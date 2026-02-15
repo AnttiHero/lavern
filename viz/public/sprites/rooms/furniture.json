@@ -1,0 +1,193 @@
+{
+  "frames": {
+    "desk": {
+      "frame": {
+        "x": 0,
+        "y": 32,
+        "w": 64,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 48
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 48
+      }
+    },
+    "computer": {
+      "frame": {
+        "x": 64,
+        "y": 40,
+        "w": 32,
+        "h": 40
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 40
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 40
+      }
+    },
+    "bookshelf": {
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 48,
+        "h": 80
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 80
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 80
+      }
+    },
+    "conference-table": {
+      "frame": {
+        "x": 144,
+        "y": 32,
+        "w": 96,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 48
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 48
+      }
+    },
+    "gavel": {
+      "frame": {
+        "x": 240,
+        "y": 48,
+        "w": 32,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 32
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      }
+    },
+    "filing-cabinet": {
+      "frame": {
+        "x": 272,
+        "y": 32,
+        "w": 32,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 48
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 48
+      }
+    },
+    "chair": {
+      "frame": {
+        "x": 304,
+        "y": 48,
+        "w": 24,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 32
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 32
+      }
+    },
+    "whiteboard": {
+      "frame": {
+        "x": 328,
+        "y": 24,
+        "w": 48,
+        "h": 56
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 56
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 48,
+        "h": 56
+      }
+    },
+    "microscope": {
+      "frame": {
+        "x": 376,
+        "y": 40,
+        "w": 32,
+        "h": 40
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 40
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 40
+      }
+    },
+    "outbox": {
+      "frame": {
+        "x": 408,
+        "y": 48,
+        "w": 40,
+        "h": 32
+      },
+      "sourceSize": {
+        "w": 40,
+        "h": 32
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 40,
+        "h": 32
+      }
+    }
+  },
+  "meta": {
+    "image": "furniture.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 448,
+      "h": 80
+    },
+    "scale": 1
+  }
+}

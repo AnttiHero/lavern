@@ -1,0 +1,110 @@
+/**
+ * Audit Persistence — JSONL file-based audit trail with SHA-256 checksum chain.
+ *
+ * v3: Refactored to use SessionState — no more module-level vars.
+ * Each session has its own audit file path and hash chain.
+ *
+ * Every audit event is appended to a .jsonl file immediately (crash-safe).
+ * Each entry includes SHA-256 hash of the previous entry (tamper-evident chain).
+ * Session end compiles a full AuditTrail summary.
+ *
+ * File location: {auditDir}/{sessionId}.jsonl
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as crypto from 'node:crypto';
+import type { AuditEntry } from '../types/audit.js';
+import type { SessionState } from '../session/session-state.js';
+
+function computeHash(data: string): string {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+function appendLine(session: SessionState, data: unknown): void {
+  if (!session.auditCurrentFile) return;
+
+  const line = JSON.stringify(data);
+  session.auditLastHash = computeHash(line + session.auditLastHash);
+
+  fs.appendFileSync(session.auditCurrentFile, line + '\n', 'utf-8');
+}
+
+export function initPersistentAudit(session: SessionState): void {
+  if (!fs.existsSync(session.auditDir)) {
+    fs.mkdirSync(session.auditDir, { recursive: true });
+  }
+  session.auditCurrentFile = path.join(session.auditDir, `${session.id}.jsonl`);
+  session.auditLastHash = '';
+
+  // Write session start marker
+  const startEntry = {
+    type: 'session_start',
+    sessionId: session.id,
+    timestamp: new Date().toISOString(),
+    previousHash: '',
+  };
+  appendLine(session, startEntry);
+}
+
+export function persistAuditEntry(session: SessionState, entry: AuditEntry): void {
+  if (!session.auditCurrentFile) return;
+
+  const persistedEntry = {
+    ...entry,
+    previousHash: session.auditLastHash,
+  };
+  appendLine(session, persistedEntry);
+}
+
+export function finalizePersistentAudit(session: SessionState, summary: Record<string, unknown>): void {
+  if (!session.auditCurrentFile) return;
+
+  const endEntry = {
+    type: 'session_end',
+    timestamp: new Date().toISOString(),
+    previousHash: session.auditLastHash,
+    summary,
+  };
+  appendLine(session, endEntry);
+}
+
+/**
+ * Verify the checksum chain of an audit file.
+ * Returns true if the chain is intact (no tampering), false otherwise.
+ */
+export function verifyAuditChain(filePath: string): { valid: boolean; entries: number; error?: string } {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.trim().split('\n').filter(l => l.length > 0);
+
+    let prevHash = '';
+    for (let i = 0; i < lines.length; i++) {
+      const parsed = JSON.parse(lines[i]);
+      if (i > 0 && parsed.previousHash !== prevHash) {
+        return {
+          valid: false,
+          entries: lines.length,
+          error: `Chain broken at entry ${i}: expected hash ${prevHash.slice(0, 16)}..., got ${(parsed.previousHash || '').slice(0, 16)}...`,
+        };
+      }
+      prevHash = computeHash(lines[i] + (i === 0 ? '' : prevHash));
+    }
+
+    return { valid: true, entries: lines.length };
+  } catch (e) {
+    return { valid: false, entries: 0, error: `Failed to read audit file: ${e}` };
+  }
+}
+
+/**
+ * Read all entries from a session audit file.
+ */
+export function readAuditFile(filePath: string): unknown[] {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content.trim().split('\n').filter(l => l.length > 0).map(l => JSON.parse(l));
+  } catch {
+    return [];
+  }
+}

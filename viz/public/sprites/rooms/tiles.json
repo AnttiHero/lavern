@@ -1,0 +1,733 @@
+{
+  "frames": {
+    "tile-intake": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-intake-light": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-intake-left": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-intake-right": {
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-parallel_analysis": {
+      "frame": {
+        "x": 0,
+        "y": 72,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-parallel_analysis-light": {
+      "frame": {
+        "x": 64,
+        "y": 72,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-parallel_analysis-left": {
+      "frame": {
+        "x": 128,
+        "y": 72,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-parallel_analysis-right": {
+      "frame": {
+        "x": 192,
+        "y": 72,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-debate_1": {
+      "frame": {
+        "x": 0,
+        "y": 144,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-debate_1-light": {
+      "frame": {
+        "x": 64,
+        "y": 144,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-debate_1-left": {
+      "frame": {
+        "x": 128,
+        "y": 144,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-debate_1-right": {
+      "frame": {
+        "x": 192,
+        "y": 144,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-ethics_gate": {
+      "frame": {
+        "x": 0,
+        "y": 216,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-ethics_gate-light": {
+      "frame": {
+        "x": 64,
+        "y": 216,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-ethics_gate-left": {
+      "frame": {
+        "x": 128,
+        "y": 216,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-ethics_gate-right": {
+      "frame": {
+        "x": 192,
+        "y": 216,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-transformation": {
+      "frame": {
+        "x": 0,
+        "y": 288,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-transformation-light": {
+      "frame": {
+        "x": 64,
+        "y": 288,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-transformation-left": {
+      "frame": {
+        "x": 128,
+        "y": 288,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-transformation-right": {
+      "frame": {
+        "x": 192,
+        "y": 288,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-parallel_verification": {
+      "frame": {
+        "x": 0,
+        "y": 360,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-parallel_verification-light": {
+      "frame": {
+        "x": 64,
+        "y": 360,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-parallel_verification-left": {
+      "frame": {
+        "x": 128,
+        "y": 360,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-parallel_verification-right": {
+      "frame": {
+        "x": 192,
+        "y": 360,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-debate_2": {
+      "frame": {
+        "x": 0,
+        "y": 432,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-debate_2-light": {
+      "frame": {
+        "x": 64,
+        "y": 432,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-debate_2-left": {
+      "frame": {
+        "x": 128,
+        "y": 432,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-debate_2-right": {
+      "frame": {
+        "x": 192,
+        "y": 432,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-meaning_gate": {
+      "frame": {
+        "x": 0,
+        "y": 504,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-meaning_gate-light": {
+      "frame": {
+        "x": 64,
+        "y": 504,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-meaning_gate-left": {
+      "frame": {
+        "x": 128,
+        "y": 504,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-meaning_gate-right": {
+      "frame": {
+        "x": 192,
+        "y": 504,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-synthesis": {
+      "frame": {
+        "x": 0,
+        "y": 576,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-synthesis-light": {
+      "frame": {
+        "x": 64,
+        "y": 576,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-synthesis-left": {
+      "frame": {
+        "x": 128,
+        "y": 576,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-synthesis-right": {
+      "frame": {
+        "x": 192,
+        "y": 576,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-final_gate": {
+      "frame": {
+        "x": 0,
+        "y": 648,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "tile-final_gate-light": {
+      "frame": {
+        "x": 64,
+        "y": 648,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-final_gate-left": {
+      "frame": {
+        "x": 128,
+        "y": 648,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    },
+    "wall-final_gate-right": {
+      "frame": {
+        "x": 192,
+        "y": 648,
+        "w": 64,
+        "h": 72
+      },
+      "sourceSize": {
+        "w": 64,
+        "h": 72
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 72
+      }
+    }
+  },
+  "meta": {
+    "image": "tiles.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 256,
+      "h": 720
+    },
+    "scale": 1
+  }
+}

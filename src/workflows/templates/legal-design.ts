@@ -1,0 +1,221 @@
+/**
+ * Legal Design Workflow Template — Wraps the existing v4 10-step pipeline
+ * as a WorkflowTemplate for the registry.
+ *
+ * This does NOT replace the existing legal-design pipeline. The existing
+ * `createWorkflowTools()` and `PHASE_DENY_RULES` continue to operate
+ * for legal-design runs. This template exists so the Router can see
+ * the legal-design pipeline in the registry alongside other workflows.
+ */
+
+import type { WorkflowTemplate } from '../../types/workflow.js';
+import { WORKFLOW_STEPS, STEP_DEFINITIONS } from '../../types/workflow.js';
+import { workflowRegistry } from '../registry.js';
+
+/**
+ * Convert existing StepDefinitions to GenericStepDefinition format.
+ */
+const stepDefinitions: Record<string, import('../../types/workflow.js').GenericStepDefinition> = {};
+for (const step of WORKFLOW_STEPS) {
+  const def = STEP_DEFINITIONS[step];
+  stepDefinitions[step] = {
+    name: def.name,
+    description: def.description,
+    preconditions: [...def.preconditions],
+    requiresGateApproval: def.requiresGateApproval,
+    gateType: def.gateType,
+  };
+}
+
+export const legalDesignTemplate: WorkflowTemplate = {
+  id: 'legal-design',
+  name: 'Legal Document Redesign',
+  description: 'Full 10-step legal design pipeline: multidisciplinary analysis, debate, transformation, verification, synthesis with human gates. The Shem\'s flagship workflow.',
+  steps: [...WORKFLOW_STEPS],
+  stepDefinitions,
+  availableTools: [
+    'Read', 'Grep', 'Glob', 'Task', 'TodoWrite',
+    // Workflow engine
+    'mcp__shem__get_current_step',
+    'mcp__shem__advance_step',
+    'mcp__shem__get_workflow_history',
+    // Debate board
+    'mcp__shem__post_finding',
+    'mcp__shem__post_challenge',
+    'mcp__shem__post_response',
+    'mcp__shem__resolve_debate',
+    'mcp__shem__get_findings',
+    'mcp__shem__get_challenges',
+    'mcp__shem__get_unresolved_debates',
+    'mcp__shem__get_debate_summary',
+    // Scoring engine
+    'mcp__shem__calculate_complexity_tax',
+    'mcp__shem__calculate_readability_score',
+    'mcp__shem__calculate_findability_score',
+    'mcp__shem__compare_before_after',
+    // Verification engine
+    'mcp__shem__run_self_verification',
+    'mcp__shem__run_cross_verification',
+    'mcp__shem__run_score_verification',
+    'mcp__shem__get_verification_summary',
+    // Memory system
+    'mcp__shem__add_institutional_memory',
+    'mcp__shem__query_institutional_memory',
+    'mcp__shem__save_matter_memory',
+    'mcp__shem__load_matter_memory',
+    'mcp__shem__save_precedent',
+    'mcp__shem__query_precedents',
+    // Approval gate
+    'mcp__shem__request_approval',
+    // v4: Report Card
+    'mcp__shem__compile_report_card',
+    'mcp__shem__get_report_card',
+    // v4: Feedback Loop
+    'mcp__shem__run_feedback_loop',
+    'mcp__shem__update_precedent_effectiveness',
+    'mcp__shem__record_anti_pattern',
+    'mcp__shem__query_anti_patterns',
+    // v4: Baselines
+    'mcp__shem__update_baselines',
+    'mcp__shem__check_against_baseline',
+    'mcp__shem__get_baseline',
+    'mcp__shem__get_quality_trend',
+    // v4: LEGAL.md
+    'mcp__shem__compile_legal_md',
+    'mcp__shem__get_legal_md',
+    // v4: Session Replay Testing
+    'mcp__shem__run_regression_test',
+    'mcp__shem__run_batch_regression',
+    'mcp__shem__compare_sessions',
+  ],
+  requiredAgents: [
+    'design-reviewer',
+    'ethics-auditor',
+    'service-designer',
+    'plain-language-specialist',
+    'client-proxy',
+    'transformation-specialist',
+    'meaning-guardian',
+    'synthesis-editor',
+  ],
+  orchestratorPrompt: '(uses existing orchestratorPrompt from src/agents/prompts/orchestrator.ts)',
+  phasePermissions: {
+    intake: {
+      denyTools: [
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+      ],
+      reason: 'Intake phase: only reading, memory queries, and context gathering allowed.',
+    },
+    parallel_analysis: {
+      denyTools: [
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__advance_step',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+      ],
+      reason: 'Analysis phase: agents post findings but do not challenge or resolve.',
+    },
+    debate_1: {
+      denyTools: [
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+        'mcp__shem__save_precedent',
+      ],
+      reason: 'Debate phase 1: challenges, responses, and resolutions allowed.',
+    },
+    ethics_gate: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+      ],
+      reason: 'Ethics gate: only approval decisions and reading allowed.',
+    },
+    transformation: {
+      denyTools: [
+        'mcp__shem__calculate_complexity_tax',
+        'mcp__shem__calculate_readability_score',
+        'mcp__shem__calculate_findability_score',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+      ],
+      reason: 'Transformation phase: focus on rewriting, not scoring or verifying.',
+    },
+    parallel_verification: {
+      denyTools: [
+        'mcp__shem__save_precedent',
+        'mcp__shem__resolve_debate',
+      ],
+      reason: 'Verification phase: run all verification types + re-check agents.',
+    },
+    debate_2: {
+      denyTools: [
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+        'mcp__shem__save_precedent',
+      ],
+      reason: 'Debate phase 2: resolve transformation challenges.',
+    },
+    meaning_gate: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+      ],
+      reason: 'Meaning gate: only approval decisions and reading allowed.',
+    },
+    synthesis: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__run_self_verification',
+        'mcp__shem__run_cross_verification',
+        'mcp__shem__run_score_verification',
+        'mcp__shem__run_feedback_loop',
+        'mcp__shem__update_baselines',
+        'mcp__shem__record_anti_pattern',
+      ],
+      reason: 'Synthesis phase: assemble artifacts, save precedents, compile report card. No debate or feedback loop.',
+    },
+    final_gate: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__save_precedent',
+      ],
+      reason: 'Final gate: only approval decisions and reading allowed.',
+    },
+    delivered: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+      ],
+      reason: 'Delivered: run learning cycle (report card, feedback loop, baselines, LEGAL.md).',
+    },
+  },
+};
+
+// Auto-register on import
+workflowRegistry.register(legalDesignTemplate);

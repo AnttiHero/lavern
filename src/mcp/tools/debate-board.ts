@@ -1,0 +1,345 @@
+/**
+ * Debate Board MCP Tool — Shared state for agent collaboration.
+ *
+ * v3: Refactored to factory pattern — all state lives in SessionState.
+ * Events emitted on every state mutation for visualization + API.
+ *
+ * The orchestrator MUST call resolve_debate to formally close each debate.
+ * Resolution is a first-class auditable event — insurance reviewers can see
+ * "Why did the system resolve this dispute this way?"
+ */
+
+import { z } from 'zod';
+import { tool } from '@anthropic-ai/claude-agent-sdk';
+import type { SessionState } from '../../session/session-state.js';
+import { eventTimestamp } from '../../events/event-bus.js';
+import type { Finding, Challenge, Response, DebateResolution } from '../../types/debate.js';
+
+export function createDebateBoardTools(session: SessionState) {
+  const state = session.debate;
+  const counters = session.debateCounters;
+
+  const postFinding = tool(
+    'post_finding',
+    'Post a finding to the debate board. Used by agents to share their analysis results with other agents. Include confidence score (0.0-1.0) based on evidence strength.',
+    {
+      agent_role: z.string().describe('The role of the agent posting'),
+      finding_type: z.enum(['score', 'dark-pattern', 'transformation', 'meaning-concern', 'comprehension'])
+        .describe('Type of finding'),
+      content: z.string().describe('The finding content — what was discovered'),
+      severity: z.enum(['RED', 'YELLOW', 'GREEN']).describe('Severity classification'),
+      evidence: z.array(z.string()).describe('Specific quotes or references from the document as evidence'),
+      confidence: z.number().min(0).max(1).optional()
+        .describe('Confidence in this finding (0.0-1.0). Based on evidence strength, not self-assessment. Default: 0.8'),
+    },
+    async (args) => {
+      const finding: Finding = {
+        id: `F-${String(++counters.finding).padStart(3, '0')}`,
+        agentRole: args.agent_role as Finding['agentRole'],
+        findingType: args.finding_type,
+        content: args.content,
+        severity: args.severity,
+        evidence: args.evidence,
+        confidence: args.confidence ?? 0.8,
+        timestamp: eventTimestamp(),
+        resolved: false,
+      };
+      state.findings.push(finding);
+
+      session.events.emitEvent({
+        type: 'finding_posted',
+        findingId: finding.id,
+        agent: args.agent_role,
+        category: args.finding_type,
+        severity: args.severity,
+        confidence: finding.confidence,
+        timestamp: eventTimestamp(),
+      });
+
+      return {
+        content: [{ type: 'text' as const, text: `Finding ${finding.id} posted. Severity: ${finding.severity}. Confidence: ${(finding.confidence * 100).toFixed(0)}%. Total findings: ${state.findings.length}.` }],
+      };
+    }
+  );
+
+  const postChallenge = tool(
+    'post_challenge',
+    'Challenge another agent\'s finding. Used when an agent disagrees with or wants to question a finding posted by another agent.',
+    {
+      challenger_role: z.string().describe('The role of the agent issuing the challenge'),
+      target_finding_id: z.string().describe('The ID of the finding being challenged (e.g., "F-001")'),
+      challenge_text: z.string().describe('The challenge — why this finding is questioned'),
+      evidence: z.array(z.string()).describe('Evidence supporting the challenge'),
+    },
+    async (args) => {
+      const targetFinding = state.findings.find(f => f.id === args.target_finding_id);
+      if (!targetFinding) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: Finding ${args.target_finding_id} not found.` }],
+        };
+      }
+
+      const challenge: Challenge = {
+        id: `C-${String(++counters.challenge).padStart(3, '0')}`,
+        challengerRole: args.challenger_role as Challenge['challengerRole'],
+        targetFindingId: args.target_finding_id,
+        challengeText: args.challenge_text,
+        evidence: args.evidence,
+        timestamp: eventTimestamp(),
+        resolved: false,
+      };
+      state.challenges.push(challenge);
+
+      session.events.emitEvent({
+        type: 'challenge_posted',
+        challengeId: challenge.id,
+        challenger: args.challenger_role,
+        targetFindingId: args.target_finding_id,
+        timestamp: eventTimestamp(),
+      });
+
+      return {
+        content: [{ type: 'text' as const, text: `Challenge ${challenge.id} posted against ${args.target_finding_id} (by ${targetFinding.agentRole}). Awaiting response.` }],
+      };
+    }
+  );
+
+  const postResponse = tool(
+    'post_response',
+    'Respond to a challenge. Used by the challenged agent to defend, revise, or accept the challenge.',
+    {
+      responder_role: z.string().describe('The role of the agent responding'),
+      challenge_id: z.string().describe('The ID of the challenge being responded to'),
+      response_text: z.string().describe('The response — defense, revision, or acceptance'),
+      revised_position: z.string().optional().describe('If revising, the new position'),
+      accepted: z.boolean().describe('Whether the challenge is accepted (true = revised, false = maintained)'),
+    },
+    async (args) => {
+      const targetChallenge = state.challenges.find(c => c.id === args.challenge_id);
+      if (!targetChallenge) {
+        return {
+          content: [{ type: 'text' as const, text: `Error: Challenge ${args.challenge_id} not found.` }],
+        };
+      }
+
+      const response: Response = {
+        id: `R-${String(++counters.response).padStart(3, '0')}`,
+        responderRole: args.responder_role as Response['responderRole'],
+        challengeId: args.challenge_id,
+        responseText: args.response_text,
+        revisedPosition: args.revised_position,
+        accepted: args.accepted,
+        timestamp: eventTimestamp(),
+      };
+      state.responses.push(response);
+      targetChallenge.resolved = true;
+
+      if (args.accepted && args.revised_position) {
+        const finding = state.findings.find(f => f.id === targetChallenge.targetFindingId);
+        if (finding) {
+          finding.content = args.revised_position;
+          finding.resolved = true;
+        }
+      }
+
+      session.events.emitEvent({
+        type: 'response_posted',
+        responseId: response.id,
+        responder: args.responder_role,
+        challengeId: args.challenge_id,
+        accepted: args.accepted,
+        timestamp: eventTimestamp(),
+      });
+
+      return {
+        content: [{ type: 'text' as const, text: `Response ${response.id} to ${args.challenge_id}: ${args.accepted ? 'ACCEPTED (revised)' : 'MAINTAINED (defended)'}` }],
+      };
+    }
+  );
+
+  const resolveDebate = tool(
+    'resolve_debate',
+    'Formally resolve a debate. The orchestrator MUST call this to close each debate topic. Creates a first-class auditable resolution record. Insurance reviewers will see this.',
+    {
+      debate_topic: z.string().describe('What the debate was about'),
+      finding_ids: z.array(z.string()).describe('IDs of findings involved in the debate'),
+      resolution: z.string().describe('What was decided'),
+      winning_position: z.string().describe('Which position prevailed and why'),
+      evidence_weight: z.string().describe('Why this position won — what evidence was most compelling'),
+      confidence: z.number().min(0).max(1).describe('Confidence in the resolution (0.0-1.0)'),
+      escalation_needed: z.boolean().describe('Should this be escalated to human review?'),
+      resolved_by: z.string().describe('Which agent role resolved this (usually "orchestrator")'),
+    },
+    async (args) => {
+      const resolution: DebateResolution = {
+        id: `DR-${String(++counters.resolution).padStart(3, '0')}`,
+        debateTopic: args.debate_topic,
+        findingIds: args.finding_ids,
+        resolution: args.resolution,
+        winningPosition: args.winning_position,
+        evidenceWeight: args.evidence_weight,
+        confidence: args.confidence,
+        escalationNeeded: args.escalation_needed,
+        resolvedBy: args.resolved_by as DebateResolution['resolvedBy'],
+        timestamp: eventTimestamp(),
+      };
+      state.resolutions.push(resolution);
+
+      for (const fid of args.finding_ids) {
+        const finding = state.findings.find(f => f.id === fid);
+        if (finding) finding.resolved = true;
+      }
+
+      session.events.emitEvent({
+        type: 'debate_resolved',
+        resolutionId: resolution.id,
+        topic: args.debate_topic,
+        resolution: args.resolution,
+        confidence: args.confidence,
+        timestamp: eventTimestamp(),
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Debate resolved: ${resolution.id}\n**Topic**: ${args.debate_topic}\n**Winner**: ${args.winning_position}\n**Confidence**: ${(args.confidence * 100).toFixed(0)}%\n${args.escalation_needed ? '\u26a0\ufe0f ESCALATION RECOMMENDED \u2014 route to human review.' : '\u2705 Resolution accepted.'}`,
+        }],
+      };
+    }
+  );
+
+  const getUnresolvedDebates = tool(
+    'get_unresolved_debates',
+    'Get all unresolved debate topics \u2014 findings that have been challenged but not formally resolved. The orchestrator must resolve ALL debates before advancing the workflow.',
+    {},
+    async () => {
+      const unresolvedChallenges = state.challenges.filter(c => !c.resolved);
+      const challengedButUnresolved = state.challenges
+        .filter(c => c.resolved)
+        .filter(c => {
+          return !state.resolutions.some(r => r.findingIds.includes(c.targetFindingId));
+        });
+
+      const allUnresolved = [
+        ...unresolvedChallenges.map(c => `PENDING CHALLENGE: ${c.id} against ${c.targetFindingId} \u2014 ${c.challengeText.slice(0, 80)}`),
+        ...challengedButUnresolved.map(c => `NEEDS RESOLUTION: ${c.id} (responded but not formally resolved) \u2014 ${c.challengeText.slice(0, 80)}`),
+        ...state.findings.filter(f => !f.resolved && f.severity === 'RED').map(f => `RED FINDING UNRESOLVED: ${f.id} \u2014 ${f.content.slice(0, 80)}`),
+      ];
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: allUnresolved.length > 0
+            ? `## Unresolved Debates (${allUnresolved.length})\n\n${allUnresolved.join('\n')}\n\n\u26a0\ufe0f All debates must be formally resolved before advancing the workflow.`
+            : '\u2705 All debates have been formally resolved.',
+        }],
+      };
+    },
+    { annotations: { readOnly: true } }
+  );
+
+  const getFindings = tool(
+    'get_findings',
+    'Get all findings on the debate board, optionally filtered by agent or severity.',
+    {
+      filter_by_agent: z.string().optional().describe('Filter by agent role'),
+      filter_by_severity: z.enum(['RED', 'YELLOW', 'GREEN']).optional().describe('Filter by severity'),
+      unresolved_only: z.boolean().optional().describe('Only return unresolved findings'),
+    },
+    async (args) => {
+      let results = [...state.findings];
+      if (args.filter_by_agent) results = results.filter(f => f.agentRole === args.filter_by_agent);
+      if (args.filter_by_severity) results = results.filter(f => f.severity === args.filter_by_severity);
+      if (args.unresolved_only) results = results.filter(f => !f.resolved);
+
+      const summary = results.map(f =>
+        `${f.id} [${f.severity}] (${f.agentRole}) [${(f.confidence * 100).toFixed(0)}%]: ${f.content}\n  Evidence: ${f.evidence.join('; ')}`
+      ).join('\n\n');
+
+      return {
+        content: [{ type: 'text' as const, text: results.length > 0 ? summary : 'No findings match the criteria.' }],
+      };
+    },
+    { annotations: { readOnly: true } }
+  );
+
+  const getChallenges = tool(
+    'get_challenges',
+    'Get all challenges on the debate board, optionally filtered by target agent.',
+    {
+      target_agent: z.string().optional().describe('Filter challenges targeting this agent'),
+      unresolved_only: z.boolean().optional().describe('Only return unresolved challenges'),
+    },
+    async (args) => {
+      let results = [...state.challenges];
+      if (args.target_agent) {
+        results = results.filter(c => {
+          const finding = state.findings.find(f => f.id === c.targetFindingId);
+          return finding?.agentRole === args.target_agent;
+        });
+      }
+      if (args.unresolved_only) results = results.filter(c => !c.resolved);
+
+      const summary = results.map(c => {
+        const finding = state.findings.find(f => f.id === c.targetFindingId);
+        const response = state.responses.find(r => r.challengeId === c.id);
+        return `${c.id} (${c.challengerRole} challenges ${finding?.agentRole}): ${c.challengeText}\n  Target: ${c.targetFindingId}\n  Status: ${response ? (response.accepted ? 'ACCEPTED' : 'DEFENDED') : 'PENDING'}`;
+      }).join('\n\n');
+
+      return {
+        content: [{ type: 'text' as const, text: results.length > 0 ? summary : 'No challenges match the criteria.' }],
+      };
+    },
+    { annotations: { readOnly: true } }
+  );
+
+  const getDebateSummary = tool(
+    'get_debate_summary',
+    'Get a full summary of the debate board \u2014 all findings, challenges, resolutions, and formal debate closures.',
+    {},
+    async () => {
+      const redFindings = state.findings.filter(f => f.severity === 'RED').length;
+      const yellowFindings = state.findings.filter(f => f.severity === 'YELLOW').length;
+      const greenFindings = state.findings.filter(f => f.severity === 'GREEN').length;
+      const unresolvedChallenges = state.challenges.filter(c => !c.resolved).length;
+      const avgConfidence = state.findings.length > 0
+        ? state.findings.reduce((sum, f) => sum + f.confidence, 0) / state.findings.length
+        : 0;
+
+      const summary = `
+## Debate Board Summary
+
+**Findings**: ${state.findings.length} total (RED: ${redFindings}, YELLOW: ${yellowFindings}, GREEN: ${greenFindings})
+**Average Confidence**: ${(avgConfidence * 100).toFixed(0)}%
+**Challenges**: ${state.challenges.length} total (${unresolvedChallenges} unresolved)
+**Responses**: ${state.responses.length} total
+**Formal Resolutions**: ${state.resolutions.length}
+
+### All Findings
+${state.findings.map(f => `- ${f.id} [${f.severity}] (${f.agentRole}) [${(f.confidence * 100).toFixed(0)}%]: ${f.content}`).join('\n')}
+
+### Formal Debate Resolutions
+${state.resolutions.map(r => `- ${r.id}: "${r.debateTopic}" \u2192 ${r.winningPosition} (${(r.confidence * 100).toFixed(0)}% confidence)${r.escalationNeeded ? ' \u26a0\ufe0f ESCALATION' : ''}`).join('\n') || '(none yet \u2014 orchestrator must call resolve_debate)'}
+
+### Unresolved Challenges
+${state.challenges.filter(c => !c.resolved).map(c => `- ${c.id}: ${c.challengeText}`).join('\n') || '(none)'}
+`.trim();
+
+      return {
+        content: [{ type: 'text' as const, text: summary }],
+      };
+    },
+    { annotations: { readOnly: true } }
+  );
+
+  return [
+    postFinding,
+    postChallenge,
+    postResponse,
+    resolveDebate,
+    getFindings,
+    getChallenges,
+    getUnresolvedDebates,
+    getDebateSummary,
+  ];
+}

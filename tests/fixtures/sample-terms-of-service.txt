@@ -1,0 +1,73 @@
+TERMS OF SERVICE
+
+Last Updated: January 1, 2025
+
+PLEASE READ THESE TERMS OF SERVICE ("TERMS") CAREFULLY BEFORE USING THE SERVICES PROVIDED BY ACME CLOUD SOLUTIONS, INC. ("COMPANY", "WE", "US", OR "OUR"). BY ACCESSING OR USING OUR SERVICES, YOU ("USER", "YOU", OR "YOUR") AGREE TO BE BOUND BY THESE TERMS.
+
+1. ACCEPTANCE OF TERMS
+
+By accessing or using the Services, you acknowledge that you have read, understood, and agree to be bound by these Terms and our Privacy Policy, which is incorporated herein by reference. If you do not agree to these Terms, you must not access or use the Services. Notwithstanding any other provision herein, the Company reserves the right to modify these Terms at any time in its sole discretion.
+
+2. DESCRIPTION OF SERVICES
+
+The Company provides cloud-based software solutions (the "Services") pursuant to the terms and conditions set forth herein. The Services may include, without limitation, data storage, analytics, collaboration tools, and related functionality as determined by the Company from time to time.
+
+3. SUBSCRIPTION AND PAYMENT
+
+3.1 Fees. You agree to pay all applicable fees as set forth in the applicable Order Form or as displayed on the Company's website at the time of purchase. All fees are quoted in United States Dollars and are non-refundable except as expressly set forth herein.
+
+3.2 Auto-Renewal. Your subscription will automatically renew for successive periods of equal duration to the initial subscription term unless you provide written notice of non-renewal at least thirty (30) days prior to the expiration of the then-current term. Upon auto-renewal, the subscription fees may be increased by up to ten percent (10%) of the fees in effect during the immediately preceding term.
+
+3.3 Late Payment. In the event that any payment is not received by the Company within fifteen (15) days of the applicable due date, the Company shall have the right, without limiting its other rights or remedies, to (a) charge interest on the past due amount at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted under applicable law, whichever is lower, and (b) suspend your access to the Services until such amounts are paid in full.
+
+4. DATA AND PRIVACY
+
+4.1 Your Data. You retain all right, title, and interest in and to any data, information, or material that you submit through the Services ("Your Data"). You grant the Company a non-exclusive, worldwide, royalty-free license to use, copy, store, transmit, display, and process Your Data solely for the purpose of providing and improving the Services.
+
+4.2 Data Collection. The Company may collect certain information related to your use of the Services, including but not limited to usage patterns, device information, IP addresses, and cookies. Such information shall be collected and processed in accordance with our Privacy Policy.
+
+4.3 Data Retention. Upon termination or expiration of your subscription, the Company will retain Your Data for a period of ninety (90) days, during which time you may export Your Data. After such period, the Company shall have no obligation to maintain or provide any of Your Data and may delete all of Your Data in its systems or otherwise in its possession or under its control.
+
+5. INTELLECTUAL PROPERTY
+
+5.1 Company IP. The Services, including all software, technology, designs, and documentation, are the exclusive property of the Company and are protected by applicable intellectual property laws. Nothing herein grants you any right, title, or interest in the Company's intellectual property except as expressly set forth in these Terms.
+
+5.2 Feedback. If you provide any suggestions, ideas, enhancement requests, or other feedback regarding the Services ("Feedback"), the Company shall have a royalty-free, worldwide, irrevocable, perpetual license to use and incorporate such Feedback into the Services.
+
+6. LIMITATION OF LIABILITY
+
+6.1 IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR IN CONNECTION WITH THESE TERMS OR THE USE OF THE SERVICES, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE), OR ANY OTHER LEGAL THEORY.
+
+6.2 THE COMPANY'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THESE TERMS SHALL NOT EXCEED THE GREATER OF (A) THE TOTAL AMOUNT PAID BY YOU TO THE COMPANY DURING THE TWELVE (12) MONTH PERIOD IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR (B) ONE HUNDRED UNITED STATES DOLLARS ($100.00).
+
+7. INDEMNIFICATION
+
+You agree to indemnify, defend, and hold harmless the Company and its officers, directors, employees, and agents from and against any and all claims, damages, obligations, losses, liabilities, costs, and expenses (including but not limited to reasonable attorney's fees) arising from: (a) your use of the Services; (b) your violation of these Terms; (c) your violation of any third-party right, including without limitation any copyright, property, or privacy right; or (d) any claim that Your Data caused damage to a third party.
+
+8. TERMINATION
+
+8.1 Termination by You. You may terminate your subscription at any time by providing written notice to the Company at support@acmecloud.example. Such termination shall be effective at the end of the then-current billing period.
+
+8.2 Termination by Company. The Company may terminate or suspend your access to the Services immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach these Terms. Upon termination, your right to use the Services will cease immediately.
+
+8.3 Effect of Termination. Upon termination, all rights granted to you under these Terms will immediately cease. Sections 5, 6, 7, 9, and 10 shall survive any termination or expiration of these Terms.
+
+9. DISPUTE RESOLUTION
+
+9.1 Governing Law. These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of law provisions.
+
+9.2 Arbitration. Any dispute arising out of or relating to these Terms or the Services shall be resolved by binding arbitration administered by the American Arbitration Association in accordance with its Commercial Arbitration Rules. The arbitration shall take place in Wilmington, Delaware. The arbitrator's decision shall be final and binding, and judgment on the award may be entered in any court of competent jurisdiction.
+
+9.3 Class Action Waiver. You agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action. If for any reason a claim proceeds in court rather than in arbitration, you waive any right to a jury trial.
+
+10. GENERAL PROVISIONS
+
+10.1 Entire Agreement. These Terms constitute the entire agreement between you and the Company regarding the use of the Services and supersede all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, regarding the Services.
+
+10.2 Severability. If any provision of these Terms is found to be unenforceable or invalid, that provision will be limited or eliminated to the minimum extent necessary so that these Terms will otherwise remain in full force and effect.
+
+10.3 No Waiver. The failure of the Company to exercise or enforce any right or provision of these Terms shall not constitute a waiver of such right or provision.
+
+10.4 Assignment. The Company may assign or transfer these Terms, in whole or in part, without restriction. You may not assign or transfer any rights or obligations under these Terms without the prior written consent of the Company.
+
+10.5 Contact. If you have any questions about these Terms, please contact us at legal@acmecloud.example.

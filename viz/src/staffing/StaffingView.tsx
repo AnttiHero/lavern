@@ -1,0 +1,598 @@
+/**
+ * StaffingView — "Draft Your Team" screen.
+ *
+ * Warm editorial design. Flat grid of flippable cards with sub-group
+ * filter pills, visual section dividers, engagement configurator.
+ *
+ * v12: Editorial redesign — Inter font, warm paper palette, clean layout.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'motion/react';
+import { useAgentProfiles } from './hooks/useAgentProfiles.js';
+import { useTeamPresets } from './hooks/useTeamPresets.js';
+import { useTeamSelection } from './hooks/useTeamSelection.js';
+import { useSoundEffects } from './hooks/useSoundEffects.js';
+import { useWorkflows } from './hooks/useWorkflows.js';
+import { useEngagementConfig } from './hooks/useEngagementConfig.js';
+import { SectionHeader } from './components/SectionHeader.js';
+import { FlippableCard } from './components/FlippableCard.js';
+import { PresetSelector } from './components/PresetSelector.js';
+import { FilterBar } from './components/FilterBar.js';
+import type { SubGroupFilter } from './components/FilterBar.js';
+import { TeamBench } from './components/TeamBench.js';
+import { EngagementConfigurator } from './components/EngagementConfigurator.js';
+import { staggerContainer } from './styles/animations.js';
+import { colors, fonts, spacing, radii } from './styles/tokens.js';
+import { useUserProfile } from '../my-page/hooks/useUserProfile.js';
+import type { AgentProfile } from './hooks/useAgentProfiles.js';
+
+// ── Specialist sub-group mapping ─────────────────────────────────────────
+
+const SPECIALIST_SUBGROUP: Record<string, string> = {
+  'service-designer': 'design',
+  'plain-language-specialist': 'design',
+  'ux-writer': 'design',
+  'information-architect': 'design',
+  'visual-designer': 'design',
+  'client-proxy': 'research',
+  'accessibility-specialist': 'research',
+  'user-researcher': 'research',
+  'behavioral-scientist': 'research',
+  'ethics-auditor': 'ethics',
+  'dei-specialist': 'ethics',
+  'sustainability-analyst': 'ethics',
+  'legal-engineer': 'tech',
+  'data-analyst': 'tech',
+  'cybersecurity-advisor': 'tech',
+  'ai-ethics-specialist': 'tech',
+  'fintech-specialist': 'industry',
+  'healthcare-specialist': 'industry',
+  'media-specialist': 'industry',
+  'energy-specialist': 'industry',
+};
+
+// ── Seniority → sub-group key mapping ────────────────────────────────────
+
+const SENIORITY_SUBGROUP: Record<string, string> = {
+  partner: 'partners',
+  'senior-associate': 'senior-associates',
+  associate: 'associates',
+  junior: 'juniors',
+};
+
+/** Derive sub-group key for any profile. */
+function getSubGroup(p: AgentProfile): string {
+  if (p.category === 'orchestrator') return 'orchestrators';
+  if (p.category === 'lawyer') return SENIORITY_SUBGROUP[p.seniority] ?? 'juniors';
+  if (p.category === 'specialist') return SPECIALIST_SUBGROUP[p.role] ?? 'legacy';
+  return 'infrastructure';
+}
+
+// ── Visual section definitions (non-collapsible dividers) ────────────────
+
+interface SectionDef {
+  id: string;
+  title: string;
+  subtitle: string;
+  filter: (p: AgentProfile) => boolean;
+  accentColor?: string;
+}
+
+const SECTION_DEFS: SectionDef[] = [
+  // Orchestrators — the team leaders
+  {
+    id: 'orchestrators',
+    title: 'Orchestrators',
+    subtitle: 'Team leaders who coordinate every engagement',
+    filter: p => p.category === 'orchestrator',
+    accentColor: colors.orchestrator,
+  },
+  // Lawyers by seniority
+  {
+    id: 'partners',
+    title: 'Partners',
+    subtitle: 'Strategic leadership and firm orchestration',
+    filter: p => p.category === 'lawyer' && p.seniority === 'partner',
+  },
+  {
+    id: 'senior-associates',
+    title: 'Senior Associates',
+    subtitle: 'Deep expertise across practice areas',
+    filter: p => p.category === 'lawyer' && p.seniority === 'senior-associate',
+  },
+  {
+    id: 'associates',
+    title: 'Associates',
+    subtitle: 'Core delivery and specialist practice',
+    filter: p => p.category === 'lawyer' && p.seniority === 'associate',
+  },
+  {
+    id: 'juniors',
+    title: 'Juniors & Support',
+    subtitle: 'Research, drafting, and operational support',
+    filter: p => p.category === 'lawyer' && p.seniority === 'junior',
+  },
+  // Specialists by sub-group
+  {
+    id: 'design',
+    title: 'Design & Communication',
+    subtitle: 'Legal design, plain language, and user experience',
+    filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'design',
+  },
+  {
+    id: 'research',
+    title: 'User Research & Testing',
+    subtitle: 'Client insights, accessibility, and behavioral science',
+    filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'research',
+  },
+  {
+    id: 'ethics',
+    title: 'Ethics & Governance',
+    subtitle: 'Compliance, DEI, and sustainability',
+    filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'ethics',
+  },
+  {
+    id: 'tech',
+    title: 'Technology & Data',
+    subtitle: 'Engineering, analytics, and cybersecurity',
+    filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'tech',
+  },
+  {
+    id: 'industry',
+    title: 'Industry Specialists',
+    subtitle: 'Fintech, healthcare, media, and energy',
+    filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'industry',
+  },
+  // Infrastructure
+  {
+    id: 'infrastructure',
+    title: 'Infrastructure',
+    subtitle: 'Quality assurance, risk pricing, and testing',
+    filter: p => p.category === 'infrastructure',
+  },
+  // Legacy / catch-all for specialists not in a sub-group
+  {
+    id: 'legacy',
+    title: 'Legacy Agents',
+    subtitle: 'Specialized workflow agents',
+    filter: p => p.category === 'specialist' && !SPECIALIST_SUBGROUP[p.role],
+  },
+];
+
+// ── Component ────────────────────────────────────────────────────────────
+
+interface Props {
+  matterId?: string;
+  onTeamConfirmed?: (roles: string[]) => void;
+  onBack?: () => void;
+  onSkip?: () => void;
+}
+
+export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, onBack, onSkip }: Props) {
+  // Read matterId from prop or sessionStorage
+  const matterId = matterIdProp ?? sessionStorage.getItem('shem-matter-id') ?? undefined;
+
+  const {
+    profiles, allProfiles, loading, error, summary,
+    category, setCategory,
+    sort, setSort,
+    search, setSearch,
+  } = useAgentProfiles();
+
+  const { presets } = useTeamPresets();
+
+  const {
+    selectedRoles, activePreset,
+    toggleAgent, applyPreset, clearSelection, setRoles,
+    totalCost, teamSize, selectedProfiles, confirming,
+    confirmTeam, isSelected,
+  } = useTeamSelection(allProfiles, presets);
+
+  const { play } = useSoundEffects();
+  const { workflows, loading: workflowsLoading } = useWorkflows();
+  const {
+    config: engagementConfig,
+    setWorkflow, setIntensity, setBudget, setYolo,
+    recommendedRoles, estimatedCost, loading: recommendationLoading,
+  } = useEngagementConfig();
+
+  // Apply recommended roles only on initial load (first non-empty result).
+  // After that, recommendations are displayed as suggestions but don't override
+  // the user's manual selection.
+  const initialAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!initialAppliedRef.current && recommendedRoles.length > 0) {
+      initialAppliedRef.current = true;
+      setRoles(recommendedRoles);
+    }
+  }, [recommendedRoles, setRoles]);
+
+  // ── Sub-group filter state ─────────────────────────────────────────────
+
+  const [subGroup, setSubGroup] = useState<SubGroupFilter>('all');
+
+  // Compute counts per sub-group (from already-filtered profiles)
+  const subGroupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of profiles) {
+      const sg = getSubGroup(p);
+      counts[sg] = (counts[sg] ?? 0) + 1;
+    }
+    return counts;
+  }, [profiles]);
+
+  // Apply sub-group filter on top of category/search/sort-filtered profiles
+  const displayProfiles = useMemo(() => {
+    if (subGroup === 'all') return profiles;
+    return profiles.filter(p => getSubGroup(p) === subGroup);
+  }, [profiles, subGroup]);
+
+  // ── Group display profiles into visual sections ────────────────────────
+
+  const sections = useMemo(() => {
+    return SECTION_DEFS
+      .map(def => ({
+        ...def,
+        profiles: displayProfiles.filter(def.filter),
+      }))
+      .filter(s => s.profiles.length > 0);
+  }, [displayProfiles]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────
+
+  const handleConfirm = useCallback(async () => {
+    play('confirm');
+    const success = await confirmTeam(matterId);
+    if (success && onTeamConfirmed) {
+      // Persist team + config for session creation
+      sessionStorage.setItem('shem-briefing-team', JSON.stringify(Array.from(selectedRoles)));
+      sessionStorage.setItem('shem-briefing-config', JSON.stringify(engagementConfig));
+      setTimeout(() => {
+        onTeamConfirmed(Array.from(selectedRoles));
+      }, 1200);
+    }
+  }, [play, confirmTeam, matterId, onTeamConfirmed, selectedRoles, engagementConfig]);
+
+  // ── Save team to profile ─────────────────────────────────────────────
+  const { saveTeam } = useUserProfile();
+  const [saveTeamName, setSaveTeamName] = useState('');
+  const [showSaveTeamInput, setShowSaveTeamInput] = useState(false);
+  const [teamSaved, setTeamSaved] = useState(false);
+
+  const handleSaveTeam = useCallback(() => {
+    const name = saveTeamName.trim();
+    if (!name || teamSize === 0) return;
+    saveTeam({
+      name,
+      description: `${teamSize} agents · ${engagementConfig.workflowId}`,
+      roles: Array.from(selectedRoles),
+      teamSize,
+    });
+    setSaveTeamName('');
+    setShowSaveTeamInput(false);
+    setTeamSaved(true);
+    setTimeout(() => setTeamSaved(false), 2000);
+  }, [saveTeamName, teamSize, selectedRoles, engagementConfig.workflowId, saveTeam]);
+
+  const handlePreset = useCallback((presetId: string) => {
+    play('preset');
+    applyPreset(presetId);
+  }, [play, applyPreset]);
+
+  const handleToggle = useCallback((role: string) => {
+    play(isSelected(role) ? 'deselect' : 'select');
+    toggleAgent(role);
+  }, [play, isSelected, toggleAgent]);
+
+  return (
+    <div style={viewStyles.container}>
+      {/* Header */}
+      <div style={viewStyles.header}>
+        <div style={viewStyles.headerLeft}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={viewStyles.backButton}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            >
+              {'\u2190'} Back
+            </button>
+          )}
+          <h1 style={viewStyles.title}>Marble <span style={{ fontStyle: 'italic' }}>Legal Team</span></h1>
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              style={viewStyles.skipButton}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.borderColor = colors.text; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; b.style.borderColor = colors.border; }}
+            >
+              Skip {'\u2192'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Engagement Configurator */}
+      <EngagementConfigurator
+        config={engagementConfig}
+        workflows={workflows}
+        workflowsLoading={workflowsLoading}
+        estimatedCost={estimatedCost}
+        teamSize={teamSize}
+        recommendationLoading={recommendationLoading}
+        onWorkflowChange={setWorkflow}
+        onIntensityChange={setIntensity}
+        onBudgetChange={setBudget}
+        onYoloChange={setYolo}
+      />
+
+      {/* Preset selector */}
+      <PresetSelector
+        presets={presets}
+        activePreset={activePreset}
+        onSelect={handlePreset}
+      />
+
+      {/* Filter bar with sub-group pills */}
+      <FilterBar
+        category={category}
+        onCategoryChange={setCategory}
+        subGroup={subGroup}
+        onSubGroupChange={setSubGroup}
+        sort={sort}
+        onSortChange={setSort}
+        search={search}
+        onSearchChange={setSearch}
+        summary={summary}
+        subGroupCounts={subGroupCounts}
+      />
+
+      {/* Loading / Error */}
+      {loading && (
+        <div style={viewStyles.loadingMessage}>Loading agent profiles...</div>
+      )}
+      {error && (
+        <div style={viewStyles.errorMessage}>
+          Failed to load profiles: {error}
+        </div>
+      )}
+
+      {/* Flat grid with section dividers */}
+      {!loading && sections.map(section => (
+        <div key={section.id}>
+          <SectionHeader
+            title={section.title}
+            subtitle={section.subtitle}
+            count={section.profiles.length}
+            accentColor={section.accentColor}
+          />
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: spacing.xl,
+              padding: `${spacing.lg}px 0`,
+            }}
+          >
+            {section.profiles.map(p => (
+              <FlippableCard
+                key={p.role}
+                profile={p}
+                selected={isSelected(p.role)}
+                onToggle={handleToggle}
+              />
+            ))}
+          </motion.div>
+        </div>
+      ))}
+
+      {/* Empty state */}
+      {!loading && sections.length === 0 && displayProfiles.length === 0 && (
+        <div style={viewStyles.emptyMessage}>
+          No agents match your filters.
+        </div>
+      )}
+
+      {/* Save Team */}
+      {teamSize > 0 && (
+        <div style={viewStyles.saveTeamRow}>
+          {teamSaved ? (
+            <span style={viewStyles.savedLabel}>{'\u2713'} Team saved to My Page</span>
+          ) : showSaveTeamInput ? (
+            <div style={viewStyles.saveTeamInputRow}>
+              <input
+                type="text"
+                value={saveTeamName}
+                onChange={e => setSaveTeamName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveTeam(); }}
+                placeholder="Team name..."
+                autoFocus
+                style={viewStyles.saveTeamInput}
+              />
+              <button onClick={handleSaveTeam} disabled={!saveTeamName.trim()} style={viewStyles.saveTeamBtn}>
+                Save
+              </button>
+              <button onClick={() => setShowSaveTeamInput(false)} style={viewStyles.saveTeamCancelBtn}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setShowSaveTeamInput(true)} style={viewStyles.saveTeamTrigger}>
+              {'\u2605'} Save This Team
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Spacer for bench */}
+      <div style={{ height: 100 }} />
+
+      {/* Team bench (fixed bottom) */}
+      <TeamBench
+        selectedProfiles={selectedProfiles}
+        teamSize={teamSize}
+        totalCost={totalCost}
+        confirming={confirming}
+        onRemove={handleToggle}
+        onConfirm={handleConfirm}
+        onClear={clearSelection}
+        intensity={engagementConfig.intensity}
+        yoloMode={engagementConfig.yoloMode}
+      />
+    </div>
+  );
+}
+
+const viewStyles: Record<string, React.CSSProperties> = {
+  container: {
+    width: '100%',
+    height: '100vh',
+    overflow: 'auto',
+    backgroundColor: colors.bg,
+    color: colors.text,
+    fontFamily: fonts.sans,
+    padding: `${spacing.xxxl}px`,
+    maxWidth: 1400,
+    margin: '0 auto',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: spacing.lg,
+  },
+  backButton: {
+    padding: '6px 14px',
+    borderRadius: radii.sm,
+    border: `1.5px solid ${colors.text}`,
+    backgroundColor: 'transparent',
+    color: colors.text,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+  },
+  skipButton: {
+    padding: '6px 14px',
+    borderRadius: radii.sm,
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    color: colors.textMuted,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    marginLeft: 'auto',
+    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 300,
+    fontFamily: fonts.serif,
+    color: colors.text,
+    letterSpacing: -0.5,
+    margin: 0,
+  },
+  loadingMessage: {
+    textAlign: 'center',
+    padding: 40,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  errorMessage: {
+    textAlign: 'center',
+    padding: 20,
+    fontSize: 13,
+    color: colors.danger,
+    backgroundColor: 'rgba(196, 93, 62, 0.06)',
+    borderRadius: 8,
+    border: `1px solid rgba(196, 93, 62, 0.15)`,
+  },
+  emptyMessage: {
+    textAlign: 'center',
+    padding: 40,
+    fontSize: 13,
+    color: colors.textDim,
+  },
+
+  // Save team
+  saveTeamRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  saveTeamTrigger: {
+    background: 'none',
+    border: `1.5px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    color: colors.textMuted,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    padding: '8px 24px',
+    cursor: 'pointer',
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+  },
+  saveTeamInputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  saveTeamInput: {
+    padding: '8px 12px',
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: colors.text,
+    backgroundColor: colors.bgInput,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    outline: 'none',
+    width: 200,
+  },
+  saveTeamBtn: {
+    padding: '8px 18px',
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: '#fff',
+    backgroundColor: colors.text,
+    border: `1.5px solid ${colors.text}`,
+    borderRadius: radii.sm,
+    cursor: 'pointer',
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+  },
+  saveTeamCancelBtn: {
+    padding: '8px 12px',
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  savedLabel: {
+    fontSize: 12,
+    color: colors.success,
+    fontWeight: 500,
+    fontFamily: fonts.sans,
+  },
+};
