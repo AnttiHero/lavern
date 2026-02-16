@@ -144,7 +144,12 @@ export function createAuthMiddleware(
       throw err;
     }
 
-    const apiKey = authHeader.slice(7);
+    const apiKey = authHeader.slice(7).trim();
+    if (!apiKey) {
+      const err = new Error('API key is required');
+      (err as Error & { statusCode: number }).statusCode = 401;
+      throw err;
+    }
     const client = registry.authenticate(apiKey);
     if (!client) {
       const err = new Error('Invalid API key');

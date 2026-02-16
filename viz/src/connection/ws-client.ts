@@ -179,6 +179,13 @@ export class ShemWsClient {
       case 'pong':
         // Keepalive response
         break;
+
+      case 'speed_changed':
+      case 'paused':
+      case 'resumed':
+      case 'seeked':
+        // Replay control messages — UI state managed elsewhere
+        break;
     }
   }
 

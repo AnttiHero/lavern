@@ -55,9 +55,13 @@ export type ShemEvent =
 
 // ── Event Bus ────────────────────────────────────────────────────────────
 
+const MAX_EVENTS = 10_000;
+const EVICT_BATCH = 1_000; // Drop oldest 10% when limit is hit
+
 export class ShemEventBus extends EventEmitter {
   private eventLog: ShemEvent[] = [];
   private recording = true;
+  private droppedCount = 0;
 
   constructor() {
     super();
@@ -66,9 +70,14 @@ export class ShemEventBus extends EventEmitter {
 
   /**
    * Emit a typed event. All events are timestamped and recorded.
+   * When the log exceeds MAX_EVENTS, the oldest batch is dropped.
    */
   emitEvent(event: ShemEvent): void {
     if (this.recording) {
+      if (this.eventLog.length >= MAX_EVENTS) {
+        this.eventLog.splice(0, EVICT_BATCH);
+        this.droppedCount += EVICT_BATCH;
+      }
       this.eventLog.push(event);
     }
     this.emit('event', event);
@@ -84,16 +93,31 @@ export class ShemEventBus extends EventEmitter {
 
   /**
    * Get events since a specific index (for reconnection/catch-up).
+   * Note: indices are relative to the current log, not the original.
    */
   getEventsSince(index: number): ShemEvent[] {
     return this.eventLog.slice(index);
   }
 
   /**
-   * Get the total number of recorded events.
+   * Get the total number of recorded events (in current log).
    */
   getEventCount(): number {
     return this.eventLog.length;
+  }
+
+  /**
+   * Whether older events have been truncated from the log.
+   */
+  get isTruncated(): boolean {
+    return this.droppedCount > 0;
+  }
+
+  /**
+   * Number of events dropped due to log size limits.
+   */
+  getDroppedCount(): number {
+    return this.droppedCount;
   }
 
   /**
@@ -108,6 +132,7 @@ export class ShemEventBus extends EventEmitter {
    */
   clear(): void {
     this.eventLog.length = 0;
+    this.droppedCount = 0;
   }
 }
 

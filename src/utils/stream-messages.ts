@@ -54,6 +54,9 @@ export async function streamMessages(
           const totalCost = (message as Record<string, unknown>).total_cost_usd as number ?? 0;
           const totalTurns = (message as Record<string, unknown>).total_turns as number ?? 0;
 
+          // Write cost back to session state (was previously never written!)
+          session.updateCost(totalCost);
+
           const auditTrail = compileAuditTrail(session, documentLabel, totalCost, totalTurns);
 
           session.events.emitEvent({

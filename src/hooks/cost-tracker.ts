@@ -31,6 +31,11 @@ export function createCostHooks(session: SessionState) {
       };
     }
 
+    // Early warning at 50% budget consumed
+    if (remaining < session.budgetUsd * 0.5 && session.accumulatedCost > 0) {
+      console.error(`[COST] 50%+ budget consumed: $${session.accumulatedCost.toFixed(2)} / $${session.budgetUsd.toFixed(2)} ($${remaining.toFixed(2)} remaining)`);
+    }
+
     if (remaining < session.budgetUsd * 0.1) {
       console.error(`[COST] Warning: Only $${remaining.toFixed(2)} remaining of $${session.budgetUsd.toFixed(2)} budget.`);
     }

@@ -17,7 +17,13 @@ export type WorkflowStep =
   | 'delivered';
 
 export type AgentRole =
+  // Orchestrators
   | 'orchestrator'
+  | 'orchestrator-conductor'
+  | 'orchestrator-closer'
+  | 'orchestrator-professor'
+  | 'orchestrator-fixer'
+  // Original specialists
   | 'design-reviewer'
   | 'ethics-auditor'
   | 'transformation-specialist'
@@ -25,7 +31,79 @@ export type AgentRole =
   | 'synthesis-editor'
   | 'service-designer'
   | 'plain-language-specialist'
-  | 'client-proxy';
+  | 'client-proxy'
+  // v5: Pipeline agents
+  | 'evaluator'
+  | 'contract-reviewer'
+  // v6: Legal core, risk, adversarial
+  | 'legal-researcher'
+  | 'risk-pricer'
+  | 'red-team'
+  // v8: Leadership
+  | 'managing-partner'
+  | 'supervising-partner'
+  | 'of-counsel'
+  | 'innovation-partner'
+  | 'client-relations-partner'
+  | 'risk-partner'
+  | 'transaction-partner'
+  // v8: Corporate & Transactional
+  | 'corporate-generalist'
+  | 'ma-specialist'
+  | 'contract-specialist'
+  | 'banking-finance'
+  | 'capital-markets'
+  // v8: Disputes & Litigation
+  | 'litigation-partner'
+  | 'litigation-associate'
+  | 'arbitration-specialist'
+  | 'dispute-resolution'
+  // v8: Regulatory & Compliance
+  | 'regulatory-counsel'
+  | 'compliance-officer'
+  | 'antitrust-specialist'
+  | 'sanctions-specialist'
+  // v8: Specialist Practice
+  | 'tax-counsel'
+  | 'ip-specialist'
+  | 'privacy-counsel'
+  | 'employment-counsel'
+  | 'real-estate-counsel'
+  | 'environmental-counsel'
+  | 'international-counsel'
+  | 'restructuring-specialist'
+  | 'startup-counsel'
+  | 'public-law-counsel'
+  | 'tech-transactions'
+  // v8: Junior Lawyers
+  | 'junior-associate'
+  | 'paralegal'
+  | 'legal-intern'
+  // v8: Design & Communication
+  | 'ux-writer'
+  | 'information-architect'
+  | 'visual-designer'
+  // v8: User Research & Testing
+  | 'accessibility-specialist'
+  | 'user-researcher'
+  | 'behavioral-scientist'
+  // v8: Ethics & Governance
+  | 'dei-specialist'
+  | 'sustainability-analyst'
+  // v8: Technology & Data
+  | 'legal-engineer'
+  | 'data-analyst'
+  | 'cybersecurity-advisor'
+  | 'ai-ethics-specialist'
+  // v8: Industry Specialists
+  | 'fintech-specialist'
+  | 'healthcare-specialist'
+  | 'media-specialist'
+  | 'energy-specialist'
+  // v8: Quality & Infrastructure
+  | 'project-manager'
+  | 'knowledge-manager'
+  | 'qa-tester';
 
 export type Severity = 'RED' | 'YELLOW' | 'GREEN';
 

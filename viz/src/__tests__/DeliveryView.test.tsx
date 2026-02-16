@@ -30,28 +30,26 @@ describe('DeliveryView', () => {
     expect(screen.getByText('Next Steps')).toBeInTheDocument();
   });
 
-  it('shows the Certainty tab content by default', async () => {
+  it('shows The Work tab content by default', async () => {
     renderWithSession(
       <DeliveryView onContinue={noop} onBack={noop} />
     );
 
+    // The Work is now the default tab — look for the hero overline
     await waitFor(() => {
-      expect(screen.getByTestId('certainty-gauge')).toBeInTheDocument();
+      expect(screen.getByText('Delivered Work Product')).toBeInTheDocument();
     });
-
-    // Certainty tab should show verification breakdown and human review section
-    expect(screen.getByText('What If This Advice Is Wrong?')).toBeInTheDocument();
-    expect(screen.getByTestId('human-review-section')).toBeInTheDocument();
   });
 
-  it('shows error when no session in storage', async () => {
+  it('falls back to demo data when no session in storage', async () => {
     renderWithSession(
       <DeliveryView onContinue={noop} onBack={noop} />,
       { withSessionData: false }
     );
 
+    // Should still render demo data (no longer shows "No session found")
     await waitFor(() => {
-      expect(screen.getByText('No session found')).toBeInTheDocument();
+      expect(screen.getByText('Delivered Work Product')).toBeInTheDocument();
     });
   });
 

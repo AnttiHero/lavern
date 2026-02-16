@@ -601,6 +601,10 @@ export const RegulatoryLawyerOutputSchema = z.object({
 
 /**
  * Specialist Practice agents: Tax, IP, Privacy, Employment, Real Estate, Environmental
+ *
+ * Base schema shared by all 6 specialists. Optional domain-specific sections
+ * allow each agent to provide structured data for their specialty without
+ * breaking the shared contract. Agents populate the section matching their role.
  */
 export const SpecialistLawyerOutputSchema = z.object({
   agentRole: z.string(),
@@ -623,6 +627,27 @@ export const SpecialistLawyerOutputSchema = z.object({
     action: z.string(),
     rationale: z.string(),
   })),
+  // Domain-specific optional sections (populated by matching specialist)
+  taxAnalysis: z.object({
+    taxImplications: z.array(z.string()),
+    filingRequirements: z.array(z.object({ jurisdiction: z.string(), deadline: z.string(), form: z.string() })),
+    estimatedLiability: z.object({ currency: z.string(), low: z.number(), high: z.number() }),
+  }).optional(),
+  ipAnalysis: z.object({
+    protectionStatus: z.array(z.object({ asset: z.string(), type: z.string(), status: z.string() })),
+    registrations: z.array(z.object({ type: z.string(), jurisdiction: z.string(), status: z.string() })),
+    infringementRisks: z.array(z.object({ risk: z.string(), severity: z.string(), evidence: z.string() })),
+  }).optional(),
+  privacyAnalysis: z.object({
+    dataFlows: z.array(z.object({ source: z.string(), destination: z.string(), dataType: z.string(), lawfulBasis: z.string() })),
+    consentMechanisms: z.array(z.object({ mechanism: z.string(), adequate: z.boolean(), issues: z.array(z.string()) })),
+    dpiaConcerns: z.array(z.string()),
+  }).optional(),
+  employmentAnalysis: z.object({
+    classificationIssues: z.array(z.object({ role: z.string(), currentClassification: z.string(), risk: z.string() })),
+    compensationRisks: z.array(z.object({ area: z.string(), exposure: z.string(), recommendation: z.string() })),
+    terminationExposure: z.object({ riskLevel: z.string(), potentialClaims: z.array(z.string()), mitigation: z.array(z.string()) }),
+  }).optional(),
   findings: z.array(FindingSchema),
   confidence: z.number().min(0).max(1),
   summary: z.string(),
@@ -772,6 +797,17 @@ export const TechExpertOutputSchema = z.object({
     implementation: z.string(),
     estimatedImpact: z.string(),
   })),
+  // Domain-specific optional sections (populated by matching specialist)
+  securityAssessment: z.object({
+    vulnerabilities: z.array(z.object({ type: z.string(), severity: z.string(), description: z.string(), remediation: z.string() })),
+    threatModel: z.object({ attackSurface: z.array(z.string()), threatActors: z.array(z.string()), mitigations: z.array(z.string()) }),
+    complianceGaps: z.array(z.object({ standard: z.string(), gap: z.string(), remediation: z.string() })),
+  }).optional(),
+  aiEthicsAssessment: z.object({
+    biasRisks: z.array(z.object({ area: z.string(), risk: z.string(), mitigation: z.string() })),
+    transparencyScore: z.number().min(0).max(1),
+    humanOversightGaps: z.array(z.object({ process: z.string(), gap: z.string(), recommendation: z.string() })),
+  }).optional(),
   findings: z.array(FindingSchema),
   confidence: z.number().min(0).max(1),
   summary: z.string(),
@@ -804,6 +840,12 @@ export const IndustryExpertOutputSchema = z.object({
     complianceStatus: z.enum(['compliant', 'non-compliant', 'needs-review']),
     action: z.string(),
   })),
+  // Domain-specific optional section (populated by matching specialist)
+  sectorSpecifics: z.object({
+    licensingRequirements: z.array(z.object({ license: z.string(), jurisdiction: z.string(), status: z.string(), deadline: z.string().optional() })),
+    sectorBenchmarks: z.array(z.object({ metric: z.string(), industryAverage: z.string(), currentValue: z.string(), assessment: z.string() })),
+    emergingRisks: z.array(z.object({ risk: z.string(), timeframe: z.string(), impact: z.string(), preparedness: z.string() })),
+  }).optional(),
   findings: z.array(FindingSchema),
   confidence: z.number().min(0).max(1),
   summary: z.string(),

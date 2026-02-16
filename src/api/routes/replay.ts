@@ -62,6 +62,10 @@ export function registerReplayRoutes(
 
   fastify.get('/api/audit-logs/:sessionId', async (request, reply) => {
     const { sessionId } = request.params as { sessionId: string };
+    // Prevent path traversal — sessionId must be alphanumeric/hyphens/underscores only
+    if (!/^[\w-]+$/.test(sessionId)) {
+      return reply.status(400).send({ error: 'Invalid session ID format' });
+    }
     const filePath = path.join(path.resolve(auditDir), `${sessionId}.jsonl`);
 
     if (!fs.existsSync(filePath)) {
@@ -83,6 +87,12 @@ export function registerReplayRoutes(
 
   fastify.get('/api/replay/:sessionId', { websocket: true }, (socket, request) => {
     const { sessionId } = request.params as { sessionId: string };
+    // Prevent path traversal
+    if (!/^[\w-]+$/.test(sessionId)) {
+      socket.send(JSON.stringify({ error: 'Invalid session ID format' }));
+      socket.close();
+      return;
+    }
     const filePath = path.join(path.resolve(auditDir), `${sessionId}.jsonl`);
 
     if (!fs.existsSync(filePath)) {

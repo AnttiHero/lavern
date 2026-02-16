@@ -41,6 +41,7 @@ import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
 import { SessionList } from './components/SessionList.js';
 import { MarbleMark } from './components/MarbleMark.js';
+import { DemoBanner } from './components/DemoBanner.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 
 // Lazy-load all views (separate code-split chunks)
@@ -94,6 +95,7 @@ function ViewFallback({ text }: { text: string }) {
 
 export function App() {
   const [view, setView] = useState<AppView>(getViewFromHash);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Hash-based routing
   useEffect(() => {
@@ -176,6 +178,7 @@ export function App() {
       }
     } catch {
       // API unreachable — fall through to demo
+      setDemoMode(true);
     }
 
     // Demo fallback
@@ -218,9 +221,8 @@ export function App() {
     const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
-    const config = configStr
-      ? JSON.parse(configStr)
-      : { workflowId: 'simple-query', intensity: 'standard', budgetUsd: 10, yoloMode: false };
+    let config = { workflowId: 'simple-query', intensity: 'standard', budgetUsd: 10, yoloMode: false };
+    try { if (configStr) config = JSON.parse(configStr); } catch { /* use defaults */ }
 
     // Store team for downstream
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(roles));
@@ -264,6 +266,7 @@ export function App() {
       }
     } catch {
       // API unreachable — fall through to demo session
+      setDemoMode(true);
     }
 
     // Demo fallback: generate a local session ID and proceed
@@ -296,10 +299,12 @@ export function App() {
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
   const showMark = view !== 'landing' && view !== 'working';
+  const showDemoBanner = demoMode && view !== 'landing';
 
   if (view === 'intake') {
     return (
       <Suspense fallback={<ViewFallback text="Loading intake..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <IntakeView
           onComplete={handleIntakeComplete}
@@ -313,6 +318,7 @@ export function App() {
   if (view === 'briefing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <BriefingView
           onComplete={handleBriefingComplete}
@@ -326,6 +332,7 @@ export function App() {
   if (view === 'staffing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading team..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <StaffingView
           onTeamConfirmed={handleStaffingComplete}
@@ -339,6 +346,7 @@ export function App() {
   if (view === 'working') {
     return (
       <Suspense fallback={<ViewFallback text="Loading session..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <WorkingView
           onComplete={() => { window.location.hash = '#/delivery'; }}
@@ -352,6 +360,7 @@ export function App() {
   if (view === 'delivery') {
     return (
       <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <DeliveryView
           onContinue={handleDeliveryDone}
@@ -365,6 +374,7 @@ export function App() {
   if (view === 'billing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading billing..." />}>
+        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <BillingView
           onClose={handleBillingClose}

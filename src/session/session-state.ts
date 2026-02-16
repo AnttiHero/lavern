@@ -23,6 +23,24 @@ import type { ClientIdentity } from '../types/client.js';
 import type { SessionReportCard, DimensionSnapshot } from '../types/report-card.js';
 import type { MatterRecord } from '../types/matter.js';
 
+// ── Array size limits ─────────────────────────────────────────────────────
+// Prevents unbounded growth of debate findings, challenges, audit entries, etc.
+// MCP tools that push to session arrays should use boundedPush() for safety.
+
+const MAX_ARRAY_SIZE = 5_000;
+
+/**
+ * Push an item to an array with a size cap. When the limit is hit,
+ * the oldest 10% of entries are dropped. Returns the array for chaining.
+ */
+export function boundedPush<T>(arr: T[], item: T, max = MAX_ARRAY_SIZE): T[] {
+  if (arr.length >= max) {
+    arr.splice(0, Math.ceil(max * 0.1));
+  }
+  arr.push(item);
+  return arr;
+}
+
 // ── Verification Result (moved from verification-engine module scope) ────
 
 export interface VerificationResult {
@@ -84,6 +102,25 @@ export class SessionState {
   // ── Cost Tracker State ──
   public budgetUsd = 5.0;
   public accumulatedCost = 0;
+
+  /**
+   * Update accumulated cost and emit a cost_update event.
+   * Single source of truth for cost mutations.
+   *
+   * NOTE: The Claude Agent SDK only provides `total_cost_usd` at the END
+   * of a query() call, not per-turn. So this is typically called once when
+   * the session completes. The costTrackerHook still runs each turn but
+   * will only see non-zero values after the first query finishes.
+   */
+  updateCost(cost: number): void {
+    this.accumulatedCost = cost;
+    this.events.emitEvent({
+      type: 'cost_update',
+      totalUsd: cost,
+      budgetUsd: this.budgetUsd,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   // ── Human Gate Enforcer State ──
   public readonly triggeredGates = new Set<string>();

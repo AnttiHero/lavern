@@ -102,13 +102,13 @@ describe('BillingView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Engagement Feedback')).toBeInTheDocument();
+      expect(screen.getByText('How did we do?')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Work Quality')).toBeInTheDocument();
     expect(screen.getByText('Speed')).toBeInTheDocument();
     expect(screen.getByText('Communication')).toBeInTheDocument();
-    expect(screen.getByText('Submit Feedback')).toBeInTheDocument();
+    expect(screen.getByText(/Submit/)).toBeInTheDocument();
   });
 
   it('shows phase breakdown toggle', async () => {

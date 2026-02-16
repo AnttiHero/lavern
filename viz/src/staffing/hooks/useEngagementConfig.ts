@@ -51,6 +51,7 @@ export function useEngagementConfig() {
   const [estimatedCost, setEstimatedCost] = useState(0);
   const [targetTeamSize, setTargetTeamSize] = useState(8);
   const [loading, setLoading] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,6 +77,7 @@ export function useEngagementConfig() {
         setTargetTeamSize(data.targetTeamSize);
       } catch {
         // Fallback: generate demo recommendations from local profiles
+        setDemoMode(true);
         const intensityTargets: Record<string, number> = { quick: 4, standard: 8, thorough: 12, maximal: 16 };
         const target = intensityTargets[intensity] ?? 8;
         const defaults = DEMO_PROFILES
@@ -123,5 +125,6 @@ export function useEngagementConfig() {
     estimatedCost,
     targetTeamSize,
     loading,
+    demoMode,
   };
 }
