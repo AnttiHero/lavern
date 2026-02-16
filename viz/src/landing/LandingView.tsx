@@ -243,7 +243,11 @@ export default function LandingView({ onEnter, onMyPage }: Props) {
     mousePos.current = { x: e.clientX, y: e.clientY };
     // Dot follows instantly
     if (dotRef.current) {
+      dotRef.current.style.opacity = '1';
       dotRef.current.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    }
+    if (ringRef.current) {
+      ringRef.current.style.opacity = '1';
     }
     // Subtle marble parallax
     if (imgRef.current) {
@@ -251,6 +255,12 @@ export default function LandingView({ onEnter, onMyPage }: Props) {
       const cy = (e.clientY / window.innerHeight - 0.5) * 8;
       imgRef.current.style.transform = `scale(1.03) translate(${cx}px, ${cy}px)`;
     }
+  }, []);
+
+  const onMouseLeave = useCallback(() => {
+    if (dotRef.current) dotRef.current.style.opacity = '0';
+    if (ringRef.current) ringRef.current.style.opacity = '0';
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1.03)';
   }, []);
 
   // Ring follows with spring-like lag
@@ -276,7 +286,7 @@ export default function LandingView({ onEnter, onMyPage }: Props) {
   }
 
   return (
-    <div style={styles.page} onMouseMove={onMouseMove}>
+    <div style={styles.page} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
       {/* ── Custom cursor ─────────────────────────────────────────── */}
       <div ref={dotRef} style={styles.cursorDot} />
       <div ref={ringRef} style={styles.cursorRing} />
@@ -391,6 +401,8 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none' as const,
     zIndex: 9999,
     willChange: 'transform',
+    opacity: 0,
+    transition: 'opacity 0.3s ease',
   },
   cursorRing: {
     position: 'fixed',
@@ -404,6 +416,8 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none' as const,
     zIndex: 9998,
     willChange: 'transform',
+    opacity: 0,
+    transition: 'opacity 0.3s ease',
   },
 
   // ── Marble texture — full bleed, washed out so text dominates ──────
@@ -441,9 +455,7 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 10,
   },
   myPageBtn: {
-    background: 'rgba(255, 255, 255, 0.35)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    backgroundColor: 'transparent',
     border: `1.5px solid ${colors.text}`,
     borderRadius: radii.sm,
     color: colors.text,
