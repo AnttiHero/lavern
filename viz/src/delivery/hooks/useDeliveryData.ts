@@ -96,7 +96,8 @@ export function useDeliveryData(): {
     const sessionId = sessionStorage.getItem('shem-session-id');
 
     if (!sessionId) {
-      setError('No session found');
+      // No active session — show demo data so the screen is always previewable
+      setData(buildDemoData('demo-session-preview'));
       setLoading(false);
       return;
     }

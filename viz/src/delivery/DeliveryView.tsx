@@ -40,7 +40,7 @@ interface MatterInfo {
 
 export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   const { data, loading, error } = useDeliveryData();
-  const [activeTab, setActiveTab] = useState<DeliveryTab>('certainty');
+  const [activeTab, setActiveTab] = useState<DeliveryTab>('work');
 
   // Read matter info from sessionStorage
   const [matterInfo] = useState<MatterInfo>(() => {

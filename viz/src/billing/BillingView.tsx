@@ -138,12 +138,8 @@ const NEXT_OPTIONS: NextOption[] = [
   },
 ];
 
-const RATING_OPTIONS = [
-  { value: 1, label: 'Poor' },
-  { value: 2, label: 'Fair' },
-  { value: 3, label: 'Good' },
-  { value: 4, label: 'Excellent' },
-];
+const RATING_DOTS = [1, 2, 3, 4, 5];
+const RATING_LABELS: Record<number, string> = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Very Good', 5: 'Excellent' };
 
 export default function BillingView({ onClose }: Props) {
   const [billingData, setBillingData] = useState<BillingData | null>(null);
@@ -403,47 +399,61 @@ export default function BillingView({ onClose }: Props) {
       <div style={styles.surveySection}>
         {!surveySubmitted ? (
           <>
-            <div style={styles.surveyTitle}>Engagement Feedback</div>
-            <div style={styles.surveySubtitle}>Your assessment improves every future engagement.</div>
+            <div style={styles.surveyHeader}>
+              <div style={styles.surveyTitle}>How did we do?</div>
+              <div style={styles.surveySubtitle}>Your assessment shapes every future engagement.</div>
+            </div>
 
-            <div style={styles.surveyGrid}>
+            <div style={styles.surveyRows}>
               {ratings.map(r => (
-                <div key={r.category} style={styles.surveyCategory}>
-                  <div style={styles.surveyCategoryLabel}>{r.label}</div>
-                  <div style={styles.surveyOptions}>
-                    {RATING_OPTIONS.map(opt => (
+                <div key={r.category} style={styles.surveyRow}>
+                  <div style={styles.surveyRowLabel}>{r.label}</div>
+                  <div style={styles.surveyDots}>
+                    {RATING_DOTS.map(v => (
                       <button
-                        key={opt.value}
-                        onClick={() => handleRate(r.category, opt.value)}
+                        key={v}
+                        onClick={() => handleRate(r.category, v)}
                         style={{
-                          ...styles.surveyOptionBtn,
-                          ...(r.value === opt.value ? styles.surveyOptionSelected : {}),
+                          ...styles.surveyDot,
+                          backgroundColor: r.value !== null && v <= r.value
+                            ? (r.value >= 4 ? colors.accent : colors.text)
+                            : 'transparent',
+                          borderColor: r.value !== null && v <= r.value
+                            ? (r.value >= 4 ? colors.accent : colors.text)
+                            : colors.border,
                         }}
-                      >
-                        {opt.label}
-                      </button>
+                        title={RATING_LABELS[v]}
+                      />
                     ))}
+                  </div>
+                  <div style={styles.surveyRowValue}>
+                    {r.value !== null ? RATING_LABELS[r.value] : ''}
                   </div>
                 </div>
               ))}
             </div>
 
-            <button
-              onClick={handleSubmitSurvey}
-              disabled={ratings.some(r => r.value === null)}
-              style={{
-                ...styles.surveySubmitBtn,
-                opacity: ratings.some(r => r.value === null) ? 0.4 : 1,
-                cursor: ratings.some(r => r.value === null) ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Submit Feedback
-            </button>
+            <div style={styles.surveyFooter}>
+              <button
+                onClick={handleSubmitSurvey}
+                disabled={ratings.some(r => r.value === null)}
+                style={{
+                  ...styles.surveySubmitBtn,
+                  opacity: ratings.some(r => r.value === null) ? 0.3 : 1,
+                  cursor: ratings.some(r => r.value === null) ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={e => { if (!ratings.some(r => r.value === null)) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
+                onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              >
+                Submit {'\u2192'}
+              </button>
+            </div>
           </>
         ) : (
           <div style={styles.surveyThanks}>
             <div style={styles.surveyThanksCheck}>{'\u2713'}</div>
-            <div style={styles.surveyThanksText}>Thank you for your feedback.</div>
+            <div style={styles.surveyThanksTitle}>Thank you.</div>
+            <div style={styles.surveyThanksText}>Your feedback has been recorded.</div>
           </div>
         )}
       </div>
@@ -788,14 +798,16 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     maxWidth: 700,
     marginTop: spacing.xxl,
-    padding: `${spacing.xl}px`,
+    padding: `${spacing.xl}px ${spacing.xxl}px`,
     backgroundColor: colors.bgCard,
     border: `1.5px solid ${colors.border}`,
     borderRadius: radii.sm,
-    textAlign: 'center' as const,
+  },
+  surveyHeader: {
+    marginBottom: spacing.xl,
   },
   surveyTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 300,
     fontFamily: fonts.serif,
     color: colors.text,
@@ -804,49 +816,54 @@ const styles: Record<string, React.CSSProperties> = {
   surveySubtitle: {
     fontSize: 12,
     color: colors.textDim,
-    marginBottom: spacing.xl,
+    fontFamily: fonts.sans,
   },
-  surveyGrid: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: spacing.xxl,
-    marginBottom: spacing.lg,
-  },
-  surveyCategory: {
+  surveyRows: {
     display: 'flex',
     flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: 10,
+    gap: 0,
   },
-  surveyCategoryLabel: {
-    fontSize: 10,
-    fontWeight: 600,
-    color: colors.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-  },
-  surveyOptions: {
+  surveyRow: {
     display: 'flex',
-    gap: 4,
+    alignItems: 'center',
+    padding: '14px 0',
+    borderBottom: `1px solid ${colors.bgPanel}`,
   },
-  surveyOptionBtn: {
-    padding: '6px 12px',
-    border: `1.5px solid ${colors.border}`,
-    borderRadius: radii.sm,
-    backgroundColor: 'transparent',
-    color: colors.textSecondary,
+  surveyRowLabel: {
+    width: 130,
+    fontSize: 13,
+    fontWeight: 500,
     fontFamily: fonts.sans,
-    fontSize: 10,
-    fontWeight: 600,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
-    cursor: 'pointer',
-    transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+    color: colors.text,
+    flexShrink: 0,
   },
-  surveyOptionSelected: {
-    borderColor: colors.text,
-    backgroundColor: colors.text,
-    color: '#fff',
+  surveyDots: {
+    display: 'flex',
+    gap: 8,
+    flex: 1,
+  },
+  surveyDot: {
+    width: 14,
+    height: 14,
+    borderRadius: '50%',
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    padding: 0,
+    transition: 'background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease',
+  },
+  surveyRowValue: {
+    width: 80,
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    textAlign: 'right' as const,
+    flexShrink: 0,
+  },
+  surveyFooter: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    paddingTop: spacing.lg,
   },
   surveySubmitBtn: {
     padding: '10px 28px',
@@ -865,19 +882,24 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: 8,
-    padding: `${spacing.lg}px`,
+    gap: 6,
+    padding: `${spacing.xl}px`,
   },
   surveyThanksCheck: {
-    fontSize: 24,
+    fontSize: 20,
     color: colors.success,
     fontWeight: 700,
   },
-  surveyThanksText: {
-    fontSize: 13,
-    color: colors.textMuted,
+  surveyThanksTitle: {
+    fontSize: 18,
+    fontWeight: 300,
     fontFamily: fonts.serif,
-    fontStyle: 'italic' as const,
+    color: colors.text,
+  },
+  surveyThanksText: {
+    fontSize: 12,
+    color: colors.textDim,
+    fontFamily: fonts.sans,
   },
 
   // Actions

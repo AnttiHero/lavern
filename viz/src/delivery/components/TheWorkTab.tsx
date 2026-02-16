@@ -1,6 +1,9 @@
 /**
- * TheWorkTab — Primary deliverable: executive summary, key changes,
- * dimension scores before/after, and export placeholder.
+ * TheWorkTab — The primary deliverable, presented beautifully.
+ *
+ * Editorial layout: serif hero title, pull-quote executive summary,
+ * elegant before/after transformation cards, refined dimension bars,
+ * and a polished export prompt.
  */
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
@@ -13,32 +16,51 @@ interface Props {
 export function TheWorkTab({ data }: Props) {
   return (
     <div>
-      {/* Document title */}
-      <h2 style={styles.docTitle}>{data.documentTitle}</h2>
-
-      {/* Executive summary */}
-      <div style={styles.summaryCard}>
-        <div style={styles.summaryLabel}>Executive Summary</div>
-        <p style={styles.summaryText}>{data.executiveSummary}</p>
+      {/* ── Hero title ──────────────────────────────────────────── */}
+      <div style={styles.heroSection}>
+        <div style={styles.heroOverline}>Delivered Work Product</div>
+        <h2 style={styles.heroTitle}>{data.documentTitle}</h2>
+        <div style={styles.heroDivider} />
       </div>
 
-      {/* Key changes */}
+      {/* ── Executive summary — editorial pull-quote style ─────── */}
+      <div style={styles.summarySection}>
+        <div style={styles.summaryQuoteMark}>{'\u201C'}</div>
+        <p style={styles.summaryText}>{data.executiveSummary}</p>
+        <div style={styles.summaryLabel}>Executive Summary</div>
+      </div>
+
+      {/* ── Key changes — transformation cards ────────────────── */}
       {data.keyChanges.length > 0 && (
         <div style={styles.section}>
-          <div style={styles.sectionTitle}>Key Changes</div>
+          <div style={styles.sectionHeader}>
+            <div style={styles.sectionTitle}>What Changed</div>
+            <div style={styles.sectionCount}>{data.keyChanges.length} transformations</div>
+          </div>
+
           <div style={styles.changesList}>
             {data.keyChanges.map((change, i) => (
               <div key={i} style={styles.changeCard}>
-                <div style={styles.changeTitle}>{change.title}</div>
-                <div style={styles.changeRow}>
-                  <div style={styles.changeBefore}>
-                    <span style={styles.changeLabel}>Before</span>
-                    <span style={styles.changeText}>{change.before}</span>
-                  </div>
-                  <div style={styles.changeArrow}>{'\u2192'}</div>
-                  <div style={styles.changeAfter}>
-                    <span style={styles.changeLabel}>After</span>
-                    <span style={styles.changeText}>{change.after}</span>
+                <div style={styles.changeNumber}>
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <div style={styles.changeContent}>
+                  <div style={styles.changeTitle}>{change.title}</div>
+                  <div style={styles.changeColumns}>
+                    <div style={styles.changeBefore}>
+                      <div style={styles.changeColumnLabel}>
+                        <span style={styles.changeDotBefore} />
+                        Before
+                      </div>
+                      <div style={styles.changeColumnText}>{change.before}</div>
+                    </div>
+                    <div style={styles.changeAfter}>
+                      <div style={styles.changeColumnLabel}>
+                        <span style={styles.changeDotAfter} />
+                        After
+                      </div>
+                      <div style={styles.changeColumnText}>{change.after}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -47,50 +69,62 @@ export function TheWorkTab({ data }: Props) {
         </div>
       )}
 
-      {/* Dimension scores */}
+      {/* ── Dimension scores — refined horizontal bars ─────────── */}
       {data.dimensions.length > 0 && (
         <div style={styles.section}>
-          <div style={styles.sectionTitle}>Quality Dimensions</div>
+          <div style={styles.sectionHeader}>
+            <div style={styles.sectionTitle}>Quality Dimensions</div>
+            <div style={styles.sectionCount}>1 {'\u2013'} 5 scale</div>
+          </div>
+
           <div style={styles.dimensionsCard}>
             {data.dimensions.map((dim, i) => (
-              <div key={i} style={styles.dimensionRow}>
+              <div
+                key={i}
+                style={{
+                  ...styles.dimensionRow,
+                  borderBottom: i < data.dimensions.length - 1
+                    ? `1px solid ${colors.bgPanel}`
+                    : 'none',
+                }}
+              >
                 <div style={styles.dimensionLabel}>{dim.dimension}</div>
-                <div style={styles.barContainer}>
-                  {/* Before bar (muted) */}
+                <div style={styles.barOuter}>
                   <div style={{
                     ...styles.barBefore,
                     width: `${(dim.before / 5) * 100}%`,
                   }} />
-                  {/* After bar (colored) */}
                   <div style={{
                     ...styles.barAfter,
                     width: `${(dim.after / 5) * 100}%`,
                   }} />
                 </div>
-                <div style={styles.dimensionScores}>
+                <div style={styles.scoreGroup}>
                   <span style={styles.scoreBefore}>{dim.before.toFixed(1)}</span>
                   <span style={styles.scoreArrow}>{'\u2192'}</span>
                   <span style={styles.scoreAfter}>{dim.after.toFixed(1)}</span>
-                  <span style={styles.scoreDelta}>(+{dim.delta.toFixed(1)})</span>
                 </div>
+                <div style={styles.deltaTag}>+{dim.delta.toFixed(1)}</div>
               </div>
             ))}
-            <div style={styles.barLegend}>
-              <span style={styles.legendItem}><span style={styles.legendDotBefore} /> Before</span>
-              <span style={styles.legendItem}><span style={styles.legendDotAfter} /> After</span>
-              <span style={styles.legendScale}>Scale: 1 (poor) to 5 (excellent)</span>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Export placeholder */}
+      {/* ── Export prompt ──────────────────────────────────────── */}
       <div style={styles.exportCard}>
-        <div style={styles.exportIcon}>{'\u2193'}</div>
-        <div>
-          <div style={styles.exportTitle}>Document ready for export</div>
-          <div style={styles.exportDesc}>
-            The transformed document is ready. Export options will be available when connected to a live session.
+        <div style={styles.exportLeft}>
+          <div style={styles.exportIcon}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 3v10M6 9l4 4 4-4" stroke={colors.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M4 15h12" stroke={colors.accent} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <div style={styles.exportTitle}>Document Ready for Export</div>
+            <div style={styles.exportDesc}>
+              The transformed document is available for download when connected to a live session.
+            </div>
           </div>
         </div>
       </div>
@@ -99,128 +133,209 @@ export function TheWorkTab({ data }: Props) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  docTitle: {
-    fontSize: 28,
+  // ── Hero ──────────────────────────────────────────────────────
+  heroSection: {
+    textAlign: 'center' as const,
+    marginBottom: spacing.xxl,
+  },
+  heroOverline: {
+    fontSize: 10,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.accent,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    marginBottom: 12,
+  },
+  heroTitle: {
+    fontSize: 36,
     fontWeight: 300,
     fontFamily: fonts.serif,
     color: colors.text,
-    margin: '0 0 24px',
-    letterSpacing: -0.3,
+    margin: 0,
+    letterSpacing: -0.5,
+    lineHeight: 1.2,
+  },
+  heroDivider: {
+    width: 48,
+    height: 1,
+    backgroundColor: colors.accent,
+    margin: '20px auto 0',
+    opacity: 0.5,
   },
 
-  // Summary
-  summaryCard: {
+  // ── Executive Summary ──────────────────────────────────────────
+  summarySection: {
+    position: 'relative' as const,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
-    borderLeft: `3px solid ${colors.accent}`,
-    borderRadius: radii.md,
-    padding: spacing.xl,
+    borderRadius: radii.sm,
+    padding: '36px 40px 28px',
     marginBottom: spacing.xxl,
   },
+  summaryQuoteMark: {
+    position: 'absolute' as const,
+    top: 12,
+    left: 24,
+    fontSize: 48,
+    fontFamily: fonts.serif,
+    fontWeight: 300,
+    color: colors.accent,
+    opacity: 0.25,
+    lineHeight: 1,
+    userSelect: 'none' as const,
+  },
+  summaryText: {
+    fontSize: 14,
+    lineHeight: 1.8,
+    color: colors.textSecondary,
+    fontFamily: fonts.sans,
+    fontWeight: 400,
+    margin: 0,
+  },
   summaryLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    marginTop: 20,
+    textAlign: 'right' as const,
+  },
+
+  // ── Sections ──────────────────────────────────────────────────
+  section: { marginBottom: spacing.xxl },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.text,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  sectionCount: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+  },
+
+  // ── Key Changes ───────────────────────────────────────────────
+  changesList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 12,
+  },
+  changeCard: {
+    display: 'flex',
+    gap: 20,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    padding: `${spacing.lg}px ${spacing.xl}px`,
+  },
+  changeNumber: {
+    fontSize: 20,
+    fontWeight: 300,
+    fontFamily: fonts.sans,
+    color: colors.border,
+    lineHeight: 1,
+    flexShrink: 0,
+    width: 32,
+    paddingTop: 2,
+  },
+  changeContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  changeTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  changeColumns: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacing.lg,
+  },
+  changeBefore: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  changeAfter: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  changeColumnLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 9,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
     color: colors.textDim,
     letterSpacing: 1,
     textTransform: 'uppercase' as const,
-    marginBottom: spacing.sm,
   },
-  summaryText: {
-    fontSize: 15,
-    lineHeight: 1.7,
-    color: colors.textSecondary,
-    fontFamily: fonts.serif,
-    margin: 0,
+  changeDotBefore: {
+    display: 'inline-block',
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: colors.textDim,
+    opacity: 0.4,
   },
-
-  // Sections
-  section: { marginBottom: spacing.xxl },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 500,
-    color: colors.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: spacing.md,
+  changeDotAfter: {
+    display: 'inline-block',
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: colors.accent,
   },
-
-  // Key changes
-  changesList: { display: 'flex', flexDirection: 'column' as const, gap: spacing.md },
-  changeCard: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.md,
-    padding: spacing.lg,
-  },
-  changeTitle: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  changeRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  changeBefore: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 2,
-  },
-  changeArrow: {
-    color: colors.textDim,
-    fontSize: 14,
-    paddingTop: 14,
-    flexShrink: 0,
-  },
-  changeAfter: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 2,
-  },
-  changeLabel: {
-    fontSize: 10,
-    fontWeight: 600,
-    color: colors.textDim,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
-  },
-  changeText: {
+  changeColumnText: {
     fontSize: 13,
+    fontFamily: fonts.sans,
     color: colors.textSecondary,
-    lineHeight: 1.5,
+    lineHeight: 1.6,
   },
 
-  // Dimensions
+  // ── Dimensions ────────────────────────────────────────────────
   dimensionsCard: {
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
+    borderRadius: radii.sm,
+    padding: `${spacing.md}px ${spacing.xl}px`,
   },
   dimensionRow: {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.md,
-    padding: '8px 0',
-    borderBottom: `1px solid ${colors.bgPanel}`,
+    padding: '12px 0',
   },
   dimensionLabel: {
     width: 100,
     fontSize: 13,
     fontWeight: 500,
+    fontFamily: fonts.sans,
     color: colors.text,
     flexShrink: 0,
   },
-  barContainer: {
+  barOuter: {
     flex: 1,
-    height: 20,
+    height: 6,
     position: 'relative' as const,
     backgroundColor: colors.bgPanel,
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   barBefore: {
@@ -228,8 +343,8 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     left: 0,
     height: '100%',
-    backgroundColor: 'rgba(196, 93, 62, 0.15)',
-    borderRadius: 4,
+    backgroundColor: 'rgba(26, 26, 26, 0.08)',
+    borderRadius: 3,
   },
   barAfter: {
     position: 'absolute' as const,
@@ -237,71 +352,48 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     height: '100%',
     backgroundColor: colors.accent,
-    borderRadius: 4,
-    opacity: 0.7,
+    borderRadius: 3,
+    opacity: 0.65,
   },
-  dimensionScores: {
-    width: 120,
+  scoreGroup: {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: fonts.mono,
     flexShrink: 0,
+    width: 80,
   },
   scoreBefore: { color: colors.textDim },
-  scoreArrow: { color: colors.textDim, fontSize: 11 },
+  scoreArrow: { color: colors.textDim, fontSize: 10 },
   scoreAfter: { color: colors.text, fontWeight: 600 },
-  scoreDelta: { color: colors.success, fontSize: 11 },
-  barLegend: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing.lg,
-    marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    fontSize: 11,
-    color: colors.textDim,
-  },
-  legendItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDotBefore: {
-    display: 'inline-block',
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    backgroundColor: 'rgba(196, 93, 62, 0.15)',
-  },
-  legendDotAfter: {
-    display: 'inline-block',
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-    opacity: 0.7,
-  },
-  legendScale: {
-    marginLeft: 'auto',
-    fontFamily: fonts.mono,
+  deltaTag: {
     fontSize: 10,
-    color: colors.textDim,
+    fontWeight: 600,
+    fontFamily: fonts.mono,
+    color: colors.success,
+    backgroundColor: 'rgba(46, 125, 50, 0.06)',
+    padding: '2px 8px',
+    borderRadius: radii.sm,
+    flexShrink: 0,
   },
 
-  // Export
+  // ── Export ─────────────────────────────────────────────────────
   exportCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacing.lg,
+    justifyContent: 'space-between',
     backgroundColor: colors.bgPanel,
     border: `1px solid ${colors.border}`,
-    borderRadius: radii.md,
-    padding: spacing.xl,
+    borderRadius: radii.sm,
+    padding: `${spacing.lg}px ${spacing.xl}px`,
+  },
+  exportLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   exportIcon: {
-    fontSize: 20,
-    color: colors.textDim,
     width: 40,
     height: 40,
     display: 'flex',
@@ -313,13 +405,15 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   exportTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
+    fontFamily: fonts.sans,
     color: colors.text,
     marginBottom: 2,
   },
   exportDesc: {
     fontSize: 12,
+    fontFamily: fonts.sans,
     color: colors.textMuted,
     lineHeight: 1.5,
   },
