@@ -4,19 +4,21 @@
  * Flow:
  * 1. Create session
  * 2. Route request (LLM or deterministic, or use forceWorkflow override)
- * 3. If router selected legal-design + has documentPath → call runTheShem() (backward compat)
- * 4. Otherwise → call runGenericWorkflow() with the selected template
+ * 3. Look up the workflow template from the registry
+ * 4. Run runGenericWorkflow() with the selected template
  *
- * `runTheShem(documentPath, context, options)` still works for backward compatibility.
- * `dispatch(request, options)` is the preferred entry point.
+ * v11: The legacy runTheShem() backward compat path is sunset.
+ * All workflows (including roundtable, formerly legal-design) go through
+ * runGenericWorkflow(). The five engagement patterns (counsel, review,
+ * adversarial, roundtable, full-bench) are all WorkflowTemplates.
  */
 
-import { runTheShem, type SchemOptions } from './orchestrator.js';
+import { type SchemOptions } from './orchestrator.js';
 import { runGenericWorkflow } from './workflows/executor.js';
 import { routeRequest } from './router/router.js';
 import { workflowRegistry } from './workflows/registry.js';
 import { SessionState } from './session/session-state.js';
-import type { LegalRequest, DocumentContext, Moment, Audience, Jurisdiction } from './types/index.js';
+import type { LegalRequest } from './types/index.js';
 import type { GateResolver } from './gates/gate-resolver.js';
 import { type IntensityLevel, effortForIntensity } from './types/engagement.js';
 
@@ -95,23 +97,10 @@ export async function dispatch(
     workflowId = classification.selectedWorkflow;
   }
 
-  // If legal-design + has documentPath → backward compat path
-  if (workflowId === 'legal-design' && request.documentPath) {
-    const context: DocumentContext = {
-      moment: (request.context?.moment as Moment) ?? 'signup',
-      audience: (request.context?.audience as Audience) ?? 'consumer',
-      jurisdiction: (request.context?.jurisdiction as Jurisdiction) ?? 'US',
-      documentType: request.context?.documentType,
-      focus: request.context?.focus,
-    };
+  // v11: All patterns (including roundtable, formerly legal-design) run through
+  // runGenericWorkflow(). No special-case paths.
 
-    return runTheShem(request.documentPath, context, {
-      ...options,
-      session,
-    });
-  }
-
-  // Generic workflow path
+  // Look up template from registry
   const template = workflowRegistry.get(workflowId);
   if (!template) {
     throw new Error(`Unknown workflow template: ${workflowId}. Available: ${workflowRegistry.list().map(t => t.id).join(', ')}`);

@@ -39,7 +39,7 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
   standard: {
     tier: 'standard',
     label: 'Advisory',
-    workflowId: 'simple-query',
+    workflowId: 'counsel',
     requestType: 'legal_question',
     intensity: 'standard',
     effort: 'medium',
@@ -55,7 +55,7 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
   'white-shoe': {
     tier: 'white-shoe',
     label: 'Full Service',
-    workflowId: 'contract-review',
+    workflowId: 'review',
     requestType: 'contract_review',
     intensity: 'maximal',
     effort: 'max',

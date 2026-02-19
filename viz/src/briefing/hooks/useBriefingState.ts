@@ -1,13 +1,21 @@
 /**
  * useBriefingState — Central state for the briefing flow.
  *
- * Composes document upload + questions + memo generation + phase management.
+ * Composes document upload + questions + LLM analysis + phase management.
  * Accepts workflowId to determine question set and memo format.
+ *
+ * Phases: documents → interviewer → questions → followups → instructions → brief
+ * Stepper maps these to 4 visible dots:
+ *   - Documents (documents)
+ *   - Interviewer (interviewer)
+ *   - Questions (questions, followups)
+ *   - Brief (instructions, brief)
  */
 
 import { useState, useCallback } from 'react';
 import { useDocumentUpload, type UploadedDocument } from './useDocumentUpload.js';
 import { useBriefingQuestions } from './useBriefingQuestions.js';
+import { useBriefingAnalysis, type EngagementBrief } from './useBriefingAnalysis.js';
 import type { BriefingPhase } from '../components/ProgressStepper.js';
 import type { BriefingQuestion } from '../data/questions.js';
 
@@ -28,6 +36,76 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * Serialize an engagement brief to structured markdown for the orchestrator prompt.
+ */
+function serializeBrief(
+  brief: EngagementBrief,
+  finalInstructions: string,
+  sufficiencyScore: number | undefined,
+): string {
+  const sections: string[] = [];
+
+  sections.push('## Engagement Brief');
+  sections.push('');
+
+  sections.push('### Objective');
+  sections.push(brief.objective);
+  sections.push('');
+
+  sections.push('### Summary');
+  sections.push(brief.summary);
+  sections.push('');
+
+  if (brief.documentAnalysis) {
+    sections.push('### Document Analysis');
+    sections.push(brief.documentAnalysis);
+    sections.push('');
+  }
+
+  sections.push('### Scope & Constraints');
+  sections.push(brief.scopeAndConstraints);
+  sections.push('');
+
+  if (brief.riskFactors.length > 0) {
+    sections.push('### Risk Factors');
+    for (const risk of brief.riskFactors) {
+      sections.push(`- ${risk}`);
+    }
+    sections.push('');
+  }
+
+  if (brief.successCriteria.length > 0) {
+    sections.push('### Success Criteria');
+    for (const criterion of brief.successCriteria) {
+      sections.push(`- ${criterion}`);
+    }
+    sections.push('');
+  }
+
+  if (brief.specialInstructions.trim()) {
+    sections.push('### Special Instructions');
+    sections.push(brief.specialInstructions);
+    sections.push('');
+  }
+
+  if (finalInstructions.trim()) {
+    sections.push('### Final Client Instructions');
+    sections.push(finalInstructions.trim());
+    sections.push('');
+  }
+
+  if (sufficiencyScore != null) {
+    sections.push(`### Context Sufficiency: ${sufficiencyScore}/100`);
+    sections.push('');
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Fallback: generate a mechanical memo when LLM analysis fails.
+ */
 function generateMemo(
   answers: Record<string, string>,
   questions: BriefingQuestion[],
@@ -74,11 +152,16 @@ function generateMemo(
 }
 
 const WORKFLOW_TYPE_MAP: Record<string, string> = {
+  'roundtable': 'document_redesign',
+  'review': 'contract_review',
+  'adversarial': 'legal_research',
+  'counsel': 'legal_question',
+  'pre-engagement': 'general',
+  // Backward-compatible aliases for old workflow IDs
   'legal-design': 'document_redesign',
   'contract-review': 'contract_review',
   'research-memo': 'legal_research',
   'simple-query': 'legal_question',
-  'pre-engagement': 'general',
 };
 
 export function useBriefingState(workflowId: string, interviewerId?: string) {
@@ -87,6 +170,9 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
 
   const upload = useDocumentUpload();
   const qna = useBriefingQuestions(workflowId, interviewerId);
+  const analysis = useBriefingAnalysis();
+
+  // ── Phase transitions ──
 
   const advanceToInterviewer = useCallback(() => {
     setPhase('interviewer');
@@ -96,10 +182,94 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
     setPhase('questions');
   }, []);
 
+  /**
+   * After static questions → trigger LLM analysis → move to followups or instructions.
+   */
+  const advanceToFollowups = useCallback(async () => {
+    // Trigger LLM analysis with documents + answers
+    await analysis.analyze({
+      workflowId,
+      documents: upload.documents.map(d => ({
+        name: d.name,
+        content: d.content,
+      })),
+      answers: qna.answers,
+    });
+
+    // If analysis errored, fall back to mechanical memo
+    if (analysis.analysisError) {
+      let memo = generateMemo(qna.answers, qna.questions, upload.documents, workflowId);
+      try {
+        const profileStr = localStorage.getItem('shem-user-profile');
+        if (profileStr) {
+          const profile = JSON.parse(profileStr);
+          if (profile.customInstructions?.trim()) {
+            memo += '\n### Custom Instructions\n\n' + profile.customInstructions.trim() + '\n';
+          }
+        }
+      } catch { /* ignore */ }
+      setMemoText(memo);
+      setPhase('brief');
+      return;
+    }
+
+    // After analysis completes, the phase is set in the component based on results
+    // If follow-up questions exist and verdict is not 'strong' → followups
+    // Otherwise → skip to instructions
+    setPhase('followups');
+  }, [analysis, workflowId, upload.documents, qna.answers, qna.questions]);
+
+  const advanceToInstructions = useCallback(() => {
+    setPhase('instructions');
+  }, []);
+
+  /**
+   * After final instructions → reanalyze with everything → show brief.
+   */
+  const advanceToBrief = useCallback(async () => {
+    // If we have follow-up answers or final instructions, reanalyze
+    const hasFollowUpAnswers = Object.values(analysis.followUpAnswers).some(v => v.trim());
+    const hasFinalInstructions = analysis.finalInstructions.trim().length > 0;
+
+    if (hasFollowUpAnswers || hasFinalInstructions) {
+      await analysis.reanalyze();
+    }
+
+    // Build the memo from the engagement brief
+    if (analysis.engagementBrief) {
+      const memo = serializeBrief(
+        analysis.engagementBrief,
+        analysis.finalInstructions,
+        analysis.sufficiency?.score,
+      );
+      setMemoText(memo);
+    } else {
+      // Fallback to mechanical memo
+      let memo = generateMemo(qna.answers, qna.questions, upload.documents, workflowId);
+      if (analysis.finalInstructions.trim()) {
+        memo += '\n### Final Instructions\n\n' + analysis.finalInstructions.trim() + '\n';
+      }
+      try {
+        const profileStr = localStorage.getItem('shem-user-profile');
+        if (profileStr) {
+          const profile = JSON.parse(profileStr);
+          if (profile.customInstructions?.trim()) {
+            memo += '\n### Custom Instructions\n\n' + profile.customInstructions.trim() + '\n';
+          }
+        }
+      } catch { /* ignore */ }
+      setMemoText(memo);
+    }
+
+    setPhase('brief');
+  }, [analysis, qna.answers, qna.questions, upload.documents, workflowId]);
+
+  /**
+   * Legacy memo generation (kept as fallback).
+   */
   const advanceToMemo = useCallback(() => {
     let memo = generateMemo(qna.answers, qna.questions, upload.documents, workflowId);
 
-    // Append custom instructions from user profile (localStorage)
     try {
       const profileStr = localStorage.getItem('shem-user-profile');
       if (profileStr) {
@@ -111,7 +281,7 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
     } catch { /* ignore */ }
 
     setMemoText(memo);
-    setPhase('memo');
+    setPhase('brief');
   }, [qna.answers, qna.questions, upload.documents, workflowId]);
 
   const buildPayload = useCallback((): BriefingPayload => {
@@ -155,9 +325,13 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
     setMemoText,
     advanceToInterviewer,
     advanceToQuestions,
+    advanceToFollowups,
+    advanceToInstructions,
+    advanceToBrief,
     advanceToMemo,
     buildPayload,
     upload,
     qna,
+    analysis,
   };
 }

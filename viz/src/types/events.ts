@@ -3,18 +3,9 @@
  * Used for WebSocket message parsing and event-to-visual mapping.
  */
 
-export type WorkflowStep =
-  | 'intake'
-  | 'parallel_analysis'
-  | 'debate_1'
-  | 'ethics_gate'
-  | 'transformation'
-  | 'parallel_verification'
-  | 'debate_2'
-  | 'meaning_gate'
-  | 'synthesis'
-  | 'final_gate'
-  | 'delivered';
+// v11: WorkflowStep is now a string to support generic workflows with arbitrary step names.
+// The legacy 11-step pipeline values are still valid strings.
+export type WorkflowStep = string;
 
 export type AgentRole =
   // Orchestrators
@@ -113,17 +104,22 @@ export type ShemEvent =
   | { type: 'workflow_step'; step: WorkflowStep; previousStep: WorkflowStep; timestamp: string }
   | { type: 'agent_start'; agentId: string; role: string; task: string; timestamp: string }
   | { type: 'agent_stop'; agentId: string; role: string; durationMs: number; timestamp: string }
-  | { type: 'finding_posted'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; timestamp: string }
-  | { type: 'challenge_posted'; challengeId: string; challenger: string; targetFindingId: string; timestamp: string }
-  | { type: 'response_posted'; responseId: string; responder: string; challengeId: string; accepted: boolean; timestamp: string }
-  | { type: 'debate_resolved'; resolutionId: string; topic: string; resolution: string; confidence: number; timestamp: string }
+  // v11: enriched with substantive text
+  | { type: 'finding_posted'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; content: string; evidence: string[]; timestamp: string }
+  | { type: 'challenge_posted'; challengeId: string; challenger: string; targetFindingId: string; challengeText: string; evidence: string[]; timestamp: string }
+  | { type: 'response_posted'; responseId: string; responder: string; challengeId: string; accepted: boolean; responseText: string; revisedPosition?: string; timestamp: string }
+  | { type: 'debate_resolved'; resolutionId: string; topic: string; resolution: string; confidence: number; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; timestamp: string }
   | { type: 'gate_requested'; gateType: string; summary: string; details: string; timestamp: string }
   | { type: 'gate_decided'; gateType: string; decision: string; notes?: string; timestamp: string }
   | { type: 'verification_run'; verificationId: string; verificationType: string; passed: boolean; confidence: number; timestamp: string }
   | { type: 'tool_used'; tool: string; agent?: string; timestamp: string }
   | { type: 'cost_update'; totalUsd: number; budgetUsd: number; timestamp: string }
   | { type: 'memory_saved'; memoryType: string; key: string; timestamp: string }
-  | { type: 'error'; message: string; source?: string; timestamp: string };
+  | { type: 'error'; message: string; source?: string; timestamp: string }
+  // v5: Evaluator events
+  | { type: 'evaluator_gate_result'; passed: boolean; score: number; step: string; failureReasons: string[]; timestamp: string }
+  // v11: Quality check events
+  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string };
 
 /**
  * WebSocket message wrapper types.
@@ -151,7 +147,7 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
   'meaning_gate', 'synthesis', 'final_gate', 'delivered',
 ];
 
-export const STEP_LABELS: Record<WorkflowStep, string> = {
+export const STEP_LABELS: Record<string, string> = {
   intake: 'Intake',
   parallel_analysis: 'Analysis',
   debate_1: 'First Review',

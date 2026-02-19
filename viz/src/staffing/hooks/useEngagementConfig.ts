@@ -31,14 +31,14 @@ function getProfileDefaults() {
     if (raw) {
       const p = JSON.parse(raw);
       return {
-        workflowId: p.defaultWorkflowId || 'simple-query',
+        workflowId: p.defaultWorkflowId || 'counsel',
         intensity: (p.defaultIntensity || 'standard') as IntensityLevel,
         budgetUsd: p.defaultBudgetUsd || 10,
         yoloMode: p.yoloModeDefault || false,
       };
     }
   } catch { /* ignore */ }
-  return { workflowId: 'simple-query', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false };
+  return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false };
 }
 
 export function useEngagementConfig() {

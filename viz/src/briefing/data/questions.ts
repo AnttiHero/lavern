@@ -19,7 +19,7 @@ export interface BriefingQuestion {
 }
 
 export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
-  'legal-design': [
+  'roundtable': [
     {
       id: 'matter-description',
       text: 'Describe the document you need reviewed or improved.',
@@ -67,7 +67,7 @@ export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
     },
   ],
 
-  'contract-review': [
+  'review': [
     {
       id: 'contract-type',
       text: 'What type of contract is this?',
@@ -115,7 +115,7 @@ export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
     },
   ],
 
-  'research-memo': [
+  'adversarial': [
     {
       id: 'research-question',
       text: 'What legal question needs answering?',
@@ -154,7 +154,7 @@ export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
     },
   ],
 
-  'simple-query': [
+  'counsel': [
     {
       id: 'question',
       text: 'What is your legal question?',
@@ -253,3 +253,9 @@ export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
     },
   ],
 };
+
+// Backward-compatible aliases for old workflow IDs
+WORKFLOW_QUESTIONS['legal-design'] = WORKFLOW_QUESTIONS['roundtable'];
+WORKFLOW_QUESTIONS['contract-review'] = WORKFLOW_QUESTIONS['review'];
+WORKFLOW_QUESTIONS['research-memo'] = WORKFLOW_QUESTIONS['adversarial'];
+WORKFLOW_QUESTIONS['simple-query'] = WORKFLOW_QUESTIONS['counsel'];

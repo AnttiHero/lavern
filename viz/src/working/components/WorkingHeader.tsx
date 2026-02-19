@@ -20,6 +20,7 @@ interface WorkingHeaderProps {
   onResume: () => void;
   onSetSpeed: (speed: number) => void;
   onDisconnect: () => void;
+  onHalt: () => void;
   onConnectSession: (id: string) => void;
   onBack: () => void;
   onSkip: () => void;
@@ -44,6 +45,7 @@ export function WorkingHeader({
   onResume,
   onSetSpeed,
   onDisconnect,
+  onHalt,
   onConnectSession,
   onBack,
   onSkip,
@@ -112,6 +114,14 @@ export function WorkingHeader({
                 ))}
               </>
             )}
+            <button
+              onClick={onHalt}
+              style={styles.btnHalt}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.danger; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.danger; }}
+            >
+              &#9632; STOP
+            </button>
             <button onClick={onDisconnect} style={styles.btnDanger}>Disconnect</button>
           </>
         )}
@@ -267,13 +277,26 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
   },
-  btnDanger: {
+  btnHalt: {
     backgroundColor: 'transparent',
-    border: `1px solid ${colors.danger}`,
+    border: `2px solid ${colors.danger}`,
     borderRadius: radii.sm,
     color: colors.danger,
     fontFamily: fonts.sans,
     fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    padding: '5px 16px',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease, color 0.15s ease',
+  },
+  btnDanger: {
+    backgroundColor: 'transparent',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    color: colors.textMuted,
+    fontFamily: fonts.sans,
+    fontSize: 10,
     fontWeight: 500,
     padding: '5px 14px',
     cursor: 'pointer',

@@ -49,13 +49,13 @@ describe('MyPageView', () => {
     expect(screen.getByPlaceholderText(/e\.g\. California/i)).toBeInTheDocument();
   });
 
-  it('renders workflow dropdown with 5 options', async () => {
+  it('renders workflow dropdown with 6 options', async () => {
     const MyPageView = await loadMyPageView();
     render(<MyPageView onBack={vi.fn()} />);
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
     const options = select.querySelectorAll('option');
-    expect(options).toHaveLength(5);
+    expect(options).toHaveLength(6);
   });
 
   it('renders intensity radio buttons', async () => {

@@ -16,7 +16,7 @@ describe('useUserProfile', () => {
   it('returns default profile when localStorage is empty', () => {
     const { result } = renderHook(() => useUserProfile());
     expect(result.current.profile.displayName).toBe('');
-    expect(result.current.profile.defaultWorkflowId).toBe('simple-query');
+    expect(result.current.profile.defaultWorkflowId).toBe('counsel');
     expect(result.current.profile.defaultIntensity).toBe('standard');
     expect(result.current.profile.defaultBudgetUsd).toBe(10);
     expect(result.current.profile.yoloModeDefault).toBe(false);
@@ -50,7 +50,7 @@ describe('useUserProfile', () => {
 
     expect(result.current.profile.displayName).toBe('Ada');
     expect(result.current.profile.firmName).toBe('Better Law');
-    expect(result.current.profile.defaultWorkflowId).toBe('simple-query');
+    expect(result.current.profile.defaultWorkflowId).toBe('counsel');
   });
 
   it('adds a team via saveTeam', () => {
@@ -114,7 +114,7 @@ describe('useUserProfile', () => {
 
     const { result } = renderHook(() => useUserProfile());
     expect(result.current.profile.displayName).toBe('');
-    expect(result.current.profile.defaultWorkflowId).toBe('simple-query');
+    expect(result.current.profile.defaultWorkflowId).toBe('counsel');
     expect(result.current.profile.savedTeams).toEqual([]);
   });
 

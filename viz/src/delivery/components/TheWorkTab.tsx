@@ -3,10 +3,11 @@
  *
  * Editorial layout: serif hero title, pull-quote executive summary,
  * elegant before/after transformation cards, refined dimension bars,
- * and a polished export prompt.
+ * and download panel for work product export.
  */
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
+import { DownloadPanel } from './DownloadPanel.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -111,23 +112,8 @@ export function TheWorkTab({ data }: Props) {
         </div>
       )}
 
-      {/* ── Export prompt ──────────────────────────────────────── */}
-      <div style={styles.exportCard}>
-        <div style={styles.exportLeft}>
-          <div style={styles.exportIcon}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 3v10M6 9l4 4 4-4" stroke={colors.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M4 15h12" stroke={colors.accent} strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div>
-            <div style={styles.exportTitle}>Document Ready for Export</div>
-            <div style={styles.exportDesc}>
-              The transformed document is available for download when connected to a live session.
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ── Downloads ────────────────────────────────────────────── */}
+      <DownloadPanel data={data} />
     </div>
   );
 }
@@ -378,43 +364,4 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
 
-  // ── Export ─────────────────────────────────────────────────────
-  exportCard: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.bgPanel,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.sm,
-    padding: `${spacing.lg}px ${spacing.xl}px`,
-  },
-  exportLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  exportIcon: {
-    width: 40,
-    height: 40,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgCard,
-    borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
-    flexShrink: 0,
-  },
-  exportTitle: {
-    fontSize: 13,
-    fontWeight: 600,
-    fontFamily: fonts.sans,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  exportDesc: {
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    color: colors.textMuted,
-    lineHeight: 1.5,
-  },
 };

@@ -4,11 +4,11 @@
 
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
-export type DeliveryTab = 'certainty' | 'work' | 'story' | 'scorecard' | 'next-steps';
+export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'next-steps';
 
 const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'work', label: 'The Work' },
-  { id: 'certainty', label: 'Certainty' },
+  { id: 'review', label: 'The Review' },
   { id: 'story', label: 'The Story' },
   { id: 'scorecard', label: 'The Scorecard' },
   { id: 'next-steps', label: 'Next Steps' },

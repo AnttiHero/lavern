@@ -33,6 +33,8 @@ export function createGenericWorkflowTools(
       gateDecisions: {},
       evaluatorResults: [],
       revisionCount: 0,
+      qualityChecks: [],
+      stepIterationCounts: {},
       startedAt: now,
       lastTransitionAt: now,
     };

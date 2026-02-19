@@ -6,8 +6,8 @@ import { describe, it, expect } from 'vitest';
 import { YOLO_CONFIGS } from '../landing/yolo-config.js';
 
 describe('YOLO_CONFIGS', () => {
-  it('standard tier uses simple-query workflow', () => {
-    expect(YOLO_CONFIGS.standard.workflowId).toBe('simple-query');
+  it('standard tier uses counsel workflow', () => {
+    expect(YOLO_CONFIGS.standard.workflowId).toBe('counsel');
   });
 
   it('standard tier has 8 team roles (balanced preset)', () => {
@@ -15,8 +15,8 @@ describe('YOLO_CONFIGS', () => {
     expect(YOLO_CONFIGS.standard.teamSize).toBe(8);
   });
 
-  it('white-shoe tier uses contract-review workflow', () => {
-    expect(YOLO_CONFIGS['white-shoe'].workflowId).toBe('contract-review');
+  it('white-shoe tier uses review workflow', () => {
+    expect(YOLO_CONFIGS['white-shoe'].workflowId).toBe('review');
   });
 
   it('white-shoe tier has 14 team roles (full-service preset)', () => {

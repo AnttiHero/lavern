@@ -20,10 +20,10 @@ export type ShemEvent =
   | { type: 'workflow_step'; step: WorkflowStep; previousStep: WorkflowStep; timestamp: string }
   | { type: 'agent_start'; agentId: string; role: string; task: string; timestamp: string }
   | { type: 'agent_stop'; agentId: string; role: string; durationMs: number; timestamp: string }
-  | { type: 'finding_posted'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; timestamp: string }
-  | { type: 'challenge_posted'; challengeId: string; challenger: string; targetFindingId: string; timestamp: string }
-  | { type: 'response_posted'; responseId: string; responder: string; challengeId: string; accepted: boolean; timestamp: string }
-  | { type: 'debate_resolved'; resolutionId: string; topic: string; resolution: string; confidence: number; timestamp: string }
+  | { type: 'finding_posted'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; content: string; evidence: string[]; timestamp: string }
+  | { type: 'challenge_posted'; challengeId: string; challenger: string; targetFindingId: string; challengeText: string; evidence: string[]; timestamp: string }
+  | { type: 'response_posted'; responseId: string; responder: string; challengeId: string; accepted: boolean; responseText: string; revisedPosition?: string; timestamp: string }
+  | { type: 'debate_resolved'; resolutionId: string; topic: string; resolution: string; confidence: number; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; timestamp: string }
   | { type: 'gate_requested'; gateType: string; summary: string; details: string; timestamp: string }
   | { type: 'gate_decided'; gateType: string; decision: string; notes?: string; timestamp: string }
   | { type: 'verification_run'; verificationId: string; verificationType: string; passed: boolean; confidence: number; timestamp: string }
@@ -39,7 +39,7 @@ export type ShemEvent =
   // v5: Router & Evaluator events
   | { type: 'routing_decision'; requestType: string; selectedWorkflow: string; complexity: string; reasoning: string; timestamp: string }
   | { type: 'evaluator_gate_run'; specialistRole: string; step: string; revisionNumber: number; timestamp: string }
-  | { type: 'evaluator_gate_result'; passed: boolean; score: number; step: string; timestamp: string }
+  | { type: 'evaluator_gate_result'; passed: boolean; score: number; step: string; failureReasons: string[]; timestamp: string }
   // v6: Risk assessment events
   | { type: 'risk_assessment_requested'; step: string; timestamp: string }
   | { type: 'risk_assessment_completed'; riskLevel: string; score: number; step: string; timestamp: string }
@@ -51,7 +51,10 @@ export type ShemEvent =
   | { type: 'engagement_letter_generated'; estimatedBudget: number; feeStructure: string; timestamp: string }
   | { type: 'engagement_accepted'; matterId: string; timestamp: string }
   | { type: 'team_selected'; teamSize: number; roles: string[]; timestamp: string }
-  | { type: 'matter_opened'; matterId: string; matterNumber: string; status: string; timestamp: string };
+  | { type: 'matter_opened'; matterId: string; matterNumber: string; status: string; timestamp: string }
+  // v11: Quality iteration events
+  | { type: 'quality_check_run'; step: string; checkType: string; checkerRole?: string; iteration: number; timestamp: string }
+  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string };
 
 // ── Event Bus ────────────────────────────────────────────────────────────
 

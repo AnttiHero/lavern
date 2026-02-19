@@ -24,7 +24,7 @@ describe('DeliveryView', () => {
     });
 
     // All 5 tab labels should render
-    expect(screen.getByText('Certainty')).toBeInTheDocument();
+    expect(screen.getByText('The Review')).toBeInTheDocument();
     expect(screen.getByText('The Story')).toBeInTheDocument();
     expect(screen.getByText('The Scorecard')).toBeInTheDocument();
     expect(screen.getByText('Next Steps')).toBeInTheDocument();

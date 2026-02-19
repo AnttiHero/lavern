@@ -99,6 +99,36 @@ export class SessionState {
   public auditSessionId = '';
   public auditStartTimestamp = '';
 
+  // ── Emergency Stop ──
+  public readonly haltController = new AbortController();
+  private _haltReason: string | null = null;
+
+  /**
+   * Emergency stop — immediately signals all hooks to cease execution.
+   * The PreToolUse halt-check hook will return { continue: false } on the
+   * next tool call, which stops the SDK query() loop.
+   */
+  halt(reason: string): void {
+    if (this._haltReason) return; // already halted
+    this._haltReason = reason;
+    this.haltController.abort(reason);
+    this.events.emitEvent({
+      type: 'error',
+      message: `⛔ Emergency stop: ${reason}`,
+      source: 'halt',
+      timestamp: new Date().toISOString(),
+    });
+    console.error(`[HALT] Session ${this.id} halted: ${reason}`);
+  }
+
+  isHalted(): boolean {
+    return this._haltReason !== null;
+  }
+
+  get haltReason(): string | null {
+    return this._haltReason;
+  }
+
   // ── Cost Tracker State ──
   public budgetUsd = 5.0;
   public accumulatedCost = 0;
@@ -167,6 +197,10 @@ export class SessionState {
   public matterRecord?: MatterRecord;
   public selectedTeam: string[] = [];
   public teamBudgetEstimate = 0;
+
+  // ── v10: Agent API — Final Output Capture ──
+  /** Accumulated final assistant output text (populated by streamMessages). */
+  public finalOutput = '';
 
   constructor(
     id?: string,

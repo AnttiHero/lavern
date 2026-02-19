@@ -17,7 +17,13 @@ export interface Finding {
     // v6: Research finding types
     | 'research-citation' | 'research-conflict' | 'research-gap'
     // v6: Adversarial finding types
-    | 'adversarial-vulnerability' | 'adversarial-edge-case' | 'adversarial-ambiguity';
+    | 'adversarial-vulnerability' | 'adversarial-edge-case' | 'adversarial-ambiguity'
+    // v11: Counsel pattern
+    | 'direct-answer' | 'caveat'
+    // v11: Roundtable pattern
+    | 'panel-insight' | 'cross-domain-connection' | 'dissenting-view'
+    // v11: Full Bench pattern
+    | 'workstream-output' | 'synthesis-gap' | 'integration-risk';
   content: string;
   severity: Severity;
   evidence: string[];

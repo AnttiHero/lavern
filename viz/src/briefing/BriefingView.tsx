@@ -1,7 +1,12 @@
 /**
  * BriefingView — "Brief the Matter" screen.
  *
- * Four-phase context capture: Documents → Interviewer → Questions → Memo.
+ * Six-phase context capture:
+ *   Documents → Interviewer → Questions → Follow-ups → Instructions → Brief
+ *
+ * After static questions, an LLM analyzes sufficiency and generates
+ * targeted follow-up questions + a structured engagement brief.
+ *
  * Reads matter data from sessionStorage (set by IntakeView).
  * Comes BEFORE staffing — no team data needed.
  */
@@ -12,6 +17,8 @@ import { DocumentDropZone } from './components/DocumentDropZone.js';
 import { DocumentList } from './components/DocumentList.js';
 import { BriefingChat } from './components/BriefingChat.js';
 import { BriefingMemo } from './components/BriefingMemo.js';
+import { FollowUpSection } from './components/FollowUpSection.js';
+import { FinalInstructions } from './components/FinalInstructions.js';
 import { ContextMeter } from './components/ContextMeter.js';
 import { SuggestionChip } from './components/SuggestionChip.js';
 import { UrlImportField } from './components/UrlImportField.js';
@@ -31,10 +38,10 @@ interface Props {
 
 // Map API matter types to workflow IDs
 const MATTER_TYPE_TO_WORKFLOW: Record<string, string> = {
-  'contract_review': 'contract-review',
-  'legal_research': 'research-memo',
-  'document_redesign': 'legal-design',
-  'legal_question': 'simple-query',
+  'contract_review': 'review',
+  'legal_research': 'adversarial',
+  'document_redesign': 'roundtable',
+  'legal_question': 'counsel',
   'general': 'pre-engagement',
 };
 
@@ -68,7 +75,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   });
 
   // Derive workflowId from matter type
-  const workflowId = MATTER_TYPE_TO_WORKFLOW[matterInfo.matterType ?? ''] ?? 'simple-query';
+  const workflowId = MATTER_TYPE_TO_WORKFLOW[matterInfo.matterType ?? ''] ?? 'counsel';
 
   // Interviewer persona state (persisted to sessionStorage)
   const [interviewerId, setInterviewerId] = useState<string | undefined>(() => {
@@ -92,10 +99,14 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
     setMemoText,
     advanceToInterviewer,
     advanceToQuestions,
+    advanceToFollowups,
+    advanceToInstructions,
+    advanceToBrief,
     advanceToMemo,
     buildPayload,
     upload,
     qna,
+    analysis,
   } = useBriefingState(workflowId, interviewerId);
 
   const handleContinueToStaffing = useCallback(() => {
@@ -147,21 +158,20 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   }, [phase, advanceToQuestions, upload, qna]);
 
   // URL import handler — adds fetched content as a document
-  const handleUrlImport = useCallback((name: string, content: string, size: number) => {
-    // We need to add to documents directly via the upload state
-    // Since useDocumentUpload manages its own state, we'll use a workaround
-    // by creating a synthetic file and processing it
+  const handleUrlImport = useCallback((name: string, content: string, _size: number) => {
     const blob = new Blob([content], { type: 'text/plain' });
     const file = new File([blob], `${name}.txt`, { type: 'text/plain' });
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
 
-    // Trigger the file input handler via a synthetic event
     if (upload.inputRef.current) {
       upload.inputRef.current.files = dataTransfer.files;
       upload.inputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, [upload]);
+
+  // Determine if questions/followups should show collapsed
+  const isPostQuestions = phase === 'followups' || phase === 'instructions' || phase === 'brief';
 
   return (
     <div style={styles.container}>
@@ -182,8 +192,8 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
         newMilestone={newMilestone}
       />
 
-      {/* Smart suggestion chips */}
-      {suggestions.length > 0 && (
+      {/* Smart suggestion chips — only during early phases */}
+      {suggestions.length > 0 && (phase === 'documents' || phase === 'questions') && (
         <div style={styles.suggestionsRow}>
           {suggestions.map(s => (
             <SuggestionChip
@@ -260,7 +270,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
       )}
 
       {/* Phase 3: Questions */}
-      {(phase === 'questions' || phase === 'memo') && (
+      {(phase === 'questions' || isPostQuestions) && (
         <div style={{
           ...styles.phaseSection,
           ...(phase === 'questions' ? styles.phaseActive : styles.phaseCollapsed),
@@ -276,25 +286,82 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
               acknowledgments={qna.acknowledgments}
               onAnswer={qna.setAnswer}
               requiredComplete={qna.requiredComplete}
-              onGenerate={advanceToMemo}
+              onGenerate={advanceToFollowups}
               interviewerAvatar={interviewerPortrait}
             />
           )}
         </div>
       )}
 
-      {/* Phase 4: Memo */}
-      {phase === 'memo' && (
+      {/* Analyzing spinner — between questions and followups */}
+      {analysis.isAnalyzing && phase !== 'brief' && (
+        <div style={styles.analyzingSection}>
+          <div style={styles.analyzingDot} />
+          <span style={styles.analyzingText}>Analyzing your intake...</span>
+        </div>
+      )}
+
+      {/* Phase 4: Follow-ups (after LLM analysis) */}
+      {phase === 'followups' && !analysis.isAnalyzing && analysis.sufficiency && (
+        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+          <FollowUpSection
+            sufficiency={analysis.sufficiency}
+            followUpQuestions={analysis.followUpQuestions}
+            followUpAnswers={analysis.followUpAnswers}
+            onSetAnswer={analysis.setFollowUpAnswer}
+            onContinue={advanceToInstructions}
+            onReanalyze={analysis.reanalyze}
+            isAnalyzing={analysis.isAnalyzing}
+            analysisRound={analysis.analysisRound}
+            maxRounds={2}
+          />
+        </div>
+      )}
+
+      {/* Phase 5: Final Instructions */}
+      {phase === 'instructions' && (
+        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+          <FinalInstructions
+            value={analysis.finalInstructions}
+            onChange={analysis.setFinalInstructions}
+            onGenerate={advanceToBrief}
+            isAnalyzing={analysis.isAnalyzing}
+          />
+        </div>
+      )}
+
+      {/* Phase 6: Engagement Brief */}
+      {phase === 'brief' && (
         <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
           <ConfidenceSignal
-            message={`Your briefing covers ${Math.min(breakdown.total, 100)}% of the context needed for this workflow.`}
+            message={
+              analysis.sufficiency
+                ? `Context sufficiency: ${analysis.sufficiency.score}% — ${analysis.sufficiency.verdict}.`
+                : `Your briefing covers ${Math.min(breakdown.total, 100)}% of the context needed for this workflow.`
+            }
           />
           <div style={{ height: 12 }} />
           <BriefingMemo
             memoText={memoText}
             onMemoChange={setMemoText}
             onCommence={handleContinueToStaffing}
+            engagementBrief={analysis.engagementBrief}
+            sufficiency={analysis.sufficiency}
           />
+        </div>
+      )}
+
+      {/* Analysis error banner */}
+      {analysis.analysisError && (
+        <div style={styles.errorBanner}>
+          <span style={styles.errorBannerIcon}>{'\u26A0'}</span>
+          <span>Analysis unavailable: {analysis.analysisError}. Using mechanical brief as fallback.</span>
+          <button
+            onClick={advanceToMemo}
+            style={styles.errorFallbackBtn}
+          >
+            Use Fallback Brief
+          </button>
         </div>
       )}
 
@@ -376,5 +443,56 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     color: colors.danger,
     marginTop: 8,
+  },
+  analyzingSection: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: `${spacing.xl}px`,
+  },
+  analyzingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: colors.accent,
+    animation: 'pulse 1.2s ease-in-out infinite',
+  },
+  analyzingText: {
+    fontSize: 14,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+  },
+  errorBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 16px',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(196, 93, 62, 0.08)',
+    border: `1px solid ${colors.danger}`,
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.danger,
+    marginTop: spacing.md,
+  },
+  errorBannerIcon: {
+    fontSize: 14,
+    flexShrink: 0,
+  },
+  errorFallbackBtn: {
+    marginLeft: 'auto',
+    padding: '4px 12px',
+    borderRadius: radii.sm,
+    border: `1px solid ${colors.danger}`,
+    backgroundColor: 'transparent',
+    color: colors.danger,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
 };

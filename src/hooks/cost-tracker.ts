@@ -1,8 +1,11 @@
 /**
- * Cost Tracker Hook — Monitors spending against the budget cap.
+ * Cost Tracker & Halt-Check Hooks — Budget enforcement + emergency stop.
  *
  * v3: Refactored to factory pattern — state lives in SessionState.
- * Events emitted for visualization (cost_update).
+ * v10: Added haltCheckHook — the "red button" mechanism.
+ *
+ * Both hooks fire as PreToolUse, checked before every tool invocation.
+ * The haltCheckHook MUST be first in the array so it fires before cost checks.
  */
 
 import type { HookInput, HookJSONOutput } from '@anthropic-ai/claude-agent-sdk';
@@ -10,6 +13,26 @@ import type { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
 
 export function createCostHooks(session: SessionState) {
+  /**
+   * Halt-check hook — the "red button" mechanism.
+   * Fires before every tool use. If the session has been halted externally
+   * (via DELETE /api/sessions/:id or session.halt()), returns { continue: false }
+   * which stops the SDK query() loop immediately.
+   */
+  const haltCheckHook = async (
+    _input: HookInput,
+    _toolUseId: string | undefined,
+    _options: { signal: AbortSignal }
+  ): Promise<HookJSONOutput> => {
+    if (session.isHalted()) {
+      return {
+        continue: false,
+        stopReason: `Emergency stop: ${session.haltReason ?? 'Session halted'}`,
+      };
+    }
+    return { continue: true };
+  };
+
   const costTrackerHook = async (
     _input: HookInput,
     _toolUseId: string | undefined,
@@ -43,5 +66,5 @@ export function createCostHooks(session: SessionState) {
     return { continue: true };
   };
 
-  return { costTrackerHook };
+  return { haltCheckHook, costTrackerHook };
 }

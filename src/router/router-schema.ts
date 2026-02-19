@@ -14,6 +14,8 @@ export const RouterClassificationSchema = z.object({
     'multi_specialist',
     'full_pipeline',
     'debate_pattern',
+    'adversarial',
+    'hierarchical',
   ]),
   complexity: z.enum(['low', 'medium', 'high']),
   riskLevel: z.enum(['low', 'medium', 'high']),

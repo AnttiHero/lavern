@@ -2749,6 +2749,48 @@ export const agentProfiles: Record<string, AgentProfile> = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const teamPresets: TeamPreset[] = [
+  // ── v11: Pattern-Aligned Presets ────────────────────────────────────────
+  {
+    id: 'counsel',
+    name: 'Counsel',
+    description: 'Solo expert — 1 agent. For the counsel pattern.',
+    roles: ['evaluator'],
+  },
+  {
+    id: 'review',
+    name: 'Review',
+    description: 'Specialist + evaluator — 4 agents. For the review pattern.',
+    roles: ['contract-reviewer', 'plain-language-specialist', 'evaluator', 'risk-pricer'],
+  },
+  {
+    id: 'adversarial',
+    name: 'Adversarial',
+    description: 'Builder + Attacker + Synthesizer — 4 agents. For the adversarial pattern.',
+    roles: ['legal-researcher', 'red-team', 'synthesis-editor', 'risk-pricer'],
+  },
+  {
+    id: 'roundtable',
+    name: 'Roundtable',
+    description: 'Expert panel — 8 agents. For the roundtable pattern.',
+    roles: [
+      'design-reviewer', 'ethics-auditor', 'service-designer',
+      'plain-language-specialist', 'client-proxy',
+      'transformation-specialist', 'meaning-guardian', 'synthesis-editor',
+    ],
+  },
+  {
+    id: 'full-bench',
+    name: 'Full Bench',
+    description: 'Full firm — 16 agents. For the full bench pattern.',
+    roles: [
+      'managing-partner', 'supervising-partner', 'corporate-generalist',
+      'contract-specialist', 'regulatory-counsel', 'privacy-counsel',
+      'service-designer', 'plain-language-specialist', 'client-proxy',
+      'ethics-auditor', 'legal-researcher', 'red-team',
+      'synthesis-editor', 'evaluator', 'risk-pricer', 'qa-tester',
+    ],
+  },
+  // ── Legacy Presets (backward compat) ────────────────────────────────────
   {
     id: 'lean',
     name: 'Lean',

@@ -49,9 +49,13 @@ export class SessionManager {
     return [...this.sessions.values()].map(e => e.session);
   }
 
-  destroySession(id: string): boolean {
+  destroySession(id: string, reason?: string): boolean {
     const entry = this.sessions.get(id);
     if (entry) {
+      // Halt running agents before cleanup
+      if (!entry.session.isHalted()) {
+        entry.session.halt(reason ?? 'Session destroyed');
+      }
       entry.session.events.stopRecording();
       entry.session.events.removeAllListeners();
       this.sessions.delete(id);

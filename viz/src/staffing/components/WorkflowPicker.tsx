@@ -7,11 +7,17 @@ import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
 
 const WORKFLOW_DISPLAY: Record<string, { icon: string; label: string }> = {
-  'simple-query': { icon: '\u2014', label: 'Advisory' },
-  'contract-review': { icon: '\u00A7', label: 'Contract Review' },
-  'research-memo': { icon: '\u00B6', label: 'Research Memo' },
-  'legal-design': { icon: '\u25CA', label: 'Document Review' },
+  'counsel': { icon: '\u2014', label: 'Counsel' },
+  'review': { icon: '\u00A7', label: 'Review' },
+  'adversarial': { icon: '\u00B6', label: 'Adversarial' },
+  'roundtable': { icon: '\u25CA', label: 'Roundtable' },
+  'full-bench': { icon: '\u2248', label: 'Full Bench' },
   'pre-engagement': { icon: '\u2022', label: 'Client Onboarding' },
+  // Backward-compatible aliases for old workflow IDs
+  'simple-query': { icon: '\u2014', label: 'Counsel' },
+  'contract-review': { icon: '\u00A7', label: 'Review' },
+  'research-memo': { icon: '\u00B6', label: 'Adversarial' },
+  'legal-design': { icon: '\u25CA', label: 'Roundtable' },
 };
 
 interface Props {

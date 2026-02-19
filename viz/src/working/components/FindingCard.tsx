@@ -1,10 +1,12 @@
 /**
  * FindingCard — A finding posted by an agent, with severity badge,
- * confidence bar, and nested debate threads.
+ * the actual finding text, evidence quotes, and confidence bar.
+ *
+ * v11: Shows content + evidence. DebateThread removed — challenges
+ * and responses are now standalone cards in the stream.
  */
 
-import type { StreamCard, DebateEntry } from '../hooks/useWorkingState.js';
-import { DebateThread } from './DebateThread.js';
+import type { StreamCard } from '../hooks/useWorkingState.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 type FindingData = Extract<StreamCard, { kind: 'finding' }>;
@@ -42,9 +44,22 @@ export function FindingCard({ card, resolveAgentName, agentColor }: FindingCardP
         <span style={styles.time}>{time}</span>
       </div>
 
+      {/* The actual finding text */}
       <div style={styles.body}>
-        <span style={styles.category}>{card.category}</span>
+        <span style={styles.content}>{card.content}</span>
       </div>
+
+      {/* Evidence quotes */}
+      {card.evidence.length > 0 && (
+        <div style={styles.evidenceBlock}>
+          {card.evidence.map((e, i) => (
+            <div key={i} style={styles.evidenceLine}>
+              <span style={styles.evidenceBar} />
+              <span style={styles.evidenceText}>{e}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={styles.confidenceRow}>
         <span style={styles.confidenceLabel}>Confidence</span>
@@ -57,8 +72,6 @@ export function FindingCard({ card, resolveAgentName, agentColor }: FindingCardP
         </div>
         <span style={styles.confidenceValue}>{confidencePct}%</span>
       </div>
-
-      <DebateThread threads={card.threads} resolveAgentName={resolveAgentName} />
     </div>
   );
 }
@@ -105,11 +118,38 @@ const styles: Record<string, React.CSSProperties> = {
   body: {
     marginBottom: 8,
   },
-  category: {
+  content: {
     fontSize: 13,
     fontFamily: fonts.sans,
     fontWeight: 400,
     color: colors.textSecondary,
+    lineHeight: '1.5',
+  },
+  evidenceBlock: {
+    marginBottom: 10,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 4,
+  },
+  evidenceLine: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingLeft: 4,
+  },
+  evidenceBar: {
+    width: 2,
+    minHeight: 14,
+    backgroundColor: colors.border,
+    borderRadius: 1,
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  evidenceText: {
+    fontSize: 11,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    color: colors.textDim,
     lineHeight: '1.4',
   },
   confidenceRow: {

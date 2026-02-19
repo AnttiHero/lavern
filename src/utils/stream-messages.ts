@@ -43,6 +43,8 @@ export async function streamMessages(
           for (const block of message.message.content) {
             if ('text' in block) {
               process.stdout.write(block.text);
+              // Capture final output for agent API responses
+              session.finalOutput += block.text;
             }
           }
           process.stdout.write('\n');

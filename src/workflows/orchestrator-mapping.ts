@@ -39,29 +39,27 @@ export function getOrchestratorForWorkflow(workflowId: string): string {
  * general-purpose orchestrator and can adapt to unfamiliar workflows.
  */
 const WORKFLOW_ORCHESTRATOR_MAP: Record<string, string> = {
-  // ── The Conductor: multidisciplinary synthesis ──────────────────────────
-  // 10-step pipeline with parallel fan-out, two debate rounds, verification
-  // loops, and human gates. Requires managing 5+ specialist agents in parallel
-  // and synthesising conflicting perspectives.
-  'legal-design': 'orchestrator-conductor',
+  // ── v11: Five Engagement Patterns ──────────────────────────────────────
 
-  // ── The Closer: sequential pipeline management ─────────────────────────
-  // 6-step pipeline (contract-review) and 7-step pipeline (pre-engagement).
-  // Linear handoff chains with quality gates. The Closer excels at driving
-  // work through gates to completion without drift.
-  'contract-review': 'orchestrator-closer',
+  // The Fixer: rapid triage, single-specialist dispatch
+  'counsel': 'orchestrator-fixer',
+
+  // The Closer: sequential pipeline with quality gates
+  'review': 'orchestrator-closer',
   'pre-engagement': 'orchestrator-closer',
 
-  // ── The Professor: deep research + adversarial testing ─────────────────
-  // 5-step pipeline with emphasis on citation quality, intellectual honesty,
-  // and surviving adversarial review. The Professor will loop the researcher
-  // and red team until the argument is bulletproof.
-  'research-memo': 'orchestrator-professor',
+  // The Professor: adversarial testing, intellectual honesty
+  'adversarial': 'orchestrator-professor',
 
-  // ── The Fixer: rapid triage + single-specialist dispatch ───────────────
-  // 4-step minimal pipeline. Classify → dispatch → gate → deliver.
-  // The Fixer's speed and triage instinct make simple queries fast and cheap.
+  // The Conductor: multidisciplinary synthesis, parallel fan-out, debate
+  'roundtable': 'orchestrator-conductor',
+  'full-bench': 'orchestrator-conductor',
+
+  // ── Backward compatibility aliases ──────────────────────────────────────
   'simple-query': 'orchestrator-fixer',
+  'contract-review': 'orchestrator-closer',
+  'research-memo': 'orchestrator-professor',
+  'legal-design': 'orchestrator-conductor',
 };
 
 /**

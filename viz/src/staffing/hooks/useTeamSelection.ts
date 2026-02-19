@@ -21,11 +21,16 @@ export function useTeamSelection(
     return map;
   }, [allProfiles]);
 
+  const MAX_TEAM_SIZE = 8;
+
   const toggleAgent = useCallback((role: string) => {
     setSelectedRoles(prev => {
       const next = new Set(prev);
       if (next.has(role)) {
         next.delete(role);
+      } else if (next.size >= MAX_TEAM_SIZE) {
+        // At cap — don't add
+        return prev;
       } else {
         next.add(role);
       }
@@ -42,7 +47,7 @@ export function useTeamSelection(
     }
     const preset = presets.find(p => p.id === presetId);
     if (!preset) return;
-    setSelectedRoles(new Set(preset.roles));
+    setSelectedRoles(new Set(preset.roles.slice(0, MAX_TEAM_SIZE)));
     setActivePreset(presetId);
   }, [presets]);
 
@@ -53,7 +58,7 @@ export function useTeamSelection(
 
   /** Programmatically set the team from recommended roles */
   const setRoles = useCallback((roles: string[]) => {
-    setSelectedRoles(new Set(roles));
+    setSelectedRoles(new Set(roles.slice(0, MAX_TEAM_SIZE)));
     setActivePreset(null);
   }, []);
 
@@ -113,5 +118,7 @@ export function useTeamSelection(
     confirming,
     confirmTeam,
     isSelected: (role: string) => selectedRoles.has(role),
+    maxTeamSize: MAX_TEAM_SIZE,
+    isAtCap: selectedRoles.size >= MAX_TEAM_SIZE,
   };
 }

@@ -1,7 +1,8 @@
 /**
  * ThinkingStream — Main center area: vertical scrollable feed of agent activity cards.
  *
- * Renders different card types based on StreamCard.kind.
+ * v11: Removed narrator. Added challenge, response, quality_check card types.
+ * Shows substantive agent thinking, not tool-call plumbing.
  */
 
 import { useEffect, useRef, useMemo } from 'react';
@@ -9,7 +10,10 @@ import type { StreamCard } from '../hooks/useWorkingState.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { ThinkingCard } from './ThinkingCard.js';
 import { FindingCard } from './FindingCard.js';
+import { ChallengeCard } from './ChallengeCard.js';
+import { ResponseCard } from './ResponseCard.js';
 import { ResolutionCard } from './ResolutionCard.js';
+import { QualityCheckCard } from './QualityCheckCard.js';
 import { GateCard } from './GateCard.js';
 import { WorkflowStepCard } from './WorkflowStepCard.js';
 import { EmptyState } from './EmptyState.js';
@@ -103,8 +107,31 @@ export function ThinkingStream({
                   />
                 );
 
+              case 'challenge':
+                return (
+                  <ChallengeCard
+                    key={key}
+                    card={card}
+                    resolveAgentName={resolveAgentName}
+                    agentColor={resolveAgentColor(card.challenger)}
+                  />
+                );
+
+              case 'response':
+                return (
+                  <ResponseCard
+                    key={key}
+                    card={card}
+                    resolveAgentName={resolveAgentName}
+                    agentColor={resolveAgentColor(card.responder)}
+                  />
+                );
+
               case 'resolution':
                 return <ResolutionCard key={key} card={card} />;
+
+              case 'quality_check':
+                return <QualityCheckCard key={key} card={card} />;
 
               case 'gate':
                 return <GateCard key={key} card={card} onClick={onGateClick} />;

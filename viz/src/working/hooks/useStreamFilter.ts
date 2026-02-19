@@ -12,6 +12,10 @@ function getCardAgent(card: StreamCard): string | undefined {
       return card.role;
     case 'finding':
       return card.agent;
+    case 'challenge':
+      return card.challenger;
+    case 'response':
+      return card.responder;
     default:
       return undefined;
   }
@@ -26,13 +30,19 @@ function getCardText(card: StreamCard): string {
     case 'agent_stop':
       return card.role;
     case 'finding':
-      return `${card.agent} ${card.category} ${card.severity}`;
+      return `${card.agent} ${card.category} ${card.severity} ${card.content}`;
+    case 'challenge':
+      return `${card.challenger} ${card.challengeText}`;
+    case 'response':
+      return `${card.responder} ${card.responseText}`;
     case 'resolution':
-      return `${card.topic} ${card.resolution}`;
+      return `${card.topic} ${card.resolution} ${card.winningPosition}`;
     case 'gate':
       return `${card.gateType} ${card.summary}`;
     case 'verification':
       return `${card.verificationType} ${card.passed ? 'pass' : 'fail'}`;
+    case 'quality_check':
+      return `${card.step} ${card.passed ? 'pass' : 'fail'} ${card.failureReasons.join(' ')}`;
     case 'error':
       return card.message;
   }
@@ -48,8 +58,8 @@ export function useStreamFilter(cards: StreamCard[]) {
     if (filterByAgent) {
       result = result.filter(c => {
         const agent = getCardAgent(c);
-        // Always show workflow steps and gates regardless of agent filter
-        if (c.kind === 'workflow_step' || c.kind === 'gate') return true;
+        // Always show workflow steps, gates, resolutions, and quality checks regardless of agent filter
+        if (c.kind === 'workflow_step' || c.kind === 'gate' || c.kind === 'resolution' || c.kind === 'quality_check') return true;
         return agent === filterByAgent;
       });
     }

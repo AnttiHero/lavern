@@ -44,7 +44,7 @@ const DEFAULT_PROFILE: UserProfile = {
   displayName: '',
   firmName: '',
   defaultJurisdiction: '',
-  defaultWorkflowId: 'simple-query',
+  defaultWorkflowId: 'counsel',
   defaultIntensity: 'standard',
   defaultBudgetUsd: 10,
   yoloModeDefault: false,

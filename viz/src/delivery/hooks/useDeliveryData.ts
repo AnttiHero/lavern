@@ -1,6 +1,9 @@
 /**
  * useDeliveryData — Fetches session results for the delivery screen.
  *
+ * v12: Added finalOutput, debateResolutions, gateDecisions, verificationChecks.
+ *      Removed confidence percentages from verification — legal work isn't scored 0-100.
+ *
  * Real mode:  GET /api/sessions/:id  (extends with report card if available)
  * Demo mode:  Returns rich static data when sessionId starts with "demo-session-"
  */
@@ -44,6 +47,26 @@ export interface NextStepItem {
   kind: 'action' | 'watchout' | 'schedule';
 }
 
+export interface DebateResolutionRecord {
+  topic: string;
+  resolution: string;
+  winningPosition: string;
+  evidenceWeight: string;
+  escalationNeeded: boolean;
+}
+
+export interface GateDecisionRecord {
+  gateType: string;
+  decision: string;
+  summary?: string;
+}
+
+export interface VerificationCheck {
+  type: string;
+  passed: boolean;
+  label: string;
+}
+
 export interface DeliveryData {
   sessionId: string;
   status: string;
@@ -53,11 +76,17 @@ export interface DeliveryData {
   executiveSummary: string;
   keyChanges: KeyChange[];
   dimensions: DimensionScore[];
+  finalOutput: string;
 
-  // Tab 2: The Story
+  // Tab 2: The Review
+  debateResolutions: DebateResolutionRecord[];
+  gateDecisions: GateDecisionRecord[];
+  verificationChecks: VerificationCheck[];
+
+  // Tab 3: The Story
   narrative: NarrativeSection[];
 
-  // Tab 3: The Scorecard
+  // Tab 4: The Scorecard
   debate: { findingsCount: number; challengesCount: number; resolutionsCount: number; unresolvedCount: number };
   verification: {
     resultsCount: number;
@@ -70,14 +99,14 @@ export interface DeliveryData {
   agentPerformance: AgentPerf[];
   eventCount: number;
 
-  // Certainty — limitations & transparency
+  // Limitations & transparency
   limitations?: {
     flaggedForHumanReview: string[];
     confidenceIntervals: string;
     disclaimer: string;
   };
 
-  // Tab 4: Next Steps
+  // Tab 5: Next Steps
   nextSteps: NextStepItem[];
 }
 
@@ -96,20 +125,17 @@ export function useDeliveryData(): {
     const sessionId = sessionStorage.getItem('shem-session-id');
 
     if (!sessionId) {
-      // No active session — show demo data so the screen is always previewable
       setData(buildDemoData('demo-session-preview'));
       setLoading(false);
       return;
     }
 
-    // Demo mode
     if (sessionId.startsWith('demo-session-')) {
       setData(buildDemoData(sessionId));
       setLoading(false);
       return;
     }
 
-    // Real API
     fetch(`/api/sessions/${sessionId}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch session');
@@ -133,48 +159,140 @@ export function useDeliveryData(): {
 function mapApiResponse(sessionId: string, raw: Record<string, unknown>): DeliveryData {
   const workflow = raw.workflow as { currentStep?: string; completedSteps?: string[] } | undefined;
   const debate = raw.debate as { findingsCount?: number; challengesCount?: number; resolutionsCount?: number; unresolvedCount?: number } | undefined;
-  const verification = raw.verification as { resultsCount?: number; passed?: number; failed?: number; confidence?: number } | undefined;
+  const verification = raw.verification as { resultsCount?: number; passed?: number; failed?: number } | undefined;
   const cost = raw.cost as { accumulated?: number; budget?: number; remaining?: number } | undefined;
+  const evaluator = raw.evaluator as { results?: Array<{ step: string; passed: boolean; score: number; failureReasons?: string[]; revisionNumber?: number; timestamp?: string }>; bestScore?: number } | undefined;
+  const agentPerf = raw.agentPerformance as Array<{ role: string; durationMs?: number; findingsPosted?: number; challengesIssued?: number }> | undefined;
+  const matterTitle = raw.matterTitle as string | null;
+  const durationMs = raw.durationMs as number | undefined;
+  const rawFinalOutput = raw.finalOutput as string | null;
+  const rawDebateResolutions = raw.debateResolutions as Array<{ topic: string; resolution: string; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; confidence: number }> | undefined;
+  const rawGateDecisions = raw.gateDecisionRecords as Array<{ gateType: string; decision: string; notes?: string }> | undefined;
+  const rawFindings = raw.findings as Array<{ id: string; agent: string; category: string; severity: string; content: string; evidence: string[]; confidence: number }> | undefined;
+
+  const bestScore = evaluator?.bestScore ?? 0;
+  const evalResults = evaluator?.results ?? [];
+  const evalPassed = evalResults.filter(r => r.passed).length;
+  const evalFailed = evalResults.filter(r => !r.passed).length;
+
+  const isComplete = workflow?.currentStep === 'delivered';
+  const stepLabel = (workflow?.currentStep ?? 'unknown').replace(/_/g, ' ');
+  const docTitle = matterTitle ?? 'Session Results';
+
+  // Executive summary
+  const summaryParts: string[] = [];
+  if (isComplete) {
+    summaryParts.push(`Analysis complete.`);
+  } else {
+    summaryParts.push(`Session in progress \u2014 currently at: ${stepLabel}.`);
+  }
+  if (evalPassed > 0) {
+    summaryParts.push(`${evalPassed} quality gate${evalPassed > 1 ? 's' : ''} passed.`);
+  }
+  if ((debate?.findingsCount ?? 0) > 0) {
+    summaryParts.push(`${debate?.findingsCount} findings, ${debate?.challengesCount ?? 0} challenges.`);
+  }
+  if ((cost?.accumulated ?? 0) > 0) {
+    summaryParts.push(`Cost: $${cost!.accumulated!.toFixed(2)} of $${cost!.budget!.toFixed(2)} budget.`);
+  }
+  if (durationMs && durationMs > 0) {
+    const mins = Math.round(durationMs / 60000);
+    summaryParts.push(`Duration: ${mins > 0 ? `${mins} min` : '<1 min'}.`);
+  }
+
+  // Narrative from evaluator results
+  const narrative: NarrativeSection[] = [];
+  for (const r of evalResults) {
+    narrative.push({
+      phase: r.step.replace(/_/g, ' '),
+      heading: r.passed ? `Quality gate passed` : `Quality gate failed`,
+      body: r.passed
+        ? `The evaluator reviewed the specialist output for the ${r.step.replace(/_/g, ' ')} step and approved it to proceed.`
+        : `The evaluator reviewed the specialist output for the ${r.step.replace(/_/g, ' ')} step and found issues.${(r.failureReasons?.length ?? 0) > 0 ? ' Issues: ' + r.failureReasons!.join('; ') + '.' : ''}`,
+      agents: [],
+    });
+  }
+
+  const agentPerfList: AgentPerf[] = (agentPerf ?? []).map(a => ({
+    name: a.role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    role: a.role,
+    findingsPosted: a.findingsPosted ?? 0,
+    challengesSurvived: 0,
+    avgConfidence: bestScore,
+  }));
+
+  const debateResolutions: DebateResolutionRecord[] = (rawDebateResolutions ?? []).map(r => ({
+    topic: r.topic,
+    resolution: r.resolution,
+    winningPosition: r.winningPosition,
+    evidenceWeight: r.evidenceWeight,
+    escalationNeeded: r.escalationNeeded,
+  }));
+
+  const gateDecisions: GateDecisionRecord[] = (rawGateDecisions ?? []).map(g => ({
+    gateType: g.gateType.replace(/_/g, ' '),
+    decision: g.decision,
+    summary: g.notes,
+  }));
+
+  const verificationChecks: VerificationCheck[] = [];
+  if ((verification?.resultsCount ?? 0) > 0) {
+    verificationChecks.push(
+      { type: 'self', passed: (verification?.failed ?? 0) === 0, label: 'Self-Check' },
+      { type: 'cross', passed: (verification?.failed ?? 0) === 0, label: 'Cross-Check' },
+    );
+  }
+  for (const r of evalResults) {
+    verificationChecks.push({
+      type: 'evaluator',
+      passed: r.passed,
+      label: `${r.step.replace(/_/g, ' ')} evaluator`,
+    });
+  }
+
+  const nextSteps: NextStepItem[] = [];
+  if (isComplete) {
+    nextSteps.push({ label: 'Review the output', description: 'Read through the generated content carefully. Compare against your original brief to verify all requirements were addressed.', kind: 'action' });
+    nextSteps.push({ label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review the output before finalizing.', kind: 'watchout' });
+  } else {
+    nextSteps.push({ label: 'Session still in progress', description: `The session is at the "${stepLabel}" step. Return to the Working View to monitor progress.`, kind: 'action' });
+  }
+
+  // Limitations — flag what might be missing
+  const flaggedItems: string[] = [];
+  if (debateResolutions.some(r => r.escalationNeeded)) {
+    flaggedItems.push('One or more debate resolutions were flagged for escalation');
+  }
+  if ((rawFindings ?? []).some(f => f.severity === 'RED')) {
+    flaggedItems.push('RED severity findings were identified \u2014 verify remediation');
+  }
+  flaggedItems.push('Verify legal accuracy with qualified counsel before relying on this output');
 
   return {
     sessionId,
-    status: workflow?.currentStep === 'delivered' ? 'Complete' : (workflow?.currentStep ?? 'Unknown').replace(/_/g, ' '),
-
-    documentTitle: 'Session Results',
-    executiveSummary: 'The team has completed analysis, review, and transformation of the submitted document.',
+    status: isComplete ? 'Complete' : stepLabel,
+    documentTitle: docTitle,
+    executiveSummary: summaryParts.join(' '),
     keyChanges: [],
     dimensions: [],
-
-    narrative: [],
-
-    debate: {
-      findingsCount: debate?.findingsCount ?? 0,
-      challengesCount: debate?.challengesCount ?? 0,
-      resolutionsCount: debate?.resolutionsCount ?? 0,
-      unresolvedCount: debate?.unresolvedCount ?? 0,
-    },
-    verification: {
-      resultsCount: verification?.resultsCount ?? 0,
-      passed: verification?.passed ?? 0,
-      failed: verification?.failed ?? 0,
-      confidence: verification?.confidence ?? 0,
-    },
-    cost: {
-      accumulated: cost?.accumulated ?? 0,
-      budget: cost?.budget ?? 0,
-      remaining: cost?.remaining ?? 0,
-    },
-    agentPerformance: [],
+    finalOutput: rawFinalOutput ?? '',
+    debateResolutions,
+    gateDecisions,
+    verificationChecks,
+    narrative,
+    debate: { findingsCount: debate?.findingsCount ?? 0, challengesCount: debate?.challengesCount ?? 0, resolutionsCount: debate?.resolutionsCount ?? 0, unresolvedCount: debate?.unresolvedCount ?? 0 },
+    verification: { resultsCount: (verification?.resultsCount ?? 0) + evalResults.length, passed: (verification?.passed ?? 0) + evalPassed, failed: (verification?.failed ?? 0) + evalFailed, confidence: bestScore },
+    cost: { accumulated: cost?.accumulated ?? 0, budget: cost?.budget ?? 0, remaining: cost?.remaining ?? 0 },
+    agentPerformance: agentPerfList,
     eventCount: (raw.eventCount as number | undefined) ?? 0,
-
-    nextSteps: [],
+    limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
+    nextSteps,
   };
 }
 
 // ── Demo data ─────────────────────────────────────────────────────────────
 
 function buildDemoData(sessionId: string): DeliveryData {
-  // Read matter info for context
   let matterTitle = 'Terms of Service Redesign';
   try {
     const stored = sessionStorage.getItem('shem-matter-data');
@@ -188,7 +306,6 @@ function buildDemoData(sessionId: string): DeliveryData {
     sessionId,
     status: 'Complete',
 
-    // ── Tab 1: The Work ──
     documentTitle: matterTitle,
     executiveSummary:
       'Your document has been redesigned for clarity, accessibility, and legal precision. ' +
@@ -197,26 +314,10 @@ function buildDemoData(sessionId: string): DeliveryData {
       'Legal meaning was independently verified as fully preserved throughout the transformation.',
 
     keyChanges: [
-      {
-        title: 'Readability',
-        before: 'Flesch-Kincaid Grade 14.2 — university-level language requiring specialized knowledge',
-        after: 'Grade 7.8 — clear, accessible language that maintains professional tone',
-      },
-      {
-        title: 'Visual Hierarchy',
-        before: 'Inconsistent heading structure, no clear information flow',
-        after: 'Three-level heading system with consistent styling and logical document flow',
-      },
-      {
-        title: 'Accessibility',
-        before: 'Color contrast ratios below WCAG 2.1 AA thresholds in 3 sections',
-        after: 'Full WCAG 2.1 AA compliance — all contrast ratios above 4.5:1',
-      },
-      {
-        title: 'Legal Meaning',
-        before: 'Original legal intent embedded in complex sentence structures',
-        after: 'Identical legal meaning verified — no semantic drift detected across 12 checkpoint tests',
-      },
+      { title: 'Readability', before: 'Flesch-Kincaid Grade 14.2 \u2014 university-level language requiring specialized knowledge', after: 'Grade 7.8 \u2014 clear, accessible language that maintains professional tone' },
+      { title: 'Visual Hierarchy', before: 'Inconsistent heading structure, no clear information flow', after: 'Three-level heading system with consistent styling and logical document flow' },
+      { title: 'Accessibility', before: 'Color contrast ratios below WCAG 2.1 AA thresholds in 3 sections', after: 'Full WCAG 2.1 AA compliance \u2014 all contrast ratios above 4.5:1' },
+      { title: 'Legal Meaning', before: 'Original legal intent embedded in complex sentence structures', after: 'Identical legal meaning verified \u2014 no semantic drift detected across 12 checkpoint tests' },
     ],
 
     dimensions: [
@@ -227,96 +328,43 @@ function buildDemoData(sessionId: string): DeliveryData {
       { dimension: 'Ethics', before: 2.0, after: 3.2, delta: 1.2 },
     ],
 
-    // ── Tab 2: The Story ──
-    narrative: [
-      {
-        phase: 'Analysis',
-        heading: 'Three perspectives, three problems',
-        body:
-          'The engagement began with three specialists examining the document simultaneously. ' +
-          'The Design Reviewer identified inconsistent heading structures that disrupted the reading flow. ' +
-          'The Plain Language Specialist measured readability at Grade 14.2 — well above the target of Grade 8. ' +
-          'Meanwhile, the Ethics Auditor flagged color contrast ratios that fell short of WCAG 2.1 AA standards, ' +
-          'meaning the document was inaccessible to readers with visual impairments.',
-        agents: ['Design Reviewer', 'Plain Language Specialist', 'Ethics Auditor'],
-      },
-      {
-        phase: 'First Review',
-        heading: 'A challenge that changed the outcome',
-        body:
-          'During the first review round, the Ethics Auditor challenged the Design Reviewer\'s severity ' +
-          'assessment of the heading structure issue. The original classification was YELLOW — important ' +
-          'but not critical. The challenge argued that inconsistent headings don\'t just affect aesthetics; ' +
-          'they affect comprehension for screen reader users, making this an accessibility issue at its core. ' +
-          'The Design Reviewer accepted the challenge, and the finding was upgraded to RED.',
-        agents: ['Ethics Auditor', 'Design Reviewer'],
-        highlight: 'This challenge elevated a visual issue to a structural accessibility concern — a distinction that changed the transformation approach.',
-      },
-      {
-        phase: 'Ethics Check',
-        heading: 'Flagged for human review',
-        body:
-          'Two RED findings related to accessibility triggered the ethics gate. The system flagged ' +
-          'that these issues affect users with disabilities and readers with lower literacy levels. ' +
-          'After review, the decision was to proceed with remediation — the transformation would need ' +
-          'to address both readability and accessibility comprehensively, not as separate fixes.',
-        agents: [],
-        highlight: 'The ethics gate ensured accessibility wasn\'t treated as cosmetic but as a fundamental requirement.',
-      },
-      {
-        phase: 'Transformation',
-        heading: 'Rewriting with precision',
-        body:
-          'The Transformation Specialist restructured the entire document with a new three-level heading ' +
-          'system. The Plain Language Specialist then rewrote the content to Grade 8 reading level, ' +
-          'working sentence by sentence to simplify language without altering legal obligations. ' +
-          'This was the most time-intensive phase — every simplification had to preserve exact legal meaning.',
-        agents: ['Transformation Specialist', 'Plain Language Specialist'],
-      },
-      {
-        phase: 'Verification',
-        heading: 'All checks passed',
-        body:
-          'Three independent verification checks confirmed the transformation met all targets. ' +
-          'Readability scored Grade 7.8. Accessibility achieved full WCAG 2.1 AA compliance. ' +
-          'Most critically, the legal accuracy verification confirmed that no semantic drift had occurred — ' +
-          'every legal obligation, right, and condition in the original document was preserved in the new version.',
-        agents: [],
-      },
-      {
-        phase: 'Final Approval',
-        heading: 'Ready for delivery',
-        body:
-          'The Meaning Guardian performed a final independent review, running 12 checkpoint tests ' +
-          'comparing original and transformed versions. The verdict: legal meaning fully preserved, ' +
-          'no semantic drift detected. The document was approved for delivery.',
-        agents: ['Meaning Guardian'],
-      },
+    finalOutput:
+      '# Terms of Service \u2014 Redesigned\n\n' +
+      '## TL;DR\n\nThis agreement covers your use of our platform. You keep your data. We keep our platform running. If something goes wrong, our liability is limited to what you paid us. You can leave anytime.\n\n' +
+      '## Key Terms\n\n| Term | Meaning |\n|------|--------|\n| **Service** | The platform and all features you access through your account |\n| **Content** | Anything you upload, create, or store on the platform |\n| **Subscription Period** | The billing cycle you selected (monthly or annual) |\n\n' +
+      '## Your Rights\n\n- You own everything you create on the platform\n- You can export your data at any time\n- You can cancel your subscription at any time\n- We will not sell your personal data to third parties\n\n' +
+      '## Your Obligations\n\n- Use the platform lawfully\n- Keep your login credentials secure\n- Do not attempt to reverse-engineer the platform\n- Respect other users\' content and privacy\n\n' +
+      '## Liability\n\nOur total liability is limited to the fees you paid in the 12 months before the claim arose. We are not liable for indirect or consequential damages. This limitation does not apply to our indemnification obligations or breaches of confidentiality.\n\n' +
+      '## Termination\n\nEither party may terminate this agreement with 30 days written notice. Upon termination, you have 60 days to export your data before it is deleted.\n',
+
+    debateResolutions: [
+      { topic: 'Visual hierarchy severity', resolution: 'Upgraded to RED \u2014 structural issue affects both comprehension and programmatic accessibility.', winningPosition: 'Ethics auditor\'s accessibility argument prevailed \u2014 heading hierarchy is a Level A WCAG failure, not merely cosmetic.', evidenceWeight: 'WCAG 2.1 SC 1.3.1 requirement is dispositive. Screen reader navigation testing confirmed complete failure.', escalationNeeded: false },
+      { topic: 'Transformation quality', resolution: 'All verification checks passed. Document meets readability, accessibility, and accuracy targets.', winningPosition: 'Transformation specialist\'s restructuring and plain language rewrite both validated by cross-verification.', evidenceWeight: 'Three independent verification checks (readability, accessibility, legal-accuracy) all passed.', escalationNeeded: false },
     ],
 
-    // ── Tab 3: The Scorecard ──
-    debate: {
-      findingsCount: 5,
-      challengesCount: 1,
-      resolutionsCount: 1,
-      unresolvedCount: 0,
-    },
-    verification: {
-      resultsCount: 3,
-      passed: 3,
-      failed: 0,
-      confidence: 0.91,
-      breakdown: [
-        { type: 'self', passed: true, confidence: 0.93, label: 'Self-Check' },
-        { type: 'cross', passed: true, confidence: 0.87, label: 'Cross-Check' },
-        { type: 'score', passed: true, confidence: 0.94, label: 'Score-Check' },
-      ],
-    },
-    cost: {
-      accumulated: 4.58,
-      budget: 10.00,
-      remaining: 5.42,
-    },
+    gateDecisions: [
+      { gateType: 'ethics critical', decision: 'approve', summary: 'Three RED findings related to WCAG 2.1 AA compliance, readability, and heading structure. Approved to proceed with remediation.' },
+      { gateType: 'final delivery', decision: 'approve', summary: 'All checks passed. Document meets all targets.' },
+    ],
+
+    verificationChecks: [
+      { type: 'readability', passed: true, label: 'Readability' },
+      { type: 'accessibility', passed: true, label: 'Accessibility' },
+      { type: 'legal-accuracy', passed: true, label: 'Legal Accuracy' },
+    ],
+
+    narrative: [
+      { phase: 'Analysis', heading: 'Three perspectives, three problems', body: 'The engagement began with three specialists examining the document simultaneously. The Design Reviewer identified inconsistent heading structures that disrupted the reading flow. The Plain Language Specialist measured readability at Grade 14.2 \u2014 well above the target of Grade 8. Meanwhile, the Ethics Auditor flagged color contrast ratios that fell short of WCAG 2.1 AA standards, meaning the document was inaccessible to readers with visual impairments.', agents: ['Design Reviewer', 'Plain Language Specialist', 'Ethics Auditor'] },
+      { phase: 'First Review', heading: 'A challenge that changed the outcome', body: 'During the first review round, the Ethics Auditor challenged the Design Reviewer\'s severity assessment of the heading structure issue. The original classification was YELLOW \u2014 important but not critical. The challenge argued that inconsistent headings don\'t just affect aesthetics; they affect comprehension for screen reader users, making this an accessibility issue at its core. The Design Reviewer accepted the challenge, and the finding was upgraded to RED.', agents: ['Ethics Auditor', 'Design Reviewer'], highlight: 'This challenge elevated a visual issue to a structural accessibility concern \u2014 a distinction that changed the transformation approach.' },
+      { phase: 'Ethics Check', heading: 'Flagged for human review', body: 'Two RED findings related to accessibility triggered the ethics gate. The system flagged that these issues affect users with disabilities and readers with lower literacy levels. After review, the decision was to proceed with remediation \u2014 the transformation would need to address both readability and accessibility comprehensively, not as separate fixes.', agents: [], highlight: 'The ethics gate ensured accessibility wasn\'t treated as cosmetic but as a fundamental requirement.' },
+      { phase: 'Transformation', heading: 'Rewriting with precision', body: 'The Transformation Specialist restructured the entire document with a new three-level heading system. The Plain Language Specialist then rewrote the content to Grade 8 reading level, working sentence by sentence to simplify language without altering legal obligations. This was the most time-intensive phase \u2014 every simplification had to preserve exact legal meaning.', agents: ['Transformation Specialist', 'Plain Language Specialist'] },
+      { phase: 'Verification', heading: 'All checks passed', body: 'Three independent verification checks confirmed the transformation met all targets. Readability scored Grade 7.8. Accessibility achieved full WCAG 2.1 AA compliance. Most critically, the legal accuracy verification confirmed that no semantic drift had occurred \u2014 every legal obligation, right, and condition in the original document was preserved in the new version.', agents: [] },
+      { phase: 'Final Approval', heading: 'Ready for delivery', body: 'The Meaning Guardian performed a final independent review, running 12 checkpoint tests comparing original and transformed versions. The verdict: legal meaning fully preserved, no semantic drift detected. The document was approved for delivery.', agents: ['Meaning Guardian'] },
+    ],
+
+    debate: { findingsCount: 5, challengesCount: 1, resolutionsCount: 2, unresolvedCount: 0 },
+    verification: { resultsCount: 3, passed: 3, failed: 0, confidence: 0.91, breakdown: [{ type: 'self', passed: true, confidence: 0.93, label: 'Self-Check' }, { type: 'cross', passed: true, confidence: 0.87, label: 'Cross-Check' }, { type: 'score', passed: true, confidence: 0.94, label: 'Score-Check' }] },
+    cost: { accumulated: 4.58, budget: 10.00, remaining: 5.42 },
     agentPerformance: [
       { name: 'Design Reviewer', role: 'design-reviewer', findingsPosted: 2, challengesSurvived: 0, avgConfidence: 0.87 },
       { name: 'Ethics Auditor', role: 'ethics-auditor', findingsPosted: 1, challengesSurvived: 1, avgConfidence: 0.91 },
@@ -327,43 +375,14 @@ function buildDemoData(sessionId: string): DeliveryData {
     ],
     eventCount: 47,
 
-    // ── Certainty — transparency section ──
-    limitations: {
-      flaggedForHumanReview: [
-        'Jurisdictional nuances for multi-state compliance',
-        'Industry-specific regulatory interpretations',
-      ],
-      confidenceIntervals: 'Overall certainty 91% (range: 87\u201394% across verification dimensions)',
-      disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.',
-    },
+    limitations: { flaggedForHumanReview: ['Jurisdictional nuances for multi-state compliance', 'Industry-specific regulatory interpretations'], confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
 
-    // ── Tab 4: Next Steps ──
     nextSteps: [
-      {
-        label: 'Review the transformed document',
-        description: 'Compare the before and after versions side by side. Pay particular attention to sections where complex legal language was simplified — verify the plain-language version captures your intended meaning.',
-        kind: 'action',
-      },
-      {
-        label: 'Test with your audience',
-        description: 'Share the document with 2-3 representative readers from your target audience. Ask them to explain key obligations in their own words — if they can, the readability improvements are working.',
-        kind: 'action',
-      },
-      {
-        label: 'Update your style guide',
-        description: 'The heading structure and language patterns used in this transformation can serve as a template for future documents. Consider adopting the three-level heading system as your standard.',
-        kind: 'action',
-      },
-      {
-        label: 'Schedule a 90-day review',
-        description: 'Set a reminder to review the document after 90 days of use. Collect feedback from users and identify any sections that cause confusion or questions.',
-        kind: 'schedule',
-      },
-      {
-        label: 'Accessibility testing recommended',
-        description: 'While the document meets WCAG 2.1 AA standards, consider testing with actual assistive technology (screen readers, high-contrast mode) before publishing to your website.',
-        kind: 'watchout',
-      },
+      { label: 'Review the transformed document', description: 'Compare the before and after versions side by side. Pay particular attention to sections where complex legal language was simplified \u2014 verify the plain-language version captures your intended meaning.', kind: 'action' },
+      { label: 'Test with your audience', description: 'Share the document with 2-3 representative readers from your target audience. Ask them to explain key obligations in their own words \u2014 if they can, the readability improvements are working.', kind: 'action' },
+      { label: 'Update your style guide', description: 'The heading structure and language patterns used in this transformation can serve as a template for future documents. Consider adopting the three-level heading system as your standard.', kind: 'action' },
+      { label: 'Schedule a 90-day review', description: 'Set a reminder to review the document after 90 days of use. Collect feedback from users and identify any sections that cause confusion or questions.', kind: 'schedule' },
+      { label: 'Accessibility testing recommended', description: 'While the document meets WCAG 2.1 AA standards, consider testing with actual assistive technology (screen readers, high-contrast mode) before publishing to your website.', kind: 'watchout' },
     ],
   };
 }

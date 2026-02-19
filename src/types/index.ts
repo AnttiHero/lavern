@@ -116,7 +116,7 @@ export interface LegalRequest {
  * Determines which workflow template and specialists to use.
  */
 export interface RouterClassification {
-  requestType: 'direct_answer' | 'single_specialist' | 'multi_specialist' | 'full_pipeline' | 'debate_pattern';
+  requestType: 'direct_answer' | 'single_specialist' | 'multi_specialist' | 'full_pipeline' | 'debate_pattern' | 'adversarial' | 'hierarchical';
   complexity: 'low' | 'medium' | 'high';
   riskLevel: 'low' | 'medium' | 'high';
   selectedWorkflow: string;

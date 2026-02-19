@@ -15,6 +15,8 @@
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { agentDefinitions } from '../agents/definitions.js';
+import { agentProfiles } from '../agents/profiles.js';
+import { getOrchestratorForWorkflow } from './orchestrator-mapping.js';
 import { createShemMcpServer } from '../mcp/server.js';
 import { createAuditHooks, initAuditLog } from '../hooks/audit-logger.js';
 import { createCostHooks } from '../hooks/cost-tracker.js';
@@ -82,7 +84,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   // Create session-bound factories (pass template for generic workflow tools + permissions)
   const shemMcpServer = createShemMcpServer(session, template);
   const { auditLoggerHook, subagentStartHook, subagentStopHook } = createAuditHooks(session);
-  const { costTrackerHook } = createCostHooks(session);
+  const { haltCheckHook, costTrackerHook } = createCostHooks(session);
   const { humanGateEnforcerHook } = createGateHooks(session);
 
   // Build prompt from template + request
@@ -90,9 +92,16 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
   // Filter agent definitions to only those needed by this workflow
   // v8: When a client has selected a team, use those agents instead of template defaults
-  const teamRoles = session.selectedTeam.length > 0
+  // v11: Team size cap is now configurable per template (default 8, full-bench allows 25)
+  const DEFAULT_MAX_TEAM_SIZE = 8;
+  const maxTeamSize = template.maxTeamSize ?? DEFAULT_MAX_TEAM_SIZE;
+  const rawTeamRoles = session.selectedTeam.length > 0
     ? session.selectedTeam
     : template.requiredAgents;
+  const teamRoles = rawTeamRoles.slice(0, maxTeamSize);
+  if (rawTeamRoles.length > maxTeamSize) {
+    console.error(`[TEAM] Capped team from ${rawTeamRoles.length} to ${maxTeamSize} agents`);
+  }
   const filteredAgents: Record<string, typeof agentDefinitions[keyof typeof agentDefinitions]> = {};
   for (const role of teamRoles) {
     if (role in agentDefinitions) {
@@ -105,13 +114,21 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     filteredAgents['evaluator'] = agentDefinitions['evaluator'];
   }
 
+  // v11: Resolve orchestrator personality from profile
+  const orchestratorRole = template.orchestratorArchetype
+    ?? getOrchestratorForWorkflow(template.id);
+  const orchestratorProfile = orchestratorRole ? agentProfiles[orchestratorRole] : undefined;
+  const personalityPrefix = orchestratorProfile
+    ? `\n## Your Orchestrator Personality\nYou are "${orchestratorProfile.displayName}" — ${orchestratorProfile.tagline}\nWork style: ${orchestratorProfile.personality.workStyle}\n\n`
+    : '';
+
   const result = query({
     prompt,
     options: {
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
-        append: template.orchestratorPrompt,
+        append: personalityPrefix + template.orchestratorPrompt,
       },
       allowedTools: template.availableTools,
       agents: filteredAgents,
@@ -124,7 +141,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
           { hooks: [auditLoggerHook] },
         ],
         PreToolUse: [
-          { hooks: [humanGateEnforcerHook, costTrackerHook] },
+          { hooks: [haltCheckHook, humanGateEnforcerHook, costTrackerHook] },
         ],
         SubagentStart: [
           { hooks: [subagentStartHook] },

@@ -92,7 +92,7 @@ Agents: 13 specialists (analysis, legal core, risk, quality, transformation, syn
   // Create session-bound factories
   const shemMcpServer = createShemMcpServer(session);
   const { auditLoggerHook, subagentStartHook, subagentStopHook } = createAuditHooks(session);
-  const { costTrackerHook } = createCostHooks(session);
+  const { haltCheckHook, costTrackerHook } = createCostHooks(session);
   const { humanGateEnforcerHook } = createGateHooks(session);
 
   const prompt = `
@@ -211,7 +211,7 @@ Produce the complete dual-artifact output with full audit trail.
           { hooks: [auditLoggerHook] },
         ],
         PreToolUse: [
-          { hooks: [humanGateEnforcerHook, costTrackerHook] },
+          { hooks: [haltCheckHook, humanGateEnforcerHook, costTrackerHook] },
         ],
         SubagentStart: [
           { hooks: [subagentStartHook] },

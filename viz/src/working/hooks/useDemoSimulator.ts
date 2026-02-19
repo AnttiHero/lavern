@@ -1,14 +1,17 @@
 /**
  * useDemoSimulator — Generates fake ShemEvents on a timer for demo mode.
  *
+ * v11: All events include substantive text content — findings have content
+ * and evidence, challenges have challengeText, responses have responseText,
+ * resolutions have winningPosition and evidenceWeight.
+ *
  * When the session ID starts with "demo-session-", this hook fires
  * a scripted sequence of events so the thinking stream is populated
  * without a live backend.
  */
 
 import { useEffect, useRef } from 'react';
-import type { ShemEvent, WorkflowStep, Severity } from '../../types/events.js';
-import { WORKFLOW_STEPS } from '../../types/events.js';
+import type { ShemEvent, Severity } from '../../types/events.js';
 
 interface DemoSimulatorOptions {
   sessionId: string | undefined;
@@ -63,15 +66,44 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(800, { type: 'cost_update', totalUsd: 0.42, budgetUsd: 10.00, timestamp: ts() });
 
   const f1 = fid();
-  add(1200, { type: 'finding_posted', findingId: f1, agent: a(0), category: 'Visual hierarchy needs restructuring — headings inconsistent', severity: 'YELLOW' as Severity, confidence: 0.87, timestamp: ts() });
+  add(1200, {
+    type: 'finding_posted', findingId: f1, agent: a(0),
+    category: 'Visual Hierarchy',
+    severity: 'YELLOW' as Severity, confidence: 0.87,
+    content: 'Heading structure is inconsistent — H2 and H3 levels are swapped in sections 3 and 5, breaking the document outline. Navigation aids (TOC, bookmarks) will misrepresent the document structure.',
+    evidence: [
+      'Section 3.1 uses H3 "Limitation of Liability" but Section 4.1 uses H2 for equivalent-level "Indemnification"',
+      'PDF bookmarks show flat structure — 12 entries at same level instead of nested hierarchy',
+    ],
+    timestamp: ts(),
+  });
 
   const f2 = fid();
-  add(800, { type: 'finding_posted', findingId: f2, agent: a(2), category: 'Flesch-Kincaid grade level 14.2 — exceeds target of 8', severity: 'RED' as Severity, confidence: 0.93, timestamp: ts() });
+  add(800, {
+    type: 'finding_posted', findingId: f2, agent: a(2),
+    category: 'Readability',
+    severity: 'RED' as Severity, confidence: 0.93,
+    content: 'Flesch-Kincaid grade level 14.2 — exceeds target of Grade 8. Passive voice in 47% of sentences. Average sentence length 34 words (target: 20). The definitions section alone contains three sentences over 80 words.',
+    evidence: [
+      '"The Provider shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from the access to or use of or inability to access or use the Services."',
+    ],
+    timestamp: ts(),
+  });
 
   add(600, { type: 'agent_stop', agentId: `${a(2)}-1`, role: a(2), durationMs: 3400, timestamp: ts() });
 
   const f3 = fid();
-  add(500, { type: 'finding_posted', findingId: f3, agent: a(1), category: 'WCAG 2.1 AA compliance gap in color contrast ratios', severity: 'RED' as Severity, confidence: 0.91, timestamp: ts() });
+  add(500, {
+    type: 'finding_posted', findingId: f3, agent: a(1),
+    category: 'Accessibility',
+    severity: 'RED' as Severity, confidence: 0.91,
+    content: 'WCAG 2.1 AA compliance gap — body text color contrast ratio is 3.8:1 against the background (minimum required: 4.5:1). Three call-to-action elements fail the 3:1 minimum for large text.',
+    evidence: [
+      'Body text #767676 on #FFFFFF background — contrast ratio 4.48:1 fails AA for normal text',
+      'CTA button #B8860B on #FAF9F6 — contrast ratio 3.2:1 fails AA for text under 18pt',
+    ],
+    timestamp: ts(),
+  });
 
   add(400, { type: 'agent_stop', agentId: `${a(0)}-1`, role: a(0), durationMs: 4200, timestamp: ts() });
   add(300, { type: 'agent_stop', agentId: `${a(1)}-1`, role: a(1), durationMs: 4800, timestamp: ts() });
@@ -83,19 +115,39 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
 
   // Challenge on f1
   const c1 = cid();
-  add(800, { type: 'challenge_posted', challengeId: c1, challenger: a(1), targetFindingId: f1, timestamp: ts() });
+  add(800, {
+    type: 'challenge_posted', challengeId: c1, challenger: a(1), targetFindingId: f1,
+    challengeText: 'The heading inconsistency finding understates the severity. In accessibility testing, broken heading hierarchy is a WCAG 2.1 Level A failure (SC 1.3.1 Info and Relationships), not merely a visual issue. Screen reader users cannot navigate the document at all.',
+    evidence: [
+      'WCAG 2.1 SC 1.3.1 requires heading levels to convey document structure programmatically',
+    ],
+    timestamp: ts(),
+  });
 
   const r1 = rid();
-  add(1000, { type: 'response_posted', responseId: r1, responder: a(0), challengeId: c1, accepted: true, timestamp: ts() });
+  add(1000, {
+    type: 'response_posted', responseId: r1, responder: a(0), challengeId: c1, accepted: true,
+    responseText: 'Accepted — the accessibility impact was underweighted. Revising severity from YELLOW to RED. The heading structure issue is both a visual design problem and a programmatic accessibility failure.',
+    revisedPosition: 'Upgrade to RED severity. Heading restructuring must be completed before any other transformations to establish correct document outline for screen readers.',
+    timestamp: ts(),
+  });
 
-  add(600, { type: 'debate_resolved', resolutionId: resid(), topic: 'Visual hierarchy severity', resolution: 'Upgraded to RED — structural issue affects comprehension', confidence: 0.89, timestamp: ts() });
+  add(600, {
+    type: 'debate_resolved', resolutionId: resid(), topic: 'Visual hierarchy severity',
+    resolution: 'Upgraded to RED — structural issue affects both comprehension and programmatic accessibility.',
+    confidence: 0.89,
+    winningPosition: 'Ethics auditor\'s accessibility argument prevailed — heading hierarchy is a Level A WCAG failure, not merely cosmetic.',
+    evidenceWeight: 'WCAG 2.1 SC 1.3.1 requirement is dispositive. Screen reader navigation testing confirmed complete failure.',
+    escalationNeeded: false,
+    timestamp: ts(),
+  });
 
   add(400, { type: 'cost_update', totalUsd: 1.85, budgetUsd: 10.00, timestamp: ts() });
 
   // ── Phase: Ethics Check ──
   add(500, { type: 'workflow_step', step: 'ethics_gate', previousStep: 'debate_1', timestamp: ts() });
 
-  add(800, { type: 'gate_requested', gateType: 'ethics_critical', summary: 'Accessibility violations require human review', details: 'Two RED findings related to WCAG 2.1 AA compliance and readability levels above target grade. These affect document accessibility for users with disabilities and low literacy.', timestamp: ts() });
+  add(800, { type: 'gate_requested', gateType: 'ethics_critical', summary: 'Accessibility violations require human review', details: 'Three RED findings related to WCAG 2.1 AA compliance, readability levels above target grade, and heading structure. These affect document accessibility for users with disabilities and low literacy.', timestamp: ts() });
 
   // Auto-decide gate after a pause
   add(2500, { type: 'gate_decided', gateType: 'ethics_critical', decision: 'approve', notes: 'Proceed with remediation', timestamp: ts() });
@@ -108,11 +160,51 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
 
   add(1500, { type: 'cost_update', totalUsd: 2.94, budgetUsd: 10.00, timestamp: ts() });
 
-  const f4 = fid();
-  add(1200, { type: 'finding_posted', findingId: f4, agent: a(3 % agents.length), category: 'New heading structure applied — 3 levels, consistent styling', severity: 'GREEN' as Severity, confidence: 0.95, timestamp: ts() });
+  // Quality check — fail first attempt
+  add(800, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: false,
+    score: 0.62,
+    iteration: 1,
+    failureReasons: [
+      'Three passive voice constructions remain in the indemnification clause',
+      'Section 5.2 sentence length averages 28 words — still above 20-word target',
+    ],
+    revisionGuidance: [
+      'Convert "shall be indemnified by" to active voice: "Provider shall indemnify"',
+      'Split compound sentences in Section 5.2 at conjunction points',
+    ],
+    timestamp: ts(),
+  });
 
-  add(800, { type: 'agent_stop', agentId: `${a(3 % agents.length)}-1`, role: a(3 % agents.length), durationMs: 3800, timestamp: ts() });
-  add(600, { type: 'agent_stop', agentId: `${a(2)}-2`, role: a(2), durationMs: 4200, timestamp: ts() });
+  // Quality check — pass second attempt
+  add(1200, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: true,
+    score: 0.91,
+    iteration: 2,
+    failureReasons: [],
+    revisionGuidance: [],
+    timestamp: ts(),
+  });
+
+  const f4 = fid();
+  add(800, {
+    type: 'finding_posted', findingId: f4, agent: a(3 % agents.length),
+    category: 'Structure',
+    severity: 'GREEN' as Severity, confidence: 0.95,
+    content: 'New heading structure applied — 3 levels, consistent H1/H2/H3 nesting throughout. PDF bookmarks now show correct nested hierarchy. Flesch-Kincaid reduced to Grade 7.8.',
+    evidence: [
+      'Automated outline check: 0 violations (was: 7)',
+      'Readability score improved from 14.2 to 7.8 — below Grade 8 target',
+    ],
+    timestamp: ts(),
+  });
+
+  add(800, { type: 'agent_stop', agentId: `${a(3 % agents.length)}-1`, role: a(3 % agents.length), durationMs: 5800, timestamp: ts() });
+  add(600, { type: 'agent_stop', agentId: `${a(2)}-2`, role: a(2), durationMs: 6200, timestamp: ts() });
 
   // ── Phase: Verification ──
   add(400, { type: 'workflow_step', step: 'parallel_verification', previousStep: 'transformation', timestamp: ts() });
@@ -126,7 +218,15 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Second Review ──
   add(400, { type: 'workflow_step', step: 'debate_2', previousStep: 'parallel_verification', timestamp: ts() });
 
-  add(800, { type: 'debate_resolved', resolutionId: resid(), topic: 'Transformation quality', resolution: 'All verification checks passed. Document meets targets.', confidence: 0.93, timestamp: ts() });
+  add(800, {
+    type: 'debate_resolved', resolutionId: resid(), topic: 'Transformation quality',
+    resolution: 'All verification checks passed. Document meets readability, accessibility, and accuracy targets.',
+    confidence: 0.93,
+    winningPosition: 'Transformation specialist\'s restructuring and plain language rewrite both validated by cross-verification.',
+    evidenceWeight: 'Three independent verification checks (readability, accessibility, legal-accuracy) all passed with >88% confidence.',
+    escalationNeeded: false,
+    timestamp: ts(),
+  });
 
   // ── Phase: Meaning Check ──
   add(400, { type: 'workflow_step', step: 'meaning_gate', previousStep: 'debate_2', timestamp: ts() });
@@ -134,7 +234,17 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(300, { type: 'agent_start', agentId: `${a(4 % agents.length)}-1`, role: a(4 % agents.length), task: 'Verifying legal meaning preserved after transformation', timestamp: ts() });
 
   const f5 = fid();
-  add(1200, { type: 'finding_posted', findingId: f5, agent: a(4 % agents.length), category: 'Legal meaning fully preserved — no semantic drift detected', severity: 'GREEN' as Severity, confidence: 0.96, timestamp: ts() });
+  add(1200, {
+    type: 'finding_posted', findingId: f5, agent: a(4 % agents.length),
+    category: 'Meaning Preservation',
+    severity: 'GREEN' as Severity, confidence: 0.96,
+    content: 'Legal meaning fully preserved — no semantic drift detected. All obligations, rights, conditions, and definitions map 1:1 between source and transformed document. Defined terms used consistently.',
+    evidence: [
+      'Clause-by-clause comparison: 47/47 clauses semantically equivalent',
+      'Defined terms: 23/23 consistent usage, no orphaned or conflicting definitions',
+    ],
+    timestamp: ts(),
+  });
 
   add(600, { type: 'agent_stop', agentId: `${a(4 % agents.length)}-1`, role: a(4 % agents.length), durationMs: 2100, timestamp: ts() });
 

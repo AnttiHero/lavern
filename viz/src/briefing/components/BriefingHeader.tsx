@@ -6,11 +6,17 @@ import { ProgressStepper, type BriefingPhase } from './ProgressStepper.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 const WORKFLOW_LABELS: Record<string, string> = {
-  'legal-design': 'Document Review',
-  'contract-review': 'Contract Review',
-  'research-memo': 'Research Memo',
-  'simple-query': 'Advisory',
+  'counsel': 'Counsel',
+  'review': 'Review',
+  'adversarial': 'Adversarial',
+  'roundtable': 'Roundtable',
+  'full-bench': 'Full Bench',
   'pre-engagement': 'Client Onboarding',
+  // Backward-compatible aliases for old workflow IDs
+  'legal-design': 'Roundtable',
+  'contract-review': 'Review',
+  'research-memo': 'Adversarial',
+  'simple-query': 'Counsel',
 };
 
 interface Props {

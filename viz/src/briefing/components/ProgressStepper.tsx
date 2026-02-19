@@ -1,32 +1,51 @@
 /**
  * ProgressStepper — 4-step horizontal indicator.
- * Documents → Interviewer → Questions → Memo
+ *
+ * Internal phases: documents → interviewer → questions → followups → instructions → brief
+ * Visual steps: Documents → Interviewer → Questions → Brief
+ *
+ * Phases 'questions' and 'followups' map to stepper step "Questions".
+ * Phases 'instructions' and 'brief' map to stepper step "Brief".
  */
 
 import { colors, fonts } from '../../staffing/styles/tokens.js';
 
-export type BriefingPhase = 'documents' | 'interviewer' | 'questions' | 'memo';
+export type BriefingPhase =
+  | 'documents'
+  | 'interviewer'
+  | 'questions'
+  | 'followups'
+  | 'instructions'
+  | 'brief'
+  // Legacy alias
+  | 'memo';
 
-const STEPS: { phase: BriefingPhase; label: string }[] = [
-  { phase: 'documents', label: 'Documents' },
-  { phase: 'interviewer', label: 'Interviewer' },
-  { phase: 'questions', label: 'Questions' },
-  { phase: 'memo', label: 'Memo' },
+interface StepDef {
+  id: string;
+  label: string;
+  phases: BriefingPhase[];
+}
+
+const STEPS: StepDef[] = [
+  { id: 'documents', label: 'Documents', phases: ['documents'] },
+  { id: 'interviewer', label: 'Interviewer', phases: ['interviewer'] },
+  { id: 'questions', label: 'Questions', phases: ['questions', 'followups'] },
+  { id: 'brief', label: 'Brief', phases: ['instructions', 'brief', 'memo'] },
 ];
 
-const phaseOrder: Record<BriefingPhase, number> = {
-  documents: 0,
-  interviewer: 1,
-  questions: 2,
-  memo: 3,
-};
+function phaseToStepIndex(phase: BriefingPhase): number {
+  for (let i = 0; i < STEPS.length; i++) {
+    if (STEPS[i].phases.includes(phase)) return i;
+  }
+  return 0;
+}
 
 interface Props {
   currentPhase: BriefingPhase;
 }
 
 export function ProgressStepper({ currentPhase }: Props) {
-  const currentIdx = phaseOrder[currentPhase];
+  const currentIdx = phaseToStepIndex(currentPhase);
 
   return (
     <div style={styles.container}>
@@ -45,7 +64,7 @@ export function ProgressStepper({ currentPhase }: Props) {
             : colors.textDim;
 
         return (
-          <div key={step.phase} style={styles.stepGroup}>
+          <div key={step.id} style={styles.stepGroup}>
             {/* Connecting line before (except first) */}
             {i > 0 && (
               <div

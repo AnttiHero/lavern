@@ -30,14 +30,14 @@ export function useSmartSuggestions(
 
     // ── Document suggestions ──────────────────────────────────────────
     if (documents.length === 0) {
-      if (workflowId === 'contract-review') {
+      if (workflowId === 'review' || workflowId === 'contract-review') {
         suggestions.push({
           id: 'upload-contract',
           label: 'Upload the contract',
           description: 'Upload the contract for deeper clause-by-clause analysis',
           action: 'add-document',
         });
-      } else if (workflowId === 'legal-design') {
+      } else if (workflowId === 'roundtable' || workflowId === 'legal-design') {
         suggestions.push({
           id: 'upload-document',
           label: 'Upload the document',
@@ -87,7 +87,7 @@ export function useSmartSuggestions(
     }
 
     // Audience-specific suggestions for document review
-    if (workflowId === 'legal-design') {
+    if (workflowId === 'roundtable' || workflowId === 'legal-design') {
       const audience = answers['audience'] ?? '';
       if (/consumer|customer|public/i.test(audience) && !answers['pain-points']?.trim()) {
         suggestions.push({

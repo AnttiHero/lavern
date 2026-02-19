@@ -14,8 +14,8 @@ describe('BriefingView', () => {
       <BriefingView onComplete={noop} onBack={noop} />
     );
 
-    // BriefingHeader renders "Brief: <matterTitle>" or "Brief the Matter"
-    expect(screen.getByText(/Brief/)).toBeInTheDocument();
+    // BriefingHeader renders "Marble Briefing"
+    expect(screen.getByText(/Briefing/)).toBeInTheDocument();
   });
 
   it('starts in documents phase', () => {

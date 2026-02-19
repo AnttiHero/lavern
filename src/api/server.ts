@@ -31,6 +31,9 @@ import { registerReplayRoutes } from './routes/replay.js';
 import { registerMatterRoutes } from './routes/matters.js';
 import { registerAgentRoutes } from './routes/agents.js';
 import { registerWorkflowRoutes } from './routes/workflows.js';
+import { registerBriefingRoutes } from './routes/briefing.js';
+import { registerEngageRoutes } from './routes/engage.js';
+import { registerCapabilitiesRoutes } from './routes/capabilities.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { config } from '../config.js';
 
@@ -81,6 +84,9 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/matters/*',    // Accept engagement, team selection
     'GET /api/agents/*',      // Agent profiles, presets, and recommendations
     'GET /api/workflows',     // Workflow templates for engagement configurator
+    'POST /api/briefing/*',   // Briefing analysis for intake
+    // v10: Agent API — public discovery endpoints
+    'GET /api/capabilities',  // Machine-readable service manifest
     '/dashboard/',            // Frontend static files (prefix match — trailing /)
   ]);
   fastify.addHook('onRequest', authMiddleware);
@@ -136,6 +142,10 @@ export async function startApiServer(port: number): Promise<void> {
         get: 'GET /api/clients/:id',
         list: 'GET /api/clients',
       },
+      agentApi: {
+        capabilities: 'GET /api/capabilities',
+        engage: 'POST /api/engage',
+      },
       health: 'GET /health',
     },
   }));
@@ -149,6 +159,11 @@ export async function startApiServer(port: number): Promise<void> {
   registerAgentRoutes(fastify);
   // v9: Engagement configurator
   registerWorkflowRoutes(fastify);
+  // v10: LLM-powered briefing analysis
+  registerBriefingRoutes(fastify);
+  // v10: Agent API — engage endpoint + capabilities manifest
+  registerEngageRoutes(fastify, sessionManager);
+  registerCapabilitiesRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

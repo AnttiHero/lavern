@@ -29,8 +29,15 @@ export function initAuditLog(session: SessionState): void {
  * Create all audit hooks bound to a specific session.
  */
 export function createAuditHooks(session: SessionState) {
+  // Queue of pending Task tool calls — maps subagent_type + prompt from the
+  // PreToolUse/PostToolUse "Task" call to the SubagentStart that follows.
+  // The SDK fires PostToolUse(Task) → SubagentStart in sequence, so a simple
+  // FIFO queue reliably pairs them.
+  const pendingTaskCalls: Array<{ role: string; task: string }> = [];
+
   /**
    * PostToolUse hook — logs every tool invocation to both memory and disk.
+   * Also captures Task tool calls to extract the real agent role name.
    */
   const auditLoggerHook = async (
     input: HookInput,
@@ -40,6 +47,17 @@ export function createAuditHooks(session: SessionState) {
     const toolName = 'tool_name' in input ? input.tool_name : undefined;
     const toolInput = 'tool_input' in input ? input.tool_input : undefined;
     const toolResponse = 'tool_response' in input ? input.tool_response : undefined;
+
+    // Capture Task tool calls to extract the real subagent role name + prompt.
+    // The SDK only reports "general-purpose" as agent_type in SubagentStart,
+    // but the Task tool_input contains the actual subagent_type from our definitions.
+    if (toolName === 'Task' && toolInput && typeof toolInput === 'object') {
+      const ti = toolInput as Record<string, unknown>;
+      const role = typeof ti.subagent_type === 'string' ? ti.subagent_type : '';
+      const task = typeof ti.prompt === 'string' ? ti.prompt.slice(0, 200) : '';
+      const desc = typeof ti.description === 'string' ? ti.description : '';
+      pendingTaskCalls.push({ role: role || 'unknown', task: desc || task });
+    }
 
     const entry: AuditEntry = {
       timestamp: new Date().toISOString(),
@@ -71,14 +89,21 @@ export function createAuditHooks(session: SessionState) {
 
   /**
    * SubagentStart hook — tracks when a specialist agent begins work.
+   * Resolves the real role name from the pending Task call queue.
    */
   const subagentStartHook = async (
     input: HookInput,
     _toolUseId: string | undefined,
     _options: { signal: AbortSignal }
   ): Promise<HookJSONOutput> => {
-    const agentName = 'agent_name' in input ? (input.agent_name as string) : 'unknown';
     const agentId = 'agent_id' in input ? (input.agent_id as string) : `agent-${Date.now()}`;
+
+    // Resolve the real role name: prefer the Task tool call queue (accurate),
+    // fall back to SDK's agent_type (usually "general-purpose").
+    const pending = pendingTaskCalls.shift();
+    const agentName = pending?.role
+      || ('agent_type' in input ? (input.agent_type as string) : 'unknown');
+    const taskDescription = pending?.task || '';
 
     session.activeSubagents.set(agentId, {
       role: agentName,
@@ -98,12 +123,12 @@ export function createAuditHooks(session: SessionState) {
       type: 'agent_start',
       agentId,
       role: agentName,
-      task: '', // Task detail not available from hook input
+      task: taskDescription,
       timestamp: eventTimestamp(),
     });
 
     if (process.env.SHEM_LOG_LEVEL === 'debug') {
-      process.stderr.write(`[AUDIT] Subagent started: ${agentName} (${agentId})\n`);
+      process.stderr.write(`[AUDIT] Subagent started: ${agentName} (${agentId}) — ${taskDescription.slice(0, 80)}\n`);
     }
 
     return { continue: true };
@@ -111,23 +136,26 @@ export function createAuditHooks(session: SessionState) {
 
   /**
    * SubagentStop hook — tracks when a specialist agent finishes.
+   * Uses the role name stored at start time (from the resolved queue).
    */
   const subagentStopHook = async (
     input: HookInput,
     _toolUseId: string | undefined,
     _options: { signal: AbortSignal }
   ): Promise<HookJSONOutput> => {
-    const agentName = 'agent_name' in input ? (input.agent_name as string) : 'unknown';
     const agentId = 'agent_id' in input ? (input.agent_id as string) : '';
 
+    // Use the role stored at start time (already resolved from Task queue)
     const startInfo = session.activeSubagents.get(agentId);
+    const agentName = startInfo?.role
+      || ('agent_type' in input ? (input.agent_type as string) : 'unknown');
     const stoppedAt = new Date().toISOString();
     const durationMs = startInfo
       ? new Date(stoppedAt).getTime() - new Date(startInfo.startedAt).getTime()
       : 0;
 
     const activity: SubagentActivity = {
-      agentRole: (startInfo?.role || agentName) as SubagentActivity['agentRole'],
+      agentRole: agentName as SubagentActivity['agentRole'],
       startedAt: startInfo?.startedAt || stoppedAt,
       stoppedAt,
       durationMs,

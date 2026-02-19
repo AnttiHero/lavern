@@ -117,6 +117,12 @@ export interface GenericStepDefinition {
   requiresEvaluatorGate?: boolean;
   /** Max revision loops for evaluator gate failures (default: 2) */
   maxRevisionLoops?: number;
+  /** v11: Max quality check iterations for this step (default: 2). 0 = no quality check. */
+  maxIterations?: number;
+  /** v11: What kind of quality check — self (orchestrator re-evaluates), peer (another agent checks), evaluator (formal evaluator agent) */
+  qualityCheckType?: 'self' | 'peer' | 'evaluator';
+  /** v11: Which agent performs the quality check (required if qualityCheckType is 'peer' or 'evaluator') */
+  qualityCheckerRole?: string;
 }
 
 /**
@@ -139,6 +145,10 @@ export interface WorkflowTemplate {
   orchestratorPrompt: string;
   /** Phase-based permission deny rules (optional — uses template-specific rules) */
   phasePermissions?: Record<string, { denyTools: string[]; reason: string }>;
+  /** Maximum team size for this workflow (default: 8). Patterns like full-bench need more agents. */
+  maxTeamSize?: number;
+  /** Orchestrator archetype key — maps to an orchestrator profile for personality injection */
+  orchestratorArchetype?: string;
 }
 
 /**
@@ -152,6 +162,10 @@ export interface GenericWorkflowState {
   gateDecisions: Record<string, 'approved' | 'rejected' | 'skipped'>;
   evaluatorResults: EvaluatorResult[];
   revisionCount: number;
+  /** v11: Quality check results across all steps */
+  qualityChecks: QualityCheckResult[];
+  /** v11: Per-step iteration counts (keyed by step name) */
+  stepIterationCounts: Record<string, number>;
   startedAt: string;
   lastTransitionAt: string;
 }
@@ -165,5 +179,21 @@ export interface EvaluatorResult {
   failureReasons: string[];
   score: number;
   revisionNumber: number;
+  timestamp: string;
+}
+
+/**
+ * v11: Result from a quality check iteration.
+ * Generalized version of EvaluatorResult — works at any step, not just evaluator gates.
+ */
+export interface QualityCheckResult {
+  step: string;
+  checkType: 'self' | 'peer' | 'evaluator';
+  checkerRole?: string;
+  iteration: number;
+  passed: boolean;
+  score: number;
+  failureReasons: string[];
+  revisionGuidance: string[];
   timestamp: string;
 }

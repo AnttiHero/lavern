@@ -54,8 +54,9 @@ const DeliveryView = lazy(() => import('./delivery/DeliveryView.js'));
 const BillingView = lazy(() => import('./billing/BillingView.js'));
 const MyPageView = lazy(() => import('./my-page/MyPageView.js'));
 const MyCasesView = lazy(() => import('./my-cases/MyCasesView.js'));
+const AgentDocsView = lazy(() => import('./agent-docs/AgentDocsView.js'));
 
-type AppView = 'landing' | 'dashboard' | 'intake' | 'briefing' | 'staffing' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases';
+type AppView = 'landing' | 'dashboard' | 'intake' | 'briefing' | 'staffing' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -68,6 +69,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/billing')) return 'billing';
   if (hash.startsWith('#/my-cases')) return 'my-cases';
   if (hash.startsWith('#/my-page')) return 'my-page';
+  if (hash.startsWith('#/agent-docs')) return 'agent-docs';
   return 'landing';
 }
 
@@ -221,18 +223,23 @@ export function App() {
     const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
-    let config = { workflowId: 'simple-query', intensity: 'standard', budgetUsd: 10, yoloMode: false };
+    let config = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false };
     try { if (configStr) config = JSON.parse(configStr); } catch { /* use defaults */ }
 
     // Store team for downstream
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(roles));
 
     const WORKFLOW_TYPE_MAP: Record<string, string> = {
+      'roundtable': 'document_redesign',
+      'review': 'contract_review',
+      'adversarial': 'legal_research',
+      'counsel': 'legal_question',
+      'pre-engagement': 'general',
+      // Backward-compatible aliases for old workflow IDs
       'legal-design': 'document_redesign',
       'contract-review': 'contract_review',
       'research-memo': 'legal_research',
       'simple-query': 'legal_question',
-      'pre-engagement': 'general',
     };
 
     try {
@@ -411,6 +418,16 @@ export function App() {
     );
   }
 
+  // ── Agent Docs — API documentation for agent clients ───────────────────
+  if (view === 'agent-docs') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
+        {showMark && <MarbleMark />}
+        <AgentDocsView onBack={() => { window.location.hash = ''; }} />
+      </Suspense>
+    );
+  }
+
   // ── Dashboard — sessions hub (the old "landing") ──────────────────────
   if (view === 'dashboard') {
     return (
@@ -441,6 +458,7 @@ export function App() {
       <LandingView
         onEnter={() => { window.location.hash = '#/dashboard'; }}
         onMyPage={() => { window.location.hash = '#/my-page'; }}
+        onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
       />
     </Suspense>
   );

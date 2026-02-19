@@ -1,5 +1,7 @@
 /**
  * ResolutionCard — Debate resolution summary card.
+ *
+ * v11: Shows winning position, evidence weight, and escalation warning.
  */
 
 import type { StreamCard } from '../hooks/useWorkingState.js';
@@ -21,9 +23,28 @@ export function ResolutionCard({ card }: ResolutionCardProps) {
         <span style={styles.icon}>{'\u2713'}</span>
         <span style={styles.label}>Resolved</span>
         <span style={styles.topic}>{card.topic}</span>
+        {card.escalationNeeded && (
+          <span style={styles.escalationBadge}>Escalation needed</span>
+        )}
         <span style={styles.time}>{time}</span>
       </div>
+
       <div style={styles.resolution}>{card.resolution}</div>
+
+      {/* Winning position and evidence weight */}
+      {card.winningPosition && (
+        <div style={styles.detailRow}>
+          <span style={styles.detailLabel}>Position:</span>
+          <span style={styles.detailText}>{card.winningPosition}</span>
+        </div>
+      )}
+      {card.evidenceWeight && (
+        <div style={styles.detailRow}>
+          <span style={styles.detailLabel}>Evidence:</span>
+          <span style={styles.detailText}>{card.evidenceWeight}</span>
+        </div>
+      )}
+
       <div style={styles.confidence}>
         Confidence: {confidencePct}%
       </div>
@@ -64,6 +85,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textSecondary,
     flex: 1,
   },
+  escalationBadge: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    color: colors.danger,
+    backgroundColor: 'rgba(196, 93, 62, 0.1)',
+    padding: '2px 8px',
+    borderRadius: radii.pill,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase' as const,
+  },
   time: {
     fontSize: 10,
     color: colors.textDim,
@@ -77,6 +109,29 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textSecondary,
     lineHeight: '1.5',
     paddingLeft: 18,
+    marginBottom: 6,
+  },
+  detailRow: {
+    display: 'flex',
+    gap: 6,
+    paddingLeft: 18,
+    marginBottom: 2,
+  },
+  detailLabel: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.3,
+    flexShrink: 0,
+  },
+  detailText: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 400,
+    color: colors.textSecondary,
+    lineHeight: '1.4',
   },
   confidence: {
     fontSize: 10,

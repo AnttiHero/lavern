@@ -20,6 +20,7 @@ import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 interface Props {
   onEnter: () => void;
   onMyPage: () => void;
+  onAgentDocs?: () => void;
 }
 
 // ── Marble Logo — Typography wordmark ────────────────────────────────────
@@ -224,7 +225,7 @@ function HoverText({
   );
 }
 
-export default function LandingView({ onEnter, onMyPage }: Props) {
+export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   const [ready, setReady] = useState(false);
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -312,6 +313,14 @@ export default function LandingView({ onEnter, onMyPage }: Props) {
           animation: 'marbleFadeIn 0.8s ease 2.4s both',
         }}
       >
+        {onAgentDocs && (
+          <ShimmerButton
+            onClick={onAgentDocs}
+            style={styles.agentApiBtn}
+          >
+            Agent API {'\u2192'}
+          </ShimmerButton>
+        )}
         <ShimmerButton
           onClick={onMyPage}
           style={styles.myPageBtn}
@@ -450,9 +459,23 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: '28px 36px',
     zIndex: 10,
+  },
+  agentApiBtn: {
+    backgroundColor: 'transparent',
+    border: `1.5px solid ${colors.text}`,
+    borderRadius: radii.sm,
+    color: colors.text,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    padding: '8px 20px',
+    cursor: 'none',
+    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
   },
   myPageBtn: {
     backgroundColor: 'transparent',

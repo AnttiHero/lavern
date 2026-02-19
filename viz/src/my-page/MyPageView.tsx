@@ -22,10 +22,11 @@ interface Props {
 // ── Workflow options ────────────────────────────────────────────────────
 
 const WORKFLOW_OPTIONS = [
-  { value: 'simple-query', label: 'Advisory' },
-  { value: 'contract-review', label: 'Contract Review' },
-  { value: 'research-memo', label: 'Research Memo' },
-  { value: 'legal-design', label: 'Document Review' },
+  { value: 'counsel', label: 'Counsel' },
+  { value: 'review', label: 'Review' },
+  { value: 'adversarial', label: 'Adversarial' },
+  { value: 'roundtable', label: 'Roundtable' },
+  { value: 'full-bench', label: 'Full Bench' },
   { value: 'pre-engagement', label: 'Pre-Engagement' },
 ];
 

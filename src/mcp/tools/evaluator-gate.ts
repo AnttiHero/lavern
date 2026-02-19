@@ -99,6 +99,7 @@ After the evaluator completes, call \`record_evaluation_result\` with the result
         passed: args.passed,
         score: args.score,
         step: args.step,
+        failureReasons: args.failure_reasons ?? [],
         timestamp: eventTimestamp(),
       });
 

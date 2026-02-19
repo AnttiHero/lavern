@@ -17,7 +17,7 @@ export const DEMO_MATTER_DATA = {
 };
 
 export const DEMO_BRIEFING_CONFIG = {
-  workflowId: 'legal-design',
+  workflowId: 'roundtable',
   intensity: 'standard',
   budgetUsd: 10,
   yoloMode: false,

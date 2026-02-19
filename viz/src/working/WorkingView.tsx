@@ -8,7 +8,7 @@
  * Data: WebSocket events processed by useWorkingState into stream cards.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useStreamFilter } from './hooks/useStreamFilter.js';
@@ -56,6 +56,23 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     [dismissGate]
   );
 
+  const [halting, setHalting] = useState(false);
+  const handleHalt = useCallback(async () => {
+    if (!state.sessionId || halting) return;
+    setHalting(true);
+    try {
+      await fetch(`/api/sessions/${state.sessionId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Emergency stop by user' }),
+      });
+    } catch (e) {
+      console.error('[HALT] Failed to halt session:', e);
+    } finally {
+      setHalting(false);
+    }
+  }, [state.sessionId, halting]);
+
   // Compute running certainty from verification stream cards
   const runningCertainty = useMemo(() => {
     const verifications = state.streamCards.filter(
@@ -82,6 +99,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         onResume={resume}
         onSetSpeed={setSpeed}
         onDisconnect={disconnect}
+        onHalt={handleHalt}
         onConnectSession={connectToSession}
         onBack={onBack}
         onSkip={onSkip}

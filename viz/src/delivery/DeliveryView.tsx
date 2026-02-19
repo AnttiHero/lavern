@@ -2,8 +2,8 @@
  * DeliveryView — Tabbed editorial delivery screen.
  *
  * Five tabs present the work product as a professional handoff:
- *   1. Certainty   — hero certainty score, verification breakdown, transparency
- *   2. The Work    — primary deliverable with executive summary
+ *   1. The Work    — primary deliverable with executive summary + downloads
+ *   2. The Review  — process transparency: what was checked, debated, escalated
  *   3. The Story   — storified project narrative
  *   4. The Scorecard — quality metrics and team performance
  *   5. Next Steps  — implementation guide and watch-outs
@@ -14,15 +14,14 @@
 
 import { useState } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { ConfidenceSignal } from '../shared/ConfidenceSignal.js';
 import { useDeliveryData } from './hooks/useDeliveryData.js';
 import { DeliveryHeader } from './components/DeliveryHeader.js';
 import { TabBar, type DeliveryTab } from './components/TabBar.js';
 import { TheWorkTab } from './components/TheWorkTab.js';
+import { ReviewTab } from './components/ReviewTab.js';
 import { TheStoryTab } from './components/TheStoryTab.js';
 import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
-import { CertaintyDashboard } from './components/CertaintyDashboard.js';
 
 interface Props {
   onContinue: () => void;
@@ -67,19 +66,10 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
         <>
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {activeTab === 'certainty' && <CertaintyDashboard data={data} />}
           {activeTab === 'work' && <TheWorkTab data={data} />}
+          {activeTab === 'review' && <ReviewTab data={data} />}
           {activeTab === 'story' && <TheStoryTab data={data} />}
-          {activeTab === 'scorecard' && (
-            <>
-              <div style={{ marginBottom: spacing.lg }}>
-                <ConfidenceSignal
-                  message={`This result exceeds the quality baseline for ${matterInfo.matterType?.replace(/_/g, ' ') ?? 'this engagement'}.`}
-                />
-              </div>
-              <TheScorecardTab data={data} />
-            </>
-          )}
+          {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
           {activeTab === 'next-steps' && <NextStepsTab data={data} />}
         </>
       )}

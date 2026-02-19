@@ -25,21 +25,14 @@ export type StreamCard =
   | { kind: 'workflow_step'; step: WorkflowStep; previousStep: WorkflowStep; timestamp: string }
   | { kind: 'agent_start'; agentId: string; role: string; task: string; timestamp: string }
   | { kind: 'agent_stop'; agentId: string; role: string; durationMs: number; timestamp: string }
-  | { kind: 'finding'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; timestamp: string; threads: DebateEntry[] }
-  | { kind: 'resolution'; resolutionId: string; topic: string; resolution: string; confidence: number; timestamp: string }
+  | { kind: 'finding'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; content: string; evidence: string[]; timestamp: string }
+  | { kind: 'challenge'; challengeId: string; challenger: string; targetFindingId: string; challengeText: string; evidence: string[]; timestamp: string }
+  | { kind: 'response'; responseId: string; responder: string; challengeId: string; accepted: boolean; responseText: string; revisedPosition?: string; timestamp: string }
+  | { kind: 'resolution'; resolutionId: string; topic: string; resolution: string; confidence: number; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; timestamp: string }
   | { kind: 'gate'; gateType: string; summary: string; details: string; timestamp: string; decided?: boolean; decision?: string }
   | { kind: 'verification'; verificationType: string; passed: boolean; confidence: number; timestamp: string }
+  | { kind: 'quality_check'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string }
   | { kind: 'error'; message: string; source?: string; timestamp: string };
-
-export interface DebateEntry {
-  type: 'challenge' | 'response';
-  id: string;
-  agent: string;
-  targetFindingId?: string;
-  challengeId?: string;
-  accepted?: boolean;
-  timestamp: string;
-}
 
 export interface WorkingState {
   connectionStatus: ConnectionStatus;
@@ -294,8 +287,6 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   const streamCards = useMemo(() => {
     const cards: StreamCard[] = [];
-    // Track findings for threading
-    const findingCardIndices = new Map<string, number>();
 
     for (const event of events) {
       switch (event.type) {
@@ -328,9 +319,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           });
           break;
 
-        case 'finding_posted': {
-          const idx = cards.length;
-          findingCardIndices.set(event.findingId, idx);
+        case 'finding_posted':
           cards.push({
             kind: 'finding',
             findingId: event.findingId,
@@ -338,52 +327,36 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
             category: event.category,
             severity: event.severity,
             confidence: event.confidence,
+            content: event.content ?? '',
+            evidence: event.evidence ?? [],
             timestamp: event.timestamp,
-            threads: [],
           });
           break;
-        }
 
-        case 'challenge_posted': {
-          // Try to thread under the parent finding
-          const parentIdx = findingCardIndices.get(event.targetFindingId);
-          if (parentIdx != null) {
-            const parent = cards[parentIdx];
-            if (parent.kind === 'finding') {
-              parent.threads.push({
-                type: 'challenge',
-                id: event.challengeId,
-                agent: event.challenger,
-                targetFindingId: event.targetFindingId,
-                timestamp: event.timestamp,
-              });
-            }
-          }
+        case 'challenge_posted':
+          cards.push({
+            kind: 'challenge',
+            challengeId: event.challengeId,
+            challenger: event.challenger,
+            targetFindingId: event.targetFindingId,
+            challengeText: event.challengeText ?? '',
+            evidence: event.evidence ?? [],
+            timestamp: event.timestamp,
+          });
           break;
-        }
 
-        case 'response_posted': {
-          // Find the finding that owns this challenge
-          for (const card of cards) {
-            if (card.kind === 'finding') {
-              const challenge = card.threads.find(
-                t => t.type === 'challenge' && t.id === event.challengeId
-              );
-              if (challenge) {
-                card.threads.push({
-                  type: 'response',
-                  id: event.responseId,
-                  agent: event.responder,
-                  challengeId: event.challengeId,
-                  accepted: event.accepted,
-                  timestamp: event.timestamp,
-                });
-                break;
-              }
-            }
-          }
+        case 'response_posted':
+          cards.push({
+            kind: 'response',
+            responseId: event.responseId,
+            responder: event.responder,
+            challengeId: event.challengeId,
+            accepted: event.accepted,
+            responseText: event.responseText ?? '',
+            revisedPosition: event.revisedPosition,
+            timestamp: event.timestamp,
+          });
           break;
-        }
 
         case 'debate_resolved':
           cards.push({
@@ -392,6 +365,9 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
             topic: event.topic,
             resolution: event.resolution,
             confidence: event.confidence,
+            winningPosition: event.winningPosition ?? '',
+            evidenceWeight: event.evidenceWeight ?? '',
+            escalationNeeded: event.escalationNeeded ?? false,
             timestamp: event.timestamp,
           });
           break;
@@ -429,6 +405,19 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           });
           break;
 
+        case 'quality_check_result':
+          cards.push({
+            kind: 'quality_check',
+            step: event.step,
+            passed: event.passed,
+            score: event.score,
+            iteration: event.iteration,
+            failureReasons: event.failureReasons ?? [],
+            revisionGuidance: event.revisionGuidance ?? [],
+            timestamp: event.timestamp,
+          });
+          break;
+
         case 'error':
           cards.push({
             kind: 'error',
@@ -439,7 +428,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           break;
 
         // tool_used, cost_update, memory_saved, session_start, session_end
-        // are processed for side effects above but not shown in stream
+        // are processed for side effects only — not shown in stream
       }
     }
 

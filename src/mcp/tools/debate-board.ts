@@ -53,6 +53,8 @@ export function createDebateBoardTools(session: SessionState) {
         category: args.finding_type,
         severity: args.severity,
         confidence: finding.confidence,
+        content: args.content,
+        evidence: args.evidence,
         timestamp: eventTimestamp(),
       });
 
@@ -95,6 +97,8 @@ export function createDebateBoardTools(session: SessionState) {
         challengeId: challenge.id,
         challenger: args.challenger_role,
         targetFindingId: args.target_finding_id,
+        challengeText: args.challenge_text,
+        evidence: args.evidence,
         timestamp: eventTimestamp(),
       });
 
@@ -148,6 +152,8 @@ export function createDebateBoardTools(session: SessionState) {
         responder: args.responder_role,
         challengeId: args.challenge_id,
         accepted: args.accepted,
+        responseText: args.response_text,
+        revisedPosition: args.revised_position,
         timestamp: eventTimestamp(),
       });
 
@@ -196,6 +202,9 @@ export function createDebateBoardTools(session: SessionState) {
         topic: args.debate_topic,
         resolution: args.resolution,
         confidence: args.confidence,
+        winningPosition: args.winning_position,
+        evidenceWeight: args.evidence_weight,
+        escalationNeeded: args.escalation_needed,
         timestamp: eventTimestamp(),
       });
 
