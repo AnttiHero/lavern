@@ -3,12 +3,14 @@
  *
  * v12: Added finalOutput, debateResolutions, gateDecisions, verificationChecks.
  *      Removed confidence percentages from verification — legal work isn't scored 0-100.
+ * v13: Added polling (3s) until session completes. Mapped real dimensions, keyChanges,
+ *      and narrative from backend data instead of hardcoded empty arrays.
  *
- * Real mode:  GET /api/sessions/:id  (extends with report card if available)
+ * Real mode:  GET /api/sessions/:id with polling until complete
  * Demo mode:  Returns rich static data when sessionId starts with "demo-session-"
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 // ── Public types ─────────────────────────────────────────────────────────
 
@@ -112,6 +114,9 @@ export interface DeliveryData {
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
+const POLL_INTERVAL_MS = 3_000;
+const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
+
 export function useDeliveryData(): {
   data: DeliveryData | null;
   loading: boolean;
@@ -120,8 +125,36 @@ export function useDeliveryData(): {
   const [data, setData] = useState<DeliveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cancelledRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const fetchSession = useCallback(async (sessionId: string, startTime: number) => {
+    if (cancelledRef.current) return;
+
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`);
+      if (!res.ok) throw new Error('Failed to fetch session');
+      const raw = await res.json();
+      if (cancelledRef.current) return;
+
+      const mapped = mapApiResponse(sessionId, raw);
+      setData(mapped);
+      setLoading(false);
+
+      // Keep polling if not complete and within time limit
+      const elapsed = Date.now() - startTime;
+      if (mapped.status !== 'Complete' && elapsed < MAX_POLL_DURATION_MS) {
+        timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), POLL_INTERVAL_MS);
+      }
+    } catch (err) {
+      if (cancelledRef.current) return;
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
+    cancelledRef.current = false;
     const sessionId = sessionStorage.getItem('shem-session-id');
 
     if (!sessionId) {
@@ -136,25 +169,22 @@ export function useDeliveryData(): {
       return;
     }
 
-    fetch(`/api/sessions/${sessionId}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch session');
-        return res.json();
-      })
-      .then(raw => {
-        setData(mapApiResponse(sessionId, raw));
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+    fetchSession(sessionId, Date.now());
+
+    return () => {
+      cancelledRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [fetchSession]);
 
   return { data, loading, error };
 }
 
 // ── API response mapping ──────────────────────────────────────────────────
+
+function formatRole(role: string): string {
+  return role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
 function mapApiResponse(sessionId: string, raw: Record<string, unknown>): DeliveryData {
   const workflow = raw.workflow as { currentStep?: string; completedSteps?: string[] } | undefined;
@@ -169,6 +199,9 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const rawDebateResolutions = raw.debateResolutions as Array<{ topic: string; resolution: string; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; confidence: number }> | undefined;
   const rawGateDecisions = raw.gateDecisionRecords as Array<{ gateType: string; decision: string; notes?: string }> | undefined;
   const rawFindings = raw.findings as Array<{ id: string; agent: string; category: string; severity: string; content: string; evidence: string[]; confidence: number }> | undefined;
+  const rawBeforeScores = raw.beforeScores as Array<{ dimension: string; score: number; classification?: string }> | undefined;
+  const rawAfterScores = raw.afterScores as Array<{ dimension: string; score: number; classification?: string }> | undefined;
+  const rawReportCard = raw.reportCard as { scores?: { deltas?: Array<{ dimension: string; before: number; after: number; delta: number }> } } | null;
 
   const bestScore = evaluator?.bestScore ?? 0;
   const evalResults = evaluator?.results ?? [];
@@ -182,7 +215,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   // Executive summary
   const summaryParts: string[] = [];
   if (isComplete) {
-    summaryParts.push(`Analysis complete.`);
+    summaryParts.push('Analysis complete.');
   } else {
     summaryParts.push(`Session in progress \u2014 currently at: ${stepLabel}.`);
   }
@@ -200,21 +233,100 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     summaryParts.push(`Duration: ${mins > 0 ? `${mins} min` : '<1 min'}.`);
   }
 
-  // Narrative from evaluator results
+  // ── Dimensions from before/after scores ─────────────────────────────
+  const dimensions: DimensionScore[] = [];
+  if (rawReportCard?.scores?.deltas?.length) {
+    for (const d of rawReportCard.scores.deltas) {
+      dimensions.push({ dimension: d.dimension, before: d.before, after: d.after, delta: d.delta });
+    }
+  } else if (rawBeforeScores?.length && rawAfterScores?.length) {
+    for (const before of rawBeforeScores) {
+      const after = rawAfterScores.find(a => a.dimension === before.dimension);
+      dimensions.push({
+        dimension: before.dimension,
+        before: before.score,
+        after: after?.score ?? before.score,
+        delta: (after?.score ?? before.score) - before.score,
+      });
+    }
+  }
+
+  // ── Key changes from RED/YELLOW findings ─────────────────────────────
+  const keyChanges: KeyChange[] = (rawFindings ?? [])
+    .filter(f => f.severity === 'RED' || f.severity === 'YELLOW')
+    .slice(0, 8)
+    .map(f => ({
+      title: f.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      before: f.content,
+      after: `Identified by ${formatRole(f.agent)} [${f.severity}]`,
+    }));
+
+  // ── Narrative from real session data ──────────────────────────────────
   const narrative: NarrativeSection[] = [];
-  for (const r of evalResults) {
+
+  // Analysis phase — findings summary
+  const findings = rawFindings ?? [];
+  if (findings.length > 0) {
+    const agentNames = [...new Set(findings.map(f => f.agent))];
+    const redCount = findings.filter(f => f.severity === 'RED').length;
+    const yellowCount = findings.filter(f => f.severity === 'YELLOW').length;
+    let body = `The analysis phase produced ${findings.length} finding${findings.length > 1 ? 's' : ''} across ${agentNames.length} specialist${agentNames.length > 1 ? 's' : ''}.`;
+    if (redCount > 0) body += ` ${redCount} critical (RED) finding${redCount > 1 ? 's were' : ' was'} flagged for immediate attention.`;
+    if (yellowCount > 0) body += ` ${yellowCount} important (YELLOW) finding${yellowCount > 1 ? 's were' : ' was'} identified.`;
     narrative.push({
-      phase: r.step.replace(/_/g, ' '),
-      heading: r.passed ? `Quality gate passed` : `Quality gate failed`,
-      body: r.passed
-        ? `The evaluator reviewed the specialist output for the ${r.step.replace(/_/g, ' ')} step and approved it to proceed.`
-        : `The evaluator reviewed the specialist output for the ${r.step.replace(/_/g, ' ')} step and found issues.${(r.failureReasons?.length ?? 0) > 0 ? ' Issues: ' + r.failureReasons!.join('; ') + '.' : ''}`,
+      phase: 'Analysis',
+      heading: `${findings.length} findings from ${agentNames.length} specialist${agentNames.length > 1 ? 's' : ''}`,
+      body,
+      agents: agentNames.map(formatRole),
+    });
+  }
+
+  // Debate phase — resolutions
+  for (const r of (rawDebateResolutions ?? [])) {
+    narrative.push({
+      phase: 'Debate',
+      heading: r.topic,
+      body: r.resolution,
+      agents: [],
+      highlight: r.escalationNeeded ? 'This resolution was flagged for escalation.' : undefined,
+    });
+  }
+
+  // Gate decisions
+  for (const g of (rawGateDecisions ?? [])) {
+    narrative.push({
+      phase: 'Review Gate',
+      heading: `${g.gateType.replace(/_/g, ' ')} gate: ${g.decision}`,
+      body: g.notes ?? `The ${g.gateType.replace(/_/g, ' ')} gate was ${g.decision}.`,
       agents: [],
     });
   }
 
+  // Evaluator results
+  for (const r of evalResults) {
+    narrative.push({
+      phase: r.step.replace(/_/g, ' '),
+      heading: r.passed ? 'Quality gate passed' : 'Quality gate failed',
+      body: r.passed
+        ? `The evaluator approved the ${r.step.replace(/_/g, ' ')} step output.`
+        : `Issues found: ${(r.failureReasons ?? []).join('; ') || 'unspecified'}.`,
+      agents: [],
+    });
+  }
+
+  // Completion
+  if (isComplete) {
+    narrative.push({
+      phase: 'Delivery',
+      heading: 'Work product delivered',
+      body: 'All workflow steps completed. The deliverable has been assembled and is ready for review.',
+      agents: [],
+    });
+  }
+
+  // ── Agent performance ─────────────────────────────────────────────────
   const agentPerfList: AgentPerf[] = (agentPerf ?? []).map(a => ({
-    name: a.role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    name: formatRole(a.role),
     role: a.role,
     findingsPosted: a.findingsPosted ?? 0,
     challengesSurvived: 0,
@@ -263,7 +375,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   if (debateResolutions.some(r => r.escalationNeeded)) {
     flaggedItems.push('One or more debate resolutions were flagged for escalation');
   }
-  if ((rawFindings ?? []).some(f => f.severity === 'RED')) {
+  if (findings.some(f => f.severity === 'RED')) {
     flaggedItems.push('RED severity findings were identified \u2014 verify remediation');
   }
   flaggedItems.push('Verify legal accuracy with qualified counsel before relying on this output');
@@ -273,8 +385,8 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     status: isComplete ? 'Complete' : stepLabel,
     documentTitle: docTitle,
     executiveSummary: summaryParts.join(' '),
-    keyChanges: [],
-    dimensions: [],
+    keyChanges,
+    dimensions,
     finalOutput: rawFinalOutput ?? '',
     debateResolutions,
     gateDecisions,

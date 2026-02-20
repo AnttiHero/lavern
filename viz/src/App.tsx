@@ -276,6 +276,7 @@ export function App() {
             requestText: memoText || 'New engagement session',
           },
           ...(parsedDocs.length > 0 ? { documents: parsedDocs } : {}),
+          team: roles,
           workflow: config.workflowId,
           options: {
             budget: config.budgetUsd,

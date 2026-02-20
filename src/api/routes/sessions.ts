@@ -85,9 +85,13 @@ export function registerSessionRoutes(
     }
 
     // v12: Store parsed documents in session state
-    const rawDocs = (body as Record<string, unknown>).documents;
-    if (Array.isArray(rawDocs)) {
-      session.documents = (rawDocs as ParsedDocument[]).slice(0, 20); // Max 20 docs
+    if (body.documents && Array.isArray(body.documents)) {
+      session.documents = (body.documents as ParsedDocument[]).slice(0, 20);
+    }
+
+    // v13: Accept team roles from frontend staffing
+    if (body.team && Array.isArray(body.team) && body.team.length > 0) {
+      session.selectedTeam = body.team as string[];
     }
 
     if (body.request) {
@@ -161,8 +165,8 @@ export function registerSessionRoutes(
     return reply.send({
       sessions: sessions.map((s) => ({
         id: s.id,
-        currentStep: s.workflow.currentStep,
-        completedSteps: s.workflow.completedSteps.length,
+        currentStep: s.genericWorkflow?.currentStep ?? s.workflow.currentStep,
+        completedSteps: (s.genericWorkflow?.completedSteps ?? s.workflow.completedSteps).length,
         eventCount: s.events.getEventCount(),
         cost: s.accumulatedCost,
         budget: s.budgetUsd,
@@ -203,9 +207,9 @@ export function registerSessionRoutes(
     return reply.send({
       id: session.id,
       workflow: {
-        currentStep: session.workflow.currentStep,
-        completedSteps: session.workflow.completedSteps,
-        gateDecisions: session.workflow.gateDecisions,
+        currentStep: session.genericWorkflow?.currentStep ?? session.workflow.currentStep,
+        completedSteps: session.genericWorkflow?.completedSteps ?? session.workflow.completedSteps,
+        gateDecisions: session.genericWorkflow?.gateDecisions ?? session.workflow.gateDecisions,
       },
       debate: {
         findingsCount: session.debate.findings.length,
@@ -285,15 +289,20 @@ export function registerSessionRoutes(
         tableCount: d.tables.length,
       })),
 
+      // ── Scores for delivery dimensions ───────────────────────────
+      beforeScores: session.beforeScores,
+      afterScores: session.afterScores,
+
       reportCard: session.reportCard ?? null,
       matterTitle: session.matterRecord?.title ?? null,
       workflowTemplateId: session.workflowTemplateId ?? null,
       selectedTeam: session.selectedTeam,
       halted: session.isHalted(),
       haltReason: session.haltReason,
-      durationMs: session.workflow.startedAt
-        ? Date.now() - new Date(session.workflow.startedAt).getTime()
-        : 0,
+      durationMs: (() => {
+        const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
+        return startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
+      })(),
     });
   });
 

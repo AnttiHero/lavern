@@ -92,6 +92,10 @@ export const CreateSessionSchema = z.object({
   // v5 fields
   request: LegalRequestSchema.optional(),
   workflow: z.string().min(1).max(100).optional(),
+  // v12: Parsed documents from frontend document ingestion
+  documents: z.array(z.any()).max(20).optional(),
+  // v13: Team roles from frontend staffing
+  team: z.array(z.string().min(1).max(100)).max(30).optional(),
   // Shared
   options: SessionOptionsSchema,
 }).strict().refine(
