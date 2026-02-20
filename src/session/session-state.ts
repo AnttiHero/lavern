@@ -22,6 +22,7 @@ import type { HumanGateDecision } from '../types/index.js';
 import type { ClientIdentity } from '../types/client.js';
 import type { SessionReportCard, DimensionSnapshot } from '../types/report-card.js';
 import type { MatterRecord } from '../types/matter.js';
+import type { ParsedDocument } from '../documents/types.js';
 
 // ── Array size limits ─────────────────────────────────────────────────────
 // Prevents unbounded growth of debate findings, challenges, audit entries, etc.
@@ -197,6 +198,10 @@ export class SessionState {
   public matterRecord?: MatterRecord;
   public selectedTeam: string[] = [];
   public teamBudgetEstimate = 0;
+
+  // ── v12: Document Storage ──
+  /** Parsed documents uploaded by the client, available to agents via MCP tools. */
+  public documents: ParsedDocument[] = [];
 
   // ── v10: Agent API — Final Output Capture ──
   /** Accumulated final assistant output text (populated by streamMessages). */

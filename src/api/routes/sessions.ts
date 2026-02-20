@@ -30,6 +30,7 @@ import {
 } from '../middleware/validation.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
+import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 
 export function registerSessionRoutes(
@@ -81,6 +82,12 @@ export function registerSessionRoutes(
         session.selectedTeam = matter.assignedTeam;
         session.matterRecord = matter;
       }
+    }
+
+    // v12: Store parsed documents in session state
+    const rawDocs = (body as Record<string, unknown>).documents;
+    if (Array.isArray(rawDocs)) {
+      session.documents = (rawDocs as ParsedDocument[]).slice(0, 20); // Max 20 docs
     }
 
     if (body.request) {
@@ -264,6 +271,18 @@ export function registerSessionRoutes(
         content: f.content,
         evidence: f.evidence,
         confidence: f.confidence,
+      })),
+
+      // ── Documents ──────────────────────────────────────────────────
+      documents: session.documents.map(d => ({
+        id: d.id,
+        name: d.name,
+        mimeType: d.mimeType,
+        pageCount: d.pageCount,
+        wordCount: d.wordCount,
+        sectionCount: d.sections.length,
+        definedTermCount: d.definedTerms.length,
+        tableCount: d.tables.length,
       })),
 
       reportCard: session.reportCard ?? null,

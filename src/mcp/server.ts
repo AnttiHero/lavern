@@ -42,6 +42,8 @@ import { createEvaluatorGateTools } from './tools/evaluator-gate.js';
 import { createRiskPricingTools } from './tools/risk-pricing.js';
 // v11: Quality Check Iteration Loops
 import { createQualityCheckTools } from './tools/quality-check.js';
+// v12: Document Reader
+import { createDocumentReaderTools } from './tools/document-reader.js';
 // v8: Pre-Engagement
 import { createPreEngagementTools } from './tools/pre-engagement.js';
 import type { SessionState } from '../session/session-state.js';
@@ -85,6 +87,8 @@ export function createShemMcpServer(session: SessionState, template?: WorkflowTe
       ...createPreEngagementTools(session),
       // v11: Quality Check Iteration Loops
       ...createQualityCheckTools(session),
+      // v12: Document Reader
+      ...createDocumentReaderTools(session),
     ],
   });
 }

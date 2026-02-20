@@ -215,6 +215,23 @@ export function App() {
         payload.documents.map(d => ({ name: d.name, size: d.size, type: d.type }))
       ));
     }
+    // v12: Store parsed documents for session creation (full structure)
+    if (payload.parsedDocuments?.length) {
+      try {
+        const serialized = JSON.stringify(payload.parsedDocuments);
+        // sessionStorage limit is ~5MB — truncate fullText if needed
+        if (serialized.length < 4_500_000) {
+          sessionStorage.setItem('shem-parsed-docs', serialized);
+        } else {
+          // Store with truncated fullText to fit sessionStorage
+          const trimmed = payload.parsedDocuments.map(d => ({
+            ...d,
+            fullText: d.fullText.slice(0, 50_000),
+          }));
+          sessionStorage.setItem('shem-parsed-docs', JSON.stringify(trimmed));
+        }
+      } catch { /* sessionStorage full — documents won't be passed to session */ }
+    }
     window.location.hash = '#/staffing';
   }, []);
 
@@ -242,6 +259,13 @@ export function App() {
       'simple-query': 'legal_question',
     };
 
+    // v12: Load parsed documents from sessionStorage
+    let parsedDocs: unknown[] = [];
+    try {
+      const pdStr = sessionStorage.getItem('shem-parsed-docs');
+      if (pdStr) parsedDocs = JSON.parse(pdStr);
+    } catch { /* no parsed docs available */ }
+
     try {
       const res = await fetch('/api/sessions', {
         method: 'POST',
@@ -251,6 +275,7 @@ export function App() {
             type: WORKFLOW_TYPE_MAP[config.workflowId] ?? 'general',
             requestText: memoText || 'New engagement session',
           },
+          ...(parsedDocs.length > 0 ? { documents: parsedDocs } : {}),
           workflow: config.workflowId,
           options: {
             budget: config.budgetUsd,

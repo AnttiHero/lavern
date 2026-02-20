@@ -230,6 +230,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
             <DocumentList
               documents={upload.documents}
+              parsedDocuments={upload.parsedDocuments}
               onRemove={upload.removeDocument}
             />
 

@@ -1,5 +1,11 @@
 /**
- * useDocumentUpload — File drag/drop and FileReader logic.
+ * useDocumentUpload — File drag/drop, FileReader logic, and backend parsing.
+ *
+ * v12: Enhanced with:
+ * - Stores raw File objects for pdf.js preview
+ * - Sends files to POST /api/documents/parse for authoritative parsing
+ * - Falls back to frontend-only text extraction when backend unavailable
+ * - parsedDocuments[] holds structured ParsedDocument results for session creation
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -13,26 +19,94 @@ export interface UploadedDocument {
   uploadedAt: string;
 }
 
+/** Lightweight parsed document type (mirrors backend ParsedDocument) */
+export interface FrontendParsedDocument {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  pageCount: number;
+  wordCount: number;
+  fullText: string;
+  sections: Array<{
+    heading: string;
+    level: number;
+    content: string;
+    startIndex: number;
+    children: FrontendParsedDocument['sections'];
+  }>;
+  tables: Array<{
+    caption?: string;
+    headers: string[];
+    rows: string[][];
+  }>;
+  definedTerms: string[];
+  parseMethod: string;
+  parsedAt: string;
+}
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function useDocumentUpload() {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
+  const [rawFiles, setRawFiles] = useState<Map<string, File>>(new Map());
+  const [parsedDocuments, setParsedDocuments] = useState<FrontendParsedDocument[]>([]);
+  const [parsing, setParsing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Send a file to the backend for authoritative parsing.
+   * Returns the parsed document or null if the backend is unavailable.
+   */
+  const parseOnBackend = useCallback(async (file: File): Promise<FrontendParsedDocument | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/documents/parse', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        return await res.json() as FrontendParsedDocument;
+      }
+
+      // Backend returned an error — not fatal, we still have frontend content
+      console.warn(`[doc-parse] Backend returned ${res.status} for ${file.name}`);
+      return null;
+    } catch {
+      // Backend unavailable (demo mode) — fall through
+      return null;
+    }
+  }, []);
+
   const processFiles = useCallback(async (files: File[]) => {
     setError(null);
+    setParsing(true);
+
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
         setError(`${file.name} exceeds 10MB limit`);
         continue;
       }
 
+      const docId = crypto.randomUUID();
+
+      // Store raw File for pdf.js preview
+      setRawFiles(prev => {
+        const next = new Map(prev);
+        next.set(docId, file);
+        return next;
+      });
+
+      // Read content for the existing UploadedDocument interface
       const reader = new FileReader();
       reader.onload = () => {
         const doc: UploadedDocument = {
-          id: crypto.randomUUID(),
+          id: docId,
           name: file.name,
           size: file.size,
           type: file.type,
@@ -52,8 +126,19 @@ export function useDocumentUpload() {
       } else {
         reader.readAsDataURL(file);
       }
+
+      // Also attempt backend parsing (async, non-blocking)
+      parseOnBackend(file).then(parsed => {
+        if (parsed) {
+          // Override the ID to match our frontend ID
+          parsed.id = docId;
+          setParsedDocuments(prev => [...prev, parsed]);
+        }
+      });
     }
-  }, []);
+
+    setParsing(false);
+  }, [parseOnBackend]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -94,10 +179,19 @@ export function useDocumentUpload() {
 
   const removeDocument = useCallback((id: string) => {
     setDocuments(prev => prev.filter(d => d.id !== id));
+    setRawFiles(prev => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+    setParsedDocuments(prev => prev.filter(d => d.id !== id));
   }, []);
 
   return {
     documents,
+    rawFiles,
+    parsedDocuments,
+    parsing,
     isDragOver,
     error,
     inputRef,

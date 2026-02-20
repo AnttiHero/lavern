@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useDocumentUpload, type UploadedDocument } from './useDocumentUpload.js';
+import { useDocumentUpload, type UploadedDocument, type FrontendParsedDocument } from './useDocumentUpload.js';
 import { useBriefingQuestions } from './useBriefingQuestions.js';
 import { useBriefingAnalysis, type EngagementBrief } from './useBriefingAnalysis.js';
 import type { BriefingPhase } from '../components/ProgressStepper.js';
@@ -24,6 +24,8 @@ export interface BriefingPayload {
   requestType: string;
   memoText: string;
   documents: UploadedDocument[];
+  /** Structured parsed documents from backend (when available) */
+  parsedDocuments: FrontendParsedDocument[];
   team: string[];
   intensity: string;
   budgetUsd: number;
@@ -311,12 +313,13 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
       requestType: WORKFLOW_TYPE_MAP[workflowId] ?? 'general',
       memoText,
       documents: upload.documents,
+      parsedDocuments: upload.parsedDocuments,
       team,
       intensity,
       budgetUsd,
       yoloMode,
     };
-  }, [workflowId, memoText, upload.documents]);
+  }, [workflowId, memoText, upload.documents, upload.parsedDocuments]);
 
   return {
     phase,

@@ -87,8 +87,8 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   const { haltCheckHook, costTrackerHook } = createCostHooks(session);
   const { humanGateEnforcerHook } = createGateHooks(session);
 
-  // Build prompt from template + request
-  const prompt = buildPromptFromRequest(request, template, classification);
+  // Build prompt from template + request (includes document context if documents are loaded)
+  const prompt = buildPromptFromRequest(request, template, classification, session);
 
   // Filter agent definitions to only those needed by this workflow
   // v8: When a client has selected a team, use those agents instead of template defaults
@@ -182,6 +182,7 @@ function buildPromptFromRequest(
   request: LegalRequest,
   template: WorkflowTemplate,
   classification: RouterClassification,
+  session: SessionState,
 ): string {
   const parts: string[] = [];
 
@@ -205,6 +206,24 @@ function buildPromptFromRequest(
     if (contextParts.length > 0) {
       parts.push(`\nContext:\n${contextParts.map(c => `- ${c}`).join('\n')}`);
     }
+  }
+
+  // v12: Document context — tell agents what documents are available
+  if (session.documents.length > 0) {
+    parts.push('\n--- UPLOADED DOCUMENTS ---');
+    parts.push(`${session.documents.length} document(s) have been uploaded for this session:\n`);
+    for (let i = 0; i < session.documents.length; i++) {
+      const doc = session.documents[i];
+      const headings = doc.sections.slice(0, 10).map(s => s.heading).join(', ');
+      parts.push(`${i + 1}. **${doc.name}** — ${doc.pageCount} pages, ${doc.wordCount.toLocaleString()} words`);
+      if (headings) parts.push(`   Sections: ${headings}`);
+      if (doc.definedTerms.length > 0) {
+        parts.push(`   Defined terms: ${doc.definedTerms.slice(0, 10).join(', ')}${doc.definedTerms.length > 10 ? '...' : ''}`);
+      }
+    }
+    parts.push('');
+    parts.push('**IMPORTANT:** Use `list_documents` to see the full table of contents, then use `read_document_section` and `search_document` to access specific content. Do NOT rely solely on the request text — analyze the actual documents.');
+    parts.push('--- END DOCUMENTS ---\n');
   }
 
   // Classification info

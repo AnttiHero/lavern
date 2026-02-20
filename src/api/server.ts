@@ -25,6 +25,7 @@ import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
+import fastifyMultipart from '@fastify/multipart';
 import { SessionManager } from '../session/session-manager.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerReplayRoutes } from './routes/replay.js';
@@ -34,6 +35,7 @@ import { registerWorkflowRoutes } from './routes/workflows.js';
 import { registerBriefingRoutes } from './routes/briefing.js';
 import { registerEngageRoutes } from './routes/engage.js';
 import { registerCapabilitiesRoutes } from './routes/capabilities.js';
+import { registerDocumentRoutes } from './routes/documents.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { config } from '../config.js';
 
@@ -58,6 +60,10 @@ export async function startApiServer(port: number): Promise<void> {
   await fastify.register(fastifyCors, {
     origin: config.corsOrigins === '*' ? true : config.corsOrigins.split(','),
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  });
+
+  await fastify.register(fastifyMultipart, {
+    limits: { fileSize: 10_000_000 }, // 10 MB
   });
 
   // ── Shared State ─────────────────────────────────────────────────────
@@ -85,6 +91,7 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /api/agents/*',      // Agent profiles, presets, and recommendations
     'GET /api/workflows',     // Workflow templates for engagement configurator
     'POST /api/briefing/*',   // Briefing analysis for intake
+    'POST /api/documents/*',  // Document parsing for intake
     // v10: Agent API — public discovery endpoints
     'GET /api/capabilities',  // Machine-readable service manifest
     '/dashboard/',            // Frontend static files (prefix match — trailing /)
@@ -146,6 +153,9 @@ export async function startApiServer(port: number): Promise<void> {
         capabilities: 'GET /api/capabilities',
         engage: 'POST /api/engage',
       },
+      documents: {
+        parse: 'POST /api/documents/parse (multipart)',
+      },
       health: 'GET /health',
     },
   }));
@@ -164,6 +174,8 @@ export async function startApiServer(port: number): Promise<void> {
   // v10: Agent API — engage endpoint + capabilities manifest
   registerEngageRoutes(fastify, sessionManager);
   registerCapabilitiesRoutes(fastify);
+  // v12: Document parsing
+  registerDocumentRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

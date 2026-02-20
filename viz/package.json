@@ -13,6 +13,7 @@
   "dependencies": {
     "canvas-confetti": "^1.9.4",
     "motion": "^12.34.0",
+    "pdfjs-dist": "^5.4.624",
     "phaser": "^3.90.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
