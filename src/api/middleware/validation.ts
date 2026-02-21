@@ -128,6 +128,14 @@ export const CreateClientSchema = z.object({
 
 export type CreateClientBody = z.infer<typeof CreateClientSchema>;
 
+// ── Derivative Generation Schema ─────────────────────────────────────────
+
+export const DerivativeSchema = z.object({
+  type: z.string().min(1).max(50),
+}).strict();
+
+export type DerivativeBody = z.infer<typeof DerivativeSchema>;
+
 // ── Validation Helper ─────────────────────────────────────────────────────
 
 /**

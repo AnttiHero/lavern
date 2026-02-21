@@ -8,6 +8,7 @@
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
+import { DerivativesPanel } from './DerivativesPanel.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -114,6 +115,9 @@ export function TheWorkTab({ data }: Props) {
 
       {/* ── Downloads ────────────────────────────────────────────── */}
       <DownloadPanel data={data} />
+
+      {/* ── Derivative Document Generation ────────────────────────── */}
+      <DerivativesPanel data={data} />
     </div>
   );
 }

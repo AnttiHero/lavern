@@ -5,13 +5,14 @@
  *   - Legacy: { documentPath, context, options } → runTheShem()
  *   - New:    { request: LegalRequest, workflow?: string } → dispatch()
  *
- * POST   /api/sessions              — Create a new analysis session
- * GET    /api/sessions              — List active sessions
- * GET    /api/sessions/:id          — Get session status + metadata
- * GET    /api/sessions/:id/download — Download work product (md, json, summary)
- * GET    /api/sessions/:id/events   — WebSocket event stream
- * POST   /api/sessions/:id/gate     — Submit gate decision
- * DELETE /api/sessions/:id          — Cancel session
+ * POST   /api/sessions                  — Create a new analysis session
+ * GET    /api/sessions                  — List active sessions
+ * GET    /api/sessions/:id              — Get session status + metadata
+ * GET    /api/sessions/:id/download     — Download work product (md, json, summary)
+ * POST   /api/sessions/:id/derivatives  — Generate derivative document (memo, checklist, etc.)
+ * GET    /api/sessions/:id/events       — WebSocket event stream
+ * POST   /api/sessions/:id/gate         — Submit gate decision
+ * DELETE /api/sessions/:id              — Cancel session
  */
 
 import type { FastifyInstance } from 'fastify';
@@ -23,11 +24,15 @@ import { attachEventStream } from '../ws-handler.js';
 import {
   CreateSessionSchema,
   GateDecisionSchema,
+  DerivativeSchema,
   validateBody,
   validateDocumentPath,
   type CreateSessionBody,
   type GateDecisionBody,
+  type DerivativeBody,
 } from '../middleware/validation.js';
+import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
+import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST } from '../derivatives/derivative-types.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import type { ParsedDocument } from '../../documents/types.js';
@@ -406,6 +411,105 @@ export function registerSessionRoutes(
     }
 
     return reply.status(400).send({ error: `Unknown format: ${format}. Use md, json, or summary.` });
+  });
+
+  // ── POST /api/sessions/:id/derivatives — Generate derivative document ──
+
+  fastify.post('/api/sessions/:id/derivatives', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    const body = validateBody<DerivativeBody>(DerivativeSchema, request, reply);
+    if (!body) return;
+
+    const derivativeType = DERIVATIVE_TYPES[body.type];
+    if (!derivativeType) {
+      return reply.status(400).send({
+        error: `Unknown derivative type: ${body.type}`,
+        availableTypes: DERIVATIVE_TYPE_LIST.map(t => t.id),
+      });
+    }
+
+    // Check that session has a work product to derive from
+    if (!session.finalOutput) {
+      return reply.status(409).send({
+        error: 'Session has not produced a work product yet. Wait for the analysis to complete.',
+      });
+    }
+
+    try {
+      // Assemble context from session state
+      const context = derivativeType.buildContext(session);
+
+      // Call Claude API via Agent SDK (single-turn, no tools)
+      const result = sdkQuery({
+        prompt: context,
+        options: {
+          systemPrompt: derivativeType.systemPrompt,
+          model: 'claude-sonnet-4-5-20250929',
+          maxTurns: 1,
+        },
+      });
+
+      // Consume the async generator to collect generated text
+      let generatedContent = '';
+
+      for await (const message of result) {
+        if (!('type' in message)) continue;
+
+        if (message.type === 'assistant' && message.message?.content) {
+          for (const block of message.message.content) {
+            if ('text' in block) {
+              generatedContent += block.text;
+            }
+          }
+        }
+
+        if (message.type === 'result') {
+          if ('subtype' in message && message.subtype !== 'success') {
+            const errors = (message as Record<string, unknown>).errors;
+            throw new Error(`Generation failed: ${JSON.stringify(errors)}`);
+          }
+        }
+      }
+
+      if (!generatedContent) {
+        throw new Error('No content generated');
+      }
+
+      return reply.send({
+        content: generatedContent,
+        title: derivativeType.title,
+        type: body.type,
+        sessionId: id,
+      });
+    } catch (err) {
+      console.error(`[API] Derivative generation failed (${body.type}):`, err);
+      return reply.status(500).send({
+        error: `Failed to generate ${derivativeType.title}`,
+        details: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
+  // ── GET /api/sessions/:id/derivative-types — List available types ──────
+
+  fastify.get('/api/sessions/:id/derivative-types', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    return reply.send({
+      types: DERIVATIVE_TYPE_LIST,
+      sessionHasOutput: !!session.finalOutput,
+    });
   });
 
   // ── GET /api/sessions/:id/events — WebSocket event stream ──────────
