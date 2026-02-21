@@ -11,6 +11,7 @@ export const config = {
   memoryDir: process.env.SHEM_MEMORY_DIR ?? '.shem/memory',
   reportsDir: process.env.SHEM_REPORTS_DIR ?? '.shem/reports',
   baselinesDir: process.env.SHEM_BASELINES_DIR ?? '.shem/baselines',
+  dbPath: process.env.SHEM_DB_PATH ?? './data/marble.db',
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-6',

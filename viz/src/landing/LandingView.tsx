@@ -14,8 +14,9 @@
  *   "My Page"   → User profile & settings
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
+import { UserContext } from '../auth/UserContext.js';
 
 interface Props {
   onEnter: () => void;
@@ -226,6 +227,7 @@ function HoverText({
 }
 
 export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
+  const userCtx = useContext(UserContext);
   const [ready, setReady] = useState(false);
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -321,12 +323,34 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             Agent API {'\u2192'}
           </ShimmerButton>
         )}
-        <ShimmerButton
-          onClick={onMyPage}
-          style={styles.myPageBtn}
-        >
-          My Page
-        </ShimmerButton>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {userCtx?.user && (
+            <span style={{
+              fontFamily: fonts.sans,
+              fontSize: 11,
+              color: colors.text,
+              opacity: 0.5,
+              letterSpacing: 0.5,
+              cursor: 'none',
+            }}>
+              {userCtx.user.displayName || userCtx.user.email}
+            </span>
+          )}
+          <ShimmerButton
+            onClick={onMyPage}
+            style={styles.myPageBtn}
+          >
+            My Page
+          </ShimmerButton>
+          {userCtx && (
+            <ShimmerButton
+              onClick={() => { userCtx.logout(); }}
+              style={styles.myPageBtn}
+            >
+              Logout
+            </ShimmerButton>
+          )}
+        </div>
       </div>
 
       {/* ── Center content — firm name ────────────────────────────── */}

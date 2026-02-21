@@ -37,6 +37,8 @@ import { registerEngageRoutes } from './routes/engage.js';
 import { registerCapabilitiesRoutes } from './routes/capabilities.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
+import { registerUserAuthRoutes } from './routes/auth-routes.js';
+import { initDatabase } from '../db/database.js';
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
@@ -59,12 +61,17 @@ export async function startApiServer(port: number): Promise<void> {
 
   await fastify.register(fastifyCors, {
     origin: config.corsOrigins === '*' ? true : config.corsOrigins.split(','),
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
   });
 
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: 10_000_000 }, // 10 MB
   });
+
+  // ── Database ────────────────────────────────────────────────────────
+
+  initDatabase();
 
   // ── Shared State ─────────────────────────────────────────────────────
 
@@ -94,6 +101,11 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/documents/*',  // Document parsing for intake
     // v10: Agent API — public discovery endpoints
     'GET /api/capabilities',  // Machine-readable service manifest
+    // v14: User auth routes (public — signup/login/me)
+    'POST /api/auth/signup',
+    'POST /api/auth/login',
+    'POST /api/auth/logout',
+    'GET /api/auth/me',
     '/dashboard/',            // Frontend static files (prefix match — trailing /)
   ]);
   fastify.addHook('onRequest', authMiddleware);
@@ -153,6 +165,13 @@ export async function startApiServer(port: number): Promise<void> {
         capabilities: 'GET /api/capabilities',
         engage: 'POST /api/engage',
       },
+      auth: {
+        signup: 'POST /api/auth/signup',
+        login: 'POST /api/auth/login',
+        logout: 'POST /api/auth/logout',
+        me: 'GET /api/auth/me',
+        profile: 'PUT /api/auth/profile',
+      },
       documents: {
         parse: 'POST /api/documents/parse (multipart)',
       },
@@ -164,6 +183,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerSessionRoutes(fastify, sessionManager);
   registerReplayRoutes(fastify);
   registerAuthRoutes(fastify, clientRegistry);
+  // v14: User auth (signup, login, logout, profile)
+  registerUserAuthRoutes(fastify);
   // v8: Pre-engagement & team staffing routes
   registerMatterRoutes(fastify);
   registerAgentRoutes(fastify);

@@ -17,13 +17,19 @@ interface ActiveSession {
   budget: number;
 }
 
-interface AuditLog {
-  sessionId: string;
-  entries: number;
-  complete: boolean;
-  startedAt?: string;
-  endedAt?: string;
-  size: number;
+interface ArchivedSession {
+  id: string;
+  title: string;
+  status: string;
+  workflowId: string | null;
+  teamRoles: string[];
+  findingsCount: number;
+  resolutionsCount: number;
+  costUsd: number;
+  budgetUsd: number;
+  createdAt: string;
+  completedAt: string | null;
+  durationMs: number;
 }
 
 interface Props {
@@ -34,7 +40,7 @@ interface Props {
 
 export default function MyCasesView({ onConnectSession, onConnectReplay, onBack }: Props) {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,16 +49,16 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
       setLoading(true);
       setError(null);
 
-      const [sessionsRes, logsRes] = await Promise.allSettled([
-        fetch('/api/sessions').then(r => r.json()),
-        fetch('/api/audit-logs').then(r => r.json()),
+      const [sessionsRes, archiveRes] = await Promise.allSettled([
+        fetch('/api/sessions', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/sessions/archive', { credentials: 'include' }).then(r => r.ok ? r.json() : { sessions: [] }),
       ]);
 
       if (sessionsRes.status === 'fulfilled') {
         setActiveSessions(sessionsRes.value.sessions ?? []);
       }
-      if (logsRes.status === 'fulfilled') {
-        setAuditLogs(logsRes.value.logs ?? []);
+      if (archiveRes.status === 'fulfilled') {
+        setArchivedSessions(archiveRes.value.sessions ?? []);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch sessions');
@@ -137,43 +143,52 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
         </div>
       </div>
 
-      {/* ── Past Sessions ───────────────────────────────────────────── */}
+      {/* ── Past Sessions (from SQLite archive) ────────────────────── */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>
           <div style={styles.sectionLine} />
           <span style={styles.sectionTitle}>Past Sessions</span>
-          <span style={styles.sectionBadge}>{auditLogs.length}</span>
+          <span style={styles.sectionBadge}>{archivedSessions.length}</span>
           <div style={styles.sectionLine} />
         </div>
 
-        {auditLogs.length === 0 && !loading && (
+        {archivedSessions.length === 0 && !loading && (
           <div style={styles.empty}>No past sessions found</div>
         )}
 
         <div style={styles.pastGrid}>
-          {auditLogs.slice(0, 20).map((log) => (
-            <div key={log.sessionId} style={styles.pastCard}>
-              <span style={styles.pastSessionId}>{log.sessionId}</span>
+          {archivedSessions.slice(0, 20).map((s) => (
+            <div key={s.id} style={styles.pastCard}>
+              <span style={styles.pastSessionId}>{s.title}</span>
               <span style={{
                 ...styles.statusBadge,
-                backgroundColor: log.complete ? colors.successBg : colors.warningBg,
-                color: log.complete ? colors.success : colors.warning,
+                backgroundColor: s.status === 'completed' ? colors.successBg : colors.warningBg,
+                color: s.status === 'completed' ? colors.success : colors.warning,
               }}>
-                {log.complete ? 'Complete' : 'Partial'}
+                {s.status}
               </span>
               <div style={styles.pastMeta}>
-                <span>{log.entries} events</span>
-                {log.startedAt && (
-                  <span>{new Date(log.startedAt).toLocaleDateString()}</span>
+                <span>{s.findingsCount} findings</span>
+                <span>${s.costUsd.toFixed(2)}</span>
+                {s.completedAt && (
+                  <span>{new Date(s.completedAt).toLocaleDateString()}</span>
                 )}
               </div>
+              {s.teamRoles.length > 0 && (
+                <div style={styles.pastMeta}>
+                  <span>{s.teamRoles.length} agents</span>
+                  {s.durationMs > 0 && (
+                    <span>{Math.round(s.durationMs / 1000)}s</span>
+                  )}
+                </div>
+              )}
               <button
                 style={styles.replayButton}
-                onClick={() => onConnectReplay(log.sessionId)}
+                onClick={() => onConnectReplay(s.id)}
                 onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
                 onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
               >
-                Replay {'\u2192'}
+                View {'\u2192'}
               </button>
             </div>
           ))}

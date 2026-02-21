@@ -155,6 +155,7 @@ export function App() {
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           request: {
             type: config.requestType,
@@ -270,6 +271,7 @@ export function App() {
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           request: {
             type: WORKFLOW_TYPE_MAP[config.workflowId] ?? 'general',

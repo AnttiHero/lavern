@@ -12,6 +12,7 @@
 
 import { SessionState } from './session-state.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
+import { archiveSession } from '../db/database.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────
 const MAX_SESSIONS = 100;
@@ -37,6 +38,17 @@ export class SessionManager {
 
     const session = new SessionState(options?.id, options);
     this.sessions.set(session.id, { session, createdAt: Date.now() });
+
+    // Archive to SQLite when session completes
+    session.events.on('session_end', () => {
+      try {
+        const userId = session.userId ?? session.clientIdentity?.id ?? 'anonymous';
+        archiveSession(session, userId);
+      } catch (err) {
+        console.error(`[SESSION] Failed to archive session ${session.id}:`, err);
+      }
+    });
+
     return session;
   }
 

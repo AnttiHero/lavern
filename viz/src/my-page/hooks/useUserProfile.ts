@@ -1,11 +1,14 @@
 /**
- * useUserProfile — localStorage-backed user profile persistence.
+ * useUserProfile — User profile persistence (localStorage + server sync).
  *
- * Single key: `shem-user-profile`. Spread-with-defaults pattern so
- * new fields never crash on older stored data.
+ * Write-through: every mutation writes to both localStorage (instant) and
+ * the server via PUT /api/auth/profile (async, fire-and-forget).
+ *
+ * On init: reads from localStorage for instant load, then fetches
+ * from GET /api/auth/me to merge any server-side data.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -69,16 +72,84 @@ function writeProfile(profile: UserProfile): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
+/** Sync profile to server (fire-and-forget, debounced externally). */
+function syncToServer(profile: UserProfile): void {
+  fetch('/api/auth/profile', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      displayName: profile.displayName,
+      firmName: profile.firmName,
+      profileJson: JSON.stringify({
+        defaultJurisdiction: profile.defaultJurisdiction,
+        defaultWorkflowId: profile.defaultWorkflowId,
+        defaultIntensity: profile.defaultIntensity,
+        defaultBudgetUsd: profile.defaultBudgetUsd,
+        yoloModeDefault: profile.yoloModeDefault,
+        customInstructions: profile.customInstructions,
+        savedTeams: profile.savedTeams,
+      }),
+    }),
+  }).catch(() => { /* server unreachable — localStorage is the fallback */ });
+}
+
 // ── Hook ───────────────────────────────────────────────────────────────
 
 export function useUserProfile() {
   const [profile, setProfile] = useState<UserProfile>(readProfile);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // On mount: fetch server profile and merge
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.user) return;
+        const serverUser = data.user;
+
+        // Parse server-side profile JSON
+        let serverProfile: Record<string, unknown> = {};
+        if (serverUser.profile && typeof serverUser.profile === 'object') {
+          serverProfile = serverUser.profile;
+        }
+
+        setProfile(prev => {
+          const merged: UserProfile = {
+            ...prev,
+            // Server identity fields take precedence if non-empty
+            displayName: serverUser.displayName || prev.displayName,
+            firmName: serverUser.firmName || prev.firmName,
+            // Server profile fields take precedence if present
+            defaultJurisdiction: (serverProfile.defaultJurisdiction as string) || prev.defaultJurisdiction,
+            defaultWorkflowId: (serverProfile.defaultWorkflowId as string) || prev.defaultWorkflowId,
+            defaultIntensity: (serverProfile.defaultIntensity as string) || prev.defaultIntensity,
+            defaultBudgetUsd: (serverProfile.defaultBudgetUsd as number) || prev.defaultBudgetUsd,
+            yoloModeDefault: serverProfile.yoloModeDefault !== undefined
+              ? (serverProfile.yoloModeDefault as boolean)
+              : prev.yoloModeDefault,
+            customInstructions: (serverProfile.customInstructions as string) || prev.customInstructions,
+            savedTeams: Array.isArray(serverProfile.savedTeams)
+              ? (serverProfile.savedTeams as SavedTeam[])
+              : prev.savedTeams,
+          };
+          writeProfile(merged);
+          return merged;
+        });
+      })
+      .catch(() => { /* server unreachable — use localStorage */ });
+  }, []);
 
   /** Merge partial updates into the profile. */
   const updateProfile = useCallback((patch: Partial<UserProfile>) => {
     setProfile(prev => {
       const next = { ...prev, ...patch };
       writeProfile(next);
+
+      // Debounced server sync (500ms)
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => syncToServer(next), 500);
+
       return next;
     });
   }, []);
@@ -89,6 +160,7 @@ export function useUserProfile() {
       const newTeam: SavedTeam = { ...team, id: `team-${Date.now()}` };
       const next = { ...prev, savedTeams: [...prev.savedTeams, newTeam] };
       writeProfile(next);
+      syncToServer(next);
       return next;
     });
   }, []);
@@ -98,6 +170,7 @@ export function useUserProfile() {
     setProfile(prev => {
       const next = { ...prev, savedTeams: prev.savedTeams.filter(t => t.id !== teamId) };
       writeProfile(next);
+      syncToServer(next);
       return next;
     });
   }, []);

@@ -1,13 +1,11 @@
 /**
- * Authentication Middleware — Simple Bearer token auth for API clients.
+ * Authentication Middleware — Dual auth for API clients + browser users.
  *
- * MVP implementation:
- * - In-memory client registry (persistent storage in future)
- * - Bearer token authentication
- * - Client identity attached to request for downstream use
+ * Two authentication paths:
+ * 1. Bearer token (API clients / agents): Authorization: Bearer shem_agent_abc123...
+ * 2. Cookie (browser users): marble_token=<token> (HttpOnly, set by /api/auth/login)
  *
- * Usage:
- *   Authorization: Bearer shem_agent_abc123...
+ * If neither is present and the path isn't public, returns 401.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -15,6 +13,7 @@ import * as crypto from 'node:crypto';
 import type { ClientIdentity } from '../../types/client.js';
 import { createClientIdentity, generateApiKey } from '../../types/client.js';
 import { CreateClientSchema, validateBody, type CreateClientBody } from './validation.js';
+import { getUserByToken as dbGetUserByToken } from '../../db/database.js';
 
 /**
  * In-memory client registry.
@@ -98,6 +97,16 @@ function hashApiKey(apiKey: string): string {
 }
 
 /**
+ * Parse the marble_token from a cookie header string.
+ */
+export function parseCookieToken(cookieHeader?: string): string | null {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.split(';').find(c => c.trim().startsWith('marble_token='));
+  if (!match) return null;
+  return match.split('=')[1]?.trim() || null;
+}
+
+/**
  * Create authentication middleware that validates Bearer tokens.
  * Returns a Fastify onRequest hook.
  *
@@ -137,28 +146,43 @@ export function createAuthMiddleware(
     });
     if (isPublic) return;
 
+    // Path 1: Bearer token auth (API clients / agents)
     const authHeader = request.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      const err = new Error('Authentication required. Provide: Authorization: Bearer <api_key>');
-      (err as Error & { statusCode: number }).statusCode = 401;
-      throw err;
+    if (authHeader?.startsWith('Bearer ')) {
+      const apiKey = authHeader.slice(7).trim();
+      if (apiKey) {
+        const client = registry.authenticate(apiKey);
+        if (client) {
+          (request as FastifyRequest & { client?: ClientIdentity; userId?: string }).client = client;
+          (request as FastifyRequest & { userId?: string }).userId = client.id;
+          return;
+        }
+      }
     }
 
-    const apiKey = authHeader.slice(7).trim();
-    if (!apiKey) {
-      const err = new Error('API key is required');
-      (err as Error & { statusCode: number }).statusCode = 401;
-      throw err;
-    }
-    const client = registry.authenticate(apiKey);
-    if (!client) {
-      const err = new Error('Invalid API key');
-      (err as Error & { statusCode: number }).statusCode = 401;
-      throw err;
+    // Path 2: Cookie-based auth (browser users)
+    const cookieToken = parseCookieToken(request.headers.cookie);
+    if (cookieToken) {
+      try {
+        const user = dbGetUserByToken(cookieToken);
+        if (user) {
+          (request as FastifyRequest & { userId?: string; user?: { id: string; email: string; displayName: string } }).userId = user.id;
+          (request as FastifyRequest & { user?: { id: string; email: string; displayName: string } }).user = {
+            id: user.id,
+            email: user.email,
+            displayName: user.display_name,
+          };
+          return;
+        }
+      } catch {
+        // DB not ready yet or token invalid — fall through to 401
+      }
     }
 
-    // Attach client identity to request for downstream use
-    (request as FastifyRequest & { client?: ClientIdentity }).client = client;
+    // Neither auth method succeeded
+    const err = new Error('Authentication required. Provide: Authorization: Bearer <api_key> or login via /api/auth/login');
+    (err as Error & { statusCode: number }).statusCode = 401;
+    throw err;
   };
 }
 

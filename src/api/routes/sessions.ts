@@ -33,6 +33,7 @@ import {
 } from '../middleware/validation.js';
 import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST } from '../derivatives/derivative-types.js';
+import { getSessionArchive, getArchivedSession } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import type { ParsedDocument } from '../../documents/types.js';
@@ -78,6 +79,10 @@ export function registerSessionRoutes(
       gateResolver,
       budgetUsd: body.options?.budget ?? 5.0,
     });
+
+    // v14: Attach user identity for session archiving
+    const userId = (request as typeof request & { userId?: string }).userId;
+    if (userId) session.userId = userId;
 
     // v8: If matterId is provided, load the matter's team into the session
     const matterId = body.request?.matterId;
@@ -509,6 +514,67 @@ export function registerSessionRoutes(
     return reply.send({
       types: DERIVATIVE_TYPE_LIST,
       sessionHasOutput: !!session.finalOutput,
+    });
+  });
+
+  // ── GET /api/sessions/archive — List archived sessions for user ─────
+
+  fastify.get('/api/sessions/archive', async (request, reply) => {
+    const userId = (request as typeof request & { userId?: string }).userId;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required for session archive.' });
+    }
+
+    const archived = getSessionArchive(userId);
+    return reply.send({
+      sessions: archived.map(s => ({
+        id: s.id,
+        title: s.title,
+        status: s.status,
+        workflowId: s.workflow_id,
+        teamRoles: JSON.parse(s.team_roles || '[]'),
+        findingsCount: s.findings_count,
+        resolutionsCount: s.resolutions_count,
+        costUsd: s.cost_usd,
+        budgetUsd: s.budget_usd,
+        createdAt: s.created_at,
+        completedAt: s.completed_at,
+        durationMs: s.duration_ms,
+      })),
+      total: archived.length,
+    });
+  });
+
+  // ── GET /api/sessions/archive/:id — Get single archived session ────
+
+  fastify.get('/api/sessions/archive/:id', async (request, reply) => {
+    const userId = (request as typeof request & { userId?: string }).userId;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required for session archive.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const session = getArchivedSession(id, userId);
+
+    if (!session) {
+      return reply.status(404).send({ error: `Archived session not found: ${id}` });
+    }
+
+    return reply.send({
+      id: session.id,
+      title: session.title,
+      status: session.status,
+      workflowId: session.workflow_id,
+      teamRoles: JSON.parse(session.team_roles || '[]'),
+      findingsCount: session.findings_count,
+      resolutionsCount: session.resolutions_count,
+      costUsd: session.cost_usd,
+      budgetUsd: session.budget_usd,
+      finalOutput: session.final_output,
+      summary: JSON.parse(session.summary_json || '{}'),
+      createdAt: session.created_at,
+      completedAt: session.completed_at,
+      durationMs: session.duration_ms,
     });
   });
 

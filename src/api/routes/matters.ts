@@ -9,17 +9,49 @@
  *   POST   /api/matters/:id/team  — Submit team selection
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { createMatterRecord } from '../../types/matter.js';
-import type { MatterRecord, ConflictCheckResult, KycResult, EngagementLetter, FeeStructure } from '../../types/matter.js';
+import type { MatterRecord, ConflictCheckResult, KycResult, EngagementLetter } from '../../types/matter.js';
 import { agentProfiles, teamPresets } from '../../agents/profiles.js';
 import { validateBody } from '../middleware/validation.js';
+import { saveMatter as dbSaveMatter, getMattersByUser, getMatterById as dbGetMatterById } from '../../db/database.js';
 
-// ── In-memory matter store ──────────────────────────────────────────────
-// In production, this would be a database. For now, a simple Map.
+// ── In-memory matter cache (hot path for active sessions) ───────────────
+// Write-through: every mutation writes to both Map and SQLite.
+// On first request per user, matters are loaded from SQLite into the cache.
 
 const matterStore = new Map<string, MatterRecord>();
+const loadedUsers = new Set<string>();
+
+/** Get userId from request (set by auth middleware). */
+function getRequestUserId(request: FastifyRequest): string {
+  return (request as typeof request & { userId?: string }).userId ?? 'anonymous';
+}
+
+/** Ensure user's matters are loaded from SQLite into the in-memory cache. */
+function ensureLoaded(userId: string): void {
+  if (loadedUsers.has(userId)) return;
+  try {
+    const rows = getMattersByUser(userId);
+    for (const row of rows) {
+      if (!matterStore.has(row.id)) {
+        try {
+          const matter = JSON.parse(row.data_json) as MatterRecord;
+          matterStore.set(row.id, matter);
+        } catch { /* skip corrupt rows */ }
+      }
+    }
+  } catch { /* DB not initialized yet — running without persistence */ }
+  loadedUsers.add(userId);
+}
+
+/** Persist a matter to SQLite (write-through). */
+function persistMatter(userId: string, matter: MatterRecord): void {
+  try {
+    dbSaveMatter(userId, matter.matterId, JSON.stringify(matter), matter.status);
+  } catch { /* DB not initialized yet */ }
+}
 
 // ── Validation Schemas ──────────────────────────────────────────────────
 
@@ -64,6 +96,9 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   fastify.post('/api/matters', async (request, reply) => {
     const body = validateBody<CreateMatterBody>(CreateMatterSchema, request, reply);
     if (!body) return;
+
+    const userId = getRequestUserId(request);
+    ensureLoaded(userId);
 
     // Create matter record
     const matter = createMatterRecord(
@@ -119,8 +154,9 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     matter.estimatedBudget = budgetEst;
     matter.status = 'pre-engagement';
 
-    // Store
+    // Store (write-through: memory + SQLite)
     matterStore.set(matter.matterId, matter);
+    persistMatter(userId, matter);
 
     return reply.status(201).send({
       matterId: matter.matterId,
@@ -150,8 +186,12 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     });
   });
 
-  // ── GET /api/matters — List all matters ──────────────────────────────
-  fastify.get('/api/matters', async (_request, reply) => {
+  // ── GET /api/matters — List matters for user ────────────────────────
+  fastify.get('/api/matters', async (request, reply) => {
+    const userId = getRequestUserId(request);
+    ensureLoaded(userId);
+
+    // Return all cached matters (for anonymous/unauthenticated, returns all)
     const matters = Array.from(matterStore.values());
     return reply.send({
       matters: matters.map(m => ({
@@ -231,6 +271,7 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
 
     matter.engagementLetter.accepted = true;
     matter.engagementLetter.acceptedAt = new Date().toISOString();
+    persistMatter(getRequestUserId(request), matter);
 
     return reply.send({
       matterId: matter.matterId,
@@ -306,6 +347,7 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     if (matter.engagementLetter) {
       matter.engagementLetter.teamComposition = selectedRoles;
     }
+    persistMatter(getRequestUserId(request), matter);
 
     return reply.send({
       matterId: matter.matterId,
