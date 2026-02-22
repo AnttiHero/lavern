@@ -132,7 +132,7 @@ export function useDeliveryData(): {
     if (cancelledRef.current) return;
 
     try {
-      const res = await fetch(`/api/sessions/${sessionId}`);
+      const res = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch session');
       const raw = await res.json();
       if (cancelledRef.current) return;

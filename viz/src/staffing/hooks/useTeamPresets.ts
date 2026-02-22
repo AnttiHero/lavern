@@ -47,13 +47,14 @@ export function useTeamPresets() {
     (async () => {
       let basePresets: TeamPreset[] = [];
       try {
-        const res = await fetch('/api/agents/presets');
+        const res = await fetch('/api/agents/presets', { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         basePresets = data.presets ?? [];
-      } catch {
-        // Fallback to demo presets when API is unreachable
-        basePresets = DEMO_PRESETS;
+      } catch (e) {
+        // Log error — don't silently load demo data for production
+        console.error('[Staffing] Failed to load team presets:', e);
+        basePresets = [];
       } finally {
         // Merge saved teams at the top
         const saved = getSavedTeamPresets();

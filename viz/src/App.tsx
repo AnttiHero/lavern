@@ -41,7 +41,6 @@ import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
 import { SessionList } from './components/SessionList.js';
 import { MarbleMark } from './components/MarbleMark.js';
-import { DemoBanner } from './components/DemoBanner.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 
 // Lazy-load all views (separate code-split chunks)
@@ -97,7 +96,6 @@ function ViewFallback({ text }: { text: string }) {
 
 export function App() {
   const [view, setView] = useState<AppView>(getViewFromHash);
-  const [demoMode, setDemoMode] = useState(false);
 
   // Hash-based routing
   useEffect(() => {
@@ -180,14 +178,15 @@ export function App() {
         }
       }
     } catch {
-      // API unreachable — fall through to demo
-      setDemoMode(true);
+      // API unreachable — show error, don't silently fall through to demo
+      console.error('[YOLO] API unreachable — cannot create session');
+      alert('Cannot connect to the server. Please ensure the backend is running.');
+      return;
     }
 
-    // Demo fallback
-    const demoSessionId = `demo-session-${Date.now()}`;
-    sessionStorage.setItem('shem-session-id', demoSessionId);
-    window.location.hash = '#/working';
+    // API returned non-ok — show error
+    console.error('[YOLO] Session creation failed');
+    alert('Session creation failed. Check the server logs.');
   }, []);
 
   /** Intake complete → store matter data → Briefing */
@@ -231,7 +230,9 @@ export function App() {
           }));
           sessionStorage.setItem('shem-parsed-docs', JSON.stringify(trimmed));
         }
-      } catch { /* sessionStorage full — documents won't be passed to session */ }
+      } catch (e) {
+        console.warn('[Briefing] sessionStorage full — parsed documents will not be passed to session:', e);
+      }
     }
     window.location.hash = '#/staffing';
   }, []);
@@ -300,17 +301,15 @@ export function App() {
         }
       }
     } catch {
-      // API unreachable — fall through to demo session
-      setDemoMode(true);
+      // API unreachable — show error, don't silently fall through to demo
+      console.error('[Session] API unreachable — cannot create session');
+      alert('Cannot connect to the server. Please ensure the backend is running.');
+      return;
     }
 
-    // Demo fallback: generate a local session ID and proceed
-    const demoSessionId = `demo-session-${Date.now()}`;
-    sessionStorage.setItem('shem-session-id', demoSessionId);
-    if (matterId) {
-      sessionStorage.setItem('shem-matter-id', matterId);
-    }
-    window.location.hash = '#/working';
+    // API returned non-ok — show error
+    console.error('[Session] Session creation failed');
+    alert('Session creation failed. Check the server logs.');
   }, []);
 
   /** Delivery → Billing */
@@ -334,12 +333,10 @@ export function App() {
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
   const showMark = view !== 'landing' && view !== 'working';
-  const showDemoBanner = demoMode && view !== 'landing';
 
   if (view === 'intake') {
     return (
       <Suspense fallback={<ViewFallback text="Loading intake..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <IntakeView
           onComplete={handleIntakeComplete}
@@ -353,7 +350,6 @@ export function App() {
   if (view === 'briefing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <BriefingView
           onComplete={handleBriefingComplete}
@@ -367,7 +363,6 @@ export function App() {
   if (view === 'staffing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading team..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <StaffingView
           onTeamConfirmed={handleStaffingComplete}
@@ -381,7 +376,6 @@ export function App() {
   if (view === 'working') {
     return (
       <Suspense fallback={<ViewFallback text="Loading session..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <WorkingView
           onComplete={() => { window.location.hash = '#/delivery'; }}
@@ -395,7 +389,6 @@ export function App() {
   if (view === 'delivery') {
     return (
       <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <DeliveryView
           onContinue={handleDeliveryDone}
@@ -409,7 +402,6 @@ export function App() {
   if (view === 'billing') {
     return (
       <Suspense fallback={<ViewFallback text="Loading billing..." />}>
-        {showDemoBanner && <DemoBanner />}
         {showMark && <MarbleMark />}
         <BillingView
           onClose={handleBillingClose}

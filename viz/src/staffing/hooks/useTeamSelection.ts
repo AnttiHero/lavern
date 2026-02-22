@@ -91,6 +91,7 @@ export function useTeamSelection(
           const res = await fetch(`/api/matters/${matterId}/team`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ roles: Array.from(selectedRoles) }),
           });
           if (res.ok) return true;

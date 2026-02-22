@@ -62,13 +62,14 @@ export function useAgentProfiles() {
 
     (async () => {
       try {
-        const res = await fetch('/api/agents/profiles');
+        const res = await fetch('/api/agents/profiles', { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setAllProfiles(data.profiles ?? []);
-      } catch {
-        // Fallback to demo profiles when API is unreachable
-        setAllProfiles(DEMO_PROFILES);
+      } catch (e) {
+        // Log error — don't silently load demo data for production
+        console.error('[Staffing] Failed to load agent profiles:', e);
+        setAllProfiles([]);
       } finally {
         setLoading(false);
       }

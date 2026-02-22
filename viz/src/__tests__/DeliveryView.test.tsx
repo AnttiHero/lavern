@@ -8,10 +8,14 @@ import DeliveryView from '../delivery/DeliveryView.js';
 
 const noop = () => {};
 
+// DeliveryView uses demo data when session ID starts with "demo-session-"
+const demoSessionOverrides = { sessionId: 'demo-session-test-1234' };
+
 describe('DeliveryView', () => {
   it('renders with demo session data', async () => {
     renderWithSession(
-      <DeliveryView onContinue={noop} onBack={noop} onSkip={noop} />
+      <DeliveryView onContinue={noop} onBack={noop} onSkip={noop} />,
+      { sessionOverrides: demoSessionOverrides }
     );
 
     // Header should show
@@ -32,7 +36,8 @@ describe('DeliveryView', () => {
 
   it('shows The Work tab content by default', async () => {
     renderWithSession(
-      <DeliveryView onContinue={noop} onBack={noop} />
+      <DeliveryView onContinue={noop} onBack={noop} />,
+      { sessionOverrides: demoSessionOverrides }
     );
 
     // The Work is now the default tab — look for the hero overline
@@ -55,7 +60,8 @@ describe('DeliveryView', () => {
 
   it('renders continue button', () => {
     renderWithSession(
-      <DeliveryView onContinue={noop} onBack={noop} />
+      <DeliveryView onContinue={noop} onBack={noop} />,
+      { sessionOverrides: demoSessionOverrides }
     );
 
     expect(screen.getByText(/Continue to Billing/)).toBeInTheDocument();
@@ -63,7 +69,8 @@ describe('DeliveryView', () => {
 
   it('renders back button', () => {
     renderWithSession(
-      <DeliveryView onContinue={noop} onBack={noop} />
+      <DeliveryView onContinue={noop} onBack={noop} />,
+      { sessionOverrides: demoSessionOverrides }
     );
 
     expect(screen.getByText(/Back/)).toBeInTheDocument();
@@ -71,7 +78,8 @@ describe('DeliveryView', () => {
 
   it('renders matter badge when matter data exists', async () => {
     renderWithSession(
-      <DeliveryView onContinue={noop} onBack={noop} />
+      <DeliveryView onContinue={noop} onBack={noop} />,
+      { sessionOverrides: demoSessionOverrides }
     );
 
     await waitFor(() => {

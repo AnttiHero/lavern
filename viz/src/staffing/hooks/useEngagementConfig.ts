@@ -69,7 +69,7 @@ export function useEngagementConfig() {
           budget: String(budgetUsd),
           workflow: workflowId,
         });
-        const res = await fetch(`/api/agents/recommend?${params}`);
+        const res = await fetch(`/api/agents/recommend?${params}`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: RecommendationResult = await res.json();
         setRecommendedRoles(data.recommendedRoles);

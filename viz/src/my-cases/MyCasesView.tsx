@@ -50,14 +50,22 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
       setError(null);
 
       const [sessionsRes, archiveRes] = await Promise.allSettled([
-        fetch('/api/sessions', { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/sessions/archive', { credentials: 'include' }).then(r => r.ok ? r.json() : { sessions: [] }),
+        fetch('/api/sessions', { credentials: 'include' }).then(r => {
+          if (!r.ok) throw new Error(`Sessions: HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetch('/api/sessions/archive', { credentials: 'include' }).then(r => {
+          if (!r.ok) return { sessions: [] };
+          return r.json();
+        }),
       ]);
 
-      if (sessionsRes.status === 'fulfilled') {
+      if (sessionsRes.status === 'fulfilled' && sessionsRes.value) {
         setActiveSessions(sessionsRes.value.sessions ?? []);
+      } else if (sessionsRes.status === 'rejected') {
+        console.warn('[MyCases] Failed to fetch active sessions:', sessionsRes.reason);
       }
-      if (archiveRes.status === 'fulfilled') {
+      if (archiveRes.status === 'fulfilled' && archiveRes.value) {
         setArchivedSessions(archiveRes.value.sessions ?? []);
       }
     } catch (e) {

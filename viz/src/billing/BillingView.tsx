@@ -159,7 +159,7 @@ export default function BillingView({ onClose }: Props) {
 
     const sessionId = sessionStorage.getItem('shem-session-id');
     if (sessionId) {
-      fetch(`/api/sessions/${sessionId}`)
+      fetch(`/api/sessions/${sessionId}`, { credentials: 'include' })
         .then(res => res.json())
         .then(session => {
           if (data && session.cost) {

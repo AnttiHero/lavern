@@ -167,6 +167,7 @@ function RegistrationSection() {
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
 
@@ -261,7 +262,7 @@ export default function AgentDocsView({ onBack }: Props) {
     : 'http://localhost:3000';
 
   useEffect(() => {
-    fetch('/api/capabilities')
+    fetch('/api/capabilities', { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error(`Failed to load capabilities (${res.status})`);
         return res.json();

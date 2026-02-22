@@ -34,22 +34,29 @@ export function GateDialog({
 }: GateDialogProps) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   const handleDecision = async (decision: 'approve' | 'reject' | 'modify') => {
     setSubmitting(true);
+    setErrorMsg(null);
     try {
       const response = await fetch(`/api/sessions/${sessionId}/gate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ decision, notes: notes || undefined }),
       });
 
       if (response.ok) {
         onDecision(decision, notes);
+      } else {
+        const errBody = await response.text().catch(() => '');
+        setErrorMsg(`Failed to submit (${response.status}). ${errBody}`);
       }
     } catch (err) {
       console.error('Failed to submit gate decision:', err);
+      setErrorMsg('Cannot reach the server. Please check your connection.');
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +108,13 @@ export function GateDialog({
             disabled={submitting}
           />
         </div>
+
+        {/* Error */}
+        {errorMsg && (
+          <div style={{ padding: '0 24px 12px', color: '#C45D3E', fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+            {errorMsg}
+          </div>
+        )}
 
         {/* Actions */}
         <div style={styles.actions}>

@@ -38,6 +38,7 @@ export function UrlImportField({ onImport }: Props) {
       const res = await fetch('/api/utils/fetch-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ url: parsedUrl.href }),
       });
 

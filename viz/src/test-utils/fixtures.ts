@@ -32,7 +32,7 @@ export const DEMO_BRIEFING_TEAM = [
   'synthesis-editor',
 ];
 
-export const DEMO_SESSION_ID = 'demo-session-test-1234';
+export const DEMO_SESSION_ID = 'test-session-1234';
 
 /**
  * Pre-populate sessionStorage with standard demo data.

@@ -67,6 +67,7 @@ export function useDocumentUpload() {
 
       const res = await fetch('/api/documents/parse', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 

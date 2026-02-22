@@ -65,13 +65,13 @@ describe('WorkingView', () => {
     expect(screen.getByText(/Skip/)).toBeInTheDocument();
   });
 
-  it('auto-connects to demo session from sessionStorage', () => {
+  it('attempts to connect to session from sessionStorage', () => {
     renderWithSession(
       <WorkingView onComplete={noop} onBack={noop} onSkip={noop} />
     );
 
-    // With demo session data in sessionStorage, auto-connects → shows "connected"
-    expect(screen.getByText('connected')).toBeInTheDocument();
+    // With session data in sessionStorage, attempts WebSocket connection
+    // Without a real backend, stays disconnected — but Disconnect button still shows
     expect(screen.getByText('Disconnect')).toBeInTheDocument();
   });
 

@@ -39,7 +39,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     pause,
     resume,
     setSpeed,
-  } = useWorkingState(onComplete, teamRoles);
+  } = useWorkingState(onComplete);
 
   const {
     filteredCards,
@@ -64,6 +64,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
       await fetch(`/api/sessions/${state.sessionId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ reason: 'Emergency stop by user' }),
       });
     } catch (e) {

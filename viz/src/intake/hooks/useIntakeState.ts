@@ -89,6 +89,7 @@ export function useIntakeState() {
       const res = await fetch('/api/matters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           clientName: form.clientName,
           matterTitle: form.matterTitle,
@@ -113,21 +114,9 @@ export function useIntakeState() {
         response: data,
       });
       setPhase('review');
-    } catch {
-      // Fallback to demo mode — generate mock data locally
-      const demoData = createDemoMatter(form);
-      setDemoMode(true);
-      setMatterData({
-        matterId: demoData.matterId,
-        matterNumber: demoData.matterNumber,
-        clientName: form.clientName,
-        matterTitle: form.matterTitle,
-        matterType: form.matterType,
-        jurisdiction: form.jurisdiction,
-        response: demoData,
-        demoMode: true,
-      });
-      setPhase('review');
+    } catch (e) {
+      // Show error — don't silently generate fake data
+      setError(e instanceof Error ? e.message : 'Cannot connect to the server. Please ensure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -149,6 +138,7 @@ export function useIntakeState() {
       const res = await fetch(`/api/matters/${matterData.matterId}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ accepted: true }),
       });
       if (!res.ok) {

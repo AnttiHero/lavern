@@ -55,6 +55,7 @@ export function DerivativesPanel({ data }: Props) {
       const res = await fetch(`/api/sessions/${data.sessionId}/derivatives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ type: typeId }),
       });
 

@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { ShemWsClient, type ConnectionStatus } from '../../connection/ws-client.js';
 import type { ShemEvent, WorkflowStep, Severity } from '../../types/events.js';
-import { useDemoSimulator } from './useDemoSimulator.js';
+// Demo simulator removed — all sessions require a real backend connection
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ export interface WorkingState {
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
-export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
+export function useWorkingState(onSessionEnd?: () => void) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
 
   // Connection
@@ -131,7 +131,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   const syncSessionState = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/sessions/${id}`);
+      const res = await fetch(`/api/sessions/${id}`, { credentials: 'include' });
       if (!res.ok) return;
       const data = await res.json();
 
@@ -159,13 +159,9 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     setCost(undefined);
     setPendingGate(null);
 
-    if (id.startsWith('demo-session-')) {
-      // Demo mode: skip WS connection, set status to connected
-      setConnectionStatus('connected');
-    } else {
-      wsClientRef.current?.connectToSession(id);
-      setTimeout(() => syncSessionState(id), 500);
-    }
+    // Always connect via WebSocket — no more silent demo fallback
+    wsClientRef.current?.connectToSession(id);
+    setTimeout(() => syncSessionState(id), 500);
   }, [syncSessionState]);
 
   const connectToReplay = useCallback((id: string) => {
@@ -221,14 +217,6 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Demo simulator (fires fake events when session is demo-session-*) ─
-
-  useDemoSimulator({
-    sessionId,
-    teamRoles,
-    onEvent: handleEvent,
-  });
 
   // ── Derived: agent statuses ───────────────────────────────────────────
 

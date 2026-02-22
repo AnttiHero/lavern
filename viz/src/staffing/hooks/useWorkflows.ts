@@ -25,7 +25,7 @@ export function useWorkflows() {
 
     async function fetchWorkflows() {
       try {
-        const res = await fetch('/api/workflows');
+        const res = await fetch('/api/workflows', { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!cancelled) {
