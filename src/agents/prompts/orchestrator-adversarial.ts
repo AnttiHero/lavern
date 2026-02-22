@@ -47,6 +47,11 @@ context (jurisdiction, audience, stakes, focus areas).
 Query \`query_institutional_memory\` and \`query_precedents\` for relevant lessons
 and similar analyses that have been stress-tested before.
 
+Search the knowledge base: call \`search_knowledge_base\` with a query derived from
+the matter's key issues. This searches the user's own precedent library — it may
+contain clauses or analyses that strengthen or challenge the position. If the KB
+is empty the tool will say so — that is fine, proceed.
+
 Call \`advance_step\` with completed_step: "intake".
 
 ### 2. BUILD

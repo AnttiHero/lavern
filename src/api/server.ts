@@ -36,6 +36,7 @@ import { registerBriefingRoutes } from './routes/briefing.js';
 import { registerEngageRoutes } from './routes/engage.js';
 import { registerCapabilitiesRoutes } from './routes/capabilities.js';
 import { registerDocumentRoutes } from './routes/documents.js';
+import { registerKnowledgeBaseRoutes } from './routes/knowledge-base.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { initDatabase } from '../db/database.js';
@@ -175,6 +176,14 @@ export async function startApiServer(port: number): Promise<void> {
       documents: {
         parse: 'POST /api/documents/parse (multipart)',
       },
+      knowledgeBase: {
+        createCollection: 'POST /api/knowledge-base/collections',
+        listCollections: 'GET /api/knowledge-base/collections',
+        upload: 'POST /api/knowledge-base/collections/:id/upload (multipart)',
+        search: 'GET /api/knowledge-base/search?q=...',
+        deleteCollection: 'DELETE /api/knowledge-base/collections/:id',
+        deleteDocument: 'DELETE /api/knowledge-base/documents/:id',
+      },
       health: 'GET /health',
     },
   }));
@@ -197,6 +206,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerCapabilitiesRoutes(fastify);
   // v12: Document parsing
   registerDocumentRoutes(fastify);
+  // v15: Knowledge Base — reference document collections
+  registerKnowledgeBaseRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

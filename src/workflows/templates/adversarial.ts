@@ -78,6 +78,10 @@ export const adversarialTemplate: WorkflowTemplate = {
     'mcp__shem__save_matter_memory',
     'mcp__shem__query_precedents',
     'mcp__shem__save_precedent',
+    // Knowledge Base
+    'mcp__shem__search_knowledge_base',
+    'mcp__shem__list_knowledge_base_collections',
+    'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
     // Risk pricing
     'mcp__shem__request_risk_assessment',

@@ -49,6 +49,13 @@ Use reasonable defaults for missing context.
 
 Query \`query_institutional_memory\`, \`load_matter_memory\`,
 \`query_anti_patterns\`, and \`get_baseline\` for this document type.
+
+Search the knowledge base: call \`search_knowledge_base\` with a query derived from
+the document type and key clauses (e.g., "indemnification SaaS", "liability cap
+software agreement"). This searches the user's own precedent library. If results
+are returned, share them as context for the analysis team. If the KB is empty the
+tool will say so — that is fine, proceed.
+
 Call \`advance_step\` with completed_step: "intake".
 
 ### 2. PARALLEL ANALYSIS

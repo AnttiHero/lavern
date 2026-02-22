@@ -79,6 +79,10 @@ export const contractReviewTemplate: WorkflowTemplate = {
     'mcp__shem__save_matter_memory',
     'mcp__shem__query_precedents',
     'mcp__shem__save_precedent',
+    // Knowledge Base
+    'mcp__shem__search_knowledge_base',
+    'mcp__shem__list_knowledge_base_collections',
+    'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
     // Approval gate (for final_gate)
     'mcp__shem__request_approval',

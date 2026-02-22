@@ -70,6 +70,11 @@ Query memory extensively — \`query_institutional_memory\`,
 \`get_baseline\`. How were similar matters decomposed before?
 What went wrong in past complex matters?
 
+Search the knowledge base: call \`search_knowledge_base\` with a query derived from
+the matter's key issues and document type. This searches the user's own precedent
+library. If results are returned, share them as context for all sub-teams. If the
+KB is empty the tool will say so — that is fine, proceed.
+
 Call \`advance_step\` with completed_step: "intake".
 
 ### 2. DECOMPOSITION

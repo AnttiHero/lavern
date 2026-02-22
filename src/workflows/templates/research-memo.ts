@@ -72,6 +72,10 @@ export const researchMemoTemplate: WorkflowTemplate = {
     'mcp__shem__save_matter_memory',
     'mcp__shem__query_precedents',
     'mcp__shem__save_precedent',
+    // Knowledge Base
+    'mcp__shem__search_knowledge_base',
+    'mcp__shem__list_knowledge_base_collections',
+    'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
     // Evaluator gate
     'mcp__shem__run_evaluator_gate',

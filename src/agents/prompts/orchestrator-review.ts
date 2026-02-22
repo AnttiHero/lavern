@@ -70,6 +70,13 @@ Call \`get_current_step\`. Accept the request and gather context:
 
 Query \`query_institutional_memory\` and \`load_matter_memory\` for patterns,
 lessons, and returning-client context.
+
+Search the knowledge base: call \`search_knowledge_base\` with a query derived from
+the document type and key clauses (e.g., "indemnification SaaS", "liability cap
+software agreement"). This searches the user's own precedent library. If results
+are returned, include them as context for the specialist. If the KB is empty the
+tool will say so — that is fine, proceed.
+
 Call \`advance_step\` with completed_step: "intake".
 
 ### 2. SPECIALIST ANALYSIS

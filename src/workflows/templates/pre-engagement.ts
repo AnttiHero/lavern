@@ -91,6 +91,10 @@ export const preEngagementTemplate: WorkflowTemplate = {
     'mcp__shem__query_institutional_memory',
     'mcp__shem__load_matter_memory',
     'mcp__shem__query_precedents',
+    // Knowledge Base
+    'mcp__shem__search_knowledge_base',
+    'mcp__shem__list_knowledge_base_collections',
+    'mcp__shem__get_knowledge_base_entry',
   ],
   requiredAgents: [],  // Pre-engagement doesn't dispatch specialist agents — it's orchestrator-only
   orchestratorPrompt: `You are the orchestrator for the pre-engagement workflow at The Shem law firm.

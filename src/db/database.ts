@@ -1,12 +1,13 @@
 /**
- * Database Layer — SQLite persistence for users, sessions, and matters.
+ * Database Layer — SQLite persistence for users, sessions, matters, and knowledge base.
  *
  * Uses better-sqlite3 (synchronous, fast, zero-config).
  * The DB file lives at ./data/marble.db by default.
  *
  * Live sessions stay in-memory (SessionManager handles EventBus, WebSocket).
  * SQLite stores the archive: completed sessions, user accounts, matters.
- * Think of it as: RAM for live work, SQLite for the archive.
+ * Knowledge base: FTS5-indexed document chunks for agent reference materials.
+ * Think of it as: RAM for live work, SQLite for the archive + knowledge.
  */
 
 import Database from 'better-sqlite3';
@@ -95,7 +96,93 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_matters_user ON matters(user_id);
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires ON auth_tokens(expires_at);
+
+    -- ── Knowledge Base (v15) ──────────────────────────────────────────
+    -- Collections group related documents (e.g., "NDA Precedents", "Firm Playbook")
+    CREATE TABLE IF NOT EXISTS kb_collections (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL REFERENCES users(id),
+      name        TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      doc_type    TEXT DEFAULT '',
+      metadata    TEXT DEFAULT '{}',
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
+
+    -- Each document uploaded to a collection
+    CREATE TABLE IF NOT EXISTS kb_documents (
+      id            TEXT PRIMARY KEY,
+      collection_id TEXT NOT NULL REFERENCES kb_collections(id) ON DELETE CASCADE,
+      user_id       TEXT NOT NULL REFERENCES users(id),
+      filename      TEXT NOT NULL,
+      mime_type     TEXT NOT NULL,
+      file_size     INTEGER NOT NULL,
+      word_count    INTEGER DEFAULT 0,
+      page_count    INTEGER DEFAULT 0,
+      doc_type      TEXT DEFAULT '',
+      jurisdiction  TEXT DEFAULT '',
+      metadata      TEXT DEFAULT '{}',
+      created_at    TEXT NOT NULL
+    );
+
+    -- Searchable chunks (one document → many chunks)
+    CREATE TABLE IF NOT EXISTS kb_chunks (
+      id            TEXT PRIMARY KEY,
+      document_id   TEXT NOT NULL REFERENCES kb_documents(id) ON DELETE CASCADE,
+      collection_id TEXT NOT NULL REFERENCES kb_collections(id) ON DELETE CASCADE,
+      user_id       TEXT NOT NULL REFERENCES users(id),
+      heading       TEXT DEFAULT '',
+      content       TEXT NOT NULL,
+      chunk_index   INTEGER NOT NULL,
+      level         INTEGER DEFAULT 1,
+      word_count    INTEGER DEFAULT 0,
+      metadata      TEXT DEFAULT '{}',
+      created_at    TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_kb_collections_user ON kb_collections(user_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_documents_collection ON kb_documents(collection_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_documents_user ON kb_documents(user_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_chunks_document ON kb_chunks(document_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_chunks_collection ON kb_chunks(collection_id);
+    CREATE INDEX IF NOT EXISTS idx_kb_chunks_user ON kb_chunks(user_id);
   `);
+
+  // FTS5 virtual table + sync triggers (must be separate from the main exec block
+  // because CREATE VIRTUAL TABLE cannot be inside multi-statement exec on some versions)
+  db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS kb_chunks_fts USING fts5(
+      heading, content, content='kb_chunks', content_rowid='rowid'
+    );
+  `);
+
+  // Sync triggers — keep FTS index in sync with kb_chunks table
+  // Use try/catch because triggers already existing is not an error we care about
+  try {
+    db.exec(`
+      CREATE TRIGGER kb_chunks_ai AFTER INSERT ON kb_chunks BEGIN
+        INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
+      END;
+    `);
+  } catch { /* trigger already exists */ }
+
+  try {
+    db.exec(`
+      CREATE TRIGGER kb_chunks_ad AFTER DELETE ON kb_chunks BEGIN
+        INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
+      END;
+    `);
+  } catch { /* trigger already exists */ }
+
+  try {
+    db.exec(`
+      CREATE TRIGGER kb_chunks_au AFTER UPDATE ON kb_chunks BEGIN
+        INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
+        INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
+      END;
+    `);
+  } catch { /* trigger already exists */ }
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────

@@ -37,7 +37,9 @@ agent from the available roster. Do not deliberate — decide.
 ## Execution
 
 1. **INTAKE**: Call \`get_current_step\`. Check \`query_institutional_memory\` for
-   relevant lessons. Identify the specialist. Call \`advance_step\` with
+   relevant lessons. Call \`search_knowledge_base\` with a query derived from the
+   request — this searches the user's own precedent library (returns empty if none
+   exists, which is fine). Identify the specialist. Call \`advance_step\` with
    completed_step: "intake".
 
 2. **SPECIALIST EXECUTION**: Dispatch the specialist with the full request, all

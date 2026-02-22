@@ -106,6 +106,10 @@ export const roundtableTemplate: WorkflowTemplate = {
     'mcp__shem__load_matter_memory',
     'mcp__shem__save_precedent',
     'mcp__shem__query_precedents',
+    // Knowledge Base
+    'mcp__shem__search_knowledge_base',
+    'mcp__shem__list_knowledge_base_collections',
+    'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
     // Approval gate
     'mcp__shem__request_approval',
