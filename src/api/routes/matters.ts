@@ -22,6 +22,7 @@ import { saveMatter as dbSaveMatter, getMattersByUser, getMatterById as dbGetMat
 // On first request per user, matters are loaded from SQLite into the cache.
 
 const matterStore = new Map<string, MatterRecord>();
+const matterOwners = new Map<string, string>(); // matterId → userId
 const loadedUsers = new Set<string>();
 
 /** Get userId from request (set by auth middleware). */
@@ -39,11 +40,12 @@ function ensureLoaded(userId: string): void {
         try {
           const matter = JSON.parse(row.data_json) as MatterRecord;
           matterStore.set(row.id, matter);
+          matterOwners.set(row.id, userId);
         } catch { /* skip corrupt rows */ }
       }
     }
+    loadedUsers.add(userId);
   } catch { /* DB not initialized yet — running without persistence */ }
-  loadedUsers.add(userId);
 }
 
 /** Persist a matter to SQLite (write-through). */
@@ -156,6 +158,7 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
 
     // Store (write-through: memory + SQLite)
     matterStore.set(matter.matterId, matter);
+    matterOwners.set(matter.matterId, userId);
     persistMatter(userId, matter);
 
     return reply.status(201).send({
@@ -191,8 +194,10 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     const userId = getRequestUserId(request);
     ensureLoaded(userId);
 
-    // Return all cached matters (for anonymous/unauthenticated, returns all)
-    const matters = Array.from(matterStore.values());
+    // Return only this user's matters
+    const matters = Array.from(matterStore.entries())
+      .filter(([id]) => matterOwners.get(id) === userId)
+      .map(([, m]) => m);
     return reply.send({
       matters: matters.map(m => ({
         matterId: m.matterId,

@@ -324,7 +324,7 @@ export function App() {
       'shem-matter-id', 'shem-matter-data',
       'shem-briefing-memo', 'shem-briefing-docs',
       'shem-briefing-team', 'shem-briefing-config',
-      'shem-session-id',
+      'shem-session-id', 'shem-parsed-docs',
     ];
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
     window.location.hash = '';

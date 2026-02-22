@@ -4,7 +4,7 @@
 
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
-export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'next-steps';
+export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'next-steps' | 'conversation';
 
 const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'work', label: 'The Work' },
@@ -12,6 +12,7 @@ const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'story', label: 'The Story' },
   { id: 'scorecard', label: 'The Scorecard' },
   { id: 'next-steps', label: 'Next Steps' },
+  { id: 'conversation', label: 'Ask the Team' },
 ];
 
 interface Props {

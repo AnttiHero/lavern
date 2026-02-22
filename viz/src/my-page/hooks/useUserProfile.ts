@@ -100,6 +100,11 @@ export function useUserProfile() {
   const [profile, setProfile] = useState<UserProfile>(readProfile);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => { clearTimeout(syncTimerRef.current); };
+  }, []);
+
   // On mount: fetch server profile and merge
   useEffect(() => {
     fetch('/api/auth/me', { credentials: 'include' })
@@ -124,7 +129,7 @@ export function useUserProfile() {
             defaultJurisdiction: (serverProfile.defaultJurisdiction as string) || prev.defaultJurisdiction,
             defaultWorkflowId: (serverProfile.defaultWorkflowId as string) || prev.defaultWorkflowId,
             defaultIntensity: (serverProfile.defaultIntensity as string) || prev.defaultIntensity,
-            defaultBudgetUsd: (serverProfile.defaultBudgetUsd as number) || prev.defaultBudgetUsd,
+            defaultBudgetUsd: (serverProfile.defaultBudgetUsd as number) ?? prev.defaultBudgetUsd,
             yoloModeDefault: serverProfile.yoloModeDefault !== undefined
               ? (serverProfile.yoloModeDefault as boolean)
               : prev.yoloModeDefault,

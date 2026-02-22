@@ -10,6 +10,7 @@
  * GET    /api/sessions/:id              — Get session status + metadata
  * GET    /api/sessions/:id/download     — Download work product (md, json, summary)
  * POST   /api/sessions/:id/derivatives  — Generate derivative document (memo, checklist, etc.)
+ * POST   /api/sessions/:id/conversation — Ask the team (SSE streaming Q&A)
  * GET    /api/sessions/:id/events       — WebSocket event stream
  * POST   /api/sessions/:id/gate         — Submit gate decision
  * DELETE /api/sessions/:id              — Cancel session
@@ -32,12 +33,33 @@ import {
   type DerivativeBody,
 } from '../middleware/validation.js';
 import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
-import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST } from '../derivatives/derivative-types.js';
+import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
+import { agentProfiles } from '../../agents/profiles.js';
+import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
 import { getSessionArchive, getArchivedSession } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
+
+/** Safely parse JSON, returning fallback on failure. */
+function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
+  if (!json) return fallback;
+  try { return JSON.parse(json) as T; } catch { return fallback; }
+}
+
+/** Check if the requesting user owns the session (or session has no owner). */
+function checkSessionOwnership(
+  request: unknown,
+  session: { userId?: string },
+): boolean {
+  const requestUserId = (request as { userId?: string }).userId;
+  // No owner set (legacy/anonymous sessions) — allow access
+  if (!session.userId) return true;
+  // No authenticated user — deny
+  if (!requestUserId) return false;
+  return requestUserId === session.userId;
+}
 
 export function registerSessionRoutes(
   fastify: FastifyInstance,
@@ -195,6 +217,10 @@ export function registerSessionRoutes(
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
+    if (!checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
     const gateResolver = session.gateResolver;
     const pendingGate = gateResolver instanceof AsyncGateResolver
       ? gateResolver.getPendingGate()
@@ -322,7 +348,7 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
-    if (!session) {
+    if (!session || !checkSessionOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -424,7 +450,7 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
-    if (!session) {
+    if (!session || !checkSessionOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -507,7 +533,7 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
-    if (!session) {
+    if (!session || !checkSessionOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -515,6 +541,132 @@ export function registerSessionRoutes(
       types: DERIVATIVE_TYPE_LIST,
       sessionHasOutput: !!session.finalOutput,
     });
+  });
+
+  // ── POST /api/sessions/:id/conversation — Ask the team ──────────────
+
+  fastify.post('/api/sessions/:id/conversation', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    if (!session.finalOutput) {
+      return reply.status(409).send({
+        error: 'Session has not produced a work product yet. Wait for the analysis to complete.',
+      });
+    }
+
+    const body = request.body as {
+      message?: string;
+      history?: { role: 'user' | 'assistant'; content: string }[];
+    } | undefined;
+
+    if (!body?.message || typeof body.message !== 'string' || body.message.trim().length === 0) {
+      return reply.status(400).send({ error: 'message is required.' });
+    }
+
+    // Validate input limits
+    if (body.message.length > 10_000) {
+      return reply.status(400).send({ error: 'message must be under 10,000 characters.' });
+    }
+
+    const history = Array.isArray(body.history) ? body.history.slice(-40) : []; // Cap at 40 turns
+
+    // Resolve orchestrator personality from workflow template
+    const workflowId = session.workflowTemplateId ?? 'counsel';
+    const orchestratorRole = getOrchestratorForWorkflow(workflowId);
+    const profile = agentProfiles[orchestratorRole];
+
+    const personaBlock = profile
+      ? `You are ${profile.displayName} — ${profile.tagline}\n\n${profile.personality.workStyle}\n`
+      : 'You are the senior partner who led this analysis.\n';
+
+    // Build system prompt with full session context
+    const systemPrompt = `${personaBlock}
+You led the analysis team on this matter. Below is the complete session context — every finding, resolution, score, and the full work product your team produced.
+
+Answer the user's questions thoroughly, referencing specific findings, resolutions, and scores from the analysis. You can:
+- Explain any finding or resolution in detail
+- Draft alternative contract clauses or language
+- Suggest additional analyses or next steps
+- Compare different approaches with pros and cons
+- Provide risk assessments on specific questions
+- Summarize sections of the work product
+
+Be direct, specific, and cite evidence from the analysis. If the user asks about something not covered in the analysis, say so clearly.
+
+${buildFullContext(session)}`;
+
+    // Build prompt from conversation history + new message
+    const historyBlock = history
+      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n\n');
+
+    const prompt = historyBlock
+      ? `${historyBlock}\n\nUser: ${body.message.trim()}`
+      : body.message.trim();
+
+    // Track client disconnect to stop streaming
+    let clientDisconnected = false;
+    request.raw.on('close', () => { clientDisconnected = true; });
+
+    try {
+      // Set up SSE response
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+
+      const result = sdkQuery({
+        prompt,
+        options: {
+          systemPrompt,
+          model: 'claude-sonnet-4-5-20250929',
+          maxTurns: 1,
+        },
+      });
+
+      for await (const message of result) {
+        if (clientDisconnected) break;
+        if (!('type' in message)) continue;
+
+        if (message.type === 'assistant' && message.message?.content) {
+          for (const block of message.message.content) {
+            if ('text' in block) {
+              reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: block.text })}\n\n`);
+            }
+          }
+        }
+
+        if (message.type === 'result') {
+          if ('subtype' in message && message.subtype !== 'success') {
+            const errors = (message as Record<string, unknown>).errors;
+            reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: `Generation failed: ${JSON.stringify(errors)}` })}\n\n`);
+          }
+        }
+      }
+
+      if (!clientDisconnected) {
+        reply.raw.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+      }
+      reply.raw.end();
+    } catch (err) {
+      console.error(`[API] Conversation failed for session ${id}:`, err);
+      // If headers haven't been sent yet, send a normal error
+      if (!reply.raw.headersSent) {
+        return reply.status(500).send({
+          error: 'Conversation failed',
+          details: err instanceof Error ? err.message : String(err),
+        });
+      }
+      // If streaming already started, send error as SSE
+      reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: err instanceof Error ? err.message : String(err) })}\n\n`);
+      reply.raw.end();
+    }
   });
 
   // ── GET /api/sessions/archive — List archived sessions for user ─────
@@ -532,7 +684,7 @@ export function registerSessionRoutes(
         title: s.title,
         status: s.status,
         workflowId: s.workflow_id,
-        teamRoles: JSON.parse(s.team_roles || '[]'),
+        teamRoles: safeJsonParse(s.team_roles, []),
         findingsCount: s.findings_count,
         resolutionsCount: s.resolutions_count,
         costUsd: s.cost_usd,
@@ -565,13 +717,13 @@ export function registerSessionRoutes(
       title: session.title,
       status: session.status,
       workflowId: session.workflow_id,
-      teamRoles: JSON.parse(session.team_roles || '[]'),
+      teamRoles: safeJsonParse(session.team_roles, []),
       findingsCount: session.findings_count,
       resolutionsCount: session.resolutions_count,
       costUsd: session.cost_usd,
       budgetUsd: session.budget_usd,
       finalOutput: session.final_output,
-      summary: JSON.parse(session.summary_json || '{}'),
+      summary: safeJsonParse(session.summary_json, {}),
       createdAt: session.created_at,
       completedAt: session.completed_at,
       durationMs: session.duration_ms,
@@ -603,7 +755,7 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
-    if (!session) {
+    if (!session || !checkSessionOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -646,7 +798,7 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
-    if (!session) {
+    if (!session || !checkSessionOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 

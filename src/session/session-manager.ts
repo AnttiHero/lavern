@@ -89,6 +89,26 @@ export class SessionManager {
   }
 
   /**
+   * Evict a single session: archive it, halt agents, then remove.
+   */
+  private evictSession(id: string, entry: SessionEntry): void {
+    // Archive before removing listeners so work product is preserved
+    try {
+      const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? 'anonymous';
+      archiveSession(entry.session, userId);
+    } catch (err) {
+      console.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+    }
+    // Halt any running agents
+    if (!entry.session.isHalted()) {
+      entry.session.halt('Session evicted (TTL/cap)');
+    }
+    entry.session.events.stopRecording();
+    entry.session.events.removeAllListeners();
+    this.sessions.delete(id);
+  }
+
+  /**
    * Evict expired sessions (TTL) and enforce max session cap.
    * Called lazily at the start of createSession().
    */
@@ -99,9 +119,7 @@ export class SessionManager {
     // Phase 1: TTL eviction
     for (const [id, entry] of this.sessions) {
       if (now - entry.createdAt > SESSION_TTL_MS) {
-        entry.session.events.stopRecording();
-        entry.session.events.removeAllListeners();
-        this.sessions.delete(id);
+        this.evictSession(id, entry);
         evicted++;
       }
     }
@@ -113,9 +131,7 @@ export class SessionManager {
       );
       const toRemove = sorted.slice(0, this.sessions.size - MAX_SESSIONS + 1);
       for (const [id, entry] of toRemove) {
-        entry.session.events.stopRecording();
-        entry.session.events.removeAllListeners();
-        this.sessions.delete(id);
+        this.evictSession(id, entry);
         evicted++;
       }
     }

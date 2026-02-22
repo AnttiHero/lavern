@@ -52,13 +52,15 @@ const ProfileUpdateSchema = z.object({
 const COOKIE_NAME = 'marble_token';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
+const SECURE_FLAG = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+
 function setAuthCookie(reply: FastifyReply, token: string): void {
-  const cookie = `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}`;
+  const cookie = `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${SECURE_FLAG}`;
   reply.header('Set-Cookie', cookie);
 }
 
 function clearAuthCookie(reply: FastifyReply): void {
-  reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`);
+  reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${SECURE_FLAG}`);
 }
 
 function sanitizeUser(user: { id: string; email: string; display_name: string; firm_name: string; profile_json: string }) {

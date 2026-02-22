@@ -83,7 +83,7 @@ function matterTitle(session: SessionState): string {
 }
 
 /** Build a full context block that all derivative types share. */
-function buildFullContext(session: SessionState): string {
+export function buildFullContext(session: SessionState): string {
   return `# Analysis Context
 
 ## Matter

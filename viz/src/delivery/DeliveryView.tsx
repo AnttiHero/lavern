@@ -1,12 +1,13 @@
 /**
  * DeliveryView — Tabbed editorial delivery screen.
  *
- * Five tabs present the work product as a professional handoff:
+ * Six tabs present the work product as a professional handoff:
  *   1. The Work    — primary deliverable with executive summary + downloads
  *   2. The Review  — process transparency: what was checked, debated, escalated
  *   3. The Story   — storified project narrative
  *   4. The Scorecard — quality metrics and team performance
  *   5. Next Steps  — implementation guide and watch-outs
+ *   6. Ask the Team — post-delivery conversational Q&A
  *
  * Fetches data from GET /api/sessions/:id or falls back to
  * demo data when session ID starts with "demo-session-".
@@ -22,6 +23,7 @@ import { ReviewTab } from './components/ReviewTab.js';
 import { TheStoryTab } from './components/TheStoryTab.js';
 import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
+import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
 
 interface Props {
   onContinue: () => void;
@@ -40,6 +42,11 @@ interface MatterInfo {
 export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   const { data, loading, error } = useDeliveryData();
   const [activeTab, setActiveTab] = useState<DeliveryTab>('work');
+
+  // Conversation state lives here so it persists across tab switches
+  const [convMessages, setConvMessages] = useState<ConversationMessage[]>([]);
+  const [convInput, setConvInput] = useState('');
+  const [convStreaming, setConvStreaming] = useState(false);
 
   // Read matter info from sessionStorage
   const [matterInfo] = useState<MatterInfo>(() => {
@@ -71,6 +78,17 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           {activeTab === 'story' && <TheStoryTab data={data} />}
           {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
           {activeTab === 'next-steps' && <NextStepsTab data={data} />}
+          {activeTab === 'conversation' && (
+            <ConversationTab
+              sessionId={data.sessionId}
+              messages={convMessages}
+              setMessages={setConvMessages}
+              input={convInput}
+              setInput={setConvInput}
+              streaming={convStreaming}
+              setStreaming={setConvStreaming}
+            />
+          )}
         </>
       )}
 
