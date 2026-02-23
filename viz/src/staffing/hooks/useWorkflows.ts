@@ -16,9 +16,17 @@ export interface WorkflowSummary {
   gateSteps: string[];
 }
 
+const DEMO_WORKFLOWS: WorkflowSummary[] = [
+  { id: 'roundtable', name: 'Roundtable', description: 'Full document review, redraft, and plain-language improvement', stepCount: 8, steps: ['intake', 'research', 'draft', 'review', 'design', 'test', 'refine', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 2, hasGates: true, gateSteps: ['review', 'deliver'] },
+  { id: 'review', name: 'Review', description: 'Systematic contract analysis and redlining', stepCount: 6, steps: ['intake', 'analysis', 'redline', 'review', 'negotiate', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
+  { id: 'adversarial', name: 'Adversarial', description: 'Legal research with structured memorandum output', stepCount: 5, steps: ['intake', 'research', 'draft', 'review', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
+  { id: 'counsel', name: 'Counsel', description: 'Quick legal question answered with analysis', stepCount: 4, steps: ['intake', 'analysis', 'draft', 'deliver'], requiredAgents: ['managing-partner'], gateCount: 0, hasGates: false, gateSteps: [] },
+];
+
 export function useWorkflows() {
-  const [workflows, setWorkflows] = useState<WorkflowSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with demo workflows — renders immediately on standalone deploy
+  const [workflows, setWorkflows] = useState<WorkflowSummary[]>(DEMO_WORKFLOWS);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,12 +41,7 @@ export function useWorkflows() {
         }
       } catch {
         // Fallback demo workflows when API is unreachable
-        if (!cancelled) setWorkflows([
-          { id: 'roundtable', name: 'Roundtable', description: 'Full document review, redraft, and plain-language improvement', stepCount: 8, steps: ['intake', 'research', 'draft', 'review', 'design', 'test', 'refine', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 2, hasGates: true, gateSteps: ['review', 'deliver'] },
-          { id: 'review', name: 'Review', description: 'Systematic contract analysis and redlining', stepCount: 6, steps: ['intake', 'analysis', 'redline', 'review', 'negotiate', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
-          { id: 'adversarial', name: 'Adversarial', description: 'Legal research with structured memorandum output', stepCount: 5, steps: ['intake', 'research', 'draft', 'review', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
-          { id: 'counsel', name: 'Counsel', description: 'Quick legal question answered with analysis', stepCount: 4, steps: ['intake', 'analysis', 'draft', 'deliver'], requiredAgents: ['managing-partner'], gateCount: 0, hasGates: false, gateSteps: [] },
-        ]);
+        if (!cancelled) setWorkflows(DEMO_WORKFLOWS);
       } finally {
         if (!cancelled) setLoading(false);
       }

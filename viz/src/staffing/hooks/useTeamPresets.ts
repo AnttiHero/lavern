@@ -36,8 +36,10 @@ function getSavedTeamPresets(): TeamPreset[] {
 }
 
 export function useTeamPresets() {
-  const [presets, setPresets] = useState<TeamPreset[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with demo presets + saved teams — ready to render immediately
+  const saved = getSavedTeamPresets();
+  const [presets, setPresets] = useState<TeamPreset[]>([...saved, ...DEMO_PRESETS]);
+  const [loading, setLoading] = useState(false);
   const fetched = useRef(false);
 
   useEffect(() => {
