@@ -6,7 +6,9 @@
  *   #/dashboard  → Hero: begin engagement + YOLO
  *   #/intake     → Client intake / reception
  *   #/briefing   → Context capture / document upload / Q&A
- *   #/staffing   → Draft & confirm team
+ *   #/strategy   → Choose approach, depth, team leader
+ *   #/instruct   → Tell your team lead what to focus on
+ *   #/team       → Browse & select agents
  *   #/working    → Live agent dashboard (thinking stream)
  *   #/delivery   → Work results presentation
  *   #/billing    → Invoice & cost summary
@@ -17,7 +19,8 @@
  * App.tsx handles routing and cross-view data flow via sessionStorage.
  */
 
-import { useEffect, useState, useCallback, Suspense, lazy } from 'react';
+import { useEffect, useState, useCallback, useContext, Suspense, lazy } from 'react';
+import { UserContext } from './auth/UserContext.js';
 
 // ── Global keyframes for hover effects ──────────────────────────────
 const MARBLE_KEYFRAMES_ID = 'marble-global-keyframes';
@@ -49,24 +52,33 @@ import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 
 // Lazy-load all views (separate code-split chunks)
 const LandingView = lazy(() => import('./landing/LandingView.js'));
+const LobbyView = lazy(() => import('./landing/LobbyView.js'));
 const IntakeView = lazy(() => import('./intake/IntakeView.js'));
 const BriefingView = lazy(() => import('./briefing/BriefingView.js'));
-const StaffingView = lazy(() => import('./staffing/StaffingView.js'));
+const StrategyView = lazy(() => import('./staffing/StrategyView.js'));
+const InstructView = lazy(() => import('./staffing/InstructView.js'));
+const TeamView = lazy(() => import('./staffing/TeamView.js'));
 const WorkingView = lazy(() => import('./working/WorkingView.js'));
 const DeliveryView = lazy(() => import('./delivery/DeliveryView.js'));
 const BillingView = lazy(() => import('./billing/BillingView.js'));
 const MyPageView = lazy(() => import('./my-page/MyPageView.js'));
 const MyCasesView = lazy(() => import('./my-cases/MyCasesView.js'));
 const AgentDocsView = lazy(() => import('./agent-docs/AgentDocsView.js'));
+const LoginView = lazy(() => import('./auth/LoginView.js'));
 
-type AppView = 'landing' | 'dashboard' | 'intake' | 'briefing' | 'staffing' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs';
+type AppView = 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'instruct' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
+  if (hash.startsWith('#/lobby')) return 'lobby';
+  if (hash.startsWith('#/login')) return 'login';
   if (hash.startsWith('#/dashboard')) return 'dashboard';
   if (hash.startsWith('#/intake')) return 'intake';
   if (hash.startsWith('#/briefing')) return 'briefing';
-  if (hash.startsWith('#/staffing')) return 'staffing';
+  if (hash.startsWith('#/strategy')) return 'strategy';
+  if (hash.startsWith('#/instruct')) return 'instruct';
+  if (hash.startsWith('#/team')) return 'team';
+  if (hash.startsWith('#/staffing')) return 'strategy'; // backward compat redirect
   if (hash.startsWith('#/working')) return 'working';
   if (hash.startsWith('#/delivery')) return 'delivery';
   if (hash.startsWith('#/billing')) return 'billing';
@@ -205,7 +217,7 @@ export function App() {
     window.location.hash = '#/briefing';
   }, []);
 
-  /** Briefing complete → store memo → Staffing */
+  /** Briefing complete → store memo → Strategy */
   const handleBriefingComplete = useCallback((payload: BriefingPayload) => {
     sessionStorage.setItem('shem-briefing-memo', payload.memoText);
     sessionStorage.setItem('shem-briefing-config', JSON.stringify({
@@ -238,12 +250,26 @@ export function App() {
         console.warn('[Briefing] sessionStorage full — parsed documents will not be passed to session:', e);
       }
     }
-    window.location.hash = '#/staffing';
+    window.location.hash = '#/strategy';
   }, []);
 
-  /** Staffing confirmed → create session → Working */
+  /** Strategy complete → Instruct */
+  const handleStrategyComplete = useCallback(() => {
+    window.location.hash = '#/instruct';
+  }, []);
+
+  /** Instruct complete → Team */
+  const handleInstructComplete = useCallback(() => {
+    window.location.hash = '#/team';
+  }, []);
+
+  /** Team confirmed → create session → Working */
   const handleStaffingComplete = useCallback(async (roles: string[]) => {
-    const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
+    let memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
+    const instructPrompt = sessionStorage.getItem('shem-instruct-prompt') ?? '';
+    if (instructPrompt.trim()) {
+      memoText += '\n\n### Client Instructions\n\n' + instructPrompt.trim() + '\n';
+    }
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
     let config = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false };
@@ -327,7 +353,8 @@ export function App() {
       'shem-matter-id', 'shem-matter-data',
       'shem-briefing-memo', 'shem-briefing-docs',
       'shem-briefing-team', 'shem-briefing-config',
-      'shem-session-id', 'shem-parsed-docs',
+      'shem-session-id', 'shem-parsed-docs', 'shem-strategy-preset',
+      'shem-instruct-prompt',
     ];
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
     window.location.hash = '';
@@ -336,7 +363,8 @@ export function App() {
   // ── View rendering ────────────────────────────────────────────────────
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
-  const showMark = view !== 'landing' && view !== 'working';
+  const showMark = view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
+  const userCtx = useContext(UserContext);
 
   if (view === 'intake') {
     return (
@@ -358,19 +386,45 @@ export function App() {
         <BriefingView
           onComplete={handleBriefingComplete}
           onBack={() => { window.location.hash = '#/intake'; }}
-          onSkip={() => { window.location.hash = '#/staffing'; }}
+          onSkip={() => { window.location.hash = '#/strategy'; }}
         />
       </Suspense>
     );
   }
 
-  if (view === 'staffing') {
+  if (view === 'strategy') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
+        {showMark && <MarbleMark />}
+        <StrategyView
+          onComplete={handleStrategyComplete}
+          onBack={() => { window.location.hash = '#/briefing'; }}
+          onSkip={() => { window.location.hash = '#/instruct'; }}
+        />
+      </Suspense>
+    );
+  }
+
+  if (view === 'instruct') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading..." />}>
+        {showMark && <MarbleMark />}
+        <InstructView
+          onComplete={handleInstructComplete}
+          onBack={() => { window.location.hash = '#/strategy'; }}
+          onSkip={() => { window.location.hash = '#/team'; }}
+        />
+      </Suspense>
+    );
+  }
+
+  if (view === 'team') {
     return (
       <Suspense fallback={<ViewFallback text="Loading team..." />}>
         {showMark && <MarbleMark />}
-        <StaffingView
+        <TeamView
           onTeamConfirmed={handleStaffingComplete}
-          onBack={() => { window.location.hash = '#/briefing'; }}
+          onBack={() => { window.location.hash = '#/instruct'; }}
           onSkip={() => { window.location.hash = '#/delivery'; }}
         />
       </Suspense>
@@ -383,7 +437,7 @@ export function App() {
         {showMark && <MarbleMark />}
         <WorkingView
           onComplete={() => { window.location.hash = '#/delivery'; }}
-          onBack={() => { window.location.hash = '#/staffing'; }}
+          onBack={() => { window.location.hash = '#/team'; }}
           onSkip={() => { window.location.hash = '#/delivery'; }}
         />
       </Suspense>
@@ -442,12 +496,41 @@ export function App() {
     );
   }
 
+  // ── Login — standalone login page ──────────────────────────────────────
+  if (view === 'login') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading..." />}>
+        <LoginView
+          onAuth={(user) => {
+            if (userCtx) userCtx.login(user);
+            window.location.hash = '#/lobby';
+          }}
+          onBack={() => { window.location.hash = '#/lobby'; }}
+        />
+      </Suspense>
+    );
+  }
+
   // ── Agent Docs — API documentation for agent clients ───────────────────
   if (view === 'agent-docs') {
     return (
       <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
         {showMark && <MarbleMark />}
         <AgentDocsView onBack={() => { window.location.hash = ''; }} />
+      </Suspense>
+    );
+  }
+
+  // ── Lobby — cinematic MARBLE gate ────────────────────────────────────
+  if (view === 'lobby') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading..." />}>
+        <LobbyView
+          onEnter={() => { window.location.hash = '#/dashboard'; }}
+          onMyPage={() => { window.location.hash = '#/my-page'; }}
+          onLogin={() => { window.location.hash = '#/login'; }}
+          onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
+        />
       </Suspense>
     );
   }
@@ -480,7 +563,7 @@ export function App() {
     <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
       <MarbleMark hideCursor />
       <LandingView
-        onEnter={() => { window.location.hash = '#/dashboard'; }}
+        onEnter={() => { window.location.hash = '#/lobby'; }}
         onMyPage={() => { window.location.hash = '#/my-page'; }}
         onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
       />

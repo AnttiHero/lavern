@@ -60,7 +60,7 @@ function persistMatter(userId: string, matter: MatterRecord): void {
 const CreateMatterSchema = z.object({
   clientName: z.string().min(1).max(500),
   matterTitle: z.string().min(1).max(500),
-  matterDescription: z.string().min(1).max(5000),
+  matterDescription: z.string().max(5000).default(''),
   matterType: z.enum(['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'general']).optional(),
   counterparties: z.array(z.string().max(500)).optional(),
   relatedParties: z.array(z.string().max(500)).optional(),

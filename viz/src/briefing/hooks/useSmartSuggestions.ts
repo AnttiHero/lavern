@@ -30,18 +30,12 @@ export function useSmartSuggestions(
 
     // ── Document suggestions ──────────────────────────────────────────
     if (documents.length === 0) {
-      if (workflowId === 'review' || workflowId === 'contract-review') {
-        suggestions.push({
-          id: 'upload-contract',
-          label: 'Upload the contract',
-          description: 'Upload the contract for deeper clause-by-clause analysis',
-          action: 'add-document',
-        });
-      } else if (workflowId === 'roundtable' || workflowId === 'legal-design') {
+      if (workflowId === 'review' || workflowId === 'contract-review'
+        || workflowId === 'roundtable' || workflowId === 'legal-design') {
         suggestions.push({
           id: 'upload-document',
-          label: 'Upload the document',
-          description: 'Upload the document you need reviewed for deeper analysis',
+          label: 'Upload your document',
+          description: 'Upload the document for deeper analysis',
           action: 'add-document',
         });
       } else if (contextScore < 50) {

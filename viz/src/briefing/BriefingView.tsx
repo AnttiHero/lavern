@@ -174,7 +174,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   const isPostQuestions = phase === 'followups' || phase === 'instructions' || phase === 'brief';
 
   return (
-    <div style={styles.container}>
+    <div className="briefing-scroll" style={styles.container}>
       <BriefingHeader
         matterNumber={matterInfo.matterNumber}
         matterTitle={matterInfo.matterTitle}
@@ -372,6 +372,15 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   );
 }
 
+// Hide scrollbar globally for briefing container
+const BRIEFING_SCROLLBAR_ID = 'briefing-hide-scrollbar';
+if (typeof document !== 'undefined' && !document.getElementById(BRIEFING_SCROLLBAR_ID)) {
+  const s = document.createElement('style');
+  s.id = BRIEFING_SCROLLBAR_ID;
+  s.textContent = `.briefing-scroll::-webkit-scrollbar { display: none; }`;
+  document.head.appendChild(s);
+}
+
 const styles: Record<string, React.CSSProperties> = {
   container: {
     width: '100%',
@@ -384,6 +393,7 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 800,
     margin: '0 auto',
     position: 'relative',
+    scrollbarWidth: 'none' as unknown as undefined, // Firefox
   },
   phaseSection: {
     marginBottom: spacing.xl,

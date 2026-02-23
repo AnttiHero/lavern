@@ -1,5 +1,6 @@
 /**
- * BudgetMeter — Team size count + running cost total.
+ * BudgetMeter — Compact team size + equivalent hourly cost.
+ * Framed as "traditional firm equivalent" — not a real charge.
  * Warm editorial tones.
  */
 
@@ -15,52 +16,29 @@ export function BudgetMeter({ teamSize, totalCost }: Props) {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
+      gap: 8,
       fontFamily: fonts.sans,
     }}>
-      {/* Team size */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
+      <span style={{
+        fontSize: 13,
+        fontWeight: 600,
+        color: teamSize > 0 ? colors.text : colors.textDim,
       }}>
-        <span style={{ fontSize: 11, color: colors.textMuted, fontWeight: 500 }}>Team</span>
-        <span style={{
-          fontSize: 16,
-          fontWeight: 600,
-          color: teamSize > 0 ? colors.text : colors.textDim,
-          minWidth: 20,
-          textAlign: 'center',
-        }}>
-          {teamSize}
-        </span>
-      </div>
+        {teamSize} agent{teamSize !== 1 ? 's' : ''}
+      </span>
 
-      {/* Divider */}
-      <div style={{
-        width: 1,
-        height: 20,
-        backgroundColor: colors.border,
-      }} />
-
-      {/* Cost */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-      }}>
-        <span style={{ fontSize: 11, color: colors.textMuted, fontWeight: 500 }}>Est.</span>
-        <span style={{
-          fontSize: 16,
-          fontWeight: 600,
-          color: totalCost > 0 ? colors.text : colors.textDim,
-          backgroundColor: totalCost > 0 ? colors.bgPanel : 'transparent',
-          padding: '2px 8px',
-          borderRadius: radii.sm,
-        }}>
-          ${totalCost}/eng
-        </span>
-      </div>
+      {totalCost > 0 && (
+        <>
+          <span style={{ fontSize: 11, color: colors.textDim }}>{'\u00B7'}</span>
+          <span style={{
+            fontSize: 12,
+            color: colors.textMuted,
+            fontWeight: 500,
+          }}>
+            ~${totalCost.toLocaleString()}/hr equiv.
+          </span>
+        </>
+      )}
     </div>
   );
 }

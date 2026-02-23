@@ -8,10 +8,11 @@
  * Data: WebSocket events processed by useWorkingState into stream cards.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useStreamFilter } from './hooks/useStreamFilter.js';
+import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
 import { PhaseStrip } from './components/PhaseStrip.js';
 import { TeamPanel } from './components/TeamPanel.js';
@@ -19,6 +20,7 @@ import { ThinkingStream } from './components/ThinkingStream.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
 import { GateDialog } from '../components/GateDialog.js';
 import { colors } from '../staffing/styles/tokens.js';
+import { injectWorkingKeyframes } from './styles/animations.js';
 
 interface WorkingViewProps {
   onComplete: () => void;
@@ -27,6 +29,9 @@ interface WorkingViewProps {
 }
 
 export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewProps) {
+  // Inject CSS keyframes for thinking animations
+  useEffect(() => { injectWorkingKeyframes(); }, []);
+
   const { team } = useTeamRoster();
   const teamRoles = useMemo(() => team.map(t => t.role), [team]);
 
@@ -39,7 +44,10 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     pause,
     resume,
     setSpeed,
-  } = useWorkingState(onComplete);
+  } = useWorkingState(onComplete, teamRoles);
+
+  // Thread debates from flat stream
+  const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
 
   const {
     filteredCards,
@@ -47,7 +55,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     setFilterByAgent,
     searchText,
     setSearchText,
-  } = useStreamFilter(state.streamCards);
+  } = useStreamFilter(threadedStream);
 
   const handleGateDecision = useCallback(
     (_decision: 'approve' | 'reject' | 'modify', _notes?: string) => {
@@ -120,6 +128,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           onFilterAgent={setFilterByAgent}
           activeAgentCount={state.activeAgentCount}
           totalEventCount={state.events.length}
+          findingCounts={state.findingCounts}
+          activeThinkingAgents={state.activeThinkingAgents}
         />
 
         <ThinkingStream
@@ -129,6 +139,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           onSearchChange={setSearchText}
           onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
           isConnected={state.connectionStatus === 'connected'}
+          debateThreads={debateThreads}
+          activeThinkingAgents={state.activeThinkingAgents}
         />
       </div>
 

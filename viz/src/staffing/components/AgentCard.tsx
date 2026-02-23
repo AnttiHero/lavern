@@ -65,6 +65,8 @@ export function AgentCard({ profile, selected }: Props) {
       flexDirection: 'column',
       alignItems: 'center',
       gap: 4,
+      minHeight: 0,
+      overflow: 'hidden',
     }}>
       {/* Top badges row */}
       <div style={{
@@ -139,7 +141,9 @@ export function AgentCard({ profile, selected }: Props) {
       </div>
 
       {/* Radar chart — slightly smaller */}
-      <SkillRadar skills={profile.skills} costTier={profile.costTier} size={120} />
+      <div style={{ flexShrink: 0 }}>
+        <SkillRadar skills={profile.skills} costTier={profile.costTier} size={120} />
+      </div>
 
       {/* Bottom info — billing rate, required badge, category */}
       <div style={{

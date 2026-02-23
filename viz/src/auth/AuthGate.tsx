@@ -1,18 +1,16 @@
 /**
- * AuthGate — Wraps the entire app with authentication.
+ * AuthGate — Transparent auth wrapper.
  *
- * On mount: calls GET /api/auth/me to check if the user has a valid cookie.
- * If authenticated → renders children (the app) with UserContext.
- * If not authenticated → renders LoginView.
+ * Always renders children (the app). Provides UserContext with
+ * the current user (or null) plus login/logout functions.
  *
- * Also provides a logout function via context.
+ * The landing and lobby are accessible without auth.
+ * Login happens inline on the lobby page.
  */
 
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UserContext, type AuthUser } from './UserContext.js';
 import { colors, fonts } from '../staffing/styles/tokens.js';
-
-const LoginView = lazy(() => import('./LoginView.js'));
 
 interface Props {
   children: React.ReactNode;
@@ -35,15 +33,19 @@ export function AuthGate({ children }: Props) {
       });
   }, []);
 
-  // Logout handler
+  const login = useCallback((u: AuthUser) => {
+    setUser(u);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
     setUser(null);
+    window.location.hash = '';
   }, []);
 
-  // Loading state
+  // Brief loading flash while checking cookie
   if (checking) {
     return (
       <div style={loadingStyles.wrap}>
@@ -52,18 +54,9 @@ export function AuthGate({ children }: Props) {
     );
   }
 
-  // Not authenticated → show login
-  if (!user) {
-    return (
-      <Suspense fallback={<div style={loadingStyles.wrap} />}>
-        <LoginView onAuth={setUser} />
-      </Suspense>
-    );
-  }
-
-  // Authenticated → provide user context and render app
+  // Always render app — login happens on the lobby page
   return (
-    <UserContext.Provider value={{ user, logout }}>
+    <UserContext.Provider value={{ user, login, logout }}>
       {children}
     </UserContext.Provider>
   );

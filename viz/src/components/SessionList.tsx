@@ -6,8 +6,9 @@
  * Sessions live in My Cases now.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useContext } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { UserContext } from '../auth/UserContext.js';
 import type { YoloTier } from '../landing/yolo-config.js';
 
 interface SessionListProps {
@@ -32,6 +33,8 @@ if (typeof document !== 'undefined' && !document.getElementById(YOLO_KF_ID)) {
 }
 
 export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProps) {
+  const userCtx = useContext(UserContext);
+  const isLoggedIn = !!userCtx?.user;
   const [yoloOpen, setYoloOpen] = useState(false);
   const [yoloQuestion, setYoloQuestion] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -74,6 +77,26 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             </svg>
             My Page
           </button>
+          {!isLoggedIn && (
+            <button
+              onClick={() => { window.location.hash = '#/login'; }}
+              style={styles.topNavBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            >
+              Sign In
+            </button>
+          )}
+          {isLoggedIn && (
+            <button
+              onClick={() => { userCtx!.logout(); }}
+              style={styles.topNavBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            >
+              Logout
+            </button>
+          )}
         </div>
       </div>
 
@@ -119,7 +142,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             onMouseEnter={() => setHoveredBtn('yolo')}
             onMouseLeave={() => setHoveredBtn(null)}
           >
-            {'\u26A1'} White-Shoe YOLO
+            Express Lane
           </button>
         )}
       </div>
@@ -128,7 +151,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
       {yoloOpen && onYoloLaunch && (
         <div style={styles.yoloPanel}>
           <div style={styles.yoloPanelHeader}>
-            <span style={styles.yoloPanelTitle}>{'\u26A1'} Ask Right Away</span>
+            <span style={styles.yoloPanelTitle}>Express Lane</span>
             <button
               onClick={() => setYoloOpen(false)}
               style={styles.yoloCloseBtn}
@@ -138,6 +161,11 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
               {'\u2715'}
             </button>
           </div>
+
+          <p style={styles.yoloDescription}>
+            Skip the briefing. No documents, no context {'\u2014'} just a question and the full
+            agentic team working on it. Same structure, same quality gates.
+          </p>
 
           <textarea
             value={yoloQuestion}
@@ -184,6 +212,11 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
               {'\u26A1'} White-Shoe {'\u2192'}
             </button>
           </div>
+
+          <p style={styles.yoloWarning}>
+            {'\u26A0'} White-Shoe engages the full senior team with extended deliberation.
+            Expect significantly higher cost.
+          </p>
         </div>
       )}
     </div>
@@ -384,5 +417,24 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.accent,
     color: '#fff',
     border: `2px solid ${colors.accent}`,
+  },
+  yoloDescription: {
+    fontSize: 14,
+    color: colors.textMuted,
+    lineHeight: 1.7,
+    margin: `0 0 ${spacing.lg}px`,
+    fontFamily: fonts.sans,
+    letterSpacing: 0.2,
+  },
+  yoloWarning: {
+    fontSize: 11,
+    color: colors.accent,
+    lineHeight: 1.5,
+    margin: `${spacing.md}px 0 0`,
+    fontFamily: fonts.sans,
+    fontWeight: 500,
+    letterSpacing: 0.3,
+    textAlign: 'center' as const,
+    opacity: 0.8,
   },
 };

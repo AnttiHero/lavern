@@ -1,25 +1,21 @@
 /**
- * AgentDocsView — Interactive API documentation for agent clients.
+ * AgentDocsView — Marble for Agents.
  *
- * Fetches GET /api/capabilities and renders the machine-readable manifest
- * as a warm editorial documentation page. Includes:
- *   - Registration form (creates agent client, shows API key once)
- *   - Live code examples (curl, Python, JS)
- *   - Workflow catalog with cost estimates
- *   - Sync vs webhook mode explanation
+ * Same dark marble aesthetic as the front door, but the content
+ * is data-dense and machine-readable. Serif headlines, monospace
+ * data blocks, warm cream on near-black.
  *
- * Styled in the Marble warm editorial design system.
- * v10: The agent-facing entry point — Act 2 of the Legal Singularity.
+ * Still Marble. Just the back office.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 
 interface Props {
   onBack: () => void;
 }
 
-// ── Types for capabilities response ─────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────
 
 interface Workflow {
   id: string;
@@ -53,22 +49,50 @@ interface Capabilities {
   quickstart: string[];
 }
 
-// ── Code example tabs ───────────────────────────────────────────────────
+// ── Dark palette — Marble at night ───────────────────────────────────
+
+const D = {
+  bg: '#0A0A0F',
+  surface: 'rgba(250, 249, 246, 0.03)',
+  border: 'rgba(250, 249, 246, 0.08)',
+  borderHover: 'rgba(250, 249, 246, 0.2)',
+  accent: colors.accent,
+  accentDim: 'rgba(196, 93, 62, 0.6)',
+  text: 'rgba(250, 249, 246, 0.8)',
+  textDim: 'rgba(250, 249, 246, 0.4)',
+  textFaint: 'rgba(250, 249, 246, 0.15)',
+  white: 'rgba(250, 249, 246, 0.92)',
+};
+
+// ── Keyframes ────────────────────────────────────────────────────────
+
+const KF_ID = 'marble-agent-kf';
+if (typeof document !== 'undefined' && !document.getElementById(KF_ID)) {
+  const el = document.createElement('style');
+  el.id = KF_ID;
+  el.textContent = `
+    @keyframes agentFadeIn {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes agentGlow {
+      0%, 100% { opacity: 0.04; }
+      50% { opacity: 0.08; }
+    }
+  `;
+  document.head.appendChild(el);
+}
+
+// ── Code examples ────────────────────────────────────────────────────
 
 type CodeLang = 'curl' | 'python' | 'javascript';
 
-function codeExamples(apiKey: string, baseUrl: string): Record<CodeLang, string> {
-  const key = apiKey || '<your-api-key>';
+function getExamples(base: string): Record<CodeLang, string> {
   return {
-    curl: `# Register as an agent
-curl -X POST ${baseUrl}/api/clients \\
-  -H 'Content-Type: application/json' \\
-  -d '{"type": "agent", "name": "My Agent"}'
-
-# Engage — synchronous mode
-curl -X POST ${baseUrl}/api/engage \\
-  -H 'Authorization: Bearer ${key}' \\
-  -H 'Content-Type: application/json' \\
+    curl: `# Engage — synchronous mode
+curl -X POST ${base}/api/engage \\
+  -H "Authorization: Bearer <key>" \\
+  -H "Content-Type: application/json" \\
   -d '{
     "task": "Review this NDA for risks and unusual clauses",
     "documents": [{
@@ -83,50 +107,29 @@ curl -X POST ${baseUrl}/api/engage \\
 
     python: `import requests
 
-BASE = "${baseUrl}"
-
-# Register
-reg = requests.post(f"{BASE}/api/clients", json={
-    "type": "agent",
-    "name": "My Python Agent"
-})
-api_key = reg.json()["apiKey"]
-
-# Engage
-result = requests.post(
-    f"{BASE}/api/engage",
-    headers={"Authorization": f"Bearer {api_key}"},
+res = requests.post(
+    "${base}/api/engage",
+    headers={"Authorization": "Bearer <key>"},
     json={
-        "task": "What is the statute of limitations "
-               "for breach of contract in California?",
+        "task": "Statute of limitations for breach "
+               "of contract in California?",
         "constraints": {"intensity": "quick"}
     }
 )
 
-data = result.json()
+data = res.json()
 print(data["deliverables"]["output"])
-print(f"Cost: \${data['cost']['totalUsd']}")`,
+print(f"Cost: \${data['cost']['totalUsd']}")
+print(f"Confidence: {data['quality']['confidence']}")`,
 
-    javascript: `const BASE = "${baseUrl}";
-
-// Register
-const reg = await fetch(\`\${BASE}/api/clients\`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ type: "agent", name: "My JS Agent" })
-});
-const { apiKey } = await reg.json();
-
-// Engage
-const res = await fetch(\`\${BASE}/api/engage\`, {
+    javascript: `const res = await fetch("${base}/api/engage", {
   method: "POST",
   headers: {
-    "Authorization": \`Bearer \${apiKey}\`,
+    "Authorization": "Bearer <key>",
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    task: "Analyze this SaaS agreement for data "
-        + "processing compliance under GDPR",
+    task: "Analyze SaaS agreement for GDPR compliance",
     documents: [{
       name: "saas-agreement.txt",
       content: "SERVICE AGREEMENT..."
@@ -136,298 +139,24 @@ const res = await fetch(\`\${BASE}/api/engage\`, {
   })
 });
 
-const data = await res.json();
-console.log(data.deliverables.output);
-console.log(\`Quality: \${data.quality.confidence}\`);`,
+const { deliverables, quality, cost } = await res.json();`,
   };
 }
 
-// ── Registration form ───────────────────────────────────────────────────
+// ── Response schema ──────────────────────────────────────────────────
 
-function RegistrationSection() {
-  const [name, setName] = useState('');
-  const [callbackUrl, setCallbackUrl] = useState('');
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const handleRegister = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const body: Record<string, unknown> = {
-        type: 'agent',
-        name: name.trim() || undefined,
-      };
-      if (callbackUrl.trim()) {
-        body.callbackUrl = callbackUrl.trim();
-      }
-
-      const res = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Registration failed (${res.status})`);
-      }
-
-      const data = await res.json();
-      setApiKey(data.apiKey);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  }, [name, callbackUrl]);
-
-  const handleCopy = useCallback(() => {
-    if (apiKey) {
-      navigator.clipboard.writeText(apiKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [apiKey]);
-
-  if (apiKey) {
-    return (
-      <div style={styles.registrationCard}>
-        <div style={styles.successBadge}>Registered</div>
-        <p style={styles.keyWarning}>
-          Store this API key securely. It will not be shown again.
-        </p>
-        <div style={styles.keyDisplay}>
-          <code style={styles.keyCode}>{apiKey}</code>
-          <button onClick={handleCopy} style={styles.copyBtn}>
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={styles.registrationCard}>
-      <h3 style={styles.sectionTitle}>Register Your Agent</h3>
-      <div style={styles.formRow}>
-        <label style={styles.label}>Agent Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="My Legal Agent"
-          style={styles.input}
-        />
-      </div>
-      <div style={styles.formRow}>
-        <label style={styles.label}>
-          Callback URL <span style={styles.optional}>(optional, for webhook mode)</span>
-        </label>
-        <input
-          type="url"
-          value={callbackUrl}
-          onChange={e => setCallbackUrl(e.target.value)}
-          placeholder="https://your-agent.example.com/webhook"
-          style={styles.input}
-        />
-      </div>
-      {error && <div style={styles.errorText}>{error}</div>}
-      <button
-        onClick={handleRegister}
-        disabled={loading}
-        style={{
-          ...styles.registerBtn,
-          opacity: loading ? 0.5 : 1,
-        }}
-      >
-        {loading ? 'Registering...' : 'Register & Get API Key'}
-      </button>
-    </div>
-  );
-}
-
-// ── Main View ───────────────────────────────────────────────────────────
-
-export default function AgentDocsView({ onBack }: Props) {
-  const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeLang, setActiveLang] = useState<CodeLang>('curl');
-
-  const baseUrl = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.host}`
-    : 'http://localhost:3000';
-
-  useEffect(() => {
-    fetch('/api/capabilities', { credentials: 'include' })
-      .then(res => {
-        if (!res.ok) throw new Error(`Failed to load capabilities (${res.status})`);
-        return res.json();
-      })
-      .then(data => setCapabilities(data))
-      .catch(err => setLoadError(err instanceof Error ? err.message : 'Failed to load'));
-  }, []);
-
-  const examples = codeExamples('', baseUrl);
-
-  return (
-    <div style={styles.container}>
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        style={styles.backBtn}
-        onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
-        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
-      >
-        {'\u2190'} Back
-      </button>
-
-      {/* Header */}
-      <div style={styles.header}>
-        <h1 style={styles.title}>
-          Marble <span style={{ fontStyle: 'italic' }}>for Agents</span>
-        </h1>
-        <p style={styles.subtitle}>
-          Structured legal intelligence, delivered as JSON.
-        </p>
-        <p style={styles.description}>
-          Same multi-agent orchestration engine that serves human clients.
-          Send a task, receive structured results with deliverables, quality signals, and cost.
-        </p>
-      </div>
-
-      {/* Quickstart */}
-      {capabilities && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionHeading}>Quickstart</h2>
-          <div style={styles.quickstartList}>
-            {capabilities.quickstart.map((step, i) => (
-              <div key={i} style={styles.quickstartItem}>
-                <code style={styles.quickstartCode}>{step}</code>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Registration */}
-      <div style={styles.section}>
-        <h2 style={styles.sectionHeading}>1. Register</h2>
-        <RegistrationSection />
-      </div>
-
-      {/* Code Examples */}
-      <div style={styles.section}>
-        <h2 style={styles.sectionHeading}>2. Engage</h2>
-        <p style={styles.bodyText}>
-          Send a legal task and receive structured results. Choose sync mode for immediate responses
-          or webhook mode for background processing.
-        </p>
-
-        {/* Language tabs */}
-        <div style={styles.langTabs}>
-          {(['curl', 'python', 'javascript'] as CodeLang[]).map(lang => (
-            <button
-              key={lang}
-              onClick={() => setActiveLang(lang)}
-              style={{
-                ...styles.langTab,
-                ...(activeLang === lang ? styles.langTabActive : {}),
-              }}
-            >
-              {lang === 'curl' ? 'cURL' : lang === 'python' ? 'Python' : 'JavaScript'}
-            </button>
-          ))}
-        </div>
-
-        <pre style={styles.codeBlock}>
-          <code>{examples[activeLang]}</code>
-        </pre>
-      </div>
-
-      {/* Sync vs Webhook */}
-      <div style={styles.section}>
-        <h2 style={styles.sectionHeading}>3. Delivery Modes</h2>
-        <div style={styles.modeGrid}>
-          <div style={styles.modeCard}>
-            <div style={styles.modeLabel}>Sync</div>
-            <div style={styles.modeDescription}>
-              Request blocks until the session completes. Returns the full structured response
-              with deliverables, quality signals, and cost. Default mode. Timeout: 5 minutes.
-            </div>
-            <code style={styles.modeCode}>{"\"mode\": \"sync\""}</code>
-          </div>
-          <div style={styles.modeCard}>
-            <div style={styles.modeLabel}>Webhook</div>
-            <div style={styles.modeDescription}>
-              Returns immediately with status URLs. Full results are POSTed to your callback URL
-              when the session completes. Monitor progress via WebSocket events.
-            </div>
-            <code style={styles.modeCode}>{"\"mode\": \"webhook\", \"callbackUrl\": \"...\""}</code>
-          </div>
-        </div>
-      </div>
-
-      {/* Workflows */}
-      {capabilities && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionHeading}>4. Available Workflows</h2>
-          <p style={styles.bodyText}>
-            Tasks are automatically routed to the optimal workflow. You can also force a specific workflow.
-          </p>
-          <div style={styles.workflowGrid}>
-            {capabilities.workflows.map(w => (
-              <div key={w.id} style={styles.workflowCard}>
-                <div style={styles.workflowName}>{w.name}</div>
-                <div style={styles.workflowId}>{w.id}</div>
-                <div style={styles.workflowDescription}>{w.description}</div>
-                <div style={styles.workflowMeta}>
-                  {w.steps} steps &middot; {w.agents} agents &middot; {w.gates} gates
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Intensity Tiers */}
-      {capabilities && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionHeading}>5. Intensity & Pricing</h2>
-          <p style={styles.bodyText}>
-            Control the depth of analysis and cost with intensity levels.
-            Budget is enforced as a hard cap — the session halts if exceeded.
-          </p>
-          <div style={styles.tierGrid}>
-            {capabilities.intensityTiers.map(tier => (
-              <div key={tier.level} style={styles.tierCard}>
-                <div style={styles.tierLabel}>{tier.label}</div>
-                <div style={styles.tierCost}>~${tier.estimatedCostUsd}</div>
-                <div style={styles.tierDescription}>{tier.description}</div>
-                <div style={styles.tierMeta}>
-                  {tier.estimatedMinutes[0]}&ndash;{tier.estimatedMinutes[1]} min &middot;{' '}
-                  {tier.teamSize} agents &middot; {tier.gates} gates
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Response Structure */}
-      <div style={styles.section}>
-        <h2 style={styles.sectionHeading}>6. Response Structure</h2>
-        <pre style={styles.codeBlock}>
-          <code>{`{
+const RESPONSE_SCHEMA = `{
   "engagementId": "shem-1234567890",
   "status": "completed",
   "deliverables": {
-    "output": "Full synthesized analysis text...",
+    "output": "Full synthesized analysis...",
     "findings": [
-      { "agent": "contract-reviewer", "text": "...", "category": "contract-risk" }
+      {
+        "agent": "contract-reviewer",
+        "text": "Section 4.2(a) contains non-mutual indemnification...",
+        "category": "contract-risk",
+        "citation": "Section 4.2(a), lines 142-158"
+      }
     ],
     "resolutions": [
       { "finding": "F-001", "resolution": "...", "decidedBy": "orchestrator" }
@@ -440,7 +169,12 @@ export default function AgentDocsView({ onBack }: Props) {
   },
   "cost": {
     "totalUsd": 3.42,
-    "budgetUsd": 10.00
+    "budgetUsd": 10.00,
+    "breakdown": [
+      { "agent": "contract-reviewer", "usd": 1.80 },
+      { "agent": "risk-pricer", "usd": 0.95 },
+      { "agent": "evaluator", "usd": 0.67 }
+    ]
   },
   "metadata": {
     "workflowUsed": "review",
@@ -448,199 +182,593 @@ export default function AgentDocsView({ onBack }: Props) {
     "durationMs": 45000,
     "eventCount": 128
   }
-}`}</code>
-        </pre>
+}`;
+
+// ── Section wrapper ──────────────────────────────────────────────────
+
+function Section({
+  label,
+  delay = 0,
+  children,
+}: {
+  label: string;
+  delay?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        ...sty.section,
+        animation: `agentFadeIn 0.6s ease ${delay}s both`,
+      }}
+    >
+      <div style={sty.sectionHeader}>
+        <span style={sty.sectionRule} />
+        <span style={sty.sectionLabel}>{label}</span>
+        <span style={sty.sectionRule} />
       </div>
-
-      {/* Jurisdictions */}
-      {capabilities && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionHeading}>7. Supported Jurisdictions</h2>
-          <div style={styles.jurisdictionRow}>
-            {capabilities.jurisdictions.map(j => (
-              <span key={j} style={styles.jurisdictionBadge}>{j}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Error state */}
-      {loadError && (
-        <div style={styles.errorBanner}>
-          Could not load live capabilities: {loadError}.
-          The examples above use static defaults. Start the server to see live data.
-        </div>
-      )}
-
-      {/* Service info */}
-      {capabilities && (
-        <div style={styles.footer}>
-          <span style={styles.footerText}>
-            {capabilities.service.name} v{capabilities.service.version}
-          </span>
-          <span style={styles.footerDot}>&middot;</span>
-          <span style={styles.footerText}>{capabilities.service.tagline}</span>
-        </div>
-      )}
-
-      <div style={{ height: 80 }} />
+      {children}
     </div>
   );
 }
 
-// ── Styles ──────────────────────────────────────────────────────────────
+function MetricCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div style={sty.metricCard}>
+      <div style={sty.metricValue}>{value}</div>
+      <div style={sty.metricLabel}>{label}</div>
+    </div>
+  );
+}
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    width: '100%',
-    height: '100vh',
+// ── Registration ─────────────────────────────────────────────────────
+
+function RegisterBlock() {
+  const [name, setName] = useState('');
+  const [callbackUrl, setCallbackUrl] = useState('');
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleRegister = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = { type: 'agent' };
+      if (name.trim()) body.name = name.trim();
+      if (callbackUrl.trim()) body.callbackUrl = callbackUrl.trim();
+
+      const res = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || `Registration failed (${res.status})`);
+      }
+
+      const d = await res.json();
+      setApiKey(d.apiKey);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [name, callbackUrl]);
+
+  if (apiKey) {
+    return (
+      <div style={sty.card}>
+        <div style={{ color: D.accent, fontWeight: 600, marginBottom: 12, fontFamily: fonts.sans, fontSize: 12, letterSpacing: 1 }}>
+          REGISTERED
+        </div>
+        <div style={{ color: D.accentDim, fontSize: 12, marginBottom: 12, fontFamily: fonts.sans }}>
+          Store this key securely. It will not be shown again.
+        </div>
+        <div style={sty.keyRow}>
+          <code style={sty.keyCode}>{apiKey}</code>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(apiKey);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            style={sty.smallBtn}
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={sty.card}>
+      <div style={sty.formRow}>
+        <label style={sty.formLabel}>Agent Name</label>
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="My Legal Agent"
+          style={sty.input}
+        />
+      </div>
+      <div style={sty.formRow}>
+        <label style={sty.formLabel}>
+          Callback URL <span style={{ fontWeight: 400, color: D.textFaint }}>(optional)</span>
+        </label>
+        <input
+          value={callbackUrl}
+          onChange={e => setCallbackUrl(e.target.value)}
+          placeholder="https://your-agent.com/webhook"
+          style={sty.input}
+        />
+      </div>
+      {error && (
+        <div style={{ color: D.accent, fontSize: 12, fontFamily: fonts.sans, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
+      <button
+        onClick={handleRegister}
+        disabled={loading}
+        style={{ ...sty.primaryBtn, marginTop: 16, opacity: loading ? 0.5 : 1 }}
+      >
+        {loading ? 'Registering...' : 'Register & Get API Key'}
+      </button>
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────
+
+export default function AgentDocsView({ onBack }: Props) {
+  const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
+  const [activeLang, setActiveLang] = useState<CodeLang>('curl');
+  const [backHover, setBackHover] = useState(false);
+
+  const baseUrl = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.host}`
+    : 'http://localhost:3000';
+
+  // Fetch capabilities
+  useEffect(() => {
+    fetch('/api/capabilities', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setCapabilities(d); })
+      .catch(() => {});
+  }, []);
+
+  const examples = getExamples(baseUrl);
+
+  return (
+    <div style={sty.page}>
+      {/* Subtle marble texture — barely visible */}
+      <img
+        src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+        alt=""
+        style={sty.marbleBg}
+      />
+      <div style={sty.veil} />
+
+      {/* Back */}
+      <button
+        onClick={onBack}
+        style={{
+          ...sty.backBtn,
+          color: backHover ? D.white : D.textDim,
+          borderColor: backHover ? D.borderHover : D.border,
+        }}
+        onMouseEnter={() => setBackHover(true)}
+        onMouseLeave={() => setBackHover(false)}
+      >
+        {'\u2190'} Back
+      </button>
+
+      <div style={sty.container}>
+        {/* ── Header ─────────────────────────────────────── */}
+        <div style={{ ...sty.header, animation: 'agentFadeIn 0.8s ease 0.1s both' }}>
+          <h1 style={sty.title}>
+            MARBLE
+          </h1>
+          <p style={sty.subtitle}>for Agents</p>
+          <p style={sty.description}>
+            Structured legal intelligence, delivered as JSON.
+            Same multi-agent engine that serves human clients.
+          </p>
+        </div>
+
+        {/* ── SIGNAL ──────────────────────────────────── */}
+        <Section label="Why Marble" delay={0.2}>
+          <div style={sty.pitch}>
+            You handle the reasoning.
+            <br />
+            We handle the law.
+          </div>
+
+          <div style={sty.metricGrid}>
+            <MetricCard value="13" label="Specialist Agents" />
+            <MetricCard value="40+" label="MCP Tools" />
+            <MetricCard value="4" label="Workflows" />
+            <MetricCard value="8" label="Jurisdictions" />
+          </div>
+
+          <div style={sty.bulletList}>
+            <div style={sty.bullet}>Structured JSON deliverables {'\u2014'} no parsing required</div>
+            <div style={sty.bullet}>Every finding cites source text as evidence</div>
+            <div style={sty.bullet}>Every output cross-verified by evaluator agent</div>
+            <div style={sty.bullet}>Hard budget enforcement {'\u2014'} you control spend</div>
+            <div style={sty.bullet}>Human-gated quality at every decision point</div>
+          </div>
+        </Section>
+
+        {/* ── REGISTER ────────────────────────────────── */}
+        <Section label="Register" delay={0.25}>
+          <RegisterBlock />
+        </Section>
+
+        {/* ── ENGAGE ──────────────────────────────────── */}
+        <Section label="Engage" delay={0.3}>
+          <div style={sty.endpoint}>
+            <span style={{ color: D.accent }}>POST</span>{' '}
+            <span style={{ color: D.white }}>/api/engage</span>
+          </div>
+
+          <div style={sty.langTabs}>
+            {(['curl', 'python', 'javascript'] as CodeLang[]).map(lang => (
+              <button
+                key={lang}
+                onClick={() => setActiveLang(lang)}
+                style={{
+                  ...sty.langTab,
+                  color: activeLang === lang ? D.white : D.textDim,
+                  borderBottomColor: activeLang === lang ? D.accent : 'transparent',
+                }}
+              >
+                {lang === 'curl' ? 'cURL' : lang === 'python' ? 'Python' : 'JavaScript'}
+              </button>
+            ))}
+          </div>
+
+          <pre style={sty.code}>{examples[activeLang]}</pre>
+        </Section>
+
+        {/* ── DELIVERY MODES ──────────────────────────── */}
+        <Section label="Delivery Modes" delay={0.35}>
+          <div style={sty.modeGrid}>
+            <div style={sty.card}>
+              <div style={sty.modeTitle}>Sync</div>
+              <div style={sty.modeDesc}>
+                Request blocks until complete. Full structured response returned.
+                Timeout: 5 minutes.
+              </div>
+              <code style={sty.modeCode}>{'"mode": "sync"'}</code>
+            </div>
+            <div style={sty.card}>
+              <div style={sty.modeTitle}>Webhook</div>
+              <div style={sty.modeDesc}>
+                Returns immediately with status URLs. Results POSTed to your callback.
+                Monitor progress via WebSocket.
+              </div>
+              <code style={sty.modeCode}>{'"mode": "webhook"'}</code>
+            </div>
+          </div>
+        </Section>
+
+        {/* ── WORKFLOWS ───────────────────────────────── */}
+        {capabilities && (
+          <Section label="Workflows" delay={0.4}>
+            <table style={sty.table}>
+              <thead>
+                <tr>
+                  <th style={sty.th}>ID</th>
+                  <th style={sty.th}>Agents</th>
+                  <th style={sty.th}>Steps</th>
+                  <th style={sty.th}>Gates</th>
+                  <th style={sty.th}>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {capabilities.workflows.map(w => (
+                  <tr key={w.id}>
+                    <td style={{ ...sty.td, color: D.accent, fontFamily: fonts.mono }}>{w.id}</td>
+                    <td style={sty.td}>{w.agents}</td>
+                    <td style={sty.td}>{w.steps}</td>
+                    <td style={sty.td}>{w.gates}</td>
+                    <td style={{ ...sty.td, color: D.textDim }}>{w.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {/* ── PRICING ─────────────────────────────────── */}
+        {capabilities && (
+          <Section label="Intensity & Pricing" delay={0.45}>
+            <table style={sty.table}>
+              <thead>
+                <tr>
+                  <th style={sty.th}>Level</th>
+                  <th style={sty.th}>Cost</th>
+                  <th style={sty.th}>Time</th>
+                  <th style={sty.th}>Team</th>
+                  <th style={sty.th}>Oversight</th>
+                </tr>
+              </thead>
+              <tbody>
+                {capabilities.intensityTiers.map(tier => (
+                  <tr key={tier.level}>
+                    <td style={{ ...sty.td, color: D.accent, fontFamily: fonts.mono }}>{tier.level}</td>
+                    <td style={{ ...sty.td, color: D.white, fontWeight: 600, fontFamily: fonts.mono }}>
+                      ~${tier.estimatedCostUsd}
+                    </td>
+                    <td style={{ ...sty.td, fontFamily: fonts.mono }}>
+                      {tier.estimatedMinutes[0]}&ndash;{tier.estimatedMinutes[1]}m
+                    </td>
+                    <td style={sty.td}>{tier.teamSize} agents</td>
+                    <td style={{ ...sty.td, color: D.textDim }}>{tier.gates}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {/* ── RESPONSE ────────────────────────────────── */}
+        <Section label="Response Structure" delay={0.5}>
+          <pre style={sty.code}>{RESPONSE_SCHEMA}</pre>
+        </Section>
+
+        {/* ── JURISDICTIONS ────────────────────────────── */}
+        {capabilities && (
+          <Section label="Jurisdictions" delay={0.55}>
+            <div style={sty.badgeRow}>
+              {capabilities.jurisdictions.map(j => (
+                <span key={j} style={sty.badge}>{j}</span>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ── COMPATIBILITY ────────────────────────────── */}
+        <Section label="Compatibility" delay={0.6}>
+          <p style={sty.bodyText}>
+            Any agent framework. Any HTTP client. Any language.
+          </p>
+          <div style={sty.badgeRow}>
+            {['LangChain', 'CrewAI', 'AutoGPT', 'Claude MCP', 'OpenAI Actions', 'Custom'].map(f => (
+              <span key={f} style={sty.badge}>{f}</span>
+            ))}
+          </div>
+        </Section>
+
+        {/* ── Footer ──────────────────────────────────── */}
+        <div style={sty.footer}>
+          <span>MARBLE</span>
+          {capabilities && (
+            <>
+              <span style={sty.footerDot}>{'\u00b7'}</span>
+              <span>v{capabilities.service.version}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Styles ───────────────────────────────────────────────────────────
+
+const sty: Record<string, React.CSSProperties> = {
+  page: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: D.bg,
     overflow: 'auto',
-    backgroundColor: colors.bg,
-    color: colors.text,
-    fontFamily: fonts.sans,
-    padding: `${spacing.xxxl}px`,
-    maxWidth: 860,
-    margin: '0 auto',
-    position: 'relative',
+    color: D.text,
   },
+
+  // ── Marble background — barely visible ─────────────────────────────
+  marbleBg: {
+    position: 'fixed',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover' as const,
+    filter: 'brightness(0.1) contrast(1.1) saturate(0.15)',
+    opacity: 0.5,
+    pointerEvents: 'none' as const,
+    zIndex: 0,
+  },
+  veil: {
+    position: 'fixed',
+    inset: 0,
+    background: 'radial-gradient(ellipse 80% 60% at center top, transparent 0%, rgba(10, 10, 15, 0.7) 100%)',
+    pointerEvents: 'none' as const,
+    zIndex: 0,
+  },
+
+  container: {
+    position: 'relative',
+    zIndex: 1,
+    maxWidth: 800,
+    margin: '0 auto',
+    padding: '80px 48px 120px',
+  },
+
   backBtn: {
-    position: 'absolute' as const,
-    left: 48,
-    top: 48,
-    padding: '6px 14px',
+    position: 'fixed' as const,
+    top: 28,
+    left: 36,
+    zIndex: 100,
+    padding: '6px 16px',
+    border: `1.5px solid ${D.border}`,
     borderRadius: radii.sm,
-    border: `1.5px solid ${colors.text}`,
     backgroundColor: 'transparent',
-    color: colors.text,
+    color: D.textDim,
     fontFamily: fonts.sans,
     fontSize: 11,
     fontWeight: 600,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease',
+    transition: 'color 0.25s ease, border-color 0.25s ease',
   },
+
+  // ── Header ─────────────────────────────────────────────────────────
   header: {
     textAlign: 'center' as const,
-    marginBottom: spacing.xxxl,
-    paddingTop: spacing.xl,
+    marginBottom: 64,
+    paddingTop: 24,
   },
   title: {
-    fontSize: 36,
-    fontFamily: fonts.serif,
+    fontSize: 72,
     fontWeight: 300,
-    color: colors.text,
+    fontFamily: fonts.serif,
+    color: D.white,
     margin: 0,
-    lineHeight: 1.2,
+    letterSpacing: 16,
+    textTransform: 'uppercase' as const,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: fonts.sans,
-    fontWeight: 500,
-    color: colors.textSecondary,
-    marginTop: 12,
-    letterSpacing: 0.5,
+    fontSize: 18,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    fontWeight: 300,
+    color: D.textDim,
+    marginTop: 8,
+    letterSpacing: 1,
   },
   description: {
     fontSize: 14,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
-    marginTop: 8,
-    maxWidth: 540,
-    margin: '8px auto 0',
-    lineHeight: 1.6,
+    color: D.textDim,
+    marginTop: 20,
+    lineHeight: 1.7,
+    maxWidth: 480,
+    margin: '20px auto 0',
   },
 
-  // Sections
+  // ── Section ────────────────────────────────────────────────────────
   section: {
-    marginBottom: spacing.xxxl,
+    marginBottom: 56,
   },
-  sectionHeading: {
-    fontSize: 22,
-    fontFamily: fonts.serif,
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 24,
+  },
+  sectionRule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: D.border,
+  },
+  sectionLabel: {
+    fontSize: 10,
     fontWeight: 600,
-    color: colors.text,
-    margin: '0 0 16px 0',
-    paddingBottom: 8,
-    borderBottom: `1px solid ${colors.border}`,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: fonts.serif,
-    fontWeight: 600,
-    color: colors.text,
-    margin: '0 0 16px 0',
-  },
-  bodyText: {
-    fontSize: 14,
+    letterSpacing: 3,
+    color: D.textDim,
+    textTransform: 'uppercase' as const,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
-    lineHeight: 1.6,
-    marginBottom: 16,
+    flexShrink: 0,
   },
 
-  // Quickstart
-  quickstartList: {
+  // ── Signal ─────────────────────────────────────────────────────────
+  pitch: {
+    fontSize: 28,
+    fontWeight: 300,
+    fontFamily: fonts.serif,
+    color: D.white,
+    lineHeight: 1.4,
+    marginBottom: 32,
+    letterSpacing: 0.3,
+  },
+  metricGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 12,
+    marginBottom: 28,
+  },
+  metricCard: {
+    textAlign: 'center' as const,
+    padding: '20px 8px',
+    border: `1px solid ${D.border}`,
+    borderRadius: radii.sm,
+    backgroundColor: D.surface,
+  },
+  metricValue: {
+    fontSize: 32,
+    fontWeight: 300,
+    fontFamily: fonts.serif,
+    color: D.white,
+    lineHeight: 1,
+    marginBottom: 6,
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: D.textDim,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    fontFamily: fonts.sans,
+  },
+  bulletList: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 8,
   },
-  quickstartItem: {
-    padding: '8px 12px',
-    backgroundColor: colors.bgPanel,
-    borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
-  },
-  quickstartCode: {
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    color: colors.textSecondary,
+  bullet: {
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    color: D.text,
+    lineHeight: 1.6,
+    paddingLeft: 16,
+    borderLeft: `2px solid ${D.border}`,
   },
 
-  // Registration
-  registrationCard: {
-    padding: spacing.xl,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.lg,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+  // ── Cards ──────────────────────────────────────────────────────────
+  card: {
+    padding: 24,
+    border: `1px solid ${D.border}`,
+    borderRadius: radii.md,
+    backgroundColor: D.surface,
   },
   formRow: {
     marginBottom: 16,
   },
-  label: {
+  formLabel: {
     display: 'block',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: fonts.sans,
     fontWeight: 600,
-    color: colors.textSecondary,
+    color: D.textDim,
     marginBottom: 6,
-    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
-  },
-  optional: {
-    fontWeight: 400,
-    textTransform: 'none' as const,
-    color: colors.textMuted,
-    letterSpacing: 0,
+    textTransform: 'uppercase' as const,
   },
   input: {
     width: '100%',
     padding: '10px 14px',
     borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
-    backgroundColor: colors.bgInput,
+    border: `1px solid ${D.border}`,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    color: D.white,
     fontFamily: fonts.sans,
     fontSize: 13,
-    color: colors.text,
     outline: 'none',
     boxSizing: 'border-box' as const,
+    transition: 'border-color 0.2s ease',
   },
-  registerBtn: {
+  primaryBtn: {
     padding: '10px 24px',
     borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
-    backgroundColor: colors.text,
+    border: `2px solid ${D.accent}`,
+    backgroundColor: D.accent,
     color: '#fff',
     fontFamily: fonts.sans,
     fontSize: 12,
@@ -648,259 +776,165 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 1,
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
-    marginTop: 8,
+    transition: 'opacity 0.2s ease',
   },
-  errorText: {
-    fontSize: 12,
+  smallBtn: {
+    padding: '4px 12px',
+    borderRadius: radii.sm,
+    border: `1px solid ${D.border}`,
+    backgroundColor: 'transparent',
+    color: D.textDim,
     fontFamily: fonts.sans,
-    color: colors.danger,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  successBadge: {
-    display: 'inline-block',
-    fontSize: 10,
-    fontFamily: fonts.sans,
+    fontSize: 11,
     fontWeight: 600,
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
-    color: colors.success,
-    border: `1px solid ${colors.success}`,
-    borderRadius: radii.pill,
-    padding: '2px 10px',
-    marginBottom: 12,
+    cursor: 'pointer',
+    flexShrink: 0,
   },
-  keyWarning: {
-    fontSize: 13,
-    fontFamily: fonts.sans,
-    color: colors.danger,
-    fontWeight: 500,
-    marginBottom: 12,
-  },
-  keyDisplay: {
+  keyRow: {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
     padding: '10px 14px',
-    backgroundColor: colors.bgPanel,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    border: `1px solid ${D.border}`,
     borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
   },
   keyCode: {
-    fontFamily: fonts.mono,
-    fontSize: 13,
-    color: colors.text,
     flex: 1,
+    fontSize: 12,
+    fontFamily: fonts.mono,
+    color: D.white,
     wordBreak: 'break-all' as const,
   },
-  copyBtn: {
-    padding: '4px 12px',
-    borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
-    backgroundColor: 'transparent',
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    color: colors.textMuted,
-    cursor: 'pointer',
-    flexShrink: 0,
-  },
 
-  // Code examples
+  // ── Code ───────────────────────────────────────────────────────────
+  endpoint: {
+    fontSize: 14,
+    fontFamily: fonts.mono,
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
   langTabs: {
     display: 'flex',
     gap: 0,
-    marginBottom: 0,
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${D.border}`,
   },
   langTab: {
-    padding: '8px 20px',
+    padding: '6px 18px',
     border: 'none',
     borderBottom: '2px solid transparent',
     backgroundColor: 'transparent',
     fontFamily: fonts.mono,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 500,
-    color: colors.textMuted,
     cursor: 'pointer',
     transition: 'color 0.2s ease, border-color 0.2s ease',
   },
-  langTabActive: {
-    color: colors.text,
-    borderBottomColor: colors.text,
-  },
-  codeBlock: {
+  code: {
     padding: 20,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderRadius: `0 0 ${radii.md}px ${radii.md}px`,
-    color: '#E0DED8',
+    border: `1px solid ${D.border}`,
+    borderTop: 'none',
+    color: D.text,
     fontFamily: fonts.mono,
     fontSize: 12,
-    lineHeight: 1.6,
+    lineHeight: 1.7,
     overflow: 'auto' as const,
     whiteSpace: 'pre' as const,
     margin: 0,
   },
 
-  // Modes
+  // ── Modes ──────────────────────────────────────────────────────────
   modeGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: 16,
   },
-  modeCard: {
-    padding: spacing.xl,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.lg,
-  },
-  modeLabel: {
+  modeTitle: {
     fontSize: 16,
     fontFamily: fonts.serif,
     fontWeight: 600,
-    color: colors.text,
+    color: D.white,
     marginBottom: 8,
   },
-  modeDescription: {
+  modeDesc: {
     fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
+    color: D.textDim,
     lineHeight: 1.6,
     marginBottom: 12,
   },
   modeCode: {
-    fontFamily: fonts.mono,
     fontSize: 11,
-    color: colors.textMuted,
-    backgroundColor: colors.bgPanel,
-    padding: '2px 6px',
-    borderRadius: radii.sm,
+    fontFamily: fonts.mono,
+    color: D.accentDim,
   },
 
-  // Workflows
-  workflowGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-  },
-  workflowCard: {
-    padding: 16,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.md,
-  },
-  workflowName: {
-    fontSize: 14,
-    fontFamily: fonts.serif,
-    fontWeight: 600,
-    color: colors.text,
-  },
-  workflowId: {
-    fontSize: 10,
-    fontFamily: fonts.mono,
-    color: colors.textMuted,
-    marginBottom: 6,
-  },
-  workflowDescription: {
-    fontSize: 12,
+  // ── Tables ─────────────────────────────────────────────────────────
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+    fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
-    lineHeight: 1.5,
-    marginBottom: 8,
   },
-  workflowMeta: {
+  th: {
+    textAlign: 'left' as const,
+    padding: '10px 12px',
+    borderBottom: `1px solid ${D.border}`,
+    color: D.textDim,
     fontSize: 10,
-    fontFamily: fonts.mono,
-    color: colors.textDim,
+    fontWeight: 600,
+    letterSpacing: 1,
     textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-
-  // Tiers
-  tierGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 12,
-  },
-  tierCard: {
-    padding: 16,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: radii.md,
-    textAlign: 'center' as const,
-  },
-  tierLabel: {
-    fontSize: 14,
-    fontFamily: fonts.serif,
-    fontWeight: 600,
-    color: colors.text,
-  },
-  tierCost: {
-    fontSize: 22,
-    fontFamily: fonts.mono,
-    fontWeight: 600,
-    color: colors.accent,
-    margin: '4px 0',
-  },
-  tierDescription: {
-    fontSize: 11,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
-    lineHeight: 1.5,
-    marginBottom: 8,
   },
-  tierMeta: {
-    fontSize: 10,
-    fontFamily: fonts.mono,
-    color: colors.textDim,
+  td: {
+    padding: '10px 12px',
+    borderBottom: `1px solid rgba(250, 249, 246, 0.04)`,
+    color: D.text,
+    fontSize: 13,
   },
 
-  // Jurisdictions
-  jurisdictionRow: {
+  // ── Badges ─────────────────────────────────────────────────────────
+  badgeRow: {
     display: 'flex',
     gap: 8,
     flexWrap: 'wrap' as const,
   },
-  jurisdictionBadge: {
+  badge: {
     padding: '6px 16px',
+    border: `1px solid ${D.border}`,
     borderRadius: radii.pill,
-    border: `1px solid ${colors.border}`,
-    fontFamily: fonts.mono,
-    fontSize: 13,
-    fontWeight: 600,
-    color: colors.textSecondary,
-  },
-
-  // Error
-  errorBanner: {
-    padding: '12px 16px',
-    borderRadius: radii.md,
-    backgroundColor: 'rgba(196, 93, 62, 0.08)',
-    border: `1px solid ${colors.danger}`,
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.danger,
-    marginTop: spacing.xl,
+    fontWeight: 500,
+    color: D.textDim,
+    letterSpacing: 0.3,
   },
 
-  // Footer
+  bodyText: {
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    color: D.textDim,
+    lineHeight: 1.6,
+    marginBottom: 12,
+  },
+
+  // ── Footer ─────────────────────────────────────────────────────────
   footer: {
     textAlign: 'center' as const,
-    marginTop: spacing.xxxl,
-    paddingTop: spacing.xl,
-    borderTop: `1px solid ${colors.border}`,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerText: {
-    fontSize: 12,
+    paddingTop: 32,
+    marginTop: 24,
+    borderTop: `1px solid ${D.border}`,
+    fontSize: 10,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    fontWeight: 500,
+    color: D.textFaint,
+    letterSpacing: 3,
+    textTransform: 'uppercase' as const,
   },
   footerDot: {
-    fontSize: 12,
-    color: colors.textDim,
+    margin: '0 6px',
   },
 };

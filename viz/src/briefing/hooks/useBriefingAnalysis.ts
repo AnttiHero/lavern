@@ -83,12 +83,16 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
     setIsAnalyzing(true);
     setAnalysisError(null);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
     try {
       const res = await fetch('/api/briefing/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -102,10 +106,14 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
       setEngagementBrief(data.engagementBrief);
       setAnalysisRound(prev => prev + 1);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const isAbort = err instanceof DOMException && err.name === 'AbortError';
+      const message = isAbort
+        ? 'Analysis timed out — server may be unreachable.'
+        : err instanceof Error ? err.message : String(err);
       setAnalysisError(message);
       console.error('[BRIEFING ANALYSIS] Failed:', message);
     } finally {
+      clearTimeout(timeout);
       setIsAnalyzing(false);
     }
   }, []);

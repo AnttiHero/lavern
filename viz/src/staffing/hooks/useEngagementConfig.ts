@@ -24,8 +24,23 @@ interface RecommendationResult {
   estimatedCost: number;
 }
 
-/** Read engagement defaults from user profile in localStorage. */
+/** Read engagement defaults: sessionStorage (from briefing) > localStorage (user profile) > hardcoded. */
 function getProfileDefaults() {
+  // Priority 1: sessionStorage — set by BriefingView or StrategyView
+  try {
+    const ssRaw = sessionStorage.getItem('shem-briefing-config');
+    if (ssRaw) {
+      const ss = JSON.parse(ssRaw);
+      return {
+        workflowId: ss.workflowId || 'counsel',
+        intensity: (ss.intensity || 'standard') as IntensityLevel,
+        budgetUsd: ss.budgetUsd || 10,
+        yoloMode: ss.yoloMode || false,
+      };
+    }
+  } catch { /* ignore */ }
+
+  // Priority 2: localStorage — user profile defaults
   try {
     const raw = localStorage.getItem('shem-user-profile');
     if (raw) {
@@ -38,6 +53,7 @@ function getProfileDefaults() {
       };
     }
   } catch { /* ignore */ }
+
   return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false };
 }
 
@@ -78,7 +94,7 @@ export function useEngagementConfig() {
       } catch {
         // Fallback: generate demo recommendations from local profiles
         setDemoMode(true);
-        const intensityTargets: Record<string, number> = { quick: 4, standard: 8, thorough: 12, maximal: 16 };
+        const intensityTargets: Record<string, number> = { quick: 3, standard: 5, thorough: 7, maximal: 8 };
         const target = intensityTargets[intensity] ?? 8;
         const defaults = DEMO_PROFILES
           .filter(p => p.defaultSelected || !p.optional)

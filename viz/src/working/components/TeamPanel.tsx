@@ -1,12 +1,13 @@
 /**
  * TeamPanel — Left sidebar showing the dynamic team roster.
  *
- * Reads the actual team from useTeamRoster (sessionStorage).
- * Click an agent to filter the ThinkingStream.
+ * v12: Wider (280px), richer agent cards with task, elapsed time, finding counts.
+ *      Orchestrator shown at top when present.
  */
 
+import { useMemo } from 'react';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
-import type { AgentStatus } from '../hooks/useWorkingState.js';
+import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
 import { AgentChip } from './AgentChip.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
@@ -17,6 +18,8 @@ interface TeamPanelProps {
   onFilterAgent: (role: string | null) => void;
   activeAgentCount: number;
   totalEventCount: number;
+  findingCounts: Map<string, number>;
+  activeThinkingAgents: Map<string, ActiveThinkingAgent>;
 }
 
 export function TeamPanel({
@@ -26,7 +29,26 @@ export function TeamPanel({
   onFilterAgent,
   activeAgentCount,
   totalEventCount,
+  findingCounts,
+  activeThinkingAgents,
 }: TeamPanelProps) {
+  // Split orchestrator from team members
+  const { orchestrators, members } = useMemo(() => {
+    const orch: AgentProfile[] = [];
+    const mem: AgentProfile[] = [];
+    for (const p of team) {
+      if (p.category === 'orchestrator') orch.push(p);
+      else mem.push(p);
+    }
+    return { orchestrators: orch, members: mem };
+  }, [team]);
+
+  const totalFindings = useMemo(() => {
+    let sum = 0;
+    for (const c of findingCounts.values()) sum += c;
+    return sum;
+  }, [findingCounts]);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -43,8 +65,32 @@ export function TeamPanel({
         </button>
       )}
 
+      {/* Orchestrator section */}
+      {orchestrators.length > 0 && (
+        <div style={styles.orchestratorSection}>
+          <span style={styles.sectionLabel}>Team Lead</span>
+          {orchestrators.map(profile => (
+            <AgentChip
+              key={profile.role}
+              profile={profile}
+              status={agentStatuses.get(profile.role)}
+              isFiltered={filterByAgent === profile.role}
+              onClick={() =>
+                onFilterAgent(filterByAgent === profile.role ? null : profile.role)
+              }
+              thinkingAgent={activeThinkingAgents.get(profile.role)}
+              findingCount={findingCounts.get(profile.role) ?? 0}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Team members */}
       <div style={styles.roster}>
-        {team.map(profile => (
+        {members.length > 0 && orchestrators.length > 0 && (
+          <span style={styles.sectionLabel}>Agents</span>
+        )}
+        {members.map(profile => (
           <AgentChip
             key={profile.role}
             profile={profile}
@@ -53,6 +99,8 @@ export function TeamPanel({
             onClick={() =>
               onFilterAgent(filterByAgent === profile.role ? null : profile.role)
             }
+            thinkingAgent={activeThinkingAgents.get(profile.role)}
+            findingCount={findingCounts.get(profile.role) ?? 0}
           />
         ))}
       </div>
@@ -61,6 +109,10 @@ export function TeamPanel({
         <div style={styles.statRow}>
           <span style={styles.statLabel}>Active</span>
           <span style={styles.statValue}>{activeAgentCount}</span>
+        </div>
+        <div style={styles.statRow}>
+          <span style={styles.statLabel}>Findings</span>
+          <span style={styles.statValue}>{totalFindings}</span>
         </div>
         <div style={styles.statRow}>
           <span style={styles.statLabel}>Events</span>
@@ -73,7 +125,7 @@ export function TeamPanel({
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    width: 240,
+    width: 280,
     height: '100%',
     backgroundColor: colors.bgCard,
     borderRight: `1px solid ${colors.border}`,
@@ -114,6 +166,23 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '8px 12px 0',
     cursor: 'pointer',
     textAlign: 'center' as const,
+  },
+  orchestratorSection: {
+    padding: '8px 8px 4px',
+    borderBottom: `1px solid ${colors.border}`,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  sectionLabel: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.textDim,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    padding: '0 10px',
+    marginBottom: 2,
   },
   roster: {
     flex: 1,

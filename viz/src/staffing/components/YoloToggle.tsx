@@ -1,5 +1,5 @@
 /**
- * YoloToggle — YOLO MODE toggle with warning state.
+ * YoloToggle — Autopilot toggle with warning state.
  * Warm editorial — amber warning, no neon glow.
  */
 
@@ -28,7 +28,7 @@ export function YoloToggle({ enabled, onToggle }: Props) {
             ...styles.label,
             color: enabled ? colors.warning : colors.textMuted,
           }}>
-            Yolo Mode
+            Autopilot
           </span>
         </div>
 
@@ -52,7 +52,7 @@ export function YoloToggle({ enabled, onToggle }: Props) {
         color: enabled ? colors.warning : colors.textDim,
       }}>
         {enabled
-          ? 'All gates auto-approved. Full automation.'
+          ? 'Full automation \u2014 no human review gates.'
           : 'Human-in-the-loop at gate checkpoints.'}
       </span>
 
@@ -63,7 +63,7 @@ export function YoloToggle({ enabled, onToggle }: Props) {
           exit={{ opacity: 0, height: 0 }}
           style={styles.warning}
         >
-          {'\u26A0'} No human review — agents decide everything autonomously.
+          {'\u26A0'} Agents will proceed through all gates without stopping for human review.
         </motion.div>
       )}
     </div>

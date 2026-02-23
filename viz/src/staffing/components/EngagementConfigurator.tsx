@@ -1,44 +1,66 @@
 /**
- * EngagementConfigurator — Control panel for workflow, intensity, budget, and YOLO mode.
+ * EngagementConfigurator — Control panel for workflow, intensity, team lead, and autopilot.
  *
- * Sits above the agent card grid in StaffingView. 2-column layout.
- * Warm editorial design — paper panel with subtle border.
+ * Sits above the agent card grid in StaffingView / StrategyView.
+ *
+ * v15: Restructured layout — cards → connector text → orchestrator → depth + autopilot.
+ *      Connector sentence makes the approach → team lead relationship explicit.
  */
 
 import { motion } from 'motion/react';
 import { WorkflowPicker } from './WorkflowPicker.js';
 import { IntensitySelector } from './IntensitySelector.js';
-import { BudgetSlider } from './BudgetSlider.js';
+import { TeamCostSummary } from './TeamCostSummary.js';
 import { YoloToggle } from './YoloToggle.js';
+import { OrchestratorMiniCard } from './OrchestratorMiniCard.js';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
 import type { IntensityLevel, EngagementConfig } from '../hooks/useEngagementConfig.js';
+import type { AgentProfile } from '../hooks/useAgentProfiles.js';
+
+/** Branded workflow names for the connector sentence. */
+const WORKFLOW_BRANDED: Record<string, string> = {
+  'counsel': 'Quick Counsel',
+  'simple-query': 'Quick Counsel',
+  'review': 'Deep Review',
+  'contract-review': 'Deep Review',
+  'adversarial': 'Stress Test',
+  'research-memo': 'Stress Test',
+  'roundtable': 'The Roundtable',
+  'legal-design': 'The Roundtable',
+};
 
 interface Props {
   config: EngagementConfig;
   workflows: WorkflowSummary[];
   workflowsLoading: boolean;
-  estimatedCost: number;
-  teamSize: number;
+  selectedProfiles?: AgentProfile[];
+  totalCost?: number;
+  teamSize?: number;
   recommendationLoading: boolean;
+  orchestratorProfile: AgentProfile | null;
   onWorkflowChange: (id: string) => void;
   onIntensityChange: (level: IntensityLevel) => void;
-  onBudgetChange: (budget: number) => void;
   onYoloChange: (yolo: boolean) => void;
+  showCostSummary?: boolean;
 }
 
 export function EngagementConfigurator({
   config,
   workflows,
   workflowsLoading,
-  estimatedCost,
-  teamSize,
+  selectedProfiles = [],
+  totalCost = 0,
+  teamSize = 0,
   recommendationLoading,
+  orchestratorProfile,
   onWorkflowChange,
   onIntensityChange,
-  onBudgetChange,
   onYoloChange,
+  showCostSummary = true,
 }: Props) {
+  const brandedName = WORKFLOW_BRANDED[config.workflowId] ?? config.workflowId;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -46,15 +68,14 @@ export function EngagementConfigurator({
       transition={{ duration: 0.3 }}
       style={styles.container}
     >
-      {/* Header */}
-      <div style={styles.header}>
-        <span style={styles.title}>Engagement Configuration</span>
-        {recommendationLoading && (
+      {/* Loading indicator */}
+      {recommendationLoading && (
+        <div style={styles.header}>
           <span style={styles.loadingDot}>{'\u2022'} updating...</span>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Workflow picker — full width */}
+      {/* Workflow picker — 2×2 card grid, full width */}
       <WorkflowPicker
         workflows={workflows}
         activeWorkflow={config.workflowId}
@@ -62,7 +83,23 @@ export function EngagementConfigurator({
         loading={workflowsLoading}
       />
 
-      {/* Two-column layout */}
+      {/* Connector text + Orchestrator — full width */}
+      {orchestratorProfile && (
+        <div style={styles.orchestratorSection}>
+          <div style={styles.connector}>
+            <span style={styles.connectorText}>
+              {brandedName} is led by
+            </span>
+          </div>
+          <OrchestratorMiniCard
+            profile={orchestratorProfile}
+            workflowId={config.workflowId}
+            showTagline
+          />
+        </div>
+      )}
+
+      {/* Two-column: Depth + Autopilot */}
       <div style={styles.columns}>
         {/* Left column: Intensity */}
         <div style={styles.column}>
@@ -72,15 +109,16 @@ export function EngagementConfigurator({
           />
         </div>
 
-        {/* Right column: Budget + YOLO */}
+        {/* Right column: Cost (optional) + Autopilot */}
         <div style={styles.column}>
-          <BudgetSlider
-            budget={config.budgetUsd}
-            estimatedCost={estimatedCost}
-            teamSize={teamSize}
-            onBudgetChange={onBudgetChange}
-          />
-          <div style={{ marginTop: spacing.md }}>
+          {showCostSummary && (
+            <TeamCostSummary
+              selectedProfiles={selectedProfiles}
+              totalCost={totalCost}
+              teamSize={teamSize}
+            />
+          )}
+          <div style={{ marginTop: showCostSummary ? spacing.md : 0 }}>
             <YoloToggle
               enabled={config.yoloMode}
               onToggle={onYoloChange}
@@ -107,17 +145,28 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  title: {
-    fontSize: 14,
-    fontFamily: fonts.sans,
-    color: colors.text,
-    fontWeight: 600,
-  },
   loadingDot: {
     fontSize: 11,
     fontFamily: fonts.sans,
     color: colors.textDim,
     fontStyle: 'italic',
+  },
+  orchestratorSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
+  connector: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  connectorText: {
+    fontSize: 14,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    letterSpacing: 0.2,
   },
   columns: {
     display: 'grid',

@@ -1,12 +1,16 @@
 /**
  * ThinkingStream — Main center area: vertical scrollable feed of agent activity cards.
  *
- * v11: Removed narrator. Added challenge, response, quality_check card types.
- * Shows substantive agent thinking, not tool-call plumbing.
+ * v12: Threaded debates, tool_used cards, active thinking indicators.
+ *      Challenge/response/resolution cards are absorbed into DebateThreadCards.
+ *      tool_used events fill the silence between agent_start and first finding.
+ *      Active thinking agents show live indicators at the bottom.
  */
 
 import { useEffect, useRef, useMemo } from 'react';
-import type { StreamCard } from '../hooks/useWorkingState.js';
+import { motion, AnimatePresence } from 'motion/react';
+import type { StreamCard, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
+import type { DebateThread } from '../hooks/useDebateThreads.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { ThinkingCard } from './ThinkingCard.js';
 import { FindingCard } from './FindingCard.js';
@@ -16,8 +20,12 @@ import { ResolutionCard } from './ResolutionCard.js';
 import { QualityCheckCard } from './QualityCheckCard.js';
 import { GateCard } from './GateCard.js';
 import { WorkflowStepCard } from './WorkflowStepCard.js';
+import { ToolUsedCard } from './ToolUsedCard.js';
+import { ActiveThinkingCard } from './ActiveThinkingCard.js';
+import { DebateThreadCard } from './DebateThreadCard.js';
 import { EmptyState } from './EmptyState.js';
 import { colors, fonts, radii, categoryColor } from '../../staffing/styles/tokens.js';
+import { streamCardEntrance } from '../styles/animations.js';
 
 interface ThinkingStreamProps {
   cards: StreamCard[];
@@ -26,6 +34,8 @@ interface ThinkingStreamProps {
   onSearchChange: (text: string) => void;
   onGateClick: () => void;
   isConnected: boolean;
+  debateThreads: Map<string, DebateThread>;
+  activeThinkingAgents: Map<string, ActiveThinkingAgent>;
 }
 
 export function ThinkingStream({
@@ -35,6 +45,8 @@ export function ThinkingStream({
   onSearchChange,
   onGateClick,
   isConnected,
+  debateThreads,
+  activeThinkingAgents,
 }: ThinkingStreamProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +71,13 @@ export function ThinkingStream({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [cards.length]);
+  }, [cards.length, activeThinkingAgents.size]);
+
+  // Active thinking agents as array for rendering
+  const thinkingArray = useMemo(
+    () => Array.from(activeThinkingAgents.values()),
+    [activeThinkingAgents],
+  );
 
   return (
     <div style={styles.container}>
@@ -76,93 +94,152 @@ export function ThinkingStream({
 
       {/* Stream */}
       <div ref={scrollRef} style={styles.stream}>
-        {cards.length === 0 ? (
+        {cards.length === 0 && thinkingArray.length === 0 ? (
           <EmptyState isConnected={isConnected} />
         ) : (
-          cards.map((card, i) => {
-            const key = `${card.kind}-${i}`;
+          <>
+            {cards.map((card, i) => {
+              const key = `${card.kind}-${i}`;
 
-            switch (card.kind) {
-              case 'workflow_step':
-                return <WorkflowStepCard key={key} card={card} />;
+              // If this finding has a debate thread, render DebateThreadCard instead
+              if (card.kind === 'finding') {
+                const thread = debateThreads.get(card.findingId);
+                if (thread) {
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <DebateThreadCard thread={thread} profileMap={profileMap} />
+                    </motion.div>
+                  );
+                }
+              }
 
-              case 'agent_start':
-              case 'agent_stop':
-                return (
-                  <ThinkingCard
-                    key={key}
-                    card={card}
-                    resolveAgentName={resolveAgentName}
-                    agentColor={resolveAgentColor(card.role)}
-                  />
-                );
+              switch (card.kind) {
+                case 'workflow_step':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <WorkflowStepCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'finding':
-                return (
-                  <FindingCard
-                    key={key}
-                    card={card}
-                    resolveAgentName={resolveAgentName}
-                    agentColor={resolveAgentColor(card.agent)}
-                  />
-                );
+                case 'agent_start':
+                case 'agent_stop':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ThinkingCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.role)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'challenge':
-                return (
-                  <ChallengeCard
-                    key={key}
-                    card={card}
-                    resolveAgentName={resolveAgentName}
-                    agentColor={resolveAgentColor(card.challenger)}
-                  />
-                );
+                case 'tool_used':
+                  return (
+                    <ToolUsedCard
+                      key={key}
+                      card={card}
+                      resolveAgentName={resolveAgentName}
+                      agentColor={card.agent ? resolveAgentColor(card.agent) : undefined}
+                    />
+                  );
 
-              case 'response':
-                return (
-                  <ResponseCard
-                    key={key}
-                    card={card}
-                    resolveAgentName={resolveAgentName}
-                    agentColor={resolveAgentColor(card.responder)}
-                  />
-                );
+                case 'finding':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <FindingCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.agent)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'resolution':
-                return <ResolutionCard key={key} card={card} />;
+                case 'challenge':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ChallengeCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.challenger)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'quality_check':
-                return <QualityCheckCard key={key} card={card} />;
+                case 'response':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ResponseCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.responder)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'gate':
-                return <GateCard key={key} card={card} onClick={onGateClick} />;
+                case 'resolution':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ResolutionCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'verification':
-                return (
-                  <div key={key} style={styles.verificationCard}>
-                    <span style={styles.verificationIcon}>
-                      {card.passed ? '\u2713' : '\u2717'}
-                    </span>
-                    <span style={styles.verificationText}>
-                      {card.verificationType}: {card.passed ? 'Passed' : 'Failed'}
-                    </span>
-                    <span style={styles.verificationConf}>
-                      {Math.round(card.confidence * 100)}%
-                    </span>
-                  </div>
-                );
+                case 'quality_check':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <QualityCheckCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'error':
-                return (
-                  <div key={key} style={styles.errorCard}>
-                    <span style={styles.errorIcon}>!</span>
-                    <span style={styles.errorText}>{card.message}</span>
-                  </div>
-                );
+                case 'gate':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <GateCard card={card} onClick={onGateClick} />
+                    </motion.div>
+                  );
 
-              default:
-                return null;
-            }
-          })
+                case 'verification':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <div style={styles.verificationCard}>
+                        <span style={styles.verificationIcon}>
+                          {card.passed ? '\u2713' : '\u2717'}
+                        </span>
+                        <span style={styles.verificationText}>
+                          {card.verificationType}: {card.passed ? 'Passed' : 'Failed'}
+                        </span>
+                        <span style={styles.verificationConf}>
+                          {Math.round(card.confidence * 100)}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+
+                case 'error':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <div style={styles.errorCard}>
+                        <span style={styles.errorIcon}>!</span>
+                        <span style={styles.errorText}>{card.message}</span>
+                      </div>
+                    </motion.div>
+                  );
+
+                default:
+                  return null;
+              }
+            })}
+
+            {/* Active thinking indicators — pinned at bottom of stream */}
+            <AnimatePresence>
+              {thinkingArray.map(agent => (
+                <ActiveThinkingCard
+                  key={agent.agentId}
+                  agent={agent}
+                  profile={profileMap.get(agent.role)}
+                />
+              ))}
+            </AnimatePresence>
+          </>
         )}
       </div>
     </div>

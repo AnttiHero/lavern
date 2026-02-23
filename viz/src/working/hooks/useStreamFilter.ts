@@ -11,6 +11,7 @@ function getCardAgent(card: StreamCard): string | undefined {
     case 'agent_stop':
       return card.role;
     case 'finding':
+    case 'tool_used':
       return card.agent;
     case 'challenge':
       return card.challenger;
@@ -29,6 +30,8 @@ function getCardText(card: StreamCard): string {
       return `${card.role} ${card.task}`;
     case 'agent_stop':
       return card.role;
+    case 'tool_used':
+      return `${card.agent ?? ''} ${card.tool}`;
     case 'finding':
       return `${card.agent} ${card.category} ${card.severity} ${card.content}`;
     case 'challenge':

@@ -32,13 +32,39 @@ interface Props {
   onStepChange: (step: IntakePhase) => void;
 }
 
+// ── Matter type SVG icons — consistent 24×24 thin-line art ─────────────
+
+function MatterIcon({ type }: { type: string }) {
+  const s = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  switch (type) {
+    case 'contract_review': return (
+      <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 15l2 2 4-4" /></svg>
+    );
+    case 'document_redesign': return (
+      <svg {...s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="12" y2="17" /></svg>
+    );
+    case 'legal_research': return (
+      <svg {...s}><path d="M4 4h16v16H4z" /><line x1="8" y1="8" x2="16" y2="8" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="16" x2="12" y2="16" /></svg>
+    );
+    case 'legal_question': return (
+      <svg {...s}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="none" /></svg>
+    );
+    case 'risk_assessment': return (
+      <svg {...s}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+    );
+    default: return (
+      <svg {...s}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a4 4 0 0 1 8 0v2" /></svg>
+    );
+  }
+}
+
 const MATTER_TYPES = [
-  { value: 'contract_review', label: 'Contract Review', icon: '\u00A7', desc: 'Review, draft, or negotiate agreements' },
-  { value: 'document_redesign', label: 'Document Review', icon: '\u25CA', desc: 'Review and improve legal documents' },
-  { value: 'legal_research', label: 'Legal Research', icon: '\u00B6', desc: 'Research memo or legal brief' },
-  { value: 'legal_question', label: 'Advisory', icon: '\u2014', desc: 'Quick legal question or opinion' },
-  { value: 'risk_assessment', label: 'Risk Assessment', icon: '\u2022', desc: 'Compliance or risk analysis' },
-  { value: 'general', label: 'General', icon: '\u2026', desc: 'Other legal work' },
+  { value: 'contract_review', label: 'Contract Review', desc: 'Review, draft, or negotiate agreements' },
+  { value: 'document_redesign', label: 'Document Review', desc: 'Review and improve legal documents' },
+  { value: 'legal_research', label: 'Legal Research', desc: 'Research memo or legal brief' },
+  { value: 'legal_question', label: 'Advisory', desc: 'Quick legal question or opinion' },
+  { value: 'risk_assessment', label: 'Risk Assessment', desc: 'Compliance or risk analysis' },
+  { value: 'general', label: 'General', desc: 'Other legal work' },
 ];
 
 const JURISDICTIONS = [
@@ -121,11 +147,15 @@ export function ClientInfoForm({ onSubmit, loading, guidedStep, onStepChange }: 
   }, [step, form.clientName, form.matterTitle, goNext]);
 
   const handleSubmit = useCallback(() => {
-    if (customJurisdiction && form.jurisdiction === 'OTHER') {
-      onSubmit({ ...form, jurisdiction: customJurisdiction });
-    } else {
-      onSubmit(form);
-    }
+    // Ensure matterDescription is never empty (backend requires min 1 char)
+    const resolved = {
+      ...form,
+      matterDescription: form.matterDescription.trim() || form.matterTitle.trim() || 'General legal matter',
+      jurisdiction: (customJurisdiction && form.jurisdiction === 'OTHER')
+        ? customJurisdiction
+        : form.jurisdiction,
+    };
+    onSubmit(resolved);
   }, [form, customJurisdiction, onSubmit]);
 
   return (
@@ -222,7 +252,7 @@ export function ClientInfoForm({ onSubmit, loading, guidedStep, onStepChange }: 
                   backgroundColor: form.matterType === t.value ? colors.accentLight : colors.bgCard,
                 }}
               >
-                <span style={styles.typeIcon}>{t.icon}</span>
+                <span style={styles.typeIcon}><MatterIcon type={t.value} /></span>
                 <span style={styles.typeLabel}>{t.label}</span>
                 <span style={styles.typeDesc}>{t.desc}</span>
               </button>
@@ -523,10 +553,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
   },
   typeIcon: {
-    fontSize: 18,
-    fontFamily: fonts.serif,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: 4,
+    opacity: 0.6,
   },
   typeLabel: {
     fontSize: 12,

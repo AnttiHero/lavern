@@ -1,24 +1,48 @@
 /**
- * WorkflowPicker — Horizontal row of selectable workflow pills.
- * Warm editorial design.
+ * WorkflowPicker — 2×2 card grid for choosing the engagement approach.
+ *
+ * Each card shows icon, branded name, description, "best for" tagline,
+ * and step/gate counts. Warm editorial design.
+ *
+ * v2: Replaced horizontal pill row with rich info cards.
  */
 
+import { motion } from 'motion/react';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
 
-const WORKFLOW_DISPLAY: Record<string, { icon: string; label: string }> = {
-  'counsel': { icon: '\u2014', label: 'Counsel' },
-  'review': { icon: '\u00A7', label: 'Review' },
-  'adversarial': { icon: '\u00B6', label: 'Adversarial' },
-  'roundtable': { icon: '\u25CA', label: 'Roundtable' },
-  'full-bench': { icon: '\u2248', label: 'Full Bench' },
-  'pre-engagement': { icon: '\u2022', label: 'Client Onboarding' },
-  // Backward-compatible aliases for old workflow IDs
-  'simple-query': { icon: '\u2014', label: 'Counsel' },
-  'contract-review': { icon: '\u00A7', label: 'Review' },
-  'research-memo': { icon: '\u00B6', label: 'Adversarial' },
-  'legal-design': { icon: '\u25CA', label: 'Roundtable' },
+const WORKFLOW_DISPLAY: Record<string, {
+  icon: string;
+  label: string;
+  whyUse: string;
+}> = {
+  'counsel': {
+    icon: '\u2014',
+    label: 'Quick Counsel',
+    whyUse: 'Best for: Fast answers to specific questions.',
+  },
+  'review': {
+    icon: '\u00A7',
+    label: 'Deep Review',
+    whyUse: 'Best for: Contracts that need clause-by-clause analysis.',
+  },
+  'adversarial': {
+    icon: '\u00B6',
+    label: 'Stress Test',
+    whyUse: 'Best for: Testing whether your position can survive attack.',
+  },
+  'roundtable': {
+    icon: '\u25CA',
+    label: 'The Roundtable',
+    whyUse: 'Best for: Documents that need multidisciplinary redesign.',
+  },
 };
+
+/** Legacy / non-selectable workflow IDs — filtered from display. */
+const HIDDEN_WORKFLOW_IDS = new Set([
+  'simple-query', 'contract-review', 'research-memo', 'legal-design', // legacy aliases
+  'full-bench', 'pre-engagement', // not user-selectable workflow patterns
+]);
 
 interface Props {
   workflows: WorkflowSummary[];
@@ -31,36 +55,75 @@ export function WorkflowPicker({ workflows, activeWorkflow, onSelect, loading }:
   if (loading) {
     return (
       <div style={styles.container}>
-        <span style={styles.label}>Workflow</span>
+        <span style={styles.label}>Approach</span>
         <span style={styles.loadingText}>Loading workflows...</span>
       </div>
     );
   }
 
+  const visible = workflows.filter(w => !HIDDEN_WORKFLOW_IDS.has(w.id));
+
   return (
     <div style={styles.container}>
-      <span style={styles.label}>Workflow</span>
-      <div style={styles.pills}>
-        {workflows.map(w => {
+      <span style={styles.label}>Approach</span>
+      <div style={styles.grid}>
+        {visible.map(w => {
           const isActive = w.id === activeWorkflow;
+          const display = WORKFLOW_DISPLAY[w.id];
+          const label = display?.label ?? w.name;
+          const whyUse = display?.whyUse ?? '';
+          const icon = display?.icon ?? '\u2699';
+
           return (
-            <button
+            <motion.button
               key={w.id}
               onClick={() => onSelect(w.id)}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.15 }}
               style={{
-                ...styles.pill,
+                ...styles.card,
                 borderColor: isActive ? colors.text : colors.border,
-                backgroundColor: isActive ? colors.text : 'transparent',
-                color: isActive ? '#fff' : colors.textMuted,
+                backgroundColor: isActive ? colors.text : colors.bgCard,
               }}
-              title={w.description}
             >
-              <span style={styles.icon}>{WORKFLOW_DISPLAY[w.id]?.icon ?? '\u2699'}</span>
-              <span>{WORKFLOW_DISPLAY[w.id]?.label ?? w.name}</span>
-              <span style={{ ...styles.stepCount, color: isActive ? 'rgba(255,255,255,0.6)' : colors.textDim }}>
-                {w.stepCount} steps
-              </span>
-            </button>
+              {/* Icon + Name row */}
+              <div style={styles.cardHeader}>
+                <span style={{
+                  ...styles.icon,
+                  color: isActive ? 'rgba(255,255,255,0.5)' : colors.textDim,
+                }}>{icon}</span>
+                <span style={{
+                  ...styles.cardTitle,
+                  color: isActive ? '#fff' : colors.text,
+                }}>{label}</span>
+              </div>
+
+              {/* Description */}
+              <div style={{
+                ...styles.description,
+                color: isActive ? 'rgba(255,255,255,0.7)' : colors.textMuted,
+              }}>
+                {w.description}
+              </div>
+
+              {/* Why use tagline */}
+              {whyUse && (
+                <div style={{
+                  ...styles.whyUse,
+                  color: isActive ? 'rgba(255,255,255,0.55)' : colors.textDim,
+                }}>
+                  {whyUse}
+                </div>
+              )}
+
+              {/* Step + gate counts */}
+              <div style={{
+                ...styles.meta,
+                color: isActive ? 'rgba(255,255,255,0.45)' : colors.textDim,
+              }}>
+                {w.stepCount} steps{w.hasGates ? ` \u00B7 ${w.gateCount} human gate${w.gateCount !== 1 ? 's' : ''}` : ' \u00B7 no gates'}
+              </div>
+            </motion.button>
           );
         })}
       </div>
@@ -82,31 +145,57 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  pills: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacing.md,
   },
-  pill: {
+  card: {
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
     gap: 6,
-    padding: '7px 16px',
-    borderRadius: radii.lg,
+    padding: '14px 16px',
+    borderRadius: radii.md,
     border: `1px solid ${colors.border}`,
     backgroundColor: colors.bgCard,
     fontFamily: fonts.sans,
-    fontSize: 12,
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
-    whiteSpace: 'nowrap',
+    transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+    textAlign: 'left',
+    minHeight: 0,
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   },
   icon: {
-    fontSize: 14,
+    fontSize: 16,
+    color: colors.textDim,
+    flexShrink: 0,
   },
-  stepCount: {
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: colors.text,
+  },
+  description: {
+    fontSize: 12,
+    lineHeight: '16px',
+    color: colors.textMuted,
+  },
+  whyUse: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    lineHeight: '15px',
+    color: colors.textDim,
+    marginTop: 2,
+  },
+  meta: {
     fontSize: 10,
     color: colors.textDim,
+    marginTop: 'auto',
+    paddingTop: 4,
   },
   loadingText: {
     fontSize: 12,

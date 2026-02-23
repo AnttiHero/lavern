@@ -52,9 +52,9 @@ export function useTeamPresets() {
         const data = await res.json();
         basePresets = data.presets ?? [];
       } catch (e) {
-        // Log error — don't silently load demo data for production
-        console.error('[Staffing] Failed to load team presets:', e);
-        basePresets = [];
+        // API unreachable — use demo presets for local development
+        console.warn('[Staffing] API unreachable, using demo presets:', e);
+        basePresets = DEMO_PRESETS;
       } finally {
         // Merge saved teams at the top
         const saved = getSavedTeamPresets();

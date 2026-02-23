@@ -3,7 +3,7 @@
  * budget calculation, and team confirmation API call.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import type { AgentProfile } from './useAgentProfiles.js';
 import type { TeamPreset } from './useTeamPresets.js';
 
@@ -14,6 +14,10 @@ export function useTeamSelection(
   const [selectedRoles, setSelectedRoles] = useState<Set<string>>(new Set());
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  // Track when a preset was last applied — prevents recommendation effect
+  // from overwriting a just-applied preset (race condition guard).
+  const presetAppliedAtRef = useRef(0);
 
   const profileMap = useMemo(() => {
     const map = new Map<string, AgentProfile>();
@@ -47,6 +51,7 @@ export function useTeamSelection(
     }
     const preset = presets.find(p => p.id === presetId);
     if (!preset) return;
+    presetAppliedAtRef.current = Date.now();
     setSelectedRoles(new Set(preset.roles.slice(0, MAX_TEAM_SIZE)));
     setActivePreset(presetId);
   }, [presets]);
@@ -121,5 +126,7 @@ export function useTeamSelection(
     isSelected: (role: string) => selectedRoles.has(role),
     maxTeamSize: MAX_TEAM_SIZE,
     isAtCap: selectedRoles.size >= MAX_TEAM_SIZE,
+    /** Returns true if a preset was applied within the last 500ms (race guard). */
+    wasPresetRecentlyApplied: () => Date.now() - presetAppliedAtRef.current < 500,
   };
 }

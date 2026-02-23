@@ -14,10 +14,10 @@ const LEVELS: {
   description: string;
   teamSize: number;
 }[] = [
-  { level: 'quick', label: 'Quick', description: 'Minimal team, fast turnaround', teamSize: 3 },
-  { level: 'standard', label: 'Standard', description: 'Balanced team, critical gates', teamSize: 8 },
-  { level: 'thorough', label: 'Thorough', description: 'Full gates, high assurance', teamSize: 14 },
-  { level: 'maximal', label: 'Maximal', description: 'Every specialist, every gate', teamSize: 25 },
+  { level: 'quick', label: 'Swift', description: 'Lean and fast', teamSize: 3 },
+  { level: 'standard', label: 'Balanced', description: 'Right-sized for most matters', teamSize: 5 },
+  { level: 'thorough', label: 'Thorough', description: 'Full coverage, high confidence', teamSize: 7 },
+  { level: 'maximal', label: 'Full Force', description: 'Every resource. Every angle.', teamSize: 8 },
 ];
 
 interface Props {
@@ -32,7 +32,7 @@ export function IntensitySelector({ intensity, onSelect }: Props) {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.label}>Intensity</span>
+        <span style={styles.label}>Depth</span>
       </div>
 
       {/* Segmented button row */}

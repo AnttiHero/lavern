@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { ShemWsClient, type ConnectionStatus } from '../../connection/ws-client.js';
 import type { ShemEvent, WorkflowStep, Severity } from '../../types/events.js';
-// Demo simulator removed — all sessions require a real backend connection
+import { useDemoSimulator } from './useDemoSimulator.js';
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -21,10 +21,20 @@ export interface AgentStatus {
   totalDurationMs: number;
 }
 
+/** Agent currently thinking — derived from agent_start / tool_used / agent_stop. */
+export interface ActiveThinkingAgent {
+  agentId: string;
+  role: string;
+  task: string;
+  startTimestamp: string;
+  toolsUsed: string[];
+}
+
 export type StreamCard =
   | { kind: 'workflow_step'; step: WorkflowStep; previousStep: WorkflowStep; timestamp: string }
   | { kind: 'agent_start'; agentId: string; role: string; task: string; timestamp: string }
   | { kind: 'agent_stop'; agentId: string; role: string; durationMs: number; timestamp: string }
+  | { kind: 'tool_used'; tool: string; agent?: string; timestamp: string }
   | { kind: 'finding'; findingId: string; agent: string; category: string; severity: Severity; confidence: number; content: string; evidence: string[]; timestamp: string }
   | { kind: 'challenge'; challengeId: string; challenger: string; targetFindingId: string; challengeText: string; evidence: string[]; timestamp: string }
   | { kind: 'response'; responseId: string; responder: string; challengeId: string; accepted: boolean; responseText: string; revisedPosition?: string; timestamp: string }
@@ -48,11 +58,13 @@ export interface WorkingState {
   agentStatuses: Map<string, AgentStatus>;
   streamCards: StreamCard[];
   activeAgentCount: number;
+  activeThinkingAgents: Map<string, ActiveThinkingAgent>;
+  findingCounts: Map<string, number>;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
-export function useWorkingState(onSessionEnd?: () => void) {
+export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
 
   // Connection
@@ -157,7 +169,12 @@ export function useWorkingState(onSessionEnd?: () => void) {
     setCost(undefined);
     setPendingGate(null);
 
-    // Always connect via WebSocket — no more silent demo fallback
+    // Demo sessions are handled by useDemoSimulator — skip WS connection
+    if (id.startsWith('demo-session-')) {
+      setConnectionStatus('connected');
+      return;
+    }
+
     wsClientRef.current?.connectToSession(id);
     setTimeout(() => syncSessionState(id), 500);
   }, [syncSessionState]);
@@ -215,6 +232,10 @@ export function useWorkingState(onSessionEnd?: () => void) {
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Demo simulator ──────────────────────────────────────────────────
+
+  useDemoSimulator({ sessionId, teamRoles, onEvent: handleEvent });
 
   // ── Derived: agent statuses ───────────────────────────────────────────
 
@@ -404,6 +425,15 @@ export function useWorkingState(onSessionEnd?: () => void) {
           });
           break;
 
+        case 'tool_used':
+          cards.push({
+            kind: 'tool_used',
+            tool: event.tool,
+            agent: event.agent,
+            timestamp: event.timestamp,
+          });
+          break;
+
         case 'error':
           cards.push({
             kind: 'error',
@@ -413,7 +443,7 @@ export function useWorkingState(onSessionEnd?: () => void) {
           });
           break;
 
-        // tool_used, cost_update, memory_saved, session_start, session_end
+        // cost_update, memory_saved, session_start, session_end
         // are processed for side effects only — not shown in stream
       }
     }
@@ -428,6 +458,41 @@ export function useWorkingState(onSessionEnd?: () => void) {
     }
     return count;
   }, [agentStatuses]);
+
+  // ── Derived: active thinking agents (live thinking indicator) ───────
+
+  const activeThinkingAgents = useMemo(() => {
+    const agents = new Map<string, ActiveThinkingAgent>();
+    for (const event of events) {
+      if (event.type === 'agent_start') {
+        agents.set(event.role, {
+          agentId: event.agentId,
+          role: event.role,
+          task: event.task,
+          startTimestamp: event.timestamp,
+          toolsUsed: [],
+        });
+      } else if (event.type === 'agent_stop') {
+        agents.delete(event.role);
+      } else if (event.type === 'tool_used' && event.agent) {
+        const a = agents.get(event.agent);
+        if (a) a.toolsUsed = [...a.toolsUsed, event.tool];
+      }
+    }
+    return agents;
+  }, [events]);
+
+  // ── Derived: finding counts per agent ───────────────────────────────
+
+  const findingCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      if (event.type === 'finding_posted') {
+        counts.set(event.agent, (counts.get(event.agent) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [events]);
 
   // ── Return ────────────────────────────────────────────────────────────
 
@@ -445,6 +510,8 @@ export function useWorkingState(onSessionEnd?: () => void) {
     agentStatuses,
     streamCards,
     activeAgentCount,
+    activeThinkingAgents,
+    findingCounts,
   };
 
   return {

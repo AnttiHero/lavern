@@ -24,7 +24,7 @@ interface Props {
 
 const categories: Array<{ key: CategoryFilter; label: string }> = [
   { key: 'all', label: 'All' },
-  { key: 'orchestrator', label: 'Orchestrators' },
+  // Orchestrators are shown in the OrchestratorPanel, not in the grid
   { key: 'lawyer', label: 'Lawyers' },
   { key: 'specialist', label: 'Specialists' },
   { key: 'infrastructure', label: 'Infrastructure' },

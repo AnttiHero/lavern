@@ -171,7 +171,7 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
   const [memoText, setMemoText] = useState('');
 
   const upload = useDocumentUpload();
-  const qna = useBriefingQuestions(workflowId, interviewerId);
+  const qna = useBriefingQuestions(workflowId, interviewerId, upload.documents);
   const analysis = useBriefingAnalysis();
 
   // ── Phase transitions ──

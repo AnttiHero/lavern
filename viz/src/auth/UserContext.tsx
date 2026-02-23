@@ -1,8 +1,8 @@
 /**
  * UserContext — Authenticated user state available throughout the app.
  *
- * Provides the current user (id, email, displayName, firmName, profile)
- * and a logout function. Used by AuthGate to set the user after login.
+ * Provides the current user (or null if not logged in),
+ * plus login and logout functions.
  */
 
 import { createContext, useContext } from 'react';
@@ -16,7 +16,8 @@ export interface AuthUser {
 }
 
 export interface UserContextValue {
-  user: AuthUser;
+  user: AuthUser | null;
+  login: (user: AuthUser) => void;
   logout: () => Promise<void>;
 }
 

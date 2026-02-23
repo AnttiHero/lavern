@@ -1,13 +1,41 @@
 /**
- * BriefingChat — Progressive Q&A form with acknowledgment responses.
+ * BriefingChat — Progressive Q&A with thinking delays.
  *
- * Questions are revealed one at a time with active listening responses
- * between them, mimicking a top-firm partner conducting an intake meeting.
+ * Each new question pauses behind a "thinking" indicator (three animated dots)
+ * before revealing — like a real interviewer considering the previous answer
+ * before moving on. The first question gets a shorter delay; follow-ups
+ * take 1.8–3 seconds to simulate genuine deliberation.
  */
 
+import { useState, useEffect, useRef } from 'react';
 import { ChatMessage } from './ChatMessage.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 import type { BriefingQuestion } from '../data/questions.js';
+
+// ── Keyframes for thinking dots + reveal fade ─────────────────────────────
+
+const THINKING_KF_ID = 'briefing-thinking-keyframes';
+if (typeof document !== 'undefined' && !document.getElementById(THINKING_KF_ID)) {
+  const s = document.createElement('style');
+  s.id = THINKING_KF_ID;
+  s.textContent = `
+    @keyframes briefingThinkDot {
+      0%, 80%, 100% { opacity: 0.15; transform: scale(0.7); }
+      40% { opacity: 0.9; transform: scale(1); }
+    }
+    @keyframes briefingReveal {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes briefingAckFade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  `;
+  document.head.appendChild(s);
+}
+
+// ── Component ─────────────────────────────────────────────────────────────
 
 interface Props {
   questions: BriefingQuestion[];
@@ -29,18 +57,81 @@ export function BriefingChat({
   onGenerate,
   interviewerAvatar,
 }: Props) {
+  // Track which questions have been "revealed" (past thinking delay)
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
+  const [thinkingForId, setThinkingForId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // When a new question appears, show thinking dots → reveal after delay
+  useEffect(() => {
+    if (questions.length === 0) return;
+
+    // Find the first unrevealed question
+    const unrevealed = questions.find(q => !revealedIds.has(q.id));
+    if (!unrevealed) return;
+    if (thinkingForId === unrevealed.id) return; // already thinking about it
+
+    // First question → shorter delay; subsequent → deliberation time
+    const isFirst = revealedIds.size === 0;
+    const delay = isFirst
+      ? 800 + Math.random() * 400            // 0.8 – 1.2 s
+      : 1800 + Math.random() * 1200;         // 1.8 – 3.0 s
+
+    setThinkingForId(unrevealed.id);
+
+    timerRef.current = setTimeout(() => {
+      setRevealedIds(prev => {
+        const next = new Set(prev);
+        next.add(unrevealed.id);
+        return next;
+      });
+      setThinkingForId(null);
+    }, delay);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [questions, revealedIds, thinkingForId]);
+
   return (
     <div style={styles.container}>
       {questions.map((q, i) => {
         const answer = answers[q.id] ?? '';
         const hasAnswer = answer.trim().length > 0;
         const ack = acknowledgments?.[q.id];
-        const isLastQuestion = i === questions.length - 1;
+        const isLastVisible = i === questions.length - 1;
+        const isRevealed = revealedIds.has(q.id);
+        const isThinking = thinkingForId === q.id;
 
+        // ── Thinking state — three animated dots ─────────────────────
+        if (!isRevealed) {
+          if (isThinking) {
+            return (
+              <div key={q.id} style={styles.thinkingRow}>
+                {interviewerAvatar && (
+                  <div
+                    style={styles.avatar}
+                    dangerouslySetInnerHTML={{ __html: interviewerAvatar }}
+                  />
+                )}
+                <div style={styles.thinkingBubble}>
+                  <span style={{ ...styles.thinkingDot, animationDelay: '0s' }} />
+                  <span style={{ ...styles.thinkingDot, animationDelay: '0.2s' }} />
+                  <span style={{ ...styles.thinkingDot, animationDelay: '0.4s' }} />
+                </div>
+              </div>
+            );
+          }
+          return null; // not yet in the pipeline
+        }
+
+        // ── Revealed question — slides in with fade ──────────────────
         return (
-          <div key={q.id}>
+          <div
+            key={q.id}
+            style={{ animation: 'briefingReveal 0.45s ease both' }}
+          >
             <div style={interviewerAvatar ? styles.questionRow : undefined}>
-              {/* Avatar beside each question (if interviewer selected) */}
               {interviewerAvatar && (
                 <div
                   style={styles.avatar}
@@ -56,11 +147,12 @@ export function BriefingChat({
               </div>
             </div>
 
-            {/* Active listening response — shown after answering, before next question */}
-            {hasAnswer && ack && !isLastQuestion && (
+            {/* Acknowledgment — fades in after user answers */}
+            {hasAnswer && ack && !isLastVisible && (
               <div style={{
                 ...styles.acknowledgment,
                 ...(interviewerAvatar ? { marginLeft: 44 } : {}),
+                animation: 'briefingAckFade 0.6s ease 0.3s both',
               }}>
                 <div style={styles.ackDot} />
                 <span style={styles.ackText}>{ack}</span>
@@ -70,25 +162,30 @@ export function BriefingChat({
         );
       })}
 
-      <div style={styles.footer}>
-        <button
-          onClick={onGenerate}
-          disabled={!requiredComplete}
-          style={{
-            ...styles.generateBtn,
-            backgroundColor: requiredComplete ? colors.text : colors.bgPanel,
-            color: requiredComplete ? '#fff' : colors.textDim,
-            cursor: requiredComplete ? 'pointer' : 'not-allowed',
-          }}
-          onMouseEnter={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
-          onMouseLeave={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; } }}
-        >
-          Generate Briefing {'\u2192'}
-        </button>
-      </div>
+      {/* Generate button — hidden while interviewer is "thinking" */}
+      {!thinkingForId && (
+        <div style={styles.footer}>
+          <button
+            onClick={onGenerate}
+            disabled={!requiredComplete}
+            style={{
+              ...styles.generateBtn,
+              backgroundColor: requiredComplete ? colors.text : colors.bgPanel,
+              color: requiredComplete ? '#fff' : colors.textDim,
+              cursor: requiredComplete ? 'pointer' : 'not-allowed',
+            }}
+            onMouseEnter={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
+            onMouseLeave={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; } }}
+          >
+            Generate Briefing {'\u2192'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+// ── Styles ─────────────────────────────────────────────────────────────────
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -110,6 +207,34 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     minWidth: 0,
   },
+
+  // ── Thinking indicator ──────────────────────────────────────────────────
+  thinkingRow: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    minHeight: 40,
+  },
+  thinkingBubble: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '10px 18px',
+    backgroundColor: 'rgba(196, 93, 62, 0.04)',
+    borderRadius: 12,
+    borderLeft: `3px solid ${colors.accent}`,
+  },
+  thinkingDot: {
+    display: 'inline-block',
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: colors.accent,
+    animation: 'briefingThinkDot 1.4s ease-in-out infinite',
+  },
+
+  // ── Acknowledgment ──────────────────────────────────────────────────────
   acknowledgment: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -136,6 +261,8 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
     fontStyle: 'italic',
   },
+
+  // ── Footer ──────────────────────────────────────────────────────────────
   footer: {
     display: 'flex',
     justifyContent: 'flex-end',

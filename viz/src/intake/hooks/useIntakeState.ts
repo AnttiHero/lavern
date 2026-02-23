@@ -114,9 +114,21 @@ export function useIntakeState() {
         response: data,
       });
       setPhase('review');
-    } catch (e) {
-      // Show error — don't silently generate fake data
-      setError(e instanceof Error ? e.message : 'Cannot connect to the server. Please ensure the backend is running.');
+    } catch {
+      // Fallback to demo data when backend is unreachable or returns an error
+      const demoResponse = createDemoMatter(form);
+      setMatterData({
+        matterId: demoResponse.matterId,
+        matterNumber: demoResponse.matterNumber,
+        clientName: form.clientName,
+        matterTitle: form.matterTitle,
+        matterType: form.matterType,
+        jurisdiction: form.jurisdiction,
+        response: demoResponse,
+        demoMode: true,
+      });
+      setDemoMode(true);
+      setPhase('review');
     } finally {
       setLoading(false);
     }

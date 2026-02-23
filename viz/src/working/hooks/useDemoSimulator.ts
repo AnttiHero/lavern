@@ -1,9 +1,8 @@
 /**
  * useDemoSimulator — Generates fake ShemEvents on a timer for demo mode.
  *
- * v11: All events include substantive text content — findings have content
- * and evidence, challenges have challengeText, responses have responseText,
- * resolutions have winningPosition and evidenceWeight.
+ * v12: Added tool_used events between agent_start and first finding
+ *      to fill silence gaps. Each tool event includes agent field.
  *
  * When the session ID starts with "demo-session-", this hook fires
  * a scripted sequence of events so the thinking stream is populated
@@ -60,13 +59,23 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(500, { type: 'workflow_step', step: 'parallel_analysis', previousStep: 'intake', timestamp: ts() });
 
   add(400, { type: 'agent_start', agentId: `${a(0)}-1`, role: a(0), task: 'Analyzing document structure and visual hierarchy', timestamp: ts() });
-  add(600, { type: 'agent_start', agentId: `${a(1)}-1`, role: a(1), task: 'Reviewing ethical compliance and accessibility standards', timestamp: ts() });
-  add(300, { type: 'agent_start', agentId: `${a(2)}-1`, role: a(2), task: 'Evaluating readability and plain language compliance', timestamp: ts() });
+  // Tool events to fill the silence
+  add(300, { type: 'tool_used', tool: 'analyze_heading_structure', agent: a(0), timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'measure_visual_hierarchy', agent: a(0), timestamp: ts() });
 
-  add(800, { type: 'cost_update', totalUsd: 0.42, budgetUsd: 10.00, timestamp: ts() });
+  add(250, { type: 'agent_start', agentId: `${a(1)}-1`, role: a(1), task: 'Reviewing ethical compliance and accessibility standards', timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'check_wcag_compliance', agent: a(1), timestamp: ts() });
+  add(250, { type: 'tool_used', tool: 'run_contrast_check', agent: a(1), timestamp: ts() });
+
+  add(200, { type: 'agent_start', agentId: `${a(2)}-1`, role: a(2), task: 'Evaluating readability and plain language compliance', timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'calculate_readability_score', agent: a(2), timestamp: ts() });
+  add(250, { type: 'tool_used', tool: 'measure_sentence_length', agent: a(2), timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'count_passive_voice', agent: a(2), timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 0.42, budgetUsd: 10.00, timestamp: ts() });
 
   const f1 = fid();
-  add(1200, {
+  add(400, {
     type: 'finding_posted', findingId: f1, agent: a(0),
     category: 'Visual Hierarchy',
     severity: 'YELLOW' as Severity, confidence: 0.87,
@@ -156,9 +165,15 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(400, { type: 'workflow_step', step: 'transformation', previousStep: 'ethics_gate', timestamp: ts() });
 
   add(300, { type: 'agent_start', agentId: `${a(3 % agents.length)}-1`, role: a(3 % agents.length), task: 'Restructuring document with improved visual hierarchy', timestamp: ts() });
-  add(400, { type: 'agent_start', agentId: `${a(2)}-2`, role: a(2), task: 'Rewriting content to Grade 8 reading level', timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'restructure_heading_tree', agent: a(3 % agents.length), timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'rebuild_pdf_bookmarks', agent: a(3 % agents.length), timestamp: ts() });
 
-  add(1500, { type: 'cost_update', totalUsd: 2.94, budgetUsd: 10.00, timestamp: ts() });
+  add(200, { type: 'agent_start', agentId: `${a(2)}-2`, role: a(2), task: 'Rewriting content to Grade 8 reading level', timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'simplify_sentence_structure', agent: a(2), timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'convert_passive_to_active', agent: a(2), timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'split_compound_sentences', agent: a(2), timestamp: ts() });
+
+  add(400, { type: 'cost_update', totalUsd: 2.94, budgetUsd: 10.00, timestamp: ts() });
 
   // Quality check — fail first attempt
   add(800, {
@@ -178,8 +193,12 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
     timestamp: ts(),
   });
 
+  // Tools for revision
+  add(400, { type: 'tool_used', tool: 'apply_revision_guidance', agent: a(2), timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'recalculate_readability', agent: a(2), timestamp: ts() });
+
   // Quality check — pass second attempt
-  add(1200, {
+  add(500, {
     type: 'quality_check_result',
     step: 'transformation',
     passed: true,
@@ -232,9 +251,12 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(400, { type: 'workflow_step', step: 'meaning_gate', previousStep: 'debate_2', timestamp: ts() });
 
   add(300, { type: 'agent_start', agentId: `${a(4 % agents.length)}-1`, role: a(4 % agents.length), task: 'Verifying legal meaning preserved after transformation', timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'semantic_diff', agent: a(4 % agents.length), timestamp: ts() });
+  add(300, { type: 'tool_used', tool: 'clause_comparison', agent: a(4 % agents.length), timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'defined_term_consistency_check', agent: a(4 % agents.length), timestamp: ts() });
 
   const f5 = fid();
-  add(1200, {
+  add(400, {
     type: 'finding_posted', findingId: f5, agent: a(4 % agents.length),
     category: 'Meaning Preservation',
     severity: 'GREEN' as Severity, confidence: 0.96,
@@ -254,7 +276,9 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   add(400, { type: 'workflow_step', step: 'synthesis', previousStep: 'meaning_gate', timestamp: ts() });
 
   add(300, { type: 'agent_start', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), task: 'Compiling final document with all revisions', timestamp: ts() });
-  add(1500, { type: 'agent_stop', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), durationMs: 1800, timestamp: ts() });
+  add(400, { type: 'tool_used', tool: 'merge_revision_layers', agent: a(5 % agents.length), timestamp: ts() });
+  add(350, { type: 'tool_used', tool: 'generate_change_log', agent: a(5 % agents.length), timestamp: ts() });
+  add(500, { type: 'agent_stop', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), durationMs: 1800, timestamp: ts() });
 
   add(200, { type: 'cost_update', totalUsd: 4.58, budgetUsd: 10.00, timestamp: ts() });
 

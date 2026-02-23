@@ -1,20 +1,20 @@
 /**
  * LoginView — Login / Signup screen for Marble.
  *
- * Matches the editorial warm palette. Toggle between Login and Sign Up.
- * On success, calls onAuth(user) which re-renders the parent AuthGate.
+ * Same marble background as the lobby, but with an overlay card.
+ * Typography wordmark instead of SVG. Clean, editorial, warm.
  */
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { MarbleLogo } from '../landing/LandingView.js';
 import type { AuthUser } from './UserContext.js';
 
 interface Props {
   onAuth: (user: AuthUser) => void;
+  onBack?: () => void;
 }
 
-export default function LoginView({ onAuth }: Props) {
+export default function LoginView({ onAuth, onBack }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,11 +62,33 @@ export default function LoginView({ onAuth }: Props) {
 
   return (
     <div style={styles.page}>
+      {/* Marble background */}
+      <img
+        src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+        alt=""
+        style={styles.marbleBg}
+      />
+      <div style={styles.veil} />
+
+      {/* Back button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={styles.backBtn}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+        >
+          {'\u2190'} Back
+        </button>
+      )}
+
+      {/* Card */}
       <div style={styles.card}>
-        {/* Logo */}
-        <div style={styles.logoWrap}>
-          <MarbleLogo height={32} />
-        </div>
+        {/* Wordmark */}
+        <h1 style={styles.wordmark}>MARBLE</h1>
+
+        {/* Thin rule */}
+        <div style={styles.rule} />
 
         {/* Title */}
         <h2 style={styles.title}>
@@ -155,34 +177,96 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.bg,
+    backgroundColor: '#f0ede8',
     fontFamily: fonts.sans,
+    position: 'relative' as const,
+    overflow: 'hidden',
+  },
+
+  marbleBg: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover' as const,
+    objectPosition: 'center center',
+    filter: 'contrast(0.75) brightness(1.12) saturate(0.3)',
+    opacity: 0.5,
+    pointerEvents: 'none' as const,
+  },
+  veil: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(245, 243, 239, 0.45)',
+    pointerEvents: 'none' as const,
+  },
+
+  backBtn: {
+    position: 'absolute' as const,
+    top: 28,
+    left: 36,
+    zIndex: 10,
+    padding: '6px 14px',
+    borderRadius: radii.sm,
+    border: `1.5px solid ${colors.text}`,
+    backgroundColor: 'transparent',
+    color: colors.text,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.25s ease, color 0.25s ease',
   },
 
   card: {
+    position: 'relative' as const,
+    zIndex: 1,
     width: '100%',
     maxWidth: 400,
     padding: `${spacing.xxxl}px ${spacing.xxl}px`,
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    borderRadius: radii.lg,
+    border: '1px solid rgba(26, 26, 26, 0.06)',
   },
 
-  logoWrap: {
-    marginBottom: spacing.xxl,
+  wordmark: {
+    fontSize: 48,
+    fontWeight: 300,
+    fontFamily: fonts.serif,
+    color: colors.text,
+    margin: 0,
+    letterSpacing: 10,
+    textTransform: 'uppercase' as const,
+    opacity: 0.8,
+  },
+
+  rule: {
+    width: 48,
+    height: 1.5,
+    backgroundColor: colors.text,
+    opacity: 0.2,
+    margin: `${spacing.xl}px 0`,
   },
 
   title: {
     fontFamily: fonts.serif,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 300,
+    fontStyle: 'italic' as const,
     color: colors.text,
     margin: 0,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
 
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textMuted,
     margin: `${spacing.sm}px 0 ${spacing.xxl}px`,
     textAlign: 'center' as const,
@@ -190,7 +274,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   error: {
     width: '100%',
-    backgroundColor: 'rgba(196, 93, 62, 0.06)',
+    backgroundColor: 'rgba(196, 93, 62, 0.08)',
     color: colors.danger,
     border: '1px solid rgba(196, 93, 62, 0.2)',
     borderRadius: radii.sm,
@@ -198,36 +282,38 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.lg,
     fontSize: 13,
     textAlign: 'center' as const,
+    boxSizing: 'border-box' as const,
   },
 
   form: {
     width: '100%',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     gap: spacing.md,
   },
 
   input: {
     width: '100%',
-    padding: '12px 14px',
+    padding: '13px 16px',
     fontSize: 14,
     fontFamily: fonts.sans,
     color: colors.text,
-    backgroundColor: colors.bgInput,
-    border: `1.5px solid ${colors.border}`,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    border: `1.5px solid rgba(26, 26, 26, 0.1)`,
     borderRadius: radii.sm,
     outline: 'none',
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.2s ease',
+    letterSpacing: 0.2,
   },
 
   submitBtn: {
     width: '100%',
     padding: '14px',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
     fontFamily: fonts.sans,
-    letterSpacing: 1,
+    letterSpacing: 2,
     textTransform: 'uppercase' as const,
     color: '#fff',
     backgroundColor: colors.text,
@@ -239,7 +325,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   toggle: {
-    marginTop: spacing.xxl,
+    marginTop: spacing.xl,
     display: 'flex',
     alignItems: 'center',
     gap: spacing.sm,

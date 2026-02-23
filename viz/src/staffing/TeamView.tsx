@@ -1,10 +1,10 @@
 /**
- * StaffingView — "Draft Your Team" screen.
+ * TeamView — "Choose Your Team" page.
  *
- * Warm editorial design. Flat grid of flippable cards with sub-group
- * filter pills, visual section dividers, engagement configurator.
+ * Browse agents, filter by category/seniority/specialty, build your team.
+ * TeamBench fixed at bottom shows selected agents and confirm button.
  *
- * v12: Editorial redesign — Inter font, warm paper palette, clean layout.
+ * Flow: #/strategy → #/team → #/working
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,15 +13,14 @@ import { useAgentProfiles } from './hooks/useAgentProfiles.js';
 import { useTeamPresets } from './hooks/useTeamPresets.js';
 import { useTeamSelection } from './hooks/useTeamSelection.js';
 import { useSoundEffects } from './hooks/useSoundEffects.js';
-import { useWorkflows } from './hooks/useWorkflows.js';
 import { useEngagementConfig } from './hooks/useEngagementConfig.js';
+import { PresetSelector } from './components/PresetSelector.js';
 import { SectionHeader } from './components/SectionHeader.js';
 import { FlippableCard } from './components/FlippableCard.js';
-import { PresetSelector } from './components/PresetSelector.js';
 import { FilterBar } from './components/FilterBar.js';
 import type { SubGroupFilter } from './components/FilterBar.js';
 import { TeamBench } from './components/TeamBench.js';
-import { EngagementConfigurator } from './components/EngagementConfigurator.js';
+import { TeamCostSummary } from './components/TeamCostSummary.js';
 import { staggerContainer } from './styles/animations.js';
 import { colors, fonts, spacing, radii } from './styles/tokens.js';
 import { useUserProfile } from '../my-page/hooks/useUserProfile.js';
@@ -69,7 +68,7 @@ function getSubGroup(p: AgentProfile): string {
   return 'infrastructure';
 }
 
-// ── Visual section definitions (non-collapsible dividers) ────────────────
+// ── Visual section definitions ───────────────────────────────────────────
 
 interface SectionDef {
   id: string;
@@ -80,15 +79,6 @@ interface SectionDef {
 }
 
 const SECTION_DEFS: SectionDef[] = [
-  // Orchestrators — the team leaders
-  {
-    id: 'orchestrators',
-    title: 'Orchestrators',
-    subtitle: 'Team leaders who coordinate every engagement',
-    filter: p => p.category === 'orchestrator',
-    accentColor: colors.orchestrator,
-  },
-  // Lawyers by seniority
   {
     id: 'partners',
     title: 'Partners',
@@ -113,7 +103,6 @@ const SECTION_DEFS: SectionDef[] = [
     subtitle: 'Research, drafting, and operational support',
     filter: p => p.category === 'lawyer' && p.seniority === 'junior',
   },
-  // Specialists by sub-group
   {
     id: 'design',
     title: 'Design & Communication',
@@ -144,14 +133,12 @@ const SECTION_DEFS: SectionDef[] = [
     subtitle: 'Fintech, healthcare, media, and energy',
     filter: p => p.category === 'specialist' && SPECIALIST_SUBGROUP[p.role] === 'industry',
   },
-  // Infrastructure
   {
     id: 'infrastructure',
     title: 'Infrastructure',
     subtitle: 'Quality assurance, risk pricing, and testing',
     filter: p => p.category === 'infrastructure',
   },
-  // Legacy / catch-all for specialists not in a sub-group
   {
     id: 'legacy',
     title: 'Legacy Agents',
@@ -163,15 +150,15 @@ const SECTION_DEFS: SectionDef[] = [
 // ── Component ────────────────────────────────────────────────────────────
 
 interface Props {
-  matterId?: string;
-  onTeamConfirmed?: (roles: string[]) => void;
-  onBack?: () => void;
+  onTeamConfirmed: (roles: string[]) => void;
+  onBack: () => void;
   onSkip?: () => void;
 }
 
-export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, onBack, onSkip }: Props) {
-  // Read matterId from prop or sessionStorage
-  const matterId = matterIdProp ?? sessionStorage.getItem('shem-matter-id') ?? undefined;
+export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
+  const matterId = sessionStorage.getItem('shem-matter-id') ?? undefined;
+
+  // ── Data hooks ──────────────────────────────────────────────────────────
 
   const {
     profiles, allProfiles, loading, error, summary,
@@ -183,36 +170,52 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
   const { presets } = useTeamPresets();
 
   const {
-    selectedRoles, activePreset,
-    toggleAgent, applyPreset, clearSelection, setRoles,
+    selectedRoles, activePreset, toggleAgent, applyPreset, clearSelection, setRoles,
     totalCost, teamSize, selectedProfiles, confirming,
-    confirmTeam, isSelected,
+    confirmTeam, isSelected, wasPresetRecentlyApplied,
   } = useTeamSelection(allProfiles, presets);
 
   const { play } = useSoundEffects();
-  const { workflows, loading: workflowsLoading } = useWorkflows();
   const {
     config: engagementConfig,
-    setWorkflow, setIntensity, setBudget, setYolo,
-    recommendedRoles, estimatedCost, loading: recommendationLoading,
+    recommendedRoles, loading: recommendationLoading,
   } = useEngagementConfig();
 
-  // Apply recommended roles only on initial load (first non-empty result).
-  // After that, recommendations are displayed as suggestions but don't override
-  // the user's manual selection.
-  const initialAppliedRef = useRef(false);
+  // ── Apply preset from Strategy page (one-time on mount) ─────────────────
+
+  const presetApplied = useRef(false);
   useEffect(() => {
-    if (!initialAppliedRef.current && recommendedRoles.length > 0) {
-      initialAppliedRef.current = true;
-      setRoles(recommendedRoles);
+    if (presetApplied.current) return;
+    const presetId = sessionStorage.getItem('shem-strategy-preset');
+    if (presetId) {
+      presetApplied.current = true;
+      sessionStorage.removeItem('shem-strategy-preset');
+      applyPreset(presetId);
     }
-  }, [recommendedRoles, setRoles]);
+  }, [applyPreset]);
+
+  // ── Apply recommended roles on config change ───────────────────────────
+
+  const lastAppliedConfigRef = useRef({ intensity: '', workflow: '' });
+  useEffect(() => {
+    if (recommendedRoles.length > 0) {
+      if (wasPresetRecentlyApplied()) return;
+      const currentKey = `${engagementConfig.intensity}-${engagementConfig.workflowId}`;
+      const lastKey = `${lastAppliedConfigRef.current.intensity}-${lastAppliedConfigRef.current.workflow}`;
+      if (currentKey !== lastKey) {
+        lastAppliedConfigRef.current = {
+          intensity: engagementConfig.intensity,
+          workflow: engagementConfig.workflowId,
+        };
+        setRoles(recommendedRoles);
+      }
+    }
+  }, [recommendedRoles, engagementConfig.intensity, engagementConfig.workflowId, setRoles, wasPresetRecentlyApplied]);
 
   // ── Sub-group filter state ─────────────────────────────────────────────
 
   const [subGroup, setSubGroup] = useState<SubGroupFilter>('all');
 
-  // Compute counts per sub-group (from already-filtered profiles)
   const subGroupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of profiles) {
@@ -222,13 +225,12 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
     return counts;
   }, [profiles]);
 
-  // Apply sub-group filter on top of category/search/sort-filtered profiles
   const displayProfiles = useMemo(() => {
     if (subGroup === 'all') return profiles;
     return profiles.filter(p => getSubGroup(p) === subGroup);
   }, [profiles, subGroup]);
 
-  // ── Group display profiles into visual sections ────────────────────────
+  // ── Group into sections ─────────────────────────────────────────────────
 
   const sections = useMemo(() => {
     return SECTION_DEFS
@@ -239,13 +241,12 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
       .filter(s => s.profiles.length > 0);
   }, [displayProfiles]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────
+  // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleConfirm = useCallback(async () => {
     play('confirm');
     const success = await confirmTeam(matterId);
     if (success && onTeamConfirmed) {
-      // Persist team + config for session creation
       sessionStorage.setItem('shem-briefing-team', JSON.stringify(Array.from(selectedRoles)));
       sessionStorage.setItem('shem-briefing-config', JSON.stringify(engagementConfig));
       setTimeout(() => {
@@ -254,7 +255,18 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
     }
   }, [play, confirmTeam, matterId, onTeamConfirmed, selectedRoles, engagementConfig]);
 
-  // ── Save team to profile ─────────────────────────────────────────────
+  const handleToggle = useCallback((role: string) => {
+    play(isSelected(role) ? 'deselect' : 'select');
+    toggleAgent(role);
+  }, [play, isSelected, toggleAgent]);
+
+  const handlePresetSelect = useCallback((presetId: string) => {
+    play('preset');
+    applyPreset(presetId);
+  }, [play, applyPreset]);
+
+  // ── Save team to profile ───────────────────────────────────────────────
+
   const { saveTeam } = useUserProfile();
   const [saveTeamName, setSaveTeamName] = useState('');
   const [showSaveTeamInput, setShowSaveTeamInput] = useState(false);
@@ -265,7 +277,7 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
     if (!name || teamSize === 0) return;
     saveTeam({
       name,
-      description: `${teamSize} agents · ${engagementConfig.workflowId}`,
+      description: `${teamSize} agents \u00B7 ${engagementConfig.workflowId}`,
       roles: Array.from(selectedRoles),
       teamSize,
     });
@@ -275,36 +287,24 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
     setTimeout(() => setTeamSaved(false), 2000);
   }, [saveTeamName, teamSize, selectedRoles, engagementConfig.workflowId, saveTeam]);
 
-  const handlePreset = useCallback((presetId: string) => {
-    play('preset');
-    applyPreset(presetId);
-  }, [play, applyPreset]);
-
-  const handleToggle = useCallback((role: string) => {
-    play(isSelected(role) ? 'deselect' : 'select');
-    toggleAgent(role);
-  }, [play, isSelected, toggleAgent]);
-
   return (
-    <div style={viewStyles.container}>
+    <div style={styles.container}>
       {/* Header */}
-      <div style={viewStyles.header}>
-        <div style={viewStyles.headerLeft}>
-          {onBack && (
-            <button
-              onClick={onBack}
-              style={viewStyles.backButton}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-            >
-              {'\u2190'} Back
-            </button>
-          )}
-          <h1 style={viewStyles.title}>Marble <span style={{ fontStyle: 'italic' }}>Legal Team</span></h1>
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <button
+            onClick={onBack}
+            style={styles.backButton}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+          >
+            {'\u2190'} Strategy
+          </button>
+          <h1 style={styles.title}>Marble <span style={{ fontStyle: 'italic' }}>Team</span></h1>
           {onSkip && (
             <button
               onClick={onSkip}
-              style={viewStyles.skipButton}
+              style={styles.skipButton}
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.borderColor = colors.text; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; b.style.borderColor = colors.border; }}
             >
@@ -312,30 +312,31 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
             </button>
           )}
         </div>
+        {recommendationLoading && (
+          <span style={styles.loadingHint}>{'\u2022'} loading recommendations...</span>
+        )}
       </div>
 
-      {/* Engagement Configurator */}
-      <EngagementConfigurator
-        config={engagementConfig}
-        workflows={workflows}
-        workflowsLoading={workflowsLoading}
-        estimatedCost={estimatedCost}
+      {/* Team cost comparison */}
+      <TeamCostSummary
+        selectedProfiles={selectedProfiles}
+        totalCost={totalCost}
         teamSize={teamSize}
-        recommendationLoading={recommendationLoading}
-        onWorkflowChange={setWorkflow}
-        onIntensityChange={setIntensity}
-        onBudgetChange={setBudget}
-        onYoloChange={setYolo}
       />
 
-      {/* Preset selector */}
-      <PresetSelector
-        presets={presets}
-        activePreset={activePreset}
-        onSelect={handlePreset}
-      />
+      {/* Presets — quick team builder */}
+      {presets.length > 0 && (
+        <div style={styles.presetsSection}>
+          <span style={styles.presetsLabel}>Quick presets</span>
+          <PresetSelector
+            presets={presets}
+            activePreset={activePreset}
+            onSelect={handlePresetSelect}
+          />
+        </div>
+      )}
 
-      {/* Filter bar with sub-group pills */}
+      {/* Filter bar */}
       <FilterBar
         category={category}
         onCategoryChange={setCategory}
@@ -351,15 +352,15 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
 
       {/* Loading / Error */}
       {loading && (
-        <div style={viewStyles.loadingMessage}>Loading agent profiles...</div>
+        <div style={styles.loadingMessage}>Loading agent profiles...</div>
       )}
       {error && (
-        <div style={viewStyles.errorMessage}>
+        <div style={styles.errorMessage}>
           Failed to load profiles: {error}
         </div>
       )}
 
-      {/* Flat grid with section dividers */}
+      {/* Agent card grid */}
       {!loading && sections.map(section => (
         <div key={section.id}>
           <SectionHeader
@@ -393,18 +394,18 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
 
       {/* Empty state */}
       {!loading && sections.length === 0 && displayProfiles.length === 0 && (
-        <div style={viewStyles.emptyMessage}>
+        <div style={styles.emptyMessage}>
           No agents match your filters.
         </div>
       )}
 
       {/* Save Team */}
       {teamSize > 0 && (
-        <div style={viewStyles.saveTeamRow}>
+        <div style={styles.saveTeamRow}>
           {teamSaved ? (
-            <span style={viewStyles.savedLabel}>{'\u2713'} Team saved to My Page</span>
+            <span style={styles.savedLabel}>{'\u2713'} Team saved to My Page</span>
           ) : showSaveTeamInput ? (
-            <div style={viewStyles.saveTeamInputRow}>
+            <div style={styles.saveTeamInputRow}>
               <input
                 type="text"
                 value={saveTeamName}
@@ -412,17 +413,17 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveTeam(); }}
                 placeholder="Team name..."
                 autoFocus
-                style={viewStyles.saveTeamInput}
+                style={styles.saveTeamInput}
               />
-              <button onClick={handleSaveTeam} disabled={!saveTeamName.trim()} style={viewStyles.saveTeamBtn}>
+              <button onClick={handleSaveTeam} disabled={!saveTeamName.trim()} style={styles.saveTeamBtn}>
                 Save
               </button>
-              <button onClick={() => setShowSaveTeamInput(false)} style={viewStyles.saveTeamCancelBtn}>
+              <button onClick={() => setShowSaveTeamInput(false)} style={styles.saveTeamCancelBtn}>
                 Cancel
               </button>
             </div>
           ) : (
-            <button onClick={() => setShowSaveTeamInput(true)} style={viewStyles.saveTeamTrigger}>
+            <button onClick={() => setShowSaveTeamInput(true)} style={styles.saveTeamTrigger}>
               {'\u2605'} Save This Team
             </button>
           )}
@@ -432,7 +433,7 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
       {/* Spacer for bench */}
       <div style={{ height: 100 }} />
 
-      {/* Team bench (fixed bottom) */}
+      {/* TeamBench — fixed bottom */}
       <TeamBench
         selectedProfiles={selectedProfiles}
         teamSize={teamSize}
@@ -448,7 +449,7 @@ export default function StaffingView({ matterId: matterIdProp, onTeamConfirmed, 
   );
 }
 
-const viewStyles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = {
   container: {
     width: '100%',
     height: '100vh',
@@ -470,6 +471,7 @@ const viewStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'baseline',
     gap: spacing.lg,
+    width: '100%',
   },
   backButton: {
     padding: '6px 14px',
@@ -508,6 +510,28 @@ const viewStyles: Record<string, React.CSSProperties> = {
     letterSpacing: -0.5,
     margin: 0,
   },
+  presetsSection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 2,
+    marginBottom: spacing.md,
+  },
+  presetsLabel: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 500,
+    color: colors.textDim,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  loadingHint: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    fontStyle: 'italic',
+    flexShrink: 0,
+  },
   loadingMessage: {
     textAlign: 'center',
     padding: 40,
@@ -529,8 +553,6 @@ const viewStyles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: colors.textDim,
   },
-
-  // Save team
   saveTeamRow: {
     display: 'flex',
     justifyContent: 'center',

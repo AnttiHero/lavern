@@ -62,7 +62,7 @@ export function AgentCardBack({ profile }: Props) {
           Practice Areas
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {profile.practiceAreas.slice(0, 5).map(pa => (
+          {profile.practiceAreas.slice(0, 3).map(pa => (
             <span key={pa} style={{
               fontSize: 9,
               fontFamily: fonts.sans,
@@ -78,7 +78,7 @@ export function AgentCardBack({ profile }: Props) {
       </div>
 
       {/* Strengths */}
-      <div>
+      <div style={{ overflow: 'hidden' }}>
         <div style={{
           fontSize: 10,
           fontFamily: fonts.sans,
@@ -88,12 +88,15 @@ export function AgentCardBack({ profile }: Props) {
         }}>
           Strengths
         </div>
-        {profile.strengths.slice(0, 3).map(s => (
+        {profile.strengths.slice(0, 2).map(s => (
           <div key={s} style={{
             fontSize: 10,
             fontFamily: fonts.sans,
             color: colors.textSecondary,
-            lineHeight: '15px',
+            lineHeight: '14px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}>
             {'\u2713'} {s}
           </div>
@@ -101,7 +104,7 @@ export function AgentCardBack({ profile }: Props) {
       </div>
 
       {/* Limitations */}
-      <div>
+      <div style={{ overflow: 'hidden' }}>
         <div style={{
           fontSize: 10,
           fontFamily: fonts.sans,
@@ -111,12 +114,15 @@ export function AgentCardBack({ profile }: Props) {
         }}>
           Limitations
         </div>
-        {profile.limitations.slice(0, 2).map(l => (
+        {profile.limitations.slice(0, 1).map(l => (
           <div key={l} style={{
             fontSize: 10,
             fontFamily: fonts.sans,
             color: colors.textMuted,
-            lineHeight: '15px',
+            lineHeight: '14px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}>
             {'\u26A0'} {l}
           </div>
@@ -133,7 +139,7 @@ export function AgentCardBack({ profile }: Props) {
         marginTop: 'auto',
         overflow: 'hidden',
         display: '-webkit-box',
-        WebkitLineClamp: 3,
+        WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
       }}>
         &ldquo;{profile.personality.workStyle}&rdquo;

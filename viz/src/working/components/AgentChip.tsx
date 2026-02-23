@@ -1,12 +1,13 @@
 /**
- * AgentChip — Individual agent in the TeamPanel sidebar.
+ * AgentChip — Rich mini-card for an agent in the TeamPanel sidebar.
  *
- * Shows category color dot, display name, status indicator.
- * Clickable to filter the thinking stream.
+ * v12: Category color bar, display name, current task (truncated),
+ *      live elapsed time when active, findings count badge, pulse when active.
  */
 
+import { useState, useEffect } from 'react';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
-import type { AgentStatus } from '../hooks/useWorkingState.js';
+import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
 import { colors, fonts, radii, categoryColor } from '../../staffing/styles/tokens.js';
 
 interface AgentChipProps {
@@ -14,18 +15,30 @@ interface AgentChipProps {
   status: AgentStatus | undefined;
   isFiltered: boolean;
   onClick: () => void;
+  thinkingAgent?: ActiveThinkingAgent;
+  findingCount: number;
 }
 
-const STATUS_DOT: Record<string, { bg: string; animate: boolean }> = {
-  idle: { bg: colors.textDim, animate: false },
-  active: { bg: colors.success, animate: true },
-  complete: { bg: colors.sonnet, animate: false },
-};
-
-export function AgentChip({ profile, status, isFiltered, onClick }: AgentChipProps) {
+export function AgentChip({ profile, status, isFiltered, onClick, thinkingAgent, findingCount }: AgentChipProps) {
   const catColor = categoryColor(profile.category);
-  const st = status?.status ?? 'idle';
-  const dotStyle = STATUS_DOT[st] ?? STATUS_DOT.idle;
+  const isActive = status?.status === 'active';
+
+  // Live elapsed timer when thinking
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!thinkingAgent) { setElapsed(0); return; }
+    const start = new Date(thinkingAgent.startTimestamp).getTime();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [thinkingAgent?.startTimestamp]);
+
+  const elapsedStr = elapsed < 60
+    ? `${elapsed}s`
+    : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
+
+  const taskText = thinkingAgent?.task ?? status?.taskDescription;
 
   return (
     <button
@@ -34,22 +47,39 @@ export function AgentChip({ profile, status, isFiltered, onClick }: AgentChipPro
         ...styles.chip,
         backgroundColor: isFiltered ? colors.bgPanel : 'transparent',
         borderColor: isFiltered ? colors.borderSelected : 'transparent',
+        animation: isActive ? 'activeAgentGlow 2s ease-in-out infinite' : undefined,
       }}
     >
-      <div style={{ ...styles.colorDot, backgroundColor: catColor }} />
+      {/* Category color bar */}
+      <div style={{ ...styles.colorBar, backgroundColor: catColor }} />
+
       <div style={styles.info}>
-        <span style={styles.name}>{profile.displayName}</span>
-        {status?.lastActivity && (
+        {/* Name row */}
+        <div style={styles.nameRow}>
+          <span style={styles.name}>{profile.displayName}</span>
+          {isActive && (
+            <span style={styles.activeDot}>{'\u2022'}</span>
+          )}
+          {findingCount > 0 && (
+            <span style={styles.findingBadge}>{findingCount}</span>
+          )}
+        </div>
+
+        {/* Current task */}
+        {taskText && (
+          <span style={styles.task}>{taskText}</span>
+        )}
+
+        {/* Elapsed time when active */}
+        {thinkingAgent && (
+          <span style={styles.elapsed}>{elapsedStr}</span>
+        )}
+
+        {/* Status when not active */}
+        {!thinkingAgent && status?.lastActivity && (
           <span style={styles.activity}>{status.lastActivity}</span>
         )}
       </div>
-      <div
-        style={{
-          ...styles.statusDot,
-          backgroundColor: dotStyle.bg,
-          boxShadow: dotStyle.animate ? `0 0 0 3px rgba(74, 124, 80, 0.2)` : 'none',
-        }}
-      />
     </button>
   );
 }
@@ -57,29 +87,35 @@ export function AgentChip({ profile, status, isFiltered, onClick }: AgentChipPro
 const styles: Record<string, React.CSSProperties> = {
   chip: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 8,
     width: '100%',
-    padding: '7px 10px',
+    padding: '8px 10px',
     border: '1px solid transparent',
     borderRadius: radii.md,
     cursor: 'pointer',
     textAlign: 'left' as const,
     transition: 'background-color 0.15s ease, border-color 0.15s ease',
     fontFamily: fonts.sans,
+    minHeight: 40,
   },
-  colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
+  colorBar: {
+    width: 3,
+    borderRadius: 2,
     flexShrink: 0,
+    alignSelf: 'stretch',
   },
   info: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 1,
+    gap: 2,
     minWidth: 0,
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
   },
   name: {
     fontSize: 12,
@@ -88,6 +124,37 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    flex: 1,
+  },
+  activeDot: {
+    color: colors.success,
+    fontSize: 10,
+    flexShrink: 0,
+  },
+  findingBadge: {
+    fontSize: 9,
+    fontFamily: fonts.mono,
+    fontWeight: 600,
+    color: colors.textMuted,
+    backgroundColor: colors.bgPanel,
+    padding: '0 5px',
+    borderRadius: radii.pill,
+    flexShrink: 0,
+    lineHeight: '16px',
+  },
+  task: {
+    fontSize: 10,
+    color: colors.textDim,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    lineHeight: '14px',
+  },
+  elapsed: {
+    fontSize: 9,
+    fontFamily: fonts.mono,
+    color: colors.success,
+    fontWeight: 500,
   },
   activity: {
     fontSize: 10,
@@ -95,12 +162,5 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    flexShrink: 0,
-    transition: 'background-color 0.3s ease',
   },
 };
