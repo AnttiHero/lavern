@@ -115,9 +115,7 @@ export function useWorkingState(onSessionEnd?: () => void) {
     const client = new ShemWsClient({
       onEvent: handleEvent,
       onStatusChange: setConnectionStatus,
-      onReplayComplete: (count) => {
-        console.log(`Replay complete: ${count} events`);
-      },
+      onReplayComplete: () => {},
       onError: (msg) => {
         console.error('WebSocket error:', msg);
       },

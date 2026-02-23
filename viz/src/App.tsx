@@ -33,6 +33,10 @@ if (typeof document !== 'undefined' && !document.getElementById(MARBLE_KEYFRAMES
       0% { background-position: 0% 50%; }
       100% { background-position: 100% 50%; }
     }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
   `;
   document.head.appendChild(s);
 }
