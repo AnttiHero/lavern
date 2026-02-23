@@ -48,7 +48,8 @@ const seniorityOrder: Record<string, number> = {
 };
 
 export function useAgentProfiles() {
-  const [allProfiles, setAllProfiles] = useState<AgentProfile[]>([]);
+  // Initialize with demo profiles — prevents empty→populated flash on standalone deploy
+  const [allProfiles, setAllProfiles] = useState<AgentProfile[]>(DEMO_PROFILES as unknown as AgentProfile[]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState<CategoryFilter>('all');
