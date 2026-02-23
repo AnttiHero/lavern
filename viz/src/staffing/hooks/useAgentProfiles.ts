@@ -66,10 +66,9 @@ export function useAgentProfiles() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setAllProfiles(data.profiles ?? []);
-      } catch (e) {
-        // Log error — don't silently load demo data for production
-        console.error('[Staffing] Failed to load agent profiles:', e);
-        setAllProfiles([]);
+      } catch {
+        // API unavailable (standalone deploy) — use bundled demo profiles
+        setAllProfiles(DEMO_PROFILES as unknown as AgentProfile[]);
       } finally {
         setLoading(false);
       }
