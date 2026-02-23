@@ -3,10 +3,13 @@
  *
  * Manages workflow selection, intensity level, budget, and YOLO mode.
  * Fetches team recommendations from the API on config change (debounced).
+ *
+ * In standalone mode: generates recommendations locally, no API fetch.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { DEMO_PROFILES } from '../data/demoProfiles.js';
+import { IS_STANDALONE } from '../../standalone.js';
 
 export type IntensityLevel = 'quick' | 'standard' | 'thorough' | 'maximal';
 
@@ -22,6 +25,26 @@ interface RecommendationResult {
   teamSize: number;
   targetTeamSize: number;
   estimatedCost: number;
+}
+
+const INTENSITY_TARGETS: Record<string, number> = { quick: 3, standard: 5, thorough: 7, maximal: 8 };
+
+/** Generate local recommendations from demo profiles. */
+function generateLocalRecommendation(intensity: string) {
+  const target = INTENSITY_TARGETS[intensity] ?? 8;
+  const defaults = DEMO_PROFILES
+    .filter(p => p.defaultSelected || !p.optional)
+    .map(p => p.role);
+  const extras = DEMO_PROFILES
+    .filter(p => !p.defaultSelected && p.optional)
+    .sort((a, b) => a.billingRateUsd - b.billingRateUsd)
+    .map(p => p.role);
+  const roles = [...defaults, ...extras].slice(0, target);
+  const cost = roles.reduce((sum, r) => {
+    const p = DEMO_PROFILES.find(pr => pr.role === r);
+    return sum + (p?.billingRateUsd ?? 0);
+  }, 0);
+  return { roles, cost, target };
 }
 
 /** Read engagement defaults: sessionStorage (from briefing) > localStorage (user profile) > hardcoded. */
@@ -63,11 +86,14 @@ export function useEngagementConfig() {
   const [intensity, setIntensity] = useState<IntensityLevel>(defaults.intensity);
   const [budgetUsd, setBudgetUsd] = useState(defaults.budgetUsd);
   const [yoloMode, setYoloMode] = useState(defaults.yoloMode);
-  const [recommendedRoles, setRecommendedRoles] = useState<string[]>([]);
-  const [estimatedCost, setEstimatedCost] = useState(0);
-  const [targetTeamSize, setTargetTeamSize] = useState(8);
+
+  // In standalone mode, generate initial recommendation synchronously
+  const initialRec = IS_STANDALONE ? generateLocalRecommendation(defaults.intensity) : null;
+  const [recommendedRoles, setRecommendedRoles] = useState<string[]>(initialRec?.roles ?? []);
+  const [estimatedCost, setEstimatedCost] = useState(initialRec?.cost ?? 0);
+  const [targetTeamSize, setTargetTeamSize] = useState(initialRec?.target ?? 8);
   const [loading, setLoading] = useState(false);
-  const [demoMode, setDemoMode] = useState(false);
+  const [demoMode, setDemoMode] = useState(IS_STANDALONE);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -75,6 +101,15 @@ export function useEngagementConfig() {
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
+    }
+
+    // Standalone: compute locally, no async, no flicker
+    if (IS_STANDALONE) {
+      const rec = generateLocalRecommendation(intensity);
+      setRecommendedRoles(rec.roles);
+      setEstimatedCost(rec.cost);
+      setTargetTeamSize(rec.target);
+      return;
     }
 
     debounceRef.current = setTimeout(async () => {
@@ -94,22 +129,10 @@ export function useEngagementConfig() {
       } catch {
         // Fallback: generate demo recommendations from local profiles
         setDemoMode(true);
-        const intensityTargets: Record<string, number> = { quick: 3, standard: 5, thorough: 7, maximal: 8 };
-        const target = intensityTargets[intensity] ?? 8;
-        const defaults = DEMO_PROFILES
-          .filter(p => p.defaultSelected || !p.optional)
-          .map(p => p.role);
-        const extras = DEMO_PROFILES
-          .filter(p => !p.defaultSelected && p.optional)
-          .sort((a, b) => a.billingRateUsd - b.billingRateUsd)
-          .map(p => p.role);
-        const roles = [...defaults, ...extras].slice(0, target);
-        setRecommendedRoles(roles);
-        setEstimatedCost(roles.reduce((sum, r) => {
-          const p = DEMO_PROFILES.find(pr => pr.role === r);
-          return sum + (p?.billingRateUsd ?? 0);
-        }, 0));
-        setTargetTeamSize(target);
+        const rec = generateLocalRecommendation(intensity);
+        setRecommendedRoles(rec.roles);
+        setEstimatedCost(rec.cost);
+        setTargetTeamSize(rec.target);
       } finally {
         setLoading(false);
       }

@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // When served embedded in the API, base is /dashboard/.
-  // For standalone deployment (Vercel, etc.), set VITE_BASE_PATH=/ in env.
-  base: process.env.VITE_BASE_PATH || '/dashboard/',
+  // Standalone: / (Vercel auto-sets VERCEL=1; also accepts explicit VITE_BASE_PATH).
+  // Embedded in API server: /dashboard/.
+  base: process.env.VITE_BASE_PATH || (process.env.VERCEL ? '/' : '/dashboard/'),
   build: {
     outDir: 'dist',
   },

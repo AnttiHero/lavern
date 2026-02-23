@@ -3,10 +3,13 @@
  *
  * Merges user-saved teams from localStorage (shem-user-profile) at
  * the top of the list, prefixed with ★ to distinguish from built-ins.
+ *
+ * In standalone mode: uses bundled demo data, no API fetch.
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { DEMO_PRESETS } from '../data/demoProfiles.js';
+import { IS_STANDALONE } from '../../standalone.js';
 
 export interface TeamPreset {
   id: string;
@@ -36,13 +39,14 @@ function getSavedTeamPresets(): TeamPreset[] {
 }
 
 export function useTeamPresets() {
-  // Initialize with demo presets + saved teams — ready to render immediately
   const saved = getSavedTeamPresets();
   const [presets, setPresets] = useState<TeamPreset[]>([...saved, ...DEMO_PRESETS]);
   const [loading, setLoading] = useState(false);
   const fetched = useRef(false);
 
   useEffect(() => {
+    // Standalone mode: demo data is already loaded, skip fetch
+    if (IS_STANDALONE) return;
     if (fetched.current) return;
     fetched.current = true;
 
@@ -53,12 +57,10 @@ export function useTeamPresets() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         basePresets = data.presets ?? [];
-      } catch (e) {
-        // API unreachable — use demo presets for local development
-        console.warn('[Staffing] API unreachable, using demo presets:', e);
+      } catch {
+        // API unreachable — keep demo presets
         basePresets = DEMO_PRESETS;
       } finally {
-        // Merge saved teams at the top
         const saved = getSavedTeamPresets();
         setPresets([...saved, ...basePresets]);
         setLoading(false);

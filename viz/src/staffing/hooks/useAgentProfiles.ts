@@ -1,9 +1,13 @@
 /**
  * useAgentProfiles — Fetch all agent profiles once, filter/sort client-side.
+ *
+ * In standalone mode (Vercel, static hosting): uses bundled demo data only.
+ * No API fetch, no loading state, no flicker.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DEMO_PROFILES } from '../data/demoProfiles.js';
+import { IS_STANDALONE } from '../../standalone.js';
 
 export interface AgentProfile {
   role: string;
@@ -48,8 +52,6 @@ const seniorityOrder: Record<string, number> = {
 };
 
 export function useAgentProfiles() {
-  // Initialize with demo profiles — ready to render immediately on standalone deploy.
-  // loading starts FALSE because we already have displayable data.
   const [allProfiles, setAllProfiles] = useState<AgentProfile[]>(DEMO_PROFILES as unknown as AgentProfile[]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,8 @@ export function useAgentProfiles() {
   const fetched = useRef(false);
 
   useEffect(() => {
+    // Standalone mode: demo data is already loaded, skip fetch entirely
+    if (IS_STANDALONE) return;
     if (fetched.current) return;
     fetched.current = true;
 
@@ -69,8 +73,7 @@ export function useAgentProfiles() {
         const data = await res.json();
         setAllProfiles(data.profiles ?? []);
       } catch {
-        // API unavailable (standalone deploy) — use bundled demo profiles
-        setAllProfiles(DEMO_PROFILES as unknown as AgentProfile[]);
+        // API unavailable — keep demo profiles (already in state)
       } finally {
         setLoading(false);
       }

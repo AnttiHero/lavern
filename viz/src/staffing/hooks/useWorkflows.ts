@@ -1,8 +1,11 @@
 /**
  * useWorkflows — Fetch workflow templates from API for the engagement configurator.
+ *
+ * In standalone mode: uses bundled demo data, no API fetch.
  */
 
 import { useState, useEffect } from 'react';
+import { IS_STANDALONE } from '../../standalone.js';
 
 export interface WorkflowSummary {
   id: string;
@@ -24,11 +27,13 @@ const DEMO_WORKFLOWS: WorkflowSummary[] = [
 ];
 
 export function useWorkflows() {
-  // Initialize with demo workflows — renders immediately on standalone deploy
   const [workflows, setWorkflows] = useState<WorkflowSummary[]>(DEMO_WORKFLOWS);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Standalone mode: demo data is already loaded, skip fetch
+    if (IS_STANDALONE) return;
+
     let cancelled = false;
 
     async function fetchWorkflows() {
@@ -40,8 +45,7 @@ export function useWorkflows() {
           setWorkflows(data.workflows ?? []);
         }
       } catch {
-        // Fallback demo workflows when API is unreachable
-        if (!cancelled) setWorkflows(DEMO_WORKFLOWS);
+        // API unreachable — keep demo workflows
       } finally {
         if (!cancelled) setLoading(false);
       }
