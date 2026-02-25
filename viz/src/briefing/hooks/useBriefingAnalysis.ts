@@ -62,6 +62,8 @@ export interface UseBriefingAnalysisReturn {
   analysisRound: number;
   finalInstructions: string;
   setFinalInstructions: (text: string) => void;
+  /** Inject result from LLM interview finalization (bypasses /api/briefing/analyze). */
+  setFromInterviewResult: (result: { sufficiency: Sufficiency; followUpQuestions: FollowUpQuestion[]; engagementBrief: EngagementBrief }) => void;
 }
 
 const MAX_ROUNDS = 2;
@@ -154,6 +156,24 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
     setFollowUpAnswers(prev => ({ ...prev, [id]: value }));
   }, []);
 
+  /**
+   * Inject structured result from the LLM interview finalization.
+   * Bypasses the /api/briefing/analyze call — the interview already produced
+   * an equivalent BriefingAnalyzeResponse.
+   */
+  const setFromInterviewResult = useCallback((result: {
+    sufficiency: Sufficiency;
+    followUpQuestions: FollowUpQuestion[];
+    engagementBrief: EngagementBrief;
+  }) => {
+    setSufficiency(result.sufficiency);
+    setFollowUpQuestions(result.followUpQuestions ?? []);
+    setEngagementBrief(result.engagementBrief);
+    setAnalysisRound(1);
+    setFollowUpAnswers({});
+    setAnalysisError(null);
+  }, []);
+
   return {
     isAnalyzing,
     analysisError,
@@ -167,5 +187,6 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
     analysisRound,
     finalInstructions,
     setFinalInstructions,
+    setFromInterviewResult,
   };
 }

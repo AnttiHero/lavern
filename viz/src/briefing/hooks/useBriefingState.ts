@@ -16,6 +16,7 @@ import { useState, useCallback } from 'react';
 import { useDocumentUpload, type UploadedDocument, type FrontendParsedDocument } from './useDocumentUpload.js';
 import { useBriefingQuestions } from './useBriefingQuestions.js';
 import { useBriefingAnalysis, type EngagementBrief } from './useBriefingAnalysis.js';
+import { useLLMInterview, type UseLLMInterviewReturn } from './useLLMInterview.js';
 import type { BriefingPhase } from '../components/ProgressStepper.js';
 import type { BriefingQuestion } from '../data/questions.js';
 
@@ -174,6 +175,14 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
   const qna = useBriefingQuestions(workflowId, interviewerId, upload.documents);
   const analysis = useBriefingAnalysis();
 
+  // LLM-driven interview (active when an interviewer persona is selected)
+  const interview = useLLMInterview(
+    workflowId,
+    interviewerId,
+    upload.documents.map(d => ({ name: d.name, content: d.content })),
+  );
+  const useLLMMode = interviewerId != null;
+
   // ── Phase transitions ──
 
   const advanceToInterviewer = useCallback(() => {
@@ -182,7 +191,11 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
 
   const advanceToQuestions = useCallback(() => {
     setPhase('questions');
-  }, []);
+    // If LLM mode is active, start the conversational interview
+    if (useLLMMode && !interview.fallbackToStatic) {
+      interview.startInterview();
+    }
+  }, [useLLMMode, interview]);
 
   /**
    * After static questions → trigger LLM analysis → move to followups or instructions.
@@ -336,5 +349,9 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
     upload,
     qna,
     analysis,
+    /** LLM-driven interview hook (active when interviewer persona is selected). */
+    interview,
+    /** True when conversational LLM interview is active (interviewer selected). */
+    useLLMMode,
   };
 }

@@ -11,11 +11,12 @@
  * Comes BEFORE staffing — no team data needed.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { BriefingHeader } from './components/BriefingHeader.js';
 import { DocumentDropZone } from './components/DocumentDropZone.js';
 import { DocumentList } from './components/DocumentList.js';
 import { BriefingChat } from './components/BriefingChat.js';
+import { ConversationalChat } from './components/ConversationalChat.js';
 import { BriefingMemo } from './components/BriefingMemo.js';
 import { FollowUpSection } from './components/FollowUpSection.js';
 import { FinalInstructions } from './components/FinalInstructions.js';
@@ -108,12 +109,40 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
     upload,
     qna,
     analysis,
+    interview,
+    useLLMMode,
   } = useBriefingState(workflowId, interviewerId);
+
+  // LLM interview mode: active when interviewer is selected and first call didn't fail
+  const showConversationalChat = useLLMMode && !interview.fallbackToStatic;
 
   const handleContinueToStaffing = useCallback(() => {
     const payload = buildPayload();
     onComplete(payload);
   }, [buildPayload, onComplete]);
+
+  // Handle LLM interview finalization → generate structured brief → proceed
+  const handleInterviewFinalize = useCallback(async () => {
+    await interview.finalizeInterview();
+    // The interviewResult will be set asynchronously — we handle it in an effect below
+  }, [interview]);
+
+  // When interviewResult arrives, inject it into the analysis pipeline and advance
+  const interviewResultHandled = useRef(false);
+
+  useEffect(() => {
+    const result = interview.interviewResult;
+    if (result && !interviewResultHandled.current) {
+      interviewResultHandled.current = true;
+      analysis.setFromInterviewResult(result);
+      // Skip follow-ups if sufficiency is strong, otherwise show them
+      if (result.sufficiency.verdict === 'strong' || result.followUpQuestions.length === 0) {
+        setPhase('instructions');
+      } else {
+        setPhase('followups');
+      }
+    }
+  }, [interview.interviewResult, analysis, setPhase]);
 
   // Context completeness scoring
   const { breakdown, milestones, newMilestone } = useContextScore(
@@ -279,17 +308,33 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
         </div>
       )}
 
-      {/* Phase 3: Questions */}
+      {/* Phase 3: Questions (Conversational LLM or Static) */}
       {(phase === 'questions' || isPostQuestions) && (
         <div data-phase="questions" style={{
           ...styles.phaseSection,
           ...(phase === 'questions' ? styles.phaseActive : styles.phaseCollapsed),
         }}>
           <div style={styles.phaseTitle}>
-            {phase === 'questions' ? 'Tell us about the matter' : 'Questions answered'}
+            {phase === 'questions'
+              ? (showConversationalChat ? 'Interview in progress' : 'Tell us about the matter')
+              : (showConversationalChat ? 'Interview complete' : 'Questions answered')}
           </div>
 
-          {phase === 'questions' && (
+          {phase === 'questions' && showConversationalChat && (
+            <ConversationalChat
+              messages={interview.messages}
+              isStreaming={interview.isStreaming}
+              turnCount={interview.turnCount}
+              maxTurns={interview.maxTurns}
+              error={interview.error}
+              onSendAnswer={interview.sendAnswer}
+              onFinalize={handleInterviewFinalize}
+              interviewerAvatar={interviewerPortrait}
+              interviewerName={interviewerId ? getInterviewer(interviewerId)?.name : undefined}
+            />
+          )}
+
+          {phase === 'questions' && !showConversationalChat && (
             <BriefingChat
               questions={qna.visibleQuestions}
               answers={qna.answers}
