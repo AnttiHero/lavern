@@ -61,6 +61,9 @@ export function BriefingChat({
   const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
   const [thinkingForId, setThinkingForId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref mirror of thinkingForId — guards against duplicate scheduling
+  // without appearing in the dependency array (which would clear the timer).
+  const thinkingRef = useRef<string | null>(null);
 
   // When a new question appears, show thinking dots → reveal after delay
   useEffect(() => {
@@ -69,7 +72,10 @@ export function BriefingChat({
     // Find the first unrevealed question
     const unrevealed = questions.find(q => !revealedIds.has(q.id));
     if (!unrevealed) return;
-    if (thinkingForId === unrevealed.id) return; // already thinking about it
+    if (thinkingRef.current === unrevealed.id) return; // already scheduled
+
+    // Clear any stale timer from a previous question
+    if (timerRef.current) clearTimeout(timerRef.current);
 
     // First question → shorter delay; subsequent → deliberation time
     const isFirst = revealedIds.size === 0;
@@ -77,6 +83,7 @@ export function BriefingChat({
       ? 800 + Math.random() * 400            // 0.8 – 1.2 s
       : 1800 + Math.random() * 1200;         // 1.8 – 3.0 s
 
+    thinkingRef.current = unrevealed.id;
     setThinkingForId(unrevealed.id);
 
     timerRef.current = setTimeout(() => {
@@ -85,13 +92,15 @@ export function BriefingChat({
         next.add(unrevealed.id);
         return next;
       });
+      thinkingRef.current = null;
       setThinkingForId(null);
     }, delay);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      thinkingRef.current = null;
     };
-  }, [questions, revealedIds, thinkingForId]);
+  }, [questions, revealedIds]); // thinkingForId intentionally excluded — tracked via ref
 
   return (
     <div style={styles.container}>
