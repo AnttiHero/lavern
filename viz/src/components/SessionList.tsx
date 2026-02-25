@@ -9,6 +9,7 @@
 import { useState, useCallback, useContext } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
+import { MarbleIlluminated } from './MarbleIlluminated.js';
 import type { YoloTier } from '../landing/yolo-config.js';
 
 interface SessionListProps {
@@ -102,7 +103,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
       <div style={styles.hero}>
-        <p style={styles.logoType}>MARBLE</p>
+        <p style={styles.logoType}><MarbleIlluminated color={colors.textMuted} /></p>
 
         <h1 style={styles.title}>
           Your <span style={styles.titleItalic}>Engagements</span>

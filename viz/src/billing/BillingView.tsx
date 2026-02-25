@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { colors, fonts, radii, spacing, tierColor, tierBg } from '../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 import { STEP_LABELS } from '../types/events.js';
 import type { WorkflowStep } from '../types/events.js';
 
@@ -224,7 +225,7 @@ export default function BillingView({ onClose }: Props) {
         {/* Invoice header */}
         <div style={styles.invoiceHeader}>
           <div>
-            <div style={styles.firmName}>MARBLE</div>
+            <div style={styles.firmName}><MarbleIlluminated /></div>
             <div style={styles.firmTag}>The Agentic Law Firm</div>
           </div>
           <div style={styles.invoiceLabel}>INVOICE</div>

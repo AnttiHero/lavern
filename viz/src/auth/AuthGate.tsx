@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { UserContext, type AuthUser } from './UserContext.js';
 import { IS_STANDALONE } from '../standalone.js';
 import { colors, fonts } from '../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
   children: React.ReactNode;
@@ -52,7 +53,7 @@ export function AuthGate({ children }: Props) {
   if (checking) {
     return (
       <div style={loadingStyles.wrap}>
-        <div style={loadingStyles.text}>MARBLE</div>
+        <div style={loadingStyles.text}><MarbleIlluminated color={colors.textDim} /></div>
       </div>
     );
   }

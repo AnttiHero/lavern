@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
   onEnter: () => void;
@@ -313,7 +314,9 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
           animation: 'doorFade 0.6s ease 3.1s both',
         }}
       >
-        <span style={styles.firmCredit}>MARBLE</span>
+        <span style={styles.firmCredit}>
+          <MarbleIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
+        </span>
       </div>
     </div>
   );

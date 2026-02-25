@@ -4,6 +4,7 @@
  */
 
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../../components/MarbleIlluminated.js';
 
 interface Props {
   matterNumber?: string;
@@ -23,7 +24,7 @@ export function DeliveryHeader({ matterNumber, matterType, jurisdiction, onBack,
         onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
       >{'\u2190'} Back</button>
       <div style={styles.center}>
-        <div style={styles.logoType}>MARBLE</div>
+        <div style={styles.logoType}><MarbleIlluminated color={colors.textMuted} /></div>
         <h1 style={styles.title}>Marble <span style={{ fontStyle: 'italic' }}>Delivery</span></h1>
         {matterNumber && (
           <div style={styles.matterBadge}>

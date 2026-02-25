@@ -12,6 +12,7 @@
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
   onEnter: () => void;
@@ -247,7 +248,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
             animation: 'lobbyNameReveal 1.8s ease 0.6s both',
           }}
         >
-          MARBLE
+          <MarbleIlluminated />
         </HoverText>
 
         <div

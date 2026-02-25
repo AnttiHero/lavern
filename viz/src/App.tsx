@@ -40,6 +40,10 @@ if (typeof document !== 'undefined' && !document.getElementById(MARBLE_KEYFRAMES
       0%, 100% { opacity: 0.4; transform: scale(1); }
       50% { opacity: 1; transform: scale(1.3); }
     }
+    @keyframes marbleIlluminate {
+      0% { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
   `;
   document.head.appendChild(s);
 }

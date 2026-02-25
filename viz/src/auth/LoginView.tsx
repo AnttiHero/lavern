@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 import type { AuthUser } from './UserContext.js';
 
 interface Props {
@@ -85,7 +86,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
       {/* Card */}
       <div style={styles.card}>
         {/* Wordmark */}
-        <h1 style={styles.wordmark}>MARBLE</h1>
+        <h1 style={styles.wordmark}><MarbleIlluminated color="rgba(26,26,26,0.8)" /></h1>
 
         {/* Thin rule */}
         <div style={styles.rule} />
