@@ -14,12 +14,12 @@ export default defineConfig({
     proxy: {
       // Proxy API + WebSocket calls to the Shem backend
       '/api': {
-        target: 'http://localhost:3456',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         ws: true,
       },
       '/health': {
-        target: 'http://localhost:3456',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

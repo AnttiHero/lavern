@@ -177,16 +177,16 @@ export function App() {
           return;
         }
       }
+
+      // API returned non-ok — log the actual error
+      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('[YOLO] Session creation failed:', res.status, errorBody);
+      alert(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[YOLO] API unreachable — cannot create session');
       alert('Cannot connect to the server. Please ensure the backend is running.');
-      return;
     }
-
-    // API returned non-ok — show error
-    console.error('[YOLO] Session creation failed');
-    alert('Session creation failed. Check the server logs.');
   }, []);
 
   /** Intake complete → store matter data → Briefing */
@@ -314,16 +314,16 @@ export function App() {
           return;
         }
       }
+
+      // API returned non-ok — log the actual error
+      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('[Session] Session creation failed:', res.status, errorBody);
+      alert(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');
       alert('Cannot connect to the server. Please ensure the backend is running.');
-      return;
     }
-
-    // API returned non-ok — show error
-    console.error('[Session] Session creation failed');
-    alert('Session creation failed. Check the server logs.');
   }, []);
 
   /** Delivery → Billing */

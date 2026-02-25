@@ -144,6 +144,24 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
     }
   }, [interview.interviewResult, analysis, setPhase]);
 
+  // Auto-start the LLM interview when entering questions phase with interviewer selected.
+  // This runs AFTER render when all state is committed — avoids the stale closure in advanceToQuestions.
+  const interviewStarted = useRef(false);
+
+  useEffect(() => {
+    if (
+      phase === 'questions' &&
+      useLLMMode &&
+      !interview.fallbackToStatic &&
+      interview.messages.length === 0 &&
+      !interview.isStreaming &&
+      !interviewStarted.current
+    ) {
+      interviewStarted.current = true;
+      interview.startInterview();
+    }
+  }, [phase, useLLMMode, interview]);
+
   // Context completeness scoring
   const { breakdown, milestones, newMilestone } = useContextScore(
     upload.documents,

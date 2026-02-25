@@ -191,11 +191,7 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
 
   const advanceToQuestions = useCallback(() => {
     setPhase('questions');
-    // If LLM mode is active, start the conversational interview
-    if (useLLMMode && !interview.fallbackToStatic) {
-      interview.startInterview();
-    }
-  }, [useLLMMode, interview]);
+  }, []);
 
   /**
    * After static questions → trigger LLM analysis → move to followups or instructions.

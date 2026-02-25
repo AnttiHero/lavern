@@ -93,6 +93,35 @@ export function ConversationalChat({
     <div style={styles.container}>
       {/* Messages thread */}
       <div style={styles.thread}>
+        {/* Loading state — waiting for first message from startInterview */}
+        {messages.length === 0 && !error && (
+          <div
+            style={{
+              ...styles.messageRow,
+              justifyContent: 'flex-start',
+              animation: 'convFadeIn 0.3s ease both',
+            }}
+          >
+            <div style={styles.avatarCol}>
+              {interviewerAvatar ? (
+                <div
+                  style={styles.avatar}
+                  dangerouslySetInnerHTML={{ __html: interviewerAvatar }}
+                />
+              ) : (
+                <div style={styles.avatarFallback}>M</div>
+              )}
+            </div>
+            <div style={{ ...styles.bubble, ...styles.assistantBubble }}>
+              <div style={styles.thinkingDots}>
+                <span style={{ ...styles.dot, animationDelay: '0s' }} />
+                <span style={{ ...styles.dot, animationDelay: '0.2s' }} />
+                <span style={{ ...styles.dot, animationDelay: '0.4s' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         {messages.map((msg, i) => (
           <div
             key={i}

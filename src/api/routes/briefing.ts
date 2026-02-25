@@ -12,6 +12,7 @@ import { BriefingAnalyzeRequestSchema, BriefingAnalyzeResponseSchema } from '../
 import { analyzeBriefing } from '../briefing/briefing-analyzer.js';
 import { InterviewTurnSchema } from '../briefing/interview-schema.js';
 import { buildInterviewSystemPrompt, buildFinalizationSystemPrompt } from '../briefing/interview-prompt.js';
+import { config } from '../../config.js';
 
 /**
  * Load ANTHROPIC_API_KEY from .env if not already in process.env.
@@ -37,7 +38,7 @@ function ensureApiKey(): string {
 
 const API_KEY = ensureApiKey();
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const INTERVIEW_MODEL = 'claude-3-haiku-20240307';
+const INTERVIEW_MODEL = config.routerModel; // Sonnet — old Haiku was too dumb for interviews
 
 /**
  * Call Anthropic Messages API directly (non-streaming).

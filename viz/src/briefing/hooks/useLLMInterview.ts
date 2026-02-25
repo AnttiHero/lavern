@@ -41,7 +41,7 @@ export interface UseLLMInterviewReturn {
   finalizeInterview: () => Promise<void>;
 }
 
-const MAX_TURNS = 8;
+const MAX_TURNS = 5;
 
 /**
  * Read an SSE stream and append text chunks to the last assistant message.
@@ -228,8 +228,9 @@ export function useLLMInterview(
   }, [isStreaming, messages, documents, workflowId, interviewerId]);
 
   const startInterview = useCallback(async () => {
+    if (messages.length > 0 || isStreaming) return;
     await callInterview(undefined, false);
-  }, [callInterview]);
+  }, [callInterview, messages.length, isStreaming]);
 
   const sendAnswer = useCallback(async (text: string) => {
     await callInterview(text.trim(), false);
