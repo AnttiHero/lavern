@@ -48,6 +48,7 @@ import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
 import { SessionList } from './components/SessionList.js';
 import { MarbleMark } from './components/MarbleMark.js';
+import { LoadingM } from './components/LoadingM.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 
 // Lazy-load all views (separate code-split chunks)
@@ -90,24 +91,7 @@ function getViewFromHash(): AppView {
 
 /** Shared loading fallback for lazy-loaded views */
 function ViewFallback({ text }: { text: string }) {
-  return (
-    <div style={{
-      width: '100%',
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#FAF9F6',
-      color: '#A3A39E',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      fontSize: 13,
-      fontWeight: 500,
-      letterSpacing: 1,
-      textTransform: 'uppercase' as const,
-    }}>
-      {text}
-    </div>
-  );
+  return <LoadingM text={text} />;
 }
 
 export function App() {
@@ -574,10 +558,9 @@ export function App() {
 const styles: Record<string, React.CSSProperties> = {
   app: {
     width: '100%',
-    height: '100vh',
+    minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
     backgroundColor: '#FAF9F6',
     position: 'relative',
   },
@@ -587,6 +570,5 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 9000,
     backgroundColor: 'rgba(250, 249, 246, 0.95)',
     backdropFilter: 'blur(8px)',
-    overflow: 'auto',
   },
 };

@@ -287,8 +287,7 @@ function TeamActionButton({ label, onClick, danger }: { label: string; onClick: 
 const styles: Record<string, React.CSSProperties> = {
   page: {
     width: '100%',
-    height: '100vh',
-    overflow: 'auto',
+    minHeight: '100vh',
     backgroundColor: colors.bg,
     fontFamily: fonts.sans,
     color: colors.text,

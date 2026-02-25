@@ -102,13 +102,44 @@ export class AsyncGateResolver implements GateResolver {
   private pendingGate: {
     request: GateRequest;
     resolve: (decision: GateDecision) => void;
+    createdAt: number;
+    timer: ReturnType<typeof setTimeout>;
   } | null = null;
 
+  /** Gate timeout in ms. Default 5 minutes. Set to 0 to disable. */
+  private timeoutMs: number;
+
+  constructor(timeoutMs = 5 * 60 * 1000) {
+    this.timeoutMs = timeoutMs;
+  }
+
   async resolve(request: GateRequest): Promise<GateDecision> {
+    // Clear any stale pending gate (safety net)
+    if (this.pendingGate) {
+      clearTimeout(this.pendingGate.timer);
+      this.pendingGate.resolve({ decision: 'approve', notes: 'Superseded by new gate request' });
+      this.pendingGate = null;
+    }
+
     return new Promise<GateDecision>((resolvePromise) => {
+      const timer = this.timeoutMs > 0
+        ? setTimeout(() => {
+            console.warn(`[GATE] Timeout after ${this.timeoutMs / 1000}s — auto-approving gate: ${request.gateType}`);
+            if (this.pendingGate) {
+              this.pendingGate = null;
+              resolvePromise({
+                decision: 'approve',
+                notes: `Auto-approved: no response within ${Math.round(this.timeoutMs / 60000)} minutes`,
+              });
+            }
+          }, this.timeoutMs)
+        : setTimeout(() => {}, 0); // no-op timer if disabled
+
       this.pendingGate = {
         request,
         resolve: resolvePromise,
+        createdAt: Date.now(),
+        timer,
       };
     });
   }
@@ -128,13 +159,32 @@ export class AsyncGateResolver implements GateResolver {
   }
 
   /**
+   * How long the current gate has been pending, in ms. Returns 0 if no gate.
+   */
+  getPendingAge(): number {
+    return this.pendingGate ? Date.now() - this.pendingGate.createdAt : 0;
+  }
+
+  /**
    * Submit a decision for the pending gate (called by API route).
    */
   submitDecision(decision: GateDecision): boolean {
     if (!this.pendingGate) return false;
+    clearTimeout(this.pendingGate.timer);
     this.pendingGate.resolve(decision);
     this.pendingGate = null;
     return true;
+  }
+
+  /**
+   * Cancel any pending gate and clean up timers.
+   */
+  cancel(): void {
+    if (this.pendingGate) {
+      clearTimeout(this.pendingGate.timer);
+      this.pendingGate.resolve({ decision: 'reject', notes: 'Session cancelled' });
+      this.pendingGate = null;
+    }
   }
 }
 

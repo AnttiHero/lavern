@@ -209,8 +209,7 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
 const styles: Record<string, React.CSSProperties> = {
   container: {
     width: '100%',
-    height: '100vh',
-    overflow: 'auto',
+    minHeight: '100vh',
     backgroundColor: colors.bg,
     color: colors.text,
     fontFamily: fonts.sans,

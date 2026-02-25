@@ -164,7 +164,7 @@ export default function IntakeView({ onComplete, onSkip, onBack }: Props) {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    width: '100%', height: '100vh', overflow: 'auto', backgroundColor: colors.bg,
+    width: '100%', minHeight: '100vh', backgroundColor: colors.bg,
     color: colors.text, fontFamily: fonts.sans, padding: `${spacing.xxxl}px`,
     maxWidth: 800, margin: '0 auto', position: 'relative',
   },

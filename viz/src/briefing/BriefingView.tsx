@@ -384,8 +384,7 @@ if (typeof document !== 'undefined' && !document.getElementById(BRIEFING_SCROLLB
 const styles: Record<string, React.CSSProperties> = {
   container: {
     width: '100%',
-    height: '100vh',
-    overflow: 'auto',
+    minHeight: '100vh',
     backgroundColor: colors.bg,
     color: colors.text,
     fontFamily: fonts.sans,
@@ -393,7 +392,6 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 800,
     margin: '0 auto',
     position: 'relative',
-    scrollbarWidth: 'none' as unknown as undefined, // Firefox
   },
   phaseSection: {
     marginBottom: spacing.xl,
