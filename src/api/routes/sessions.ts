@@ -41,6 +41,7 @@ import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
+import { convertToDocx, convertToHtml, type DocumentStyle } from '../../assembly/format-converter.js';
 
 /** Safely parse JSON, returning fallback on failure. */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
@@ -289,6 +290,7 @@ export function registerSessionRoutes(
       },
       agentPerformance,
       // ── Deliverable content ────────────────────────────────────────
+      assembledDocument: session.assembledDocument || null,
       finalOutput: session.finalOutput || null,
       debateResolutions: session.debate.resolutions.map(r => ({
         topic: r.debateTopic,
@@ -343,6 +345,8 @@ export function registerSessionRoutes(
   });
 
   // ── GET /api/sessions/:id/download — Download work product ─────────
+  // v15: Serves assembledDocument (the clean deliverable) by default.
+  // Supports: md, docx, pdf, json, summary, raw (process log)
 
   fastify.get('/api/sessions/:id/download', async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -352,22 +356,62 @@ export function registerSessionRoutes(
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
-    const query = request.query as { format?: string };
-    const format = query.format ?? 'md';
+    const reqQuery = request.query as { format?: string; style?: string };
+    const format = reqQuery.format ?? 'md';
+    const title = session.matterRecord?.title ?? 'Work Product';
+
+    // Validate document style
+    const validStyles: DocumentStyle[] = ['traditional', 'elegant', 'accessible'];
+    const style: DocumentStyle | undefined = validStyles.includes(reqQuery.style as DocumentStyle)
+      ? (reqQuery.style as DocumentStyle)
+      : undefined;
+
+    // The deliverable is the assembled document (clean), fallback to finalOutput (process log)
+    const deliverable = session.assembledDocument || session.finalOutput || '# No output yet\n\nThe session has not produced a deliverable yet.';
 
     if (format === 'md') {
-      const content = session.finalOutput || '# No output yet\n\nThe session has not produced a deliverable yet.';
       const filename = `${id}-workproduct.md`;
       return reply
         .header('Content-Type', 'text/markdown; charset=utf-8')
         .header('Content-Disposition', `attachment; filename="${filename}"`)
-        .send(content);
+        .send(deliverable);
+    }
+
+    if (format === 'docx') {
+      try {
+        const docxBuffer = await convertToDocx(deliverable, title, style);
+        const filename = `${id}-workproduct.docx`;
+        return reply
+          .header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+          .header('Content-Disposition', `attachment; filename="${filename}"`)
+          .send(docxBuffer);
+      } catch (err) {
+        console.error('DOCX conversion error:', err);
+        return reply.status(500).send({ error: 'Failed to generate DOCX. Try downloading as Markdown instead.' });
+      }
+    }
+
+    if (format === 'pdf') {
+      // Serve as HTML with print-optimized CSS — browsers can print to PDF,
+      // or client-side can use the HTML directly for rendering
+      try {
+        const html = convertToHtml(deliverable, title, style);
+        const filename = `${id}-workproduct.html`;
+        return reply
+          .header('Content-Type', 'text/html; charset=utf-8')
+          .header('Content-Disposition', `attachment; filename="${filename}"`)
+          .send(html);
+      } catch (err) {
+        console.error('PDF/HTML conversion error:', err);
+        return reply.status(500).send({ error: 'Failed to generate PDF. Try downloading as Markdown instead.' });
+      }
     }
 
     if (format === 'json') {
       const data = {
         sessionId: session.id,
         exportedAt: new Date().toISOString(),
+        assembledDocument: session.assembledDocument || null,
         debate: {
           findings: session.debate.findings.map(f => ({
             id: f.id, agent: f.agentRole, category: f.findingType,
@@ -397,13 +441,13 @@ export function registerSessionRoutes(
 
     if (format === 'summary') {
       const lines: string[] = [];
-      const title = session.matterRecord?.title ?? 'Analysis Summary';
       lines.push(`# ${title}`, '');
       lines.push(`**Date:** ${new Date().toLocaleDateString()}`, '');
 
-      // Executive summary from first paragraph of finalOutput
-      if (session.finalOutput) {
-        const firstParagraph = session.finalOutput.split('\n\n').find(p => p.trim() && !p.startsWith('#'));
+      // Executive summary from assembled document (or first paragraph of output)
+      const source = session.assembledDocument || session.finalOutput;
+      if (source) {
+        const firstParagraph = source.split('\n\n').find(p => p.trim() && !p.startsWith('#'));
         if (firstParagraph) {
           lines.push('## Executive Summary', '', firstParagraph.trim(), '');
         }
@@ -441,7 +485,17 @@ export function registerSessionRoutes(
         .send(lines.join('\n'));
     }
 
-    return reply.status(400).send({ error: `Unknown format: ${format}. Use md, json, or summary.` });
+    // v15: Raw format — the original process log (for debugging/audit)
+    if (format === 'raw') {
+      const content = session.finalOutput || '# No process output\n\nNo orchestrator output was captured.';
+      const filename = `${id}-processlog.md`;
+      return reply
+        .header('Content-Type', 'text/markdown; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .send(content);
+    }
+
+    return reply.status(400).send({ error: `Unknown format: ${format}. Use md, docx, pdf, json, summary, or raw.` });
   });
 
   // ── POST /api/sessions/:id/derivatives — Generate derivative document ──

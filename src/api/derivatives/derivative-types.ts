@@ -84,6 +84,9 @@ function matterTitle(session: SessionState): string {
 
 /** Build a full context block that all derivative types share. */
 export function buildFullContext(session: SessionState): string {
+  // v15: Use assembledDocument (clean deliverable) over finalOutput (process log)
+  const deliverable = session.assembledDocument || session.finalOutput || '(no output yet)';
+
   return `# Analysis Context
 
 ## Matter
@@ -91,8 +94,8 @@ Title: ${matterTitle(session)}
 ${session.matterRecord?.matterNumber ? `Matter Number: ${session.matterRecord.matterNumber}` : ''}
 ${session.matterRecord ? `Status: ${session.matterRecord.status ?? 'active'}` : ''}
 
-## Work Product (Primary Analysis)
-${session.finalOutput || '(no output yet)'}
+## Work Product (Primary Deliverable)
+${deliverable}
 
 ## Key Findings
 ${formatFindings(session)}
@@ -119,6 +122,8 @@ ${formatGateDecisions(session)}
 /** Build a client-safe context (no internal debate details, agent names cleaned). */
 function buildClientContext(session: SessionState): string {
   const redYellow = session.debate.findings.filter(f => f.severity === 'RED' || f.severity === 'YELLOW');
+  // v15: Use assembledDocument (clean deliverable) over finalOutput (process log)
+  const deliverable = session.assembledDocument || session.finalOutput || '(no output yet)';
 
   return `# Analysis Context
 
@@ -126,8 +131,8 @@ function buildClientContext(session: SessionState): string {
 Title: ${matterTitle(session)}
 ${session.matterRecord?.matterNumber ? `Matter Number: ${session.matterRecord.matterNumber}` : ''}
 
-## Work Product (Primary Analysis)
-${session.finalOutput || '(no output yet)'}
+## Work Product (Primary Deliverable)
+${deliverable}
 
 ## Key Issues Identified
 ${redYellow.length > 0
@@ -177,7 +182,7 @@ ${failures.length > 0
 ${formatScores(session)}
 
 ## Full Work Product
-${session.finalOutput || '(no output yet)'}`;
+${session.assembledDocument || session.finalOutput || '(no output yet)'}`;
 }
 
 // ── Derivative Types ─────────────────────────────────────────────────────────

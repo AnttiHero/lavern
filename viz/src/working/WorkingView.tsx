@@ -1,22 +1,21 @@
 /**
  * WorkingView — Live agent dashboard.
  *
- * Replaces the old Phaser 3 office with a warm editorial "thinking stream"
- * that lets clients follow their agents' deliberation in real time.
+ * v16: Replaced TeamPanel + ThinkingStream with HeartbeatBand + InsightFeed.
  *
- * Layout: WorkingHeader → PhaseStrip → (TeamPanel | ThinkingStream)
- * Data: WebSocket events processed by useWorkingState into stream cards.
+ * Layout: WorkingHeader → HeartbeatBand → InsightFeed (full width)
+ * Data: WebSocket events processed by useWorkingState into stream cards,
+ *       filtered by useInsightFilter to remove noise (tool_used, agent_start/stop).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
-import { useStreamFilter } from './hooks/useStreamFilter.js';
+import { useInsightFilter } from './hooks/useInsightFilter.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
-import { PhaseStrip } from './components/PhaseStrip.js';
-import { TeamPanel } from './components/TeamPanel.js';
-import { ThinkingStream } from './components/ThinkingStream.js';
+import { HeartbeatBand } from './components/HeartbeatBand.js';
+import { InsightFeed } from './components/InsightFeed.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
 import { GateDialog } from '../components/GateDialog.js';
 import { colors } from '../staffing/styles/tokens.js';
@@ -29,7 +28,7 @@ interface WorkingViewProps {
 }
 
 export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewProps) {
-  // Inject CSS keyframes for thinking animations
+  // Inject CSS keyframes for animations
   useEffect(() => { injectWorkingKeyframes(); }, []);
 
   const { team } = useTeamRoster();
@@ -49,13 +48,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   // Thread debates from flat stream
   const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
 
-  const {
-    filteredCards,
-    filterByAgent,
-    setFilterByAgent,
-    searchText,
-    setSearchText,
-  } = useStreamFilter(threadedStream);
+  // Filter to insights only — no tool_used, agent_start, agent_stop
+  const insightCards = useInsightFilter(threadedStream);
 
   const handleGateDecision = useCallback(
     (_decision: 'approve' | 'reject' | 'modify', _notes?: string) => {
@@ -92,6 +86,13 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     return Math.round(avg * 100);
   }, [state.streamCards]);
 
+  // Total finding count for HeartbeatBand
+  const totalFindings = useMemo(() => {
+    let count = 0;
+    for (const c of state.findingCounts.values()) count += c;
+    return count;
+  }, [state.findingCounts]);
+
   const showSessionOverlay =
     !state.sessionId && state.connectionStatus === 'disconnected';
 
@@ -115,34 +116,26 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         certaintyPct={runningCertainty}
       />
 
-      <PhaseStrip
+      <HeartbeatBand
         currentStep={state.currentStep}
         completedSteps={state.completedSteps}
+        activeThinkingAgents={state.activeThinkingAgents}
+        agentStatuses={state.agentStatuses}
+        team={team}
+        cost={state.cost}
+        certaintyPct={runningCertainty}
+        findingCount={totalFindings}
+        sessionStartTime={state.events[0]?.timestamp ?? null}
+        lastEventTimestamp={state.lastEventTimestamp}
       />
 
-      <div style={styles.main}>
-        <TeamPanel
-          team={team}
-          agentStatuses={state.agentStatuses}
-          filterByAgent={filterByAgent}
-          onFilterAgent={setFilterByAgent}
-          activeAgentCount={state.activeAgentCount}
-          totalEventCount={state.events.length}
-          findingCounts={state.findingCounts}
-          activeThinkingAgents={state.activeThinkingAgents}
-        />
-
-        <ThinkingStream
-          cards={filteredCards}
-          team={team}
-          searchText={searchText}
-          onSearchChange={setSearchText}
-          onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
-          isConnected={state.connectionStatus === 'connected'}
-          debateThreads={debateThreads}
-          activeThinkingAgents={state.activeThinkingAgents}
-        />
-      </div>
+      <InsightFeed
+        cards={insightCards}
+        team={team}
+        onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
+        isConnected={state.connectionStatus === 'connected'}
+        debateThreads={debateThreads}
+      />
 
       {/* Session list overlay when disconnected */}
       {showSessionOverlay && (
@@ -181,10 +174,5 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     backgroundColor: colors.bg,
     position: 'relative' as const,
-  },
-  main: {
-    flex: 1,
-    display: 'flex',
-    overflow: 'hidden',
   },
 };

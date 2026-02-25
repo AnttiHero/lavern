@@ -84,7 +84,13 @@ export class ShemEventBus extends EventEmitter {
       this.eventLog.push(event);
     }
     this.emit('event', event);
-    this.emit(event.type, event);
+    // Node.js EventEmitter throws ERR_UNHANDLED_ERROR when emitting 'error'
+    // with no listener. Use 'shem_error' alias to avoid crashing the process.
+    if (event.type === 'error') {
+      this.emit('shem_error', event);
+    } else {
+      this.emit(event.type, event);
+    }
   }
 
   /**

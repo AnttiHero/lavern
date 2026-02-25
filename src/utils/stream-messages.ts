@@ -57,6 +57,8 @@ export interface StreamOptions {
   documentLabel: string;
   workflowLabel?: string;
   logLevel: string;
+  /** When true, don't emit session_end — caller will emit after post-processing (e.g. assembly). */
+  suppressSessionEnd?: boolean;
 }
 
 /**
@@ -68,7 +70,7 @@ export async function streamMessages(
   result: AsyncIterable<any>,
   options: StreamOptions,
 ): Promise<void> {
-  const { session, documentLabel, workflowLabel, logLevel } = options;
+  const { session, documentLabel, workflowLabel, logLevel, suppressSessionEnd } = options;
   const label = workflowLabel ? `SESSION COMPLETE (${workflowLabel})` : 'SESSION COMPLETE';
   let estimatedCost = 0;
 
@@ -121,13 +123,15 @@ export async function streamMessages(
         if ('subtype' in message && message.subtype === 'success') {
           const auditTrail = compileAuditTrail(session, documentLabel, totalCost, totalTurns);
 
-          session.events.emitEvent({
-            type: 'session_end',
-            sessionId: session.id,
-            totalCost,
-            duration: 0,
-            timestamp: eventTimestamp(),
-          });
+          if (!suppressSessionEnd) {
+            session.events.emitEvent({
+              type: 'session_end',
+              sessionId: session.id,
+              totalCost,
+              duration: 0,
+              timestamp: eventTimestamp(),
+            });
+          }
 
           console.log('\n' + '\u2550'.repeat(60));
           console.log(label);
@@ -144,13 +148,15 @@ export async function streamMessages(
           const subtype = (message as Record<string, unknown>).subtype as string;
           console.error(`\nSession ended (${subtype}):`, errors);
 
-          session.events.emitEvent({
-            type: 'session_end',
-            sessionId: session.id,
-            totalCost,
-            duration: 0,
-            timestamp: eventTimestamp(),
-          });
+          if (!suppressSessionEnd) {
+            session.events.emitEvent({
+              type: 'session_end',
+              sessionId: session.id,
+              totalCost,
+              duration: 0,
+              timestamp: eventTimestamp(),
+            });
+          }
 
           // Still compile audit trail for error cases
           compileAuditTrail(session, documentLabel, totalCost, totalTurns);

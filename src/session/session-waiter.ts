@@ -26,7 +26,7 @@ export function waitForSessionCompletion(
     const cleanup = () => {
       if (timer) clearTimeout(timer);
       session.events.removeListener('session_end', onEnd);
-      session.events.removeListener('error', onError);
+      session.events.removeListener('shem_error', onError);
     };
 
     const onEnd = (_event: ShemEvent) => {
@@ -47,7 +47,7 @@ export function waitForSessionCompletion(
 
     // Listen for completion and errors
     session.events.on('session_end', onEnd);
-    session.events.on('error', onError);
+    session.events.on('shem_error', onError);
 
     // Timeout
     timer = setTimeout(() => {

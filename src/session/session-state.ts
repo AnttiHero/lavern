@@ -211,6 +211,15 @@ export class SessionState {
   /** Accumulated final assistant output text (populated by streamMessages). */
   public finalOutput = '';
 
+  // ── v15: Document Assembly — Clean Deliverable ──
+  /** The assembled deliverable document, produced by the document-assembler after
+   *  the multi-agent pipeline completes. This is the ACTUAL deliverable (ToS, review,
+   *  memo) — separate from finalOutput which retains the process log for audit. */
+  public assembledDocument = '';
+
+  /** The original legal request that created this session (stored for assembly context). */
+  public legalRequest?: import('../types/index.js').LegalRequest;
+
   constructor(
     id?: string,
     options?: {

@@ -16,6 +16,14 @@ interface Props {
 }
 
 export function TheWorkTab({ data }: Props) {
+  // Check if we have a real assembled document (not process dump)
+  const isProcessDump = (text: string) => {
+    const trimmed = text.trimStart();
+    return /^(I'll |I will |Let me |Here is|Here's |Based on|The analysis|OK|Okay|Sure|Certainly|Good\.|Clean slate)/i.test(trimmed);
+  };
+  const hasDocument = data.finalOutput && data.finalOutput.length > 200
+    && !isProcessDump(data.finalOutput);
+
   return (
     <div>
       {/* ── Hero title ──────────────────────────────────────────── */}
@@ -25,11 +33,30 @@ export function TheWorkTab({ data }: Props) {
         <div style={styles.heroDivider} />
       </div>
 
+      {/* ── Downloads first — this is what the client wants ───── */}
+      <DownloadPanel data={data} />
+
+      {/* ── Document preview — show a snippet of the actual doc ── */}
+      {hasDocument && (
+        <div style={styles.previewSection}>
+          <div style={styles.sectionHeader}>
+            <div style={styles.sectionTitle}>Document Preview</div>
+            <div style={styles.sectionCount}>{data.finalOutput.length.toLocaleString()} chars</div>
+          </div>
+          <div style={styles.previewCard}>
+            <pre style={styles.previewText}>
+              {data.finalOutput.substring(0, 2000)}
+              {data.finalOutput.length > 2000 && '\n\n... (download full document above)'}
+            </pre>
+          </div>
+        </div>
+      )}
+
       {/* ── Executive summary — editorial pull-quote style ─────── */}
       <div style={styles.summarySection}>
         <div style={styles.summaryQuoteMark}>{'\u201C'}</div>
         <p style={styles.summaryText}>{data.executiveSummary}</p>
-        <div style={styles.summaryLabel}>Executive Summary</div>
+        <div style={styles.summaryLabel}>Analysis Summary</div>
       </div>
 
       {/* ── Key changes — transformation cards ────────────────── */}
@@ -113,9 +140,6 @@ export function TheWorkTab({ data }: Props) {
         </div>
       )}
 
-      {/* ── Downloads ────────────────────────────────────────────── */}
-      <DownloadPanel data={data} />
-
       {/* ── Derivative Document Generation ────────────────────────── */}
       <DerivativesPanel data={data} />
     </div>
@@ -192,6 +216,29 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
     marginTop: 20,
     textAlign: 'right' as const,
+  },
+
+  // ── Document Preview ──────────────────────────────────────────
+  previewSection: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xxl,
+  },
+  previewCard: {
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    padding: spacing.xl,
+    maxHeight: 400,
+    overflow: 'auto' as const,
+  },
+  previewText: {
+    fontSize: 12,
+    fontFamily: fonts.mono,
+    color: colors.textSecondary,
+    lineHeight: 1.6,
+    margin: 0,
+    whiteSpace: 'pre-wrap' as const,
+    wordWrap: 'break-word' as const,
   },
 
   // ── Sections ──────────────────────────────────────────────────

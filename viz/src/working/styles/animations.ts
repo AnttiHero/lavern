@@ -94,6 +94,31 @@ export function injectWorkingKeyframes() {
       0%, 100% { box-shadow: 0 0 0 0 rgba(74, 124, 80, 0); }
       50% { box-shadow: 0 0 0 3px rgba(74, 124, 80, 0.15); }
     }
+
+    /* v16: HeartbeatBand animations */
+    @keyframes heartbeatGlow {
+      0%, 100% { filter: drop-shadow(0 0 2px rgba(184, 134, 11, 0.2)); }
+      50% { filter: drop-shadow(0 0 8px rgba(184, 134, 11, 0.4)); }
+    }
+    @keyframes heartbeatGlowIdle {
+      0%, 100% { filter: drop-shadow(0 0 1px rgba(74, 124, 80, 0.1)); }
+      50% { filter: drop-shadow(0 0 4px rgba(74, 124, 80, 0.2)); }
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    @keyframes narrativeFade {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes counterPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
   `;
   document.head.appendChild(style);
 }

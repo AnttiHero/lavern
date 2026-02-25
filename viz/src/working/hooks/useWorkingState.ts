@@ -60,6 +60,8 @@ export interface WorkingState {
   activeAgentCount: number;
   activeThinkingAgents: Map<string, ActiveThinkingAgent>;
   findingCounts: Map<string, number>;
+  /** Timestamp of the most recent event (for staleness detection). */
+  lastEventTimestamp: string | null;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -512,6 +514,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     activeAgentCount,
     activeThinkingAgents,
     findingCounts,
+    lastEventTimestamp: events.length > 0 ? events[events.length - 1].timestamp : null,
   };
 
   return {

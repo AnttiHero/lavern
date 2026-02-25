@@ -26,6 +26,7 @@ import { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { streamMessages } from '../utils/stream-messages.js';
 import { handleSessionError } from '../utils/error-recovery.js';
+import { assembleDocument } from '../assembly/document-assembler.js';
 import { config } from '../config.js';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
@@ -48,6 +49,7 @@ export async function runGenericWorkflow(
 
   session.budgetUsd = maxBudgetUsd;
   session.workflowTemplateId = template.id;
+  session.legalRequest = request;  // Store for assembly context
 
   // Initialize audit log
   initAuditLog(session);
@@ -158,19 +160,52 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     },
   });
 
-  // Stream messages to console
+  // Stream messages to console (suppress session_end — we emit it after assembly)
+  let pipelineCost = 0;
+  let pipelineDurationMs = 0;
   try {
     await streamMessages(result, {
       session,
       documentLabel: request.documentPath ?? '(no document)',
       workflowLabel: template.id,
       logLevel,
+      suppressSessionEnd: true,
     });
+    pipelineCost = session.accumulatedCost;
   } catch (error) {
     const sessionError = handleSessionError(session, error);
     console.error(`The Shem (${template.id}) encountered an error at step "${sessionError.step}":`, sessionError.cause);
+    // Still emit session_end on error so frontend isn't stuck
+    session.events.emitEvent({
+      type: 'session_end',
+      sessionId: session.id,
+      totalCost: session.accumulatedCost,
+      duration: 0,
+      timestamp: eventTimestamp(),
+    });
     throw error;
   }
+
+  // ── v15: Document Assembly — produce the actual deliverable ────────
+  // After the multi-agent pipeline completes, make a focused Claude call
+  // to assemble the ACTUAL document from all the structured analysis.
+  // This is what makes Marble's output better than a single prompt:
+  // the assembly has ALL the multi-agent intelligence as context.
+  try {
+    session.assembledDocument = await assembleDocument(session, request);
+  } catch (assemblyError) {
+    console.error('Document assembly failed (non-fatal):', assemblyError);
+    // Non-fatal: the process output is still available via finalOutput
+  }
+
+  // NOW emit session_end — assembly is complete, deliverable is ready
+  session.events.emitEvent({
+    type: 'session_end',
+    sessionId: session.id,
+    totalCost: session.accumulatedCost,
+    duration: 0,
+    timestamp: eventTimestamp(),
+  });
 
   return session;
 }

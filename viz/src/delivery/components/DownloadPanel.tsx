@@ -1,16 +1,25 @@
 /**
- * DownloadPanel — Download buttons for work product, data, and client summary.
+ * DownloadPanel — Download buttons for deliverable in multiple formats.
  *
- * In demo mode, generates client-side Blob downloads.
- * In real mode, navigates to /api/sessions/:id/download?format=X.
+ * v16: Added document style selector (Traditional / Elegant / Accessible).
+ * Style is appended to the download URL as &style=X for DOCX and PDF.
  */
 
+import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
   data: DeliveryData;
 }
+
+type DocStyle = 'traditional' | 'elegant' | 'accessible';
+
+const STYLE_OPTIONS: { id: DocStyle; label: string; desc: string }[] = [
+  { id: 'traditional', label: 'Traditional', desc: 'Classic law-firm' },
+  { id: 'elegant', label: 'Elegant', desc: 'Warm editorial' },
+  { id: 'accessible', label: 'Accessible', desc: 'WCAG AA' },
+];
 
 function triggerBlobDownload(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -59,11 +68,11 @@ function generateClientSummary(data: DeliveryData): string {
 
 export function DownloadPanel({ data }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
+  const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
 
-  const handleDownload = (format: 'md' | 'json' | 'summary') => {
+  const handleDownload = (format: 'docx' | 'pdf' | 'md' | 'json' | 'summary') => {
     if (isDemo) {
-      // Client-side Blob download
-      if (format === 'md') {
+      if (format === 'md' || format === 'docx' || format === 'pdf') {
         triggerBlobDownload(data.finalOutput || '# No output yet', `${data.sessionId}-workproduct.md`, 'text/markdown');
       } else if (format === 'json') {
         const jsonData = {
@@ -79,36 +88,86 @@ export function DownloadPanel({ data }: Props) {
         triggerBlobDownload(summary, `${data.sessionId}-summary.md`, 'text/markdown');
       }
     } else {
-      // Real API download
-      window.open(`/api/sessions/${data.sessionId}/download?format=${format}`, '_blank');
+      // Append style for formatted outputs (docx/pdf)
+      const styleParam = (format === 'docx' || format === 'pdf') ? `&style=${selectedStyle}` : '';
+      window.open(`/api/sessions/${data.sessionId}/download?format=${format}${styleParam}`, '_blank');
     }
   };
 
   return (
     <div style={styles.panel}>
       <div style={styles.panelHeader}>
-        <div style={styles.panelTitle}>Download</div>
+        <div style={styles.panelTitle}>Download Deliverable</div>
       </div>
-      <div style={styles.cards}>
+
+      {/* Style selector */}
+      <div style={styles.styleSection}>
+        <div style={styles.styleLabel}>Document Style</div>
+        <div style={styles.stylePills}>
+          {STYLE_OPTIONS.map(opt => {
+            const isActive = selectedStyle === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setSelectedStyle(opt.id)}
+                style={{
+                  ...styles.pill,
+                  ...(isActive ? styles.pillActive : {}),
+                }}
+              >
+                <span style={styles.pillName}>{opt.label}</span>
+                <span style={{
+                  ...styles.pillDesc,
+                  color: isActive ? 'rgba(255,255,255,0.7)' : colors.textMuted,
+                }}>{opt.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Primary row: DOCX and PDF */}
+      <div style={styles.primaryRow}>
         <DownloadCard
           icon={'\uD83D\uDCC4'}
-          title="Work Product"
-          description="The full deliverable as Markdown"
-          format=".md"
+          title="Word Document"
+          description="Professional .docx format"
+          format=".docx"
           primary
+          onClick={() => handleDownload('docx')}
+          disabled={isDemo}
+        />
+        <DownloadCard
+          icon={'\uD83D\uDCC3'}
+          title="PDF"
+          description="Print-ready document"
+          format=".pdf"
+          primary
+          onClick={() => handleDownload('pdf')}
+          disabled={isDemo}
+        />
+      </div>
+
+      {/* Secondary row: Other formats */}
+      <div style={styles.secondaryRow}>
+        <DownloadCard
+          icon={'#'}
+          title="Markdown"
+          description="Raw markdown source"
+          format=".md"
           onClick={() => handleDownload('md')}
         />
         <DownloadCard
-          icon={'\u007B\u007D'}
+          icon={'{ }'}
           title="Structured Data"
-          description="Findings, debates, verification"
+          description="Findings & debates"
           format=".json"
           onClick={() => handleDownload('json')}
         />
         <DownloadCard
-          icon={'\uD83D\uDCCB'}
-          title="Client Summary"
-          description="One-page executive briefing"
+          icon={'\u2139\uFE0F'}
+          title="Executive Brief"
+          description="One-page summary"
           format=".md"
           onClick={() => handleDownload('summary')}
         />
@@ -117,35 +176,39 @@ export function DownloadPanel({ data }: Props) {
   );
 }
 
-function DownloadCard({ icon, title, description, format, primary, onClick }: {
+function DownloadCard({ icon, title, description, format, primary, disabled, onClick }: {
   icon: string;
   title: string;
   description: string;
   format: string;
   primary?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         ...styles.card,
         ...(primary ? styles.cardPrimary : {}),
+        ...(disabled ? styles.cardDisabled : {}),
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = colors.borderHover; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = colors.borderHover; }}
+      onMouseLeave={e => { if (!disabled) e.currentTarget.style.borderColor = primary ? colors.accent : colors.border; }}
     >
       <div style={styles.cardIcon}>{icon}</div>
       <div style={styles.cardTitle}>{title}</div>
       <div style={styles.cardDesc}>{description}</div>
       <div style={styles.cardFormat}>{format}</div>
+      {disabled && <div style={styles.cardNote}>Live session only</div>}
     </button>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
-    marginTop: spacing.xxl,
+    marginTop: spacing.xl,
   },
   panelHeader: {
     marginBottom: spacing.md,
@@ -157,17 +220,69 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
-  cards: {
+
+  // Style selector
+  styleSection: {
+    marginBottom: spacing.lg,
+  },
+  styleLabel: {
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+    fontFamily: fonts.sans,
+  },
+  stylePills: {
+    display: 'flex',
+    gap: spacing.sm,
+  },
+  pill: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    gap: 2,
+    padding: '10px 20px',
+    borderRadius: radii.lg,
+    border: `1px solid ${colors.border}`,
+    backgroundColor: colors.bgCard,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+    flex: 1,
+  },
+  pillActive: {
+    border: `1px solid ${colors.text}`,
+    backgroundColor: colors.text,
+    color: '#fff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  pillName: {
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+  },
+  pillDesc: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+  },
+
+  // Download cards
+  primaryRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  secondaryRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   card: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     gap: spacing.xs,
-    padding: `${spacing.xl}px ${spacing.lg}px`,
+    padding: `${spacing.lg}px ${spacing.md}px`,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.lg,
@@ -178,10 +293,15 @@ const styles: Record<string, React.CSSProperties> = {
   cardPrimary: {
     borderColor: colors.accent,
     borderWidth: 2,
+    padding: `${spacing.xl}px ${spacing.lg}px`,
+  },
+  cardDisabled: {
+    opacity: 0.5,
+    cursor: 'default',
   },
   cardIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
+    fontSize: 22,
+    marginBottom: 2,
   },
   cardTitle: {
     fontSize: 13,
@@ -202,6 +322,13 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgPanel,
     padding: '2px 8px',
     borderRadius: radii.sm,
-    marginTop: spacing.xs,
+    marginTop: 2,
+  },
+  cardNote: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    fontStyle: 'italic' as const,
+    marginTop: 2,
   },
 };
