@@ -5,8 +5,8 @@
  * generate a derivative document (memo, checklist, etc.) from their
  * completed analysis. Each generation is a Claude API call on the backend.
  *
- * Design: matches the editorial warm palette. 2-column grid of cards,
- * each with icon, title, description, and generate button.
+ * v17: Added document style selector + format options (MD / DOCX / HTML).
+ * For demo sessions, generates a basic markdown template client-side.
  */
 
 import { useState } from 'react';
@@ -18,6 +18,20 @@ interface Props {
 }
 
 type CardStatus = 'idle' | 'generating' | 'done' | 'error';
+type DocStyle = 'traditional' | 'elegant' | 'accessible';
+type OutputFormat = 'md' | 'docx' | 'html';
+
+const STYLE_OPTIONS: { id: DocStyle; label: string }[] = [
+  { id: 'traditional', label: 'Traditional' },
+  { id: 'elegant', label: 'Elegant' },
+  { id: 'accessible', label: 'Accessible' },
+];
+
+const FORMAT_OPTIONS: { id: OutputFormat; label: string; ext: string }[] = [
+  { id: 'docx', label: 'Word', ext: '.docx' },
+  { id: 'html', label: 'HTML', ext: '.html' },
+  { id: 'md', label: 'Markdown', ext: '.md' },
+];
 
 const DERIVATIVES = [
   { id: 'executive-memo',       icon: '\uD83D\uDCDD', title: 'Executive Memo',       desc: 'Formal memo for leadership' },
@@ -30,8 +44,10 @@ const DERIVATIVES = [
   { id: 'training-brief',       icon: '\uD83C\uDF93', title: 'Training Brief',       desc: 'Educational issues summary' },
 ];
 
-function triggerBlobDownload(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
+function triggerBlobDownload(content: string | ArrayBuffer, filename: string, mimeType: string) {
+  const blob = content instanceof ArrayBuffer
+    ? new Blob([content], { type: mimeType })
+    : new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -42,21 +58,89 @@ function triggerBlobDownload(content: string, filename: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
+/** Generate a basic demo derivative from available session data. */
+function generateDemoDerivative(typeId: string, data: DeliveryData): string {
+  const meta = DERIVATIVES.find(d => d.id === typeId);
+  const title = meta?.title ?? typeId;
+  const lines: string[] = [];
+
+  lines.push(`# ${title}`);
+  lines.push('');
+  lines.push(`**Session:** ${data.sessionId}`);
+  lines.push(`**Date:** ${new Date().toLocaleDateString()}`);
+  lines.push('');
+
+  if (data.executiveSummary) {
+    lines.push('## Summary');
+    lines.push('');
+    lines.push(data.executiveSummary);
+    lines.push('');
+  }
+
+  if (data.keyChanges.length > 0) {
+    lines.push('## Key Findings');
+    lines.push('');
+    for (const c of data.keyChanges) {
+      lines.push(`### ${c.title}`);
+      lines.push(`- **Before:** ${c.before}`);
+      lines.push(`- **After:** ${c.after}`);
+      lines.push('');
+    }
+  }
+
+  if (data.debateResolutions.length > 0) {
+    lines.push('## Resolutions');
+    lines.push('');
+    for (const r of data.debateResolutions) {
+      lines.push(`- **${r.topic}:** ${r.resolution}`);
+    }
+    lines.push('');
+  }
+
+  if (data.nextSteps.length > 0) {
+    lines.push('## Recommended Actions');
+    lines.push('');
+    for (const s of data.nextSteps) {
+      lines.push(`- **${s.label}:** ${s.description}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('*Generated from AI-assisted analysis. Independent verification recommended.*');
+  return lines.join('\n');
+}
+
 export function DerivativesPanel({ data }: Props) {
   const [statuses, setStatuses] = useState<Record<string, CardStatus>>({});
+  const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
+  const [selectedFormat, setSelectedFormat] = useState<OutputFormat>('docx');
   const isDemo = data.sessionId.startsWith('demo-session');
 
   const handleGenerate = async (typeId: string) => {
-    if (isDemo) return;
-
     setStatuses(prev => ({ ...prev, [typeId]: 'generating' }));
 
     try {
+      // Demo sessions: generate client-side markdown
+      if (isDemo) {
+        const markdown = generateDemoDerivative(typeId, data);
+        triggerBlobDownload(markdown, `${data.sessionId}-${typeId}.md`, 'text/markdown');
+        setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
+        setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 3000);
+        return;
+      }
+
+      // Live sessions: request from API with format + style
       const res = await fetch(`/api/sessions/${data.sessionId}/derivatives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ type: typeId }),
+        body: JSON.stringify({
+          type: typeId,
+          format: selectedFormat,
+          style: selectedStyle,
+        }),
       });
 
       if (!res.ok) {
@@ -64,27 +148,35 @@ export function DerivativesPanel({ data }: Props) {
         throw new Error(err.error || 'Generation failed');
       }
 
-      const result = await res.json();
-      triggerBlobDownload(
-        result.content,
-        `${data.sessionId}-${typeId}.md`,
-        'text/markdown',
-      );
+      // Binary formats (DOCX) → download blob; text formats → download text
+      const meta = DERIVATIVES.find(d => d.id === typeId);
+      const safeTitle = (meta?.title ?? typeId).replace(/[^a-zA-Z0-9-_]/g, '-');
+
+      if (selectedFormat === 'docx') {
+        const buffer = await res.arrayBuffer();
+        triggerBlobDownload(
+          buffer,
+          `${data.sessionId}-${safeTitle}.docx`,
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+      } else if (selectedFormat === 'html') {
+        const html = await res.text();
+        triggerBlobDownload(html, `${data.sessionId}-${safeTitle}.html`, 'text/html');
+      } else {
+        const result = await res.json();
+        triggerBlobDownload(
+          result.content,
+          `${data.sessionId}-${safeTitle}.md`,
+          'text/markdown',
+        );
+      }
 
       setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
-
-      // Reset to idle after 3 seconds
-      setTimeout(() => {
-        setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
-      }, 3000);
+      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 3000);
     } catch (err) {
       console.error(`[DerivativesPanel] Generation failed for ${typeId}:`, err);
       setStatuses(prev => ({ ...prev, [typeId]: 'error' }));
-
-      // Reset to idle after 5 seconds
-      setTimeout(() => {
-        setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
-      }, 5000);
+      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
     }
   };
 
@@ -97,10 +189,48 @@ export function DerivativesPanel({ data }: Props) {
         </div>
       </div>
 
+      {/* Style + Format selectors */}
+      <div style={styles.selectorRow}>
+        <div style={styles.selectorGroup}>
+          <div style={styles.selectorLabel}>Style</div>
+          <div style={styles.pills}>
+            {STYLE_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setSelectedStyle(opt.id)}
+                style={{
+                  ...styles.pill,
+                  ...(selectedStyle === opt.id ? styles.pillActive : {}),
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={styles.selectorGroup}>
+          <div style={styles.selectorLabel}>Format</div>
+          <div style={styles.pills}>
+            {FORMAT_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setSelectedFormat(opt.id)}
+                style={{
+                  ...styles.pill,
+                  ...(selectedFormat === opt.id ? styles.pillActive : {}),
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div style={styles.grid}>
         {DERIVATIVES.map(d => {
           const status = statuses[d.id] ?? 'idle';
-          const disabled = isDemo || status === 'generating';
+          const disabled = status === 'generating';
 
           return (
             <button
@@ -146,7 +276,7 @@ export function DerivativesPanel({ data }: Props) {
 
       {isDemo && (
         <div style={styles.demoNote}>
-          Derivative generation is available with live sessions.
+          Demo mode: downloads a basic markdown template. Style and format options require a live session.
         </div>
       )}
     </div>
@@ -158,7 +288,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: spacing.xxl,
   },
   panelHeader: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   panelTitle: {
     fontSize: 12,
@@ -171,6 +301,47 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: colors.textDim,
     marginTop: 4,
+  },
+
+  // Selectors
+  selectorRow: {
+    display: 'flex',
+    gap: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  selectorGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.xs,
+  },
+  selectorLabel: {
+    fontSize: 10,
+    fontWeight: 500,
+    color: colors.textDim,
+    fontFamily: fonts.sans,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  pills: {
+    display: 'flex',
+    gap: 4,
+  },
+  pill: {
+    padding: '5px 12px',
+    borderRadius: radii.sm,
+    border: `1px solid ${colors.border}`,
+    backgroundColor: colors.bgCard,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors.textSecondary,
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+  },
+  pillActive: {
+    backgroundColor: colors.text,
+    color: '#fff',
+    borderColor: colors.text,
   },
 
   // Grid

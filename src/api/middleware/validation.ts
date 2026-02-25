@@ -132,6 +132,8 @@ export type CreateClientBody = z.infer<typeof CreateClientSchema>;
 
 export const DerivativeSchema = z.object({
   type: z.string().min(1).max(50),
+  format: z.enum(['md', 'docx', 'html']).optional(),
+  style: z.enum(['traditional', 'elegant', 'accessible']).optional(),
 }).strict();
 
 export type DerivativeBody = z.infer<typeof DerivativeSchema>;

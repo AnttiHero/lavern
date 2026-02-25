@@ -95,6 +95,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
   const {
     phase,
+    setPhase,
     memoText,
     setMemoText,
     advanceToInterviewer,
@@ -135,8 +136,12 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
   const handleSuggestionActivate = useCallback((suggestion: Suggestion) => {
     if (suggestion.action === 'add-document') {
-      // Focus the document drop zone / open file picker
-      upload.openFilePicker();
+      // Navigate back to documents phase where the upload zone + file input live
+      if (phase !== 'documents') {
+        setPhase('documents');
+      } else {
+        upload.openFilePicker();
+      }
     } else if (suggestion.action === 'focus-question' && suggestion.targetQuestionId) {
       // If in earlier phases, advance to questions
       if (phase === 'documents' || phase === 'interviewer') {
@@ -149,13 +154,17 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
           qna.setAnswer(suggestion.targetQuestionId, suggestion.autoText + currentAnswer);
         }
       }
-      // Scroll to the target question
+      // Scroll to the questions area (questionRefs map isn't wired to DOM)
       setTimeout(() => {
-        const el = questionRefs.current.get(suggestion.targetQuestionId!);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 150);
+        const questionsEl = document.querySelector('[data-phase="questions"]');
+        if (questionsEl) {
+          questionsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+      }, 200);
     }
-  }, [phase, advanceToQuestions, upload, qna]);
+  }, [phase, setPhase, advanceToQuestions, upload, qna]);
 
   // URL import handler — adds fetched content as a document
   const handleUrlImport = useCallback((name: string, content: string, _size: number) => {
@@ -272,7 +281,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Phase 3: Questions */}
       {(phase === 'questions' || isPostQuestions) && (
-        <div style={{
+        <div data-phase="questions" style={{
           ...styles.phaseSection,
           ...(phase === 'questions' ? styles.phaseActive : styles.phaseCollapsed),
         }}>

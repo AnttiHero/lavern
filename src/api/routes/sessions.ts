@@ -566,6 +566,27 @@ export function registerSessionRoutes(
         throw new Error('No content generated');
       }
 
+      const format = body.format ?? 'md';
+      const style = body.style as DocumentStyle | undefined;
+
+      // Convert to requested format
+      if (format === 'docx') {
+        const docxBuffer = await convertToDocx(generatedContent, derivativeType.title, style);
+        const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
+        reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.docx"`);
+        return reply.send(Buffer.from(docxBuffer));
+      }
+
+      if (format === 'html') {
+        const html = convertToHtml(generatedContent, derivativeType.title, style);
+        const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
+        reply.header('Content-Type', 'text/html; charset=utf-8');
+        reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.html"`);
+        return reply.send(html);
+      }
+
+      // Default: return raw markdown as JSON
       return reply.send({
         content: generatedContent,
         title: derivativeType.title,
