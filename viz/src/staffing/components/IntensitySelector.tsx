@@ -15,9 +15,9 @@ const LEVELS: {
   teamSize: number;
 }[] = [
   { level: 'quick', label: 'Swift', description: 'Lean and fast', teamSize: 3 },
-  { level: 'standard', label: 'Balanced', description: 'Right-sized for most matters', teamSize: 5 },
-  { level: 'thorough', label: 'Thorough', description: 'Full coverage, high confidence', teamSize: 7 },
-  { level: 'maximal', label: 'Full Force', description: 'Every resource. Every angle.', teamSize: 8 },
+  { level: 'standard', label: 'Balanced', description: 'Right-sized for most matters', teamSize: 6 },
+  { level: 'thorough', label: 'Thorough', description: 'Full coverage, high confidence', teamSize: 10 },
+  { level: 'maximal', label: 'Full Force', description: 'Every resource. Every angle.', teamSize: 14 },
 ];
 
 interface Props {

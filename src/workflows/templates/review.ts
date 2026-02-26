@@ -107,7 +107,7 @@ export const reviewTemplate: WorkflowTemplate = {
     'evaluator',
     'risk-pricer',
   ],
-  maxTeamSize: 4,
+  maxTeamSize: 14,
   orchestratorArchetype: 'orchestrator-closer',
   orchestratorPrompt: orchestratorReviewPrompt,
   phasePermissions: {

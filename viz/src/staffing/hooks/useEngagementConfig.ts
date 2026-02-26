@@ -27,7 +27,7 @@ interface RecommendationResult {
   estimatedCost: number;
 }
 
-const INTENSITY_TARGETS: Record<string, number> = { quick: 3, standard: 5, thorough: 7, maximal: 8 };
+const INTENSITY_TARGETS: Record<string, number> = { quick: 3, standard: 6, thorough: 10, maximal: 14 };
 
 /** Generate local recommendations from demo profiles. */
 function generateLocalRecommendation(intensity: string) {

@@ -56,7 +56,7 @@ export const counselTemplate: WorkflowTemplate = {
     // Selected dynamically by the router based on request type.
     // Counsel has no fixed agents — the right expert for the question.
   ],
-  maxTeamSize: 2,
+  maxTeamSize: 6,
   orchestratorArchetype: 'orchestrator-fixer',
   orchestratorPrompt: orchestratorCounselPrompt,
   phasePermissions: {

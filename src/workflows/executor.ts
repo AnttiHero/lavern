@@ -94,8 +94,8 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
   // Filter agent definitions to only those needed by this workflow
   // v8: When a client has selected a team, use those agents instead of template defaults
-  // v11: Team size cap is now configurable per template (default 8, full-bench allows 25)
-  const DEFAULT_MAX_TEAM_SIZE = 8;
+  // v11: Team size cap is now configurable per template (default 14, full-bench allows 25)
+  const DEFAULT_MAX_TEAM_SIZE = 14;
   const maxTeamSize = template.maxTeamSize ?? DEFAULT_MAX_TEAM_SIZE;
   const rawTeamRoles = session.selectedTeam.length > 0
     ? session.selectedTeam

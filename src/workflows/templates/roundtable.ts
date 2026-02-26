@@ -143,7 +143,7 @@ export const roundtableTemplate: WorkflowTemplate = {
     'client-proxy',
     'synthesis-editor',
   ],
-  maxTeamSize: 10,
+  maxTeamSize: 14,
   orchestratorArchetype: 'orchestrator-conductor',
   orchestratorPrompt: orchestratorRoundtablePrompt,
   phasePermissions: {

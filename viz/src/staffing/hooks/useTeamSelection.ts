@@ -25,7 +25,7 @@ export function useTeamSelection(
     return map;
   }, [allProfiles]);
 
-  const MAX_TEAM_SIZE = 8;
+  const MAX_TEAM_SIZE = 14;
 
   const toggleAgent = useCallback((role: string) => {
     setSelectedRoles(prev => {

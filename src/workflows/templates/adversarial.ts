@@ -95,7 +95,7 @@ export const adversarialTemplate: WorkflowTemplate = {
     'red-team',
     'synthesis-editor',
   ],
-  maxTeamSize: 5,
+  maxTeamSize: 12,
   orchestratorArchetype: 'orchestrator-professor',
   orchestratorPrompt: orchestratorAdversarialPrompt,
   phasePermissions: {
