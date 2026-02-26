@@ -20,6 +20,11 @@ export const config = {
   // ── API ────────────────────────────────────────────────────────────────
   port: parseInt(process.env.SHEM_PORT ?? '3000', 10),
   corsOrigins: process.env.SHEM_CORS_ORIGINS ?? '*',
+  baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
+
+  // ── Payment (x402 — USDC on Base) ───────────────────────────────────
+  x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
+  x402RecipientAddress: process.env.SHEM_X402_RECIPIENT ?? '',
 
   // ── Budgets ────────────────────────────────────────────────────────────
   defaultBudgetUsd: parseFloat(process.env.SHEM_DEFAULT_BUDGET ?? '5.0'),

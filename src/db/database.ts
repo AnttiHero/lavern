@@ -379,6 +379,88 @@ export function getArchivedSession(sessionId: string, userId: string): ArchivedS
   `).get(sessionId, userId) as ArchivedSession | undefined;
 }
 
+// ── Reputation Metrics ──────────────────────────────────────────────────
+
+export interface ReputationMetrics {
+  totalEngagements: number;
+  successRate: number | null;
+  avgVerificationPassRate: number | null;
+  avgDeliveryTimeMs: number | null;
+  avgCostUsd: number | null;
+  workflowBreakdown: Array<{ workflowId: string; count: number }>;
+}
+
+/**
+ * Aggregate reputation metrics from the session archive.
+ * Cold-start safe: returns totalEngagements: 0 with null metrics when no history.
+ */
+export function getReputationMetrics(): ReputationMetrics {
+  const db = getDb();
+
+  // Total engagements
+  const countRow = db.prepare('SELECT COUNT(*) as cnt FROM session_archive').get() as { cnt: number };
+  const totalEngagements = countRow.cnt;
+
+  if (totalEngagements === 0) {
+    return {
+      totalEngagements: 0,
+      successRate: null,
+      avgVerificationPassRate: null,
+      avgDeliveryTimeMs: null,
+      avgCostUsd: null,
+      workflowBreakdown: [],
+    };
+  }
+
+  // Success rate (status = 'completed' vs total)
+  const successRow = db.prepare(
+    "SELECT COUNT(*) as cnt FROM session_archive WHERE status = 'completed'"
+  ).get() as { cnt: number };
+  const successRate = Math.round((successRow.cnt / totalEngagements) * 100) / 100;
+
+  // Average verification pass rate (from summary_json)
+  const sessions = db.prepare(
+    'SELECT summary_json, duration_ms, cost_usd FROM session_archive'
+  ).all() as Array<{ summary_json: string; duration_ms: number; cost_usd: number }>;
+
+  let totalVerifRate = 0;
+  let verifCount = 0;
+  let totalDuration = 0;
+  let totalCost = 0;
+
+  for (const s of sessions) {
+    try {
+      const summary = JSON.parse(s.summary_json);
+      if (summary.verification && summary.verification.total > 0) {
+        totalVerifRate += summary.verification.passed / summary.verification.total;
+        verifCount++;
+      }
+    } catch { /* skip malformed JSON */ }
+    totalDuration += s.duration_ms;
+    totalCost += s.cost_usd;
+  }
+
+  const avgVerificationPassRate = verifCount > 0
+    ? Math.round((totalVerifRate / verifCount) * 100) / 100
+    : null;
+  const avgDeliveryTimeMs = Math.round(totalDuration / totalEngagements);
+  const avgCostUsd = Math.round((totalCost / totalEngagements) * 100) / 100;
+
+  // Workflow breakdown
+  const workflowRows = db.prepare(
+    'SELECT workflow_id, COUNT(*) as cnt FROM session_archive WHERE workflow_id IS NOT NULL GROUP BY workflow_id ORDER BY cnt DESC'
+  ).all() as Array<{ workflow_id: string; cnt: number }>;
+
+  return {
+    totalEngagements,
+    successRate,
+    avgVerificationPassRate,
+    avgDeliveryTimeMs,
+    avgCostUsd,
+    workflowBreakdown: workflowRows.map(r => ({ workflowId: r.workflow_id, count: r.cnt })),
+  };
+}
+
 // ── Matter Queries ───────────────────────────────────────────────────────
 
 export function saveMatter(userId: string, matterId: string, dataJson: string, status: string): void {

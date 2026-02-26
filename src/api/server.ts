@@ -35,6 +35,9 @@ import { registerWorkflowRoutes } from './routes/workflows.js';
 import { registerBriefingRoutes } from './routes/briefing.js';
 import { registerEngageRoutes } from './routes/engage.js';
 import { registerCapabilitiesRoutes } from './routes/capabilities.js';
+import { registerWellKnownRoutes } from './routes/well-known.js';
+import { registerPricingRoutes } from './routes/pricing.js';
+import { registerReputationRoutes } from './routes/reputation.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerKnowledgeBaseRoutes } from './routes/knowledge-base.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
@@ -102,6 +105,12 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/documents/*',  // Document parsing for intake
     // v10: Agent API — public discovery endpoints
     'GET /api/capabilities',  // Machine-readable service manifest
+    // v16: Agent-first discovery layer
+    'GET /.well-known/*',     // A2A agent card + OpenAI plugin manifest
+    'GET /openapi.json',      // OpenAPI 3.0 spec
+    'GET /llms.txt',          // AI crawler guidance
+    'GET /api/pricing',       // Deterministic cost estimates
+    'GET /api/reputation',    // Machine-readable trust signal
     // v14: User auth routes (public — signup/login/me)
     'POST /api/auth/signup',
     'POST /api/auth/login',
@@ -165,6 +174,14 @@ export async function startApiServer(port: number): Promise<void> {
       agentApi: {
         capabilities: 'GET /api/capabilities',
         engage: 'POST /api/engage',
+        pricing: 'GET /api/pricing',
+        reputation: 'GET /api/reputation',
+      },
+      discovery: {
+        agentCard: 'GET /.well-known/agent.json',
+        pluginManifest: 'GET /.well-known/ai-plugin.json',
+        openapi: 'GET /openapi.json',
+        llmsTxt: 'GET /llms.txt',
       },
       auth: {
         signup: 'POST /api/auth/signup',
@@ -204,6 +221,10 @@ export async function startApiServer(port: number): Promise<void> {
   // v10: Agent API — engage endpoint + capabilities manifest
   registerEngageRoutes(fastify, sessionManager);
   registerCapabilitiesRoutes(fastify);
+  // v16: Agent-first discovery + intelligence layer
+  registerWellKnownRoutes(fastify);
+  registerPricingRoutes(fastify);
+  registerReputationRoutes(fastify);
   // v12: Document parsing
   registerDocumentRoutes(fastify);
   // v15: Knowledge Base — reference document collections

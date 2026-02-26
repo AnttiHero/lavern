@@ -11,6 +11,7 @@
  *   webhook: Returns immediately, POSTs results to callbackUrl on completion.
  *
  * v10: Act 2 of the Legal Singularity — AI agents as consumers.
+ * v16: Enhanced agent fast-path — format param, base64/URL document input.
  */
 
 import { z } from 'zod';
@@ -33,8 +34,13 @@ import { validateBody } from '../middleware/validation.js';
 
 const EngageDocumentSchema = z.object({
   name: z.string().min(1).max(500),
-  content: z.string().min(1).max(100_000),
-});
+  content: z.string().min(1).max(100_000).optional(),
+  contentBase64: z.string().max(200_000).optional(),
+  contentUrl: z.string().url().max(2000).optional(),
+}).refine(
+  (doc) => doc.content || doc.contentBase64 || doc.contentUrl,
+  { message: 'At least one of content, contentBase64, or contentUrl is required.' },
+);
 
 const EngageContextSchema = z.object({
   jurisdiction: z.enum(['US', 'EU', 'UK', 'CA', 'AU']).optional(),
@@ -58,6 +64,7 @@ export const EngageRequestSchema = z.object({
   documents: z.array(EngageDocumentSchema).max(20).optional(),
   context: EngageContextSchema,
   constraints: EngageConstraintsSchema,
+  format: z.enum(['full', 'summary', 'citations-only']).optional().default('full'),
   mode: z.enum(['sync', 'webhook']).optional().default('sync'),
   callbackUrl: z.string().url().max(2000).optional(),
 }).strict().refine(
@@ -120,17 +127,61 @@ interface EngageAcceptedResponse {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 /**
+ * Resolve a document's content from content, contentBase64, or contentUrl.
+ * Priority: content > contentBase64 > contentUrl.
+ */
+async function resolveDocumentContent(doc: { name: string; content?: string; contentBase64?: string; contentUrl?: string }): Promise<string> {
+  if (doc.content) return doc.content;
+
+  if (doc.contentBase64) {
+    try {
+      return Buffer.from(doc.contentBase64, 'base64').toString('utf-8');
+    } catch {
+      throw new Error(`Failed to decode base64 content for document "${doc.name}".`);
+    }
+  }
+
+  if (doc.contentUrl) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
+      const res = await fetch(doc.contentUrl, {
+        signal: controller.signal,
+        headers: { 'Accept': 'text/plain, text/html, application/json, */*' },
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Enforce 100KB size limit
+      const text = await res.text();
+      if (text.length > 100_000) {
+        throw new Error(`Content exceeds 100KB limit (got ${Math.round(text.length / 1000)}KB).`);
+      }
+      return text;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to fetch content from URL for document "${doc.name}": ${msg}`);
+    }
+  }
+
+  throw new Error(`No content source for document "${doc.name}".`);
+}
+
+/**
  * Build a LegalRequest from the engage body.
  * Embeds document content directly in the requestText.
+ * Now async to support URL fetching.
  */
-function buildLegalRequest(body: EngageRequestBody): LegalRequest {
+async function buildLegalRequest(body: EngageRequestBody): Promise<LegalRequest> {
   const parts: string[] = [body.task];
 
   // Embed document content inline
   if (body.documents && body.documents.length > 0) {
     parts.push('\n\n--- DOCUMENTS ---');
     for (const doc of body.documents) {
-      parts.push(`\n### ${doc.name}\n${doc.content}`);
+      const content = await resolveDocumentContent(doc);
+      parts.push(`\n### ${doc.name}\n${content}`);
     }
   }
 
@@ -223,6 +274,46 @@ function buildEngageResponse(
   };
 }
 
+/**
+ * Apply format filter to an EngageResponse.
+ *
+ * - 'full': return everything (default)
+ * - 'summary': engagementId + status + truncated output + findings count + confidence + cost
+ * - 'citations-only': engagementId + status + citations array + confidence
+ */
+function applyFormat(response: EngageResponse, format: string): unknown {
+  if (format === 'summary') {
+    return {
+      engagementId: response.engagementId,
+      status: response.status,
+      output: response.deliverables.output.slice(0, 500) + (response.deliverables.output.length > 500 ? '...' : ''),
+      findingsCount: response.deliverables.findings.length,
+      resolutionsCount: response.deliverables.resolutions.length,
+      confidence: response.quality.confidence,
+      cost: response.cost,
+      metadata: response.metadata,
+    };
+  }
+
+  if (format === 'citations-only') {
+    // Extract citation-like content from findings
+    const citations = response.deliverables.findings.map(f => ({
+      agent: f.agent,
+      text: f.text,
+      category: f.category,
+    }));
+    return {
+      engagementId: response.engagementId,
+      status: response.status,
+      citations,
+      confidence: response.quality.confidence,
+    };
+  }
+
+  // 'full' — return as-is
+  return response;
+}
+
 // ── Route Registration ──────────────────────────────────────────────────
 
 export function registerEngageRoutes(
@@ -261,8 +352,14 @@ export function registerEngageRoutes(
       session.clientIdentity = client;
     }
 
-    // Build legal request from engage body
-    const legalRequest = buildLegalRequest(body);
+    // Build legal request from engage body (async — resolves base64/URL docs)
+    let legalRequest: LegalRequest;
+    try {
+      legalRequest = await buildLegalRequest(body);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(422).send({ error: message });
+    }
 
     // ── Webhook mode: fire-and-forget, return immediately ──────────
     if (body.mode === 'webhook' && body.callbackUrl) {
@@ -330,7 +427,7 @@ export function registerEngageRoutes(
       const status = session.isHalted() ? 'halted' : 'completed';
       const response = buildEngageResponse(session, status, startTime);
 
-      return reply.send(response);
+      return reply.send(applyFormat(response, body.format));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
 
@@ -339,8 +436,9 @@ export function registerEngageRoutes(
       const response = buildEngageResponse(session, status, startTime);
 
       // Include the error in the response
+      const formatted = applyFormat(response, body.format) as Record<string, unknown>;
       return reply.status(status === 'halted' ? 200 : 500).send({
-        ...response,
+        ...formatted,
         error: message,
       });
     }

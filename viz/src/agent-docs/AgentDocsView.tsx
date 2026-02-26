@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { colors, fonts, radii } from '../staffing/styles/tokens.js';
+import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
@@ -327,8 +327,51 @@ function RegisterBlock() {
 
 // ── Main component ───────────────────────────────────────────────────
 
+// ── Pricing / Reputation types ────────────────────────────────────
+
+interface PricingTier {
+  level: string;
+  label: string;
+  suggestedTeamSize: number;
+  estimatedCostUsd: { min: number; max: number };
+  estimatedMinutes: [number, number];
+  gateFrequency: string;
+}
+
+interface TokenRate {
+  model: string;
+  tier: string;
+  inputPerMillion: number;
+  outputPerMillion: number;
+}
+
+interface PricingData {
+  tiers: PricingTier[];
+  tokenRates: TokenRate[];
+  paymentMethods: Array<{ method: string; status: string; description: string }>;
+}
+
+interface ReputationData {
+  metrics: {
+    totalEngagements: number;
+    successRate: number | null;
+    avgVerificationPassRate: number | null;
+    avgDeliveryTimeMs: number | null;
+    avgCostUsd: number | null;
+  };
+  trust: {
+    multiAgentVerification: boolean;
+    humanGateEnforcement: boolean;
+    auditTrailAvailable: boolean;
+    citationRequired: boolean;
+    description: string;
+  };
+}
+
 export default function AgentDocsView({ onBack }: Props) {
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
+  const [pricing, setPricing] = useState<PricingData | null>(null);
+  const [reputation, setReputation] = useState<ReputationData | null>(null);
   const [activeLang, setActiveLang] = useState<CodeLang>('curl');
   const [backHover, setBackHover] = useState(false);
 
@@ -336,11 +379,21 @@ export default function AgentDocsView({ onBack }: Props) {
     ? `${window.location.protocol}//${window.location.host}`
     : 'http://localhost:3000';
 
-  // Fetch capabilities
+  // Fetch capabilities, pricing, reputation in parallel
   useEffect(() => {
     fetch('/api/capabilities', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCapabilities(d); })
+      .catch(() => {});
+
+    fetch('/api/pricing', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPricing(d); })
+      .catch(() => {});
+
+    fetch('/api/reputation', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setReputation(d); })
       .catch(() => {});
   }, []);
 
@@ -545,6 +598,158 @@ export default function AgentDocsView({ onBack }: Props) {
             {['LangChain', 'CrewAI', 'AutoGPT', 'Claude MCP', 'OpenAI Actions', 'Custom'].map(f => (
               <span key={f} style={sty.badge}>{f}</span>
             ))}
+          </div>
+        </Section>
+
+        {/* ── DISCOVERY ────────────────────────────────── */}
+        <Section label="Discovery" delay={0.65}>
+          <p style={sty.bodyText}>
+            Machine-readable endpoints for automated service discovery. No human docs needed.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { path: '/.well-known/agent.json', label: 'A2A Agent Card', desc: 'Google/DeepMind standard for agent-to-agent discovery' },
+              { path: '/.well-known/ai-plugin.json', label: 'Plugin Manifest', desc: 'OpenAI plugin format for ChatGPT Actions' },
+              { path: '/openapi.json', label: 'OpenAPI 3.0', desc: 'Machine-readable API specification' },
+              { path: '/llms.txt', label: 'llms.txt', desc: 'AI crawler guidance (like robots.txt for LLMs)' },
+              { path: '/api/capabilities', label: 'Capabilities', desc: 'Full service manifest with workflows and pricing' },
+            ].map(ep => (
+              <div key={ep.path} style={sty.discoveryRow}>
+                <code style={{ color: D.accent, fontFamily: fonts.mono, fontSize: 12, minWidth: 260, flexShrink: 0 }}>
+                  GET {ep.path}
+                </code>
+                <span style={{ color: D.textDim, fontSize: 12, fontFamily: fonts.sans }}>
+                  {ep.desc}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* ── TRUST & REPUTATION ──────────────────────── */}
+        <Section label="Trust & Reputation" delay={0.7}>
+          <p style={sty.bodyText}>
+            Live metrics from the session archive. Cold-start safe.
+          </p>
+          <div style={{ ...sty.endpoint, marginBottom: 16 }}>
+            <span style={{ color: D.accent }}>GET</span>{' '}
+            <span style={{ color: D.white }}>/api/reputation</span>
+          </div>
+          {reputation && (
+            <div style={sty.metricGrid}>
+              <MetricCard
+                value={String(reputation.metrics.totalEngagements)}
+                label="Engagements"
+              />
+              <MetricCard
+                value={reputation.metrics.successRate !== null ? `${Math.round(reputation.metrics.successRate * 100)}%` : '\u2014'}
+                label="Success Rate"
+              />
+              <MetricCard
+                value={reputation.metrics.avgVerificationPassRate !== null ? `${Math.round(reputation.metrics.avgVerificationPassRate * 100)}%` : '\u2014'}
+                label="Verification"
+              />
+              <MetricCard
+                value={reputation.metrics.avgCostUsd !== null ? `$${reputation.metrics.avgCostUsd.toFixed(2)}` : '\u2014'}
+                label="Avg Cost"
+              />
+            </div>
+          )}
+          {reputation?.trust && (
+            <div style={sty.bulletList}>
+              {reputation.trust.multiAgentVerification && <div style={sty.bullet}>Multi-agent debate and cross-verification</div>}
+              {reputation.trust.humanGateEnforcement && <div style={sty.bullet}>Human gate enforcement at decision points</div>}
+              {reputation.trust.auditTrailAvailable && <div style={sty.bullet}>Full audit trail for every engagement</div>}
+              {reputation.trust.citationRequired && <div style={sty.bullet}>Every finding must cite source text</div>}
+            </div>
+          )}
+        </Section>
+
+        {/* ── LIVE PRICING ─────────────────────────────── */}
+        {pricing && (
+          <Section label="Live Pricing" delay={0.75}>
+            <div style={{ ...sty.endpoint, marginBottom: 16 }}>
+              <span style={{ color: D.accent }}>GET</span>{' '}
+              <span style={{ color: D.white }}>/api/pricing</span>
+            </div>
+            <table style={sty.table}>
+              <thead>
+                <tr>
+                  <th style={sty.th}>Tier</th>
+                  <th style={sty.th}>Cost Range</th>
+                  <th style={sty.th}>Time</th>
+                  <th style={sty.th}>Team</th>
+                  <th style={sty.th}>Gates</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pricing.tiers.map(t => (
+                  <tr key={t.level}>
+                    <td style={{ ...sty.td, color: D.accent, fontFamily: fonts.mono }}>{t.level}</td>
+                    <td style={{ ...sty.td, color: D.white, fontWeight: 600, fontFamily: fonts.mono }}>
+                      ${t.estimatedCostUsd.min}&ndash;${t.estimatedCostUsd.max}
+                    </td>
+                    <td style={{ ...sty.td, fontFamily: fonts.mono }}>
+                      {t.estimatedMinutes[0]}&ndash;{t.estimatedMinutes[1]}m
+                    </td>
+                    <td style={sty.td}>{t.suggestedTeamSize} agents</td>
+                    <td style={{ ...sty.td, color: D.textDim }}>{t.gateFrequency}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Token rates */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ ...sty.sectionLabel, marginBottom: 12 }}>Token Rates (per 1M tokens)</div>
+              <table style={sty.table}>
+                <thead>
+                  <tr>
+                    <th style={sty.th}>Model</th>
+                    <th style={sty.th}>Tier</th>
+                    <th style={sty.th}>Input</th>
+                    <th style={sty.th}>Output</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pricing.tokenRates.map(r => (
+                    <tr key={r.model}>
+                      <td style={{ ...sty.td, color: D.accent, fontFamily: fonts.mono, fontSize: 11 }}>{r.model}</td>
+                      <td style={{ ...sty.td, color: D.textDim }}>{r.tier}</td>
+                      <td style={{ ...sty.td, fontFamily: fonts.mono }}>${r.inputPerMillion}</td>
+                      <td style={{ ...sty.td, fontFamily: fonts.mono }}>${r.outputPerMillion}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        )}
+
+        {/* ── PAYMENT ─────────────────────────────────── */}
+        <Section label="Payment" delay={0.8}>
+          <div style={sty.modeGrid}>
+            <div style={sty.card}>
+              <div style={sty.modeTitle}>API Key (Fiat)</div>
+              <div style={sty.modeDesc}>
+                Register at POST /api/clients. Usage tracked per engagement.
+                Budget cap enforced per session. Unused budget is not charged.
+              </div>
+              <div style={{ ...sty.badgeRow, marginTop: 8 }}>
+                <span style={{ ...sty.badge, borderColor: D.accent, color: D.accent }}>Active</span>
+              </div>
+            </div>
+            <div style={sty.card}>
+              <div style={sty.modeTitle}>x402 (USDC on Base)</div>
+              <div style={sty.modeDesc}>
+                Pay per request with USDC via x402 protocol.
+                No account needed {'\u2014'} include X-PAYMENT header.
+                Agent-native micropayments.
+              </div>
+              <div style={{ ...sty.badgeRow, marginTop: 8 }}>
+                <span style={{ ...sty.badge, borderColor: D.textDim }}>{'\u2022'} Coming Soon</span>
+              </div>
+            </div>
           </div>
         </Section>
 
@@ -920,6 +1125,15 @@ const sty: Record<string, React.CSSProperties> = {
     color: D.textDim,
     lineHeight: 1.6,
     marginBottom: 12,
+  },
+  discoveryRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    padding: '8px 12px',
+    borderRadius: radii.sm,
+    border: `1px solid ${D.border}`,
+    backgroundColor: D.surface,
   },
 
   // ── Footer ─────────────────────────────────────────────────────────
