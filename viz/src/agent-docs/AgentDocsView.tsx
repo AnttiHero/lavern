@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
