@@ -2,7 +2,7 @@
  * Sidebar — Agent roster with status indicators.
  *
  * Warm editorial design — Inter font, white background, muted accents.
- * Shows all 8 agents with their current status (idle/working/talking),
+ * Shows agents with their current status (idle/working/talking),
  * event count, and color-coded role.
  */
 

@@ -77,7 +77,7 @@ export async function runTheShem(
 
   console.log(`
 \u2554${'═'.repeat(62)}\u2557
-\u2551                        THE SHEM v6                           \u2551
+\u2551                        THE SHEM v8                           \u2551
 \u2551              "We know what's written in the Golem's mouth"   \u2551
 \u255a${'═'.repeat(62)}\u255d
 

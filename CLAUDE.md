@@ -46,8 +46,8 @@ with qualified legal professionals.
 - `src/config.ts` — Centralized configuration (env-var backed)
 - `src/utils/` — Shared utilities (fs helpers with atomic writes, message streaming, error recovery)
 - `src/types/` — TypeScript type definitions and Zod schemas
-- `viz/` — Real-time visualization dashboard (React + Pixi.js pixel-art office)
-- `tests/` — 399 tests across 25 files (unit + integration)
+- `viz/` — Real-time visualization dashboard (React + Phaser pixel-art office)
+- `tests/` — 405 tests across 26 files (unit + integration)
 
 ## v7 Changes (Production Hardening + Visual Dashboard)
 

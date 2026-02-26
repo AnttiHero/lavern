@@ -145,7 +145,7 @@ export interface WorkflowTemplate {
   orchestratorPrompt: string;
   /** Phase-based permission deny rules (optional — uses template-specific rules) */
   phasePermissions?: Record<string, { denyTools: string[]; reason: string }>;
-  /** Maximum team size for this workflow (default: 8). Patterns like full-bench need more agents. */
+  /** Maximum team size for this workflow (default: 14). Patterns like full-bench need more agents. */
   maxTeamSize?: number;
   /** Orchestrator archetype key — maps to an orchestrator profile for personality injection */
   orchestratorArchetype?: string;

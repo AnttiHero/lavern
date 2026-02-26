@@ -247,18 +247,6 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
     transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
   },
-  buttonAccent: {
-    backgroundColor: colors.accentLight,
-    border: `1px solid rgba(196, 93, 62, 0.25)`,
-    borderRadius: radii.sm,
-    color: colors.accent,
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    padding: '5px 14px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
-  },
   buttonDanger: {
     backgroundColor: 'transparent',
     border: `1.5px solid ${colors.danger}`,
