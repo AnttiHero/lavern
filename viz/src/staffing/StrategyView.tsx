@@ -106,9 +106,8 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
       {/* CTA */}
       <motion.div
         style={styles.ctaRow}
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
       >
         <button
           onClick={handleBrowse}
