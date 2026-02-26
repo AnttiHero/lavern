@@ -9,6 +9,7 @@
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
+import { SimpleMarkdown } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -44,10 +45,10 @@ export function TheWorkTab({ data }: Props) {
             <div style={styles.sectionCount}>{data.finalOutput.length.toLocaleString()} chars</div>
           </div>
           <div style={styles.previewCard}>
-            <pre style={styles.previewText}>
-              {data.finalOutput.substring(0, 2000)}
-              {data.finalOutput.length > 2000 && '\n\n... (download full document above)'}
-            </pre>
+            <SimpleMarkdown content={
+              data.finalOutput.substring(0, 2000) +
+              (data.finalOutput.length > 2000 ? '\n\n---\n\n*... download full document above*' : '')
+            } />
           </div>
         </div>
       )}
@@ -231,15 +232,7 @@ const styles: Record<string, React.CSSProperties> = {
     maxHeight: 400,
     overflow: 'auto' as const,
   },
-  previewText: {
-    fontSize: 12,
-    fontFamily: fonts.mono,
-    color: colors.textSecondary,
-    lineHeight: 1.6,
-    margin: 0,
-    whiteSpace: 'pre-wrap' as const,
-    wordWrap: 'break-word' as const,
-  },
+  // previewText removed — replaced by SimpleMarkdown renderer
 
   // ── Sections ──────────────────────────────────────────────────
   section: { marginBottom: spacing.xxl },

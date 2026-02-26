@@ -6,8 +6,8 @@
  * DiceBear Notionists avatarExtra fields control visual presentation diversity.
  *
  * Exported:
- *   agentProfiles  — Record<string, AgentProfile> with all 59 agents
- *   teamPresets    — 6 pre-built team configurations
+ *   agentProfiles  — Record<string, AgentProfile> with all 70 agents
+ *   teamPresets    — 7 pre-built team configurations
  */
 
 import type { AgentProfile, TeamPreset } from '../types/agent-profile.js';
