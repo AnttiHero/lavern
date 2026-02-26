@@ -180,17 +180,6 @@ export class OfficeScene extends Phaser.Scene {
   /* ── Create ─────────────────────────────────────────────────────────── */
 
   create(): void {
-    console.log('🎮 Phaser OfficeScene.create() running!');
-
-    // Debug banner — proves Phaser is rendering (remove later)
-    this.add.text(this.cameras.main.width / 2, 8, '🎮 PHASER 3', {
-      fontFamily: 'Courier New',
-      fontSize: '12px',
-      color: '#00ff00',
-      stroke: '#000000',
-      strokeThickness: 3,
-    }).setOrigin(0.5, 0).setDepth(99999).setScrollFactor(0).setAlpha(0.7);
-
     // Build all rooms
     for (const def of ROOMS) {
       this.buildRoom(def);

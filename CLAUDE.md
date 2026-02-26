@@ -32,7 +32,7 @@ with qualified legal professionals.
 
 ## Project Structure
 
-- `src/agents/` — 13 agent definitions and prompts
+- `src/agents/` — 57 agent definitions and prompts
 - `src/mcp/tools/` — 40+ MCP tools (debate board, scoring, verification, memory, risk pricing, etc.)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/workflows/` — Workflow templates (legal-design, contract-review, research-memo, simple-query)

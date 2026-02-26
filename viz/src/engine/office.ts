@@ -19,7 +19,6 @@ export class Office {
 
   async init(container: HTMLDivElement): Promise<void> {
     if (this.initialized) return;
-    console.log('🎮 Office.init() — creating Phaser game, container:', container.clientWidth, 'x', container.clientHeight);
 
     const scene = new OfficeScene();
     this.scene = scene;

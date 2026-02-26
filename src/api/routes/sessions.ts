@@ -691,7 +691,7 @@ ${buildFullContext(session)}`;
     try {
       // Set up SSE response
       reply.raw.writeHead(200, {
-        'Content-Type': 'text/event-stream',
+        'Content-Type': 'text/event-stream; charset=utf-8',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       });

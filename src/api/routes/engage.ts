@@ -142,14 +142,13 @@ async function resolveDocumentContent(doc: { name: string; content?: string; con
   }
 
   if (doc.contentUrl) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
       const res = await fetch(doc.contentUrl, {
         signal: controller.signal,
         headers: { 'Accept': 'text/plain, text/html, application/json, */*' },
       });
-      clearTimeout(timeout);
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -162,6 +161,8 @@ async function resolveDocumentContent(doc: { name: string; content?: string; con
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       throw new Error(`Failed to fetch content from URL for document "${doc.name}": ${msg}`);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
