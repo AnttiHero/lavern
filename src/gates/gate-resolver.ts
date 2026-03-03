@@ -13,6 +13,7 @@
  */
 
 import * as readline from 'node:readline';
+import { config } from '../config.js';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -215,7 +216,7 @@ export class WebhookGateResolver implements GateResolver {
   private timeoutMs: number;
   private fallback: AsyncGateResolver;
 
-  constructor(callbackUrl: string, timeoutMs = 30000) {
+  constructor(callbackUrl: string, timeoutMs = config.gateWebhookTimeoutMs) {
     this.callbackUrl = callbackUrl;
     this.timeoutMs = timeoutMs;
     this.fallback = new AsyncGateResolver();

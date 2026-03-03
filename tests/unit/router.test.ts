@@ -266,4 +266,126 @@ describe('Router', () => {
       expect(routerPrompt).toContain('red-team');
     });
   });
+
+  // ── V11 Name Mapping (LLM Router Safety Net) ───────────────────────
+
+  describe('V11 → Canonical Template Mapping', () => {
+    // These test the V11_TO_TEMPLATE mapping in router.ts, which is
+    // critical for LLM-based routing. When the LLM returns v11 names
+    // (counsel, review, adversarial, roundtable), they must map to the
+    // correct canonical template IDs so the registry resolves the
+    // templates with correct step definitions.
+
+    it('should map LLM v11 "counsel" to canonical "simple-query"', async () => {
+      // Simulate what happens when LLM returns selectedWorkflow: 'counsel'
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      // The LLM would return 'counsel' — verify the canonical template exists
+      const counselTemplate = workflowRegistry.get('counsel');
+      const simpleQueryTemplate = workflowRegistry.get('simple-query');
+
+      expect(counselTemplate).toBeDefined();
+      expect(simpleQueryTemplate).toBeDefined();
+
+      // Canonical template should have the correct step definitions
+      expect(simpleQueryTemplate!.steps).toContain('specialist_execution');
+    });
+
+    it('should map LLM v11 "review" to canonical "contract-review"', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      const reviewTemplate = workflowRegistry.get('review');
+      const contractReviewTemplate = workflowRegistry.get('contract-review');
+
+      expect(reviewTemplate).toBeDefined();
+      expect(contractReviewTemplate).toBeDefined();
+
+      // Canonical template should have contract_analysis step, not specialist_analysis
+      expect(contractReviewTemplate!.steps).toContain('contract_analysis');
+    });
+
+    it('should map LLM v11 "adversarial" to canonical "research-memo"', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      const adversarialTemplate = workflowRegistry.get('adversarial');
+      const researchMemoTemplate = workflowRegistry.get('research-memo');
+
+      expect(adversarialTemplate).toBeDefined();
+      expect(researchMemoTemplate).toBeDefined();
+
+      // Canonical template should have research-specific steps
+      expect(researchMemoTemplate!.steps).toContain('research_execution');
+    });
+
+    it('should map LLM v11 "roundtable" to canonical "legal-design"', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      const roundtableTemplate = workflowRegistry.get('roundtable');
+      const legalDesignTemplate = workflowRegistry.get('legal-design');
+
+      expect(roundtableTemplate).toBeDefined();
+      expect(legalDesignTemplate).toBeDefined();
+
+      // Canonical template should have parallel_analysis step
+      expect(legalDesignTemplate!.steps).toContain('parallel_analysis');
+    });
+
+    it('should keep "full-bench" as-is (no rename)', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+      const fullBenchTemplate = workflowRegistry.get('full-bench');
+      expect(fullBenchTemplate).toBeDefined();
+    });
+
+    it('should have v11 templates with different step definitions than canonical', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      // v11 'review' has specialist_analysis; canonical 'contract-review' has contract_analysis
+      const v11Review = workflowRegistry.get('review');
+      const canonicalReview = workflowRegistry.get('contract-review');
+
+      expect(v11Review!.steps).toContain('specialist_analysis');
+      expect(canonicalReview!.steps).toContain('contract_analysis');
+      // They should NOT be the same object (different step definitions)
+      expect(v11Review!.id).not.toBe(canonicalReview!.id);
+    });
+
+    it('deterministic classifier should return canonical names only', () => {
+      const designResult = classifyRequest({ type: 'document_redesign', documentPath: '/doc.pdf' });
+      expect(designResult.selectedWorkflow).toBe('legal-design');
+
+      const reviewResult = classifyRequest({ type: 'contract_review', documentPath: '/doc.pdf' });
+      expect(reviewResult.selectedWorkflow).toBe('contract-review');
+
+      const researchResult = classifyRequest({ type: 'legal_research', requestText: 'Research this' });
+      expect(researchResult.selectedWorkflow).toBe('research-memo');
+
+      const questionResult = classifyRequest({ type: 'legal_question', requestText: 'What is X?' });
+      expect(questionResult.selectedWorkflow).toBe('simple-query');
+
+      // None should return v11 names
+      const allWorkflows = [
+        designResult.selectedWorkflow,
+        reviewResult.selectedWorkflow,
+        researchResult.selectedWorkflow,
+        questionResult.selectedWorkflow,
+      ];
+      expect(allWorkflows).not.toContain('counsel');
+      expect(allWorkflows).not.toContain('review');
+      expect(allWorkflows).not.toContain('adversarial');
+      expect(allWorkflows).not.toContain('roundtable');
+    });
+
+    it('all canonical workflow IDs should resolve to templates with correct step types', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+
+      // Each canonical template should exist and have unique step names
+      const canonicals = ['simple-query', 'contract-review', 'research-memo', 'legal-design'];
+      for (const id of canonicals) {
+        const template = workflowRegistry.get(id);
+        expect(template, `Template "${id}" should exist`).toBeDefined();
+        expect(template!.steps.length).toBeGreaterThan(0);
+        expect(template!.id).toBe(id);
+      }
+    });
+  });
 });

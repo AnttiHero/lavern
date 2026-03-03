@@ -171,5 +171,3 @@ export const reviewTemplate: WorkflowTemplate = {
 
 // Auto-register on import
 workflowRegistry.register(reviewTemplate);
-// Backward compatibility alias
-workflowRegistry.register({ ...reviewTemplate, id: 'contract-review' });

@@ -74,7 +74,7 @@ export async function startApiServer(port: number): Promise<void> {
   });
 
   await fastify.register(fastifyMultipart, {
-    limits: { fileSize: 10_000_000 }, // 10 MB
+    limits: { fileSize: config.maxUploadBytes },
   });
 
   // Rate limiting — global default + stricter limit on session creation
@@ -272,7 +272,7 @@ export async function startApiServer(port: number): Promise<void> {
   // ── Start ────────────────────────────────────────────────────────────
 
   try {
-    await fastify.listen({ port, host: '0.0.0.0' });
+    await fastify.listen({ port, host: config.host });
 
     const dashboardAvailable = fs.existsSync(frontendDir);
     console.log(`

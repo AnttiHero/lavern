@@ -5,6 +5,7 @@
  */
 
 import type { IntensityLevel } from '../types/engagement.js';
+import type { DocumentStyle } from '../assembly/format-converter.js';
 
 // ── Client Profile ──────────────────────────────────────────────────────
 
@@ -174,7 +175,7 @@ export interface ClawConfig {
   budget: number;              // Override budget
   perDocBudget: number;
   intensity: IntensityLevel;
-  style: string;
+  style: DocumentStyle;
   formats: string[];
   scanIntervalMs: number;
   once: boolean;               // Batch mode: process once, then exit

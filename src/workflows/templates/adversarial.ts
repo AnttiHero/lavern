@@ -149,5 +149,3 @@ export const adversarialTemplate: WorkflowTemplate = {
 
 // Auto-register on import
 workflowRegistry.register(adversarialTemplate);
-// Backward compatibility alias
-workflowRegistry.register({ ...adversarialTemplate, id: 'research-memo' });

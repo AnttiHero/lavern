@@ -1,0 +1,360 @@
+/**
+ * Integration Tests — Claw Mode Pipeline
+ *
+ * Exercises the core pipeline: registry → planner → delivery
+ * WITHOUT making real API calls. The processor's dispatch() is
+ * not called — we test the data flow between components.
+ *
+ * These tests use real temp directories and files, real DocumentRegistry
+ * persistence, and real planner budget logic.
+ */
+
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { DocumentRegistry } from '../../src/claw/registry.js';
+import { planWork, planSingleJob, matchesSensitivityPattern, DEFAULT_SENSITIVITY_PATTERNS } from '../../src/claw/planner.js';
+import { ClawDelivery } from '../../src/claw/delivery.js';
+import type { ClawConfig, ClawProfile } from '../../src/claw/types.js';
+import type { IntensityLevel } from '../../src/types/engagement.js';
+import type { DocumentStyle } from '../../src/assembly/format-converter.js';
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function createTempDir(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'claw-pipeline-'));
+}
+
+function createTestFile(dir: string, name: string, content = '# Test\nSample content.'): string {
+  const filePath = path.join(dir, name);
+  fs.writeFileSync(filePath, content, 'utf-8');
+  return filePath;
+}
+
+function createMockProfile(): ClawProfile {
+  return {
+    company: 'Test Corp',
+    jurisdiction: 'US',
+    industry: 'Technology',
+    size: 'small',
+    concerns: ['privacy', 'compliance'],
+    preferences: {
+      style: 'plain-language',
+      intensity: 'standard' as IntensityLevel,
+      riskAppetite: 'balanced',
+    },
+    watchPaths: [],
+    budget: { totalUsd: 100, perDocumentMaxUsd: 50 },
+    createdAt: new Date().toISOString(),
+    // Empty array = no sensitivity patterns (avoids default patterns flagging test files)
+    sensitivityPatterns: [],
+  };
+}
+
+function createMockConfig(clawDir: string, overrides?: Partial<ClawConfig>): ClawConfig {
+  return {
+    dir: clawDir,
+    profile: createMockProfile(),
+    budget: 100,
+    perDocBudget: 10,
+    intensity: 'standard' as IntensityLevel,
+    style: 'traditional' as DocumentStyle,
+    formats: ['markdown'],
+    scanIntervalMs: 5000,
+    once: true,
+    dryRun: false,
+    debug: false,
+    ...overrides,
+  };
+}
+
+// ── Tests ────────────────────────────────────────────────────────────────
+
+describe('Claw Mode Pipeline Integration', () => {
+  let tempDir: string;
+  let watchDir: string;
+  let clawDir: string;
+
+  beforeEach(() => {
+    tempDir = createTempDir();
+    watchDir = path.join(tempDir, 'watch');
+    clawDir = path.join(tempDir, 'claw');
+    fs.mkdirSync(watchDir);
+    fs.mkdirSync(clawDir);
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  // ── Registry → Planner ──────────────────────────────────────────────
+
+  describe('Registry scan → Planner', () => {
+    it('should discover new documents and plan jobs for them', () => {
+      // Each file needs unique content to produce distinct SHA-256 hashes
+      // (registry keys by hash — identical content would overwrite)
+      createTestFile(watchDir, 'vendor-agreement.md', '# Vendor Agreement\nPayment terms apply.');
+      createTestFile(watchDir, 'nda-template.md', '# NDA Template\nConfidentiality clause here.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      const { newDocs, changedDocs } = registry.scan([watchDir]);
+
+      expect(newDocs).toHaveLength(2);
+      expect(changedDocs).toHaveLength(0);
+
+      const config = createMockConfig(clawDir);
+      const plan = planWork(registry, config);
+
+      expect(plan.jobs).toHaveLength(2);
+      expect(plan.jobs.every(j => j.trigger === 'new')).toBe(true);
+      expect(plan.estimatedCostUsd).toBeGreaterThan(0);
+    });
+
+    it('should skip documents that exceed budget', () => {
+      createTestFile(watchDir, 'contract-1.md', '# Contract One\nFirst party obligations.');
+      createTestFile(watchDir, 'contract-2.md', '# Contract Two\nSecond party obligations.');
+
+      // estimateCost returns ~$0.10 for tiny files.
+      // $0.15 total budget fits exactly 1 doc ($0.10), leaving $0.05 for second.
+      const registry = new DocumentRegistry(clawDir, 0.15);
+      registry.scan([watchDir]);
+
+      const config = createMockConfig(clawDir, { budget: 0.15, perDocBudget: 1 });
+      const plan = planWork(registry, config);
+
+      expect(plan.jobs).toHaveLength(1);
+      expect(plan.skipped).toHaveLength(1);
+      expect(plan.skipped[0].reason).toContain('budget');
+    });
+
+    it('should not re-plan already reviewed documents', () => {
+      const docPath = createTestFile(watchDir, 'reviewed.md');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      // Mark as reviewed
+      const doc = registry.getDocumentByPath(docPath);
+      expect(doc).toBeDefined();
+      registry.markReviewed(doc!.hash, 'session-1', { critical: 0, major: 0, minor: 0 }, 5);
+
+      const config = createMockConfig(clawDir);
+      const plan = planWork(registry, config);
+
+      expect(plan.jobs).toHaveLength(0);
+    });
+
+    it('should detect changed documents after modification', () => {
+      const docPath = createTestFile(watchDir, 'living-doc.md', 'Version 1');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      // Mark as reviewed
+      const doc = registry.getDocumentByPath(docPath);
+      registry.markReviewed(doc!.hash, 'session-1', { critical: 0, major: 0, minor: 0 }, 5);
+
+      // Modify the file (changes the hash)
+      fs.writeFileSync(docPath, 'Version 2 — significant changes', 'utf-8');
+      const { changedDocs } = registry.scan([watchDir]);
+
+      expect(changedDocs).toHaveLength(1);
+
+      const config = createMockConfig(clawDir);
+      const plan = planWork(registry, config);
+      expect(plan.jobs.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ── Sensitivity Patterns in Pipeline ────────────────────────────────
+
+  describe('Sensitivity patterns in pipeline', () => {
+    it('should skip confidential documents when no local model is configured', () => {
+      // When no local model is set (default), confidential docs are flagged
+      // and skipped — they cannot be sent to the external API.
+      createTestFile(watchDir, 'confidential-merger-draft.md', '# Merger Draft\nTarget acquisition details.');
+      createTestFile(watchDir, 'regular-vendor-contract.md', '# Vendor Contract\nStandard service terms.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      const config = createMockConfig(clawDir, {
+        profile: {
+          ...createMockProfile(),
+          sensitivityPatterns: DEFAULT_SENSITIVITY_PATTERNS,
+        },
+      });
+
+      const plan = planWork(registry, config);
+
+      // Confidential doc should be skipped (flagged), not queued
+      const confSkipped = plan.skipped.find(s => s.path.includes('confidential'));
+      expect(confSkipped).toBeDefined();
+      expect(confSkipped!.reason).toContain('sensitivity');
+
+      // Regular doc should be planned normally
+      const regJob = plan.jobs.find(j => j.documentName.includes('regular'));
+      expect(regJob).toBeDefined();
+      expect(regJob?.confidential).toBeUndefined();
+
+      // Only 1 job (the regular doc)
+      expect(plan.jobs).toHaveLength(1);
+    });
+
+    it('should detect sensitivity patterns on filenames', () => {
+      // Direct test of the pattern matcher
+      expect(matchesSensitivityPattern('confidential-memo.pdf', DEFAULT_SENSITIVITY_PATTERNS))
+        .toBe('*confidential*');
+      expect(matchesSensitivityPattern('merger-agreement.docx', DEFAULT_SENSITIVITY_PATTERNS))
+        .toBe('*merger*');
+      expect(matchesSensitivityPattern('regular-contract.pdf', DEFAULT_SENSITIVITY_PATTERNS))
+        .toBeNull();
+    });
+  });
+
+  // ── Single Job Planning ─────────────────────────────────────────────
+
+  describe('planSingleJob', () => {
+    it('should create a job for a valid document', () => {
+      const docPath = createTestFile(watchDir, 'new-contract.md');
+      const registry = new DocumentRegistry(clawDir, 100);
+      const result = registry.indexFile(docPath);
+      expect(result).toBe('new');
+
+      const doc = registry.getDocumentByPath(docPath);
+      const config = createMockConfig(clawDir);
+
+      const job = planSingleJob(docPath, doc!.hash, 'new', registry, config);
+      expect(job).not.toBeNull();
+      expect(job!.documentPath).toBe(docPath);
+      expect(job!.trigger).toBe('new');
+    });
+
+    it('should return null when budget is exhausted', () => {
+      const docPath = createTestFile(watchDir, 'expensive.md');
+      const registry = new DocumentRegistry(clawDir, 0.01); // Nearly no budget
+      registry.indexFile(docPath);
+
+      const doc = registry.getDocumentByPath(docPath);
+      const config = createMockConfig(clawDir, { budget: 0.01, perDocBudget: 10 });
+
+      const job = planSingleJob(docPath, doc!.hash, 'new', registry, config);
+      expect(job).toBeNull();
+    });
+  });
+
+  // ── Registry Persistence ────────────────────────────────────────────
+
+  describe('Registry persistence', () => {
+    it('should persist state.json and survive reload', () => {
+      createTestFile(watchDir, 'persisted.md');
+
+      const registry1 = new DocumentRegistry(clawDir, 100);
+      registry1.scan([watchDir]);
+      const doc = registry1.getDocumentByPath(path.join(watchDir, 'persisted.md'));
+      registry1.markReviewed(doc!.hash, 'session-abc', { critical: 1, major: 2, minor: 3 }, 7.50);
+
+      // Create new registry from same dir — should load persisted state
+      const registry2 = new DocumentRegistry(clawDir, 100);
+      const reloaded = registry2.getDocument(doc!.hash);
+
+      expect(reloaded).toBeDefined();
+      expect(reloaded!.status).toBe('flagged'); // critical > 0
+      expect(reloaded!.lastReviewSession).toBe('session-abc');
+      expect(reloaded!.findingsSummary).toEqual({ critical: 1, major: 2, minor: 3 });
+      expect(reloaded!.costUsd).toBe(7.50);
+    });
+
+    it('should track confidential flag in persisted state', () => {
+      createTestFile(watchDir, 'secret.md');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+      const doc = registry.getDocumentByPath(path.join(watchDir, 'secret.md'));
+      registry.markReviewed(doc!.hash, 'session-local', { critical: 0, major: 0, minor: 1 }, 0, true);
+
+      // Reload
+      const registry2 = new DocumentRegistry(clawDir, 100);
+      const reloaded = registry2.getDocument(doc!.hash);
+
+      expect(reloaded!.confidential).toBe(true);
+      expect(reloaded!.costUsd).toBe(0);
+    });
+
+    it('should report correct summary with confidential/frontier split', () => {
+      createTestFile(watchDir, 'local-doc.md', '# Local Document\nProcessed on-device.');
+      createTestFile(watchDir, 'cloud-doc.md', '# Cloud Document\nProcessed via frontier model.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      const { newDocs } = registry.scan([watchDir]);
+      expect(newDocs).toHaveLength(2);
+
+      // Get documents by their scanned paths (which may be resolved differently from createTestFile return)
+      const allDocs = registry.getDocumentsByStatus('new');
+      expect(allDocs).toHaveLength(2);
+
+      // Mark first as confidential (local), second as frontier (cloud)
+      registry.markReviewed(allDocs[0].hash, 'sess-1', { critical: 0, major: 0, minor: 0 }, 0, true);
+      registry.markReviewed(allDocs[1].hash, 'sess-2', { critical: 0, major: 1, minor: 0 }, 5);
+
+      const summary = registry.summary;
+      expect(summary.confidential).toBe(1);
+      expect(summary.frontier).toBe(1);
+      expect(summary.total).toBe(2);
+    });
+  });
+
+  // ── Delivery (Local) ────────────────────────────────────────────────
+
+  describe('Delivery — local analysis output', () => {
+    it('should write delivery bundle for local analysis', async () => {
+      const docPath = createTestFile(watchDir, 'confidential-nda.md', '# NDA\nSensitive content.');
+      const delivery = new ClawDelivery(clawDir);
+      const config = createMockConfig(clawDir);
+
+      const result = await delivery.deliverLocal(
+        'test-session-local',
+        {
+          summary: 'This NDA contains standard confidentiality provisions.',
+          documentType: 'NDA',
+          clauses: [
+            { title: 'Confidentiality', text: 'All information disclosed...', concern: 'Broad scope', severity: 'major' },
+          ],
+          risks: [
+            { description: 'No expiration date', severity: 'high', citation: 'Section 4' },
+          ],
+          recommendations: ['Add a 2-year expiration clause'],
+          confidenceNote: 'Analyzed locally — verify with counsel',
+          model: 'llama3.1:8b',
+        },
+        docPath,
+        'hash123',
+        config,
+      );
+
+      // Verify directory and files exist
+      expect(fs.existsSync(result)).toBe(true);
+      expect(fs.existsSync(path.join(result, 'manifest.json'))).toBe(true);
+      expect(fs.existsSync(path.join(result, 'deliverable.md'))).toBe(true);
+      expect(fs.existsSync(path.join(result, 'findings.json'))).toBe(true);
+      expect(fs.existsSync(path.join(result, 'summary.txt'))).toBe(true);
+
+      // Verify manifest content
+      const manifest = JSON.parse(fs.readFileSync(path.join(result, 'manifest.json'), 'utf-8'));
+      expect(manifest.confidential).toBe(true);
+      expect(manifest.execution.totalCostUsd).toBe(0);
+      expect(manifest.execution.model).toContain('local');
+      expect(manifest.status).toBe('completed');
+
+      // Verify deliverable has confidentiality stamp
+      const deliverable = fs.readFileSync(path.join(result, 'deliverable.md'), 'utf-8');
+      expect(deliverable).toContain('CONFIDENTIAL');
+      expect(deliverable).toContain('On-Device');
+
+      // Verify findings JSON
+      const findings = JSON.parse(fs.readFileSync(path.join(result, 'findings.json'), 'utf-8'));
+      expect(findings).toHaveLength(2); // 1 clause + 1 risk
+    });
+  });
+});

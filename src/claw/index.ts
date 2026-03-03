@@ -22,6 +22,7 @@ import { runDaemon } from './daemon.js';
 import { notify } from './notify.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
+import type { DocumentStyle } from '../assembly/format-converter.js';
 import {
   printBanner,
   printWatchStatus,
@@ -82,6 +83,20 @@ export function parseClawArgs(args: string[]): ClawCliArgs {
   };
 }
 
+// ── Style mapping ────────────────────────────────────────────────────────
+
+/** Map profile style preference to a valid DocumentStyle for rendering. */
+const STYLE_MAP: Record<string, DocumentStyle> = {
+  'plain-language': 'accessible',
+  traditional: 'traditional',
+  elegant: 'elegant',
+  accessible: 'accessible',
+};
+
+function toDocumentStyle(style?: string): DocumentStyle | undefined {
+  return style ? STYLE_MAP[style] : undefined;
+}
+
 // ── Build Config ─────────────────────────────────────────────────────────
 
 function buildClawConfig(args: ClawCliArgs): ClawConfig {
@@ -94,7 +109,7 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
     budget: args.budget ?? profile?.budget.totalUsd ?? config.claw.defaultBudget,
     perDocBudget: args.perDocBudget ?? profile?.budget.perDocumentMaxUsd ?? config.claw.defaultPerDocBudget,
     intensity: args.intensity ?? profile?.preferences.intensity ?? (config.claw.defaultIntensity as IntensityLevel),
-    style: profile?.preferences.style ?? config.claw.defaultStyle,
+    style: toDocumentStyle(profile?.preferences.style) ?? config.claw.defaultStyle,
     formats: [...config.claw.defaultFormats],
     scanIntervalMs: config.claw.scanIntervalMs,
     once: args.once ?? false,

@@ -108,7 +108,7 @@ export class ClawDelivery {
     // DOCX (if configured)
     if (config.formats.includes('docx') && markdown) {
       try {
-        const docxBuffer = await convertToDocx(markdown, title, config.style as any);
+        const docxBuffer = await convertToDocx(markdown, title, config.style);
         fs.writeFileSync(path.join(deliveryDir, 'deliverable.docx'), docxBuffer);
         manifest.outputs.docx = 'deliverable.docx';
       } catch (err) {
@@ -119,7 +119,7 @@ export class ClawDelivery {
     // HTML (if configured)
     if (config.formats.includes('html') && markdown) {
       try {
-        const html = convertToHtml(markdown, title, config.style as any);
+        const html = convertToHtml(markdown, title, config.style);
         fs.writeFileSync(path.join(deliveryDir, 'deliverable.html'), html, 'utf-8');
         manifest.outputs.html = 'deliverable.html';
       } catch (err) {
@@ -288,7 +288,7 @@ export class ClawDelivery {
     // DOCX (if configured)
     if (clawConfig.formats.includes('docx')) {
       try {
-        const docxBuffer = await convertToDocx(markdown, title, clawConfig.style as any);
+        const docxBuffer = await convertToDocx(markdown, title, clawConfig.style);
         fs.writeFileSync(path.join(deliveryDir, 'deliverable.docx'), docxBuffer);
         manifest.outputs.docx = 'deliverable.docx';
         writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);

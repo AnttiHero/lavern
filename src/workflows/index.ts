@@ -8,19 +8,19 @@
  * Old template files kept for reference but no longer imported.
  */
 
-// v11: Import new engagement patterns — each auto-registers + backward compat aliases
-import './templates/counsel.js';       // was simple-query
-import './templates/review.js';        // was contract-review
-import './templates/adversarial.js';   // was research-memo
-import './templates/roundtable.js';    // was legal-design
-import './templates/full-bench.js';    // NEW — hierarchical pattern
+// v11: Import new engagement patterns (each auto-registers under its v11 name)
+import './templates/counsel.js';       // v11 name: 'counsel'
+import './templates/review.js';        // v11 name: 'review'
+import './templates/adversarial.js';   // v11 name: 'adversarial'
+import './templates/roundtable.js';    // v11 name: 'roundtable'
+import './templates/full-bench.js';    // v11 name: 'full-bench'
 // Pre-engagement workflow (unchanged)
 import './templates/pre-engagement.js';
 // v16: Verification pipeline (standalone + post-production)
 import './templates/verification.js';
 
-// Import original templates AFTER v11 — they override backward compat aliases
-// with correct step definitions (contract_analysis vs specialist_analysis, etc.)
+// Original templates — canonical IDs used by the deterministic router
+// (simple-query, contract-review, research-memo, legal-design)
 import './templates/simple-query.js';
 import './templates/contract-review.js';
 import './templates/research-memo.js';

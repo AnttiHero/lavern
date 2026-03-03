@@ -13,10 +13,7 @@
 import { SessionState } from './session-state.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
 import { archiveSession } from '../db/database.js';
-
-// ── Defaults ──────────────────────────────────────────────────────────
-const MAX_SESSIONS = 100;
-const SESSION_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+import { config } from '../config.js';
 
 interface SessionEntry {
   session: SessionState;
@@ -118,18 +115,18 @@ export class SessionManager {
 
     // Phase 1: TTL eviction
     for (const [id, entry] of this.sessions) {
-      if (now - entry.createdAt > SESSION_TTL_MS) {
+      if (now - entry.createdAt > config.sessionTtlMs) {
         this.evictSession(id, entry);
         evicted++;
       }
     }
 
     // Phase 2: Cap enforcement — remove oldest sessions if still over limit
-    if (this.sessions.size >= MAX_SESSIONS) {
+    if (this.sessions.size >= config.maxSessions) {
       const sorted = [...this.sessions.entries()].sort(
         (a, b) => a[1].createdAt - b[1].createdAt
       );
-      const toRemove = sorted.slice(0, this.sessions.size - MAX_SESSIONS + 1);
+      const toRemove = sorted.slice(0, this.sessions.size - config.maxSessions + 1);
       for (const [id, entry] of toRemove) {
         this.evictSession(id, entry);
         evicted++;

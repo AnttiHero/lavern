@@ -224,5 +224,3 @@ export const roundtableTemplate: WorkflowTemplate = {
 
 // Auto-register on import
 workflowRegistry.register(roundtableTemplate);
-// Backward compatibility alias
-workflowRegistry.register({ ...roundtableTemplate, id: 'legal-design' });

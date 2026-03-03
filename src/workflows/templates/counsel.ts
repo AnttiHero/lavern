@@ -77,5 +77,3 @@ export const counselTemplate: WorkflowTemplate = {
 
 // Auto-register on import
 workflowRegistry.register(counselTemplate);
-// Backward compatibility alias
-workflowRegistry.register({ ...counselTemplate, id: 'simple-query' });

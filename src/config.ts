@@ -22,9 +22,12 @@ export const config = {
 
   // ── API ────────────────────────────────────────────────────────────────
   port: parseInt(process.env.SHEM_PORT ?? '3000', 10),
+  host: process.env.SHEM_HOST ?? '0.0.0.0',
   corsOrigins: process.env.SHEM_CORS_ORIGINS ?? '*',
   baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
   trustProxy: process.env.SHEM_TRUST_PROXY === 'true',
+  /** Max upload file size in bytes (default: 10 MB) */
+  maxUploadBytes: parseInt(process.env.SHEM_MAX_UPLOAD_BYTES ?? String(10_000_000), 10),
 
   // ── Rate Limiting ───────────────────────────────────────────────────
   /** Max requests per window per IP (default: 100/min) */
@@ -42,9 +45,19 @@ export const config = {
   defaultBudgetUsd: parseFloat(process.env.SHEM_DEFAULT_BUDGET ?? '5.0'),
   routerBudgetUsd: 0.01,
 
+  // ── Sessions ─────────────────────────────────────────────────────────
+  /** Session TTL in ms before eviction (default: 4 hours) */
+  sessionTtlMs: parseInt(process.env.SHEM_SESSION_TTL_MS ?? String(4 * 60 * 60 * 1000), 10),
+  /** Max concurrent sessions (default: 100) */
+  maxSessions: parseInt(process.env.SHEM_MAX_SESSIONS ?? '100', 10),
+
   // ── Orchestrator ───────────────────────────────────────────────────────
   defaultMaxTurns: parseInt(process.env.SHEM_MAX_TURNS ?? '80', 10),
   genericMaxTurns: parseInt(process.env.SHEM_GENERIC_MAX_TURNS ?? '60', 10),
+
+  // ── Gates ──────────────────────────────────────────────────────────────
+  /** Webhook gate timeout in ms (default: 30s) */
+  gateWebhookTimeoutMs: parseInt(process.env.SHEM_GATE_WEBHOOK_TIMEOUT_MS ?? '30000', 10),
 
   // ── Logging ────────────────────────────────────────────────────────────
   logLevel: (process.env.SHEM_LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error',
@@ -71,6 +84,8 @@ export const config = {
     // Notifications
     webhookUrl: process.env.MARBLE_CLAW_WEBHOOK_URL ?? '',
     notifyMacOs: process.env.MARBLE_CLAW_MACOS_NOTIFY !== 'false',
+    /** Notification dedup window in ms (default: 5 minutes) */
+    notifyDedupMs: parseInt(process.env.MARBLE_CLAW_NOTIFY_DEDUP_MS ?? String(5 * 60 * 1000), 10),
     // Local model for confidential documents (Ollama OpenAI-compatible API)
     localModelUrl: process.env.MARBLE_LOCAL_MODEL_URL ?? 'http://localhost:11434',
     localModel: process.env.MARBLE_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
@@ -78,5 +93,5 @@ export const config = {
   },
 
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.8.0',
+  version: '0.8.1',
 } as const;
