@@ -29,6 +29,7 @@ import type { IntensityLevel } from '../../types/engagement.js';
 import { defaultBudgetForIntensity } from '../../types/engagement.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { validateBody } from '../middleware/validation.js';
+import { config } from '../../config.js';
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -323,7 +324,14 @@ export function registerEngageRoutes(
 ): void {
 
   // ── POST /api/engage — Agent-native engagement endpoint ───────────
-  fastify.post('/api/engage', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/api/engage', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const startTime = Date.now();
 
     // Validate request body

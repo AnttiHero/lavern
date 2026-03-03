@@ -154,7 +154,14 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
   });
 
   // ── POST /api/claw/scan ─────────────────────────────────────────────
-  fastify.post('/api/claw/scan', async (_request, reply) => {
+  fastify.post('/api/claw/scan', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (_request, reply) => {
     const dir = config.claw.dir;
     const profile = loadProfile(dir);
 

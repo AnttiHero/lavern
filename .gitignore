@@ -25,5 +25,16 @@ npm-debug.log*
 # Test coverage
 coverage/
 
+# Runtime data
+audit-logs/
+data/
+test-results/
+
+# Environment backups
+.env.save
+
+# Claude Code
+.claude/
+
 # OS
 Thumbs.db

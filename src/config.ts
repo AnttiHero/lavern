@@ -26,6 +26,14 @@ export const config = {
   baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
   trustProxy: process.env.SHEM_TRUST_PROXY === 'true',
 
+  // ── Rate Limiting ───────────────────────────────────────────────────
+  /** Max requests per window per IP (default: 100/min) */
+  rateLimitMax: parseInt(process.env.SHEM_RATE_LIMIT_MAX ?? '100', 10),
+  /** Rate limit window in ms (default: 60 000 = 1 minute) */
+  rateLimitWindowMs: parseInt(process.env.SHEM_RATE_LIMIT_WINDOW_MS ?? '60000', 10),
+  /** Max session-creation requests per window per IP (default: 10/min) */
+  rateLimitSessionMax: parseInt(process.env.SHEM_RATE_LIMIT_SESSION_MAX ?? '10', 10),
+
   // ── Payment (x402 — USDC on Base) ───────────────────────────────────
   x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
   x402RecipientAddress: process.env.SHEM_X402_RECIPIENT ?? '',

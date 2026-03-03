@@ -29,6 +29,26 @@ import { eventTimestamp } from '../events/event-bus.js';
 // Ensure templates are registered
 import '../workflows/index.js';
 
+/**
+ * Map v11 prompt-friendly pattern names to registered template IDs.
+ *
+ * The router prompt describes five patterns (counsel, review, adversarial,
+ * roundtable, full-bench) which are intuitive for the LLM. But the workflow
+ * registry's canonical templates use the original names (simple-query,
+ * contract-review, research-memo, legal-design). The v11 templates register
+ * backward-compat aliases, but those get overwritten with wrong step
+ * definitions when the old templates import after them (see workflows/index.ts).
+ *
+ * This map normalizes LLM output to the correct canonical template IDs.
+ */
+const V11_TO_TEMPLATE: Record<string, string> = {
+  'counsel':     'simple-query',
+  'review':      'contract-review',
+  'adversarial': 'research-memo',
+  'roundtable':  'legal-design',
+  'full-bench':  'full-bench',   // no rename — full-bench is canonical
+};
+
 export interface RouterOptions {
   /** Use LLM-based routing (default: true). Set to false for deterministic-only. */
   useLlm?: boolean;
@@ -57,6 +77,12 @@ export async function routeRequest(
     // Try LLM-based routing
     try {
       const llmResult = await llmClassify(request, options?.model);
+
+      // Normalize v11 pattern names to canonical template IDs
+      const mapped = V11_TO_TEMPLATE[llmResult.selectedWorkflow];
+      if (mapped) {
+        llmResult.selectedWorkflow = mapped;
+      }
 
       // Validate the LLM's selected workflow actually exists
       const template = workflowRegistry.get(llmResult.selectedWorkflow);

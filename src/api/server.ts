@@ -26,6 +26,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyRateLimit from '@fastify/rate-limit';
 import { SessionManager } from '../session/session-manager.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerReplayRoutes } from './routes/replay.js';
@@ -74,6 +75,12 @@ export async function startApiServer(port: number): Promise<void> {
 
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: 10_000_000 }, // 10 MB
+  });
+
+  // Rate limiting — global default + stricter limit on session creation
+  await fastify.register(fastifyRateLimit, {
+    max: config.rateLimitMax,
+    timeWindow: config.rateLimitWindowMs,
   });
 
   // ── Database ────────────────────────────────────────────────────────

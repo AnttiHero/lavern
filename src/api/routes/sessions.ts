@@ -39,6 +39,7 @@ import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping
 import { getSessionArchive, getArchivedSession } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
+import { config } from '../../config.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, type DocumentStyle } from '../../assembly/format-converter.js';
@@ -73,7 +74,14 @@ export function registerSessionRoutes(
   //   Legacy: { documentPath, context, options }
   //   v5:     { request: LegalRequest, workflow?: string, options }
 
-  fastify.post('/api/sessions', async (request, reply) => {
+  fastify.post('/api/sessions', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request, reply) => {
     // Validate request body
     const body = validateBody<CreateSessionBody>(CreateSessionSchema, request, reply);
     if (!body) return; // 400 already sent
