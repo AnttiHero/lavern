@@ -91,7 +91,7 @@ with qualified legal professionals.
 - `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text)
 
 ### Tests
-- `tests/` — 446 tests across 28 files (unit + integration)
+- `tests/` — 557 tests across 31 files (unit + integration)
 
 ## Version History
 

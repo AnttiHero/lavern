@@ -13,7 +13,10 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
+    "test:watch": "vitest",
     "test:integration": "vitest run tests/integration",
+    "typecheck": "tsc --noEmit",
+    "typecheck:all": "tsc --noEmit && cd viz && npx tsc --noEmit",
     "serve": "tsx src/index.ts --serve",
     "serve:dev": "tsx src/index.ts --serve --port 3000",
     "build:viz": "cd viz && npm run build"
