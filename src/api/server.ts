@@ -45,7 +45,7 @@ import { registerVerifyRoutes } from './routes/verify.js';
 import { registerClawRoutes } from './routes/claw.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
-import { initDatabase } from '../db/database.js';
+import { initDatabase, cleanExpiredTokens } from '../db/database.js';
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
@@ -87,6 +87,15 @@ export async function startApiServer(port: number): Promise<void> {
 
   initDatabase();
 
+  // Clean expired auth tokens at startup and every hour
+  const expired = cleanExpiredTokens();
+  if (expired > 0) console.log(`[AUTH] Cleaned ${expired} expired auth token${expired === 1 ? '' : 's'}`);
+  const tokenCleanupInterval = setInterval(() => {
+    const cleaned = cleanExpiredTokens();
+    if (cleaned > 0) console.log(`[AUTH] Cleaned ${cleaned} expired auth token${cleaned === 1 ? '' : 's'}`);
+  }, 60 * 60 * 1000); // 1 hour
+  tokenCleanupInterval.unref(); // Don't keep the process alive for cleanup
+
   // ── Shared State ─────────────────────────────────────────────────────
 
   const sessionManager = new SessionManager();
@@ -94,41 +103,50 @@ export async function startApiServer(port: number): Promise<void> {
 
   // ── Authentication ──────────────────────────────────────────────────
 
-  const authMiddleware = createAuthMiddleware(clientRegistry, [
+  // ── Public paths ──────────────────────────────────────────────────
+  // Paths listed here bypass auth (no Bearer token or cookie required).
+  // POST mutations are NOT listed here — the dashboard authenticates
+  // via marble_token cookie (set by /api/auth/login), which the auth
+  // middleware validates in its cookie path. Only read-only (GET) and
+  // auth/discovery endpoints are public.
+  const publicPaths: string[] = [
     '/health',
     '/',
     '/api/clients',           // Client registration is public (creates the API key)
-    'GET /api/sessions',      // Read-only listing for dashboard
-    'GET /api/sessions/*',    // Session detail + WebSocket events for dashboard
-    'POST /api/sessions/*',   // Gate decisions from dashboard
-    'GET /api/audit-logs',    // Read-only listing for dashboard
-    'GET /api/audit-logs/*',  // Audit log detail for dashboard
-    'GET /api/replay/*',      // WebSocket replay for dashboard
-    // v8: Pre-engagement & team staffing
-    'GET /api/matters',       // Matter listing for dashboard
-    'GET /api/matters/*',     // Matter detail for dashboard
-    'POST /api/matters',      // Create matter
-    'POST /api/matters/*',    // Accept engagement, team selection
-    'GET /api/agents/*',      // Agent profiles, presets, and recommendations
-    'GET /api/workflows',     // Workflow templates for engagement configurator
-    'POST /api/briefing/*',   // Briefing analysis for intake
-    'POST /api/documents/*',  // Document parsing for intake
-    // v10: Agent API — public discovery endpoints
+    // Dashboard read-only views (mutations require cookie auth)
+    'GET /api/sessions',      // Session listing
+    'GET /api/sessions/*',    // Session detail + WebSocket events
+    'GET /api/audit-logs',    // Audit log listing
+    'GET /api/audit-logs/*',  // Audit log detail
+    'GET /api/replay/*',      // WebSocket replay
+    'GET /api/matters',       // Matter listing
+    'GET /api/matters/*',     // Matter detail
+    'GET /api/agents/*',      // Agent profiles, presets, recommendations
+    'GET /api/workflows',     // Workflow templates
+    // Agent API — public discovery endpoints (read-only)
     'GET /api/capabilities',  // Machine-readable service manifest
-    // v16: Agent-first discovery layer
     'GET /.well-known/*',     // A2A agent card + OpenAI plugin manifest
     'GET /openapi.json',      // OpenAPI 3.0 spec
     'GET /llms.txt',          // AI crawler guidance
     'GET /api/pricing',       // Deterministic cost estimates
     'GET /api/reputation',    // Machine-readable trust signal
-    // v14: User auth routes (public — signup/login/me)
+    // User auth routes (public by definition)
     'POST /api/auth/signup',
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
-    // Claw Mode — behind auth (was public in v0.8, locked down in v0.8.1)
-    '/dashboard/',            // Frontend static files (prefix match — trailing /)
-  ]);
+    // Frontend static files (prefix match — trailing /)
+    '/dashboard/',
+  ];
+
+  // x402: When payment-based auth is enabled, unauthenticated callers
+  // can reach /api/engage to receive 402 Payment Required responses.
+  // Auth is then handled inside the route (Bearer OR x402 payment).
+  if (config.x402Enabled) {
+    publicPaths.push('POST /api/engage');
+  }
+
+  const authMiddleware = createAuthMiddleware(clientRegistry, publicPaths);
   fastify.addHook('onRequest', authMiddleware);
 
   // ── Routes ───────────────────────────────────────────────────────────
