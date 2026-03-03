@@ -149,10 +149,11 @@ export function WorkingHeader({
               <div
                 style={{
                   ...styles.costFill,
-                  width: `${Math.min(100, (cost.accumulated / cost.budget) * 100)}%`,
-                  backgroundColor:
-                    cost.accumulated / cost.budget > 0.9 ? colors.danger :
-                    cost.accumulated / cost.budget > 0.7 ? colors.warning : colors.success,
+                  width: `${cost.budget > 0 ? Math.min(100, (cost.accumulated / cost.budget) * 100) : 0}%`,
+                  backgroundColor: cost.budget > 0
+                    ? (cost.accumulated / cost.budget > 0.9 ? colors.danger :
+                       cost.accumulated / cost.budget > 0.7 ? colors.warning : colors.success)
+                    : colors.textDim,
                 }}
               />
             </div>

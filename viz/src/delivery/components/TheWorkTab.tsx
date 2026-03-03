@@ -46,8 +46,8 @@ export function TheWorkTab({ data }: Props) {
           </div>
           <div style={styles.previewCard}>
             <SimpleMarkdown content={
-              data.finalOutput.substring(0, 2000) +
-              (data.finalOutput.length > 2000 ? '\n\n---\n\n*... download full document above*' : '')
+              data.finalOutput.substring(0, 5000) +
+              (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document above*' : '')
             } />
           </div>
         </div>
@@ -64,8 +64,8 @@ export function TheWorkTab({ data }: Props) {
       {data.keyChanges.length > 0 && (
         <div style={styles.section}>
           <div style={styles.sectionHeader}>
-            <div style={styles.sectionTitle}>What Changed</div>
-            <div style={styles.sectionCount}>{data.keyChanges.length} transformations</div>
+            <div style={styles.sectionTitle}>Key Findings</div>
+            <div style={styles.sectionCount}>{data.keyChanges.length} items</div>
           </div>
 
           <div style={styles.changesList}>
@@ -80,14 +80,14 @@ export function TheWorkTab({ data }: Props) {
                     <div style={styles.changeBefore}>
                       <div style={styles.changeColumnLabel}>
                         <span style={styles.changeDotBefore} />
-                        Before
+                        Evidence
                       </div>
                       <div style={styles.changeColumnText}>{change.before}</div>
                     </div>
                     <div style={styles.changeAfter}>
                       <div style={styles.changeColumnLabel}>
                         <span style={styles.changeDotAfter} />
-                        After
+                        Finding
                       </div>
                       <div style={styles.changeColumnText}>{change.after}</div>
                     </div>
@@ -229,7 +229,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.sm,
     padding: spacing.xl,
-    maxHeight: 400,
+    maxHeight: 600,
     overflow: 'auto' as const,
   },
   // previewText removed — replaced by SimpleMarkdown renderer

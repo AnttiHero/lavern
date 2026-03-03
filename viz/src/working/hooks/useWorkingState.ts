@@ -42,6 +42,10 @@ export type StreamCard =
   | { kind: 'gate'; gateType: string; summary: string; details: string; timestamp: string; decided?: boolean; decision?: string }
   | { kind: 'verification'; verificationType: string; passed: boolean; confidence: number; timestamp: string }
   | { kind: 'quality_check'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string }
+  | { kind: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
+  | { kind: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }
+  | { kind: 'verification_finding'; findingId: string; pass: string; severity: string; location: string; description: string; autoFixable: boolean; timestamp: string }
+  | { kind: 'verification_report'; verdict: string; overallScore: number; totalFindings: number; timestamp: string }
   | { kind: 'error'; message: string; source?: string; timestamp: string };
 
 export interface WorkingState {
@@ -271,14 +275,20 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       } else if (event.type === 'finding_posted') {
         const existing = statuses.get(event.agent);
         if (existing) {
-          existing.eventCount++;
-          existing.lastActivity = `[${event.severity}] ${event.category}`;
+          statuses.set(event.agent, {
+            ...existing,
+            eventCount: existing.eventCount + 1,
+            lastActivity: `[${event.severity}] ${event.category}`,
+          });
         }
       } else if (event.type === 'challenge_posted') {
         const existing = statuses.get(event.challenger);
         if (existing) {
-          existing.eventCount++;
-          existing.lastActivity = 'Challenging...';
+          statuses.set(event.challenger, {
+            ...existing,
+            eventCount: existing.eventCount + 1,
+            lastActivity: 'Challenging...',
+          });
         }
       }
     }
@@ -423,6 +433,52 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
             iteration: event.iteration,
             failureReasons: event.failureReasons ?? [],
             revisionGuidance: event.revisionGuidance ?? [],
+            timestamp: event.timestamp,
+          });
+          break;
+
+        case 'verification_pass_started':
+          cards.push({
+            kind: 'verification_pass_started',
+            pass: event.pass,
+            passIndex: event.passIndex,
+            totalPasses: event.totalPasses,
+            timestamp: event.timestamp,
+          });
+          break;
+
+        case 'verification_pass_completed':
+          cards.push({
+            kind: 'verification_pass_completed',
+            pass: event.pass,
+            passIndex: event.passIndex,
+            score: event.score,
+            criticalCount: event.criticalCount,
+            majorCount: event.majorCount,
+            minorCount: event.minorCount,
+            timestamp: event.timestamp,
+          });
+          break;
+
+        case 'verification_finding':
+          cards.push({
+            kind: 'verification_finding',
+            findingId: event.findingId,
+            pass: event.pass,
+            severity: event.severity,
+            location: event.location,
+            description: event.description,
+            autoFixable: event.autoFixable,
+            timestamp: event.timestamp,
+          });
+          break;
+
+        case 'verification_report_compiled':
+          cards.push({
+            kind: 'verification_report',
+            verdict: event.verdict,
+            overallScore: event.overallScore,
+            totalFindings: event.totalFindings,
             timestamp: event.timestamp,
           });
           break;

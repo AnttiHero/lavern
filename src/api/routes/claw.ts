@@ -1,0 +1,175 @@
+/**
+ * Claw Mode API Routes — Remote monitoring & control.
+ *
+ * When the firm runs on a Mac Mini, these endpoints let you
+ * check status, trigger scans, and browse deliveries from
+ * your main machine or the dashboard.
+ *
+ * Endpoints:
+ *   GET  /api/claw/status      — Profile + registry summary + budget + daemon
+ *   GET  /api/claw/documents   — List all tracked documents with status
+ *   GET  /api/claw/deliveries  — List completed delivery sessions
+ *   POST /api/claw/scan        — Trigger an immediate rescan of watch paths
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { FastifyInstance } from 'fastify';
+import { config } from '../../config.js';
+import { loadProfile } from '../../claw/init.js';
+import { DocumentRegistry } from '../../claw/registry.js';
+import { getDaemonStatus } from '../../claw/daemon.js';
+
+// ── Route Registration ──────────────────────────────────────────────────
+
+export function registerClawRoutes(fastify: FastifyInstance): void {
+
+  // ── GET /api/claw/status ────────────────────────────────────────────
+  fastify.get('/api/claw/status', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+
+    if (!profile) {
+      return reply.status(404).send({
+        error: 'No Claw Mode profile found',
+        hint: 'Run `marble claw init` to create a client profile.',
+      });
+    }
+
+    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const state = registry.getState();
+    const summary = registry.summary;
+
+    // Daemon status (safe on non-macOS — returns not-installed)
+    let daemon = { installed: false, running: false, label: 'com.marble.claw', plistPath: '', logDir: '' };
+    try {
+      daemon = getDaemonStatus();
+    } catch { /* non-macOS */ }
+
+    return reply.send({
+      profile: {
+        company: profile.company,
+        jurisdiction: profile.jurisdiction,
+        industry: profile.industry,
+        size: profile.size,
+        concerns: profile.concerns,
+        style: profile.preferences.style,
+        intensity: profile.preferences.intensity,
+        riskAppetite: profile.preferences.riskAppetite,
+        createdAt: profile.createdAt,
+      },
+      watchPaths: profile.watchPaths,
+      budget: {
+        totalUsd: state.budget.totalUsd,
+        spentUsd: state.budget.spentUsd,
+        remainingUsd: registry.budgetRemaining,
+        exhausted: registry.budgetExhausted,
+      },
+      documents: summary,
+      sessions: {
+        completed: state.sessionsCompleted,
+        failed: state.sessionsFailed,
+      },
+      lastScan: state.lastScan,
+      daemon,
+    });
+  });
+
+  // ── GET /api/claw/documents ─────────────────────────────────────────
+  fastify.get('/api/claw/documents', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+
+    if (!profile) {
+      return reply.status(404).send({ error: 'No profile found' });
+    }
+
+    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const state = registry.getState();
+
+    // Transform to array sorted by lastModified desc
+    const documents = Object.values(state.documents)
+      .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+      .map(doc => ({
+        name: doc.name,
+        path: doc.path,
+        type: doc.type,
+        status: doc.status,
+        sizeBytes: doc.sizeBytes,
+        firstSeen: doc.firstSeen,
+        lastModified: doc.lastModified,
+        lastReviewed: doc.lastReviewed ?? null,
+        findings: doc.findingsSummary ?? null,
+        costUsd: doc.costUsd ?? null,
+        error: doc.error ?? null,
+      }));
+
+    return reply.send({ documents, total: documents.length });
+  });
+
+  // ── GET /api/claw/deliveries ────────────────────────────────────────
+  fastify.get('/api/claw/deliveries', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const deliveryDir = path.join(dir, 'delivery');
+
+    if (!fs.existsSync(deliveryDir)) {
+      return reply.send({ deliveries: [], total: 0 });
+    }
+
+    const deliveries: object[] = [];
+
+    try {
+      const sessions = fs.readdirSync(deliveryDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name);
+
+      for (const sessionId of sessions) {
+        const manifestPath = path.join(deliveryDir, sessionId, 'manifest.json');
+        if (fs.existsSync(manifestPath)) {
+          try {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+            deliveries.push({
+              sessionId,
+              filename: manifest.input?.filename,
+              type: manifest.input?.detectedType,
+              workflow: manifest.task?.workflow,
+              status: manifest.status,
+              costUsd: manifest.execution?.totalCostUsd,
+              durationSeconds: manifest.execution?.durationSeconds,
+              findings: manifest.analysis,
+              completedAt: manifest.execution?.completedAt,
+            });
+          } catch { /* skip malformed manifests */ }
+        }
+      }
+    } catch { /* delivery dir unreadable */ }
+
+    // Sort by completedAt desc
+    deliveries.sort((a: any, b: any) =>
+      new Date(b.completedAt ?? 0).getTime() - new Date(a.completedAt ?? 0).getTime()
+    );
+
+    return reply.send({ deliveries, total: deliveries.length });
+  });
+
+  // ── POST /api/claw/scan ─────────────────────────────────────────────
+  fastify.post('/api/claw/scan', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+
+    if (!profile) {
+      return reply.status(404).send({ error: 'No profile found' });
+    }
+
+    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const { newDocs, changedDocs } = registry.scan(profile.watchPaths);
+
+    return reply.send({
+      scanned: true,
+      newDocuments: newDocs.length,
+      changedDocuments: changedDocs.length,
+      total: registry.totalDocuments,
+      timestamp: new Date().toISOString(),
+    });
+  });
+}

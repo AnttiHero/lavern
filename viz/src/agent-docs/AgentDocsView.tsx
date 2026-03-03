@@ -65,25 +65,6 @@ const D = {
   white: 'rgba(250, 249, 246, 0.92)',
 };
 
-// ── Keyframes ────────────────────────────────────────────────────────
-
-const KF_ID = 'marble-agent-kf';
-if (typeof document !== 'undefined' && !document.getElementById(KF_ID)) {
-  const el = document.createElement('style');
-  el.id = KF_ID;
-  el.textContent = `
-    @keyframes agentFadeIn {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes agentGlow {
-      0%, 100% { opacity: 0.04; }
-      50% { opacity: 0.08; }
-    }
-  `;
-  document.head.appendChild(el);
-}
-
 // ── Code examples ────────────────────────────────────────────────────
 
 type CodeLang = 'curl' | 'python' | 'javascript';

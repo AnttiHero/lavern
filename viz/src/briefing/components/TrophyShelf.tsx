@@ -10,25 +10,6 @@ import type { ContextMilestone } from '../hooks/useContextScore.js';
 import { TROPHY_DEFINITIONS } from '../data/trophies.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
-// Inject keyframes once
-const KEYFRAMES_ID = 'shem-trophy-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(KEYFRAMES_ID)) {
-  const style = document.createElement('style');
-  style.id = KEYFRAMES_ID;
-  style.textContent = `
-    @keyframes trophyEnter {
-      0% { opacity: 0; transform: scale(0.8); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    @keyframes trophyGlow {
-      0% { box-shadow: 0 0 0px rgba(196, 93, 62, 0); }
-      40% { box-shadow: 0 0 10px rgba(196, 93, 62, 0.3); }
-      100% { box-shadow: 0 0 0px rgba(196, 93, 62, 0); }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 interface Props {
   milestones: ContextMilestone[];
   newMilestone: number | null;

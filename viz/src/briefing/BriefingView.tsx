@@ -29,7 +29,8 @@ import { useBriefingState, type BriefingPayload } from './hooks/useBriefingState
 import { useContextScore } from './hooks/useContextScore.js';
 import { useSmartSuggestions, type Suggestion } from './hooks/useSmartSuggestions.js';
 import { getInterviewer } from './data/interviewers.js';
-import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { colors } from '../staffing/styles/tokens.js';
+import { cn } from '../utils/cn.js';
 
 interface Props {
   onComplete: (payload: BriefingPayload) => void;
@@ -144,9 +145,15 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
     }
   }, [interview.interviewResult, analysis, setPhase]);
 
-  // Auto-start the LLM interview when entering questions phase with interviewer selected.
-  // This runs AFTER render when all state is committed — avoids the stale closure in advanceToQuestions.
+  // Reset interview refs when user navigates back to earlier phases
   const interviewStarted = useRef(false);
+
+  useEffect(() => {
+    if (phase === 'documents' || phase === 'interviewer') {
+      interviewResultHandled.current = false;
+      interviewStarted.current = false;
+    }
+  }, [phase]);
 
   useEffect(() => {
     if (
@@ -177,9 +184,6 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
     qna.answers,
     breakdown.total,
   );
-
-  // Ref map for scrolling to questions
-  const questionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const handleSuggestionActivate = useCallback((suggestion: Suggestion) => {
     if (suggestion.action === 'add-document') {
@@ -230,7 +234,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   const isPostQuestions = phase === 'followups' || phase === 'instructions' || phase === 'brief';
 
   return (
-    <div className="briefing-scroll" style={styles.container}>
+    <div className="briefing-scroll w-full min-h-screen bg-bg text-text font-sans px-4 sm:px-6 md:px-8 lg:px-12 py-6 sm:py-8 lg:py-12 max-w-[800px] mx-auto relative">
       <BriefingHeader
         matterNumber={matterInfo.matterNumber}
         matterTitle={matterInfo.matterTitle}
@@ -250,7 +254,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Smart suggestion chips — only during early phases */}
       {suggestions.length > 0 && (phase === 'documents' || phase === 'questions') && (
-        <div style={styles.suggestionsRow}>
+        <div className="flex flex-wrap gap-2 mb-5">
           {suggestions.map(s => (
             <SuggestionChip
               key={s.id}
@@ -262,11 +266,11 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
       )}
 
       {/* Phase 1: Documents */}
-      <div style={{
-        ...styles.phaseSection,
-        ...(phase === 'documents' ? styles.phaseActive : styles.phaseCollapsed),
-      }}>
-        <div style={styles.phaseTitle}>
+      <div className={cn(
+        'mb-6 transition-[background-color,color,border-color] duration-300',
+        phase === 'documents' ? 'opacity-100' : 'opacity-50 pb-2 border-b border-border mb-5',
+      )}>
+        <div className="text-xs font-sans font-medium text-text-muted uppercase tracking-[0.5px] mb-4">
           {phase === 'documents' ? 'Upload relevant documents' : `${upload.documents.length} document${upload.documents.length !== 1 ? 's' : ''} attached`}
         </div>
 
@@ -291,18 +295,18 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
             />
 
             {upload.error && (
-              <div style={styles.error}>{upload.error}</div>
+              <div className="text-xs font-sans text-danger mt-2">{upload.error}</div>
             )}
 
-            <div style={styles.continueRow}>
-              <span style={styles.skipHint}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 mt-5">
+              <span className="text-xs font-sans text-text-dim italic">
                 {upload.documents.length === 0
                   ? 'You can skip this step if you have no documents to upload.'
                   : ''}
               </span>
               <button
                 onClick={advanceToInterviewer}
-                style={styles.continueBtn}
+                className="px-6 py-3 sm:px-8 rounded-sm border-2 border-text bg-text text-white font-sans text-xs font-semibold tracking-[1.5px] uppercase cursor-pointer transition-[background-color,color,border-color] duration-250 w-full sm:w-auto text-center"
                 onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
                 onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
               >
@@ -315,7 +319,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Phase 2: Interviewer */}
       {phase === 'interviewer' && (
-        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+        <div className="mb-6">
           <InterviewerPicker
             onSelect={(id) => {
               handleSelectInterviewer(id);
@@ -328,11 +332,11 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Phase 3: Questions (Conversational LLM or Static) */}
       {(phase === 'questions' || isPostQuestions) && (
-        <div data-phase="questions" style={{
-          ...styles.phaseSection,
-          ...(phase === 'questions' ? styles.phaseActive : styles.phaseCollapsed),
-        }}>
-          <div style={styles.phaseTitle}>
+        <div data-phase="questions" className={cn(
+          'mb-6 transition-[background-color,color,border-color] duration-300',
+          phase === 'questions' ? 'opacity-100' : 'opacity-50 pb-2 border-b border-border mb-5',
+        )}>
+          <div className="text-xs font-sans font-medium text-text-muted uppercase tracking-[0.5px] mb-4">
             {phase === 'questions'
               ? (showConversationalChat ? 'Interview in progress' : 'Tell us about the matter')
               : (showConversationalChat ? 'Interview complete' : 'Questions answered')}
@@ -361,6 +365,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
               requiredComplete={qna.requiredComplete}
               onGenerate={advanceToFollowups}
               interviewerAvatar={interviewerPortrait}
+              isAnalyzing={analysis.isAnalyzing}
             />
           )}
         </div>
@@ -368,15 +373,15 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Analyzing spinner — between questions and followups */}
       {analysis.isAnalyzing && phase !== 'brief' && (
-        <div style={styles.analyzingSection}>
-          <div style={styles.analyzingDot} />
-          <span style={styles.analyzingText}>Analyzing your intake...</span>
+        <div className="flex items-center justify-center gap-2.5 p-6">
+          <div className="w-2 h-2 rounded-full bg-accent" style={{ animation: 'pulse 1.2s ease-in-out infinite' }} />
+          <span className="text-sm font-serif italic text-text-secondary">Analyzing your intake...</span>
         </div>
       )}
 
       {/* Phase 4: Follow-ups (after LLM analysis) */}
       {phase === 'followups' && !analysis.isAnalyzing && analysis.sufficiency && (
-        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+        <div className="mb-6">
           <FollowUpSection
             sufficiency={analysis.sufficiency}
             followUpQuestions={analysis.followUpQuestions}
@@ -393,7 +398,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Phase 5: Final Instructions */}
       {phase === 'instructions' && (
-        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+        <div className="mb-6">
           <FinalInstructions
             value={analysis.finalInstructions}
             onChange={analysis.setFinalInstructions}
@@ -405,7 +410,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Phase 6: Engagement Brief */}
       {phase === 'brief' && (
-        <div style={{ ...styles.phaseSection, ...styles.phaseActive }}>
+        <div className="mb-6">
           <ConfidenceSignal
             message={
               analysis.sufficiency
@@ -413,7 +418,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
                 : `Your briefing covers ${Math.min(breakdown.total, 100)}% of the context needed for this workflow.`
             }
           />
-          <div style={{ height: 12 }} />
+          <div className="h-3" />
           <BriefingMemo
             memoText={memoText}
             onMemoChange={setMemoText}
@@ -426,12 +431,12 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
       {/* Analysis error banner */}
       {analysis.analysisError && (
-        <div style={styles.errorBanner}>
-          <span style={styles.errorBannerIcon}>{'\u26A0'}</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 px-4 py-2.5 rounded-md bg-accent-light border border-danger text-xs font-sans text-danger mt-4">
+          <span className="text-sm shrink-0">{'\u26A0'}</span>
           <span>Analysis unavailable: {analysis.analysisError}. Using mechanical brief as fallback.</span>
           <button
             onClick={advanceToMemo}
-            style={styles.errorFallbackBtn}
+            className="sm:ml-auto px-3 py-1 rounded-sm border border-danger bg-transparent text-danger font-sans text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 w-full sm:w-auto text-center"
           >
             Use Fallback Brief
           </button>
@@ -439,141 +444,8 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
       )}
 
       {/* Bottom spacer */}
-      <div style={{ height: 80 }} />
+      <div className="h-20" />
     </div>
   );
 }
 
-// Hide scrollbar globally for briefing container
-const BRIEFING_SCROLLBAR_ID = 'briefing-hide-scrollbar';
-if (typeof document !== 'undefined' && !document.getElementById(BRIEFING_SCROLLBAR_ID)) {
-  const s = document.createElement('style');
-  s.id = BRIEFING_SCROLLBAR_ID;
-  s.textContent = `.briefing-scroll::-webkit-scrollbar { display: none; }`;
-  document.head.appendChild(s);
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    width: '100%',
-    minHeight: '100vh',
-    backgroundColor: colors.bg,
-    color: colors.text,
-    fontFamily: fonts.sans,
-    padding: `${spacing.xxxl}px`,
-    maxWidth: 800,
-    margin: '0 auto',
-    position: 'relative',
-  },
-  phaseSection: {
-    marginBottom: spacing.xl,
-    transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
-  },
-  phaseActive: {
-    opacity: 1,
-  },
-  phaseCollapsed: {
-    opacity: 0.5,
-    paddingBottom: 8,
-    borderBottom: `1px solid ${colors.border}`,
-    marginBottom: spacing.lg,
-  },
-  phaseTitle: {
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    fontWeight: 500,
-    color: colors.textMuted,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: spacing.md,
-  },
-  continueRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  skipHint: {
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    color: colors.textDim,
-    fontStyle: 'italic',
-  },
-  continueBtn: {
-    padding: '12px 32px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
-    backgroundColor: colors.text,
-    color: '#fff',
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    fontWeight: 600,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-  suggestionsRow: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: 8,
-    marginBottom: spacing.lg,
-  },
-  error: {
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    color: colors.danger,
-    marginTop: 8,
-  },
-  analyzingSection: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    padding: `${spacing.xl}px`,
-  },
-  analyzingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    backgroundColor: colors.accent,
-    animation: 'pulse 1.2s ease-in-out infinite',
-  },
-  analyzingText: {
-    fontSize: 14,
-    fontFamily: fonts.serif,
-    fontStyle: 'italic',
-    color: colors.textSecondary,
-  },
-  errorBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '10px 16px',
-    borderRadius: radii.md,
-    backgroundColor: 'rgba(196, 93, 62, 0.08)',
-    border: `1px solid ${colors.danger}`,
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    color: colors.danger,
-    marginTop: spacing.md,
-  },
-  errorBannerIcon: {
-    fontSize: 14,
-    flexShrink: 0,
-  },
-  errorFallbackBtn: {
-    marginLeft: 'auto',
-    padding: '4px 12px',
-    borderRadius: radii.sm,
-    border: `1px solid ${colors.danger}`,
-    backgroundColor: 'transparent',
-    color: colors.danger,
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap' as const,
-    flexShrink: 0,
-  },
-};

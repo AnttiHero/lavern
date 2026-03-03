@@ -40,6 +40,8 @@ import { registerPricingRoutes } from './routes/pricing.js';
 import { registerReputationRoutes } from './routes/reputation.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerKnowledgeBaseRoutes } from './routes/knowledge-base.js';
+import { registerVerifyRoutes } from './routes/verify.js';
+import { registerClawRoutes } from './routes/claw.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { initDatabase } from '../db/database.js';
@@ -116,6 +118,9 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    // Claw Mode — remote monitoring (dashboard needs read access)
+    'GET /api/claw/*',
+    'POST /api/claw/*',
     '/dashboard/',            // Frontend static files (prefix match — trailing /)
   ]);
   fastify.addHook('onRequest', authMiddleware);
@@ -193,6 +198,12 @@ export async function startApiServer(port: number): Promise<void> {
       documents: {
         parse: 'POST /api/documents/parse (multipart)',
       },
+      claw: {
+        status: 'GET /api/claw/status',
+        documents: 'GET /api/claw/documents',
+        deliveries: 'GET /api/claw/deliveries',
+        scan: 'POST /api/claw/scan',
+      },
       knowledgeBase: {
         createCollection: 'POST /api/knowledge-base/collections',
         listCollections: 'GET /api/knowledge-base/collections',
@@ -229,6 +240,10 @@ export async function startApiServer(port: number): Promise<void> {
   registerDocumentRoutes(fastify);
   // v15: Knowledge Base — reference document collections
   registerKnowledgeBaseRoutes(fastify);
+  // v16: Standalone document verification
+  registerVerifyRoutes(fastify, sessionManager);
+  // Claw Mode — remote monitoring & control
+  registerClawRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

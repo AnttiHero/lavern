@@ -72,12 +72,14 @@ export function useNarrativeStatus({
 
   // Build the message queue
   const message = useMemo(() => {
-    const phase = PHASE_DESCRIPTIONS[currentStep];
+    // WorkflowStep is a free string — guard against unknown steps
+    const phase = PHASE_DESCRIPTIONS[currentStep] ?? null;
+    const stepLabel = currentStep.replace(/_/g, ' ');
     const activeAgents = Array.from(activeThinkingAgents.values());
     const messages: string[] = [];
 
     // Priority 1: Phase description (always first in queue)
-    messages.push(phase.description);
+    messages.push(phase?.description ?? `Your team is working on: ${stepLabel}`);
 
     // Priority 2: Active agent tasks
     for (const agent of activeAgents) {
@@ -96,7 +98,7 @@ export function useNarrativeStatus({
     }
 
     // Priority 4: Silence reassurance
-    if (silenceSec > 15) {
+    if (silenceSec > 15 && phase?.silenceMessages) {
       messages.push(...phase.silenceMessages);
     }
 
@@ -110,7 +112,7 @@ export function useNarrativeStatus({
     }
 
     // Pick message based on rotation index
-    if (messages.length === 0) return phase.statusVerb;
+    if (messages.length === 0) return phase?.statusVerb ?? `Working on ${stepLabel}...`;
     return messages[rotationIndex % messages.length];
   }, [currentStep, activeThinkingAgents, findingCount, silenceSec, teamSize, rotationIndex]);
 

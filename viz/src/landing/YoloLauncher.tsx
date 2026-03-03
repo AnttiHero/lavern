@@ -16,24 +16,6 @@ interface Props {
 const std = YOLO_CONFIGS.standard;
 const ws = YOLO_CONFIGS['white-shoe'];
 
-// Inject danger keyframes
-const YOLO_KEYFRAMES_ID = 'yolo-launcher-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(YOLO_KEYFRAMES_ID)) {
-  const s = document.createElement('style');
-  s.id = YOLO_KEYFRAMES_ID;
-  s.textContent = `
-    @keyframes yoloPulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-    @keyframes yoloGlow {
-      0%, 100% { box-shadow: 0 0 0 rgba(196, 93, 62, 0); }
-      50% { box-shadow: 0 0 32px rgba(196, 93, 62, 0.2); }
-    }
-  `;
-  document.head.appendChild(s);
-}
-
 export function YoloLauncher({ onLaunch }: Props) {
   const [question, setQuestion] = useState('');
   const [hoveredTier, setHoveredTier] = useState<string | null>(null);

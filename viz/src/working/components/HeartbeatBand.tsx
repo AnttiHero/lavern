@@ -4,12 +4,15 @@
  * A persistent horizontal band below the header that is always visible,
  * always animating. The user NEVER stares at a frozen screen.
  *
+ * v17: Workflow-aware — reads the workflow ID from sessionStorage and
+ *      shows the correct pipeline steps via WORKFLOW_STEP_MAP.
+ *
  * Layout:
  *   Top row:  ActivityRing | NarrativeStatus | AgentPresenceOrbs
  *   Bottom:   Inline phase progress (from PhaseStrip) + RunningStats
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { WorkflowStep } from '../../types/events.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
@@ -18,8 +21,8 @@ import { ActivityRing } from './ActivityRing.js';
 import { AgentPresenceOrbs } from './AgentPresenceOrbs.js';
 import { NarrativeStatus } from './NarrativeStatus.js';
 import { RunningStats } from './RunningStats.js';
-import { WORKFLOW_STEPS, STEP_LABELS } from '../../types/events.js';
-import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
+import { WORKFLOW_STEPS, WORKFLOW_STEP_MAP, STEP_LABELS } from '../../types/events.js';
+import { colors, fonts } from '../../staffing/styles/tokens.js';
 
 interface HeartbeatBandProps {
   currentStep: WorkflowStep;
@@ -34,19 +37,15 @@ interface HeartbeatBandProps {
   lastEventTimestamp: string | null;
 }
 
-const STEP_COLORS: Record<WorkflowStep, string> = {
-  intake: '#2E7D9C',
-  parallel_analysis: '#4A7C50',
-  debate_1: '#B8860B',
-  ethics_gate: '#C45D3E',
-  transformation: '#4A7C50',
-  parallel_verification: '#7B5EA7',
-  debate_2: '#B8860B',
-  meaning_gate: '#7B5EA7',
-  synthesis: '#9C7B3E',
-  final_gate: '#8B6914',
-  delivered: '#4A7C50',
-};
+/** Rotating color palette for phase dots — deterministic by step index. */
+const STEP_COLOR_PALETTE = [
+  '#2E7D9C', '#4A7C50', '#B8860B', '#C45D3E',
+  '#7B5EA7', '#9C7B3E', '#8B6914', '#2E7D9C',
+];
+
+function getStepColor(index: number): string {
+  return STEP_COLOR_PALETTE[index % STEP_COLOR_PALETTE.length];
+}
 
 export function HeartbeatBand({
   currentStep,
@@ -60,8 +59,44 @@ export function HeartbeatBand({
   sessionStartTime,
   lastEventTimestamp,
 }: HeartbeatBandProps) {
-  const totalSteps = WORKFLOW_STEPS.length - 1; // exclude 'delivered'
-  const progress = Math.min(completedSteps.length / totalSteps, 1);
+  // Resolve the correct pipeline for this workflow
+  const [workflowId] = useState<string>(() => {
+    try {
+      const configStr = sessionStorage.getItem('shem-briefing-config');
+      if (configStr) {
+        const config = JSON.parse(configStr);
+        return config.workflowId ?? '';
+      }
+    } catch { /* ignore */ }
+    return '';
+  });
+
+  const pipelineSteps = useMemo(() => {
+    // 1. Try the known workflow map
+    if (workflowId && WORKFLOW_STEP_MAP[workflowId]) {
+      return WORKFLOW_STEP_MAP[workflowId];
+    }
+    // 2. If current step is not in legacy pipeline, build from events
+    if (currentStep && !WORKFLOW_STEPS.includes(currentStep)) {
+      // Build a dynamic pipeline from completed steps + current
+      const seen = new Set<WorkflowStep>();
+      const ordered: WorkflowStep[] = [];
+      for (const s of completedSteps) {
+        if (!seen.has(s)) { seen.add(s); ordered.push(s); }
+      }
+      if (!seen.has(currentStep)) {
+        seen.add(currentStep);
+        ordered.push(currentStep);
+      }
+      if (!seen.has('delivered')) ordered.push('delivered');
+      return ordered;
+    }
+    // 3. Fallback to legacy
+    return WORKFLOW_STEPS;
+  }, [workflowId, currentStep, completedSteps]);
+
+  const totalSteps = pipelineSteps.filter(s => s !== 'delivered').length;
+  const progress = totalSteps > 0 ? Math.min(completedSteps.length / totalSteps, 1) : 0;
 
   const narrativeMessage = useNarrativeStatus({
     currentStep,
@@ -71,7 +106,7 @@ export function HeartbeatBand({
     teamSize: team.length,
   });
 
-  const insightCount = findingCount; // findings are the primary insight metric
+  const insightCount = findingCount;
 
   return (
     <div style={styles.band}>
@@ -95,10 +130,10 @@ export function HeartbeatBand({
       <div style={styles.bottomRow}>
         {/* Inline phase progress */}
         <div style={styles.phaseRow}>
-          {WORKFLOW_STEPS.map((step) => {
+          {pipelineSteps.map((step, idx) => {
             const isCompleted = completedSteps.includes(step);
             const isCurrent = step === currentStep;
-            const stepColor = STEP_COLORS[step];
+            const stepColor = getStepColor(idx);
 
             if (step === 'delivered' && currentStep !== 'delivered') return null;
 
@@ -128,7 +163,7 @@ export function HeartbeatBand({
                       whiteSpace: 'nowrap' as const,
                     }}
                   >
-                    {STEP_LABELS[step]}
+                    {STEP_LABELS[step] ?? step.replace(/_/g, ' ')}
                   </span>
                 )}
               </div>

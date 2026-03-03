@@ -24,8 +24,22 @@ export function createDebateBoardTools(session: SessionState) {
     'Post a finding to the debate board. Used by agents to share their analysis results with other agents. Include confidence score (0.0-1.0) based on evidence strength.',
     {
       agent_role: z.string().describe('The role of the agent posting'),
-      finding_type: z.enum(['score', 'dark-pattern', 'transformation', 'meaning-concern', 'comprehension'])
-        .describe('Type of finding'),
+      finding_type: z.enum([
+        // Legacy legal-design types
+        'score', 'dark-pattern', 'transformation', 'meaning-concern', 'comprehension',
+        // Contract review types
+        'contract-risk', 'contract-deviation', 'contract-standard',
+        // Research types
+        'research-citation', 'research-conflict', 'research-gap',
+        // Adversarial types
+        'adversarial-vulnerability', 'adversarial-edge-case', 'adversarial-ambiguity',
+        // Counsel types
+        'direct-answer', 'caveat',
+        // Roundtable types
+        'panel-insight', 'cross-domain-connection', 'dissenting-view',
+        // Full Bench types
+        'workstream-output', 'synthesis-gap', 'integration-risk',
+      ]).describe('Type of finding'),
       content: z.string().describe('The finding content — what was discovered'),
       severity: z.enum(['RED', 'YELLOW', 'GREEN']).describe('Severity classification'),
       evidence: z.array(z.string()).describe('Specific quotes or references from the document as evidence'),

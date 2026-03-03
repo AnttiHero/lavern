@@ -1,0 +1,162 @@
+/**
+ * Claw Init — Client onboarding.
+ *
+ * Interactive flow that creates the client profile at
+ * `~/.marble/profile.json`. The firm's understanding of who you are.
+ *
+ * "Welcome to Marble. Let's get to know you."
+ */
+
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as readline from 'node:readline';
+import { ensureDir, writeJsonFileAtomic } from '../utils/fs-helpers.js';
+import { config } from '../config.js';
+import type { ClawProfile } from './types.js';
+import type { IntensityLevel } from '../types/engagement.js';
+
+// ── Init Flow ────────────────────────────────────────────────────────────
+
+export async function initClaw(dir?: string, force = false): Promise<ClawProfile> {
+  const baseDir = dir ?? config.claw.dir;
+  const profilePath = path.join(baseDir, 'profile.json');
+
+  // Check for existing profile
+  if (fs.existsSync(profilePath) && !force) {
+    console.log(`\nProfile already exists at ${profilePath}`);
+    console.log('Use --force to overwrite.\n');
+
+    // Return existing profile
+    const existing = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+    return existing;
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const ask = (question: string): Promise<string> =>
+    new Promise((resolve) => {
+      rl.question(question, (answer) => resolve(answer.trim()));
+    });
+
+  try {
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('  MARBLE — CLAW MODE SETUP');
+    console.log('  Welcome to the firm. Let\'s get to know you.');
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    // Company info
+    const company = await ask('Company name: ');
+    const jurisdiction = await ask('Primary jurisdiction (e.g., Delaware, California, UK): ') || 'Delaware';
+    const industry = await ask('Industry (e.g., SaaS, Healthcare, Finance): ') || 'Technology';
+    const size = await ask('Company size (e.g., "Series A, 12 employees"): ') || 'Startup';
+
+    // Concerns
+    console.log('\nWhat legal concerns matter most? (comma-separated)');
+    console.log('Examples: IP protection, customer contracts, employment, privacy, compliance');
+    const concernsStr = await ask('Concerns: ');
+    const concerns = concernsStr
+      ? concernsStr.split(',').map(c => c.trim()).filter(c => c)
+      : ['general legal review'];
+
+    // Style preference
+    console.log('\nDocument style preference:');
+    console.log('  1) plain-language  — Clear, accessible, modern');
+    console.log('  2) traditional     — Formal, Times New Roman, numbered headings');
+    console.log('  3) accessible      — WCAG compliant, high contrast, generous spacing');
+    const styleChoice = await ask('Style (1/2/3): ');
+    const style: ClawProfile['preferences']['style'] =
+      styleChoice === '2' ? 'traditional' :
+      styleChoice === '3' ? 'accessible' :
+      'plain-language';
+
+    // Risk appetite
+    console.log('\nRisk appetite for legal positions:');
+    console.log('  1) conservative — Flag everything, maximum caution');
+    console.log('  2) balanced     — Standard risk tolerance');
+    console.log('  3) aggressive   — Business-first, accept reasonable risk');
+    const riskChoice = await ask('Risk appetite (1/2/3): ');
+    const riskAppetite: ClawProfile['preferences']['riskAppetite'] =
+      riskChoice === '1' ? 'conservative' :
+      riskChoice === '3' ? 'aggressive' :
+      'balanced';
+
+    // Watch paths
+    console.log('\nWhich directories should the firm watch? (comma-separated)');
+    console.log('Examples: ~/Documents/Legal, ~/Dropbox/Contracts, ./agreements');
+    const watchStr = await ask('Watch paths: ');
+    const watchPaths = watchStr
+      ? watchStr.split(',').map(p => p.trim()).filter(p => p)
+      : ['~/Documents/Legal'];
+
+    // Validate watch paths
+    for (const wp of watchPaths) {
+      const resolved = path.resolve(wp.replace(/^~/, os.homedir()));
+      if (!fs.existsSync(resolved)) {
+        console.warn(`  \u26A0 Path does not exist: ${wp} — will be created or skipped at startup`);
+      }
+    }
+
+    // Budget
+    const budgetStr = await ask(`\nTotal budget in USD (default: $${config.claw.defaultBudget.toFixed(0)}): `);
+    const totalUsd = budgetStr ? parseFloat(budgetStr) : config.claw.defaultBudget;
+
+    const perDocStr = await ask(`Per-document max in USD (default: $${config.claw.defaultPerDocBudget.toFixed(0)}): `);
+    const perDocumentMaxUsd = perDocStr ? parseFloat(perDocStr) : config.claw.defaultPerDocBudget;
+
+    // Build profile
+    const profile: ClawProfile = {
+      company,
+      jurisdiction,
+      industry,
+      size,
+      concerns,
+      preferences: {
+        style,
+        intensity: 'standard' as IntensityLevel,
+        riskAppetite,
+      },
+      watchPaths,
+      budget: {
+        totalUsd,
+        perDocumentMaxUsd,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    // Persist
+    ensureDir(baseDir);
+    writeJsonFileAtomic(profilePath, profile);
+
+    console.log('\n───────────────────────────────────────────────────────');
+    console.log(`  Profile saved to ${profilePath}`);
+    console.log(`  Watching: ${watchPaths.join(', ')}`);
+    console.log(`  Budget: $${totalUsd.toFixed(2)} ($${perDocumentMaxUsd.toFixed(2)} per document)`);
+    console.log('───────────────────────────────────────────────────────');
+    console.log('\n  Run `marble claw start` to begin.\n');
+
+    return profile;
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Load an existing profile from disk.
+ */
+export function loadProfile(dir?: string): ClawProfile | null {
+  const baseDir = dir ?? config.claw.dir;
+  const profilePath = path.join(baseDir, 'profile.json');
+
+  if (!fs.existsSync(profilePath)) return null;
+
+  try {
+    return JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+  } catch {
+    console.error(`Failed to load profile from ${profilePath}`);
+    return null;
+  }
+}

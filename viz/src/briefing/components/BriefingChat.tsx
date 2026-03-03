@@ -12,29 +12,6 @@ import { ChatMessage } from './ChatMessage.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 import type { BriefingQuestion } from '../data/questions.js';
 
-// ── Keyframes for thinking dots + reveal fade ─────────────────────────────
-
-const THINKING_KF_ID = 'briefing-thinking-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(THINKING_KF_ID)) {
-  const s = document.createElement('style');
-  s.id = THINKING_KF_ID;
-  s.textContent = `
-    @keyframes briefingThinkDot {
-      0%, 80%, 100% { opacity: 0.15; transform: scale(0.7); }
-      40% { opacity: 0.9; transform: scale(1); }
-    }
-    @keyframes briefingReveal {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes briefingAckFade {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-  `;
-  document.head.appendChild(s);
-}
-
 // ── Component ─────────────────────────────────────────────────────────────
 
 interface Props {
@@ -46,6 +23,8 @@ interface Props {
   onGenerate: () => void;
   /** SVG portrait string for the interviewer avatar (optional) */
   interviewerAvatar?: string;
+  /** True while the LLM analysis is running (shows loading state on button). */
+  isAnalyzing?: boolean;
 }
 
 export function BriefingChat({
@@ -56,6 +35,7 @@ export function BriefingChat({
   requiredComplete,
   onGenerate,
   interviewerAvatar,
+  isAnalyzing = false,
 }: Props) {
   // Track which questions have been "revealed" (past thinking delay)
   const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
@@ -176,17 +156,22 @@ export function BriefingChat({
         <div style={styles.footer}>
           <button
             onClick={onGenerate}
-            disabled={!requiredComplete}
+            disabled={!requiredComplete || isAnalyzing}
             style={{
               ...styles.generateBtn,
-              backgroundColor: requiredComplete ? colors.text : colors.bgPanel,
-              color: requiredComplete ? '#fff' : colors.textDim,
-              cursor: requiredComplete ? 'pointer' : 'not-allowed',
+              backgroundColor: isAnalyzing ? colors.bgPanel : (requiredComplete ? colors.text : colors.bgPanel),
+              color: isAnalyzing ? colors.textSecondary : (requiredComplete ? '#fff' : colors.textDim),
+              cursor: isAnalyzing ? 'wait' : (requiredComplete ? 'pointer' : 'not-allowed'),
             }}
-            onMouseEnter={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
-            onMouseLeave={e => { if (requiredComplete) { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; } }}
+            onMouseEnter={e => { if (requiredComplete && !isAnalyzing) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
+            onMouseLeave={e => { if (requiredComplete && !isAnalyzing) { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; } }}
           >
-            Generate Briefing {'\u2192'}
+            {isAnalyzing ? (
+              <>
+                <span style={{ ...styles.spinnerDot, border: `2px solid ${colors.border}`, borderTopColor: colors.text }} />
+                Generating Briefing{'\u2026'}
+              </>
+            ) : 'Generate Briefing \u2192'}
           </button>
         </div>
       )}
@@ -284,6 +269,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 13,
     fontWeight: 600,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
     transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+  },
+  spinnerDot: {
+    display: 'inline-block',
+    width: 14,
+    height: 14,
+    border: '2px solid rgba(255,255,255,0.3)',
+    borderTopColor: '#fff',
+    borderRadius: '50%',
+    animation: 'briefingBtnSpin 0.8s linear infinite',
+    flexShrink: 0,
   },
 };

@@ -5,6 +5,9 @@
  * Import `config` anywhere you need a setting instead of using string literals.
  */
 
+import * as os from 'node:os';
+import * as path from 'node:path';
+
 export const config = {
   // ── Paths ──────────────────────────────────────────────────────────────
   auditDir: process.env.SHEM_AUDIT_DIR ?? './audit-logs',
@@ -42,6 +45,17 @@ export const config = {
     opus:   { model: 'claude-opus-4-6',            multiplier: 3.0, label: 'Partner / Senior (Opus)' },
     sonnet: { model: 'claude-sonnet-4-5-20250929',  multiplier: 1.0, label: 'Associate / Specialist (Sonnet)' },
     haiku:  { model: 'claude-haiku-3-5-20250929',   multiplier: 0.3, label: 'Junior / Paralegal (Haiku)' },
+  },
+
+  // ── Claw Mode (Law Firm on Retainer) ──────────────────────────────────
+  claw: {
+    dir: process.env.MARBLE_CLAW_DIR ?? path.join(os.homedir(), '.marble'),
+    defaultBudget: parseFloat(process.env.MARBLE_CLAW_BUDGET ?? '50.0'),
+    defaultPerDocBudget: parseFloat(process.env.MARBLE_CLAW_PER_DOC_BUDGET ?? '10.0'),
+    defaultIntensity: 'standard' as const,
+    defaultStyle: 'elegant' as const,
+    defaultFormats: ['markdown', 'docx'] as readonly string[],
+    scanIntervalMs: parseInt(process.env.MARBLE_CLAW_SCAN_INTERVAL ?? '30000', 10),
   },
 
   // ── Version ────────────────────────────────────────────────────────────

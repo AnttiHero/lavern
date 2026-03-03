@@ -1,0 +1,263 @@
+/**
+ * Daemon — The firm's building manager.
+ *
+ * macOS LaunchAgent integration for running Claw Mode as a
+ * persistent background service. The firm starts when you boot.
+ * The firm restarts if it crashes. The firm never sleeps.
+ *
+ * Inspired by OpenClaw's daemon module pattern.
+ *
+ * Commands:
+ *   marble claw daemon install   — Generate plist + load into launchd
+ *   marble claw daemon uninstall — Unload + remove plist
+ *   marble claw daemon status    — Show launchd service status
+ *   marble claw daemon logs      — Tail the log files
+ */
+
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { execSync, spawn } from 'node:child_process';
+import { ensureDir } from '../utils/fs-helpers.js';
+import { config } from '../config.js';
+
+// ── Constants ────────────────────────────────────────────────────────────
+
+const LABEL = 'com.marble.claw';
+const PLIST_DIR = path.join(os.homedir(), 'Library', 'LaunchAgents');
+const PLIST_PATH = path.join(PLIST_DIR, `${LABEL}.plist`);
+
+function logDir(): string {
+  return path.join(config.claw.dir, 'logs');
+}
+
+// ── Plist Generation ─────────────────────────────────────────────────────
+
+function generatePlist(): string {
+  // Find the node binary
+  let nodePath: string;
+  try {
+    nodePath = execSync('which node', { encoding: 'utf-8' }).trim();
+  } catch {
+    nodePath = '/usr/local/bin/node';
+  }
+
+  // Find tsx for development mode
+  let tsxPath: string;
+  try {
+    tsxPath = execSync('which tsx', { encoding: 'utf-8' }).trim();
+  } catch {
+    tsxPath = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');
+  }
+
+  const workDir = process.cwd();
+  const entryPoint = path.join(workDir, 'src', 'index.ts');
+  const logs = logDir();
+
+  // Use tsx in dev, node+dist in production
+  const useCompiled = fs.existsSync(path.join(workDir, 'dist', 'index.js'));
+  const programArgs = useCompiled
+    ? [nodePath, path.join(workDir, 'dist', 'index.js'), '--serve', '--claw']
+    : [tsxPath, entryPoint, '--serve', '--claw'];
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${LABEL}</string>
+
+  <key>ProgramArguments</key>
+  <array>
+${programArgs.map(a => `    <string>${escapeXml(a)}</string>`).join('\n')}
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>${escapeXml(workDir)}</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>${escapeXml(path.join(logs, 'claw.stdout.log'))}</string>
+
+  <key>StandardErrorPath</key>
+  <string>${escapeXml(path.join(logs, 'claw.stderr.log'))}</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>HOME</key>
+    <string>${escapeXml(os.homedir())}</string>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>`;
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Service Management ───────────────────────────────────────────────────
+
+export interface DaemonStatus {
+  installed: boolean;
+  running: boolean;
+  pid?: number;
+  label: string;
+  plistPath: string;
+  logDir: string;
+}
+
+export function installDaemon(): void {
+  // Create log directory
+  const logs = logDir();
+  ensureDir(logs);
+  ensureDir(PLIST_DIR);
+
+  // Generate and write plist
+  const plist = generatePlist();
+  fs.writeFileSync(PLIST_PATH, plist, 'utf-8');
+
+  console.log(`\nPlist written to ${PLIST_PATH}`);
+
+  // Load into launchd
+  try {
+    execSync(`launchctl load -w "${PLIST_PATH}"`, { stdio: 'inherit' });
+    console.log(`Service loaded: ${LABEL}`);
+    console.log(`\nThe firm is now running.`);
+    console.log(`  Logs: ${logs}/`);
+    console.log(`  Dashboard: http://localhost:${config.port}/dashboard/`);
+    console.log(`  API: http://localhost:${config.port}/api/claw/status`);
+    console.log(`\n  Stop: marble claw daemon uninstall\n`);
+  } catch (err) {
+    console.error('Failed to load service:', err);
+    console.log('\nTry manually: launchctl load -w ' + PLIST_PATH);
+  }
+}
+
+export function uninstallDaemon(): void {
+  if (!fs.existsSync(PLIST_PATH)) {
+    console.log(`\nNo service found at ${PLIST_PATH}\n`);
+    return;
+  }
+
+  try {
+    execSync(`launchctl unload -w "${PLIST_PATH}"`, { stdio: 'inherit' });
+  } catch {
+    // May already be unloaded
+  }
+
+  fs.unlinkSync(PLIST_PATH);
+  console.log(`\nService unloaded and plist removed.`);
+  console.log(`The firm has closed for the day.\n`);
+}
+
+export function getDaemonStatus(): DaemonStatus {
+  const status: DaemonStatus = {
+    installed: fs.existsSync(PLIST_PATH),
+    running: false,
+    label: LABEL,
+    plistPath: PLIST_PATH,
+    logDir: logDir(),
+  };
+
+  if (status.installed) {
+    try {
+      const output = execSync(`launchctl list ${LABEL} 2>/dev/null`, { encoding: 'utf-8' });
+      status.running = true;
+
+      // Parse PID from output
+      const pidMatch = output.match(/"PID"\s*=\s*(\d+)/);
+      if (pidMatch) {
+        status.pid = parseInt(pidMatch[1], 10);
+      }
+    } catch {
+      // Not running or not loaded
+    }
+  }
+
+  return status;
+}
+
+export function printDaemonStatus(): void {
+  const status = getDaemonStatus();
+
+  console.log(`\n  Service: ${status.label}`);
+  console.log(`  Installed: ${status.installed ? 'yes' : 'no'}`);
+  console.log(`  Running: ${status.running ? `yes (PID ${status.pid ?? 'unknown'})` : 'no'}`);
+  console.log(`  Plist: ${status.plistPath}`);
+  console.log(`  Logs: ${status.logDir}/\n`);
+
+  if (!status.installed) {
+    console.log('  Run `marble claw daemon install` to start the firm.\n');
+  }
+}
+
+export function tailLogs(): void {
+  const logs = logDir();
+  const stdout = path.join(logs, 'claw.stdout.log');
+  const stderr = path.join(logs, 'claw.stderr.log');
+
+  if (!fs.existsSync(stdout) && !fs.existsSync(stderr)) {
+    console.log(`\nNo log files found at ${logs}/`);
+    console.log('Is the daemon running?\n');
+    return;
+  }
+
+  console.log(`\nTailing logs from ${logs}/\n`);
+
+  try {
+    // Use tail -f to follow both log files
+    const files = [stdout, stderr].filter(f => fs.existsSync(f));
+    const tail = spawn('tail', ['-f', ...files], { stdio: 'inherit' });
+
+    process.on('SIGINT', () => {
+      tail.kill();
+      process.exit(0);
+    });
+  } catch (err) {
+    console.error('Failed to tail logs:', err);
+  }
+}
+
+// ── CLI Handler ──────────────────────────────────────────────────────────
+
+export async function runDaemon(args: string[]): Promise<void> {
+  const subcommand = args[0] ?? 'status';
+
+  if (process.platform !== 'darwin') {
+    console.error('\nDaemon mode is currently macOS-only (launchd).');
+    console.error('For Linux, use systemd: systemctl --user ...');
+    console.error('For manual mode: marble --serve --claw\n');
+    return;
+  }
+
+  switch (subcommand) {
+    case 'install':
+      installDaemon();
+      break;
+    case 'uninstall':
+      uninstallDaemon();
+      break;
+    case 'status':
+      printDaemonStatus();
+      break;
+    case 'logs':
+      tailLogs();
+      break;
+    default:
+      console.log(`\nUnknown daemon command: ${subcommand}`);
+      console.log('Usage: marble claw daemon [install|uninstall|status|logs]\n');
+  }
+}

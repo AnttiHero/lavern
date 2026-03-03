@@ -8,7 +8,7 @@
  * Max 2 analysis rounds (initial + after follow-ups), then force-continue.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 // ── Types (mirrors backend BriefingAnalyzeResponse) ─────────────────────
 
@@ -49,6 +49,13 @@ interface AnalyzeResponse {
   engagementBrief: EngagementBrief;
 }
 
+/** Returned from analyze/reanalyze so callers don't hit stale-closure issues with React state. */
+export interface AnalyzeCallResult {
+  success: boolean;
+  data?: AnalyzeResponse;
+  error?: string;
+}
+
 export interface UseBriefingAnalysisReturn {
   isAnalyzing: boolean;
   analysisError: string | null;
@@ -57,8 +64,8 @@ export interface UseBriefingAnalysisReturn {
   followUpAnswers: Record<string, string>;
   engagementBrief: EngagementBrief | null;
   setFollowUpAnswer: (id: string, value: string) => void;
-  analyze: (params: AnalyzeParams) => Promise<void>;
-  reanalyze: () => Promise<void>;
+  analyze: (params: AnalyzeParams) => Promise<AnalyzeCallResult>;
+  reanalyze: () => Promise<AnalyzeCallResult>;
   analysisRound: number;
   finalInstructions: string;
   setFinalInstructions: (text: string) => void;
@@ -80,13 +87,20 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
 
   // Keep last params for reanalyze
   const lastParams = useRef<AnalyzeParams | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const callAnalyze = useCallback(async (body: Record<string, unknown>) => {
+  // Abort in-flight analysis on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
+  const callAnalyze = useCallback(async (body: Record<string, unknown>): Promise<AnalyzeCallResult> => {
     setIsAnalyzing(true);
     setAnalysisError(null);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    abortRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 60_000);
 
     try {
       const res = await fetch('/api/briefing/analyze', {
@@ -107,6 +121,7 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
       setFollowUpQuestions(data.followUpQuestions ?? []);
       setEngagementBrief(data.engagementBrief);
       setAnalysisRound(prev => prev + 1);
+      return { success: true, data };
     } catch (err) {
       const isAbort = err instanceof DOMException && err.name === 'AbortError';
       const message = isAbort
@@ -114,19 +129,21 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
         : err instanceof Error ? err.message : String(err);
       setAnalysisError(message);
       console.error('[BRIEFING ANALYSIS] Failed:', message);
+      return { success: false, error: message };
     } finally {
       clearTimeout(timeout);
+      abortRef.current = null;
       setIsAnalyzing(false);
     }
   }, []);
 
-  const analyze = useCallback(async (params: AnalyzeParams) => {
+  const analyze = useCallback(async (params: AnalyzeParams): Promise<AnalyzeCallResult> => {
     lastParams.current = params;
     setAnalysisRound(0);
     setFollowUpAnswers({});
     setFinalInstructions('');
 
-    await callAnalyze({
+    return await callAnalyze({
       workflowId: params.workflowId,
       documents: params.documents.map(d => ({
         name: d.name,
@@ -136,11 +153,11 @@ export function useBriefingAnalysis(): UseBriefingAnalysisReturn {
     });
   }, [callAnalyze]);
 
-  const reanalyze = useCallback(async () => {
-    if (!lastParams.current) return;
-    if (analysisRound >= MAX_ROUNDS) return;
+  const reanalyze = useCallback(async (): Promise<AnalyzeCallResult> => {
+    if (!lastParams.current) return { success: false, error: 'No previous analysis' };
+    if (analysisRound >= MAX_ROUNDS) return { success: false, error: 'Max rounds reached' };
 
-    await callAnalyze({
+    return await callAnalyze({
       workflowId: lastParams.current.workflowId,
       documents: lastParams.current.documents.map(d => ({
         name: d.name,

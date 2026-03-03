@@ -8,7 +8,7 @@
  *       filtered by useInsightFilter to remove noise (tool_used, agent_start/stop).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useInsightFilter } from './hooks/useInsightFilter.js';
@@ -18,8 +18,11 @@ import { HeartbeatBand } from './components/HeartbeatBand.js';
 import { InsightFeed } from './components/InsightFeed.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
 import { GateDialog } from '../components/GateDialog.js';
-import { colors } from '../staffing/styles/tokens.js';
+import { VerificationFeed } from '../verification/VerificationFeed.js';
+import { colors, radii, spacing } from '../staffing/styles/tokens.js';
 import { injectWorkingKeyframes } from './styles/animations.js';
+
+const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
 
 interface WorkingViewProps {
   onComplete: () => void;
@@ -96,6 +99,19 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   const showSessionOverlay =
     !state.sessionId && state.connectionStatus === 'disconnected';
 
+  const [showPacMan, setShowPacMan] = useState(false);
+
+  // Check if verification pipeline events are present
+  const hasVerificationEvents = useMemo(() =>
+    state.streamCards.some(c =>
+      c.kind === 'verification_pass_started' ||
+      c.kind === 'verification_pass_completed' ||
+      c.kind === 'verification_finding' ||
+      c.kind === 'verification_report'
+    ),
+    [state.streamCards]
+  );
+
   return (
     <div style={styles.root}>
       <WorkingHeader
@@ -129,6 +145,13 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         lastEventTimestamp={state.lastEventTimestamp}
       />
 
+      {/* Verification pipeline display — shown when verification events are streaming */}
+      {hasVerificationEvents && (
+        <div style={{ overflow: 'auto', flex: hasVerificationEvents ? '0 0 auto' : undefined, maxHeight: '50vh' }}>
+          <VerificationFeed streamCards={state.streamCards} />
+        </div>
+      )}
+
       <InsightFeed
         cards={insightCards}
         team={team}
@@ -161,6 +184,28 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           onDismiss={dismissGate}
         />
       )}
+
+      {/* Pac-Man trigger */}
+      <button
+        onClick={() => setShowPacMan(true)}
+        style={styles.ghostBtn}
+        title="Play Pac-Man while you wait"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2C6 2 3 5 3 9v7c0 0 1.5-2 2.5-2s1.5 2 2.5 2 1.5-2 2.5-2 1.5 2 2.5 2 1.5-2 2.5-2V9c0-4-3-7-7-7z" fill={colors.textMuted} opacity={0.5}/>
+          <circle cx="7.5" cy="8" r="2" fill="#fff"/>
+          <circle cx="12.5" cy="8" r="2" fill="#fff"/>
+          <circle cx="8" cy="8" r="1" fill="#222"/>
+          <circle cx="13" cy="8" r="1" fill="#222"/>
+        </svg>
+      </button>
+
+      {/* Pac-Man game overlay */}
+      {showPacMan && (
+        <Suspense fallback={null}>
+          <PacManGame onClose={() => setShowPacMan(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -174,5 +219,22 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     backgroundColor: colors.bg,
     position: 'relative' as const,
+  },
+  ghostBtn: {
+    position: 'absolute' as const,
+    bottom: spacing.md,
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'none',
+    border: `1px solid transparent`,
+    borderRadius: radii.sm,
+    cursor: 'pointer',
+    opacity: 0.35,
+    transition: 'opacity 0.3s ease, border-color 0.3s ease',
+    zIndex: 100,
   },
 };

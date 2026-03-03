@@ -70,10 +70,12 @@ export const reviewTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
-    // Debate board (for posting findings)
+    // Debate board (for posting findings and resolving them)
     'mcp__shem__post_finding',
     'mcp__shem__get_findings',
     'mcp__shem__get_debate_summary',
+    'mcp__shem__resolve_debate',
+    'mcp__shem__get_unresolved_debates',
     // Memory system
     'mcp__shem__query_institutional_memory',
     'mcp__shem__add_institutional_memory',
@@ -114,6 +116,7 @@ export const reviewTemplate: WorkflowTemplate = {
     intake: {
       denyTools: [
         'mcp__shem__post_finding',
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_approval',
@@ -124,13 +127,14 @@ export const reviewTemplate: WorkflowTemplate = {
     },
     specialist_analysis: {
       denyTools: [
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_approval',
         'mcp__shem__request_risk_assessment',
         'mcp__shem__record_risk_assessment',
       ],
-      reason: 'Analysis phase: specialist produces findings.',
+      reason: 'Analysis phase: specialist produces findings. Resolution happens later.',
     },
     evaluator_gate: {
       denyTools: [

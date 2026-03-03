@@ -7,9 +7,10 @@
  */
 
 import { useState, useCallback, useContext } from 'react';
-import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
 import { MarbleIlluminated } from './MarbleIlluminated.js';
+import { cn } from '../utils/cn.js';
 import type { YoloTier } from '../landing/yolo-config.js';
 
 interface SessionListProps {
@@ -17,23 +18,13 @@ interface SessionListProps {
   onConnectReplay: (id: string) => void;
   onBeginEngagement?: () => void;
   onYoloLaunch?: (question: string, tier: YoloTier) => void;
+  onBetTheCompany?: () => void;
 }
 
-// Inject YOLO keyframes
-const YOLO_KF_ID = 'dashboard-yolo-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(YOLO_KF_ID)) {
-  const s = document.createElement('style');
-  s.id = YOLO_KF_ID;
-  s.textContent = `
-    @keyframes dashboardYoloGlow {
-      0%, 100% { box-shadow: 0 0 0 rgba(196, 93, 62, 0); }
-      50% { box-shadow: 0 0 24px rgba(196, 93, 62, 0.15); }
-    }
-  `;
-  document.head.appendChild(s);
-}
+// Shared nav button class
+const NAV_BTN = 'flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 sm:pl-3.5 rounded-sm border-[1.5px] border-text bg-transparent text-text font-sans text-[11px] font-semibold cursor-pointer tracking-[1px] uppercase transition-[background-color,color,border-color] duration-250 whitespace-nowrap';
 
-export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProps) {
+export function SessionList({ onBeginEngagement, onYoloLaunch, onBetTheCompany }: SessionListProps) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const [yoloOpen, setYoloOpen] = useState(false);
@@ -48,19 +39,18 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
   const yoloEmpty = !yoloQuestion.trim();
 
   return (
-    <div style={styles.container}>
+    <div className="relative w-full min-h-screen bg-bg text-text font-sans px-4 sm:px-6 pb-10 sm:pb-15">
       {/* Top bar — nav */}
-      <div style={styles.topBar}>
-        {/* Left spacer — MarbleMark handles home */}
+      <div className="flex justify-between items-center pt-5">
         <div />
-        <div style={styles.topNavGroup}>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => { window.location.hash = '#/my-cases'; }}
-            style={styles.topNavBtn}
+            className={NAV_BTN}
             onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
             onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
           >
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ marginRight: 6 }}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="mr-1.5">
               <rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
               <path d="M5 4V2.5A1.5 1.5 0 016.5 1h3A1.5 1.5 0 0111 2.5V4" stroke="currentColor" strokeWidth="1.5" />
             </svg>
@@ -68,11 +58,11 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
           </button>
           <button
             onClick={() => { window.location.hash = '#/my-page'; }}
-            style={styles.topNavBtn}
+            className={NAV_BTN}
             onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
             onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
           >
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ marginRight: 6 }}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="mr-1.5">
               <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
               <path d="M2 14.5c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -81,7 +71,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
           {!isLoggedIn && (
             <button
               onClick={() => { window.location.hash = '#/login'; }}
-              style={styles.topNavBtn}
+              className={NAV_BTN}
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
             >
@@ -91,7 +81,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
           {isLoggedIn && (
             <button
               onClick={() => { userCtx!.logout(); }}
-              style={styles.topNavBtn}
+              className={NAV_BTN}
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
             >
@@ -102,14 +92,16 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
       </div>
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <div style={styles.hero}>
-        <p style={styles.logoType}><MarbleIlluminated color={colors.textMuted} /></p>
+      <div className="text-center pt-16 sm:pt-20 lg:pt-[120px] pb-8 sm:pb-12 lg:pb-[60px] max-w-[700px] mx-auto flex flex-col items-center">
+        <p className="text-[10px] font-semibold font-sans text-text-muted tracking-[4px] uppercase m-0">
+          <MarbleIlluminated color={colors.textMuted} />
+        </p>
 
-        <h1 style={styles.title}>
-          Your <span style={styles.titleItalic}>Engagements</span>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[64px] font-light font-serif text-text m-0 mt-4 tracking-tight leading-none">
+          Your <span className="italic font-light">Engagements</span>
         </h1>
 
-        <p style={styles.subtitle}>
+        <p className="text-sm sm:text-base text-text-muted mt-6 font-normal leading-relaxed font-sans tracking-[0.3px]">
           Legal intelligence, delivered with certainty.
         </p>
 
@@ -117,8 +109,8 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
         {onBeginEngagement && (
           <button
             onClick={onBeginEngagement}
+            className="mt-8 sm:mt-10 lg:mt-12 px-8 py-4 sm:px-12 sm:py-4.5 lg:px-16 lg:py-[18px] rounded-sm border-2 border-text font-sans text-xs sm:text-sm font-semibold tracking-[2px] uppercase cursor-pointer transition-[background-color,color,border-color] duration-250"
             style={{
-              ...styles.ctaButton,
               backgroundColor: hoveredBtn === 'cta' ? 'transparent' : colors.text,
               color: hoveredBtn === 'cta' ? colors.text : '#fff',
             }}
@@ -129,12 +121,12 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
           </button>
         )}
 
-        {/* YOLO toggle — one small button, no explanation */}
+        {/* YOLO toggle */}
         {onYoloLaunch && !yoloOpen && (
           <button
             onClick={() => setYoloOpen(true)}
+            className="mt-5 px-5 sm:px-7 py-2.5 rounded-sm border-2 border-accent font-sans text-[11px] font-semibold tracking-[1.5px] uppercase cursor-pointer transition-[background-color,color,border-color] duration-250"
             style={{
-              ...styles.yoloToggleBtn,
               backgroundColor: hoveredBtn === 'yolo' ? 'transparent' : colors.accent,
               color: hoveredBtn === 'yolo' ? colors.accent : '#fff',
               borderColor: colors.accent,
@@ -146,16 +138,33 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             Express Lane
           </button>
         )}
+
+        {/* Bet the Company */}
+        {onBetTheCompany && (
+          <button
+            onClick={onBetTheCompany}
+            className="mt-6 px-6 py-2 rounded-sm border-[1.5px] border-transparent font-serif italic text-[15px] font-normal tracking-[0.5px] cursor-pointer transition-[background-color,color,border-color] duration-300"
+            style={{
+              color: hoveredBtn === 'btc' ? '#B8960B' : colors.textMuted,
+              borderColor: hoveredBtn === 'btc' ? 'rgba(184, 150, 11, 0.4)' : 'transparent',
+              backgroundColor: hoveredBtn === 'btc' ? 'rgba(184, 150, 11, 0.06)' : 'transparent',
+            }}
+            onMouseEnter={() => setHoveredBtn('btc')}
+            onMouseLeave={() => setHoveredBtn(null)}
+          >
+            Bet the Company
+          </button>
+        )}
       </div>
 
       {/* ── YOLO Panel — expands when toggled ──────────────────────── */}
       {yoloOpen && onYoloLaunch && (
-        <div style={styles.yoloPanel}>
-          <div style={styles.yoloPanelHeader}>
-            <span style={styles.yoloPanelTitle}>Express Lane</span>
+        <div className="max-w-[600px] mx-auto p-4 sm:p-6 bg-bg-card border-[1.5px] border-border rounded-sm mt-4">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-lg font-light font-serif text-accent">Express Lane</span>
             <button
               onClick={() => setYoloOpen(false)}
-              style={styles.yoloCloseBtn}
+              className="w-7 h-7 flex items-center justify-center border-[1.5px] border-text rounded-sm bg-transparent text-text text-xs cursor-pointer transition-[background-color,color] duration-250"
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
             >
@@ -163,7 +172,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             </button>
           </div>
 
-          <p style={styles.yoloDescription}>
+          <p className="text-sm text-text-muted leading-relaxed mb-4 font-sans tracking-[0.2px]">
             Skip the briefing. No documents, no context {'\u2014'} just a question and the full
             agentic team working on it. Same structure, same quality gates.
           </p>
@@ -173,19 +182,16 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             onChange={e => setYoloQuestion(e.target.value)}
             placeholder="What's your legal question?"
             rows={3}
-            style={{
-              ...styles.yoloInput,
-              borderColor: yoloQuestion.trim() ? colors.accent : colors.border,
-            }}
+            className="w-full px-4 py-3.5 text-[15px] font-sans text-text bg-bg-input border-[1.5px] rounded-sm resize-y outline-none leading-relaxed box-border transition-[border-color] duration-250"
+            style={{ borderColor: yoloQuestion.trim() ? colors.accent : colors.border }}
           />
 
-          <div style={styles.yoloBtnRow}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
             <button
               onClick={() => handleYoloLaunch('standard')}
               disabled={yoloEmpty}
+              className="py-3.5 px-5 rounded-sm font-sans text-xs font-semibold tracking-[1.5px] uppercase transition-[background-color,color,border-color] duration-250 border-2 border-text"
               style={{
-                ...styles.yoloLaunchBtn,
-                ...styles.yoloStandardBtn,
                 opacity: yoloEmpty ? 0.35 : 1,
                 cursor: yoloEmpty ? 'not-allowed' : 'pointer',
                 backgroundColor: !yoloEmpty && hoveredBtn === 'yolo-std' ? 'transparent' : colors.text,
@@ -199,9 +205,8 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             <button
               onClick={() => handleYoloLaunch('white-shoe')}
               disabled={yoloEmpty}
+              className="py-3.5 px-5 rounded-sm font-sans text-xs font-semibold tracking-[1.5px] uppercase transition-[background-color,color,border-color] duration-250 border-2 border-accent"
               style={{
-                ...styles.yoloLaunchBtn,
-                ...styles.yoloWhiteShoeBtn,
                 opacity: yoloEmpty ? 0.35 : 1,
                 cursor: yoloEmpty ? 'not-allowed' : 'pointer',
                 backgroundColor: !yoloEmpty && hoveredBtn === 'yolo-ws' ? 'transparent' : colors.accent,
@@ -214,7 +219,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
             </button>
           </div>
 
-          <p style={styles.yoloWarning}>
+          <p className="text-[11px] text-accent leading-snug mt-3 font-sans font-medium tracking-[0.3px] text-center opacity-80">
             {'\u26A0'} White-Shoe engages the full senior team with extended deliberation.
             Expect significantly higher cost.
           </p>
@@ -223,218 +228,3 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    position: 'relative',
-    width: '100%',
-    minHeight: '100vh',
-    backgroundColor: colors.bg,
-    color: colors.text,
-    fontFamily: fonts.sans,
-    padding: '0 24px 60px',
-  },
-
-  // ── Top Bar ──────────────────────────────────────────────────────
-  topBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 0 0',
-  },
-  topNavGroup: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  topNavBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 18px 8px 14px',
-    borderRadius: radii.sm,
-    border: `1.5px solid ${colors.text}`,
-    backgroundColor: 'transparent',
-    color: colors.text,
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    cursor: 'pointer',
-    letterSpacing: 1,
-    textTransform: 'uppercase' as const,
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-
-  // ── Hero ──────────────────────────────────────────────────────────
-  hero: {
-    textAlign: 'center' as const,
-    paddingTop: 120,
-    paddingBottom: 60,
-    maxWidth: 700,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: 0,
-  },
-  logoType: {
-    fontSize: 10,
-    fontWeight: 600,
-    fontFamily: fonts.sans,
-    color: colors.textMuted,
-    letterSpacing: 4,
-    textTransform: 'uppercase' as const,
-    margin: 0,
-  },
-  title: {
-    fontSize: 64,
-    fontWeight: 300,
-    fontFamily: fonts.serif,
-    color: colors.text,
-    margin: 0,
-    marginTop: 16,
-    letterSpacing: -1.5,
-    lineHeight: 1.05,
-  },
-  titleItalic: {
-    fontStyle: 'italic' as const,
-    fontWeight: 300,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: 24,
-    fontWeight: 400,
-    lineHeight: 1.7,
-    fontFamily: fonts.sans,
-    letterSpacing: 0.3,
-  },
-  ctaButton: {
-    marginTop: 48,
-    padding: '18px 64px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
-    backgroundColor: colors.text,
-    color: '#fff',
-    fontFamily: fonts.sans,
-    fontSize: 14,
-    fontWeight: 600,
-    letterSpacing: 2,
-    textTransform: 'uppercase' as const,
-    cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-  yoloToggleBtn: {
-    marginTop: 20,
-    padding: '10px 28px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.accent}`,
-    backgroundColor: colors.accent,
-    color: '#fff',
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-
-  // ── YOLO Panel ──────────────────────────────────────────────────
-  yoloPanel: {
-    maxWidth: 600,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    padding: `${spacing.xl}px`,
-    backgroundColor: colors.bgCard,
-    border: `1.5px solid ${colors.border}`,
-    borderRadius: radii.sm,
-    marginTop: spacing.lg,
-  },
-  yoloPanelHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  yoloPanelTitle: {
-    fontSize: 18,
-    fontWeight: 300,
-    fontFamily: fonts.serif,
-    color: colors.accent,
-  },
-  yoloCloseBtn: {
-    width: 28,
-    height: 28,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: `1.5px solid ${colors.text}`,
-    borderRadius: radii.sm,
-    backgroundColor: 'transparent',
-    color: colors.text,
-    fontSize: 12,
-    cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease',
-  },
-  yoloInput: {
-    width: '100%',
-    padding: '14px 16px',
-    fontSize: 15,
-    fontFamily: fonts.sans,
-    color: colors.text,
-    backgroundColor: colors.bgInput,
-    border: `1.5px solid ${colors.border}`,
-    borderRadius: radii.sm,
-    resize: 'vertical' as const,
-    outline: 'none',
-    lineHeight: 1.6,
-    boxSizing: 'border-box' as const,
-    transition: 'border-color 0.25s ease',
-  },
-  yoloBtnRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  yoloLaunchBtn: {
-    padding: '14px 20px',
-    borderRadius: radii.sm,
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    fontWeight: 600,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-  yoloStandardBtn: {
-    backgroundColor: colors.text,
-    color: '#fff',
-    border: `2px solid ${colors.text}`,
-  },
-  yoloWhiteShoeBtn: {
-    backgroundColor: colors.accent,
-    color: '#fff',
-    border: `2px solid ${colors.accent}`,
-  },
-  yoloDescription: {
-    fontSize: 14,
-    color: colors.textMuted,
-    lineHeight: 1.7,
-    margin: `0 0 ${spacing.lg}px`,
-    fontFamily: fonts.sans,
-    letterSpacing: 0.2,
-  },
-  yoloWarning: {
-    fontSize: 11,
-    color: colors.accent,
-    lineHeight: 1.5,
-    margin: `${spacing.md}px 0 0`,
-    fontFamily: fonts.sans,
-    fontWeight: 500,
-    letterSpacing: 0.3,
-    textAlign: 'center' as const,
-    opacity: 0.8,
-  },
-};

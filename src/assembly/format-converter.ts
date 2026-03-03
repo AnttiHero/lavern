@@ -18,7 +18,7 @@ import {
   AlignmentType, BorderStyle, TableRow, TableCell, Table,
   WidthType, convertInchesToTwip, Header, Footer, PageNumber,
   PageBreak, Tab, TabStopType, TabStopPosition,
-  ShadingType,
+  ShadingType, LevelFormat,
 } from 'docx';
 import { marked } from 'marked';
 
@@ -297,7 +297,7 @@ function getStyleProfile(style?: DocumentStyle): StyleProfile {
 // ── Markdown Parsing ────────────────────────────────────────────────────
 
 interface DocxSection {
-  type: 'heading' | 'paragraph' | 'list-item' | 'table' | 'hr' | 'blockquote';
+  type: 'heading' | 'paragraph' | 'list-item' | 'numbered-item' | 'table' | 'hr' | 'blockquote';
   level?: number;
   text: string;
   bold?: boolean;
@@ -350,11 +350,25 @@ function parseMarkdownToSections(markdown: string): DocxSection[] {
       continue;
     }
 
-    // List items
-    if (/^[-*]\s/.test(line.trim()) || /^\d+\.\s/.test(line.trim())) {
+    // Numbered list items
+    if (/^\d+\.\s/.test(line.trim())) {
       const items: string[] = [];
-      while (i < lines.length && (/^[-*]\s/.test(lines[i].trim()) || /^\d+\.\s/.test(lines[i].trim()) || /^\s{2,}/.test(lines[i]))) {
-        const item = lines[i].trim().replace(/^[-*]\s+/, '').replace(/^\d+\.\s+/, '');
+      while (i < lines.length && (/^\d+\.\s/.test(lines[i].trim()) || /^\s{2,}/.test(lines[i]))) {
+        const item = lines[i].trim().replace(/^\d+\.\s+/, '');
+        if (item) items.push(stripMarkdownInline(item));
+        i++;
+      }
+      for (const item of items) {
+        sections.push({ type: 'numbered-item', text: item });
+      }
+      continue;
+    }
+
+    // Bullet list items
+    if (/^[-*+]\s/.test(line.trim())) {
+      const items: string[] = [];
+      while (i < lines.length && (/^[-*+]\s/.test(lines[i].trim()) || /^\s{2,}/.test(lines[i]))) {
+        const item = lines[i].trim().replace(/^[-*+]\s+/, '');
         if (item) items.push(stripMarkdownInline(item));
         i++;
       }
@@ -698,6 +712,16 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
         break;
       }
 
+      case 'numbered-item': {
+        bodyChildren.push(new Paragraph({
+          children: parseInlineToRuns(section.text, profile),
+          numbering: { reference: 'default-numbering', level: 0 },
+          spacing: { after: 80, line: profile.lineSpacing },
+          indent: { left: convertInchesToTwip(0.4) },
+        }));
+        break;
+      }
+
       case 'blockquote': {
         const borderColor = profile.id === 'accessible' ? profile.ink : profile.accent;
         const borderSize = profile.id === 'accessible' ? 12 : 8;
@@ -800,6 +824,21 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
     title,
     creator: 'Marble — Multi-Agent Legal Design System',
     description: `Generated deliverable: ${title}`,
+    numbering: {
+      config: [{
+        reference: 'default-numbering',
+        levels: [{
+          level: 0,
+          format: LevelFormat.DECIMAL,
+          text: '%1.',
+          alignment: AlignmentType.START,
+          style: {
+            run: { font: profile.bodyFont, size: profile.bodySize },
+            paragraph: { indent: { left: convertInchesToTwip(0.4), hanging: convertInchesToTwip(0.25) } },
+          },
+        }],
+      }],
+    },
     styles: {
       default: {
         document: {

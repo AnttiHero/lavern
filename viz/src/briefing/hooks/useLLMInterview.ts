@@ -8,7 +8,7 @@
  * Falls back to static questions if the first API call fails.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Sufficiency, FollowUpQuestion, EngagementBrief } from './useBriefingAnalysis.js';
 
 /** Mirrors the backend InterviewResult shape. */
@@ -117,6 +117,12 @@ export function useLLMInterview(
   const [fallbackToStatic, setFallbackToStatic] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
+  const isStreamingRef = useRef(false);
+
+  // Abort in-flight requests on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   // Count user turns from messages
   const turnCount = messages.filter(m => m.role === 'user').length;
@@ -125,10 +131,15 @@ export function useLLMInterview(
     userMessage?: string,
     finalize = false,
   ) => {
-    if (isStreaming) return;
+    // Use ref guard — state value may be stale due to closure capture
+    if (isStreamingRef.current) return;
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    // Timeout: 30s for finalization (non-streaming), 15s for initial SSE connection
+    const timeoutMs = finalize ? 30_000 : 15_000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     // Build history from current messages (exclude the message we're about to add)
     const history = messages.map(m => ({ role: m.role, content: m.content }));
@@ -140,6 +151,7 @@ export function useLLMInterview(
     }));
 
     try {
+      isStreamingRef.current = true;
       setIsStreaming(true);
       setError(null);
 
@@ -198,11 +210,18 @@ export function useLLMInterview(
         throw new Error(err.error || err.message || 'Request failed');
       }
 
+      // SSE connection established — cancel the connection timeout
+      // (the stream itself can take longer as tokens flow in)
+      clearTimeout(timeout);
+
       await consumeSSEStream(res, setMessages, controller.signal);
     } catch (err) {
-      if (controller.signal.aborted) return;
+      // Determine error message — aborts are timeouts (we only abort via timeout)
+      const isAbort = err instanceof DOMException && err.name === 'AbortError';
+      const errorMessage = isAbort
+        ? 'Interview request timed out — server may be unreachable.'
+        : err instanceof Error ? err.message : String(err);
 
-      const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('[useLLMInterview]', errorMessage);
       setError(errorMessage);
 
@@ -210,27 +229,37 @@ export function useLLMInterview(
       if (messages.length === 0) {
         setFallbackToStatic(true);
       } else {
-        // Mid-conversation failure: remove the empty assistant message
+        // Mid-conversation failure: remove the empty assistant message AND the user message we just added
+        // (so turnCount doesn't inflate from failed turns)
         setMessages(prev => {
-          const last = prev[prev.length - 1];
+          let cleaned = prev;
+          // Remove empty assistant message
+          const last = cleaned[cleaned.length - 1];
           if (last && last.role === 'assistant' && last.content === '') {
-            return prev.slice(0, -1);
+            cleaned = cleaned.slice(0, -1);
           }
-          return prev;
+          // Remove the user message we just optimistically added
+          if (userMessage) {
+            const lastUser = cleaned[cleaned.length - 1];
+            if (lastUser && lastUser.role === 'user' && lastUser.content === userMessage) {
+              cleaned = cleaned.slice(0, -1);
+            }
+          }
+          return cleaned;
         });
       }
     } finally {
-      if (!controller.signal.aborted) {
-        setIsStreaming(false);
-      }
+      clearTimeout(timeout);
+      isStreamingRef.current = false;
+      setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [isStreaming, messages, documents, workflowId, interviewerId]);
+  }, [messages, documents, workflowId, interviewerId]);
 
   const startInterview = useCallback(async () => {
-    if (messages.length > 0 || isStreaming) return;
+    if (messages.length > 0 || isStreamingRef.current) return;
     await callInterview(undefined, false);
-  }, [callInterview, messages.length, isStreaming]);
+  }, [callInterview, messages.length]);
 
   const sendAnswer = useCallback(async (text: string) => {
     await callInterview(text.trim(), false);

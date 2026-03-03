@@ -118,6 +118,22 @@ How does this compare to what is standard?
 
 Call \`advance_step\` with completed_step: "plain_language_review".
 
+### 4b. RESOLVE ALL FINDINGS
+Before presenting to the human, formally resolve every finding on the debate
+board. Call \`get_unresolved_debates\` to see what is open, then call
+\`resolve_debate\` for each topic cluster. Group related findings (e.g., all
+liability-related findings) into a single resolution. For each resolution:
+- **debate_topic**: A clear label (e.g., "Liability and Indemnification Risks")
+- **finding_ids**: All finding IDs covered by this resolution
+- **resolution**: What the analysis concluded and what is recommended
+- **winning_position**: The final recommendation (e.g., "Negotiate liability cap")
+- **evidence_weight**: Why — cite the most compelling evidence
+- **confidence**: Average confidence of the underlying findings
+- **escalation_needed**: true only if a finding requires human legal counsel
+- **resolved_by**: "orchestrator"
+
+This creates the formal audit trail. Every finding must be accounted for.
+
 ### 5. HUMAN GATE
 Present findings in DECISION ORDER, not document order:
 1. Deal-breakers — things that should stop the process

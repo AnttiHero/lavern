@@ -1,0 +1,316 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────────────────────
+ * Source of truth: viz/src/staffing/styles/tokens.ts
+ * Keep these values in sync. */
+
+@theme {
+  /* Backgrounds — warm paper tones */
+  --color-bg: #FAF9F6;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-hover: #FFFFFF;
+  --color-bg-panel: #F5F4F0;
+  --color-bg-input: #F0EFEB;
+
+  /* Borders — soft warm greys */
+  --color-border: #E5E3DD;
+  --color-border-hover: #C5C3BD;
+  --color-border-selected: #1A1A1A;
+
+  /* Accent — single warm accent (terracotta/copper) */
+  --color-accent: #C45D3E;
+  --color-accent-light: rgba(196, 93, 62, 0.08);
+  --color-accent-mid: rgba(196, 93, 62, 0.15);
+  --color-accent-muted: rgba(196, 93, 62, 0.5);
+
+  /* Cost tiers */
+  --color-opus: #8B6914;
+  --color-opus-bg: rgba(139, 105, 20, 0.07);
+  --color-sonnet: #2E7D9C;
+  --color-sonnet-bg: rgba(46, 125, 156, 0.07);
+  --color-haiku: #4A7C50;
+  --color-haiku-bg: rgba(74, 124, 80, 0.07);
+
+  /* Text — warm darks */
+  --color-text: #1A1A1A;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #7A7A76;
+  --color-text-dim: #A3A39E;
+
+  /* Semantic */
+  --color-success: #4A7C50;
+  --color-success-bg: rgba(74, 124, 80, 0.07);
+  --color-warning: #B8860B;
+  --color-warning-bg: rgba(184, 134, 11, 0.07);
+  --color-danger: #C45D3E;
+
+  /* Category */
+  --color-lawyer: #2E7D9C;
+  --color-specialist: #7B5EA7;
+  --color-infrastructure: #9C7B3E;
+  --color-orchestrator: #C45D3E;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────── */
+
+body {
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
+/* ── Utility classes ───────────────────────────────────────────────── */
+
+/* Marble spotlight text (LandingView) */
+.marble-spotlight {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Briefing scrollbar hide */
+.briefing-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Keyframes ─────────────────────────────────────────────────────── */
+/* Consolidated from 17 files that previously injected via JS. */
+
+/* App.tsx — global hover effects */
+@keyframes marbleShimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+@keyframes marbleBtnHover {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+@keyframes marbleIlluminate {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* LobbyView */
+@keyframes lobbyFadeUp {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lobbyFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes lobbyLineGrow {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+@keyframes lobbyPhotoReveal {
+  0% { opacity: 0; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes lobbyNameReveal {
+  0% { opacity: 0; letter-spacing: 40px; }
+  100% { opacity: 1; letter-spacing: 22px; }
+}
+
+/* LandingView — dark door */
+@keyframes doorReveal {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes doorFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes marbleBreath {
+  0%, 100% { filter: brightness(0.12) contrast(1.2) saturate(0.15); }
+  50% { filter: brightness(0.16) contrast(1.15) saturate(0.2); }
+}
+@keyframes crackGlow {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.09; }
+}
+
+/* QuickStartView */
+@keyframes qsFadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes qsFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes qsLineGrow {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+/* SessionList — dashboard */
+@keyframes dashboardYoloGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(196, 93, 62, 0); }
+  50% { box-shadow: 0 0 24px rgba(196, 93, 62, 0.15); }
+}
+
+/* ErrorToast */
+@keyframes toastSlideIn {
+  0% { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastSlideOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+
+/* LoadingM — breathing M + dot */
+@keyframes marbleLoadBreath {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+@keyframes marbleDot {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 0.5; }
+}
+
+/* Working screen — thinking/heartbeat/narrative */
+@keyframes thinkingDotBounce {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+@keyframes activeThinkingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.08); }
+}
+@keyframes openDebatePulse {
+  0%, 100% { border-color: rgba(184, 134, 11, 0.3); }
+  50% { border-color: rgba(184, 134, 11, 0.6); }
+}
+@keyframes activeAgentGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 124, 80, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(74, 124, 80, 0.15); }
+}
+@keyframes heartbeatGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(184, 134, 11, 0.2)); }
+  50% { filter: drop-shadow(0 0 8px rgba(184, 134, 11, 0.4)); }
+}
+@keyframes heartbeatGlowIdle {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(74, 124, 80, 0.1)); }
+  50% { filter: drop-shadow(0 0 4px rgba(74, 124, 80, 0.2)); }
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes narrativeFade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes counterPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Holographic — card hover effects */
+@keyframes holoShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes selectedPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.08); }
+  50% { box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.15); }
+}
+
+/* BriefingChat — thinking dots + reveal */
+@keyframes briefingThinkDot {
+  0%, 80%, 100% { opacity: 0.15; transform: scale(0.7); }
+  40% { opacity: 0.9; transform: scale(1); }
+}
+@keyframes briefingReveal {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes briefingAckFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes briefingBtnSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* FinalInstructions — spinner */
+@keyframes fiBtnSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ConversationalChat */
+@keyframes convThinkDot {
+  0%, 80%, 100% { opacity: 0.15; transform: scale(0.7); }
+  40% { opacity: 0.9; transform: scale(1); }
+}
+@keyframes convFadeIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* TrophyShelf */
+@keyframes trophyEnter {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes trophyGlow {
+  0% { box-shadow: 0 0 0px rgba(196, 93, 62, 0); }
+  40% { box-shadow: 0 0 10px rgba(196, 93, 62, 0.3); }
+  100% { box-shadow: 0 0 0px rgba(196, 93, 62, 0); }
+}
+
+/* YoloLauncher */
+@keyframes yoloPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes yoloGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(196, 93, 62, 0); }
+  50% { box-shadow: 0 0 32px rgba(196, 93, 62, 0.2); }
+}
+
+/* AgentDocsView */
+@keyframes agentFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes agentGlow {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.08; }
+}
+
+/* BetTheCompanyView */
+@keyframes btcFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes btcPulse {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.08; }
+}
+@keyframes btcGoldShimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}

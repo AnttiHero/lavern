@@ -1,7 +1,8 @@
 /**
  * SimpleMarkdown — Lightweight markdown renderer for delivery previews.
  *
- * Handles: headings, bold/italic, bullet lists, tables, horizontal rules, paragraphs.
+ * Handles: headings (h1-h6), bold/italic/code, bullet & numbered lists,
+ * blockquotes, tables, horizontal rules, paragraphs.
  * No external dependencies — just React + inline styles.
  */
 
@@ -14,8 +15,8 @@ interface Props {
 /** Render inline formatting: **bold**, *italic*, `code` */
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  // Process: **bold**, *italic*, `code`
-  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
+  // Process: **bold**, *italic*, `code`, [link](url)
+  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|\[([^\]]+)\]\(([^)]+)\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -35,6 +36,11 @@ function renderInline(text: string): React.ReactNode[] {
       // `code`
       parts.push(
         <code key={match.index} style={sty.inlineCode}>{match[4]}</code>
+      );
+    } else if (match[5] && match[6]) {
+      // [link text](url)
+      parts.push(
+        <span key={match.index} style={sty.link}>{match[5]}</span>
       );
     }
     lastIndex = match.index + match[0].length;
@@ -88,6 +94,11 @@ function renderTable(lines: string[]): React.ReactNode {
   );
 }
 
+/** Check if a line is a bullet list item (- or *) */
+function isBulletLine(line: string): boolean {
+  return /^[-*+]\s/.test(line);
+}
+
 export function SimpleMarkdown({ content }: Props) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
@@ -96,27 +107,40 @@ export function SimpleMarkdown({ content }: Props) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Heading
-    if (line.startsWith('# ')) {
-      elements.push(<h1 key={i} style={sty.h1}>{renderInline(line.slice(2))}</h1>);
-      i++;
-      continue;
-    }
-    if (line.startsWith('## ')) {
-      elements.push(<h2 key={i} style={sty.h2}>{renderInline(line.slice(3))}</h2>);
-      i++;
-      continue;
-    }
-    if (line.startsWith('### ')) {
-      elements.push(<h3 key={i} style={sty.h3}>{renderInline(line.slice(4))}</h3>);
+    // Heading h1-h6
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const text = headingMatch[2];
+      const styleKey = level <= 3 ? `h${level}` : 'h4';
+      elements.push(
+        <div key={i} style={sty[styleKey] as React.CSSProperties}>
+          {renderInline(text)}
+        </div>
+      );
       i++;
       continue;
     }
 
     // Horizontal rule
-    if (/^---+$/.test(line.trim())) {
+    if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim())) {
       elements.push(<hr key={i} style={sty.hr} />);
       i++;
+      continue;
+    }
+
+    // Blockquote: collect consecutive > lines
+    if (line.trim().startsWith('>')) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quoteLines.push(lines[i].trim().replace(/^>\s*/, ''));
+        i++;
+      }
+      elements.push(
+        <blockquote key={`bq-${i}`} style={sty.blockquote}>
+          {renderInline(quoteLines.join(' '))}
+        </blockquote>
+      );
       continue;
     }
 
@@ -131,11 +155,11 @@ export function SimpleMarkdown({ content }: Props) {
       continue;
     }
 
-    // Bullet list: collect consecutive lines starting with -
-    if (line.startsWith('- ')) {
+    // Bullet list: collect consecutive lines starting with -, *, or +
+    if (isBulletLine(line)) {
       const items: string[] = [];
-      while (i < lines.length && lines[i].startsWith('- ')) {
-        items.push(lines[i].slice(2));
+      while (i < lines.length && isBulletLine(lines[i])) {
+        items.push(lines[i].replace(/^[-*+]\s+/, ''));
         i++;
       }
       elements.push(
@@ -176,10 +200,12 @@ export function SimpleMarkdown({ content }: Props) {
     while (
       i < lines.length &&
       lines[i].trim() !== '' &&
-      !lines[i].startsWith('#') &&
-      !lines[i].startsWith('- ') &&
+      !lines[i].match(/^#{1,6}\s/) &&
+      !isBulletLine(lines[i]) &&
       !lines[i].trim().startsWith('|') &&
+      !lines[i].trim().startsWith('>') &&
       !/^---+$/.test(lines[i].trim()) &&
+      !/^\*\*\*+$/.test(lines[i].trim()) &&
       !/^\d+\.\s/.test(lines[i])
     ) {
       paraLines.push(lines[i]);
@@ -231,8 +257,25 @@ const sty: Record<string, React.CSSProperties> = {
     marginBottom: spacing.xs,
     lineHeight: 1.3,
   },
+  h4: {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    lineHeight: 1.4,
+  },
   p: {
     margin: `0 0 ${spacing.sm}px`,
+  },
+  blockquote: {
+    margin: `${spacing.sm}px 0`,
+    paddingLeft: 16,
+    borderLeft: `3px solid ${colors.accent}`,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
+    lineHeight: 1.6,
   },
   hr: {
     border: 'none',
@@ -256,6 +299,10 @@ const sty: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgPanel,
     padding: '1px 5px',
     borderRadius: 3,
+  },
+  link: {
+    color: colors.accent,
+    borderBottom: `1px solid rgba(196, 93, 62, 0.3)`,
   },
   tableWrapper: {
     overflowX: 'auto' as const,

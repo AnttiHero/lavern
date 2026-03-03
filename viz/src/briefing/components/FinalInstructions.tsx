@@ -45,7 +45,12 @@ export function FinalInstructions({ value, onChange, onGenerate, isAnalyzing }: 
           onMouseEnter={e => { if (!isAnalyzing) { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; } }}
           onMouseLeave={e => { if (!isAnalyzing) { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; } }}
         >
-          {isAnalyzing ? 'Generating Brief...' : 'Generate Engagement Brief \u2192'}
+          {isAnalyzing ? (
+            <>
+              <span style={styles.spinner} />
+              Generating Brief{'\u2026'}
+            </>
+          ) : 'Generate Engagement Brief \u2192'}
         </button>
       </div>
     </div>
@@ -110,6 +115,19 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
     cursor: 'pointer',
     boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
     transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+  },
+  spinner: {
+    display: 'inline-block',
+    width: 14,
+    height: 14,
+    border: '2px solid rgba(255,255,255,0.3)',
+    borderTopColor: '#fff',
+    borderRadius: '50%',
+    animation: 'fiBtnSpin 0.8s linear infinite',
+    flexShrink: 0,
   },
 };

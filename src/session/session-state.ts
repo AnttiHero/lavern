@@ -23,6 +23,7 @@ import type { ClientIdentity } from '../types/client.js';
 import type { SessionReportCard, DimensionSnapshot } from '../types/report-card.js';
 import type { MatterRecord } from '../types/matter.js';
 import type { ParsedDocument } from '../documents/types.js';
+import type { VerificationPipelineState } from '../types/verification.js';
 
 // ── Array size limits ─────────────────────────────────────────────────────
 // Prevents unbounded growth of debate findings, challenges, audit entries, etc.
@@ -219,6 +220,10 @@ export class SessionState {
 
   /** The original legal request that created this session (stored for assembly context). */
   public legalRequest?: import('../types/index.js').LegalRequest;
+
+  // ── v16: Verification Pipeline State ──
+  /** 10-pass verification pipeline state. Initialized when pipeline starts. */
+  public verificationPipeline?: VerificationPipelineState;
 
   constructor(
     id?: string,

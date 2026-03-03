@@ -12,25 +12,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { InterviewMessage } from '../hooks/useLLMInterview.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
-// ── Keyframes (reuse briefingThinkDot from BriefingChat if not already injected)
-
-const CONV_KF_ID = 'conv-chat-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(CONV_KF_ID)) {
-  const s = document.createElement('style');
-  s.id = CONV_KF_ID;
-  s.textContent = `
-    @keyframes convThinkDot {
-      0%, 80%, 100% { opacity: 0.15; transform: scale(0.7); }
-      40% { opacity: 0.9; transform: scale(1); }
-    }
-    @keyframes convFadeIn {
-      0% { opacity: 0; transform: translateY(6px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-  `;
-  document.head.appendChild(s);
-}
-
 // ── Component ─────────────────────────────────────────────────────────
 
 interface Props {
@@ -82,7 +63,7 @@ export function ConversationalChat({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   }, [handleSend]);
 
@@ -106,6 +87,8 @@ export function ConversationalChat({
               {interviewerAvatar ? (
                 <div
                   style={styles.avatar}
+                  // TRUST BOUNDARY: interviewerAvatar is a static SVG string from interviewers.ts —
+                  // if this ever changes to user-supplied data, sanitize with DOMPurify first.
                   dangerouslySetInnerHTML={{ __html: interviewerAvatar }}
                 />
               ) : (
@@ -136,7 +119,9 @@ export function ConversationalChat({
                 {interviewerAvatar ? (
                   <div
                     style={styles.avatar}
-                    dangerouslySetInnerHTML={{ __html: interviewerAvatar }}
+                    // TRUST BOUNDARY: interviewerAvatar is a static SVG string from interviewers.ts —
+                  // if this ever changes to user-supplied data, sanitize with DOMPurify first.
+                  dangerouslySetInnerHTML={{ __html: interviewerAvatar }}
                   />
                 ) : (
                   <div style={styles.avatarFallback}>M</div>

@@ -195,10 +195,13 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
 
   /**
    * After static questions → trigger LLM analysis → move to followups or instructions.
+   *
+   * Uses the RETURNED result from analyze() instead of reading analysis.analysisError
+   * (which is React state and would be stale in this closure after await).
    */
   const advanceToFollowups = useCallback(async () => {
     // Trigger LLM analysis with documents + answers
-    await analysis.analyze({
+    const result = await analysis.analyze({
       workflowId,
       documents: upload.documents.map(d => ({
         name: d.name,
@@ -208,7 +211,7 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
     });
 
     // If analysis errored, fall back to mechanical memo
-    if (analysis.analysisError) {
+    if (!result.success) {
       let memo = generateMemo(qna.answers, qna.questions, upload.documents, workflowId);
       try {
         const profileStr = localStorage.getItem('shem-user-profile');
@@ -236,22 +239,33 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
 
   /**
    * After final instructions → reanalyze with everything → show brief.
+   *
+   * Uses the RETURNED result from reanalyze() to avoid stale-closure issues
+   * with analysis.engagementBrief after await.
    */
   const advanceToBrief = useCallback(async () => {
     // If we have follow-up answers or final instructions, reanalyze
     const hasFollowUpAnswers = Object.values(analysis.followUpAnswers).some(v => v.trim());
     const hasFinalInstructions = analysis.finalInstructions.trim().length > 0;
 
+    let brief = analysis.engagementBrief;
+    let score = analysis.sufficiency?.score;
+
     if (hasFollowUpAnswers || hasFinalInstructions) {
-      await analysis.reanalyze();
+      const result = await analysis.reanalyze();
+      // Use the fresh result data if reanalyze succeeded
+      if (result.success && result.data) {
+        brief = result.data.engagementBrief;
+        score = result.data.sufficiency?.score;
+      }
     }
 
     // Build the memo from the engagement brief
-    if (analysis.engagementBrief) {
+    if (brief) {
       const memo = serializeBrief(
-        analysis.engagementBrief,
+        brief,
         analysis.finalInstructions,
-        analysis.sufficiency?.score,
+        score,
       );
       setMemoText(memo);
     } else {

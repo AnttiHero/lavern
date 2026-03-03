@@ -97,10 +97,29 @@ async function main(): Promise<void> {
   if (args.includes('--serve')) {
     const portIndex = args.indexOf('--port');
     const port = portIndex >= 0 ? parseInt(args[portIndex + 1] || '3000', 10) : 3000;
+
+    // Combined mode: --serve --claw — API server + Claw Mode together
+    if (args.includes('--claw')) {
+      console.log(`Combined mode — API server + Claw Mode on port ${port}...`);
+      const { startApiServer } = await import('./api/server.js');
+      await startApiServer(port);
+      // Start Claw Mode in background (watch mode, never exits)
+      const { runClaw } = await import('./claw/index.js');
+      await runClaw(['start']);
+      return;
+    }
+
     console.log(`API server mode — starting on port ${port}...`);
     // Dynamic import to avoid loading Fastify unless needed
     const { startApiServer } = await import('./api/server.js');
     await startApiServer(port);
+    return;
+  }
+
+  // Claw Mode — the firm on retainer
+  if (args[0] === 'claw') {
+    const { runClaw } = await import('./claw/index.js');
+    await runClaw(args.slice(1));
     return;
   }
 
@@ -116,9 +135,20 @@ async function main(): Promise<void> {
 \u255a${'═'.repeat(62)}\u255d
 
 Usage:
-  npx tsx src/index.ts <document-path> [options]       Document redesign (legal-design pipeline)
-  npx tsx src/index.ts --request "text" [options]      Route through dispatch (auto-selects workflow)
-  npx tsx src/index.ts --request "text" --workflow id  Force specific workflow
+  marble <document-path> [options]                     Document redesign (legal-design pipeline)
+  marble --request "text" [options]                    Route through dispatch (auto-selects workflow)
+  marble --request "text" --workflow id                Force specific workflow
+
+Claw Mode (Law Firm on Retainer):
+  marble claw init                                     Onboard — create client profile
+  marble claw start [options]                          Start the firm (watch + process)
+  marble claw status                                   Show current state
+  marble claw start --once                             Batch mode — process all, then exit
+  marble claw start --dry-run                          Preview what would be processed
+  marble claw daemon install                           Install as macOS LaunchAgent
+  marble claw daemon uninstall                         Remove LaunchAgent
+  marble claw daemon status                            Show daemon service status
+  marble claw daemon logs                              Tail daemon log files
 
 CLI Options:
   --moment <moment>          User moment (default: signup)
@@ -136,6 +166,7 @@ CLI Options:
 
 API Server:
   --serve                    Start API + WebSocket server
+  --serve --claw             API + Claw Mode together (Mac Mini mode)
   --port <port>              Server port (default: 3000)
 
 Examples:

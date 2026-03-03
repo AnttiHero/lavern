@@ -16,6 +16,8 @@ import './templates/roundtable.js';    // was legal-design
 import './templates/full-bench.js';    // NEW — hierarchical pattern
 // Pre-engagement workflow (unchanged)
 import './templates/pre-engagement.js';
+// v16: Verification pipeline (standalone + post-production)
+import './templates/verification.js';
 
 // Re-export the registry for consumers
 export { workflowRegistry } from './registry.js';

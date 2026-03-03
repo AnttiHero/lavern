@@ -48,16 +48,18 @@ async function callAnthropic(params: {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   maxTokens?: number;
 }): Promise<string> {
+  const maxTokens = params.maxTokens ?? 4096;
   const res = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
       'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': '2025-04-15',
       'content-type': 'application/json',
     },
     body: JSON.stringify({
       model: INTERVIEW_MODEL,
-      max_tokens: params.maxTokens ?? 4096,
+      max_tokens: maxTokens,
+      thinking: { type: 'enabled', budget_tokens: Math.min(1024, Math.floor(maxTokens * 0.25)) },
       system: params.system,
       messages: params.messages,
     }),
@@ -72,79 +74,9 @@ async function callAnthropic(params: {
     content: Array<{ type: string; text?: string }>;
   };
 
+  // Extract only the text block — skip thinking blocks
   const textBlock = data.content.find(b => b.type === 'text');
   return textBlock?.text ?? '';
-}
-
-/**
- * Stream Anthropic Messages API and forward SSE chunks to client.
- */
-async function streamAnthropic(params: {
-  system: string;
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  maxTokens?: number;
-  onText: (text: string) => void;
-  isDisconnected: () => boolean;
-}): Promise<void> {
-  const res = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: INTERVIEW_MODEL,
-      max_tokens: params.maxTokens ?? 400,
-      system: params.system,
-      messages: params.messages,
-      stream: true,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error (${res.status}): ${errText}`);
-  }
-
-  if (!res.body) throw new Error('No response body');
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (params.isDisconnected()) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const jsonStr = line.slice(6).trim();
-        if (!jsonStr) continue;
-
-        try {
-          const event = JSON.parse(jsonStr) as Record<string, unknown>;
-          if (
-            event.type === 'content_block_delta' &&
-            (event.delta as Record<string, unknown>)?.type === 'text_delta'
-          ) {
-            const text = (event.delta as { text: string }).text;
-            if (text) params.onText(text);
-          }
-        } catch {
-          // Skip malformed JSON
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
 }
 
 export function registerBriefingRoutes(fastify: FastifyInstance): void {
@@ -268,17 +200,20 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
         'Connection': 'keep-alive',
       });
 
-      // Stream from Anthropic API using raw fetch + SSE parsing
+      // Stream from Anthropic API using raw fetch + SSE parsing.
+      // Enable extended thinking so the model reasons internally (filtered out)
+      // and produces a clean conversational response.
       const apiRes = await fetch(ANTHROPIC_API_URL, {
         method: 'POST',
         headers: {
           'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
+          'anthropic-version': '2025-04-15',
           'content-type': 'application/json',
         },
         body: JSON.stringify({
           model: INTERVIEW_MODEL,
-          max_tokens: 400,
+          max_tokens: 1600,
+          thinking: { type: 'enabled', budget_tokens: 1024 },
           system: systemPrompt,
           messages: apiMessages,
           stream: true,
@@ -298,10 +233,14 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
         return;
       }
 
-      // Pipe Anthropic SSE stream → parse content_block_delta → forward to client
+      // Pipe Anthropic SSE stream → parse content_block_delta → forward to client.
+      // Track content block types to skip thinking blocks; also strip any
+      // <thinking>…</thinking> tags the model might emit as raw text.
       const reader = apiRes.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let insideThinkingBlock = false;   // API-level thinking content block
+      let insideThinkingTag = false;     // Model-emitted <thinking> raw text
 
       try {
         while (true) {
@@ -319,8 +258,48 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
 
             try {
               const event = JSON.parse(jsonStr);
-              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta' && event.delta.text) {
-                reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: event.delta.text })}\n\n`);
+
+              // Track content block type (text vs thinking)
+              if (event.type === 'content_block_start') {
+                insideThinkingBlock = event.content_block?.type === 'thinking';
+              }
+
+              if (
+                event.type === 'content_block_delta' &&
+                event.delta?.type === 'text_delta' &&
+                event.delta.text &&
+                !insideThinkingBlock
+              ) {
+                let chunk: string = event.delta.text;
+
+                // Strip <thinking>…</thinking> tags emitted as raw text
+                if (insideThinkingTag) {
+                  const closeIdx = chunk.indexOf('</thinking>');
+                  if (closeIdx !== -1) {
+                    chunk = chunk.slice(closeIdx + '</thinking>'.length);
+                    insideThinkingTag = false;
+                  } else {
+                    continue; // still inside thinking tag — skip entire chunk
+                  }
+                }
+
+                // Check if a new <thinking> tag opens in this chunk
+                const openIdx = chunk.indexOf('<thinking>');
+                if (openIdx !== -1) {
+                  const before = chunk.slice(0, openIdx);
+                  const afterOpen = chunk.slice(openIdx + '<thinking>'.length);
+                  const closeIdx = afterOpen.indexOf('</thinking>');
+                  if (closeIdx !== -1) {
+                    chunk = before + afterOpen.slice(closeIdx + '</thinking>'.length);
+                  } else {
+                    chunk = before;
+                    insideThinkingTag = true;
+                  }
+                }
+
+                if (chunk) {
+                  reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+                }
               }
             } catch { /* skip malformed */ }
           }

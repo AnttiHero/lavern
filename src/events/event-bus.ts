@@ -54,7 +54,12 @@ export type ShemEvent =
   | { type: 'matter_opened'; matterId: string; matterNumber: string; status: string; timestamp: string }
   // v11: Quality iteration events
   | { type: 'quality_check_run'; step: string; checkType: string; checkerRole?: string; iteration: number; timestamp: string }
-  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string };
+  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string }
+  // v16: Verification Pipeline events
+  | { type: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
+  | { type: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }
+  | { type: 'verification_finding'; findingId: string; pass: string; severity: string; location: string; description: string; autoFixable: boolean; timestamp: string }
+  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string };
 
 // ── Event Bus ────────────────────────────────────────────────────────────
 

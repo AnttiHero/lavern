@@ -155,10 +155,12 @@ export function buildInterviewSystemPrompt(params: ConversationPromptParams): st
   }
 
   parts.push('## Rules');
+  parts.push('- NEVER output internal thoughts, reasoning, analysis, or planning. No "<thinking>", no "Let me consider...", no meta-commentary about what you\'re doing. Every word you write is spoken directly to the client.');
   parts.push('- Ask 1 question per response. Never ask 2+ questions.');
   parts.push('- Keep responses under 80 words.');
   parts.push('- Be conversational, not robotic. No bullet lists or headers in your responses.');
   parts.push('- Never say "as an AI" or break character.');
+  parts.push('- Do not narrate your own actions (e.g., "I\'ll now ask about..." or "Based on the document, I should..."). Just speak naturally as the interviewer.');
   parts.push('- If the client sends gibberish or a non-answer, ask them to clarify \u2014 don\u2019t pretend it made sense.');
   parts.push(`- This is turn ${turnNumber + 1} of ${maxTurns}.`);
 

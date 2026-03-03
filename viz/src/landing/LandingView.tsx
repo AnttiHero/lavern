@@ -9,7 +9,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { colors, fonts, radii } from '../staffing/styles/tokens.js';
+import { colors } from '../staffing/styles/tokens.js';
+import { cn } from '../utils/cn.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
 interface Props {
@@ -61,39 +62,6 @@ export function MarbleLogoSmall({
   color?: string;
 }) {
   return <MarbleLogo height={height} color={color} veinColor="transparent" />;
-}
-
-// ── Keyframes ──────────────────────────────────────────────────────────────
-
-const KEYFRAMES_ID = 'marble-landing-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(KEYFRAMES_ID)) {
-  const style = document.createElement('style');
-  style.id = KEYFRAMES_ID;
-  style.textContent = `
-    @keyframes doorReveal {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes doorFade {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    @keyframes marbleBreath {
-      0%, 100% { filter: brightness(0.12) contrast(1.2) saturate(0.15); }
-      50% { filter: brightness(0.16) contrast(1.15) saturate(0.2); }
-    }
-    @keyframes crackGlow {
-      0%, 100% { opacity: 0.04; }
-      50% { opacity: 0.09; }
-    }
-    .marble-spotlight {
-      -webkit-background-clip: text !important;
-      background-clip: text !important;
-      -webkit-text-fill-color: transparent !important;
-      color: transparent !important;
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 // ── The Dark Door ──────────────────────────────────────────────────────────
@@ -194,13 +162,13 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   }, [onEnter, onAgentDocs]);
 
   if (!ready) {
-    return <div style={{ position: 'fixed', inset: 0, backgroundColor: '#080808' }} />;
+    return <div className="fixed inset-0 bg-[#080808]" />;
   }
 
   return (
     <div
+      className="fixed inset-0 overflow-hidden z-[9999] bg-[#080808] cursor-auto lg:cursor-none"
       style={{
-        ...styles.page,
         opacity: exiting ? 0 : 1,
         transition: 'opacity 0.7s ease',
       }}
@@ -208,30 +176,63 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
       onMouseLeave={onMouseLeave}
     >
       {/* ── Custom cursor ──────────────────────────────────────────── */}
-      <div ref={dotRef} style={styles.cursorDot} />
-      <div ref={ringRef} style={styles.cursorRing} />
+      <div
+        ref={dotRef}
+        className={cn(
+          'fixed -top-1 -left-1 w-2 h-2 rounded-full pointer-events-none z-[9999]',
+          'bg-[rgba(250,249,246,0.85)] will-change-transform opacity-0 transition-opacity duration-300 ease-in-out',
+          'hidden lg:block',
+        )}
+      />
+      <div
+        ref={ringRef}
+        className={cn(
+          'fixed -top-[18px] -left-[18px] w-9 h-9 rounded-full pointer-events-none z-[9998]',
+          'bg-[rgba(250,249,246,0.03)] blur-[10px] will-change-transform opacity-0 transition-opacity duration-300 ease-in-out',
+          'hidden lg:block',
+        )}
+      />
 
       {/* ── Marble texture — barely visible in the dark ────────────── */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={styles.marbleImg}
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[marbleBreath_10s_ease_infinite]"
+        style={{
+          filter: 'brightness(0.14) contrast(1.2) saturate(0.15)',
+          opacity: 0.7,
+          transform: 'scale(1.05)',
+        }}
       />
 
       {/* ── Dark veil — vignette toward edges ──────────────────────── */}
-      <div style={styles.veil} />
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          background: 'radial-gradient(ellipse 70% 60% at center, transparent 0%, rgba(8, 8, 8, 0.6) 100%)',
+        }}
+      />
 
       {/* ── Vertical light crack — the door seam ───────────────────── */}
-      <div style={styles.doorCrack} />
+      <div
+        className="absolute top-[10%] bottom-[10%] left-1/2 w-px -ml-px pointer-events-none z-[2] animate-[crackGlow_6s_ease_infinite]"
+        style={{
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(250, 249, 246, 0.04) 20%, rgba(250, 249, 246, 0.06) 50%, rgba(250, 249, 246, 0.04) 80%, transparent 100%)',
+        }}
+      />
 
       {/* ── Center — The Question ──────────────────────────────────── */}
-      <div style={styles.center}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-[5] pb-8">
         <p
           ref={welcomeRef}
-          className="marble-spotlight"
+          className={cn(
+            'marble-spotlight',
+            'text-[10px] sm:text-[13px] font-medium font-sans',
+            'text-[rgba(250,249,246,0.25)] tracking-[3px] sm:tracking-[6px] uppercase',
+            'm-0 mb-8 sm:mb-12',
+          )}
           style={{
-            ...styles.welcome,
             animation: 'doorFade 1.8s ease 0.3s both',
             background: 'rgba(250, 249, 246, 0.25)',
           }}
@@ -240,16 +241,22 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         </p>
 
         <h1
+          className={cn(
+            'text-3xl sm:text-4xl lg:text-[56px] font-light font-serif',
+            'text-[rgba(250,249,246,0.85)] m-0 tracking-[0.5px] leading-[1.15] text-center',
+          )}
           style={{
-            ...styles.questionTop,
             animation: 'doorReveal 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both',
           }}
         >
           Are you a human
         </h1>
         <h1
+          className={cn(
+            'text-3xl sm:text-4xl lg:text-[56px] font-light font-serif italic',
+            'text-[rgba(250,249,246,0.55)] m-0 mt-0.5 tracking-[0.5px] leading-[1.15] text-center',
+          )}
           style={{
-            ...styles.questionBottom,
             animation: 'doorReveal 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.3s both',
           }}
         >
@@ -258,15 +265,20 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
 
         {/* ── Two paths ────────────────────────────────────────────── */}
         <div
+          className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 lg:gap-9 mt-10 sm:mt-14 lg:mt-[72px]"
           style={{
-            ...styles.choiceRow,
             animation: 'doorFade 1s ease 2.3s both',
           }}
         >
           <button
             onClick={() => handleChoice('human')}
+            className={cn(
+              'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
+              'rounded border-[1.5px] border-solid',
+              'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
+              'cursor-auto lg:cursor-none transition-all duration-[350ms] ease-in-out',
+            )}
             style={{
-              ...styles.choiceBtn,
               color: hoveredChoice === 'human'
                 ? 'rgba(250, 249, 246, 0.95)'
                 : 'rgba(250, 249, 246, 0.35)',
@@ -283,12 +295,17 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             Human
           </button>
 
-          <span style={styles.choiceDivider} />
+          <span className="block h-px w-7 sm:w-px sm:h-7 bg-[rgba(250,249,246,0.08)]" />
 
           <button
             onClick={() => handleChoice('agent')}
+            className={cn(
+              'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
+              'rounded border-[1.5px] border-solid',
+              'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
+              'cursor-auto lg:cursor-none transition-all duration-[350ms] ease-in-out',
+            )}
             style={{
-              ...styles.choiceBtn,
               color: hoveredChoice === 'agent'
                 ? colors.accent
                 : 'rgba(250, 249, 246, 0.35)',
@@ -309,191 +326,15 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
 
       {/* ── Bottom — barely-there firm name ─────────────────────────── */}
       <div
+        className="absolute bottom-0 left-0 right-0 flex justify-center pb-10 z-10"
         style={{
-          ...styles.bottom,
           animation: 'doorFade 0.6s ease 3.1s both',
         }}
       >
-        <span style={styles.firmCredit}>
+        <span className="text-[9px] font-medium font-sans text-[rgba(250,249,246,0.12)] tracking-[6px] uppercase">
           <MarbleIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
         </span>
       </div>
     </div>
   );
 }
-
-// ── Styles ─────────────────────────────────────────────────────────────────
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    position: 'fixed',
-    inset: 0,
-    overflow: 'hidden',
-    zIndex: 9999,
-    backgroundColor: '#080808',
-    cursor: 'none',
-  },
-
-  // ── Custom cursor — inverted for dark background ─────────────────────
-  cursorDot: {
-    position: 'fixed',
-    top: -4,
-    left: -4,
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    backgroundColor: 'rgba(250, 249, 246, 0.85)',
-    pointerEvents: 'none' as const,
-    zIndex: 9999,
-    willChange: 'transform',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-  cursorRing: {
-    position: 'fixed',
-    top: -18,
-    left: -18,
-    width: 36,
-    height: 36,
-    borderRadius: '50%',
-    backgroundColor: 'rgba(250, 249, 246, 0.03)',
-    filter: 'blur(10px)',
-    pointerEvents: 'none' as const,
-    zIndex: 9998,
-    willChange: 'transform',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-
-  // ── Marble texture — darkened to near-invisibility ────────────────────
-  marbleImg: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover' as const,
-    objectPosition: 'center center',
-    filter: 'brightness(0.14) contrast(1.2) saturate(0.15)',
-    opacity: 0.7,
-    transform: 'scale(1.05)',
-    willChange: 'transform',
-    transition: 'transform 0.5s ease-out',
-    animation: 'marbleBreath 10s ease infinite',
-  },
-
-  // ── Dark veil — radial vignette, darker at edges ──────────────────────
-  veil: {
-    position: 'absolute',
-    inset: 0,
-    background: 'radial-gradient(ellipse 70% 60% at center, transparent 0%, rgba(8, 8, 8, 0.6) 100%)',
-    pointerEvents: 'none' as const,
-    zIndex: 1,
-  },
-
-  // ── Door crack — a thin vertical line of faint light ──────────────────
-  doorCrack: {
-    position: 'absolute',
-    top: '10%',
-    bottom: '10%',
-    left: '50%',
-    width: 1,
-    marginLeft: -0.5,
-    background: 'linear-gradient(to bottom, transparent 0%, rgba(250, 249, 246, 0.04) 20%, rgba(250, 249, 246, 0.06) 50%, rgba(250, 249, 246, 0.04) 80%, transparent 100%)',
-    pointerEvents: 'none' as const,
-    zIndex: 2,
-    animation: 'crackGlow 6s ease infinite',
-  },
-
-  // ── Center content ────────────────────────────────────────────────────
-  center: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-    paddingBottom: 32,
-  },
-
-  welcome: {
-    fontSize: 13,
-    fontWeight: 500,
-    fontFamily: fonts.sans,
-    color: 'rgba(250, 249, 246, 0.25)',
-    letterSpacing: 6,
-    textTransform: 'uppercase' as const,
-    margin: '0 0 48px',
-  },
-
-  questionTop: {
-    fontSize: 56,
-    fontWeight: 300,
-    fontFamily: fonts.serif,
-    color: 'rgba(250, 249, 246, 0.85)',
-    margin: 0,
-    letterSpacing: 0.5,
-    lineHeight: 1.15,
-    textAlign: 'center' as const,
-  },
-  questionBottom: {
-    fontSize: 56,
-    fontWeight: 300,
-    fontFamily: fonts.serif,
-    fontStyle: 'italic' as const,
-    color: 'rgba(250, 249, 246, 0.55)',
-    margin: 0,
-    marginTop: 2,
-    letterSpacing: 0.5,
-    lineHeight: 1.15,
-    textAlign: 'center' as const,
-  },
-
-  // ── Choice buttons ────────────────────────────────────────────────────
-  choiceRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 36,
-    marginTop: 72,
-  },
-  choiceBtn: {
-    padding: '14px 52px',
-    borderRadius: radii.sm,
-    border: '1.5px solid rgba(250, 249, 246, 0.12)',
-    backgroundColor: 'transparent',
-    color: 'rgba(250, 249, 246, 0.35)',
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    fontWeight: 500,
-    letterSpacing: 4,
-    textTransform: 'uppercase' as const,
-    cursor: 'none',
-    transition: 'all 0.35s ease',
-  },
-  choiceDivider: {
-    display: 'block',
-    width: 1,
-    height: 28,
-    backgroundColor: 'rgba(250, 249, 246, 0.08)',
-  },
-
-  // ── Bottom credit ─────────────────────────────────────────────────────
-  bottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '0 0 40px',
-    zIndex: 10,
-  },
-  firmCredit: {
-    fontSize: 9,
-    fontWeight: 500,
-    fontFamily: fonts.sans,
-    color: 'rgba(250, 249, 246, 0.12)',
-    letterSpacing: 6,
-    textTransform: 'uppercase' as const,
-  },
-};

@@ -119,7 +119,12 @@ export type ShemEvent =
   // v5: Evaluator events
   | { type: 'evaluator_gate_result'; passed: boolean; score: number; step: string; failureReasons: string[]; timestamp: string }
   // v11: Quality check events
-  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string };
+  | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string }
+  // v16: Verification Pipeline events
+  | { type: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
+  | { type: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }
+  | { type: 'verification_finding'; findingId: string; pass: string; severity: string; location: string; description: string; autoFixable: boolean; timestamp: string }
+  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string };
 
 /**
  * WebSocket message wrapper types.
@@ -141,14 +146,49 @@ export type WsMessage =
 /**
  * Workflow step metadata.
  */
+/**
+ * Legacy 11-step pipeline. Used as fallback when the actual workflow
+ * steps are not yet known from server events.
+ */
 export const WORKFLOW_STEPS: WorkflowStep[] = [
   'intake', 'parallel_analysis', 'debate_1', 'ethics_gate',
   'transformation', 'parallel_verification', 'debate_2',
-  'meaning_gate', 'synthesis', 'final_gate', 'delivered',
+  'meaning_gate', 'synthesis',
+  'final_gate', 'delivered',
 ];
 
+/**
+ * Known step sequences per workflow template.
+ * HeartbeatBand uses these to show the correct progress dots.
+ */
+export const WORKFLOW_STEP_MAP: Record<string, WorkflowStep[]> = {
+  // Legal design / roundtable (legacy 11-step)
+  'roundtable': WORKFLOW_STEPS,
+  'legal-design': WORKFLOW_STEPS,
+  // Review (6-step)
+  'review': ['intake', 'specialist_analysis', 'evaluator_gate', 'plain_language_review', 'final_gate', 'delivered'],
+  'contract-review': ['intake', 'contract_analysis', 'evaluator_gate', 'plain_language_review', 'final_gate', 'delivered'],
+  // Adversarial / research (6-step)
+  'adversarial': ['intake', 'build', 'attack', 'synthesize', 'final_gate', 'delivered'],
+  'research-memo': ['intake', 'research_execution', 'red_team_review', 'synthesis', 'final_gate', 'delivered'],
+  // Counsel (4-step)
+  'counsel': ['intake', 'specialist_execution', 'final_gate', 'delivered'],
+  'simple-query': ['intake', 'specialist_execution', 'final_gate', 'delivered'],
+  // Full bench (6-step)
+  'full-bench': ['intake', 'decomposition', 'workstream_execution', 'senior_review', 'final_gate', 'delivered'],
+  // Pre-engagement (8-step)
+  'pre-engagement': ['intake', 'conflict_check', 'kyc_screening', 'engagement_letter', 'client_review_gate', 'team_staffing', 'matter_opening', 'engaged'],
+  // Verification (5-step)
+  'verification': ['intake', 'verification_pipeline', 'report_compilation', 'final_gate', 'delivered'],
+};
+
+/** Human-readable labels for every known step. */
 export const STEP_LABELS: Record<string, string> = {
+  // Common
   intake: 'Intake',
+  final_gate: 'Final Approval',
+  delivered: 'Delivered',
+  // Legal design / roundtable
   parallel_analysis: 'Analysis',
   debate_1: 'First Review',
   ethics_gate: 'Ethics Check',
@@ -157,8 +197,37 @@ export const STEP_LABELS: Record<string, string> = {
   debate_2: 'Second Review',
   meaning_gate: 'Meaning Check',
   synthesis: 'Synthesis',
-  final_gate: 'Final Approval',
-  delivered: 'Delivered',
+  // Review
+  specialist_analysis: 'Specialist Analysis',
+  evaluator_gate: 'Quality Check',
+  plain_language_review: 'Plain Language',
+  contract_analysis: 'Contract Analysis',
+  // Adversarial / research
+  build: 'Build Arguments',
+  attack: 'Stress Test',
+  synthesize: 'Synthesize',
+  research_execution: 'Research',
+  red_team_review: 'Red Team',
+  // Counsel
+  specialist_execution: 'Specialist Work',
+  // Roundtable generic
+  debate: 'Roundtable',
+  gate: 'Gate Review',
+  // Full bench
+  decomposition: 'Decompose',
+  workstream_execution: 'Parallel Work',
+  senior_review: 'Senior Review',
+  // Pre-engagement
+  conflict_check: 'Conflict Check',
+  kyc_screening: 'KYC',
+  engagement_letter: 'Engagement Letter',
+  client_review_gate: 'Client Review',
+  team_staffing: 'Staffing',
+  matter_opening: 'Matter Opening',
+  engaged: 'Engaged',
+  // Verification pipeline
+  verification_pipeline: 'Verification',
+  report_compilation: 'Report',
 };
 
 /**

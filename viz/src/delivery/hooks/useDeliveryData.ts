@@ -254,14 +254,20 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   }
 
   // ── Key changes from RED/YELLOW findings ─────────────────────────────
+  // For review workflows, findings are risks — not before/after transformations.
+  // Present them as "Issue → Recommendation" instead of "Before → After".
   const keyChanges: KeyChange[] = (rawFindings ?? [])
     .filter(f => f.severity === 'RED' || f.severity === 'YELLOW')
     .slice(0, 8)
-    .map(f => ({
-      title: f.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      before: f.content,
-      after: `Identified by ${formatRole(f.agent)} [${f.severity}]`,
-    }));
+    .map(f => {
+      const evidence = (f.evidence ?? []).join('; ');
+      const hasEvidence = evidence.length > 0;
+      return {
+        title: `${f.severity === 'RED' ? '\u26D4' : '\u26A0\uFE0F'} ${f.category.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`,
+        before: hasEvidence ? evidence : f.content,
+        after: hasEvidence ? f.content : `Flagged by ${formatRole(f.agent)}`,
+      };
+    });
 
   // ── Narrative from real session data ──────────────────────────────────
   const narrative: NarrativeSection[] = [];

@@ -61,10 +61,12 @@ export const researchMemoTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
-    // Debate board (for posting research findings)
+    // Debate board (for posting research findings and resolving them)
     'mcp__shem__post_finding',
     'mcp__shem__get_findings',
     'mcp__shem__get_debate_summary',
+    'mcp__shem__resolve_debate',
+    'mcp__shem__get_unresolved_debates',
     // Memory system (read + write — research findings are precedents)
     'mcp__shem__query_institutional_memory',
     'mcp__shem__add_institutional_memory',
@@ -106,6 +108,7 @@ This is a 5-step pipeline for structured legal research:
 - Query institutional memory and precedents at intake for existing research
 - The evaluator gate runs automatically after research execution
 - Red team review is adversarial — let them challenge the research honestly
+- **BEFORE delivery**: call \`get_unresolved_debates\`, then \`resolve_debate\` for each topic cluster to formally close all findings. Every finding must be resolved before delivery.
 - Save significant findings as precedents for future queries
 - Request risk assessment after evaluator gate passes
 
@@ -124,6 +127,7 @@ The final deliverable should include:
     intake: {
       denyTools: [
         'mcp__shem__post_finding',
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_risk_assessment',
@@ -133,12 +137,13 @@ The final deliverable should include:
     },
     research_execution: {
       denyTools: [
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_risk_assessment',
         'mcp__shem__record_risk_assessment',
       ],
-      reason: 'Research phase: legal-researcher produces findings and citations.',
+      reason: 'Research phase: legal-researcher produces findings and citations. Resolution happens later.',
     },
     evaluator_gate: {
       denyTools: [

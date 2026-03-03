@@ -68,10 +68,12 @@ export const contractReviewTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
-    // Debate board (for posting contract findings)
+    // Debate board (for posting contract findings and resolving them)
     'mcp__shem__post_finding',
     'mcp__shem__get_findings',
     'mcp__shem__get_debate_summary',
+    'mcp__shem__resolve_debate',
+    'mcp__shem__get_unresolved_debates',
     // Memory system
     'mcp__shem__query_institutional_memory',
     'mcp__shem__add_institutional_memory',
@@ -119,9 +121,10 @@ This is a 6-step pipeline for contract analysis:
 - Post all contract findings to the debate board using contract-specific finding types: \`contract-risk\`, \`contract-deviation\`, \`contract-standard\`
 - Query memory at intake for relevant precedents and standard positions
 - The evaluator gate runs automatically after analysis
+- After the evaluator gate passes, request risk assessment from risk-pricer before plain language review
+- **BEFORE the final gate**: call \`get_unresolved_debates\`, then call \`resolve_debate\` for each topic cluster to formally close all findings. Group related findings (e.g., all liability items). Every finding must be resolved before delivery.
 - MUST invoke approval gate before final delivery
 - Save successful review patterns as precedents for future use
-- After the evaluator gate passes, request risk assessment from risk-pricer before plain language review
 
 ## Output
 The final deliverable should include:
@@ -136,6 +139,7 @@ The final deliverable should include:
     intake: {
       denyTools: [
         'mcp__shem__post_finding',
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_approval',
@@ -146,13 +150,14 @@ The final deliverable should include:
     },
     contract_analysis: {
       denyTools: [
+        'mcp__shem__resolve_debate',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__record_evaluation_result',
         'mcp__shem__request_approval',
         'mcp__shem__request_risk_assessment',
         'mcp__shem__record_risk_assessment',
       ],
-      reason: 'Analysis phase: contract-reviewer produces findings.',
+      reason: 'Analysis phase: contract-reviewer produces findings. Resolution happens later.',
     },
     evaluator_gate: {
       denyTools: [

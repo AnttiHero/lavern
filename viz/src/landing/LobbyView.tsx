@@ -10,9 +10,10 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { colors, fonts, radii } from '../staffing/styles/tokens.js';
+import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { cn } from '../utils/cn.js';
 
 interface Props {
   onEnter: () => void;
@@ -21,51 +22,16 @@ interface Props {
   onAgentDocs?: () => void;
 }
 
-// ── Keyframes ──────────────────────────────────────────────────────────────
-
-const KEYFRAMES_ID = 'marble-lobby-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(KEYFRAMES_ID)) {
-  const style = document.createElement('style');
-  style.id = KEYFRAMES_ID;
-  style.textContent = `
-    @keyframes lobbyFadeUp {
-      0% { opacity: 0; transform: translateY(24px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes lobbyFadeIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    @keyframes lobbyLineGrow {
-      0% { transform: scaleX(0); }
-      100% { transform: scaleX(1); }
-    }
-    @keyframes lobbyPhotoReveal {
-      0% { opacity: 0; transform: scale(1.04); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    @keyframes lobbyNameReveal {
-      0% { opacity: 0; letter-spacing: 40px; }
-      100% { opacity: 1; letter-spacing: 22px; }
-    }
-    @keyframes marbleShimmer {
-      0% { left: -100%; }
-      100% { left: 200%; }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 // ── Shimmer button ─────────────────────────────────────────────────────────
 
 function ShimmerButton({
   onClick,
-  style,
+  className,
   animStyle,
   children,
 }: {
   onClick: () => void;
-  style: React.CSSProperties;
+  className?: string;
   animStyle?: React.CSSProperties;
   children: React.ReactNode;
 }) {
@@ -73,14 +39,19 @@ function ShimmerButton({
   return (
     <button
       onClick={onClick}
+      className={cn(
+        'relative overflow-hidden border-[1.5px] border-text rounded-sm',
+        'font-sans text-[11px] font-semibold tracking-[1.5px] uppercase',
+        'px-3 py-1.5 sm:px-5 sm:py-2',
+        'lg:cursor-none cursor-pointer',
+        'transition-[background-color,color,border-color] duration-250 ease-in-out',
+        className,
+      )}
       style={{
-        ...style,
         ...animStyle,
-        position: 'relative',
-        overflow: 'hidden',
-        backgroundColor: hovered ? colors.text : style.backgroundColor,
-        color: hovered ? '#fff' : (style.color ?? colors.text),
-        borderColor: hovered ? colors.text : (style.borderColor ?? colors.text),
+        backgroundColor: hovered ? colors.text : 'transparent',
+        color: hovered ? '#fff' : colors.text,
+        borderColor: hovered ? colors.text : colors.text,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -88,15 +59,10 @@ function ShimmerButton({
       {children}
       {hovered && (
         <span
+          className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
           style={{
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '60%',
-            height: '100%',
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
             animation: 'marbleShimmer 0.6s ease forwards',
-            pointerEvents: 'none',
           }}
         />
       )}
@@ -107,17 +73,20 @@ function ShimmerButton({
 // ── Hover glow ─────────────────────────────────────────────────────────────
 
 function HoverText({
+  className,
   style,
   children,
   as: Tag = 'span',
 }: {
-  style: React.CSSProperties;
+  className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
   as?: 'h1' | 'p' | 'span';
 }) {
   const [hovered, setHovered] = useState(false);
   return (
     <Tag
+      className={className}
       style={{
         ...style,
         transition: 'text-shadow 0.4s ease, opacity 0.4s ease',
@@ -190,48 +159,59 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
   }, []);
 
   if (!ready) {
-    return <div style={{ position: 'fixed', inset: 0, backgroundColor: '#f0ede8' }} />;
+    return <div className="fixed inset-0 bg-[#f0ede8]" />;
   }
 
   return (
-    <div style={styles.page} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
-      {/* ── Custom cursor ──────────────────────────────────────────── */}
-      <div ref={dotRef} style={styles.cursorDot} />
-      <div ref={ringRef} style={styles.cursorRing} />
+    <div
+      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8] cursor-auto lg:cursor-none"
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+    >
+      {/* ── Custom cursor (desktop only via JS opacity) ─────────── */}
+      <div
+        ref={dotRef}
+        className="fixed -top-1 -left-1 w-2 h-2 rounded-full bg-text pointer-events-none z-[9999] will-change-transform opacity-0 transition-opacity duration-300 hidden lg:block"
+      />
+      <div
+        ref={ringRef}
+        className="fixed -top-4 -left-4 w-8 h-8 rounded-full bg-[rgba(26,26,26,0.06)] blur-[8px] pointer-events-none z-[9998] will-change-transform opacity-0 transition-opacity duration-300 hidden lg:block"
+      />
 
-      {/* ── Full-bleed marble texture ────────────────────────────── */}
+      {/* ── Full-bleed marble texture ──────────────────────────── */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-300 ease-out"
         style={{
-          ...styles.marbleImg,
+          filter: 'contrast(0.75) brightness(1.12) saturate(0.3)',
+          opacity: 0.6,
+          transform: 'scale(1.03)',
           animation: 'lobbyPhotoReveal 2s ease 0s both',
         }}
       />
 
-      {/* ── Frost veil ───────────────────────────────────────────── */}
-      <div style={styles.veil} />
+      {/* ── Frost veil ─────────────────────────────────────────── */}
+      <div className="absolute inset-0 bg-[rgba(245,243,239,0.35)] pointer-events-none" />
 
-      {/* ── Top nav ──────────────────────────────────────────────── */}
+      {/* ── Top nav ────────────────────────────────────────────── */}
       <div
-        style={{
-          ...styles.topNav,
-          animation: 'lobbyFadeIn 0.8s ease 2.4s both',
-        }}
+        className="absolute top-0 left-0 right-0 flex justify-between p-4 sm:p-5 lg:px-9 lg:py-7 z-10"
+        style={{ animation: 'lobbyFadeIn 0.8s ease 2.4s both' }}
       >
         {isLoggedIn && (
           <>
             {onAgentDocs && (
-              <ShimmerButton onClick={onAgentDocs} style={styles.navBtn}>
+              <ShimmerButton onClick={onAgentDocs}>
                 Agent API {'\u2192'}
               </ShimmerButton>
             )}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <ShimmerButton onClick={onMyPage} style={styles.navBtn}>
+            <div className="flex gap-2 sm:gap-2.5 items-center">
+              <ShimmerButton onClick={onMyPage}>
                 My Page
               </ShimmerButton>
-              <ShimmerButton onClick={() => { userCtx!.logout(); }} style={styles.navBtn}>
+              <ShimmerButton onClick={() => { userCtx!.logout(); }}>
                 Logout
               </ShimmerButton>
             </div>
@@ -239,53 +219,55 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
         )}
       </div>
 
-      {/* ── Center — firm name ────────────────────────────────────── */}
-      <div style={styles.centerContent}>
+      {/* ── Center — firm name ──────────────────────────────────── */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-5 pb-12 sm:pb-16 lg:pb-20 px-4">
         <HoverText
           as="h1"
-          style={{
-            ...styles.firmName,
-            animation: 'lobbyNameReveal 1.8s ease 0.6s both',
-          }}
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-[130px] font-light font-serif text-text m-0 tracking-[6px] sm:tracking-[12px] md:tracking-[16px] lg:tracking-[22px] uppercase"
+          style={{ animation: 'lobbyNameReveal 1.8s ease 0.6s both' }}
         >
           <MarbleIlluminated />
         </HoverText>
 
         <div
-          style={{
-            ...styles.rule,
-            animation: 'lobbyLineGrow 0.8s ease 1.6s both',
-          }}
+          className="w-16 sm:w-20 lg:w-[100px] h-0.5 bg-text mt-6 sm:mt-8 lg:mt-10 mb-5 sm:mb-6 lg:mb-8 origin-center"
+          style={{ animation: 'lobbyLineGrow 0.8s ease 1.6s both' }}
         />
 
         <HoverText
           as="p"
-          style={{
-            ...styles.tagline,
-            animation: 'lobbyFadeIn 0.8s ease 1.8s both',
-          }}
+          className="text-[10px] sm:text-xs lg:text-xl font-sans font-semibold text-text tracking-[3px] sm:tracking-[5px] lg:tracking-[8px] uppercase m-0"
+          style={{ animation: 'lobbyFadeIn 0.8s ease 1.8s both' }}
         >
           The Agentic Law Firm
         </HoverText>
       </div>
 
-      {/* ── Bottom — statement + enter ───────────────────────────── */}
-      <div style={styles.bottomContent}>
+      {/* ── Bottom — statement + enter ─────────────────────────── */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center px-4 pb-8 sm:px-8 sm:pb-10 lg:px-10 lg:pb-[60px] z-10">
         <HoverText
           as="p"
-          style={{
-            ...styles.statement,
-            animation: 'lobbyFadeUp 0.8s ease 2s both',
-          }}
+          className="text-xl sm:text-2xl lg:text-[32px] font-serif font-normal text-text mb-8 sm:mb-10 lg:mb-12 tracking-[0.5px] leading-relaxed text-center"
+          style={{ animation: 'lobbyFadeUp 0.8s ease 2s both' }}
         >
           Excellence doesn{'\u2019'}t scale.{' '}
-          <span style={{ fontStyle: 'italic' }}>Until now.</span>
+          <span className="italic">Until now.</span>
         </HoverText>
 
         <ShimmerButton
           onClick={onEnter}
-          style={styles.enterBtn}
-          animStyle={{ animation: 'lobbyFadeUp 0.5s ease 2.4s both' }}
+          className={cn(
+            'px-10 py-4 sm:px-16 sm:py-5 lg:px-[88px] lg:py-5',
+            'border-2 border-text',
+            'text-sm sm:text-base lg:text-lg font-semibold',
+            'tracking-[3px] lg:tracking-[5px]',
+          )}
+          animStyle={{
+            animation: 'lobbyFadeUp 0.5s ease 2.4s both',
+            backgroundColor: 'rgba(255, 255, 255, 0.35)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         >
           Enter {'\u2192'}
         </ShimmerButton>
@@ -293,167 +275,3 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
     </div>
   );
 }
-
-// ── Styles ─────────────────────────────────────────────────────────────────
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    position: 'fixed',
-    inset: 0,
-    overflow: 'hidden',
-    zIndex: 9999,
-    backgroundColor: '#f0ede8',
-    cursor: 'none',
-  },
-
-  cursorDot: {
-    position: 'fixed',
-    top: -4,
-    left: -4,
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    backgroundColor: colors.text,
-    pointerEvents: 'none' as const,
-    zIndex: 9999,
-    willChange: 'transform',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-  cursorRing: {
-    position: 'fixed',
-    top: -16,
-    left: -16,
-    width: 32,
-    height: 32,
-    borderRadius: '50%',
-    backgroundColor: 'rgba(26, 26, 26, 0.06)',
-    filter: 'blur(8px)',
-    pointerEvents: 'none' as const,
-    zIndex: 9998,
-    willChange: 'transform',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-
-  marbleImg: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover' as const,
-    objectPosition: 'center center',
-    filter: 'contrast(0.75) brightness(1.12) saturate(0.3)',
-    opacity: 0.6,
-    transform: 'scale(1.03)',
-    willChange: 'transform',
-    transition: 'transform 0.3s ease-out',
-  },
-
-  veil: {
-    position: 'absolute',
-    inset: 0,
-    background: 'rgba(245, 243, 239, 0.35)',
-    pointerEvents: 'none' as const,
-  },
-
-  topNav: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '28px 36px',
-    zIndex: 10,
-  },
-  navBtn: {
-    backgroundColor: 'transparent',
-    border: `1.5px solid ${colors.text}`,
-    borderRadius: radii.sm,
-    color: colors.text,
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    padding: '8px 20px',
-    cursor: 'none',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
-  },
-
-  centerContent: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-    paddingBottom: 80,
-  },
-  firmName: {
-    fontSize: 130,
-    fontWeight: 300,
-    fontFamily: fonts.serif,
-    color: colors.text,
-    margin: 0,
-    letterSpacing: 22,
-    textTransform: 'uppercase' as const,
-  },
-  rule: {
-    width: 100,
-    height: 2,
-    backgroundColor: colors.text,
-    marginTop: 40,
-    marginBottom: 32,
-    transformOrigin: 'center',
-  },
-  tagline: {
-    fontSize: 20,
-    fontFamily: fonts.sans,
-    fontWeight: 600,
-    color: colors.text,
-    letterSpacing: 8,
-    textTransform: 'uppercase' as const,
-    margin: 0,
-  },
-
-  bottomContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    padding: '0 40px 60px',
-    zIndex: 10,
-  },
-  statement: {
-    fontSize: 32,
-    fontFamily: fonts.serif,
-    fontWeight: 400,
-    color: colors.text,
-    margin: '0 0 48px',
-    letterSpacing: 0.5,
-    lineHeight: 1.4,
-    textAlign: 'center' as const,
-  },
-  enterBtn: {
-    padding: '20px 88px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    color: colors.text,
-    fontFamily: fonts.sans,
-    fontSize: 18,
-    fontWeight: 600,
-    letterSpacing: 5,
-    textTransform: 'uppercase' as const,
-    cursor: 'none',
-    transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
-  },
-};

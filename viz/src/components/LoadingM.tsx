@@ -8,29 +8,6 @@
 
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
-const KEYFRAMES_ID = 'marble-loading-m-keyframes';
-if (typeof document !== 'undefined' && !document.getElementById(KEYFRAMES_ID)) {
-  const s = document.createElement('style');
-  s.id = KEYFRAMES_ID;
-  s.textContent = `
-    @keyframes marbleBreath {
-      0%, 100% {
-        opacity: 0.25;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.7;
-        transform: scale(1.08);
-      }
-    }
-    @keyframes marbleDot {
-      0%, 80%, 100% { opacity: 0; }
-      40% { opacity: 0.5; }
-    }
-  `;
-  document.head.appendChild(s);
-}
-
 interface LoadingMProps {
   /** Optional text below the M (e.g., "Loading session..."). If omitted, no text shown. */
   text?: string;
@@ -58,7 +35,7 @@ export function LoadingM({ text, size = 64 }: LoadingMProps) {
         color: colors.text,
         lineHeight: 1,
         userSelect: 'none',
-        animation: 'marbleBreath 2.4s ease-in-out infinite',
+        animation: 'marbleLoadBreath 2.4s ease-in-out infinite',
       }}>
         M
       </div>
