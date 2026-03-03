@@ -101,7 +101,7 @@ export async function processDocument(
           sessionId, localResult, documentPath, documentHash, clawConfig,
         );
 
-        registry.markReviewed(documentHash, sessionId, localFindings, 0); // $0 — local inference
+        registry.markReviewed(documentHash, sessionId, localFindings, 0, true); // $0 — local inference, confidential
 
         const durationMs = Date.now() - startTime;
         log(`🔒 Delivered (local) → ${path.relative(clawConfig.dir, deliveryDir)}/`);

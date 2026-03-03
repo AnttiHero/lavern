@@ -1,6 +1,6 @@
 {
   "name": "the-shem",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "The Shem - Multi-agent legal design system. The world's first driverless law firm.",
   "type": "module",
   "main": "dist/index.js",

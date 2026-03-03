@@ -19,5 +19,12 @@ import './templates/pre-engagement.js';
 // v16: Verification pipeline (standalone + post-production)
 import './templates/verification.js';
 
+// Import original templates AFTER v11 — they override backward compat aliases
+// with correct step definitions (contract_analysis vs specialist_analysis, etc.)
+import './templates/simple-query.js';
+import './templates/contract-review.js';
+import './templates/research-memo.js';
+import './templates/legal-design.js';
+
 // Re-export the registry for consumers
 export { workflowRegistry } from './registry.js';

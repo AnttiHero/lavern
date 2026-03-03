@@ -59,6 +59,7 @@ export interface DocumentEntry {
   };
   costUsd?: number;            // Cost of last review
   error?: string;              // Error message if status === 'error'
+  confidential?: boolean;      // Processed via local model (privilege preservation)
 }
 
 /** Persistent state tracked across Claw Mode sessions. */

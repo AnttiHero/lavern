@@ -32,6 +32,8 @@ interface ClawStatus {
     flagged: number;
     pending: number;
     errors: number;
+    confidential: number;
+    frontier: number;
   };
   sessions: {
     completed: number;
@@ -56,6 +58,7 @@ interface ClawDocument {
   findings: { critical: number; major: number; minor: number } | null;
   costUsd: number | null;
   error: string | null;
+  confidential: boolean;
 }
 
 interface Props {
@@ -169,6 +172,24 @@ export default function ClawView({ onBack }: Props) {
         <StatCard label="Sessions" value={status.sessions.completed} />
       </div>
 
+      {/* Processing Model Split */}
+      {(status.documents.confidential > 0 || status.documents.frontier > 0) && (
+        <div style={styles.modelSplitRow}>
+          <div style={styles.modelCard}>
+            <div style={styles.modelIcon}>🔒</div>
+            <div style={styles.modelCount}>{status.documents.confidential}</div>
+            <div style={styles.modelLabel}>Local</div>
+            <div style={styles.modelSublabel}>On-device · $0</div>
+          </div>
+          <div style={styles.modelCard}>
+            <div style={styles.modelIcon}>☁️</div>
+            <div style={styles.modelCount}>{status.documents.frontier}</div>
+            <div style={styles.modelLabel}>Frontier</div>
+            <div style={styles.modelSublabel}>Claude · Full pipeline</div>
+          </div>
+        </div>
+      )}
+
       {/* Budget Bar */}
       <div style={styles.card}>
         <div style={styles.cardHeader}>
@@ -224,6 +245,7 @@ export default function ClawView({ onBack }: Props) {
                 {documents.map((doc, i) => (
                   <tr key={i} style={doc.status === 'flagged' ? styles.flaggedRow : undefined}>
                     <td style={styles.td}>
+                      {doc.confidential && <span style={styles.lockIcon} title="Processed locally — privilege preserved">🔒</span>}
                       <span style={styles.docName}>{doc.name}</span>
                     </td>
                     <td style={styles.td}>{doc.type}</td>
@@ -242,7 +264,9 @@ export default function ClawView({ onBack }: Props) {
                       )}
                     </td>
                     <td style={styles.td}>
-                      {doc.costUsd != null ? `$${doc.costUsd.toFixed(2)}` : '\u2014'}
+                      {doc.confidential
+                        ? <span style={styles.localCostBadge}>Local</span>
+                        : doc.costUsd != null ? `$${doc.costUsd.toFixed(2)}` : '\u2014'}
                     </td>
                     <td style={styles.td}>
                       {doc.lastReviewed ? new Date(doc.lastReviewed).toLocaleString() : '\u2014'}
@@ -531,6 +555,54 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgPanel,
     color: colors.textMuted,
     marginRight: '4px',
+  },
+  lockIcon: {
+    marginRight: '6px',
+    fontSize: '12px',
+  },
+  localCostBadge: {
+    display: 'inline-block',
+    padding: '1px 6px',
+    borderRadius: radii.pill,
+    fontSize: '10px',
+    fontWeight: 700,
+    backgroundColor: 'rgba(46, 125, 156, 0.08)',
+    color: colors.sonnet,
+  },
+  modelSplitRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  modelCard: {
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    textAlign: 'center' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '2px',
+  },
+  modelIcon: {
+    fontSize: '20px',
+    marginBottom: '2px',
+  },
+  modelCount: {
+    fontSize: '28px',
+    fontWeight: 700,
+    fontFamily: fonts.serif,
+  },
+  modelLabel: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: colors.text,
+  },
+  modelSublabel: {
+    fontSize: '11px',
+    color: colors.textMuted,
   },
   emptyState: {
     padding: spacing.lg,

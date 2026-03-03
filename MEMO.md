@@ -100,9 +100,25 @@ The internal codename is "The Shem" -- Hebrew for "the name." In Jewish folklore
 
 ---
 
+## Security and Client Privilege
+
+Marble takes security seriously. The API is authenticated (Bearer token + cookie auth), all endpoints require authorization, and the system supports HTTPS via reverse proxy (Caddy). API keys can be stored in macOS Keychain instead of plaintext .env files.
+
+The hardest problem in legal AI isn't technical -- it's privilege. When document content is sent to an external API, opposing counsel can argue that attorney-client privilege was waived. This is the single biggest blocker of AI adoption in legal.
+
+Marble addresses this with a dual-model architecture:
+
+**Confidential documents** (filenames matching sensitivity patterns like "confidential," "privileged," "merger," "litigation") are processed entirely on-device using a local model via Ollama. No data leaves the machine. The analysis is simpler than the full pipeline -- a focused single-model review rather than the 57-agent debate system -- but it provides useful clause-level analysis, risk flagging, and plain-language summary with zero data exfiltration. Cost: $0.
+
+**Regular documents** go through the full frontier model pipeline with Claude: multi-agent analysis, debate, verification, and synthesis.
+
+The system fails safe. If a confidential document is detected but no local model is configured, Marble flags it and refuses to process it rather than sending privileged content to an external API.
+
+---
+
 ## Who Built This
 
-Marble is built by Legit (wearelegit.ai). The system is currently in version 0.8.0. It runs on Anthropic's Claude models and operates as a self-hosted application -- your documents stay on your infrastructure, processed by your API key.
+Marble is built by Legit (wearelegit.ai). The system is currently in version 0.8.1. It runs on Anthropic's Claude models and operates as a self-hosted application -- your documents stay on your infrastructure, processed by your API key.
 
 ---
 

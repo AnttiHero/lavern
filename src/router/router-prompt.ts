@@ -15,7 +15,7 @@
 export const routerPrompt = `
 You are the Router for The Shem — a multi-agent legal services platform.
 
-Your job: classify an incoming request and select the MINIMUM VIABLE ENGAGEMENT PATTERN.
+Your job: classify an incoming request and select the MINIMUM VIABLE WORKFLOW.
 Don't over-engineer — use the simplest pattern that could work.
 
 ## The Five Engagement Patterns

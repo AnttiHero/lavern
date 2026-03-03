@@ -181,113 +181,114 @@ function buildRouterUserPrompt(request: LegalRequest): string {
  * during testing.
  */
 export function classifyRequest(request: LegalRequest): RouterClassification {
-  // Rule 1: Document redesign → roundtable (multidisciplinary panel)
+  // Rule 1: Document redesign → legal-design (multidisciplinary panel, 10-step pipeline)
   if (request.type === 'document_redesign') {
     return {
       requestType: 'full_pipeline',
       complexity: 'high',
       riskLevel: 'medium',
-      selectedWorkflow: 'roundtable',
+      selectedWorkflow: 'legal-design',
       selectedSpecialists: [
         'design-reviewer', 'ethics-auditor', 'service-designer',
         'plain-language-specialist', 'client-proxy', 'synthesis-editor',
+        'transformation-specialist', 'meaning-guardian',
       ],
       requiresDebate: true,
       requiresEthicsFirst: true,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Document redesign requires the roundtable pattern with parallel expert panel, debate, and synthesis.',
+      reasoning: 'Document redesign requires the legal-design pipeline with parallel expert panel, debate, and synthesis.',
     };
   }
 
-  // Rule 2: Contract review → review (specialist + evaluator)
+  // Rule 2: Contract review → contract-review (specialist + evaluator + plain language)
   if (request.type === 'contract_review') {
     return {
       requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'review',
+      selectedWorkflow: 'contract-review',
       selectedSpecialists: [
         'contract-reviewer', 'plain-language-specialist', 'evaluator',
       ],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Contract review uses the review pattern with specialist analysis, evaluator quality check, and plain language summary.',
+      reasoning: 'Contract review uses the contract-review pipeline with clause analysis, evaluator gate, and plain language summary.',
     };
   }
 
-  // Rule 3: Legal research → adversarial (builder + attacker + synthesizer)
+  // Rule 3: Legal research → research-memo (researcher + evaluator + red-team)
   if (request.type === 'legal_research') {
     return {
-      requestType: 'adversarial',
+      requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'adversarial',
-      selectedSpecialists: ['legal-researcher', 'red-team', 'synthesis-editor'],
-      requiresDebate: true,
-      requiresEthicsFirst: false,
-      requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Legal research uses the adversarial pattern: builder produces analysis, red-team attacks it, synthesizer resolves.',
-    };
-  }
-
-  // Rule 4: Risk assessment → counsel (solo expert, fast)
-  if (request.type === 'risk_assessment') {
-    return {
-      requestType: 'direct_answer',
-      complexity: 'low',
-      riskLevel: 'low',
-      selectedWorkflow: 'counsel',
-      selectedSpecialists: ['risk-pricer'],
+      selectedWorkflow: 'research-memo',
+      selectedSpecialists: ['legal-researcher', 'evaluator', 'red-team'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Risk assessment uses the counsel pattern with risk-pricer specialist.',
+      reasoning: 'Legal research uses the research-memo pipeline: researcher produces memo, evaluator checks quality, red-team stress-tests.',
     };
   }
 
-  // Rule 5: Legal question → counsel (solo expert, direct answer)
+  // Rule 4: Risk assessment → simple-query (specialist + evaluator gate)
+  if (request.type === 'risk_assessment') {
+    return {
+      requestType: 'single_specialist',
+      complexity: 'low',
+      riskLevel: 'low',
+      selectedWorkflow: 'simple-query',
+      selectedSpecialists: ['risk-pricer', 'evaluator'],
+      requiresDebate: false,
+      requiresEthicsFirst: false,
+      requiresConsistencyCheck: !!request.matterId,
+      reasoning: 'Risk assessment uses the simple-query pipeline with risk-pricer specialist and evaluator gate.',
+    };
+  }
+
+  // Rule 5: Legal question → simple-query (specialist + evaluator gate)
   if (request.type === 'legal_question') {
     return {
       requestType: 'direct_answer',
       complexity: 'low',
       riskLevel: 'low',
-      selectedWorkflow: 'counsel',
-      selectedSpecialists: [],
+      selectedWorkflow: 'simple-query',
+      selectedSpecialists: ['evaluator'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Simple legal question uses the counsel pattern — one expert, direct answer.',
+      reasoning: 'Simple legal question uses the simple-query pipeline with evaluator quality gate.',
     };
   }
 
   // Rule 6: General / fallback
-  // If document path is present, treat as document work → review
+  // If document path is present, treat as document work → contract-review
   if (request.documentPath) {
     return {
       requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'review',
+      selectedWorkflow: 'contract-review',
       selectedSpecialists: ['contract-reviewer', 'plain-language-specialist', 'evaluator'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'General request with document path — defaulting to review pattern.',
+      reasoning: 'General request with document path — defaulting to contract-review pipeline.',
     };
   }
 
-  // Default: counsel for everything else
+  // Default: simple-query for everything else
   return {
     requestType: 'direct_answer',
     complexity: 'low',
     riskLevel: 'low',
-    selectedWorkflow: 'counsel',
-    selectedSpecialists: [],
+    selectedWorkflow: 'simple-query',
+    selectedSpecialists: ['evaluator'],
     requiresDebate: false,
     requiresEthicsFirst: false,
     requiresConsistencyCheck: false,
-    reasoning: 'General request without document — defaulting to counsel pattern.',
+    reasoning: 'General request without document — defaulting to simple-query pipeline.',
   };
 }
 

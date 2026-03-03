@@ -161,6 +161,7 @@ export class DocumentRegistry {
     sessionId: string,
     findings: { critical: number; major: number; minor: number },
     costUsd: number,
+    confidential?: boolean,
   ): void {
     const doc = this.state.documents[hash];
     if (!doc) return;
@@ -170,6 +171,7 @@ export class DocumentRegistry {
     doc.lastReviewSession = sessionId;
     doc.findingsSummary = findings;
     doc.costUsd = costUsd;
+    if (confidential) doc.confidential = true;
 
     this.state.sessionsCompleted++;
     this.state.budget.spentUsd += costUsd;
@@ -223,14 +225,20 @@ export class DocumentRegistry {
     flagged: number;
     pending: number;
     errors: number;
+    confidential: number;
+    frontier: number;
   } {
     const docs = Object.values(this.state.documents);
+    const reviewed = docs.filter(d => d.status === 'reviewed' || d.status === 'flagged');
+    const confidentialCount = reviewed.filter(d => d.confidential).length;
     return {
       total: docs.length,
       reviewed: docs.filter(d => d.status === 'reviewed').length,
       flagged: docs.filter(d => d.status === 'flagged').length,
       pending: docs.filter(d => ['new', 'queued', 'stale'].includes(d.status)).length,
       errors: docs.filter(d => d.status === 'error').length,
+      confidential: confidentialCount,
+      frontier: reviewed.length - confidentialCount,
     };
   }
 

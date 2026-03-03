@@ -102,6 +102,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
         findings: doc.findingsSummary ?? null,
         costUsd: doc.costUsd ?? null,
         error: doc.error ?? null,
+        confidential: doc.confidential ?? false,
       }));
 
     return reply.send({ documents, total: documents.length });
