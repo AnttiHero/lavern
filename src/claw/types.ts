@@ -25,6 +25,8 @@ export interface ClawProfile {
     totalUsd: number;
     perDocumentMaxUsd: number;
   };
+  /** Glob patterns for filenames requiring local-only processing (privilege preservation) */
+  sensitivityPatterns?: string[];
   createdAt: string;
 }
 
@@ -80,6 +82,10 @@ export interface ClawJob {
   documentHash: string;
   trigger: 'new' | 'changed' | 'sidecar' | 'manual';
   status: 'queued' | 'processing' | 'completed' | 'failed';
+  /** When true, process with local model only — no data leaves the machine */
+  confidential?: boolean;
+  /** Sensitivity pattern that matched */
+  matchedPattern?: string;
   startedAt?: string;
   completedAt?: string;
   costUsd?: number;
@@ -154,6 +160,8 @@ export interface ClawManifest {
   };
 
   status: 'completed' | 'failed' | 'partial';
+  /** True when document was analyzed entirely on-device (privilege preservation) */
+  confidential?: boolean;
   error?: string;
 }
 

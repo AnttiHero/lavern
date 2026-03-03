@@ -19,6 +19,7 @@ import { ClawWatcher } from './watcher.js';
 import { planWork, planSingleJob } from './planner.js';
 import { processDocument } from './processor.js';
 import { runDaemon } from './daemon.js';
+import { notify } from './notify.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import {
@@ -180,9 +181,24 @@ async function runStart(args: ClawCliArgs): Promise<void> {
   let totalCost = 0;
   const batchStart = Date.now();
 
+  // Budget warning check (before processing)
+  const budgetState = registry.getState().budget;
+  if (budgetState.spentUsd >= budgetState.totalUsd * 0.8 && budgetState.spentUsd < budgetState.totalUsd) {
+    notify({
+      type: 'budget_warning',
+      title: 'Budget warning (80%)',
+      message: `$${registry.budgetRemaining.toFixed(2)} remaining of $${budgetState.totalUsd.toFixed(2)}`,
+    });
+  }
+
   for (const job of plan.jobs) {
     if (registry.budgetExhausted) {
       printBudgetExhausted(registry);
+      notify({
+        type: 'budget_exhausted',
+        title: 'Retainer exhausted',
+        message: `Total budget of $${registry.getState().budget.totalUsd.toFixed(2)} has been spent.`,
+      });
       break;
     }
 
@@ -195,6 +211,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
       registry,
       clawConfig,
       (msg) => printJobProgress(msg),
+      job.confidential,
     );
 
     printJobResult(result);
@@ -217,6 +234,11 @@ async function runStart(args: ClawCliArgs): Promise<void> {
       onChange: async (filePath, event) => {
         if (registry.budgetExhausted) {
           printBudgetExhausted(registry);
+          notify({
+            type: 'budget_exhausted',
+            title: 'Retainer exhausted',
+            message: `Total budget of $${registry.getState().budget.totalUsd.toFixed(2)} has been spent.`,
+          });
           return;
         }
 
@@ -246,6 +268,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
           registry,
           clawConfig,
           (msg) => printJobProgress(msg),
+          job.confidential,
         );
 
         printJobResult(processResult);

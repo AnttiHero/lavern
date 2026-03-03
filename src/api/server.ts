@@ -49,6 +49,7 @@ import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
   const fastify = Fastify({
+    trustProxy: config.trustProxy,
     logger: {
       level: config.logLevel === 'debug' ? 'debug' : 'info',
       transport: {
@@ -118,9 +119,7 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
-    // Claw Mode — remote monitoring (dashboard needs read access)
-    'GET /api/claw/*',
-    'POST /api/claw/*',
+    // Claw Mode — behind auth (was public in v0.8, locked down in v0.8.1)
     '/dashboard/',            // Frontend static files (prefix match — trailing /)
   ]);
   fastify.addHook('onRequest', authMiddleware);

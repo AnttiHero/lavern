@@ -24,6 +24,7 @@ export const config = {
   port: parseInt(process.env.SHEM_PORT ?? '3000', 10),
   corsOrigins: process.env.SHEM_CORS_ORIGINS ?? '*',
   baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
+  trustProxy: process.env.SHEM_TRUST_PROXY === 'true',
 
   // ── Payment (x402 — USDC on Base) ───────────────────────────────────
   x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
@@ -56,6 +57,16 @@ export const config = {
     defaultStyle: 'elegant' as const,
     defaultFormats: ['markdown', 'docx'] as readonly string[],
     scanIntervalMs: parseInt(process.env.MARBLE_CLAW_SCAN_INTERVAL ?? '30000', 10),
+    // Security hardening (v0.8.1)
+    maxFileSizeBytes: parseInt(process.env.MARBLE_CLAW_MAX_FILE_SIZE ?? String(10 * 1024 * 1024), 10),
+    maxDocsPerScan: parseInt(process.env.MARBLE_CLAW_MAX_DOCS_PER_SCAN ?? '50', 10),
+    // Notifications
+    webhookUrl: process.env.MARBLE_CLAW_WEBHOOK_URL ?? '',
+    notifyMacOs: process.env.MARBLE_CLAW_MACOS_NOTIFY !== 'false',
+    // Local model for confidential documents (Ollama OpenAI-compatible API)
+    localModelUrl: process.env.MARBLE_LOCAL_MODEL_URL ?? 'http://localhost:11434',
+    localModel: process.env.MARBLE_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
+    localAnalysisModel: process.env.MARBLE_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
   },
 
   // ── Version ────────────────────────────────────────────────────────────

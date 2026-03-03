@@ -20,6 +20,8 @@ import type { SessionState } from '../session/session-state.js';
 import { extractSessionFindings } from './types.js';
 import type { ClawManifest, ClawConfig } from './types.js';
 import type { InferenceResult } from './inference.js';
+import type { LocalAnalysisResult } from './local-analysis.js';
+import { extractLocalFindings } from './local-analysis.js';
 
 // ── Delivery ─────────────────────────────────────────────────────────────
 
@@ -135,6 +137,165 @@ export class ClawDelivery {
 
     // Re-save manifest with updated output paths
     writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);
+
+    return deliveryDir;
+  }
+
+  /**
+   * Write output bundle for a locally-analyzed confidential document.
+   * Same structure as frontier delivery but:
+   * - model reflects local model name
+   * - cost is $0
+   * - confidential flag is set
+   * - confidentiality stamp in deliverable
+   */
+  async deliverLocal(
+    sessionId: string,
+    result: LocalAnalysisResult,
+    documentPath: string,
+    documentHash: string,
+    clawConfig: ClawConfig,
+  ): Promise<string> {
+    const deliveryDir = path.join(this.baseDir, 'delivery', sessionId);
+    ensureDir(deliveryDir);
+
+    const filename = path.basename(documentPath);
+    const title = path.basename(documentPath, path.extname(documentPath));
+    const findings = extractLocalFindings(result);
+    const now = new Date().toISOString();
+
+    // ── Build markdown deliverable ───────────────────────────────────
+    const clauses = result.clauses.map(c =>
+      `### ${c.title}\n\n> ${c.text}\n\n**Concern:** ${c.concern}\n**Severity:** ${c.severity}\n`
+    ).join('\n');
+
+    const risks = result.risks.map(r =>
+      `- **[${r.severity.toUpperCase()}]** ${r.description} *(${r.citation})*`
+    ).join('\n');
+
+    const recommendations = result.recommendations.map((r, i) =>
+      `${i + 1}. ${r}`
+    ).join('\n');
+
+    const markdown = [
+      `# ${result.documentType}: ${title}`,
+      ``,
+      `> 🔒 **CONFIDENTIAL — Analyzed On-Device**`,
+      `> ${result.confidenceNote}`,
+      ``,
+      `## Summary`,
+      ``,
+      result.summary,
+      ``,
+      `## Key Clauses`,
+      ``,
+      clauses || '*No notable clauses identified.*',
+      ``,
+      `## Risk Assessment`,
+      ``,
+      risks || '*No significant risks identified.*',
+      ``,
+      `## Recommendations`,
+      ``,
+      recommendations || '*No specific recommendations.*',
+      ``,
+      `---`,
+      ``,
+      `*Model: ${result.model} (local) | Cost: $0.00 | ${now}*`,
+    ].join('\n');
+
+    // ── manifest.json ────────────────────────────────────────────────
+    const manifest: ClawManifest = {
+      sessionId,
+      version: '1.0.0',
+      input: {
+        filename,
+        path: documentPath,
+        extension: path.extname(documentPath),
+        sizeBytes: fs.statSync(documentPath).size,
+        detectedType: result.documentType,
+        sidecarUsed: false,
+      },
+      task: {
+        requestText: `Local analysis of ${filename} (confidential)`,
+        workflow: 'local',
+        intensity: clawConfig.intensity,
+        inferenceMethod: 'heuristic',
+      },
+      execution: {
+        startedAt: now,
+        completedAt: now,
+        durationSeconds: 0,
+        model: `local:${result.model}`,
+        totalCostUsd: 0,
+        budgetUsd: clawConfig.perDocBudget,
+        agentsUsed: ['local-analyst'],
+      },
+      analysis: {
+        findingsCount: result.clauses.length + result.risks.length,
+        criticalCount: findings.critical,
+        majorCount: findings.major,
+        minorCount: findings.minor,
+        resolutionCount: 0,
+      },
+      outputs: {
+        markdown: 'deliverable.md',
+        findings: 'findings.json',
+      },
+      status: 'completed',
+      confidential: true,
+    };
+
+    // ── Write files ──────────────────────────────────────────────────
+    writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);
+    fs.writeFileSync(path.join(deliveryDir, 'deliverable.md'), markdown, 'utf-8');
+
+    // Findings JSON
+    const findingsJson = [
+      ...result.clauses.map(c => ({
+        type: 'clause',
+        title: c.title,
+        text: c.text,
+        concern: c.concern,
+        severity: c.severity,
+      })),
+      ...result.risks.map(r => ({
+        type: 'risk',
+        description: r.description,
+        severity: r.severity,
+        citation: r.citation,
+      })),
+    ];
+    writeJsonFileAtomic(path.join(deliveryDir, 'findings.json'), findingsJson);
+
+    // Summary text
+    const summary = [
+      `Session: ${sessionId}`,
+      `Document: ${filename} (CONFIDENTIAL — local analysis)`,
+      `Type: ${result.documentType}`,
+      `Model: ${result.model} (local)`,
+      `Cost: $0.00`,
+      ``,
+      `Findings: ${findingsJson.length} total`,
+      `  Critical: ${findings.critical}`,
+      `  Major: ${findings.major}`,
+      `  Minor: ${findings.minor}`,
+      ``,
+      result.confidenceNote,
+    ].join('\n');
+    fs.writeFileSync(path.join(deliveryDir, 'summary.txt'), summary, 'utf-8');
+
+    // DOCX (if configured)
+    if (clawConfig.formats.includes('docx')) {
+      try {
+        const docxBuffer = await convertToDocx(markdown, title, clawConfig.style as any);
+        fs.writeFileSync(path.join(deliveryDir, 'deliverable.docx'), docxBuffer);
+        manifest.outputs.docx = 'deliverable.docx';
+        writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);
+      } catch (err) {
+        console.warn(`[CLAW] DOCX conversion failed: ${err}`);
+      }
+    }
 
     return deliveryDir;
   }

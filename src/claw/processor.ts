@@ -23,6 +23,9 @@ import { inferTask } from './inference.js';
 import { ClawDelivery } from './delivery.js';
 import { DocumentRegistry } from './registry.js';
 import { extractSessionFindings } from './types.js';
+import { notify } from './notify.js';
+import { config } from '../config.js';
+import { analyzeLocally, extractLocalFindings } from './local-analysis.js';
 import type { ClawProfile, ClawJob, ClawConfig } from './types.js';
 
 // ── MIME from extension ──────────────────────────────────────────────────
@@ -62,6 +65,7 @@ export async function processDocument(
   registry: DocumentRegistry,
   clawConfig: ClawConfig,
   onProgress?: (message: string) => void,
+  confidential?: boolean,
 ): Promise<ProcessResult> {
   const startTime = Date.now();
   const sessionId = `shem-${Date.now()}`;
@@ -82,6 +86,59 @@ export async function processDocument(
     const ext = path.extname(documentPath).toLowerCase();
     const mime = mimeFromExt(ext);
     const parsed = await parseDocument(buffer, path.basename(documentPath), mime);
+
+    // ── 1b. CONFIDENTIALITY GATE ──────────────────────────────────────
+    // If document matched a sensitivity pattern AND a local model is configured,
+    // process entirely on-device. No data leaves the machine.
+    if (confidential && config.claw.localModel) {
+      const localModelName = config.claw.localAnalysisModel || config.claw.localModel;
+      log(`🔒 Confidential — processing locally (${localModelName})`);
+
+      try {
+        const localResult = await analyzeLocally(parsed.fullText, path.basename(documentPath), profile);
+        const localFindings = extractLocalFindings(localResult);
+        const deliveryDir = await delivery.deliverLocal(
+          sessionId, localResult, documentPath, documentHash, clawConfig,
+        );
+
+        registry.markReviewed(documentHash, sessionId, localFindings, 0); // $0 — local inference
+
+        const durationMs = Date.now() - startTime;
+        log(`🔒 Delivered (local) → ${path.relative(clawConfig.dir, deliveryDir)}/`);
+        log(`  $0.00 · ${(durationMs / 1000).toFixed(0)}s · ${localFindings.critical} critical, ${localFindings.major} major, ${localFindings.minor} minor`);
+
+        if (localFindings.critical > 0) {
+          notify({
+            type: 'document_flagged',
+            title: `🔒 Critical findings (local): ${path.basename(documentPath)}`,
+            message: `${localFindings.critical} critical, ${localFindings.major} major — analyzed on-device`,
+            details: { documentPath, sessionId, findings: localFindings, confidential: true },
+          });
+        }
+
+        return {
+          sessionId, documentPath, documentHash,
+          success: true, costUsd: 0, durationMs, findings: localFindings, deliveryDir,
+        };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        log(`🔒 Local analysis failed: ${error}`);
+        // Don't fall through to frontier — confidential documents MUST NOT leave the machine
+        registry.markFailed(documentHash, `Local analysis failed: ${error}`);
+        notify({
+          type: 'document_failed',
+          title: `🔒 Local analysis failed: ${path.basename(documentPath)}`,
+          message: `${error.slice(0, 200)} — document NOT sent to API (privileged)`,
+          details: { documentPath, documentHash, sessionId, confidential: true },
+        });
+        return {
+          sessionId, documentPath, documentHash,
+          success: false, costUsd: 0, durationMs: Date.now() - startTime,
+          findings: { critical: 0, major: 0, minor: 0 }, deliveryDir: '',
+          error: `Local analysis failed (confidential document): ${error}`,
+        };
+      }
+    }
 
     // ── 2. INFER ──────────────────────────────────────────────────────
     log(`Inferring task...`);
@@ -132,6 +189,16 @@ export async function processDocument(
 
     registry.markReviewed(documentHash, sessionId, findings, cost);
 
+    // Notify on critical findings
+    if (findings.critical > 0) {
+      notify({
+        type: 'document_flagged',
+        title: `Critical findings: ${path.basename(documentPath)}`,
+        message: `${findings.critical} critical, ${findings.major} major, ${findings.minor} minor`,
+        details: { documentPath, sessionId, findings },
+      });
+    }
+
     const durationMs = Date.now() - startTime;
     log(`✓ Delivered → ${path.relative(clawConfig.dir, deliveryDir)}/`);
     log(`  $${cost.toFixed(2)} · ${(durationMs / 1000).toFixed(0)}s · ${findings.critical} critical, ${findings.major} major, ${findings.minor} minor`);
@@ -151,6 +218,13 @@ export async function processDocument(
     log(`✗ Failed: ${error}`);
 
     registry.markFailed(documentHash, error);
+
+    notify({
+      type: 'document_failed',
+      title: `Failed: ${path.basename(documentPath)}`,
+      message: error.slice(0, 200),
+      details: { documentPath, documentHash, sessionId },
+    });
 
     // Save partial results to failed/
     try {

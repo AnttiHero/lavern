@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { SUPPORTED_EXTENSIONS } from '../documents/parser.js';
+import { config } from '../config.js';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,17 @@ export class ClawWatcher {
   private handleFileEvent(filePath: string): void {
     try {
       if (!fs.existsSync(filePath)) return; // File was deleted
-      if (!fs.statSync(filePath).isFile()) return;
+
+      // SECURITY: Skip symlinks — prevent traversal outside watch paths
+      const lstat = fs.lstatSync(filePath);
+      if (lstat.isSymbolicLink()) return;
+      if (!lstat.isFile()) return;
+
+      // SECURITY: Skip oversized files — prevent memory exhaustion
+      if (lstat.size > config.claw.maxFileSizeBytes) {
+        if (this.debug) console.log(`[CLAW] Skipping oversized file: ${filePath} (${(lstat.size / 1024 / 1024).toFixed(1)}MB)`);
+        return;
+      }
 
       const event: WatchEvent = this.knownPaths.has(filePath) ? 'changed' : 'new';
       this.knownPaths.add(filePath);
@@ -153,6 +164,9 @@ export class ClawWatcher {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+        // SECURITY: Skip symlinks
+        if (entry.isSymbolicLink()) continue;
+
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           this.recordExisting(full);

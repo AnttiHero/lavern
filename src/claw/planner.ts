@@ -16,8 +16,41 @@
  */
 
 import * as path from 'node:path';
+import { config as globalConfig } from '../config.js';
 import { DocumentRegistry } from './registry.js';
+import { notify } from './notify.js';
 import type { ClawJob, ClawConfig, DocumentEntry } from './types.js';
+
+// ── Default Sensitivity Patterns ─────────────────────────────────────────
+
+/**
+ * Filenames matching these patterns are treated as confidential.
+ * When a local model is configured, they are processed on-device.
+ * When no local model is available, they are flagged for human review.
+ */
+export const DEFAULT_SENSITIVITY_PATTERNS = [
+  '*confidential*',
+  '*privileged*',
+  '*merger*',
+  '*acquisition*',
+  '*litigation*',
+  '*attorney*',
+  '*counsel*',
+];
+
+/**
+ * Simple glob match: supports * as wildcard. Case-insensitive.
+ */
+export function matchesSensitivityPattern(filename: string, patterns: string[]): string | null {
+  const lower = filename.toLowerCase();
+  for (const pattern of patterns) {
+    const regex = new RegExp(
+      '^' + pattern.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, (m) => m === '*' ? '.*' : `\\${m}`) + '$',
+    );
+    if (regex.test(lower)) return pattern;
+  }
+  return null;
+}
 
 // ── Estimated cost per document ──────────────────────────────────────────
 
@@ -72,11 +105,34 @@ export function planWork(
     return a.sizeBytes - b.sizeBytes; // Smaller first
   });
 
-  for (const doc of actionable) {
-    const estimated = estimateCost(doc, config.intensity);
+  const patterns = config.profile.sensitivityPatterns ?? DEFAULT_SENSITIVITY_PATTERNS;
 
-    // Budget gate — per-document
-    if (estimated > config.perDocBudget) {
+  for (const doc of actionable) {
+    // ── Sensitivity check ──────────────────────────────────────────
+    const matchedPattern = matchesSensitivityPattern(doc.name, patterns);
+    const isConfidential = !!matchedPattern;
+
+    if (isConfidential && !globalConfig.claw.localModel) {
+      // No local model — flag for human review, don't process
+      registry.updateStatus(doc.hash, 'flagged');
+      skipped.push({
+        path: doc.path,
+        reason: `Matches sensitivity pattern "${matchedPattern}" — no local model configured`,
+      });
+      notify({
+        type: 'document_flagged',
+        title: `Sensitive document: ${doc.name}`,
+        message: `Matched "${matchedPattern}" — requires human review (no local model)`,
+        details: { path: doc.path, pattern: matchedPattern },
+      });
+      continue;
+    }
+
+    // Confidential documents processed locally are free ($0)
+    const estimated = isConfidential ? 0 : estimateCost(doc, config.intensity);
+
+    // Budget gate — per-document (skip for confidential/free)
+    if (!isConfidential && estimated > config.perDocBudget) {
       skipped.push({
         path: doc.path,
         reason: `Estimated cost $${estimated.toFixed(2)} exceeds per-doc budget $${config.perDocBudget.toFixed(2)}`,
@@ -84,8 +140,8 @@ export function planWork(
       continue;
     }
 
-    // Budget gate — total
-    if (estimatedTotal + estimated > registry.budgetRemaining) {
+    // Budget gate — total (skip for confidential/free)
+    if (!isConfidential && estimatedTotal + estimated > registry.budgetRemaining) {
       skipped.push({
         path: doc.path,
         reason: `Would exceed remaining budget ($${registry.budgetRemaining.toFixed(2)} left)`,
@@ -106,7 +162,18 @@ export function planWork(
       documentHash: doc.hash,
       trigger,
       status: 'queued',
+      confidential: isConfidential || undefined,
+      matchedPattern: matchedPattern ?? undefined,
     };
+
+    if (isConfidential) {
+      notify({
+        type: 'document_confidential',
+        title: `🔒 Processing locally: ${doc.name}`,
+        message: `Matched "${matchedPattern}" — analyzing on-device`,
+        details: { path: doc.path, pattern: matchedPattern },
+      });
+    }
 
     jobs.push(job);
     estimatedTotal += estimated;
@@ -137,22 +204,37 @@ export function planSingleJob(
   const doc = registry.getDocument(documentHash);
   if (!doc) return null;
 
-  const estimated = estimateCost(doc, config.intensity);
+  const filename = path.basename(documentPath);
+  const patterns = config.profile.sensitivityPatterns ?? DEFAULT_SENSITIVITY_PATTERNS;
+  const matchedPattern = matchesSensitivityPattern(filename, patterns);
+  const isConfidential = !!matchedPattern;
 
-  if (estimated > config.perDocBudget) {
-    return null; // Too expensive for per-doc budget
+  // Confidential document with no local model → flag, don't process
+  if (isConfidential && !globalConfig.claw.localModel) {
+    registry.updateStatus(documentHash, 'flagged');
+    notify({
+      type: 'document_flagged',
+      title: `Sensitive document: ${filename}`,
+      message: `Matched "${matchedPattern}" — requires human review (no local model)`,
+    });
+    return null;
   }
 
-  if (!registry.canAfford(estimated)) {
-    return null; // Global budget exhausted
+  // Confidential documents are free (local); regular need budget checks
+  if (!isConfidential) {
+    const estimated = estimateCost(doc, config.intensity);
+    if (estimated > config.perDocBudget) return null;
+    if (!registry.canAfford(estimated)) return null;
   }
 
   return {
     id: `shem-${Date.now()}`,
     documentPath,
-    documentName: path.basename(documentPath),
+    documentName: filename,
     documentHash,
     trigger,
     status: 'queued',
+    confidential: isConfidential || undefined,
+    matchedPattern: matchedPattern ?? undefined,
   };
 }

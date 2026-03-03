@@ -15,6 +15,7 @@ import { ensureDir, writeJsonFileAtomic } from '../utils/fs-helpers.js';
 import { config } from '../config.js';
 import type { ClawProfile } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
+import { DEFAULT_SENSITIVITY_PATTERNS } from './planner.js';
 
 // ── Init Flow ────────────────────────────────────────────────────────────
 
@@ -107,6 +108,15 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
     const perDocStr = await ask(`Per-document max in USD (default: $${config.claw.defaultPerDocBudget.toFixed(0)}): `);
     const perDocumentMaxUsd = perDocStr ? parseFloat(perDocStr) : config.claw.defaultPerDocBudget;
 
+    // Sensitivity patterns (privilege preservation)
+    console.log('\nSensitivity patterns — filenames matching these are processed locally');
+    console.log('(on-device only, preserving attorney-client privilege):');
+    console.log(`Default: ${DEFAULT_SENSITIVITY_PATTERNS.join(', ')}`);
+    const patternsStr = await ask('Additional patterns (comma-separated, or Enter for defaults): ');
+    const sensitivityPatterns = patternsStr
+      ? [...DEFAULT_SENSITIVITY_PATTERNS, ...patternsStr.split(',').map(p => p.trim()).filter(p => p)]
+      : [...DEFAULT_SENSITIVITY_PATTERNS];
+
     // Build profile
     const profile: ClawProfile = {
       company,
@@ -124,6 +134,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
         totalUsd,
         perDocumentMaxUsd,
       },
+      sensitivityPatterns,
       createdAt: new Date().toISOString(),
     };
 

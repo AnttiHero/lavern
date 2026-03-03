@@ -15,6 +15,7 @@ import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import { readJsonFile, writeJsonFileAtomic, ensureDir } from '../utils/fs-helpers.js';
 import { SUPPORTED_EXTENSIONS } from '../documents/parser.js';
+import { config } from '../config.js';
 import type { ClawState, DocumentEntry, DocumentStatus } from './types.js';
 
 // ── Defaults ──────────────────────────────────────────────────────────────
@@ -94,7 +95,20 @@ export class DocumentRegistry {
    * Index a single file. Returns 'new', 'changed', or 'unchanged'.
    */
   indexFile(filePath: string): 'new' | 'changed' | 'unchanged' {
+    // SECURITY: Skip symlinks — prevent traversal outside watch paths
+    const lstat = fs.lstatSync(filePath);
+    if (lstat.isSymbolicLink()) {
+      return 'unchanged';
+    }
+
     const stat = fs.statSync(filePath);
+
+    // SECURITY: Skip files exceeding size limit — prevent memory exhaustion
+    if (stat.size > config.claw.maxFileSizeBytes) {
+      console.warn(`[CLAW] Skipping ${filePath}: ${(stat.size / 1024 / 1024).toFixed(1)}MB exceeds ${(config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0)}MB limit`);
+      return 'unchanged';
+    }
+
     const hash = hashFile(filePath);
     const name = path.basename(filePath);
     const ext = path.extname(filePath).toLowerCase();
@@ -222,17 +236,24 @@ export class DocumentRegistry {
 
   // ── Helpers ────────────────────────────────────────────────────────────
 
-  private walkDir(dir: string): string[] {
+  private walkDir(dir: string, maxDocs?: number): string[] {
     const results: string[] = [];
+    const limit = maxDocs ?? config.claw.maxDocsPerScan;
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
+        if (results.length >= limit) break;
+
         // Skip hidden files/dirs and node_modules
         if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
 
+        // SECURITY: Skip symlinks — prevent traversal outside watch paths
+        if (entry.isSymbolicLink()) continue;
+
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          results.push(...this.walkDir(full));
+          const remaining = limit - results.length;
+          results.push(...this.walkDir(full, remaining));
         } else if (entry.isFile()) {
           const ext = path.extname(entry.name).toLowerCase();
           if (SUPPORTED_EXTENSIONS.has(ext)) {
