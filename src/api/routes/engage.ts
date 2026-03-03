@@ -375,6 +375,9 @@ export function registerEngageRoutes(
       const callbackUrl = body.callbackUrl;
 
       // Launch dispatch in background
+      // yoloMode: engage endpoint is a programmatic API — no human is present
+      // to approve gates. The gate resolver (webhook or auto-approve) handles
+      // decisions independently. See gateResolver selection above (line 349).
       dispatch(legalRequest, {
         session,
         gateResolver,
@@ -414,6 +417,8 @@ export function registerEngageRoutes(
     // ── Sync mode: wait for completion, return results ──────────────
     try {
       // Launch dispatch (returns the session, but we wait separately)
+      // yoloMode: sync engage is also programmatic — caller blocks on HTTP,
+      // not on an interactive gate prompt. Same reasoning as webhook mode.
       const dispatchPromise = dispatch(legalRequest, {
         session,
         gateResolver,

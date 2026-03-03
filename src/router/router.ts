@@ -91,10 +91,12 @@ export async function routeRequest(
         routingMethod = 'llm';
       } else {
         // LLM hallucinated a workflow — fall back to deterministic
+        console.warn(`[ROUTER] LLM returned unknown workflow "${llmResult.selectedWorkflow}" — falling back to deterministic routing`);
         classification = classifyRequest(request);
       }
-    } catch {
+    } catch (err) {
       // LLM call failed — fall back to deterministic
+      console.warn('[ROUTER] LLM classification failed, falling back to deterministic routing:', err instanceof Error ? err.message : err);
       classification = classifyRequest(request);
     }
   } else {

@@ -148,6 +148,9 @@ export async function processDocument(
     // ── 3. DISPATCH ───────────────────────────────────────────────────
     log(`Dispatching: ${inference.workflow ?? 'auto-route'}`);
 
+    // yoloMode: Claw Mode is a fully autonomous retainer — no human is present
+    // during batch processing. Gates are auto-approved via AutoApproveGateResolver.
+    // Human review happens post-hoc via the dashboard or delivery bundles.
     const dispatchOptions: DispatchOptions = {
       yoloMode: true,
       gateResolver: new AutoApproveGateResolver(),

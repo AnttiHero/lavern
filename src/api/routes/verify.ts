@@ -75,6 +75,9 @@ export function registerVerifyRoutes(
 
     if (body.mode === 'async') {
       // Fire-and-forget: return session ID immediately
+      // yoloMode: verification is a fully automated pipeline — no human
+      // review gates. The verification workflow validates document integrity,
+      // not legal substance, so gate approval adds no value here.
       dispatch(legalRequest, {
         session,
         gateResolver,
@@ -95,6 +98,7 @@ export function registerVerifyRoutes(
     }
 
     // Sync mode: wait for completion
+    // yoloMode: same as async — verification is automated. See comment above.
     try {
       const dispatchPromise = dispatch(legalRequest, {
         session,

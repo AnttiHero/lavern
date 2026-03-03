@@ -122,7 +122,13 @@ function parsePaymentHeader(request: FastifyRequest): X402PaymentHeader | null {
  *   4. Payment is not already spent
  */
 function verifyPayment(_payment: X402PaymentHeader): X402VerificationResult {
-  // TODO: Integrate actual on-chain verification
+  // STUB: On-chain verification not yet implemented.
+  // When ready, integrate the Coinbase x402 SDK or Base RPC to:
+  //   1. Decode and verify the payment proof on Base
+  //   2. Confirm USDC amount matches buildPaymentRequirements()
+  //   3. Confirm recipient matches config.x402RecipientAddress
+  //   4. Check payment hasn't been double-spent (nonce/idempotency)
+  // See: https://www.x402.org/ and https://docs.cdp.coinbase.com/x402
   return {
     valid: false,
     reason: 'On-chain payment verification not yet implemented. Use Bearer token authentication.',
