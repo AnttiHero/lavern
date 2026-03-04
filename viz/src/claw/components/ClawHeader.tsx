@@ -17,6 +17,11 @@ interface Props {
 export function ClawHeader({ company, jurisdiction, industry, daemon, demoMode, onBack }: Props) {
   return (
     <div style={styles.container}>
+      {/* Ambient gradient blobs — atmospheric depth */}
+      <div style={styles.blob1} />
+      <div style={styles.blob2} />
+      <div style={styles.blob3} />
+
       <div style={styles.topRow}>
         <button
           onClick={onBack}
@@ -52,7 +57,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     backgroundColor: '#1A1A1A',
     borderRadius: radii.lg,
-    padding: `${spacing.xl}px ${spacing.xl}px ${spacing.lg}px`,
+    padding: `${spacing.xxl}px ${spacing.xl}px ${spacing.lg}px`,
     marginBottom: spacing.md,
     position: 'relative',
     overflow: 'hidden',
@@ -92,6 +97,45 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     color: 'rgba(250, 249, 246, 0.35)',
     margin: 0,
+  },
+  blob1: {
+    position: 'absolute' as const,
+    width: 220,
+    height: 220,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(196, 93, 62, 0.15) 0%, transparent 70%)',
+    filter: 'blur(60px)',
+    opacity: 0.1,
+    top: -40,
+    left: '15%',
+    animation: 'clawAmbientDrift1 20s ease-in-out infinite',
+    pointerEvents: 'none' as const,
+  },
+  blob2: {
+    position: 'absolute' as const,
+    width: 180,
+    height: 180,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(184, 134, 11, 0.12) 0%, transparent 70%)',
+    filter: 'blur(60px)',
+    opacity: 0.1,
+    top: -20,
+    right: '20%',
+    animation: 'clawAmbientDrift2 27s ease-in-out infinite',
+    pointerEvents: 'none' as const,
+  },
+  blob3: {
+    position: 'absolute' as const,
+    width: 160,
+    height: 160,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(123, 94, 167, 0.1) 0%, transparent 70%)',
+    filter: 'blur(60px)',
+    opacity: 0.08,
+    bottom: -30,
+    left: '45%',
+    animation: 'clawAmbientDrift3 34s ease-in-out infinite',
+    pointerEvents: 'none' as const,
   },
   demoBanner: {
     fontSize: 10,

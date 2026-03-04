@@ -24,6 +24,7 @@ import { TheStoryTab } from './components/TheStoryTab.js';
 import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
 import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
+import { ConfettiBurst } from './components/ConfettiBurst.js';
 
 interface Props {
   onContinue: () => void;
@@ -101,6 +102,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
       {data && (
         <>
+          <ConfettiBurst />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
           {activeTab === 'work' && <TheWorkTab data={data} />}

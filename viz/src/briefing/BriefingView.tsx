@@ -440,8 +440,8 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
         </div>
       )}
 
-      {/* Analysis error banner */}
-      {analysis.analysisError && (
+      {/* Analysis error banner — hide once we're already on the brief phase */}
+      {analysis.analysisError && phase !== 'brief' && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 px-4 py-2.5 rounded-md bg-accent-light border border-danger text-xs font-sans text-danger mt-4">
           <span className="text-sm shrink-0">{'\u26A0'}</span>
           <span>Analysis unavailable: {analysis.analysisError}. Using mechanical brief as fallback.</span>

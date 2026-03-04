@@ -97,6 +97,9 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const [tier, setTier] = useState<EngagementTier>('counsel');
   const [submitting, setSubmitting] = useState(false);
   const [instructHovered, setInstructHovered] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [archiveHovered, setArchiveHovered] = useState(false);
+  const [agentsHovered, setAgentsHovered] = useState(false);
 
   // Document upload
   const {
@@ -182,31 +185,66 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         style={{ background: `linear-gradient(180deg, ${colors.bg} 0%, rgba(250,249,246,0.82) 40%, ${colors.bg} 100%)` }}
       />
 
-      {/* ── Top nav (shimmer buttons) ────────────────────── */}
+      {/* ── Top nav ────────────────────────────────────── */}
       <div
         className="relative z-2 w-full flex justify-between items-center pt-5 px-7 box-border"
         style={{ animation: 'qsFadeIn 0.5s ease 0.7s both' }}
       >
-        <div />
-        <div className="flex flex-wrap items-center gap-2">
-          <ShimmerButton onClick={() => { window.location.hash = '#/archive'; }}>
-            Archive
-          </ShimmerButton>
-          <ShimmerButton onClick={() => { window.location.hash = '#/claw'; }}>
-            Claw
-          </ShimmerButton>
-          <ShimmerButton onClick={() => { window.location.hash = '#/my-cases'; }}>
+        {/* Archive monogram — minimal, architectural */}
+        <button
+          onClick={() => { window.location.hash = '#/archive'; }}
+          className="w-[30px] h-[30px] rounded-full flex items-center justify-center border cursor-pointer transition-all duration-250 ease-in-out"
+          style={{
+            borderColor: archiveHovered ? colors.text : 'rgba(0,0,0,0.12)',
+            backgroundColor: archiveHovered ? colors.text : 'transparent',
+            color: archiveHovered ? '#fff' : colors.text,
+          }}
+          onMouseEnter={() => setArchiveHovered(true)}
+          onMouseLeave={() => setArchiveHovered(false)}
+          title="Archive"
+        >
+          <span className="font-serif text-[14px] font-medium leading-none" style={{ marginTop: 1 }}>
+            A
+          </span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Agents — discovery button, distinct accent style */}
+          <button
+            onClick={() => { window.location.hash = '#/agent-docs'; }}
+            className={cn(
+              'font-sans text-[11px] font-semibold tracking-[1.5px] uppercase',
+              'py-1.5 cursor-pointer bg-transparent border-none',
+              'transition-colors duration-250 ease-in-out',
+            )}
+            style={{
+              color: agentsHovered ? colors.accent : colors.textMuted,
+              borderLeft: `2px solid ${agentsHovered ? colors.accent : 'rgba(0,0,0,0.1)'}`,
+              paddingLeft: 12,
+              paddingRight: 4,
+            }}
+            onMouseEnter={() => setAgentsHovered(true)}
+            onMouseLeave={() => setAgentsHovered(false)}
+          >
+            Agents
+          </button>
+
+          {/* Separator */}
+          <div className="w-px h-4 bg-border opacity-40 mx-1" />
+
+          {/* Account buttons — compact */}
+          <ShimmerButton onClick={() => { window.location.hash = '#/my-cases'; }} className="px-[14px] py-1.5 text-[10px]">
             My Cases
           </ShimmerButton>
-          <ShimmerButton onClick={() => { window.location.hash = '#/my-page'; }}>
+          <ShimmerButton onClick={() => { window.location.hash = '#/my-page'; }} className="px-[14px] py-1.5 text-[10px]">
             My Page
           </ShimmerButton>
           {!isLoggedIn ? (
-            <ShimmerButton onClick={() => { window.location.hash = '#/login'; }}>
+            <ShimmerButton onClick={() => { window.location.hash = '#/login'; }} className="px-[14px] py-1.5 text-[10px]">
               Sign In
             </ShimmerButton>
           ) : (
-            <ShimmerButton onClick={() => { userCtx!.logout(); }}>
+            <ShimmerButton onClick={() => { userCtx!.logout(); }} className="px-[14px] py-1.5 text-[10px]">
               Sign Out
             </ShimmerButton>
           )}
@@ -234,6 +272,21 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         />
       </div>
 
+      {/* ── Focus glow — warm light when leaning in ───────── */}
+      <div
+        className="absolute z-1 pointer-events-none"
+        style={{
+          width: 700,
+          height: 400,
+          top: '28%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'radial-gradient(600px circle, rgba(196, 93, 62, 0.045) 0%, transparent 70%)',
+          opacity: inputFocused ? 1 : 0,
+          transition: 'opacity 0.8s ease',
+        }}
+      />
+
       {/* ── The Card — unified input area ─────────────────── */}
       <div
         className={cn(
@@ -253,6 +306,8 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           value={question}
           onChange={e => setQuestion(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
           placeholder="What brings you in today?"
           rows={4}
           className={cn(

@@ -295,6 +295,13 @@ export function useBriefingState(workflowId: string, interviewerId?: string) {
   const advanceToMemo = useCallback(() => {
     let memo = generateMemo(qna.answers, qna.questions, upload.documents, workflowId);
 
+    // If memo is effectively empty (just headers, no substantive content),
+    // produce a minimal useful brief so agents can still proceed.
+    const contentLines = memo.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    if (contentLines.length === 0) {
+      memo = `# Briefing Memo\n## ${workflowId}\n\n### Note\n\nNo specific context was captured during the briefing.\nThe agents will proceed with general analysis based on the uploaded documents and workflow type.\n`;
+    }
+
     try {
       const profileStr = localStorage.getItem('shem-user-profile');
       if (profileStr) {

@@ -10,6 +10,8 @@ interface Props {
   budget: { spentUsd: number; totalUsd: number; exhausted: boolean };
   onScan: () => void;
   demoMode: boolean;
+  demoPlaying?: boolean;
+  onWatchDemo?: () => void;
 }
 
 function timeAgo(iso: string): string {
@@ -22,7 +24,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode }: Props) {
+export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, demoPlaying, onWatchDemo }: Props) {
   return (
     <div style={styles.strip}>
       <span style={styles.scanTime}>
@@ -39,6 +41,30 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode }: P
           </span>
           <span style={{ color: colors.textDim }}> / ${budget.totalUsd.toFixed(2)}</span>
         </span>
+
+        {demoMode && onWatchDemo && (
+          <button
+            onClick={onWatchDemo}
+            disabled={demoPlaying}
+            style={{
+              ...styles.scanBtn,
+              opacity: demoPlaying ? 0.4 : 1,
+              cursor: demoPlaying ? 'default' : 'pointer',
+            }}
+            onMouseEnter={e => {
+              if (demoPlaying) return;
+              e.currentTarget.style.backgroundColor = '#B8860B';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              if (demoPlaying) return;
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#B8860B';
+            }}
+          >
+            {demoPlaying ? 'Playing\u2026' : 'Watch Demo'}
+          </button>
+        )}
 
         <button
           onClick={onScan}

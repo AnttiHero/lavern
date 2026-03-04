@@ -5,10 +5,11 @@
  * Dark hero zone, amber accent, four tabs: Overview, Documents, Deliveries, Config.
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { colors, fonts, spacing } from '../staffing/styles/tokens.js';
 import { LoadingM } from '../components/LoadingM.js';
 import { useClawData } from './hooks/useClawData.js';
+import { useClawDemoSimulator } from './hooks/useClawDemoSimulator.js';
 import { ClawHeader } from './components/ClawHeader.js';
 import { CommandStrip } from './components/CommandStrip.js';
 import { ClawTabBar, type ClawTab } from './components/ClawTabBar.js';
@@ -22,8 +23,17 @@ interface Props {
 }
 
 export default function ClawView({ onBack }: Props) {
-  const { status, documents, deliveries, loading, demoMode, scanning, triggerScan } = useClawData();
+  const { status, documents, deliveries, loading, demoMode, scanning, triggerScan, setStatus, setDocuments, setDeliveries } = useClawData();
   const [activeTab, setActiveTab] = useState<ClawTab>('overview');
+  const [demoPlaying, setDemoPlaying] = useState(false);
+
+  useClawDemoSimulator({
+    active: demoPlaying,
+    onStatusUpdate: useCallback((fn: (s: any) => any) => setStatus(prev => prev ? fn(prev) : prev), [setStatus]),
+    onDocumentsUpdate: setDocuments,
+    onDeliveriesUpdate: setDeliveries,
+    onComplete: useCallback(() => setDemoPlaying(false), []),
+  });
 
   if (loading) {
     return (
@@ -68,6 +78,8 @@ export default function ClawView({ onBack }: Props) {
           budget={status.budget}
           onScan={triggerScan}
           demoMode={demoMode}
+          demoPlaying={demoPlaying}
+          onWatchDemo={() => setDemoPlaying(true)}
         />
 
         {/* Tab navigation */}
@@ -121,7 +133,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
     backgroundColor: colors.bg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xxxl,
     paddingBottom: 80,
   },
   container: {

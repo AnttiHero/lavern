@@ -93,6 +93,10 @@ export interface ClawData {
   demoMode: boolean;
   scanning: boolean;
   triggerScan: () => Promise<void>;
+  // Exposed for demo simulator
+  setStatus: React.Dispatch<React.SetStateAction<ClawStatus | null>>;
+  setDocuments: React.Dispatch<React.SetStateAction<ClawDocument[]>>;
+  setDeliveries: React.Dispatch<React.SetStateAction<ClawDelivery[]>>;
 }
 
 // ── Hook ────────────────────────────────────────────────────────────────
@@ -189,5 +193,5 @@ export function useClawData(): ClawData {
     }
   }, [demoMode, fetchData]);
 
-  return { status, documents, deliveries, loading, error, demoMode, scanning, triggerScan };
+  return { status, documents, deliveries, loading, error, demoMode, scanning, triggerScan, setStatus, setDocuments, setDeliveries };
 }

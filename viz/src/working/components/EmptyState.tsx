@@ -12,14 +12,66 @@ export function EmptyState({ isConnected }: EmptyStateProps) {
   return (
     <div style={styles.container}>
       <div style={styles.icon}>
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="22" stroke={colors.border} strokeWidth="2" />
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          {/* Document outline — draws on */}
           <path
-            d="M16 20L24 28L32 20"
-            stroke={colors.textDim}
-            strokeWidth="2"
+            d="M18 8 L18 56 L46 56 L46 16 L38 8 Z"
+            stroke={colors.border}
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            style={{
+              strokeDasharray: 180,
+              strokeDashoffset: 180,
+              animation: 'svgDrawOn 1.4s ease forwards 0.2s',
+              '--path-length': '180',
+            } as React.CSSProperties}
+          />
+          {/* Page fold */}
+          <path
+            d="M38 8 L38 16 L46 16"
+            stroke={colors.border}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              strokeDasharray: 16,
+              strokeDashoffset: 16,
+              animation: 'svgDrawOn 0.4s ease forwards 1.4s',
+              '--path-length': '16',
+            } as React.CSSProperties}
+          />
+          {/* Text lines — staggered draw-on */}
+          {[26, 32, 38, 44].map((y, i) => (
+            <path
+              key={y}
+              d={`M24 ${y} L${36 + (i % 2 === 0 ? 4 : -2)} ${y}`}
+              stroke={colors.textDim}
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              opacity={0.4}
+              style={{
+                strokeDasharray: 18,
+                strokeDashoffset: 18,
+                animation: `svgDrawOn 0.3s ease forwards ${1.6 + i * 0.15}s`,
+                '--path-length': '18',
+              } as React.CSSProperties}
+            />
+          ))}
+          {/* Pen nib — appears last */}
+          <path
+            d="M10 48 L14 40 L18 48 Z"
+            stroke={colors.textDim}
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.35}
+            style={{
+              strokeDasharray: 30,
+              strokeDashoffset: 30,
+              animation: 'svgDrawOn 0.5s ease forwards 2.2s',
+              '--path-length': '30',
+            } as React.CSSProperties}
           />
         </svg>
       </div>
