@@ -1,11 +1,12 @@
 /**
  * MyPageView — Persistent user profile, saved teams & custom instructions.
  *
- * Four sections:
+ * Five sections:
  *   1. About You       — name, firm, jurisdiction
  *   2. Default Settings — workflow, intensity, budget, yolo toggle
  *   3. Custom Instructions — free-text appended to every briefing memo
- *   4. Saved Teams     — reusable team presets
+ *   4. Marble's Soul   — personality, voice, principles that shape agent behavior
+ *   5. Saved Teams     — reusable team presets
  *
  * Auto-saves on every change (debounced 500ms via React state → localStorage).
  */
@@ -38,6 +39,7 @@ const INTENSITY_OPTIONS = [
 ];
 
 const MAX_INSTRUCTIONS = 2000;
+const MAX_SOUL = 5000;
 
 // ── Component ──────────────────────────────────────────────────────────
 
@@ -196,7 +198,32 @@ export default function MyPageView({ onBack }: Props) {
         </span>
       </div>
 
-      {/* ── Section 4: Saved Teams ─────────────────────────────────── */}
+      {/* ── Section 4: Marble's Soul ──────────────────────────────── */}
+      <SectionDivider label="Marble's Soul" />
+
+      <div style={styles.fieldGroup}>
+        <p style={styles.soulHeading}>
+          What kind of firm is Marble for you?
+        </p>
+        <p style={styles.fieldHint}>
+          This shapes how agents communicate, make decisions, and present their work.
+        </p>
+        <textarea
+          value={profile.soul}
+          onChange={e => {
+            const val = e.target.value.slice(0, MAX_SOUL);
+            field('soul')(val);
+          }}
+          placeholder={`Define Marble's personality for your engagements. For example:\n\nVoice: Precise but warm. Explain complex legal concepts without condescension.\nPrinciples: Always prioritize plain language. Flag GDPR implications proactively.\nStyle: Conservative on risk assessment, creative on document design.\nValues: Transparency over polish — show your work, admit uncertainty.`}
+          rows={12}
+          style={styles.textarea}
+        />
+        <span style={styles.charCount}>
+          {profile.soul.length} / {MAX_SOUL}
+        </span>
+      </div>
+
+      {/* ── Section 5: Saved Teams ─────────────────────────────────── */}
       <SectionDivider label="Saved Teams" />
 
       {hasSavedTeams ? (
@@ -388,6 +415,14 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textMuted,
     lineHeight: 1.5,
     margin: 0,
+  },
+  soulHeading: {
+    fontSize: 18,
+    fontFamily: fonts.serif,
+    fontWeight: 400,
+    color: colors.text,
+    margin: 0,
+    letterSpacing: -0.3,
   },
 
   // Input

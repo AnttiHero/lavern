@@ -20,7 +20,8 @@ export type ClawNotificationType =
   | 'document_failed'
   | 'document_flagged'
   | 'document_confidential'
-  | 'daemon_error';
+  | 'daemon_error'
+  | 'heartbeat';
 
 export interface ClawNotification {
   type: ClawNotificationType;

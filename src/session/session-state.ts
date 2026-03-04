@@ -204,6 +204,10 @@ export class SessionState {
   /** ID of the authenticated user who created this session. */
   public userId?: string;
 
+  // ── v17: Soul — User-defined firm personality ──
+  /** Shapes how agents communicate, make decisions, and present their work. */
+  public soul?: string;
+
   // ── v12: Document Storage ──
   /** Parsed documents uploaded by the client, available to agents via MCP tools. */
   public documents: ParsedDocument[] = [];

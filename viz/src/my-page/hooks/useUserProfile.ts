@@ -35,6 +35,9 @@ export interface UserProfile {
   // Custom instructions (appended to briefing memos)
   customInstructions: string;
 
+  // Soul — defines Marble's personality, voice, and principles for this user
+  soul: string;
+
   // Saved teams
   savedTeams: SavedTeam[];
 }
@@ -52,6 +55,7 @@ const DEFAULT_PROFILE: UserProfile = {
   defaultBudgetUsd: 10,
   yoloModeDefault: false,
   customInstructions: '',
+  soul: '',
   savedTeams: [],
 };
 
@@ -88,6 +92,7 @@ function syncToServer(profile: UserProfile): void {
         defaultBudgetUsd: profile.defaultBudgetUsd,
         yoloModeDefault: profile.yoloModeDefault,
         customInstructions: profile.customInstructions,
+        soul: profile.soul,
         savedTeams: profile.savedTeams,
       }),
     }),
@@ -134,6 +139,7 @@ export function useUserProfile() {
               ? (serverProfile.yoloModeDefault as boolean)
               : prev.yoloModeDefault,
             customInstructions: (serverProfile.customInstructions as string) || prev.customInstructions,
+            soul: (serverProfile.soul as string) || prev.soul,
             savedTeams: Array.isArray(serverProfile.savedTeams)
               ? (serverProfile.savedTeams as SavedTeam[])
               : prev.savedTeams,

@@ -90,6 +90,11 @@ export const config = {
     localModelUrl: process.env.MARBLE_LOCAL_MODEL_URL ?? 'http://localhost:11434',
     localModel: process.env.MARBLE_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
     localAnalysisModel: process.env.MARBLE_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
+    // Heartbeat — periodic check-in (v17)
+    heartbeatEnabled: process.env.MARBLE_CLAW_HEARTBEAT !== 'false',
+    heartbeatIntervalMs: parseInt(
+      process.env.MARBLE_CLAW_HEARTBEAT_INTERVAL ?? String(30 * 60 * 1000), 10
+    ), // 30 min default
   },
 
   // ── Version ────────────────────────────────────────────────────────────

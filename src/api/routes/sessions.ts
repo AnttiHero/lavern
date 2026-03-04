@@ -36,7 +36,7 @@ import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getArchivedSession } from '../../db/database.js';
+import { getSessionArchive, getArchivedSession, getUserById } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -113,7 +113,20 @@ export function registerSessionRoutes(
 
     // v14: Attach user identity for session archiving
     const userId = (request as typeof request & { userId?: string }).userId;
-    if (userId) session.userId = userId;
+    if (userId) {
+      session.userId = userId;
+
+      // v17: Load soul from user profile
+      try {
+        const user = getUserById(userId);
+        if (user?.profile_json) {
+          const profile = JSON.parse(user.profile_json);
+          if (typeof profile.soul === 'string' && profile.soul.trim()) {
+            session.soul = profile.soul.trim();
+          }
+        }
+      } catch { /* non-fatal — soul is optional */ }
+    }
 
     // v8: If matterId is provided, load the matter's team into the session
     const matterId = body.request?.matterId;

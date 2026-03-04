@@ -292,14 +292,47 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
     watcher.start(watchPaths);
 
+    // v17: Heartbeat — periodic status check
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    if (config.claw.heartbeatEnabled) {
+      heartbeatTimer = setInterval(() => {
+        const alerts: string[] = [];
+        const state = registry.getState();
+
+        // Budget approaching limit (>80%)
+        const pct = state.budget.spentUsd / state.budget.totalUsd;
+        if (pct > 0.8) alerts.push(`Budget ${Math.round(pct * 100)}% used`);
+
+        // Documents needing attention
+        const docs = Object.values(state.documents);
+        const stale = docs.filter(d => d.status === 'stale').length;
+        const errors = docs.filter(d => d.status === 'error').length;
+        const flagged = docs.filter(d => d.status === 'flagged').length;
+
+        if (stale > 0) alerts.push(`${stale} doc(s) changed since review`);
+        if (errors > 0) alerts.push(`${errors} doc(s) failed processing`);
+        if (flagged > 0) alerts.push(`${flagged} doc(s) need human review`);
+
+        if (alerts.length === 0) return; // Silent — everything is fine
+
+        notify({
+          type: 'heartbeat',
+          title: 'Marble Heartbeat',
+          message: alerts.join(' \u00B7 '),
+        });
+      }, config.claw.heartbeatIntervalMs);
+    }
+
     // Graceful shutdown
     process.on('SIGINT', () => {
       console.log('\n\nShutting down...');
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       watcher.stop();
       process.exit(0);
     });
 
     process.on('SIGTERM', () => {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       watcher.stop();
       process.exit(0);
     });

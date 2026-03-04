@@ -28,6 +28,8 @@ import { streamMessages } from '../utils/stream-messages.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { assembleDocument } from '../assembly/document-assembler.js';
 import { config } from '../config.js';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import type { SchemOptions } from '../orchestrator.js';
@@ -116,6 +118,20 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     filteredAgents['evaluator'] = agentDefinitions['evaluator'];
   }
 
+  // v17: Soul injection — user-defined firm personality
+  // Priority: session soul (from user profile) > SOUL.md file > empty
+  const soulText = session.soul
+    ?? (() => {
+      try {
+        const soulPath = join(options.cwd ?? process.cwd(), 'SOUL.md');
+        if (existsSync(soulPath)) return readFileSync(soulPath, 'utf-8').trim();
+      } catch { /* non-fatal */ }
+      return '';
+    })();
+  const soulPrefix = soulText
+    ? `\n## Client's Firm Personality\n${soulText}\n\n`
+    : '';
+
   // v11: Resolve orchestrator personality from profile
   const orchestratorRole = template.orchestratorArchetype
     ?? getOrchestratorForWorkflow(template.id);
@@ -130,7 +146,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
-        append: personalityPrefix + template.orchestratorPrompt,
+        append: soulPrefix + personalityPrefix + template.orchestratorPrompt,
       },
       allowedTools: template.availableTools,
       agents: filteredAgents,
