@@ -2,9 +2,12 @@
  * CustomCursor — Global custom cursor for the entire app.
  *
  * Dot: small filled circle, follows mouse instantly.
- * Trail: larger blurred circle, follows with spring-like lag (the "shadow").
- * Hover over clickable: dot becomes open circle (ring), same size.
- * Dark pages: white dot / white trail.
+ * Trail: larger blurred circle, follows with spring-like lag.
+ * Hover over clickable: dot becomes open circle (ring).
+ *
+ * Uses mix-blend-mode: difference so the cursor automatically
+ * inverts against any background — dark on light, light on dark.
+ * No manual variant switching needed.
  *
  * Desktop only — hidden on touch devices via pointer media query.
  * The native cursor is hidden via CSS in app.css.
@@ -15,12 +18,11 @@ import { useEffect, useRef, useCallback } from 'react';
 /** Selectors that count as "clickable" for circle-cursor expansion. */
 const CLICKABLE = 'a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"]), label[for], summary, .cursor-pointer';
 
-interface Props {
-  /** 'light' = black cursor on light bg, 'dark' = white cursor on dark bg */
-  variant?: 'light' | 'dark';
-}
+const DOT_COLOR = '#FFFFFF';
+const RING_COLOR = 'rgba(255, 255, 255, 0.6)';
+const TRAIL_COLOR = 'rgba(255, 255, 255, 0.12)';
 
-export function CustomCursor({ variant = 'light' }: Props) {
+export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: -100, y: -100 });
@@ -28,11 +30,6 @@ export function CustomCursor({ variant = 'light' }: Props) {
   const hovering = useRef(false);
   const rafRef = useRef(0);
   const visible = useRef(false);
-
-  const isDark = variant === 'dark';
-  const dotColor = isDark ? 'rgba(250, 249, 246, 0.9)' : 'rgba(26, 26, 26, 0.9)';
-  const ringColor = isDark ? 'rgba(250, 249, 246, 0.45)' : 'rgba(26, 26, 26, 0.45)';
-  const trailColor = isDark ? 'rgba(250, 249, 246, 0.06)' : 'rgba(26, 26, 26, 0.06)';
 
   const applyStyle = useCallback(() => {
     const dot = dotRef.current;
@@ -45,8 +42,8 @@ export function CustomCursor({ variant = 'light' }: Props) {
     // Dot — follows mouse instantly
     dot.style.left = `${mousePos.current.x - 4}px`;
     dot.style.top = `${mousePos.current.y - 4}px`;
-    dot.style.backgroundColor = isHover ? 'transparent' : dotColor;
-    dot.style.border = isHover ? `1.5px solid ${ringColor}` : 'none';
+    dot.style.backgroundColor = isHover ? 'transparent' : DOT_COLOR;
+    dot.style.border = isHover ? `1.5px solid ${RING_COLOR}` : 'none';
     dot.style.opacity = vis;
 
     // Trail — follows with lag
@@ -57,7 +54,7 @@ export function CustomCursor({ variant = 'light' }: Props) {
     trail.style.left = `${trailPos.current.x - 16}px`;
     trail.style.top = `${trailPos.current.y - 16}px`;
     trail.style.opacity = vis;
-  }, [dotColor, ringColor]);
+  }, []);
 
   // Animation loop
   useEffect(() => {
@@ -125,7 +122,7 @@ export function CustomCursor({ variant = 'light' }: Props) {
 
   return (
     <>
-      {/* Dot — small filled circle */}
+      {/* Dot — small filled circle, auto-inverts via mix-blend-mode */}
       <div
         ref={dotRef}
         style={{
@@ -137,11 +134,12 @@ export function CustomCursor({ variant = 'light' }: Props) {
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: 99999,
+          mixBlendMode: 'difference',
           transition: 'background-color 0.35s ease, border 0.35s ease',
           opacity: 0,
         }}
       />
-      {/* Trail — blurred circle that lags behind */}
+      {/* Trail — blurred circle that lags behind, also inverts */}
       <div
         ref={trailRef}
         style={{
@@ -151,10 +149,11 @@ export function CustomCursor({ variant = 'light' }: Props) {
           width: 32,
           height: 32,
           borderRadius: '50%',
-          backgroundColor: trailColor,
+          backgroundColor: TRAIL_COLOR,
           filter: 'blur(8px)',
           pointerEvents: 'none',
           zIndex: 99998,
+          mixBlendMode: 'difference',
           opacity: 0,
         }}
       />

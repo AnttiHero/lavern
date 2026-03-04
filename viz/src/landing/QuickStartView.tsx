@@ -12,7 +12,7 @@
  */
 
 import { useState, useCallback, useContext, useEffect, useRef } from 'react';
-import { colors } from '../staffing/styles/tokens.js';
+import { colors, fonts } from '../staffing/styles/tokens.js';
 import { cn } from '../utils/cn.js';
 import { UserContext } from '../auth/UserContext.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
@@ -191,43 +191,42 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         className="relative z-2 w-full flex justify-between items-center pt-5 px-7 box-border"
         style={{ animation: 'qsFadeIn 0.5s ease 0.7s both' }}
       >
-        {/* Archive monogram — minimal, architectural */}
+        {/* The Archive — quiet serif, just typography */}
         <button
           onClick={() => { window.location.hash = '#/archive'; }}
-          className="w-[30px] h-[30px] rounded-full flex items-center justify-center border cursor-pointer transition-all duration-250 ease-in-out"
+          className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
           style={{
-            borderColor: archiveHovered ? colors.text : 'rgba(0,0,0,0.12)',
-            backgroundColor: archiveHovered ? colors.text : 'transparent',
-            color: archiveHovered ? '#fff' : colors.text,
+            padding: '4px 0',
+            color: archiveHovered ? colors.text : colors.textMuted,
+            fontFamily: fonts.serif,
+            fontStyle: 'italic',
+            fontSize: 15,
+            fontWeight: 400,
+            letterSpacing: 0.5,
+            borderBottom: archiveHovered ? `1px solid ${colors.text}` : '1px solid transparent',
           }}
           onMouseEnter={() => setArchiveHovered(true)}
           onMouseLeave={() => setArchiveHovered(false)}
-          title="Archive"
         >
-          <span className="font-serif text-[14px] font-medium leading-none" style={{ marginTop: 1 }}>
-            A
-          </span>
+          The Archive
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Agents — discovery button, distinct accent style */}
+          {/* Claw — the night shift */}
           <button
-            onClick={() => { window.location.hash = '#/agent-docs'; }}
-            className={cn(
-              'font-sans text-[11px] font-semibold tracking-[1.5px] uppercase',
-              'py-1.5 cursor-pointer bg-transparent border-none',
-              'transition-colors duration-250 ease-in-out',
-            )}
+            onClick={() => { window.location.hash = '#/claw'; }}
+            className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
             style={{
-              color: agentsHovered ? colors.accent : colors.textMuted,
-              borderLeft: `2px solid ${agentsHovered ? colors.accent : 'rgba(0,0,0,0.1)'}`,
-              paddingLeft: 12,
-              paddingRight: 4,
+              fontSize: 18,
+              padding: '2px 6px',
+              opacity: agentsHovered ? 1 : 0.45,
+              transform: agentsHovered ? 'scale(1.15) rotate(-10deg)' : 'scale(1)',
             }}
             onMouseEnter={() => setAgentsHovered(true)}
             onMouseLeave={() => setAgentsHovered(false)}
+            title="Claw Mode"
           >
-            Agents
+            {'\uD83E\uDD80'}
           </button>
 
           {/* Separator */}

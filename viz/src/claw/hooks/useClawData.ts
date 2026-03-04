@@ -168,6 +168,7 @@ export function useClawData(): ClawData {
   }, [goDemo]);
 
   useEffect(() => {
+    mounted.current = true;          // reset on remount (React strict mode)
     fetchData();
 
     // Poll every 10s in live mode only

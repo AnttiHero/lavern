@@ -445,10 +445,8 @@ export function App() {
     <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
   ) : null;
 
-  // ── Custom cursor — dark on light pages, light on dark pages ─────────
-  const darkViews: AppView[] = ['landing', 'agent-docs', 'bet-the-company', 'claw'];
-  const cursorVariant = darkViews.includes(view) ? 'dark' : 'light';
-  const cursor = <CustomCursor variant={cursorVariant} />;
+  // ── Custom cursor — auto-inverts via mix-blend-mode ──────────────────
+  const cursor = <CustomCursor />;
 
   // ── Quick Start — fast-track entry point ────────────────────────────
   if (view === 'quickstart') {
