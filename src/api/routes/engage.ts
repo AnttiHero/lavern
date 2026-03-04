@@ -202,10 +202,11 @@ async function buildLegalRequest(body: EngageRequestBody): Promise<LegalRequest>
 
 /**
  * Extract structured deliverables from a completed session.
+ * v18: NEVER serve finalOutput — it contains orchestrator process dumps.
  */
 function extractDeliverables(session: SessionState): EngageDeliverables {
   return {
-    output: session.finalOutput || '(No output captured)',
+    output: session.assembledDocument || '(No output captured)',
     findings: session.debate.findings.map(f => ({
       agent: f.agentRole,
       text: f.content,

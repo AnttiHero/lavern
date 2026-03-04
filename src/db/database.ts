@@ -66,21 +66,22 @@ function runMigrations(db: Database.Database): void {
     );
 
     CREATE TABLE IF NOT EXISTS session_archive (
-      id                TEXT PRIMARY KEY,
-      user_id           TEXT NOT NULL REFERENCES users(id),
-      title             TEXT DEFAULT 'Untitled',
-      status            TEXT DEFAULT 'completed',
-      workflow_id       TEXT,
-      team_roles        TEXT DEFAULT '[]',
-      findings_count    INTEGER DEFAULT 0,
-      resolutions_count INTEGER DEFAULT 0,
-      cost_usd          REAL DEFAULT 0,
-      budget_usd        REAL DEFAULT 0,
-      final_output      TEXT,
-      summary_json      TEXT DEFAULT '{}',
-      created_at        TEXT NOT NULL,
-      completed_at      TEXT,
-      duration_ms       INTEGER DEFAULT 0
+      id                  TEXT PRIMARY KEY,
+      user_id             TEXT NOT NULL REFERENCES users(id),
+      title               TEXT DEFAULT 'Untitled',
+      status              TEXT DEFAULT 'completed',
+      workflow_id         TEXT,
+      team_roles          TEXT DEFAULT '[]',
+      findings_count      INTEGER DEFAULT 0,
+      resolutions_count   INTEGER DEFAULT 0,
+      cost_usd            REAL DEFAULT 0,
+      budget_usd          REAL DEFAULT 0,
+      final_output        TEXT,
+      assembled_document  TEXT,
+      summary_json        TEXT DEFAULT '{}',
+      created_at          TEXT NOT NULL,
+      completed_at        TEXT,
+      duration_ms         INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS matters (
@@ -183,6 +184,12 @@ function runMigrations(db: Database.Database): void {
       END;
     `);
   } catch { /* trigger already exists */ }
+
+  // v18 migration: Add assembled_document column to session_archive
+  // SQLite ALTER TABLE ADD COLUMN is safe — no-op if column already exists via CREATE TABLE
+  try {
+    db.exec(`ALTER TABLE session_archive ADD COLUMN assembled_document TEXT`);
+  } catch { /* column already exists */ }
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────
@@ -307,6 +314,7 @@ export interface ArchivedSession {
   cost_usd: number;
   budget_usd: number;
   final_output: string | null;
+  assembled_document: string | null;
   summary_json: string;
   created_at: string;
   completed_at: string | null;
@@ -344,9 +352,9 @@ export function archiveSession(session: SessionState, userId: string): void {
   getDb().prepare(`
     INSERT OR REPLACE INTO session_archive
     (id, user_id, title, status, workflow_id, team_roles, findings_count,
-     resolutions_count, cost_usd, budget_usd, final_output, summary_json,
-     created_at, completed_at, duration_ms)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     resolutions_count, cost_usd, budget_usd, final_output, assembled_document,
+     summary_json, created_at, completed_at, duration_ms)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     session.id,
     userId,
@@ -359,6 +367,7 @@ export function archiveSession(session: SessionState, userId: string): void {
     session.accumulatedCost,
     session.budgetUsd,
     session.finalOutput || null,
+    session.assembledDocument || null,
     summaryJson,
     startedAt ?? now,
     now,

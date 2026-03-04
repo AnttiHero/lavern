@@ -10,6 +10,7 @@ import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { SimpleMarkdown } from './SimpleMarkdown.js';
+import { validateDeliverable } from '../utils/validateDeliverable.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -17,13 +18,9 @@ interface Props {
 }
 
 export function TheWorkTab({ data }: Props) {
-  // Check if we have a real assembled document (not process dump)
-  const isProcessDump = (text: string) => {
-    const trimmed = text.trimStart();
-    return /^(I'll |I will |Let me |Here is|Here's |Based on|The analysis|OK|Okay|Sure|Certainly|Good\.|Clean slate)/i.test(trimmed);
-  };
-  const hasDocument = data.finalOutput && data.finalOutput.length > 200
-    && !isProcessDump(data.finalOutput);
+  // v18: Use shared validator to detect process dumps
+  const hasDocument = data.finalOutput
+    && validateDeliverable(data.finalOutput).valid;
 
   return (
     <div>

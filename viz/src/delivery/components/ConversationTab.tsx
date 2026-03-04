@@ -238,6 +238,8 @@ export function ConversationTab({
           style={styles.input}
           disabled={streaming}
           autoFocus
+          onFocus={e => { e.currentTarget.style.borderColor = colors.accent; }}
+          onBlur={e => { e.currentTarget.style.borderColor = colors.border; }}
         />
         <button
           onClick={sendMessage}

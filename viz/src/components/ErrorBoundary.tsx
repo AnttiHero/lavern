@@ -21,26 +21,38 @@ export class ErrorBoundary extends Component<Props, State> {
         <div style={{
           padding: 40,
           fontFamily: fonts.sans,
-          color: colors.danger,
+          color: colors.text,
           backgroundColor: colors.bg,
           minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center' as const,
         }}>
-          <h2 style={{ fontFamily: fonts.serif, fontWeight: 300 }}>Something went wrong</h2>
-          <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: colors.text }}>
-            {this.state.error.message}
-          </pre>
+          <div style={{ fontFamily: fonts.serif, fontSize: 48, fontWeight: 300, marginBottom: 16, opacity: 0.3 }}>M</div>
+          <h2 style={{ fontFamily: fonts.serif, fontWeight: 300, fontSize: 22, margin: '0 0 8px' }}>Something unexpected happened</h2>
+          <p style={{ fontSize: 13, color: colors.textMuted, margin: '0 0 24px', maxWidth: 360 }}>
+            Please reload the page. If the issue persists, check the browser console for details.
+          </p>
           <button
             onClick={() => window.location.reload()}
             style={{
-              marginTop: 16,
-              padding: '8px 24px',
-              border: `1px solid ${colors.text}`,
-              backgroundColor: 'transparent',
-              color: colors.text,
+              padding: '10px 32px',
+              border: `2px solid ${colors.text}`,
+              backgroundColor: colors.text,
+              color: '#fff',
               fontFamily: fonts.sans,
-              fontSize: 12,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase' as const,
               cursor: 'pointer',
+              borderRadius: 4,
+              transition: 'background-color 0.25s ease, color 0.25s ease',
             }}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
           >
             Reload
           </button>

@@ -43,6 +43,7 @@ import { config } from '../../config.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, type DocumentStyle } from '../../assembly/format-converter.js';
+import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 
 /** Safely parse JSON, returning fallback on failure. */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
@@ -388,8 +389,23 @@ export function registerSessionRoutes(
       ? (reqQuery.style as DocumentStyle)
       : undefined;
 
-    // The deliverable is the assembled document (clean), fallback to finalOutput (process log)
-    const deliverable = session.assembledDocument || session.finalOutput || '# No output yet\n\nThe session has not produced a deliverable yet.';
+    // v18: The deliverable is the assembled document ONLY. Never fall back to finalOutput.
+    // finalOutput contains the orchestrator's internal thinking/process log — serving
+    // that as a work product would be catastrophic for credibility.
+    const deliverable = session.assembledDocument || '';
+
+    // For document formats (md, docx, pdf), validate before serving
+    if (format === 'md' || format === 'docx' || format === 'pdf') {
+      const validation = validateDeliverable(deliverable);
+      if (!validation.valid) {
+        console.error(`[DOWNLOAD] Blocked invalid deliverable for session ${id}: ${validation.reason}`);
+        return reply.status(503).send({
+          error: 'The document is not ready. Assembly may still be in progress or failed. Try downloading structured data (JSON) instead, or retry later.',
+          reason: validation.reason,
+          hasFindings: session.debate.findings.length > 0,
+        });
+      }
+    }
 
     if (format === 'md') {
       const filename = `${id}-workproduct.md`;
@@ -466,8 +482,8 @@ export function registerSessionRoutes(
       lines.push(`# ${title}`, '');
       lines.push(`**Date:** ${new Date().toLocaleDateString()}`, '');
 
-      // Executive summary from assembled document (or first paragraph of output)
-      const source = session.assembledDocument || session.finalOutput;
+      // Executive summary from assembled document only (never from process log)
+      const source = session.assembledDocument;
       if (source) {
         const firstParagraph = source.split('\n\n').find(p => p.trim() && !p.startsWith('#'));
         if (firstParagraph) {
@@ -541,10 +557,13 @@ export function registerSessionRoutes(
       });
     }
 
-    // Check that session has a work product to derive from
-    if (!session.finalOutput) {
+    // Check that session has a valid assembled deliverable to derive from.
+    // v18: Never generate derivatives from finalOutput (process dump).
+    const deliverableValidation = validateDeliverable(session.assembledDocument || '');
+    if (!deliverableValidation.valid) {
       return reply.status(409).send({
-        error: 'Session has not produced a work product yet. Wait for the analysis to complete.',
+        error: 'The primary work product is not ready yet. Wait for document assembly to complete, or retry later.',
+        reason: deliverableValidation.reason,
       });
     }
 
@@ -586,6 +605,14 @@ export function registerSessionRoutes(
 
       if (!generatedContent) {
         throw new Error('No content generated');
+      }
+
+      // v18: Reject if the model produced process-dump text instead of a document
+      if (isProcessDump(generatedContent)) {
+        console.error(`[API] Derivative generation produced process dump (${body.type})`);
+        return reply.status(503).send({
+          error: 'Generation produced internal processing notes instead of a document. Please try again.',
+        });
       }
 
       const format = body.format ?? 'md';
@@ -636,7 +663,7 @@ export function registerSessionRoutes(
 
     return reply.send({
       types: DERIVATIVE_TYPE_LIST,
-      sessionHasOutput: !!session.finalOutput,
+      sessionHasOutput: !!session.assembledDocument,
     });
   });
 
@@ -650,7 +677,7 @@ export function registerSessionRoutes(
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
-    if (!session.finalOutput) {
+    if (!session.assembledDocument) {
       return reply.status(409).send({
         error: 'Session has not produced a work product yet. Wait for the analysis to complete.',
       });
@@ -809,6 +836,7 @@ ${buildFullContext(session)}`;
       return reply.status(404).send({ error: `Archived session not found: ${id}` });
     }
 
+    // v18: Serve assembled_document (clean deliverable), not final_output (process dump)
     return reply.send({
       id: session.id,
       title: session.title,
@@ -819,7 +847,7 @@ ${buildFullContext(session)}`;
       resolutionsCount: session.resolutions_count,
       costUsd: session.cost_usd,
       budgetUsd: session.budget_usd,
-      finalOutput: session.final_output,
+      assembledDocument: session.assembled_document || null,
       summary: safeJsonParse(session.summary_json, {}),
       createdAt: session.created_at,
       completedAt: session.completed_at,

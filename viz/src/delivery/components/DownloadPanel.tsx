@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { getCoworkState, setCoworkStatus } from '../../cowork/coworkStore.js';
+import { validateDeliverable } from '../utils/validateDeliverable.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -71,6 +72,9 @@ export function DownloadPanel({ data }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'writing' | 'done' | 'error'>('idle');
+
+  // v18: Validate the deliverable — disable document downloads if invalid
+  const deliverableValid = data.finalOutput ? validateDeliverable(data.finalOutput).valid : false;
 
   // Check if cowork folder is available for write-back
   const coworkActive = sessionStorage.getItem('shem-cowork-active') === 'true';
@@ -230,25 +234,32 @@ export function DownloadPanel({ data }: Props) {
         </div>
       </div>
 
+      {/* v18: Warning when document is not ready */}
+      {!deliverableValid && !isDemo && (
+        <div style={styles.assemblyWarning}>
+          Document assembly is in progress or was not completed. Structured data and executive brief are still available.
+        </div>
+      )}
+
       {/* Primary row: DOCX and PDF */}
       <div style={styles.primaryRow}>
         <DownloadCard
           icon={'\uD83D\uDCC4'}
           title="Word Document"
-          description="Professional .docx format"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Professional .docx format'}
           format=".docx"
           primary
           onClick={() => handleDownload('docx')}
-          disabled={isDemo}
+          disabled={isDemo || !deliverableValid}
         />
         <DownloadCard
           icon={'\uD83D\uDCC3'}
           title="PDF"
-          description="Print-ready document"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Print-ready document'}
           format=".pdf"
           primary
           onClick={() => handleDownload('pdf')}
-          disabled={isDemo}
+          disabled={isDemo || !deliverableValid}
         />
       </div>
 
@@ -257,9 +268,10 @@ export function DownloadPanel({ data }: Props) {
         <DownloadCard
           icon={'#'}
           title="Markdown"
-          description="Raw markdown source"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Raw markdown source'}
           format=".md"
           onClick={() => handleDownload('md')}
+          disabled={!deliverableValid && !isDemo}
         />
         <DownloadCard
           icon={'{ }'}
@@ -298,8 +310,8 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
         ...(primary ? styles.cardPrimary : {}),
         ...(disabled ? styles.cardDisabled : {}),
       }}
-      onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = colors.borderHover; }}
-      onMouseLeave={e => { if (!disabled) e.currentTarget.style.borderColor = primary ? colors.accent : colors.border; }}
+      onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = colors.borderHover; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; } }}
+      onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = primary ? colors.accent : colors.border; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
     >
       <div style={styles.cardIcon}>{icon}</div>
       <div style={styles.cardTitle}>{title}</div>
@@ -323,6 +335,19 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textMuted,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
+  },
+
+  // Assembly warning
+  assemblyWarning: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.warning,
+    backgroundColor: 'rgba(184, 134, 11, 0.06)',
+    border: `1px solid rgba(184, 134, 11, 0.2)`,
+    borderRadius: radii.sm,
+    padding: '10px 16px',
+    marginBottom: spacing.md,
+    lineHeight: 1.5,
   },
 
   // Style selector
@@ -391,12 +416,11 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.lg,
     cursor: 'pointer',
-    transition: 'border-color 0.15s ease',
+    transition: 'border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
     textAlign: 'center' as const,
   },
   cardPrimary: {
-    borderColor: colors.accent,
-    borderWidth: 2,
+    border: `2px solid ${colors.accent}`,
     padding: `${spacing.xl}px ${spacing.lg}px`,
   },
   cardDisabled: {

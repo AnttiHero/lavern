@@ -199,28 +199,35 @@ export default function MyPageView({ onBack }: Props) {
       </div>
 
       {/* ── Section 4: Marble's Soul ──────────────────────────────── */}
-      <SectionDivider label="Marble's Soul" />
+      <div style={styles.soulContainer}>
+        <div style={styles.soulInner}>
+          {/* Decorative M watermark */}
+          <div style={styles.soulWatermark} aria-hidden="true">M</div>
 
-      <div style={styles.fieldGroup}>
-        <p style={styles.soulHeading}>
-          What kind of firm is Marble for you?
-        </p>
-        <p style={styles.fieldHint}>
-          This shapes how agents communicate, make decisions, and present their work.
-        </p>
-        <textarea
-          value={profile.soul}
-          onChange={e => {
-            const val = e.target.value.slice(0, MAX_SOUL);
-            field('soul')(val);
-          }}
-          placeholder={`Define Marble's personality for your engagements. For example:\n\nVoice: Precise but warm. Explain complex legal concepts without condescension.\nPrinciples: Always prioritize plain language. Flag GDPR implications proactively.\nStyle: Conservative on risk assessment, creative on document design.\nValues: Transparency over polish — show your work, admit uncertainty.`}
-          rows={12}
-          style={styles.textarea}
-        />
-        <span style={styles.charCount}>
-          {profile.soul.length} / {MAX_SOUL}
-        </span>
+          <div style={styles.soulLabel}>Soul</div>
+          <h2 style={styles.soulHeading}>
+            What kind of firm<br />is Marble <em>for you?</em>
+          </h2>
+          <p style={styles.soulSub}>
+            Voice. Principles. Values. The character that shapes every decision your agents make.
+          </p>
+
+          <textarea
+            value={profile.soul}
+            onChange={e => {
+              const val = e.target.value.slice(0, MAX_SOUL);
+              field('soul')(val);
+            }}
+            placeholder={'Precise but warm. Explain complex legal concepts without condescension.\n\nAlways prioritize plain language. Show your work. Admit uncertainty.\n\nConservative on risk — creative on design.'}
+            rows={10}
+            style={styles.soulTextarea}
+            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(196, 93, 62, 0.4)'; e.currentTarget.style.backgroundColor = 'rgba(250, 249, 246, 0.07)'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'rgba(250, 249, 246, 0.1)'; e.currentTarget.style.backgroundColor = 'rgba(250, 249, 246, 0.05)'; }}
+          />
+          <span style={styles.soulCharCount}>
+            {profile.soul.length} / {MAX_SOUL}
+          </span>
+        </div>
       </div>
 
       {/* ── Section 5: Saved Teams ─────────────────────────────────── */}
@@ -416,13 +423,87 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
     margin: 0,
   },
-  soulHeading: {
-    fontSize: 18,
+  // ── Soul — dark inverted container ──────────────────────────────
+  soulContainer: {
+    width: '100%',
+    maxWidth: 740,
+    marginTop: spacing.xxl + 8,
+    marginBottom: spacing.md,
+    borderRadius: radii.lg,
+    background: 'linear-gradient(145deg, #1A1A1A 0%, #2A2826 50%, #1A1A1A 100%)',
+    position: 'relative' as const,
+    overflow: 'hidden' as const,
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
+  },
+  soulInner: {
+    position: 'relative' as const,
+    zIndex: 1,
+    padding: '48px 48px 36px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    textAlign: 'center' as const,
+  },
+  soulWatermark: {
+    position: 'absolute' as const,
+    top: -20,
+    right: 30,
     fontFamily: fonts.serif,
-    fontWeight: 400,
-    color: colors.text,
+    fontSize: 200,
+    fontWeight: 300,
+    color: 'rgba(250, 249, 246, 0.03)',
+    lineHeight: 1,
+    pointerEvents: 'none' as const,
+    userSelect: 'none' as const,
+  },
+  soulLabel: {
+    fontSize: 10,
+    fontWeight: 600,
+    letterSpacing: 3,
+    textTransform: 'uppercase' as const,
+    color: 'rgba(196, 93, 62, 0.7)',
+    marginBottom: 16,
+  },
+  soulHeading: {
+    fontSize: 26,
+    fontFamily: fonts.serif,
+    fontWeight: 300,
+    color: 'rgba(250, 249, 246, 0.9)',
     margin: 0,
     letterSpacing: -0.3,
+    lineHeight: 1.3,
+  },
+  soulSub: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: 'rgba(250, 249, 246, 0.4)',
+    margin: '12px 0 28px',
+    lineHeight: 1.5,
+    maxWidth: 400,
+  },
+  soulTextarea: {
+    width: '100%',
+    padding: '16px 20px',
+    fontSize: 15,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    color: 'rgba(250, 249, 246, 0.85)',
+    backgroundColor: 'rgba(250, 249, 246, 0.05)',
+    border: '1px solid rgba(250, 249, 246, 0.1)',
+    borderRadius: radii.sm,
+    outline: 'none',
+    resize: 'vertical' as const,
+    lineHeight: 1.7,
+    boxSizing: 'border-box' as const,
+    transition: 'border-color 0.3s ease, background-color 0.3s ease',
+    textAlign: 'left' as const,
+  },
+  soulCharCount: {
+    fontSize: 10,
+    color: 'rgba(250, 249, 246, 0.2)',
+    textAlign: 'right' as const,
+    width: '100%',
+    marginTop: 8,
   },
 
   // Input

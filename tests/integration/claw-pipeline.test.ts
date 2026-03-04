@@ -19,6 +19,8 @@ import { ClawDelivery } from '../../src/claw/delivery.js';
 import type { ClawConfig, ClawProfile } from '../../src/claw/types.js';
 import type { IntensityLevel } from '../../src/types/engagement.js';
 import type { DocumentStyle } from '../../src/assembly/format-converter.js';
+import type { InferenceResult } from '../../src/claw/inference.js';
+import type { SessionState } from '../../src/session/session-state.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -302,6 +304,126 @@ describe('Claw Mode Pipeline Integration', () => {
       expect(summary.confidential).toBe(1);
       expect(summary.frontier).toBe(1);
       expect(summary.total).toBe(2);
+    });
+  });
+
+  // ── Delivery (Frontier) ──────────────────────────────────────────────
+
+  describe('Delivery — frontier model output', () => {
+    function makeValidDocument(): string {
+      return [
+        '# Terms of Service',
+        '',
+        '## Section 1: Definitions',
+        '',
+        'This agreement establishes the terms and conditions governing the use of services. ' +
+        'All parties agree to the provisions set forth herein. The definitions in this section ' +
+        'apply throughout the document unless otherwise noted. Payment terms are net 30 days.',
+        '',
+        '## Section 2: Obligations',
+        '',
+        'The provider shall deliver services in accordance with industry standards and best practices. ' +
+        'Payment shall be made within the time period specified. Late payments incur interest.',
+        '',
+        '## Section 3: Termination',
+        '',
+        'Either party may terminate upon 30 days written notice. Material breach allows immediate termination.',
+      ].join('\n');
+    }
+
+    function makeMockSession(assembledDocument: string): Partial<SessionState> {
+      return {
+        assembledDocument,
+        finalOutput: "I'll start by reviewing the document. Let me check the clauses...",
+        accumulatedCost: 1.50,
+        subagentActivities: [{ agentRole: 'contract-reviewer', timestamp: new Date().toISOString(), activity: 'review' }] as any,
+        workflowTemplateId: 'review',
+        debate: { findings: [], challenges: [], responses: [], resolutions: [], rounds: [] } as any,
+        workflow: { startedAt: new Date().toISOString() } as any,
+      };
+    }
+
+    function makeMockInference(): InferenceResult {
+      return {
+        request: { type: 'contract-review', requestText: 'Review this contract' } as any,
+        workflow: 'review',
+        intensity: 'standard' as IntensityLevel,
+        method: 'heuristic',
+        reasoning: 'Detected contract file',
+      };
+    }
+
+    it('should write valid deliverable when assembledDocument passes validation', async () => {
+      const docPath = createTestFile(watchDir, 'contract.md', '# Contract\nContent.');
+      const delivery = new ClawDelivery(clawDir);
+      const config = createMockConfig(clawDir);
+      const session = makeMockSession(makeValidDocument());
+      const inference = makeMockInference();
+
+      const result = await delivery.deliver(
+        'test-frontier-valid',
+        session as SessionState,
+        inference,
+        docPath,
+        'hash456',
+        config,
+      );
+
+      expect(fs.existsSync(path.join(result, 'manifest.json'))).toBe(true);
+      expect(fs.existsSync(path.join(result, 'deliverable.md'))).toBe(true);
+
+      const manifest = JSON.parse(fs.readFileSync(path.join(result, 'manifest.json'), 'utf-8'));
+      expect(manifest.status).toBe('completed');
+
+      const deliverable = fs.readFileSync(path.join(result, 'deliverable.md'), 'utf-8');
+      expect(deliverable).toContain('Terms of Service');
+      // Must NOT contain process dump content
+      expect(deliverable).not.toContain("I'll start by");
+    });
+
+    it('should reject process dump in assembledDocument and mark as failed', async () => {
+      const docPath = createTestFile(watchDir, 'contract2.md', '# Contract 2\nMore content.');
+      const delivery = new ClawDelivery(clawDir);
+      const config = createMockConfig(clawDir);
+      // assembledDocument IS a process dump
+      const session = makeMockSession("I'll start by reviewing the document. Let me check each clause carefully...");
+      const inference = makeMockInference();
+
+      const result = await delivery.deliver(
+        'test-frontier-dump',
+        session as SessionState,
+        inference,
+        docPath,
+        'hash789',
+        config,
+      );
+
+      const manifest = JSON.parse(fs.readFileSync(path.join(result, 'manifest.json'), 'utf-8'));
+      expect(manifest.status).toBe('failed');
+
+      // No deliverable.md should exist for a failed delivery
+      expect(fs.existsSync(path.join(result, 'deliverable.md'))).toBe(false);
+    });
+
+    it('should mark as failed when assembledDocument is empty', async () => {
+      const docPath = createTestFile(watchDir, 'contract3.md', '# Contract 3\nYet more content.');
+      const delivery = new ClawDelivery(clawDir);
+      const config = createMockConfig(clawDir);
+      const session = makeMockSession('');
+      const inference = makeMockInference();
+
+      const result = await delivery.deliver(
+        'test-frontier-empty',
+        session as SessionState,
+        inference,
+        docPath,
+        'hash000',
+        config,
+      );
+
+      const manifest = JSON.parse(fs.readFileSync(path.join(result, 'manifest.json'), 'utf-8'));
+      expect(manifest.status).toBe('failed');
+      expect(fs.existsSync(path.join(result, 'deliverable.md'))).toBe(false);
     });
   });
 

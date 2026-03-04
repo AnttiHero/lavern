@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
+import { validateDeliverable } from '../utils/validateDeliverable.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -117,6 +118,8 @@ export function DerivativesPanel({ data }: Props) {
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat>('docx');
   const isDemo = data.sessionId.startsWith('demo-session');
+  const deliverableValid = data.finalOutput ? validateDeliverable(data.finalOutput).valid : false;
+  const generationBlocked = !isDemo && !deliverableValid;
 
   const handleGenerate = async (typeId: string) => {
     setStatuses(prev => ({ ...prev, [typeId]: 'generating' }));
@@ -227,10 +230,16 @@ export function DerivativesPanel({ data }: Props) {
         </div>
       </div>
 
+      {generationBlocked && (
+        <div style={styles.blockedWarning}>
+          Primary work product is not ready — derivative generation is unavailable until document assembly completes.
+        </div>
+      )}
+
       <div style={styles.grid}>
         {DERIVATIVES.map(d => {
           const status = statuses[d.id] ?? 'idle';
-          const disabled = status === 'generating';
+          const disabled = status === 'generating' || generationBlocked;
 
           return (
             <button
@@ -429,6 +438,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     fontFamily: fonts.sans,
     color: colors.danger,
+  },
+
+  // Blocked warning
+  blockedWarning: {
+    padding: `${spacing.md}px ${spacing.lg}px`,
+    marginBottom: spacing.md,
+    backgroundColor: 'rgba(198, 160, 60, 0.08)',
+    border: '1px solid rgba(198, 160, 60, 0.25)',
+    borderRadius: radii.sm,
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: 'rgb(140, 110, 30)',
+    lineHeight: 1.5,
   },
 
   // Demo note

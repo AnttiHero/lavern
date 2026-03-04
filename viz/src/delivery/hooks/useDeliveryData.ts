@@ -428,7 +428,8 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
 
 function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): DeliveryData {
   const title = (raw.title as string) || 'Archived Session';
-  const finalOutput = (raw.finalOutput as string) || '';
+  // v18: Use assembledDocument (clean deliverable), never raw finalOutput (process dump)
+  const finalOutput = (raw.assembledDocument as string) || '';
   const costUsd = (raw.costUsd as number) || 0;
   const budgetUsd = (raw.budgetUsd as number) || 0;
   const durationMs = (raw.durationMs as number) || 0;

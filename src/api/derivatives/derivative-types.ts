@@ -84,8 +84,9 @@ function matterTitle(session: SessionState): string {
 
 /** Build a full context block that all derivative types share. */
 export function buildFullContext(session: SessionState): string {
-  // v15: Use assembledDocument (clean deliverable) over finalOutput (process log)
-  const deliverable = session.assembledDocument || session.finalOutput || '(no output yet)';
+  // v18: NEVER fall back to finalOutput — it contains process dumps.
+  // If assembledDocument is empty, derivatives should work from findings/resolutions only.
+  const deliverable = session.assembledDocument || '(deliverable not yet assembled)';
 
   return `# Analysis Context
 
@@ -122,8 +123,8 @@ ${formatGateDecisions(session)}
 /** Build a client-safe context (no internal debate details, agent names cleaned). */
 function buildClientContext(session: SessionState): string {
   const redYellow = session.debate.findings.filter(f => f.severity === 'RED' || f.severity === 'YELLOW');
-  // v15: Use assembledDocument (clean deliverable) over finalOutput (process log)
-  const deliverable = session.assembledDocument || session.finalOutput || '(no output yet)';
+  // v18: NEVER fall back to finalOutput — it contains process dumps.
+  const deliverable = session.assembledDocument || '(deliverable not yet assembled)';
 
   return `# Analysis Context
 
@@ -182,7 +183,7 @@ ${failures.length > 0
 ${formatScores(session)}
 
 ## Full Work Product
-${session.assembledDocument || session.finalOutput || '(no output yet)'}`;
+${session.assembledDocument || '(deliverable not yet assembled)'}`;
 }
 
 // ── Derivative Types ─────────────────────────────────────────────────────────

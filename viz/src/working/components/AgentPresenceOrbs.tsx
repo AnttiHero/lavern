@@ -67,20 +67,26 @@ export function AgentPresenceOrbs({
             )}
 
             {/* Tooltip */}
-            {hoveredRole === agent.role && (
-              <div style={styles.tooltip}>
-                <div style={styles.tooltipName}>{agent.displayName}</div>
-                {isActive && thinkingAgent?.task && (
-                  <div style={styles.tooltipTask}>
-                    {thinkingAgent.task.length > 60
-                      ? thinkingAgent.task.slice(0, 57) + '...'
-                      : thinkingAgent.task}
-                  </div>
-                )}
-                {isComplete && <div style={styles.tooltipTask}>Completed</div>}
-                {!isActive && !isComplete && <div style={styles.tooltipTask}>Waiting</div>}
-              </div>
-            )}
+            <div style={{
+              ...styles.tooltip,
+              opacity: hoveredRole === agent.role ? 1 : 0,
+              transform: hoveredRole === agent.role
+                ? 'translateX(-50%) translateY(0)'
+                : 'translateX(-50%) translateY(4px)',
+              pointerEvents: 'none' as const,
+              transition: 'opacity 0.2s ease, transform 0.2s ease',
+            }}>
+              <div style={styles.tooltipName}>{agent.displayName}</div>
+              {isActive && thinkingAgent?.task && (
+                <div style={styles.tooltipTask}>
+                  {thinkingAgent.task.length > 60
+                    ? thinkingAgent.task.slice(0, 57) + '...'
+                    : thinkingAgent.task}
+                </div>
+              )}
+              {isComplete && <div style={styles.tooltipTask}>Completed</div>}
+              {!isActive && !isComplete && <div style={styles.tooltipTask}>Waiting</div>}
+            </div>
           </div>
         );
       })}
@@ -117,16 +123,17 @@ const styles: Record<string, React.CSSProperties> = {
     left: '50%',
     transform: 'translateX(-50%)',
     marginBottom: 8,
-    backgroundColor: colors.text,
+    backgroundColor: 'rgba(26, 26, 26, 0.92)',
+    backdropFilter: 'blur(8px)',
     color: colors.bg,
     borderRadius: 6,
     padding: '6px 10px',
     whiteSpace: 'normal' as const,
     zIndex: 100,
-    pointerEvents: 'none' as const,
     minWidth: 100,
     maxWidth: 220,
     textAlign: 'center' as const,
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
   },
   tooltipName: {
     fontSize: 11,

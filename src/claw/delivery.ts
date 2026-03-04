@@ -16,6 +16,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ensureDir, writeJsonFileAtomic } from '../utils/fs-helpers.js';
 import { convertToDocx, convertToHtml } from '../assembly/format-converter.js';
+import { validateDeliverable } from '../assembly/validate-deliverable.js';
 import type { SessionState } from '../session/session-state.js';
 import { extractSessionFindings } from './types.js';
 import type { ClawManifest, ClawConfig } from './types.js';
@@ -47,8 +48,13 @@ export class ClawDelivery {
     const deliveryDir = path.join(this.baseDir, 'delivery', sessionId);
     ensureDir(deliveryDir);
 
-    // Get the assembled document (clean deliverable) or fall back to final output
-    const markdown = session.assembledDocument ?? session.finalOutput ?? '';
+    // v18: Use assembled document ONLY. Never fall back to finalOutput (process dump).
+    const rawMarkdown = session.assembledDocument ?? '';
+    const validation = validateDeliverable(rawMarkdown);
+    const markdown = validation.valid ? rawMarkdown : '';
+    if (!validation.valid && rawMarkdown) {
+      console.warn(`[CLAW-DELIVERY] Rejected invalid deliverable for ${sessionId}: ${validation.reason}`);
+    }
     const title = path.basename(documentPath, path.extname(documentPath));
 
     // ── manifest.json ─────────────────────────────────────────────────
@@ -92,7 +98,7 @@ export class ClawDelivery {
         markdown: 'deliverable.md',
         findings: 'findings.json',
       },
-      status: markdown ? 'completed' : 'partial',
+      status: markdown ? 'completed' : 'failed',
     };
 
     // ── Write files ───────────────────────────────────────────────────

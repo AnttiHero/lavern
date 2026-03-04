@@ -187,7 +187,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: 50000,
   },
   dialog: {
     backgroundColor: colors.bgCard,

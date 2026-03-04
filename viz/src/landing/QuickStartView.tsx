@@ -185,7 +185,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       {/* ── Top nav (shimmer buttons) ────────────────────── */}
       <div
         className="relative z-2 w-full flex justify-between items-center pt-5 px-7 box-border"
-        style={{ animation: 'qsFadeIn 0.6s ease 0.8s both' }}
+        style={{ animation: 'qsFadeIn 0.5s ease 0.7s both' }}
       >
         <div />
         <div className="flex flex-wrap items-center gap-2">
@@ -211,20 +211,20 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       <div className="relative z-2 text-center mt-12 sm:mt-16 lg:mt-20 mb-6 sm:mb-8 lg:mb-9 px-6">
         <h1
           className="text-3xl sm:text-4xl lg:text-[52px] font-light font-serif text-text m-0 tracking-tight leading-[1.15]"
-          style={{ animation: 'qsFadeUp 0.8s ease 0.15s both' }}
+          style={{ animation: 'qsFadeUp 0.7s ease 0.1s both' }}
         >
           Your firm is{' '}<span className="italic">ready.</span>
         </h1>
         <p
           className="text-[13px] sm:text-sm font-serif text-text-muted mt-4 tracking-[0.3px] leading-normal"
-          style={{ animation: 'qsFadeIn 0.6s ease 0.5s both' }}
+          style={{ animation: 'qsFadeIn 0.5s ease 0.3s both' }}
         >
           57 agents. Every discipline. Waiting on your instruction.
         </p>
         {/* Decorative rule */}
         <div
           className="mx-auto mt-5 w-16 h-px bg-border origin-center"
-          style={{ animation: 'qsLineGrow 0.6s ease 0.65s both' }}
+          style={{ animation: 'qsLineGrow 0.5s ease 0.45s both' }}
         />
       </div>
 
@@ -236,7 +236,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           'transition-[border-color,box-shadow] duration-300 ease-in-out',
         )}
         style={{
-          animation: 'qsFadeUp 0.6s ease 0.3s both',
+          animation: 'qsFadeUp 0.6s ease 0.5s both',
           border: `1.5px solid ${isDragOver ? colors.accent : 'rgba(0,0,0,0.06)'}`,
           boxShadow: '0 2px 24px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)',
         }}
