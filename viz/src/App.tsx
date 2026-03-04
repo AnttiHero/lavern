@@ -429,6 +429,7 @@ export function App() {
       'shem-briefing-memo', 'shem-briefing-docs',
       'shem-briefing-team', 'shem-briefing-config',
       'shem-session-id', 'shem-parsed-docs', 'shem-strategy-preset',
+      'shem-cowork-active',
     ];
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
     window.location.hash = '';

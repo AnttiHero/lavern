@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
+import { getCoworkState, setCoworkStatus } from '../../cowork/coworkStore.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -69,6 +70,53 @@ function generateClientSummary(data: DeliveryData): string {
 export function DownloadPanel({ data }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'writing' | 'done' | 'error'>('idle');
+
+  // Check if cowork folder is available for write-back
+  const coworkActive = sessionStorage.getItem('shem-cowork-active') === 'true';
+  const coworkState = coworkActive ? getCoworkState() : null;
+  const canSaveToFolder = coworkActive && coworkState?.handle != null && coworkState.status !== 'disconnected';
+
+  const handleSaveToFolder = async () => {
+    if (!canSaveToFolder || !coworkState?.handle) return;
+    setSaveStatus('writing');
+    try {
+      const handle = coworkState.handle;
+      const items: { filename: string; content: string }[] = [];
+
+      // Deliverable markdown
+      if (data.finalOutput) {
+        items.push({ filename: `${data.sessionId}-deliverable.md`, content: data.finalOutput });
+      }
+
+      // Executive summary
+      const summary = generateClientSummary(data);
+      items.push({ filename: `${data.sessionId}-summary.md`, content: summary });
+
+      // Structured data (findings, debates)
+      const jsonData = {
+        sessionId: data.sessionId,
+        exportedAt: new Date().toISOString(),
+        debate: { findingsCount: data.debate.findingsCount, resolutions: data.debateResolutions },
+        verification: data.verificationChecks,
+        cost: data.cost,
+      };
+      items.push({ filename: `${data.sessionId}-data.json`, content: JSON.stringify(jsonData, null, 2) });
+
+      for (const item of items) {
+        const fileHandle = await handle.getFileHandle(item.filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([item.content], { type: 'text/plain' }));
+        await writable.close();
+      }
+
+      setCoworkStatus('delivered');
+      setSaveStatus('done');
+    } catch (err) {
+      console.error('[cowork] Failed to save to folder:', err);
+      setSaveStatus('error');
+    }
+  };
 
   const handleDownload = (format: 'docx' | 'pdf' | 'md' | 'json' | 'summary') => {
     if (isDemo) {
@@ -99,6 +147,29 @@ export function DownloadPanel({ data }: Props) {
       <div style={styles.panelHeader}>
         <div style={styles.panelTitle}>Download Deliverable</div>
       </div>
+
+      {/* Save to folder — shown when cowork folder is connected */}
+      {canSaveToFolder && (
+        <button
+          onClick={handleSaveToFolder}
+          disabled={saveStatus === 'writing' || saveStatus === 'done'}
+          style={{
+            ...styles.saveToFolderBtn,
+            ...(saveStatus === 'done' ? styles.saveToFolderDone : {}),
+            ...(saveStatus === 'error' ? styles.saveToFolderError : {}),
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0 }}>
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>
+            {saveStatus === 'idle' && `Save all to ${coworkState?.folderName ?? 'folder'}`}
+            {saveStatus === 'writing' && 'Writing files\u2026'}
+            {saveStatus === 'done' && `Saved to ${coworkState?.folderName ?? 'folder'}`}
+            {saveStatus === 'error' && 'Save failed \u2014 use downloads below'}
+          </span>
+        </button>
+      )}
 
       {/* Style selector */}
       <div style={styles.styleSection}>
@@ -330,5 +401,34 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textDim,
     fontStyle: 'italic' as const,
     marginTop: 2,
+  },
+
+  // Save to folder
+  saveToFolderBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    padding: `${spacing.md}px ${spacing.lg}px`,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.accent}`,
+    borderRadius: radii.lg,
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.accent,
+    transition: 'background-color 0.15s ease, border-color 0.15s ease',
+  },
+  saveToFolderDone: {
+    borderColor: '#4a9',
+    color: '#4a9',
+    cursor: 'default',
+  },
+  saveToFolderError: {
+    borderColor: '#c66',
+    color: '#c66',
+    cursor: 'default',
   },
 };

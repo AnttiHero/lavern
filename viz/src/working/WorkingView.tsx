@@ -15,6 +15,7 @@ import { useInsightFilter } from './hooks/useInsightFilter.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
 import { HeartbeatBand } from './components/HeartbeatBand.js';
+import { ProgressSidebar } from './components/ProgressSidebar.js';
 import { InsightFeed } from './components/InsightFeed.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
 import { GateDialog } from '../components/GateDialog.js';
@@ -145,21 +146,31 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         lastEventTimestamp={state.lastEventTimestamp}
       />
 
-      {/* Verification pipeline display — shown when verification events are streaming */}
-      {hasVerificationEvents && (
-        <div style={{ overflow: 'auto', flex: hasVerificationEvents ? '0 0 auto' : undefined, maxHeight: '50vh' }}>
-          <VerificationFeed streamCards={state.streamCards} />
-        </div>
-      )}
+      {/* Main content: sidebar + feed */}
+      <div style={styles.mainContent}>
+        <ProgressSidebar
+          currentStep={state.currentStep}
+          completedSteps={state.completedSteps}
+        />
 
-      <InsightFeed
-        cards={insightCards}
-        team={team}
-        onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
-        isConnected={state.connectionStatus === 'connected'}
-        debateThreads={debateThreads}
-        activeThinkingAgents={state.activeThinkingAgents}
-      />
+        <div style={styles.feedColumn}>
+          {/* Verification pipeline display — shown when verification events are streaming */}
+          {hasVerificationEvents && (
+            <div style={{ overflow: 'auto', flex: '0 0 auto', maxHeight: '50vh' }}>
+              <VerificationFeed streamCards={state.streamCards} />
+            </div>
+          )}
+
+          <InsightFeed
+            cards={insightCards}
+            team={team}
+            onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
+            isConnected={state.connectionStatus === 'connected'}
+            debateThreads={debateThreads}
+            activeThinkingAgents={state.activeThinkingAgents}
+          />
+        </div>
+      </div>
 
       {/* Session list overlay when disconnected */}
       {showSessionOverlay && (
@@ -220,6 +231,19 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     backgroundColor: colors.bg,
     position: 'relative' as const,
+  },
+  mainContent: {
+    flex: 1,
+    display: 'flex',
+    overflow: 'hidden',
+    minHeight: 0,
+  },
+  feedColumn: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+    minWidth: 0,
   },
   ghostBtn: {
     position: 'absolute' as const,

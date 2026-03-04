@@ -18,6 +18,8 @@ import { UserContext } from '../auth/UserContext.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 import { DocumentList } from '../briefing/components/DocumentList.js';
 import { useDocumentUpload } from '../briefing/hooks/useDocumentUpload.js';
+import { useCoworkFolder } from '../cowork/useCoworkFolder.js';
+import { CoworkFolderPanel } from '../cowork/CoworkFolderPanel.js';
 import { YOLO_CONFIGS, type YoloTier } from './yolo-config.js';
 import type { FrontendParsedDocument } from '../briefing/hooks/useDocumentUpload.js';
 
@@ -112,6 +114,11 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
     removeDocument,
   } = useDocumentUpload();
 
+  // Cowork folder mode
+  const cowork = useCoworkFolder();
+  const hasFolder = cowork.status !== 'disconnected';
+  const folderHasSelected = cowork.files.some(f => f.selected);
+
   // Smart defaults
   useEffect(() => {
     setTier(documents.length > 0 ? 'review' : 'counsel');
@@ -124,17 +131,25 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   }, []);
 
   // Submission
-  const canSubmit = (question.trim().length > 0 || documents.length > 0) && !submitting && !parsing;
+  const canSubmit = (question.trim().length > 0 || documents.length > 0 || folderHasSelected) && !submitting && !parsing;
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await onQuickStart(question.trim(), TIER_MAP[tier], parsedDocuments);
+      let docs: FrontendParsedDocument[] = parsedDocuments;
+
+      // If cowork folder is active, read selected files from it
+      if (hasFolder && folderHasSelected) {
+        docs = await cowork.getSelectedDocuments();
+        sessionStorage.setItem('shem-cowork-active', 'true');
+      }
+
+      await onQuickStart(question.trim(), TIER_MAP[tier], docs);
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, question, tier, parsedDocuments, onQuickStart]);
+  }, [canSubmit, question, tier, parsedDocuments, hasFolder, folderHasSelected, cowork, onQuickStart]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -243,8 +258,16 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           )}
         />
 
-        {/* Document list inside card (if any) */}
-        {documents.length > 0 && (
+        {/* Cowork folder panel OR document list */}
+        {hasFolder ? (
+          <CoworkFolderPanel
+            folderName={cowork.folderName!}
+            files={cowork.files}
+            status={cowork.status}
+            onToggleFile={cowork.toggleFile}
+            onDisconnect={cowork.disconnect}
+          />
+        ) : documents.length > 0 ? (
           <div className="px-6 pb-2">
             <DocumentList
               documents={documents}
@@ -252,7 +275,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
               onRemove={removeDocument}
             />
           </div>
-        )}
+        ) : null}
 
         {uploadError && (
           <p className="text-xs font-sans text-danger mx-7 mb-2">{uploadError}</p>
@@ -270,23 +293,49 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           'py-3 px-4 sm:pl-5 sm:pr-4',
           'border-t border-border bg-bg-panel',
         )}>
-          {/* Left: attach documents */}
-          <button
-            onClick={openFilePicker}
-            className={cn(
-              'flex items-center bg-transparent border-none',
-              'font-sans text-[13px] cursor-pointer',
-              'py-1.5 px-2.5 rounded-sm',
-              'transition-colors duration-200 ease-in-out whitespace-nowrap',
-              'text-text-muted hover:text-text',
+          {/* Left: attach documents + open folder */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={openFilePicker}
+              disabled={hasFolder}
+              className={cn(
+                'flex items-center bg-transparent border-none',
+                'font-sans text-[13px] cursor-pointer',
+                'py-1.5 px-2.5 rounded-sm',
+                'transition-colors duration-200 ease-in-out whitespace-nowrap',
+                hasFolder ? 'text-text-dim cursor-default opacity-40' : 'text-text-muted hover:text-text',
+              )}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                <path d="M14 2v6h6" />
+              </svg>
+              {documents.length > 0 ? `${documents.length} document${documents.length > 1 ? 's' : ''}` : 'Attach'}
+            </button>
+
+            {cowork.isSupported && (
+              <button
+                onClick={hasFolder ? undefined : cowork.openFolder}
+                disabled={documents.length > 0}
+                className={cn(
+                  'flex items-center bg-transparent border-none',
+                  'font-sans text-[13px] cursor-pointer',
+                  'py-1.5 px-2.5 rounded-sm',
+                  'transition-colors duration-200 ease-in-out whitespace-nowrap',
+                  documents.length > 0
+                    ? 'text-text-dim cursor-default opacity-40'
+                    : hasFolder
+                      ? 'text-accent'
+                      : 'text-text-muted hover:text-text',
+                )}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                {hasFolder ? cowork.folderName : 'Folder'}
+              </button>
             )}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-              <path d="M14 2v6h6" />
-            </svg>
-            {documents.length > 0 ? `${documents.length} document${documents.length > 1 ? 's' : ''}` : 'Attach documents'}
-          </button>
+          </div>
 
           <input
             ref={inputRef}
