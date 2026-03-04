@@ -127,6 +127,10 @@ export function useLLMInterview(
   // Count user turns from messages
   const turnCount = messages.filter(m => m.role === 'user').length;
 
+  // Ref to capture latest messages without stale closure
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   const callInterview = useCallback(async (
     userMessage?: string,
     finalize = false,
@@ -141,8 +145,8 @@ export function useLLMInterview(
     const timeoutMs = finalize ? 30_000 : 15_000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    // Build history from current messages (exclude the message we're about to add)
-    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    // Build history from ref (avoids stale closure over messages state)
+    const history = messagesRef.current.map(m => ({ role: m.role, content: m.content }));
 
     // Truncate document content for the API call
     const truncatedDocs = documents.map(d => ({
@@ -226,7 +230,7 @@ export function useLLMInterview(
       setError(errorMessage);
 
       // If the very first call fails, fall back to static questions
-      if (messages.length === 0) {
+      if (messagesRef.current.length === 0) {
         setFallbackToStatic(true);
       } else {
         // Mid-conversation failure: remove the empty assistant message AND the user message we just added
@@ -254,7 +258,7 @@ export function useLLMInterview(
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, documents, workflowId, interviewerId]);
+  }, [documents, workflowId, interviewerId]);
 
   const startInterview = useCallback(async () => {
     if (messages.length > 0 || isStreamingRef.current) return;

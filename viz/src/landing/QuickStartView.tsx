@@ -137,7 +137,8 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const canSubmit = (question.trim().length > 0 || documents.length > 0 || folderHasSelected) && !submitting && !parsing;
 
   const handleSubmit = useCallback(async () => {
-    if (!canSubmit) return;
+    if (submitting || parsing) return;
+    if (question.trim().length === 0 && documents.length === 0 && !folderHasSelected) return;
     setSubmitting(true);
     try {
       let docs: FrontendParsedDocument[] = parsedDocuments;
@@ -152,7 +153,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, question, tier, parsedDocuments, hasFolder, folderHasSelected, cowork, onQuickStart]);
+  }, [submitting, parsing, question, documents.length, folderHasSelected, tier, parsedDocuments, hasFolder, cowork, onQuickStart]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {

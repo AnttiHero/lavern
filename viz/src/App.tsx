@@ -178,7 +178,7 @@ export function App() {
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
@@ -281,7 +281,7 @@ export function App() {
         }
       }
 
-      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
@@ -409,7 +409,7 @@ export function App() {
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[Session] Session creation failed:', res.status, errorBody);
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {

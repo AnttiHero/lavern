@@ -37,8 +37,9 @@ export function waitForSessionCompletion(
     const onError = (event: ShemEvent) => {
       if ('message' in event) {
         const msg = (event as { message: string }).message;
-        // Only reject on fatal errors, not warnings
-        if (msg.includes('Session failed') || msg.includes('Emergency stop')) {
+        // Reject on any fatal-looking error (not just hardcoded strings)
+        if (msg.includes('Session failed') || msg.includes('Emergency stop') ||
+            msg.includes('fatal') || msg.includes('crashed') || msg.includes('unrecoverable')) {
           cleanup();
           reject(new Error(msg));
         }

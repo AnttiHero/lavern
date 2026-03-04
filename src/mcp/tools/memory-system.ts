@@ -117,21 +117,35 @@ export function createMemoryTools(session: SessionState) {
     },
     async (args) => {
       const filePath = path.join(memoryDir, 'institutional.json');
-      const memories = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
 
-      const entry: InstitutionalMemoryEntry = {
-        id: `IM-${String(memories.length + 1).padStart(3, '0')}`,
-        category: args.category,
-        content: args.content,
-        source: args.source,
-        addedAt: new Date().toISOString(),
-        usageCount: 0,
-        effectiveness: 0.5,
-        usedInSessions: [],
-        outcomes: [],
-      };
-      memories.push(entry);
-      writeJsonFileAtomic(filePath, memories);
+      // Retry loop to handle concurrent read-modify-write races.
+      // writeJsonFileAtomic uses tmp-then-rename which is atomic at the FS level,
+      // but two concurrent reads can produce stale data. A simple retry mitigates this.
+      let entry!: InstitutionalMemoryEntry;
+      let retries = 2;
+      while (retries >= 0) {
+        const memories = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
+        entry = {
+          id: `IM-${String(memories.length + 1).padStart(3, '0')}`,
+          category: args.category,
+          content: args.content,
+          source: args.source,
+          addedAt: new Date().toISOString(),
+          usageCount: 0,
+          effectiveness: 0.5,
+          usedInSessions: [],
+          outcomes: [],
+        };
+        memories.push(entry);
+        try {
+          writeJsonFileAtomic(filePath, memories);
+          break;
+        } catch (e) {
+          if (retries === 0) throw e;
+          retries--;
+          await new Promise(r => setTimeout(r, 50));
+        }
+      }
 
       session.events.emitEvent({
         type: 'memory_saved',

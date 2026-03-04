@@ -81,8 +81,11 @@ function sendMacOsNotification(notification: ClawNotification): void {
   if (process.platform !== 'darwin') return;
 
   try {
-    const title = notification.title.replace(/"/g, '\\"');
-    const message = notification.message.replace(/"/g, '\\"');
+    // Sanitize for AppleScript: escape backslashes, double quotes, AND single quotes
+    // to prevent command injection via crafted notification content.
+    const sanitize = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "'\\''");
+    const title = sanitize(notification.title);
+    const message = sanitize(notification.message);
     execSync(
       `osascript -e 'display notification "${message}" with title "Marble" subtitle "${title}"'`,
       { timeout: 3000, stdio: 'ignore' },

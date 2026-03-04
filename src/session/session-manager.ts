@@ -65,6 +65,8 @@ export class SessionManager {
       if (!entry.session.isHalted()) {
         entry.session.halt(reason ?? 'Session destroyed');
       }
+      // Archive before removing listeners (preserves event log data)
+      try { if (entry.session.userId) archiveSession(entry.session, entry.session.userId); } catch { /* non-fatal */ }
       entry.session.events.stopRecording();
       entry.session.events.removeAllListeners();
       this.sessions.delete(id);

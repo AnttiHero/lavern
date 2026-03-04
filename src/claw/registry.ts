@@ -95,17 +95,16 @@ export class DocumentRegistry {
    * Index a single file. Returns 'new', 'changed', or 'unchanged'.
    */
   indexFile(filePath: string): 'new' | 'changed' | 'unchanged' {
-    // SECURITY: Skip symlinks — prevent traversal outside watch paths
+    // SECURITY: Use lstat only (no follow) to prevent TOCTOU symlink race
     const lstat = fs.lstatSync(filePath);
-    if (lstat.isSymbolicLink()) {
+    if (lstat.isSymbolicLink() || !lstat.isFile()) {
       return 'unchanged';
     }
 
-    const stat = fs.statSync(filePath);
-
     // SECURITY: Skip files exceeding size limit — prevent memory exhaustion
-    if (stat.size > config.claw.maxFileSizeBytes) {
-      console.warn(`[CLAW] Skipping ${filePath}: ${(stat.size / 1024 / 1024).toFixed(1)}MB exceeds ${(config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0)}MB limit`);
+    // Use lstat size (no second stat call) to close TOCTOU window
+    if (lstat.size > config.claw.maxFileSizeBytes) {
+      console.warn(`[CLAW] Skipping ${filePath}: ${(lstat.size / 1024 / 1024).toFixed(1)}MB exceeds ${(config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0)}MB limit`);
       return 'unchanged';
     }
 
@@ -123,7 +122,7 @@ export class DocumentRegistry {
       }
       // Content changed — mark stale
       existingByPath.hash = hash;
-      existingByPath.sizeBytes = stat.size;
+      existingByPath.sizeBytes = lstat.size;
       existingByPath.lastModified = now;
       existingByPath.status = 'stale';
       this.save();
@@ -136,7 +135,7 @@ export class DocumentRegistry {
       name,
       type: this.inferDocumentType(name, ext),
       hash,
-      sizeBytes: stat.size,
+      sizeBytes: lstat.size,
       firstSeen: now,
       lastModified: now,
       status: 'new',

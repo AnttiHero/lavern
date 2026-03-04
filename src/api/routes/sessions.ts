@@ -869,6 +869,13 @@ ${buildFullContext(session)}`;
       return;
     }
 
+    // Verify the requesting user owns this session
+    if (!checkSessionOwnership(request, session)) {
+      socket.send(JSON.stringify({ error: `Session not found: ${id}` }));
+      socket.close(4003, 'Forbidden');
+      return;
+    }
+
     // Support ?from=N query parameter for replay from index
     const query = request.query as { from?: string };
     const fromIndex = query.from ? parseInt(query.from, 10) : 0;

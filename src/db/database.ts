@@ -209,10 +209,13 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   const [salt, key] = hash.split(':');
+  if (!salt || !key) return false;
+  const keyBuf = Buffer.from(key, 'hex');
+  if (keyBuf.length !== SCRYPT_KEYLEN) return false;
   return new Promise((resolve, reject) => {
     crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, derivedKey) => {
       if (err) reject(err);
-      else resolve(crypto.timingSafeEqual(Buffer.from(key, 'hex'), derivedKey));
+      else resolve(crypto.timingSafeEqual(keyBuf, derivedKey));
     });
   });
 }

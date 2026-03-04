@@ -107,10 +107,11 @@ export class ShemEventBus extends EventEmitter {
 
   /**
    * Get events since a specific index (for reconnection/catch-up).
-   * Note: indices are relative to the current log, not the original.
+   * Adjusts for dropped events so callers using absolute indices still work.
    */
   getEventsSince(index: number): ShemEvent[] {
-    return this.eventLog.slice(index);
+    const adjustedIndex = Math.max(0, index - this.droppedCount);
+    return this.eventLog.slice(adjustedIndex);
   }
 
   /**

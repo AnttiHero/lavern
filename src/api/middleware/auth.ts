@@ -103,7 +103,8 @@ export function parseCookieToken(cookieHeader?: string): string | null {
   if (!cookieHeader) return null;
   const match = cookieHeader.split(';').find(c => c.trim().startsWith('marble_token='));
   if (!match) return null;
-  return match.split('=')[1]?.trim() || null;
+  const idx = match.indexOf('=');
+  return idx >= 0 ? match.slice(idx + 1).trim() || null : null;
 }
 
 /**

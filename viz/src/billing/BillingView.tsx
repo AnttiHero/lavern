@@ -92,7 +92,10 @@ function buildBillingData(): BillingData | null {
   const matterStr = sessionStorage.getItem('shem-matter-data');
   const sessionId = sessionStorage.getItem('shem-session-id') ?? 'N/A';
 
-  const matter = matterStr ? JSON.parse(matterStr) : null;
+  let matter: Record<string, unknown> | null = null;
+  if (matterStr) {
+    try { matter = JSON.parse(matterStr); } catch { /* corrupt data — use defaults */ }
+  }
 
   return {
     matterNumber: matter?.matterNumber ?? 'MBL-0000-000',
@@ -161,7 +164,7 @@ export default function BillingView({ onClose }: Props) {
     const sessionId = sessionStorage.getItem('shem-session-id');
     if (sessionId) {
       fetch(`/api/sessions/${sessionId}`, { credentials: 'include' })
-        .then(res => res.json())
+        .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
         .then(session => {
           if (data && session.cost) {
             const cost = session.cost.accumulated ?? 0;

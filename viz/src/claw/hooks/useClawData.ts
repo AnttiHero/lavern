@@ -168,7 +168,6 @@ export function useClawData(): ClawData {
   }, [goDemo]);
 
   useEffect(() => {
-    mounted.current = true;
     fetchData();
 
     // Poll every 10s in live mode only

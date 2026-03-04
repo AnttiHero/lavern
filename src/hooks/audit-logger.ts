@@ -10,6 +10,7 @@
 import type { HookInput, HookJSONOutput } from '@anthropic-ai/claude-agent-sdk';
 import type { AuditEntry, AuditTrail, SubagentActivity } from '../types/audit.js';
 import type { SessionState } from '../session/session-state.js';
+import { boundedPush } from '../session/session-state.js';
 import { initPersistentAudit, persistAuditEntry, finalizePersistentAudit } from '../utils/audit-persistence.js';
 import { eventTimestamp } from '../events/event-bus.js';
 
@@ -71,7 +72,7 @@ export function createAuditHooks(session: SessionState) {
         : undefined,
     };
 
-    session.auditEntries.push(entry);
+    boundedPush(session.auditEntries, entry);
     persistAuditEntry(session, entry);
 
     session.events.emitEvent({
@@ -116,7 +117,7 @@ export function createAuditHooks(session: SessionState) {
       agentRole: agentName as AuditEntry['agentRole'],
       action: `SubagentStart: ${agentName}`,
     };
-    session.auditEntries.push(entry);
+    boundedPush(session.auditEntries, entry);
     persistAuditEntry(session, entry);
 
     session.events.emitEvent({
@@ -173,7 +174,7 @@ export function createAuditHooks(session: SessionState) {
       agentRole: activity.agentRole,
       action: `SubagentStop: ${agentName} (${(durationMs / 1000).toFixed(1)}s)`,
     };
-    session.auditEntries.push(entry);
+    boundedPush(session.auditEntries, entry);
     persistAuditEntry(session, entry);
 
     session.events.emitEvent({

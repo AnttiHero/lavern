@@ -187,7 +187,7 @@ export function useDeliveryData(): {
 
     return () => {
       cancelledRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = undefined; }
     };
   }, [fetchSession]);
 

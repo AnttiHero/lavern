@@ -88,6 +88,8 @@ export function useDocumentUpload() {
     setError(null);
     setParsing(true);
 
+    const parsePromises: Promise<void>[] = [];
+
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
         setError(`${file.name} exceeds 10MB limit`);
@@ -129,15 +131,19 @@ export function useDocumentUpload() {
       }
 
       // Also attempt backend parsing (async, non-blocking)
-      parseOnBackend(file).then(parsed => {
-        if (parsed) {
-          // Override the ID to match our frontend ID
-          parsed.id = docId;
-          setParsedDocuments(prev => [...prev, parsed]);
-        }
-      });
+      parsePromises.push(
+        parseOnBackend(file).then(parsed => {
+          if (parsed) {
+            // Override the ID to match our frontend ID
+            parsed.id = docId;
+            setParsedDocuments(prev => [...prev, parsed]);
+          }
+        })
+      );
     }
 
+    // Wait for all parse attempts before clearing parsing flag
+    await Promise.allSettled(parsePromises);
     setParsing(false);
   }, [parseOnBackend]);
 

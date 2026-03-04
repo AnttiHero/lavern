@@ -167,6 +167,7 @@ export function PacManGame({ onClose }: Props) {
   const livesRef = useRef(LIVES);
   const pelletsRef = useRef(countPellets(cloneMaze()));
   const scaredRef = useRef(0);
+  const deathTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [gameState, setGameState] = useState<GameState>('ready');
   const gsRef = useRef<GameState>('ready');
   useEffect(() => { gsRef.current = gameState; }, [gameState]);
@@ -275,7 +276,7 @@ export function PacManGame({ onClose }: Props) {
           if (livesRef.current <= 0) { gsRef.current = 'gameover'; setGameState('gameover'); }
           else {
             gsRef.current = 'dead'; setGameState('dead');
-            setTimeout(() => { resetPositions(); gsRef.current = 'playing'; setGameState('playing'); }, 700);
+            deathTimerRef.current = setTimeout(() => { resetPositions(); gsRef.current = 'playing'; setGameState('playing'); }, 700);
           }
           return;
         }
@@ -343,7 +344,7 @@ export function PacManGame({ onClose }: Props) {
           if (livesRef.current <= 0) { gsRef.current = 'gameover'; setGameState('gameover'); }
           else {
             gsRef.current = 'dead'; setGameState('dead');
-            setTimeout(() => { resetPositions(); gsRef.current = 'playing'; setGameState('playing'); }, 700);
+            deathTimerRef.current = setTimeout(() => { resetPositions(); gsRef.current = 'playing'; setGameState('playing'); }, 700);
           }
           return;
         }
@@ -546,7 +547,10 @@ export function PacManGame({ onClose }: Props) {
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (deathTimerRef.current) clearTimeout(deathTimerRef.current);
+    };
   }, [tick, draw]);
 
   // ── JSX ────────────────────────────────────────────────────────────

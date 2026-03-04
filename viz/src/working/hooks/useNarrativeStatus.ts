@@ -116,7 +116,7 @@ export function useNarrativeStatus({
     // Pick message based on rotation index
     if (messages.length === 0) return phase?.statusVerb ?? `Working on ${stepLabel}...`;
     return messages[rotationIndex % messages.length];
-  }, [currentStep, activeThinkingAgents, findingCount, silenceSec, teamSize, rotationIndex]);
+  }, [currentStep, activeThinkingAgents, findingCount, silenceSec, rotationIndex]);
 
   return message;
 }

@@ -129,11 +129,15 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     }
   }, [onSessionEnd]);
 
+  // Stable ref for handleEvent to avoid re-creating WS client on every render
+  const handleEventRef = useRef(handleEvent);
+  handleEventRef.current = handleEvent;
+
   // ── WebSocket client ──────────────────────────────────────────────────
 
   useEffect(() => {
     const client = new ShemWsClient({
-      onEvent: handleEvent,
+      onEvent: (event: ShemEvent) => handleEventRef.current(event),
       onStatusChange: setConnectionStatus,
       onReplayComplete: () => {},
       onError: (msg) => {
@@ -143,7 +147,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
     wsClientRef.current = client;
     return () => { client.disconnect(); };
-  }, [handleEvent]);
+  }, []);
 
   // ── Sync session state ────────────────────────────────────────────────
 
