@@ -50,7 +50,7 @@ export function useTeamSelection(
     });
     // Manual change breaks preset
     setActivePreset(null);
-  }, [profileMap, selectedRoles]);
+  }, []);
 
   const applyPreset = useCallback((presetId: string) => {
     if (presetId === 'custom') {

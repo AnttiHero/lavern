@@ -128,6 +128,12 @@ export function registerVerifyRoutes(
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+
+      // Halt session to stop agents and prevent further API costs
+      if (!session.isHalted()) {
+        session.halt(`Verify failed: ${message}`);
+      }
+
       return reply.status(500).send({
         sessionId: session.id,
         status: 'failed',

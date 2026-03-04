@@ -85,6 +85,13 @@ export class DocumentRegistry {
       }
     }
 
+    // Prune entries for files that no longer exist on disk
+    for (const [hash, doc] of Object.entries(this.state.documents)) {
+      if (!seenPaths.has(doc.path)) {
+        delete this.state.documents[hash];
+      }
+    }
+
     this.state.lastScan = new Date().toISOString();
     this.save();
 

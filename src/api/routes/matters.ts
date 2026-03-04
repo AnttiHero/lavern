@@ -25,9 +25,11 @@ const matterStore = new Map<string, MatterRecord>();
 const matterOwners = new Map<string, string>(); // matterId → userId
 const loadedUsers = new Set<string>();
 
-/** Get userId from request (set by auth middleware). */
+/** Get userId from request (set by auth middleware). Throws if missing. */
 function getRequestUserId(request: FastifyRequest): string {
-  return (request as typeof request & { userId?: string }).userId ?? 'anonymous';
+  const userId = (request as typeof request & { userId?: string }).userId;
+  if (!userId) throw new Error('Authentication required — userId not set on request');
+  return userId;
 }
 
 /** Ensure user's matters are loaded from SQLite into the in-memory cache. */
@@ -214,10 +216,17 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── GET /api/matters/:id — Get matter detail ─────────────────────────
   fastify.get('/api/matters/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
+    const userId = getRequestUserId(request);
+    ensureLoaded(userId);
     const matter = matterStore.get(id);
 
     if (!matter) {
       return reply.status(404).send({ error: `Matter not found: ${id}` });
+    }
+
+    // Ownership check — prevent horizontal privilege escalation
+    if (matterOwners.get(id) !== userId) {
+      return reply.status(403).send({ error: 'Access denied' });
     }
 
     return reply.send({
@@ -247,10 +256,16 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── POST /api/matters/:id/accept — Accept engagement letter ──────────
   fastify.post('/api/matters/:id/accept', async (request, reply) => {
     const { id } = request.params as { id: string };
+    const userId = getRequestUserId(request);
+    ensureLoaded(userId);
     const matter = matterStore.get(id);
 
     if (!matter) {
       return reply.status(404).send({ error: `Matter not found: ${id}` });
+    }
+
+    if (matterOwners.get(id) !== userId) {
+      return reply.status(403).send({ error: 'Access denied' });
     }
 
     if (matter.status !== 'pre-engagement') {
@@ -290,10 +305,16 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── POST /api/matters/:id/team — Submit team selection ───────────────
   fastify.post('/api/matters/:id/team', async (request, reply) => {
     const { id } = request.params as { id: string };
+    const userId = getRequestUserId(request);
+    ensureLoaded(userId);
     const matter = matterStore.get(id);
 
     if (!matter) {
       return reply.status(404).send({ error: `Matter not found: ${id}` });
+    }
+
+    if (matterOwners.get(id) !== userId) {
+      return reply.status(403).send({ error: 'Access denied' });
     }
 
     if (!matter.engagementLetter?.accepted) {

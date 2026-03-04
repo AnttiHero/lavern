@@ -153,7 +153,10 @@ export class ClawWatcher {
       this.knownPaths.add(filePath);
 
       if (this.debug) console.log(`[CLAW] ${event}: ${filePath}`);
-      this.onChange(filePath, event);
+      // Catch async callback errors to prevent unhandled rejections crashing the daemon
+      Promise.resolve(this.onChange(filePath, event)).catch(err => {
+        console.error(`[CLAW] Error processing ${filePath}:`, err);
+      });
     } catch {
       // File may have been deleted between check and stat
     }

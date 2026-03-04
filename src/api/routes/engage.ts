@@ -454,13 +454,18 @@ export function registerEngageRoutes(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
 
+      // Halt the session to stop agents and prevent further API costs
+      if (!session.isHalted()) {
+        session.halt(`Sync engage failed: ${message}`);
+      }
+
       // If the session timed out or failed, still return what we have
-      const status = session.isHalted() ? 'halted' : 'failed';
+      const status = 'failed';
       const response = buildEngageResponse(session, status, startTime);
 
       // Include the error in the response
       const formatted = applyFormat(response, body.format) as Record<string, unknown>;
-      return reply.status(status === 'halted' ? 200 : 500).send({
+      return reply.status(500).send({
         ...formatted,
         error: message,
       });

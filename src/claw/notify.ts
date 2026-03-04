@@ -43,11 +43,9 @@ function shouldSend(notification: ClawNotification): boolean {
 
   recentNotifications.set(key, now);
 
-  // Housekeeping: clean up old entries
-  if (recentNotifications.size > 200) {
-    for (const [k, ts] of recentNotifications) {
-      if (now - ts > config.claw.notifyDedupMs) recentNotifications.delete(k);
-    }
+  // Housekeeping: always prune expired entries to prevent unbounded growth
+  for (const [k, ts] of recentNotifications) {
+    if (now - ts > config.claw.notifyDedupMs) recentNotifications.delete(k);
   }
 
   return true;

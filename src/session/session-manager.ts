@@ -61,12 +61,11 @@ export class SessionManager {
   destroySession(id: string, reason?: string): boolean {
     const entry = this.sessions.get(id);
     if (entry) {
-      // Halt running agents before cleanup
+      // Halt running agents — fires session_end which triggers archival via event listener
       if (!entry.session.isHalted()) {
         entry.session.halt(reason ?? 'Session destroyed');
       }
-      // Archive before removing listeners (preserves event log data)
-      try { if (entry.session.userId) archiveSession(entry.session, entry.session.userId); } catch { /* non-fatal */ }
+      // Archival handled by session_end listener in createSession(). No duplicate call here.
       entry.session.events.stopRecording();
       entry.session.events.removeAllListeners();
       this.sessions.delete(id);

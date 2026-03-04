@@ -126,7 +126,7 @@ export function createMemoryTools(session: SessionState) {
       while (retries >= 0) {
         const memories = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
         entry = {
-          id: `IM-${String(memories.length + 1).padStart(3, '0')}`,
+          id: `IM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
           category: args.category,
           content: args.content,
           source: args.source,
@@ -184,13 +184,16 @@ export function createMemoryTools(session: SessionState) {
         memories = memories.filter(m => m.content.toLowerCase().includes(kw));
       }
 
+      // Update usage counts — best-effort, don't fail the query on write race
       if (memories.length > 0) {
-        const all = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
-        for (const m of memories) {
-          const orig = all.find(a => a.id === m.id);
-          if (orig) orig.usageCount++;
-        }
-        writeJsonFileAtomic(filePath, all);
+        try {
+          const all = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
+          for (const m of memories) {
+            const orig = all.find(a => a.id === m.id);
+            if (orig) orig.usageCount++;
+          }
+          writeJsonFileAtomic(filePath, all);
+        } catch { /* concurrent write race — usage count update is non-critical */ }
       }
 
       if (memories.length === 0) {
@@ -300,7 +303,7 @@ export function createMemoryTools(session: SessionState) {
       const precedents = readJsonFile<PrecedentEntry[]>(filePath, []);
 
       const entry: PrecedentEntry = {
-        id: `P-${String(precedents.length + 1).padStart(3, '0')}`,
+        id: `P-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
         documentType: args.document_type,
         jurisdiction: args.jurisdiction,
         patternName: args.pattern_name,

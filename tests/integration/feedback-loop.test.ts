@@ -125,8 +125,9 @@ describe('Full Learning Cycle (Integration)', () => {
     expect(fs.existsSync(path.join(memoryDir, 'precedents.json'))).toBe(true);
     expect(fs.existsSync(path.join(memoryDir, 'institutional.json'))).toBe(true);
 
-    // Track precedent saved
-    expect(session.precedentsSaved).toContain('P-001');
+    // Track precedent saved (ID is timestamp-based, just check one was recorded)
+    expect(session.precedentsSaved).toHaveLength(1);
+    expect(session.precedentsSaved[0]).toMatch(/^P-/);
   });
 
   it('Session 2: queries memories, compiles report card, runs feedback loop', async () => {
@@ -154,11 +155,13 @@ describe('Full Learning Cycle (Integration)', () => {
     });
     expect(precedentResult.content[0].text).toContain('Simplify consent');
 
-    // Verify precedentsQueried tracking
-    expect(session2.precedentsQueried).toContain('P-001');
+    // Verify precedentsQueried tracking (ID is timestamp-based)
+    expect(session2.precedentsQueried).toHaveLength(1);
+    const queriedId = session2.precedentsQueried[0];
+    expect(queriedId).toMatch(/^P-/);
 
     // Mark that we applied the precedent
-    session2.precedentsApplied.push('P-001');
+    session2.precedentsApplied.push(queriedId);
 
     // Populate session with results
     populateSessionForGoodOutcome(session2);
@@ -168,8 +171,8 @@ describe('Full Learning Cycle (Integration)', () => {
       document_type: 'privacy_policy', jurisdiction: 'EU',
     });
     expect(session2.reportCard).not.toBeNull();
-    expect(session2.reportCard!.precedents.queried).toContain('P-001');
-    expect(session2.reportCard!.precedents.applied).toContain('P-001');
+    expect(session2.reportCard!.precedents.queried).toContain(queriedId);
+    expect(session2.reportCard!.precedents.applied).toContain(queriedId);
 
     // Run feedback loop
     const feedbackResult = await invokeTool(feedbackTools, 'run_feedback_loop');

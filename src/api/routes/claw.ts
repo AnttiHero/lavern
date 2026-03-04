@@ -20,6 +20,18 @@ import { loadProfile } from '../../claw/init.js';
 import { DocumentRegistry } from '../../claw/registry.js';
 import { getDaemonStatus } from '../../claw/daemon.js';
 
+// ── Singleton registry cache — prevents concurrent read-overwrite races ──
+const registryCache = new Map<string, DocumentRegistry>();
+
+function getRegistry(dir: string, budgetUsd: number): DocumentRegistry {
+  let registry = registryCache.get(dir);
+  if (!registry) {
+    registry = new DocumentRegistry(dir, budgetUsd);
+    registryCache.set(dir, registry);
+  }
+  return registry;
+}
+
 // ── Route Registration ──────────────────────────────────────────────────
 
 export function registerClawRoutes(fastify: FastifyInstance): void {
@@ -36,7 +48,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       });
     }
 
-    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const registry = getRegistry(dir, profile.budget.totalUsd);
     const state = registry.getState();
     const summary = registry.summary;
 
@@ -84,7 +96,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       return reply.status(404).send({ error: 'No profile found' });
     }
 
-    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const registry = getRegistry(dir, profile.budget.totalUsd);
     const state = registry.getState();
 
     // Transform to array sorted by lastModified desc
@@ -169,7 +181,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       return reply.status(404).send({ error: 'No profile found' });
     }
 
-    const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+    const registry = getRegistry(dir, profile.budget.totalUsd);
     const { newDocs, changedDocs } = registry.scan(profile.watchPaths);
 
     return reply.send({

@@ -21,10 +21,13 @@ export function useKbSearch() {
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const abortRef = useRef<AbortController>();
 
   const search = useCallback((q: string) => {
     setQuery(q);
     if (timerRef.current) clearTimeout(timerRef.current);
+    // Abort any in-flight fetch so stale results don't overwrite fresh ones
+    if (abortRef.current) abortRef.current.abort();
 
     if (!q.trim()) {
       setResults([]);
@@ -34,17 +37,21 @@ export function useKbSearch() {
 
     setSearching(true);
     timerRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
         const res = await fetch(`/api/knowledge-base/search?q=${encodeURIComponent(q.trim())}&limit=10`, {
           credentials: 'include',
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
-        setResults(data.results ?? []);
-      } catch {
+        if (!controller.signal.aborted) setResults(data.results ?? []);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setResults([]);
       } finally {
-        setSearching(false);
+        if (!controller.signal.aborted) setSearching(false);
       }
     }, 300);
   }, []);
@@ -54,6 +61,7 @@ export function useKbSearch() {
     setResults([]);
     setSearching(false);
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (abortRef.current) abortRef.current.abort();
   }, []);
 
   return { results, searching, query, search, clearSearch };
