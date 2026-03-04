@@ -315,7 +315,7 @@ export default function BetTheCompanyView({ onBack }: Props) {
             <span style={{ color: D.gold }}>with a human expert reviewing every decision.</span>
           </div>
           <div style={sty.bulletList}>
-            <div style={sty.bullet}>57 specialist AI agents working your matter at maximum depth</div>
+            <div style={sty.bullet}>49 specialist AI agents working your matter at maximum depth</div>
             <div style={sty.bullet}>Every quality gate reviewed and approved by a human legal expert</div>
             <div style={sty.bullet}>Maximal intensity {'\u2014'} deepest analysis, extended deliberation, no shortcuts</div>
             <div style={sty.bullet}>Dual sign-off on every deliverable: AI analysis + human counsel</div>
