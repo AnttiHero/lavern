@@ -192,6 +192,9 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           <ShimmerButton onClick={() => { window.location.hash = '#/archive'; }}>
             Archive
           </ShimmerButton>
+          <ShimmerButton onClick={() => { window.location.hash = '#/claw'; }}>
+            Claw
+          </ShimmerButton>
           <ShimmerButton onClick={() => { window.location.hash = '#/my-cases'; }}>
             My Cases
           </ShimmerButton>
