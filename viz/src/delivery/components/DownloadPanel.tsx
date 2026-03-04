@@ -82,18 +82,33 @@ export function DownloadPanel({ data }: Props) {
     setSaveStatus('writing');
     try {
       const handle = coworkState.handle;
-      const items: { filename: string; content: string }[] = [];
 
-      // Deliverable markdown
+      // Helper to write a text file
+      const writeText = async (filename: string, content: string) => {
+        const fh = await handle.getFileHandle(filename, { create: true });
+        const w = await fh.createWritable();
+        await w.write(new Blob([content], { type: 'text/plain' }));
+        await w.close();
+      };
+
+      // Helper to write a binary blob
+      const writeBlob = async (filename: string, blob: Blob) => {
+        const fh = await handle.getFileHandle(filename, { create: true });
+        const w = await fh.createWritable();
+        await w.write(blob);
+        await w.close();
+      };
+
+      // 1. Deliverable markdown
       if (data.finalOutput) {
-        items.push({ filename: `${data.sessionId}-deliverable.md`, content: data.finalOutput });
+        await writeText(`${data.sessionId}-deliverable.md`, data.finalOutput);
       }
 
-      // Executive summary
+      // 2. Executive summary
       const summary = generateClientSummary(data);
-      items.push({ filename: `${data.sessionId}-summary.md`, content: summary });
+      await writeText(`${data.sessionId}-summary.md`, summary);
 
-      // Structured data (findings, debates)
+      // 3. Structured data (findings, debates)
       const jsonData = {
         sessionId: data.sessionId,
         exportedAt: new Date().toISOString(),
@@ -101,13 +116,29 @@ export function DownloadPanel({ data }: Props) {
         verification: data.verificationChecks,
         cost: data.cost,
       };
-      items.push({ filename: `${data.sessionId}-data.json`, content: JSON.stringify(jsonData, null, 2) });
+      await writeText(`${data.sessionId}-data.json`, JSON.stringify(jsonData, null, 2));
 
-      for (const item of items) {
-        const fileHandle = await handle.getFileHandle(item.filename, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(new Blob([item.content], { type: 'text/plain' }));
-        await writable.close();
+      // 4. DOCX and PDF — fetch from API (live sessions only)
+      if (!isDemo) {
+        const styleParam = `&style=${selectedStyle}`;
+        const formats: { ext: string; mime: string }[] = [
+          { ext: 'docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+          { ext: 'pdf', mime: 'application/pdf' },
+        ];
+
+        const fetches = formats.map(async ({ ext }) => {
+          try {
+            const resp = await fetch(`/api/sessions/${data.sessionId}/download?format=${ext}${styleParam}`);
+            if (resp.ok) {
+              const blob = await resp.blob();
+              await writeBlob(`${data.sessionId}-deliverable.${ext}`, blob);
+            }
+          } catch {
+            // Non-fatal — text files are already saved
+            console.warn(`[cowork] Could not fetch ${ext} for folder save`);
+          }
+        });
+        await Promise.all(fetches);
       }
 
       setCoworkStatus('delivered');
@@ -163,9 +194,9 @@ export function DownloadPanel({ data }: Props) {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
           <span>
-            {saveStatus === 'idle' && `Save all to ${coworkState?.folderName ?? 'folder'}`}
+            {saveStatus === 'idle' && `Save all formats to ${coworkState?.folderName ?? 'folder'}`}
             {saveStatus === 'writing' && 'Writing files\u2026'}
-            {saveStatus === 'done' && `Saved to ${coworkState?.folderName ?? 'folder'}`}
+            {saveStatus === 'done' && `All files saved to ${coworkState?.folderName ?? 'folder'}`}
             {saveStatus === 'error' && 'Save failed \u2014 use downloads below'}
           </span>
         </button>

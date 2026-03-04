@@ -38,6 +38,31 @@ interface Props {
   onBack: () => void;
 }
 
+const WORKFLOW_LABELS: Record<string, string> = {
+  counsel: 'Counsel',
+  'simple-query': 'Counsel',
+  review: 'Review',
+  'contract-review': 'Review',
+  roundtable: 'Full Bench',
+  'legal-design': 'Full Bench',
+  adversarial: 'Research',
+  'research-memo': 'Research',
+  'full-bench': 'Full Bench',
+};
+
+function formatDuration(ms: number): string {
+  if (ms <= 0) return '';
+  const secs = Math.round(ms / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  const rem = secs % 60;
+  return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
+}
+
+function shortId(id: string): string {
+  return id.length > 12 ? id.slice(0, 8) + '\u2026' : id;
+}
+
 export default function MyCasesView({ onConnectSession, onConnectReplay, onBack }: Props) {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
@@ -129,8 +154,8 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
             <div key={s.id} style={styles.activeCard}>
               <div style={styles.activeCardTop}>
                 <div style={styles.activeCardInfo}>
-                  <span style={styles.sessionId}>{s.id}</span>
                   <span style={styles.stepBadge}>{s.currentStep.replace(/_/g, ' ')}</span>
+                  <span style={styles.sessionIdMuted}>{shortId(s.id)}</span>
                 </div>
                 <button
                   style={styles.connectButton}
@@ -142,8 +167,7 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
                 </button>
               </div>
               <div style={styles.cardMeta}>
-                <span>{s.completedSteps} steps</span>
-                <span>{s.eventCount} events</span>
+                <span>{s.completedSteps} steps complete</span>
                 <span>${s.cost.toFixed(2)} / ${s.budget.toFixed(2)}</span>
               </div>
             </div>
@@ -165,41 +189,34 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
         )}
 
         <div style={styles.pastGrid}>
-          {archivedSessions.slice(0, 20).map((s) => (
-            <div key={s.id} style={styles.pastCard}>
-              <span style={styles.pastSessionId}>{s.title}</span>
-              <span style={{
-                ...styles.statusBadge,
-                backgroundColor: s.status === 'completed' ? colors.successBg : colors.warningBg,
-                color: s.status === 'completed' ? colors.success : colors.warning,
-              }}>
-                {s.status}
-              </span>
-              <div style={styles.pastMeta}>
-                <span>{s.findingsCount} findings</span>
-                <span>${s.costUsd.toFixed(2)}</span>
-                {s.completedAt && (
-                  <span>{new Date(s.completedAt).toLocaleDateString()}</span>
-                )}
-              </div>
-              {s.teamRoles.length > 0 && (
-                <div style={styles.pastMeta}>
-                  <span>{s.teamRoles.length} agents</span>
-                  {s.durationMs > 0 && (
-                    <span>{Math.round(s.durationMs / 1000)}s</span>
-                  )}
+          {archivedSessions.slice(0, 20).map((s) => {
+            const tierLabel = s.workflowId ? (WORKFLOW_LABELS[s.workflowId] ?? s.workflowId) : '';
+            const dateStr = s.completedAt
+              ? new Date(s.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+              : '';
+            return (
+              <div key={s.id} style={styles.pastCard}>
+                <div style={styles.pastCardHeader}>
+                  <span style={styles.pastTitle}>{s.title}</span>
+                  {tierLabel && <span style={styles.tierBadge}>{tierLabel}</span>}
                 </div>
-              )}
-              <button
-                style={styles.replayButton}
-                onClick={() => onConnectReplay(s.id)}
-                onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-                onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-              >
-                View {'\u2192'}
-              </button>
-            </div>
-          ))}
+                <div style={styles.pastMetaRow}>
+                  {s.findingsCount > 0 && <span>{s.findingsCount} findings</span>}
+                  <span>${s.costUsd.toFixed(2)}</span>
+                  {s.durationMs > 0 && <span>{formatDuration(s.durationMs)}</span>}
+                  {dateStr && <span>{dateStr}</span>}
+                </div>
+                <button
+                  style={styles.replayButton}
+                  onClick={() => onConnectReplay(s.id)}
+                  onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+                  onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+                >
+                  View Results {'\u2192'}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -324,11 +341,11 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 10,
   },
-  sessionId: {
-    fontSize: 13,
+  sessionIdMuted: {
+    fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.text,
-    fontWeight: 500,
+    color: colors.textDim,
+    fontWeight: 400,
   },
   stepBadge: {
     fontSize: 10,
@@ -374,32 +391,44 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '14px 16px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 6,
+    gap: 8,
   },
-  pastSessionId: {
-    fontSize: 11,
-    fontFamily: fonts.mono,
+  pastCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  pastTitle: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
     color: colors.text,
-    fontWeight: 500,
+    fontWeight: 600,
+    lineHeight: 1.3,
+    flex: 1,
     overflow: 'hidden' as const,
-    textOverflow: 'ellipsis' as const,
-    whiteSpace: 'nowrap' as const,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical' as const,
   },
-  statusBadge: {
-    fontSize: 10,
+  tierBadge: {
+    fontSize: 9,
     fontWeight: 600,
     padding: '2px 8px',
     borderRadius: radii.sm,
-    alignSelf: 'flex-start' as const,
-    letterSpacing: 0.3,
+    backgroundColor: colors.bgPanel,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
-  pastMeta: {
+  pastMetaRow: {
     display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 2,
+    gap: 10,
     fontSize: 11,
     color: colors.textDim,
+    flexWrap: 'wrap' as const,
   },
   replayButton: {
     marginTop: 4,

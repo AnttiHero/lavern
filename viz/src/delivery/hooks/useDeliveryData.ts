@@ -133,6 +133,20 @@ export function useDeliveryData(): {
 
     try {
       const res = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
+
+      // Active session not found — try archive
+      if (res.status === 404) {
+        const archiveRes = await fetch(`/api/sessions/archive/${sessionId}`, { credentials: 'include' });
+        if (archiveRes.ok) {
+          const raw = await archiveRes.json();
+          if (cancelledRef.current) return;
+          setData(mapArchiveResponse(sessionId, raw));
+          setLoading(false);
+          return; // No polling for archived sessions
+        }
+        throw new Error('Session not found');
+      }
+
       if (!res.ok) throw new Error('Failed to fetch session');
       const raw = await res.json();
       if (cancelledRef.current) return;
@@ -407,6 +421,116 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     eventCount: (raw.eventCount as number | undefined) ?? 0,
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,
+  };
+}
+
+// ── Archive response mapping ──────────────────────────────────────────────
+
+function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): DeliveryData {
+  const title = (raw.title as string) || 'Archived Session';
+  const finalOutput = (raw.finalOutput as string) || '';
+  const costUsd = (raw.costUsd as number) || 0;
+  const budgetUsd = (raw.budgetUsd as number) || 0;
+  const durationMs = (raw.durationMs as number) || 0;
+  const findingsCount = (raw.findingsCount as number) || 0;
+  const resolutionsCount = (raw.resolutionsCount as number) || 0;
+  const teamRoles = (raw.teamRoles as string[]) || [];
+  const completedAt = raw.completedAt as string | null;
+
+  // Parse summary JSON (debate, topFindings, resolutions, scores, verification)
+  const summary = (raw.summary as Record<string, unknown>) || {};
+  const debate = (summary.debate as { findingsCount?: number; challengesCount?: number; resolutionsCount?: number }) || {};
+  const topFindings = (summary.topFindings as Array<{ severity: string; content: string; agent: string }>) || [];
+  const resolutions = (summary.resolutions as Array<{ topic: string; resolution: string }>) || [];
+  const beforeScores = (summary.beforeScores as Array<{ dimension: string; score: number }>) || [];
+  const afterScores = (summary.afterScores as Array<{ dimension: string; score: number }>) || [];
+  const verification = (summary.verification as { total?: number; passed?: number }) || {};
+
+  const mins = durationMs > 0 ? Math.round(durationMs / 60000) : 0;
+  const summaryParts = [
+    'Analysis complete.',
+    findingsCount > 0 ? `${findingsCount} findings, ${resolutionsCount} resolutions.` : '',
+    costUsd > 0 ? `Cost: $${costUsd.toFixed(2)} of $${budgetUsd.toFixed(2)} budget.` : '',
+    mins > 0 ? `Duration: ${mins} min.` : '',
+  ].filter(Boolean);
+
+  // Build dimensions from before/after scores
+  const dimensions: DimensionScore[] = beforeScores.map(b => {
+    const a = afterScores.find(s => s.dimension === b.dimension);
+    return { dimension: b.dimension, before: b.score, after: a?.score ?? b.score, delta: (a?.score ?? b.score) - b.score };
+  });
+
+  // Key changes from top findings
+  const keyChanges: KeyChange[] = topFindings
+    .filter(f => f.severity === 'RED' || f.severity === 'YELLOW')
+    .slice(0, 8)
+    .map(f => ({
+      title: `${f.severity === 'RED' ? '\u26D4' : '\u26A0\uFE0F'} ${f.agent ? formatRole(f.agent) : 'Finding'}`,
+      before: f.content,
+      after: `Flagged by ${f.agent ? formatRole(f.agent) : 'specialist'}`,
+    }));
+
+  // Debate resolutions
+  const debateResolutions: DebateResolutionRecord[] = resolutions.map(r => ({
+    topic: r.topic,
+    resolution: r.resolution,
+    winningPosition: '',
+    evidenceWeight: '',
+    escalationNeeded: false,
+  }));
+
+  // Narrative from archive data
+  const narrative: NarrativeSection[] = [];
+  if (topFindings.length > 0) {
+    const agents = [...new Set(topFindings.map(f => f.agent).filter(Boolean))];
+    narrative.push({
+      phase: 'Analysis',
+      heading: `${findingsCount} findings from ${agents.length || 1} specialist${agents.length !== 1 ? 's' : ''}`,
+      body: `The analysis produced ${findingsCount} findings. ${topFindings.filter(f => f.severity === 'RED').length} critical issues were identified.`,
+      agents: agents.map(formatRole),
+    });
+  }
+  for (const r of resolutions) {
+    narrative.push({ phase: 'Debate', heading: r.topic, body: r.resolution, agents: [] });
+  }
+  narrative.push({ phase: 'Delivery', heading: 'Work product delivered', body: 'All workflow steps completed. The deliverable was assembled and delivered.', agents: [] });
+
+  // Agent performance from team roles
+  const agentPerformance: AgentPerf[] = teamRoles.map(role => ({
+    name: formatRole(role), role, findingsPosted: 0, challengesSurvived: 0, avgConfidence: 0,
+  }));
+
+  const verifTotal = verification.total ?? 0;
+  const verifPassed = verification.passed ?? 0;
+
+  return {
+    sessionId,
+    status: 'Complete',
+    documentTitle: title,
+    executiveSummary: summaryParts.join(' '),
+    keyChanges,
+    dimensions,
+    finalOutput,
+    debateResolutions,
+    gateDecisions: [],
+    verificationChecks: verifTotal > 0
+      ? [{ type: 'verification', passed: verifPassed === verifTotal, label: `${verifPassed}/${verifTotal} checks passed` }]
+      : [],
+    narrative,
+    debate: { findingsCount: debate.findingsCount ?? findingsCount, challengesCount: debate.challengesCount ?? 0, resolutionsCount: debate.resolutionsCount ?? resolutionsCount, unresolvedCount: 0 },
+    verification: { resultsCount: verifTotal, passed: verifPassed, failed: verifTotal - verifPassed, confidence: 0 },
+    cost: { accumulated: costUsd, budget: budgetUsd, remaining: budgetUsd - costUsd },
+    agentPerformance,
+    eventCount: 0,
+    limitations: {
+      flaggedForHumanReview: ['Verify legal accuracy with qualified counsel before relying on this output'],
+      confidenceIntervals: '',
+      disclaimer: 'This analysis was produced by an AI system with multi-agent verification.',
+    },
+    nextSteps: [
+      { label: 'Review the output', description: 'Read through the generated content carefully.', kind: 'action' },
+      { label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review.', kind: 'watchout' },
+    ],
   };
 }
 

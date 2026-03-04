@@ -25,7 +25,7 @@ export function MarbleMark({ size = 28, onClick, hideCursor }: MarbleMarkProps) 
     if (onClick) {
       onClick();
     } else {
-      window.location.hash = '';
+      window.location.hash = '#/quickstart';
     }
   };
 

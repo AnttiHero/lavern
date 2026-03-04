@@ -429,16 +429,16 @@ export function App() {
       'shem-briefing-memo', 'shem-briefing-docs',
       'shem-briefing-team', 'shem-briefing-config',
       'shem-session-id', 'shem-parsed-docs', 'shem-strategy-preset',
-      'shem-cowork-active',
+      'shem-cowork-active', 'shem-from-archive',
     ];
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
-    window.location.hash = '';
+    window.location.hash = '#/quickstart';
   }, []);
 
   // ── View rendering ────────────────────────────────────────────────────
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
-  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
+  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login';
   const userCtx = useContext(UserContext);
 
   // ── ErrorToast rendered globally above all views ─────────────────────
@@ -544,7 +544,7 @@ export function App() {
           {showMark && <MarbleMark />}
           <WorkingView
             onComplete={navToDelivery}
-            onBack={navToTeam}
+            onBack={() => { window.location.hash = '#/quickstart'; }}
             onSkip={navToDelivery}
           />
         </Suspense>
@@ -611,7 +611,8 @@ export function App() {
             }}
             onConnectReplay={(id) => {
               sessionStorage.setItem('shem-session-id', id);
-              window.location.hash = '#/working';
+              sessionStorage.setItem('shem-from-archive', 'true');
+              window.location.hash = '#/delivery';
             }}
             onBack={() => { window.location.hash = '#/quickstart'; }}
           />
@@ -647,7 +648,7 @@ export function App() {
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
           {showMark && <MarbleMark />}
-          <AgentDocsView onBack={() => { window.location.hash = ''; }} />
+          <AgentDocsView onBack={() => { window.location.hash = '#/quickstart'; }} />
         </Suspense>
       </ErrorBoundary>
     );

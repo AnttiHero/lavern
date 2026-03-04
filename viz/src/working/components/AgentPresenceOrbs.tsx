@@ -25,16 +25,21 @@ export function AgentPresenceOrbs({
 }: AgentPresenceOrbsProps) {
   const [hoveredRole, setHoveredRole] = useState<string | null>(null);
 
+  // Only show agents that have actually been dispatched (have a status or are active)
+  const visibleTeam = team.filter(agent =>
+    agentStatuses.has(agent.role) || activeThinkingAgents.has(agent.role)
+  );
+
   return (
     <div style={styles.container}>
-      {team.map((agent, idx) => {
+      {visibleTeam.map((agent, idx) => {
         const status = agentStatuses.get(agent.role);
         const isActive = activeThinkingAgents.has(agent.role);
         const isComplete = status?.status === 'complete';
         const color = categoryColor(agent.category);
         const thinkingAgent = activeThinkingAgents.get(agent.role);
 
-        const opacity = isActive ? 1 : isComplete ? 0.65 : 0.3;
+        const opacity = isActive ? 1 : isComplete ? 0.65 : 0.5;
         const glowShadow = isActive
           ? `0 0 6px ${color}, 0 0 12px ${color}40`
           : 'none';

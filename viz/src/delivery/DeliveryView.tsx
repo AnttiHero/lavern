@@ -48,6 +48,16 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   const [convInput, setConvInput] = useState('');
   const [convStreaming, setConvStreaming] = useState(false);
 
+  // Detect if viewing an archived session from My Cases
+  const [isArchiveView] = useState(() => {
+    const flag = sessionStorage.getItem('shem-from-archive');
+    if (flag === 'true') {
+      sessionStorage.removeItem('shem-from-archive');
+      return true;
+    }
+    return false;
+  });
+
   // Read matter info from sessionStorage
   const [matterInfo] = useState<MatterInfo>(() => {
     try {
@@ -62,8 +72,8 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
         matterNumber={matterInfo.matterNumber}
         matterType={matterInfo.matterType}
         jurisdiction={matterInfo.jurisdiction}
-        onBack={onBack}
-        onSkip={onSkip}
+        onBack={isArchiveView ? () => { window.location.hash = '#/my-cases'; } : onBack}
+        onSkip={isArchiveView ? undefined : onSkip}
       />
 
       {loading && <div style={styles.loadingState}>Loading session results...</div>}
@@ -94,14 +104,35 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
       {/* Footer */}
       <div style={styles.footer}>
-        <button
-          onClick={onContinue}
-          style={styles.continueBtn}
-          onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-          onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-        >
-          Continue to Billing {'\u2192'}
-        </button>
+        {isArchiveView ? (
+          <>
+            <button
+              onClick={() => { window.location.hash = '#/working'; }}
+              style={styles.secondaryBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            >
+              View Agent Work
+            </button>
+            <button
+              onClick={() => { window.location.hash = '#/my-cases'; }}
+              style={styles.continueBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+            >
+              {'\u2190'} Back to Cases
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onContinue}
+            style={styles.continueBtn}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+          >
+            Continue to Billing {'\u2192'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -134,8 +165,23 @@ const styles: Record<string, React.CSSProperties> = {
   footer: {
     display: 'flex',
     justifyContent: 'flex-end',
+    gap: spacing.md,
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxl,
+  },
+  secondaryBtn: {
+    padding: '12px 36px',
+    borderRadius: radii.sm,
+    border: `2px solid ${colors.text}`,
+    backgroundColor: 'transparent',
+    color: colors.text,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
   },
   continueBtn: {
     padding: '12px 36px',

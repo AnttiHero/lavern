@@ -287,56 +287,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         )}
 
         {/* ── Bottom bar (inside card) ──────────────────── */}
-        <div className={cn(
-          'flex flex-col sm:flex-row items-stretch sm:items-center',
-          'justify-between gap-3 sm:gap-0',
-          'py-3 px-4 sm:pl-5 sm:pr-4',
-          'border-t border-border bg-bg-panel',
-        )}>
-          {/* Left: attach documents + open folder */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={openFilePicker}
-              disabled={hasFolder}
-              className={cn(
-                'flex items-center bg-transparent border-none',
-                'font-sans text-[13px] cursor-pointer',
-                'py-1.5 px-2.5 rounded-sm',
-                'transition-colors duration-200 ease-in-out whitespace-nowrap',
-                hasFolder ? 'text-text-dim cursor-default opacity-40' : 'text-text-muted hover:text-text',
-              )}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                <path d="M14 2v6h6" />
-              </svg>
-              {documents.length > 0 ? `${documents.length} document${documents.length > 1 ? 's' : ''}` : 'Attach'}
-            </button>
-
-            {cowork.isSupported && (
-              <button
-                onClick={hasFolder ? undefined : cowork.openFolder}
-                disabled={documents.length > 0}
-                className={cn(
-                  'flex items-center bg-transparent border-none',
-                  'font-sans text-[13px] cursor-pointer',
-                  'py-1.5 px-2.5 rounded-sm',
-                  'transition-colors duration-200 ease-in-out whitespace-nowrap',
-                  documents.length > 0
-                    ? 'text-text-dim cursor-default opacity-40'
-                    : hasFolder
-                      ? 'text-accent'
-                      : 'text-text-muted hover:text-text',
-                )}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                {hasFolder ? cowork.folderName : 'Folder'}
-              </button>
-            )}
-          </div>
-
+        <div className="border-t border-border bg-bg-panel">
           <input
             ref={inputRef}
             type="file"
@@ -346,51 +297,49 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             className="hidden"
           />
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            {/* ── Tier selector with hints ────────────────── */}
-            <div className="flex gap-1.5 flex-1">
-              {([
-                { key: 'counsel' as EngagementTier, name: 'Counsel', hint: `Expert opinion \u00B7 up to $${counselConfig.budgetUsd}` },
-                { key: 'review' as EngagementTier, name: 'Review', hint: `Dedicated team \u00B7 up to $${reviewConfig.budgetUsd}` },
-                { key: 'full-bench' as EngagementTier, name: 'Full Bench', hint: `Every specialist \u00B7 up to $${eliteConfig.budgetUsd}` },
-              ]).map(t => {
-                const active = tier === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setTier(t.key)}
-                    className={cn(
-                      'flex-1 flex flex-col items-start py-2 px-3 rounded-md border cursor-pointer',
-                      'transition-all duration-200 ease-in-out',
-                    )}
-                    style={{
-                      backgroundColor: active ? colors.text : 'transparent',
-                      borderColor: active ? colors.text : colors.border,
-                    }}
-                  >
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-sans)',
-                      letterSpacing: 0.5,
-                      color: active ? '#fff' : colors.text,
-                      transition: 'color 0.2s ease',
-                    }}>
-                      {t.name}
-                    </span>
-                    <span style={{
-                      fontSize: 10,
-                      fontFamily: 'var(--font-sans)',
-                      color: active ? 'rgba(255,255,255,0.6)' : colors.textDim,
-                      marginTop: 1,
-                      transition: 'color 0.2s ease',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {t.hint}
-                    </span>
-                  </button>
-                );
-              })}
+          {/* Row 1: Attach/Folder left — Instruct right */}
+          <div className="flex items-center justify-between px-4 sm:px-5 pt-3 pb-2">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={openFilePicker}
+                disabled={hasFolder}
+                className={cn(
+                  'flex items-center bg-transparent border-none',
+                  'font-sans text-[13px] cursor-pointer',
+                  'py-1.5 px-2.5 rounded-sm',
+                  'transition-colors duration-200 ease-in-out whitespace-nowrap',
+                  hasFolder ? 'text-text-dim cursor-default opacity-40' : 'text-text-muted hover:text-text',
+                )}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                {documents.length > 0 ? `${documents.length} document${documents.length > 1 ? 's' : ''}` : 'Attach'}
+              </button>
+
+              {cowork.isSupported && (
+                <button
+                  onClick={hasFolder ? undefined : cowork.openFolder}
+                  disabled={documents.length > 0}
+                  className={cn(
+                    'flex items-center bg-transparent border-none',
+                    'font-sans text-[13px] cursor-pointer',
+                    'py-1.5 px-2.5 rounded-sm',
+                    'transition-colors duration-200 ease-in-out whitespace-nowrap',
+                    documents.length > 0
+                      ? 'text-text-dim cursor-default opacity-40'
+                      : hasFolder
+                        ? 'text-accent'
+                        : 'text-text-muted hover:text-text',
+                  )}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {hasFolder ? cowork.folderName : 'Folder'}
+                </button>
+              )}
             </div>
 
             {/* ── Submit with shimmer ─────────────────────── */}
@@ -423,6 +372,52 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
                 />
               )}
             </button>
+          </div>
+
+          {/* Row 2: Tier selector */}
+          <div className="flex gap-1.5 px-4 sm:px-5 pb-3">
+            {([
+              { key: 'counsel' as EngagementTier, name: 'Counsel', hint: `Expert opinion \u00B7 up to $${counselConfig.budgetUsd}` },
+              { key: 'review' as EngagementTier, name: 'Review', hint: `Dedicated team \u00B7 up to $${reviewConfig.budgetUsd}` },
+              { key: 'full-bench' as EngagementTier, name: 'Full Bench', hint: `Every specialist \u00B7 up to $${eliteConfig.budgetUsd}` },
+            ]).map(t => {
+              const active = tier === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTier(t.key)}
+                  className={cn(
+                    'flex-1 flex flex-col items-start py-2 px-3 rounded-md border cursor-pointer',
+                    'transition-all duration-200 ease-in-out',
+                  )}
+                  style={{
+                    backgroundColor: active ? colors.text : 'transparent',
+                    borderColor: active ? colors.text : colors.border,
+                  }}
+                >
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    letterSpacing: 0.5,
+                    color: active ? '#fff' : colors.text,
+                    transition: 'color 0.2s ease',
+                  }}>
+                    {t.name}
+                  </span>
+                  <span style={{
+                    fontSize: 10,
+                    fontFamily: 'var(--font-sans)',
+                    color: active ? 'rgba(255,255,255,0.6)' : colors.textDim,
+                    marginTop: 1,
+                    transition: 'color 0.2s ease',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {t.hint}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
