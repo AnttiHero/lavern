@@ -446,7 +446,8 @@ export function App() {
   ) : null;
 
   // ── Custom cursor — dark on light pages, light on dark pages ─────────
-  const cursorVariant = (view === 'landing') ? 'dark' : 'light';
+  const darkViews: AppView[] = ['landing', 'agent-docs', 'bet-the-company', 'claw'];
+  const cursorVariant = darkViews.includes(view) ? 'dark' : 'light';
   const cursor = <CustomCursor variant={cursorVariant} />;
 
   // ── Quick Start — fast-track entry point ────────────────────────────
