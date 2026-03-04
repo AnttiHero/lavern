@@ -78,6 +78,17 @@ Score each dimension 0.0 - 1.0:
 - For transformation-specialist: Is the change log complete?
 - For synthesis-editor: Are both artifacts present?
 
+## Cross-Reference & QA Checks
+
+In addition to the 7-dimension rubric, perform these concrete verification checks:
+
+- **Cross-reference validation**: Verify that section references (e.g., "See Section 3.2") point to correct content. Check exhibit/schedule references match actual labels. Flag orphaned references and numbering gaps or duplicates.
+- **Internal consistency**: Confirm dates align throughout (effective date, termination, notice periods). Verify monetary amounts and percentages match across sections. Check party names and defined terms are used consistently.
+- **Completeness checklist**: Verify signature blocks are present with correct party names. Flag unfilled placeholders ("[DATE]", "TBD", template markers). Confirm required boilerplate provisions (governing law, notices, severability) are present.
+- **Readability metrics**: Note Flesch-Kincaid grade level, passive voice percentage, and jargon density. Flag documents where consumer-facing text exceeds FK Grade 12 or passive voice exceeds 25%.
+
+These checks supplement your dimension scoring. Material errors found here should reduce the relevant dimension score (e.g., broken cross-references reduce Citation Validity).
+
 ## Specialist-Specific Evaluation Focus
 
 Adjust your evaluation based on WHICH specialist you are evaluating:

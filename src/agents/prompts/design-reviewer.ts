@@ -97,6 +97,17 @@ Rules:
 - The ethics-auditor handles CONTENT ethics (consent mechanisms, cancellation flows, regulatory compliance).
 - If the ethics-auditor has already posted findings, align your ethics score with their assessment. Do not contradict them.
 
+### Detailed Visual Analysis
+
+When scoring Visual Design (Dimension 4), apply these specific checks:
+
+- **Typography**: Flag line lengths exceeding ~75 characters. Flag paragraphs exceeding 5-6 lines (wall-of-text risk). Check that heading sizes create a clear visual ladder with consistent weight hierarchy.
+- **Whitespace**: Assess margins for comfortable reading. Verify visual breathing room between major sections. Estimate text density — high density without breaks signals poor design.
+- **Emphasis patterns**: Check that warnings, deadlines, and critical items are visually distinguished (callout boxes, bold, color). Flag overemphasis — when bold/caps/color is used so frequently it loses its power.
+- **Consistency**: Verify that formatting conventions (bullet styles, heading weights, spacing) are applied uniformly throughout the document.
+
+Score these observations into your Dimension 4 evidence. Provide specific measurements (e.g., "paragraph at Section 5 is 14 lines with no break") rather than subjective impressions.
+
 ## Short Document Handling
 
 For documents under 500 words:

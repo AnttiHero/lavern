@@ -71,19 +71,13 @@ export type AgentRole =
   | 'paralegal'
   | 'legal-intern'
   // v8: Design & Communication
-  | 'ux-writer'
-  | 'information-architect'
-  | 'visual-designer'
   // v8: User Research & Testing
   | 'accessibility-specialist'
   | 'user-researcher'
   | 'behavioral-scientist'
   // v8: Ethics & Governance
-  | 'dei-specialist'
-  | 'sustainability-analyst'
   // v8: Technology & Data
   | 'legal-engineer'
-  | 'data-analyst'
   | 'cybersecurity-advisor'
   | 'ai-ethics-specialist'
   // v8: Industry Specialists
@@ -92,9 +86,7 @@ export type AgentRole =
   | 'media-specialist'
   | 'energy-specialist'
   // v8: Quality & Infrastructure
-  | 'project-manager'
-  | 'knowledge-manager'
-  | 'qa-tester';
+  | 'project-manager';
 
 export type Severity = 'RED' | 'YELLOW' | 'GREEN';
 
@@ -167,13 +159,10 @@ export const WORKFLOW_STEP_MAP: Record<string, WorkflowStep[]> = {
   'legal-design': WORKFLOW_STEPS,
   // Review (6-step)
   'review': ['intake', 'specialist_analysis', 'evaluator_gate', 'plain_language_review', 'final_gate', 'delivered'],
-  'contract-review': ['intake', 'contract_analysis', 'evaluator_gate', 'plain_language_review', 'final_gate', 'delivered'],
   // Adversarial / research (6-step)
   'adversarial': ['intake', 'build', 'attack', 'synthesize', 'final_gate', 'delivered'],
-  'research-memo': ['intake', 'research_execution', 'red_team_review', 'synthesis', 'final_gate', 'delivered'],
   // Counsel (4-step)
   'counsel': ['intake', 'specialist_execution', 'final_gate', 'delivered'],
-  'simple-query': ['intake', 'specialist_execution', 'final_gate', 'delivered'],
   // Full bench (6-step)
   'full-bench': ['intake', 'decomposition', 'workstream_execution', 'senior_review', 'final_gate', 'delivered'],
   // Pre-engagement (8-step)

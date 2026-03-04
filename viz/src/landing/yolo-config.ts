@@ -63,11 +63,11 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
     budgetUsd: 40,
     yoloMode: true,
     teamPreset: 'full-service',
-    teamSize: 14,
+    teamSize: 12,
     teamRoles: [
       'managing-partner', 'supervising-partner', 'corporate-generalist', 'contract-specialist',
       'regulatory-counsel', 'privacy-counsel', 'service-designer', 'plain-language-specialist',
-      'client-proxy', 'ethics-auditor', 'data-analyst', 'evaluator', 'risk-pricer', 'qa-tester',
+      'client-proxy', 'ethics-auditor', 'evaluator', 'risk-pricer',
     ],
   },
   elite: {
@@ -80,7 +80,7 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
     budgetUsd: 125,
     yoloMode: true,
     teamPreset: 'elite',
-    teamSize: 23,
+    teamSize: 21,
     teamRoles: [
       // Senior leadership
       'managing-partner', 'supervising-partner', 'of-counsel', 'innovation-partner',
@@ -90,9 +90,9 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
       // Design & accessibility
       'service-designer', 'plain-language-specialist', 'client-proxy',
       // Advisory & risk
-      'ethics-auditor', 'data-analyst', 'ai-ethics-specialist',
+      'ethics-auditor', 'ai-ethics-specialist',
       // Operations & control
-      'evaluator', 'risk-pricer', 'qa-tester', 'synthesis-editor',
+      'evaluator', 'risk-pricer', 'synthesis-editor',
       // Support
       'junior-associate',
     ],

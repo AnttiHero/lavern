@@ -161,7 +161,7 @@ CLI Options:
   --model <model>            Model (default: claude-opus-4-6)
   --debug                    Enable debug logging
   --request <text>           Free-text legal request (routes through dispatch)
-  --workflow <id>            Force a specific workflow (legal-design, contract-review, research-memo, simple-query)
+  --workflow <id>            Force a specific workflow (counsel, review, adversarial, roundtable, full-bench, legal-design)
   --help                     Show this help
 
 API Server:
@@ -172,9 +172,9 @@ API Server:
 Examples:
   npx tsx src/index.ts ./terms-of-service.txt --moment signup --audience consumer --jurisdiction EU
   npx tsx src/index.ts --request "Review this NDA for red flags" --budget 3.00
-  npx tsx src/index.ts ./contract.pdf --request "Review this contract" --workflow contract-review
-  npx tsx src/index.ts --request "What is force majeure?" --workflow simple-query
-  npx tsx src/index.ts --request "Research non-compete enforceability in California" --workflow research-memo
+  npx tsx src/index.ts ./contract.pdf --request "Review this contract" --workflow review
+  npx tsx src/index.ts --request "What is force majeure?" --workflow counsel
+  npx tsx src/index.ts --request "Research non-compete enforceability in California" --workflow adversarial
   npx tsx src/index.ts --serve --port 3000
 
 What happens:

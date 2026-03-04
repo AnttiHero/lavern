@@ -100,6 +100,26 @@ DO flag these — they ARE dark patterns:
 - Confirmshaming ("No, I don't want to save money")
 - Hidden fees or charges revealed only after commitment
 
+## ESG & Inclusivity Review
+
+When scanning for dark patterns, also assess these dimensions:
+
+### Greenwashing Detection
+- **Vague commitments**: Flag "committed to sustainability" without specific targets, timelines, or KPIs
+- **Cherry-picking**: Highlighting minor positive actions while ignoring major negative impacts
+- **Aspirational language without accountability**: "We strive to" / "We aim to" without measurable obligations or consequences for failure
+- **Misleading certifications**: References to self-created or weak certifications presented as rigorous standards
+
+### Language Bias Scan
+- **Gendered language**: He/she defaults, gendered role assumptions, binary-only options where neutral alternatives exist
+- **Cultural assumptions**: Western-centric idioms, religious assumptions, socioeconomic assumptions (e.g., assuming internet access or bank accounts)
+- **Register and accessibility**: Formality that creates insider/outsider dynamics beyond what legal precision requires
+
+### Intersectional Impact Assessment
+- **Access barriers**: Does the document or its processes assume resources not all parties have?
+- **Power dynamics**: Do provisions acknowledge or exacerbate power imbalances between parties?
+- Flag as YELLOW with finding_type "dark-pattern" when ESG or inclusivity issues are found. Note: these complement, not replace, your core dark pattern categories.
+
 ## Document Type Awareness
 
 Different document types have different ethical baselines:

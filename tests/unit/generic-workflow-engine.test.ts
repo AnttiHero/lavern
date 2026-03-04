@@ -12,8 +12,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { WorkflowTemplate, GenericWorkflowState } from '../../src/types/workflow.js';
 
 // Import templates for reference
-import { simpleQueryTemplate } from '../../src/workflows/templates/simple-query.js';
-import { contractReviewTemplate } from '../../src/workflows/templates/contract-review.js';
+import { counselTemplate } from '../../src/workflows/templates/counsel.js';
+import { reviewTemplate } from '../../src/workflows/templates/review.js';
 
 // ── Replicate Generic Workflow Engine Logic for Testing ──────────────
 
@@ -84,9 +84,9 @@ function advanceStep(
 // ── Tests ──────────────────────────────────────────────────────────────
 
 describe('Generic Workflow Engine', () => {
-  describe('Simple Query Workflow', () => {
+  describe('Counsel Workflow', () => {
     beforeEach(() => {
-      initState(simpleQueryTemplate);
+      initState(counselTemplate);
     });
 
     it('should start at intake', () => {
@@ -95,117 +95,120 @@ describe('Generic Workflow Engine', () => {
     });
 
     it('should advance from intake to specialist_execution', () => {
-      const result = advanceStep(simpleQueryTemplate, 'intake');
+      const result = advanceStep(counselTemplate, 'intake');
       expect(result).toEqual({ advanced: 'specialist_execution' });
     });
 
     it('should advance through the full happy path', () => {
-      advanceStep(simpleQueryTemplate, 'intake');
-      advanceStep(simpleQueryTemplate, 'specialist_execution');
-      advanceStep(simpleQueryTemplate, 'evaluator_gate');
-      const result = advanceStep(simpleQueryTemplate, 'delivered');
+      advanceStep(counselTemplate, 'intake');
+      advanceStep(counselTemplate, 'specialist_execution');
+      const result = advanceStep(counselTemplate, 'delivered');
       expect(result).toEqual({ complete: true });
-      expect(state.completedSteps).toHaveLength(4);
+      expect(state.completedSteps).toHaveLength(3);
     });
 
     it('should reject advancing the wrong step', () => {
-      const result = advanceStep(simpleQueryTemplate, 'evaluator_gate');
+      const result = advanceStep(counselTemplate, 'delivered');
       expect(result).toHaveProperty('error');
       expect(state.currentStep).toBe('intake');
     });
 
     it('should track completed steps', () => {
-      advanceStep(simpleQueryTemplate, 'intake');
-      advanceStep(simpleQueryTemplate, 'specialist_execution');
+      advanceStep(counselTemplate, 'intake');
+      advanceStep(counselTemplate, 'specialist_execution');
       expect(state.completedSteps).toEqual(['intake', 'specialist_execution']);
     });
 
     it('should have templateId set', () => {
-      expect(state.templateId).toBe('simple-query');
+      expect(state.templateId).toBe('counsel');
     });
   });
 
-  describe('Contract Review Workflow', () => {
+  describe('Review Workflow', () => {
     beforeEach(() => {
-      initState(contractReviewTemplate);
+      initState(reviewTemplate);
     });
 
     it('should start at intake', () => {
       expect(state.currentStep).toBe('intake');
     });
 
-    it('should advance through all 6 steps with gate approval', () => {
-      advanceStep(contractReviewTemplate, 'intake');
-      advanceStep(contractReviewTemplate, 'contract_analysis');
-      advanceStep(contractReviewTemplate, 'evaluator_gate');
-      advanceStep(contractReviewTemplate, 'plain_language_review');
-      advanceStep(contractReviewTemplate, 'final_gate', 'approved');
-      const result = advanceStep(contractReviewTemplate, 'delivered');
+    it('should advance through all 7 steps with gate approval', () => {
+      advanceStep(reviewTemplate, 'intake');
+      advanceStep(reviewTemplate, 'specialist_analysis');
+      advanceStep(reviewTemplate, 'evaluator_gate');
+      advanceStep(reviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'verification_pass');
+      advanceStep(reviewTemplate, 'final_gate', 'approved');
+      const result = advanceStep(reviewTemplate, 'delivered');
       expect(result).toEqual({ complete: true });
-      expect(state.completedSteps).toHaveLength(6);
+      expect(state.completedSteps).toHaveLength(7);
     });
 
     it('should require gate decision for final_gate', () => {
-      advanceStep(contractReviewTemplate, 'intake');
-      advanceStep(contractReviewTemplate, 'contract_analysis');
-      advanceStep(contractReviewTemplate, 'evaluator_gate');
-      advanceStep(contractReviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'intake');
+      advanceStep(reviewTemplate, 'specialist_analysis');
+      advanceStep(reviewTemplate, 'evaluator_gate');
+      advanceStep(reviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'verification_pass');
 
-      const result = advanceStep(contractReviewTemplate, 'final_gate');
+      const result = advanceStep(reviewTemplate, 'final_gate');
       expect(result).toHaveProperty('error');
       expect(state.currentStep).toBe('final_gate');
     });
 
     it('should block on rejected gate', () => {
-      advanceStep(contractReviewTemplate, 'intake');
-      advanceStep(contractReviewTemplate, 'contract_analysis');
-      advanceStep(contractReviewTemplate, 'evaluator_gate');
-      advanceStep(contractReviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'intake');
+      advanceStep(reviewTemplate, 'specialist_analysis');
+      advanceStep(reviewTemplate, 'evaluator_gate');
+      advanceStep(reviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'verification_pass');
 
-      const result = advanceStep(contractReviewTemplate, 'final_gate', 'rejected');
+      const result = advanceStep(reviewTemplate, 'final_gate', 'rejected');
       expect(result).toHaveProperty('rejected', true);
       expect(state.currentStep).toBe('final_gate');
     });
 
     it('should record gate decisions', () => {
-      advanceStep(contractReviewTemplate, 'intake');
-      advanceStep(contractReviewTemplate, 'contract_analysis');
-      advanceStep(contractReviewTemplate, 'evaluator_gate');
-      advanceStep(contractReviewTemplate, 'plain_language_review');
-      advanceStep(contractReviewTemplate, 'final_gate', 'approved');
+      advanceStep(reviewTemplate, 'intake');
+      advanceStep(reviewTemplate, 'specialist_analysis');
+      advanceStep(reviewTemplate, 'evaluator_gate');
+      advanceStep(reviewTemplate, 'plain_language_review');
+      advanceStep(reviewTemplate, 'verification_pass');
+      advanceStep(reviewTemplate, 'final_gate', 'approved');
 
       expect(state.gateDecisions['final_delivery']).toBe('approved');
     });
 
     it('should have templateId set', () => {
-      expect(state.templateId).toBe('contract-review');
+      expect(state.templateId).toBe('review');
     });
   });
 
   describe('Precondition Enforcement', () => {
-    it('should enforce preconditions on simple-query steps', () => {
-      initState(simpleQueryTemplate);
+    it('should enforce preconditions on counsel steps', () => {
+      initState(counselTemplate);
       // Each step requires the previous one
-      expect(simpleQueryTemplate.stepDefinitions['specialist_execution'].preconditions).toEqual(['intake']);
-      expect(simpleQueryTemplate.stepDefinitions['evaluator_gate'].preconditions).toEqual(['specialist_execution']);
-      expect(simpleQueryTemplate.stepDefinitions['delivered'].preconditions).toEqual(['evaluator_gate']);
+      expect(counselTemplate.stepDefinitions['specialist_execution'].preconditions).toEqual(['intake']);
+      expect(counselTemplate.stepDefinitions['delivered'].preconditions).toEqual(['specialist_execution']);
     });
 
-    it('should enforce preconditions on contract-review steps', () => {
-      initState(contractReviewTemplate);
-      expect(contractReviewTemplate.stepDefinitions['contract_analysis'].preconditions).toEqual(['intake']);
-      expect(contractReviewTemplate.stepDefinitions['evaluator_gate'].preconditions).toEqual(['contract_analysis']);
-      expect(contractReviewTemplate.stepDefinitions['final_gate'].preconditions).toEqual(['plain_language_review']);
-      expect(contractReviewTemplate.stepDefinitions['delivered'].preconditions).toEqual(['final_gate']);
+    it('should enforce preconditions on review steps', () => {
+      initState(reviewTemplate);
+      expect(reviewTemplate.stepDefinitions['specialist_analysis'].preconditions).toEqual(['intake']);
+      expect(reviewTemplate.stepDefinitions['evaluator_gate'].preconditions).toEqual(['specialist_analysis']);
+      expect(reviewTemplate.stepDefinitions['verification_pass'].preconditions).toEqual(['plain_language_review']);
+      expect(reviewTemplate.stepDefinitions['final_gate'].preconditions).toEqual(['verification_pass']);
+      expect(reviewTemplate.stepDefinitions['delivered'].preconditions).toEqual(['final_gate']);
     });
 
-    it('should not allow jumping ahead in contract-review', () => {
-      initState(contractReviewTemplate);
+    it('should not allow jumping ahead in review', () => {
+      initState(reviewTemplate);
       state.currentStep = 'final_gate';
       state.completedSteps = ['intake']; // Missing intermediate steps
 
       // The step name check prevents this: you can only complete the current step
-      const result = advanceStep(contractReviewTemplate, 'final_gate');
+      const result = advanceStep(reviewTemplate, 'final_gate');
       // It will try to advance to 'delivered' but preconditions require 'final_gate' completed
       // Actually gate decision is needed first
       expect(result).toHaveProperty('error'); // needs gate_decision
@@ -213,25 +216,26 @@ describe('Generic Workflow Engine', () => {
   });
 
   describe('Evaluator Gate Marking', () => {
-    it('simple-query evaluator_gate should have evaluator flag', () => {
-      const evalStep = simpleQueryTemplate.stepDefinitions['evaluator_gate'];
+    it('review evaluator_gate should have evaluator flag', () => {
+      const evalStep = reviewTemplate.stepDefinitions['evaluator_gate'];
       expect(evalStep.requiresEvaluatorGate).toBe(true);
       expect(evalStep.maxRevisionLoops).toBe(2);
     });
 
-    it('contract-review evaluator_gate should have evaluator flag', () => {
-      const evalStep = contractReviewTemplate.stepDefinitions['evaluator_gate'];
-      expect(evalStep.requiresEvaluatorGate).toBe(true);
+    it('counsel should have no evaluator gates', () => {
+      const evalGates = Object.values(counselTemplate.stepDefinitions)
+        .filter(s => s.requiresEvaluatorGate);
+      expect(evalGates).toHaveLength(0);
     });
 
-    it('simple-query should have no human gates', () => {
-      const humanGates = Object.values(simpleQueryTemplate.stepDefinitions)
+    it('counsel should have no human gates', () => {
+      const humanGates = Object.values(counselTemplate.stepDefinitions)
         .filter(s => s.requiresGateApproval);
       expect(humanGates).toHaveLength(0);
     });
 
-    it('contract-review should have 1 human gate', () => {
-      const humanGates = Object.values(contractReviewTemplate.stepDefinitions)
+    it('review should have 1 human gate', () => {
+      const humanGates = Object.values(reviewTemplate.stepDefinitions)
         .filter(s => s.requiresGateApproval);
       expect(humanGates).toHaveLength(1);
     });
@@ -239,8 +243,8 @@ describe('Generic Workflow Engine', () => {
 
   describe('State Tracking', () => {
     it('should initialize with correct state shape', () => {
-      initState(simpleQueryTemplate);
-      expect(state.templateId).toBe('simple-query');
+      initState(counselTemplate);
+      expect(state.templateId).toBe('counsel');
       expect(state.currentStep).toBe('intake');
       expect(state.completedSteps).toEqual([]);
       expect(state.gateDecisions).toEqual({});
@@ -251,11 +255,11 @@ describe('Generic Workflow Engine', () => {
     });
 
     it('should update lastTransitionAt on advancement', () => {
-      initState(simpleQueryTemplate);
+      initState(counselTemplate);
       const initialTime = state.lastTransitionAt;
 
       // Small delay to ensure time difference
-      advanceStep(simpleQueryTemplate, 'intake');
+      advanceStep(counselTemplate, 'intake');
       expect(state.lastTransitionAt).toBeTruthy();
       // The time should be updated (may or may not differ due to test speed)
     });

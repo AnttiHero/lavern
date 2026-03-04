@@ -360,11 +360,8 @@ export function App() {
       'adversarial': 'legal_research',
       'counsel': 'legal_question',
       'pre-engagement': 'general',
-      // Backward-compatible aliases for old workflow IDs
+      // Backward-compatible alias for old workflow ID
       'legal-design': 'document_redesign',
-      'contract-review': 'contract_review',
-      'research-memo': 'legal_research',
-      'simple-query': 'legal_question',
     };
 
     // v12: Load parsed documents from sessionStorage

@@ -1402,120 +1402,6 @@ export const agentProfiles: Record<string, AgentProfile> = {
     avatarExtra: 'beard=&hair=variant32&lips=variant08',
   },
 
-  'ux-writer': {
-    role: 'ux-writer',
-    displayName: 'UX Writer',
-    tagline: 'Crafts interface copy, microcopy, and content strategy for legal tools.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 700,
-    skills: {
-      precision: 6,
-      creativity: 8,
-      speed: 7,
-      depth: 5,
-      negotiation: 4,
-      communication: 9,
-      research: 5,
-      risk: 3,
-    },
-    personality: {
-      archetype: 'The Wordsmith',
-      traits: {
-        'conservative-vs-creative': 8,
-        'thorough-vs-fast': 6,
-        'risk-averse-vs-tolerant': 6,
-        'formal-vs-approachable': 8,
-        'adversarial-vs-collaborative': 8,
-      },
-      workStyle:
-        'Crafts every word with intention, from button labels to error messages, ensuring legal interfaces are intuitive and human. Combines creative writing instincts with user-centered design principles. Produces content that guides users confidently through complex legal processes.',
-    },
-    practiceAreas: ['UX writing', 'content strategy', 'microcopy', 'interface design', 'content guidelines'],
-    strengths: ['Exceptional creative writing for interfaces', 'Strong communication instincts', 'User-centered language'],
-    limitations: ['No legal drafting capability', 'Focused on interface-level content only'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=variant02&hair=variant19',
-  },
-
-  'information-architect': {
-    role: 'information-architect',
-    displayName: 'Information Architect',
-    tagline: 'Structures and organizes complex legal information for clarity.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 725,
-    skills: {
-      precision: 7,
-      creativity: 7,
-      speed: 5,
-      depth: 8,
-      negotiation: 3,
-      communication: 6,
-      research: 6,
-      risk: 4,
-    },
-    personality: {
-      archetype: 'The Organizer',
-      traits: {
-        'conservative-vs-creative': 5,
-        'thorough-vs-fast': 3,
-        'risk-averse-vs-tolerant': 4,
-        'formal-vs-approachable': 5,
-        'adversarial-vs-collaborative': 7,
-      },
-      workStyle:
-        'Sees structure in chaos, organizing complex legal information into logical, navigable architectures. Creates taxonomies, hierarchies, and navigation systems that make dense legal content accessible. Thinks deeply about how information flows and connects.',
-    },
-    practiceAreas: ['information architecture', 'taxonomy design', 'document structure', 'knowledge organization', 'navigation design'],
-    strengths: ['Deep structural thinking', 'Creative organizational frameworks', 'Complex information management'],
-    limitations: ['Less effective at content creation', 'May over-engineer simple structures'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant43&lips=variant04',
-  },
-
-  'visual-designer': {
-    role: 'visual-designer',
-    displayName: 'Visual Designer',
-    tagline: 'Creates beautiful, clear visual representations of legal information.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 675,
-    skills: {
-      precision: 5,
-      creativity: 10,
-      speed: 6,
-      depth: 4,
-      negotiation: 3,
-      communication: 7,
-      research: 4,
-      risk: 3,
-    },
-    personality: {
-      archetype: 'The Aesthete',
-      traits: {
-        'conservative-vs-creative': 10,
-        'thorough-vs-fast': 5,
-        'risk-averse-vs-tolerant': 7,
-        'formal-vs-approachable': 8,
-        'adversarial-vs-collaborative': 8,
-      },
-      workStyle:
-        'Transforms legal concepts into visually compelling diagrams, infographics, and layouts. Believes that good design is a form of communication and that legal information can be beautiful. Pushes creative boundaries while maintaining clarity and professionalism.',
-    },
-    practiceAreas: ['visual design', 'infographics', 'diagram creation', 'document layout', 'presentation design'],
-    strengths: ['Exceptional creative vision', 'Visual communication excellence', 'Design-driven clarity'],
-    limitations: ['No legal substance expertise', 'May prioritize aesthetics over content density'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant61&lips=variant12',
-  },
-
   // ─── EXPERTS & SPECIALISTS — User Research & Testing ────────────────────
 
   'client-proxy': {
@@ -1710,82 +1596,6 @@ export const agentProfiles: Record<string, AgentProfile> = {
     avatarExtra: 'beard=&hair=variant46&lips=variant08',
   },
 
-  'dei-specialist': {
-    role: 'dei-specialist',
-    displayName: 'DEI Specialist',
-    tagline: 'Ensures diversity, equity, and inclusion in legal services and outputs.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 825,
-    skills: {
-      precision: 6,
-      creativity: 7,
-      speed: 5,
-      depth: 6,
-      negotiation: 5,
-      communication: 8,
-      research: 6,
-      risk: 5,
-    },
-    personality: {
-      archetype: 'The Includer',
-      traits: {
-        'conservative-vs-creative': 7,
-        'thorough-vs-fast': 4,
-        'risk-averse-vs-tolerant': 5,
-        'formal-vs-approachable': 8,
-        'adversarial-vs-collaborative': 8,
-      },
-      workStyle:
-        'Evaluates legal work through the lens of equity and inclusion, identifying biases in language, process, and outcome. Communicates inclusion principles with warmth and clarity, making them practical rather than abstract. Champions diverse perspectives in every review cycle.',
-    },
-    practiceAreas: ['DEI policy', 'inclusive language', 'bias review', 'equity analysis', 'cultural competence'],
-    strengths: ['Strong inclusion-focused communication', 'Creative equity solutions', 'Bias identification'],
-    limitations: ['Narrow focus area', 'May create tension with efficiency-focused team members'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant54&lips=variant03',
-  },
-
-  'sustainability-analyst': {
-    role: 'sustainability-analyst',
-    displayName: 'Sustainability Analyst',
-    tagline: 'Evaluates long-term sustainability and systemic impacts of legal advice.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 800,
-    skills: {
-      precision: 6,
-      creativity: 6,
-      speed: 5,
-      depth: 7,
-      negotiation: 4,
-      communication: 6,
-      research: 8,
-      risk: 6,
-    },
-    personality: {
-      archetype: 'The Long-Term Thinker',
-      traits: {
-        'conservative-vs-creative': 5,
-        'thorough-vs-fast': 3,
-        'risk-averse-vs-tolerant': 4,
-        'formal-vs-approachable': 5,
-        'adversarial-vs-collaborative': 7,
-      },
-      workStyle:
-        'Evaluates legal advice and strategies through a long-term sustainability lens, considering environmental, social, and governance implications. Researches systemic impacts and emerging sustainability regulations. Encourages the team to think beyond immediate client needs to broader consequences.',
-    },
-    practiceAreas: ['sustainability assessment', 'ESG analysis', 'impact evaluation', 'systemic risk', 'long-term strategy'],
-    strengths: ['Long-term strategic thinking', 'Deep sustainability research', 'Systemic impact analysis'],
-    limitations: ['May conflict with short-term commercial objectives', 'Broad scope can lack actionability'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=variant05&hair=variant13',
-  },
-
   // ─── EXPERTS & SPECIALISTS — Technology & Data ──────────────────────────
 
   'legal-engineer': {
@@ -1824,44 +1634,6 @@ export const agentProfiles: Record<string, AgentProfile> = {
     optional: true,
     defaultSelected: false,
     avatarExtra: 'beard=variant08&hair=variant06',
-  },
-
-  'data-analyst': {
-    role: 'data-analyst',
-    displayName: 'Data Analyst',
-    tagline: 'Quantitative analysis, metrics, and data-driven insights for legal work.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 800,
-    skills: {
-      precision: 9,
-      creativity: 5,
-      speed: 6,
-      depth: 8,
-      negotiation: 3,
-      communication: 5,
-      research: 7,
-      risk: 5,
-    },
-    personality: {
-      archetype: 'The Numbers Person',
-      traits: {
-        'conservative-vs-creative': 4,
-        'thorough-vs-fast': 3,
-        'risk-averse-vs-tolerant': 4,
-        'formal-vs-approachable': 4,
-        'adversarial-vs-collaborative': 6,
-      },
-      workStyle:
-        'Brings quantitative rigor to legal analysis, measuring outcomes, benchmarking performance, and identifying patterns in data. Produces precise, evidence-based reports that support decision-making with hard numbers. Thinks in metrics, dashboards, and statistical significance.',
-    },
-    practiceAreas: ['data analysis', 'legal analytics', 'benchmarking', 'reporting', 'performance metrics'],
-    strengths: ['Exceptional numerical precision', 'Deep analytical depth', 'Evidence-based insights'],
-    limitations: ['Less effective with qualitative analysis', 'May reduce nuanced issues to numbers'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant39&lips=variant06',
   },
 
   'cybersecurity-advisor': {
@@ -2210,86 +1982,9 @@ export const agentProfiles: Record<string, AgentProfile> = {
     avatarExtra: 'beard=&hair=variant44&lips=variant12',
   },
 
-  'knowledge-manager': {
-    role: 'knowledge-manager',
-    displayName: 'Knowledge Manager',
-    tagline: 'Curates, organizes, and retrieves institutional knowledge.',
-    category: 'specialist',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 700,
-    skills: {
-      precision: 7,
-      creativity: 5,
-      speed: 6,
-      depth: 8,
-      negotiation: 3,
-      communication: 6,
-      research: 8,
-      risk: 4,
-    },
-    personality: {
-      archetype: 'The Librarian',
-      traits: {
-        'conservative-vs-creative': 4,
-        'thorough-vs-fast': 3,
-        'risk-averse-vs-tolerant': 4,
-        'formal-vs-approachable': 5,
-        'adversarial-vs-collaborative': 7,
-      },
-      workStyle:
-        'Maintains and curates the firm\'s knowledge base with deep organizational care, ensuring precedents, templates, and expertise are always findable. Researches comprehensively and connects related knowledge across practice areas. Quiet but indispensable, the backbone of institutional memory.',
-    },
-    practiceAreas: ['knowledge management', 'precedent libraries', 'template curation', 'institutional memory', 'research indexing'],
-    strengths: ['Deep knowledge organization', 'Comprehensive research capabilities', 'Institutional memory management'],
-    limitations: ['Not client-facing', 'May be slow to surface insights under time pressure'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant36&lips=variant08',
-  },
-
-  'qa-tester': {
-    role: 'qa-tester',
-    displayName: 'QA Tester',
-    tagline: 'Stress-tests deliverables for errors, gaps, and edge cases.',
-    category: 'infrastructure',
-    seniority: 'specialist',
-    costTier: 'sonnet',
-    billingRateUsd: 750,
-    skills: {
-      precision: 9,
-      creativity: 6,
-      speed: 8,
-      depth: 6,
-      negotiation: 3,
-      communication: 5,
-      research: 5,
-      risk: 7,
-    },
-    personality: {
-      archetype: 'The Breaker',
-      traits: {
-        'conservative-vs-creative': 5,
-        'thorough-vs-fast': 4,
-        'risk-averse-vs-tolerant': 3,
-        'formal-vs-approachable': 4,
-        'adversarial-vs-collaborative': 3,
-      },
-      workStyle:
-        'Actively tries to break every deliverable, probing for inconsistencies, logical gaps, and edge cases with adversarial creativity. Fast and precise, rapidly identifies flaws that would embarrass the firm. Takes pride in finding errors before clients do.',
-    },
-    practiceAreas: ['quality testing', 'error detection', 'edge case analysis', 'consistency checking', 'stress testing'],
-    strengths: ['Exceptional precision in error detection', 'Fast testing turnaround', 'Creative adversarial thinking'],
-    limitations: ['Focused on finding problems, not solving them', 'Can create friction with authors of reviewed work'],
-    optional: true,
-    defaultSelected: false,
-    avatarExtra: 'beard=&hair=variant59&lips=variant08',
-  },
-
-  // ─── LEGACY AGENTS (backward compat with v2–v6 workflows) ─────────────
-  // These agents exist in agentDefinitions and are referenced by old workflow
-  // templates (legal-design, contract-review, research-memo). They are kept
-  // here so that they appear in profiles, team selection, and budget estimates.
+  // ─── CORE AGENTS (v2–v6 originals) ─────────────────────────────────────
+  // These agents are the foundation of the legal-design pipeline and are
+  // referenced across multiple workflow templates.
 
   'design-reviewer': {
     role: 'design-reviewer',
@@ -2786,7 +2481,7 @@ export const teamPresets: TeamPreset[] = [
     roles: [
       'litigation-partner', 'litigation-associate', 'corporate-generalist',
       'contract-specialist', 'arbitration-specialist', 'cybersecurity-advisor',
-      'data-analyst', 'risk-pricer',
+      'evaluator', 'risk-pricer',
     ],
   },
   {

@@ -30,7 +30,7 @@ export function useSmartSuggestions(
 
     // ── Document suggestions ──────────────────────────────────────────
     if (documents.length === 0) {
-      if (workflowId === 'review' || workflowId === 'contract-review'
+      if (workflowId === 'review'
         || workflowId === 'roundtable' || workflowId === 'legal-design') {
         suggestions.push({
           id: 'upload-document',

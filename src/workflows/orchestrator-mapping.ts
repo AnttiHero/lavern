@@ -4,13 +4,13 @@
  * Each workflow template is matched to the orchestrator best suited to its
  * coordination pattern:
  *
- *   The Conductor  → legal-design (multidisciplinary synthesis, parallel fan-out,
- *                    debate rounds, verification loops)
- *   The Closer     → contract-review, pre-engagement (sequential pipelines with
+ *   The Conductor  → roundtable, full-bench, legal-design (multidisciplinary
+ *                    synthesis, parallel fan-out, debate rounds)
+ *   The Closer     → review, pre-engagement (sequential pipelines with
  *                    quality gates, linear handoff chains)
- *   The Professor  → research-memo (deep investigation, citation validation,
- *                    adversarial stress-testing)
- *   The Fixer      → simple-query (rapid triage, single-specialist dispatch,
+ *   The Professor  → adversarial (stress-testing, citation validation,
+ *                    adversarial challenge-response)
+ *   The Fixer      → counsel (rapid triage, single-specialist dispatch,
  *                    minimal overhead)
  *
  * Design rationale:
@@ -55,10 +55,7 @@ const WORKFLOW_ORCHESTRATOR_MAP: Record<string, string> = {
   'roundtable': 'orchestrator-conductor',
   'full-bench': 'orchestrator-conductor',
 
-  // ── Backward compatibility aliases ──────────────────────────────────────
-  'simple-query': 'orchestrator-fixer',
-  'contract-review': 'orchestrator-closer',
-  'research-memo': 'orchestrator-professor',
+  // Original flagship pipeline
   'legal-design': 'orchestrator-conductor',
 };
 

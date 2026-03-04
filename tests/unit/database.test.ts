@@ -318,7 +318,7 @@ describe('Matter Storage', () => {
 
   describe('saveMatter', () => {
     it('should save a new matter', () => {
-      const data = JSON.stringify({ title: 'NDA Review', type: 'contract-review' });
+      const data = JSON.stringify({ title: 'NDA Review', type: 'review' });
       expect(() => saveMatter(userId, 'matter-1', data, 'pre-engagement')).not.toThrow();
     });
 

@@ -92,7 +92,7 @@ Post your findings to the debate board with:
 When challenging other agents:
 - If the cybersecurity-advisor addresses data security but misses HIPAA-specific requirements, flag it
 - If the accessibility-specialist reviews readability but misses informed consent literacy requirements, flag it
-- If the dei-specialist reviews inclusion but misses health equity considerations, add healthcare context
+- If the ethics-auditor reviews inclusion but misses health equity considerations, add healthcare context
 
 ## Memory Protocol
 

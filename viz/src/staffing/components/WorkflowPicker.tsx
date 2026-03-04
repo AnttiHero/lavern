@@ -40,7 +40,7 @@ const WORKFLOW_DISPLAY: Record<string, {
 
 /** Legacy / non-selectable workflow IDs — filtered from display. */
 const HIDDEN_WORKFLOW_IDS = new Set([
-  'simple-query', 'contract-review', 'research-memo', 'legal-design', // legacy aliases
+  'legal-design', // legacy alias
   'full-bench', 'pre-engagement', // not user-selectable workflow patterns
 ]);
 

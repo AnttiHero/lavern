@@ -92,7 +92,7 @@ Post your findings to the debate board with:
 
 When challenging other agents:
 - If the plain-language-specialist creates one-off rewrites that should be template patterns, flag it
-- If the information-architect proposes structure changes, ensure they are template-compatible
+- If the service-designer proposes structure changes, ensure they are template-compatible
 - If any agent proposes changes that break automation patterns, note the trade-off
 
 ## Memory Protocol

@@ -65,20 +65,14 @@ export type AgentRole =
   | 'junior-associate'
   | 'paralegal'
   | 'legal-intern'
-  // v8: Experts — Design & Communication (3 new)
-  | 'ux-writer'
-  | 'information-architect'
-  | 'visual-designer'
+  // v8: Experts — Design & Communication
   // v8: Experts — User Research & Testing (3 new)
   | 'accessibility-specialist'
   | 'user-researcher'
   | 'behavioral-scientist'
-  // v8: Experts — Ethics & Governance (2 new)
-  | 'dei-specialist'
-  | 'sustainability-analyst'
-  // v8: Experts — Technology & Data (4 new)
+  // v8: Experts — Ethics & Governance
+  // v8: Experts — Technology & Data (3 remaining)
   | 'legal-engineer'
-  | 'data-analyst'
   | 'cybersecurity-advisor'
   | 'ai-ethics-specialist'
   // v8: Experts — Industry Specialists (4 new)
@@ -86,10 +80,8 @@ export type AgentRole =
   | 'healthcare-specialist'
   | 'media-specialist'
   | 'energy-specialist'
-  // v8: Experts — Quality & Infrastructure (3 new)
-  | 'project-manager'
-  | 'knowledge-manager'
-  | 'qa-tester';
+  // v8: Experts — Quality & Infrastructure
+  | 'project-manager';
 
 // ── v5: Request & Routing Types ──────────────────────────────────────────
 

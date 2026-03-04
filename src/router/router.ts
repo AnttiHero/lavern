@@ -30,24 +30,16 @@ import { eventTimestamp } from '../events/event-bus.js';
 import '../workflows/index.js';
 
 /**
- * Map v11 prompt-friendly pattern names to registered template IDs.
+ * Canonical workflow IDs.
  *
- * The router prompt describes five patterns (counsel, review, adversarial,
- * roundtable, full-bench) which are intuitive for the LLM. But the workflow
- * registry's canonical templates use the original names (simple-query,
- * contract-review, research-memo, legal-design). The v11 templates register
- * backward-compat aliases, but those get overwritten with wrong step
- * definitions when the old templates import after them (see workflows/index.ts).
- *
- * This map normalizes LLM output to the correct canonical template IDs.
+ * v12: Legacy templates (simple-query, contract-review, research-memo) removed.
+ * The v11 names are now the canonical IDs. No mapping needed — the LLM output
+ * matches the registry directly.
  */
-const V11_TO_TEMPLATE: Record<string, string> = {
-  'counsel':     'simple-query',
-  'review':      'contract-review',
-  'adversarial': 'research-memo',
-  'roundtable':  'legal-design',
-  'full-bench':  'full-bench',   // no rename — full-bench is canonical
-};
+const CANONICAL_WORKFLOWS = new Set([
+  'counsel', 'review', 'adversarial', 'roundtable', 'full-bench',
+  'legal-design', 'pre-engagement', 'verification',
+]);
 
 export interface RouterOptions {
   /** Use LLM-based routing (default: true). Set to false for deterministic-only. */
@@ -77,12 +69,6 @@ export async function routeRequest(
     // Try LLM-based routing
     try {
       const llmResult = await llmClassify(request, options?.model);
-
-      // Normalize v11 pattern names to canonical template IDs
-      const mapped = V11_TO_TEMPLATE[llmResult.selectedWorkflow];
-      if (mapped) {
-        llmResult.selectedWorkflow = mapped;
-      }
 
       // Validate the LLM's selected workflow actually exists
       const template = workflowRegistry.get(llmResult.selectedWorkflow);
@@ -228,95 +214,95 @@ export function classifyRequest(request: LegalRequest): RouterClassification {
     };
   }
 
-  // Rule 2: Contract review → contract-review (specialist + evaluator + plain language)
+  // Rule 2: Contract review → review (specialist + evaluator + plain language + verification)
   if (request.type === 'contract_review') {
     return {
       requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'contract-review',
+      selectedWorkflow: 'review',
       selectedSpecialists: [
         'contract-reviewer', 'plain-language-specialist', 'evaluator',
       ],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Contract review uses the contract-review pipeline with clause analysis, evaluator gate, and plain language summary.',
+      reasoning: 'Contract review uses the review pipeline with clause analysis, evaluator gate, verification, and plain language summary.',
     };
   }
 
-  // Rule 3: Legal research → research-memo (researcher + evaluator + red-team)
+  // Rule 3: Legal research → adversarial (researcher + red-team + synthesizer)
   if (request.type === 'legal_research') {
     return {
       requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'research-memo',
+      selectedWorkflow: 'adversarial',
       selectedSpecialists: ['legal-researcher', 'evaluator', 'red-team'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Legal research uses the research-memo pipeline: researcher produces memo, evaluator checks quality, red-team stress-tests.',
+      reasoning: 'Legal research uses the adversarial pipeline: researcher produces memo, red-team stress-tests, synthesizer reconciles.',
     };
   }
 
-  // Rule 4: Risk assessment → simple-query (specialist + evaluator gate)
+  // Rule 4: Risk assessment → counsel (specialist + evaluator gate)
   if (request.type === 'risk_assessment') {
     return {
       requestType: 'single_specialist',
       complexity: 'low',
       riskLevel: 'low',
-      selectedWorkflow: 'simple-query',
+      selectedWorkflow: 'counsel',
       selectedSpecialists: ['risk-pricer', 'evaluator'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Risk assessment uses the simple-query pipeline with risk-pricer specialist and evaluator gate.',
+      reasoning: 'Risk assessment uses the counsel pipeline with risk-pricer specialist.',
     };
   }
 
-  // Rule 5: Legal question → simple-query (specialist + evaluator gate)
+  // Rule 5: Legal question → counsel (specialist dispatch)
   if (request.type === 'legal_question') {
     return {
       requestType: 'direct_answer',
       complexity: 'low',
       riskLevel: 'low',
-      selectedWorkflow: 'simple-query',
+      selectedWorkflow: 'counsel',
       selectedSpecialists: ['evaluator'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'Simple legal question uses the simple-query pipeline with evaluator quality gate.',
+      reasoning: 'Simple legal question uses the counsel pipeline for fast specialist dispatch.',
     };
   }
 
   // Rule 6: General / fallback
-  // If document path is present, treat as document work → contract-review
+  // If document path is present, treat as document work → review
   if (request.documentPath) {
     return {
       requestType: 'single_specialist',
       complexity: 'medium',
       riskLevel: 'medium',
-      selectedWorkflow: 'contract-review',
+      selectedWorkflow: 'review',
       selectedSpecialists: ['contract-reviewer', 'plain-language-specialist', 'evaluator'],
       requiresDebate: false,
       requiresEthicsFirst: false,
       requiresConsistencyCheck: !!request.matterId,
-      reasoning: 'General request with document path — defaulting to contract-review pipeline.',
+      reasoning: 'General request with document path — defaulting to review pipeline.',
     };
   }
 
-  // Default: simple-query for everything else
+  // Default: counsel for everything else
   return {
     requestType: 'direct_answer',
     complexity: 'low',
     riskLevel: 'low',
-    selectedWorkflow: 'simple-query',
+    selectedWorkflow: 'counsel',
     selectedSpecialists: ['evaluator'],
     requiresDebate: false,
     requiresEthicsFirst: false,
     requiresConsistencyCheck: false,
-    reasoning: 'General request without document — defaulting to simple-query pipeline.',
+    reasoning: 'General request without document — defaulting to counsel pipeline.',
   };
 }
 

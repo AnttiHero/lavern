@@ -61,19 +61,13 @@ import { juniorAssociatePrompt } from './prompts/junior-associate.js';
 import { paralegalPrompt } from './prompts/paralegal.js';
 import { legalInternPrompt } from './prompts/legal-intern.js';
 // v8: Experts — Design & Communication (new ones only, service-designer/plain-language/client-proxy already imported)
-import { uxWriterPrompt } from './prompts/ux-writer.js';
-import { informationArchitectPrompt } from './prompts/information-architect.js';
-import { visualDesignerPrompt } from './prompts/visual-designer.js';
 // v8: Experts — User Research & Testing (client-proxy already imported)
 import { accessibilitySpecialistPrompt } from './prompts/accessibility-specialist.js';
 import { userResearcherPrompt } from './prompts/user-researcher.js';
 import { behavioralScientistPrompt } from './prompts/behavioral-scientist.js';
 // v8: Experts — Ethics & Governance (ethics-auditor already imported)
-import { deiSpecialistPrompt } from './prompts/dei-specialist.js';
-import { sustainabilityAnalystPrompt } from './prompts/sustainability-analyst.js';
 // v8: Experts — Technology & Data
 import { legalEngineerPrompt } from './prompts/legal-engineer.js';
-import { dataAnalystPrompt } from './prompts/data-analyst.js';
 import { cybersecurityAdvisorPrompt } from './prompts/cybersecurity-advisor.js';
 import { aiEthicsSpecialistPrompt } from './prompts/ai-ethics-specialist.js';
 // v8: Experts — Industry Specialists
@@ -83,8 +77,6 @@ import { mediaSpecialistPrompt } from './prompts/media-specialist.js';
 import { energySpecialistPrompt } from './prompts/energy-specialist.js';
 // v8: Experts — Quality & Infrastructure (evaluator/risk-pricer already imported)
 import { projectManagerPrompt } from './prompts/project-manager.js';
-import { knowledgeManagerPrompt } from './prompts/knowledge-manager.js';
-import { qaTesterPrompt } from './prompts/qa-tester.js';
 import { outputFormats } from '../types/output-schemas.js';
 
 // Shared read-only tools available to all agents
@@ -510,34 +502,6 @@ export const agentDefinitions = {
     outputFormat: outputFormats['junior-lawyer'],
   },
 
-  // ── v8: Experts — Design & Communication (3 new) ──────────────────────
-
-  'ux-writer': {
-    description: 'UX writing specialist — microcopy, UI text, error messages, form labels. Interface-aware, context-sensitive.',
-    prompt: uxWriterPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['design-expert'],
-  },
-
-  'information-architect': {
-    description: 'Information architecture specialist. Content structure, navigation, taxonomy, findability optimization.',
-    prompt: informationArchitectPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['design-expert'],
-  },
-
-  'visual-designer': {
-    description: 'Visual design specialist. Layout, typography, visual hierarchy, color, spacing. Aesthetic and functional.',
-    prompt: visualDesignerPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['design-expert'],
-  },
 
   // ── v8: Experts — User Research & Testing (3 new) ─────────────────────
 
@@ -568,25 +532,6 @@ export const agentDefinitions = {
     outputFormat: outputFormats['research-expert'],
   },
 
-  // ── v8: Experts — Ethics & Governance (2 new) ─────────────────────────
-
-  'dei-specialist': {
-    description: 'Diversity, equity, and inclusion specialist. Inclusive language, accessibility, cultural sensitivity, bias detection.',
-    prompt: deiSpecialistPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['governance-expert'],
-  },
-
-  'sustainability-analyst': {
-    description: 'ESG and sustainability analyst. Environmental impact, social responsibility, governance assessment, long-term thinking.',
-    prompt: sustainabilityAnalystPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['governance-expert'],
-  },
 
   // ── v8: Experts — Technology & Data (4 new) ───────────────────────────
 
@@ -596,15 +541,6 @@ export const agentDefinitions = {
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
     model: 'opus' as const,
     maxTurns: 10,
-    outputFormat: outputFormats['tech-expert'],
-  },
-
-  'data-analyst': {
-    description: 'Data analysis specialist. Metrics, KPIs, trend analysis, statistical evidence, quantitative assessment.',
-    prompt: dataAnalystPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
     outputFormat: outputFormats['tech-expert'],
   },
 
@@ -669,27 +605,10 @@ export const agentDefinitions = {
   'project-manager': {
     description: 'Project management specialist. Timelines, dependencies, status tracking, resource allocation, workflow coordination.',
     prompt: projectManagerPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...learningReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
     outputFormat: outputFormats['quality-expert'],
   },
 
-  'knowledge-manager': {
-    description: 'Knowledge management specialist. Precedents, institutional memory, pattern recognition, organizational learning.',
-    prompt: knowledgeManagerPrompt,
-    tools: [...readOnlyTools, ...memoryReadTools, ...memoryWriteTools, ...learningReadTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['quality-expert'],
-  },
-
-  'qa-tester': {
-    description: 'Quality assurance specialist. Regression testing, edge cases, consistency checks, deliverable validation.',
-    prompt: qaTesterPrompt,
-    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...verificationTools],
-    model: 'sonnet' as const,
-    maxTurns: 8,
-    outputFormat: outputFormats['quality-expert'],
-  },
 };

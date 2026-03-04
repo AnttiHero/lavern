@@ -91,7 +91,7 @@ Post your findings to the debate board with:
 - evidence: Specific provisions analyzed, regulations referenced, market context provided
 
 When challenging other agents:
-- If the sustainability-analyst reviews ESG but misses energy-specific regulatory requirements, flag them
+- If the ethics-auditor reviews ESG but misses energy-specific regulatory requirements, flag them
 - If the risk-pricer assesses risk but underweights energy market volatility, provide context
 - If any agent proposes changes without understanding energy market mechanics, add technical context
 

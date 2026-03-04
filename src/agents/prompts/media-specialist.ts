@@ -87,7 +87,7 @@ Post your findings to the debate board with:
 
 When challenging other agents:
 - If the ethics-auditor reviews consent but misses content licensing dark patterns, flag them
-- If the dei-specialist reviews language but misses representation issues in media provisions, add context
+- If the ethics-auditor reviews language but misses representation issues in media provisions, add context
 - If the ai-ethics-specialist addresses AI but misses AI-generated content rights issues, flag the gap
 
 ## Memory Protocol

@@ -44,30 +44,30 @@ describe('Router', () => {
       expect(result.selectedSpecialists).toContain('synthesis-editor');
     });
 
-    it('should classify contract_review as single_specialist/contract-review', () => {
+    it('should classify contract_review as single_specialist/review', () => {
       const result = classifyRequest({ type: 'contract_review', documentPath: '/contract.pdf' });
       expect(result.requestType).toBe('single_specialist');
-      expect(result.selectedWorkflow).toBe('contract-review');
+      expect(result.selectedWorkflow).toBe('review');
       expect(result.complexity).toBe('medium');
       expect(result.selectedSpecialists).toContain('contract-reviewer');
       expect(result.selectedSpecialists).toContain('evaluator');
     });
 
-    it('should classify legal_question as direct_answer/simple-query', () => {
+    it('should classify legal_question as direct_answer/counsel', () => {
       const result = classifyRequest({ type: 'legal_question', requestText: 'What is force majeure?' });
       expect(result.requestType).toBe('direct_answer');
-      expect(result.selectedWorkflow).toBe('simple-query');
+      expect(result.selectedWorkflow).toBe('counsel');
       expect(result.complexity).toBe('low');
       expect(result.selectedSpecialists).toContain('evaluator');
     });
 
-    it('should classify legal_research as single_specialist/research-memo', () => {
+    it('should classify legal_research as single_specialist/adversarial', () => {
       const result = classifyRequest({
         type: 'legal_research',
         requestText: 'Research the enforceability of non-compete clauses in California',
       });
       expect(result.requestType).toBe('single_specialist');
-      expect(result.selectedWorkflow).toBe('research-memo');
+      expect(result.selectedWorkflow).toBe('adversarial');
       expect(result.complexity).toBe('medium');
       expect(result.riskLevel).toBe('medium');
       expect(result.selectedSpecialists).toContain('legal-researcher');
@@ -77,26 +77,26 @@ describe('Router', () => {
       expect(result.requiresEthicsFirst).toBe(false);
     });
 
-    it('should classify risk_assessment as single_specialist/simple-query with risk-pricer', () => {
+    it('should classify risk_assessment as single_specialist/counsel with risk-pricer', () => {
       const result = classifyRequest({
         type: 'risk_assessment',
         requestText: 'Assess the risk of this contract review deliverable',
       });
       expect(result.requestType).toBe('single_specialist');
-      expect(result.selectedWorkflow).toBe('simple-query');
+      expect(result.selectedWorkflow).toBe('counsel');
       expect(result.complexity).toBe('low');
       expect(result.selectedSpecialists).toContain('risk-pricer');
       expect(result.selectedSpecialists).toContain('evaluator');
     });
 
-    it('should classify general with document as contract-review', () => {
+    it('should classify general with document as review', () => {
       const result = classifyRequest({ type: 'general', documentPath: '/doc.pdf' });
-      expect(result.selectedWorkflow).toBe('contract-review');
+      expect(result.selectedWorkflow).toBe('review');
     });
 
-    it('should classify general without document as simple-query', () => {
+    it('should classify general without document as counsel', () => {
       const result = classifyRequest({ type: 'general', requestText: 'Help me' });
-      expect(result.selectedWorkflow).toBe('simple-query');
+      expect(result.selectedWorkflow).toBe('counsel');
     });
   });
 
@@ -139,7 +139,7 @@ describe('Router', () => {
 
       expect(events).toHaveLength(1);
       expect(events[0].requestType).toBe('direct_answer');
-      expect(events[0].selectedWorkflow).toBe('simple-query');
+      expect(events[0].selectedWorkflow).toBe('counsel');
       expect(events[0].reasoning).toBeTruthy();
       expect(events[0].reasoning).toContain('[deterministic]');
     });
@@ -148,7 +148,7 @@ describe('Router', () => {
       const request: LegalRequest = { type: 'contract_review', documentPath: '/contract.pdf' };
       await routeRequest(request, session, { useLlm: false });
       expect(request.routerClassification).toBeDefined();
-      expect(request.routerClassification!.selectedWorkflow).toBe('contract-review');
+      expect(request.routerClassification!.selectedWorkflow).toBe('review');
     });
 
     it('should return a valid RouterClassification', async () => {
@@ -175,16 +175,16 @@ describe('Router', () => {
       }
     });
 
-    it('should route legal_research to research-memo', async () => {
+    it('should route legal_research to adversarial', async () => {
       const request: LegalRequest = { type: 'legal_research', requestText: 'Research something' };
       await routeRequest(request, session, { useLlm: false });
-      expect(request.routerClassification!.selectedWorkflow).toBe('research-memo');
+      expect(request.routerClassification!.selectedWorkflow).toBe('adversarial');
     });
 
-    it('should route risk_assessment to simple-query with risk-pricer', async () => {
+    it('should route risk_assessment to counsel with risk-pricer', async () => {
       const request: LegalRequest = { type: 'risk_assessment', requestText: 'Assess risk' };
       await routeRequest(request, session, { useLlm: false });
-      expect(request.routerClassification!.selectedWorkflow).toBe('simple-query');
+      expect(request.routerClassification!.selectedWorkflow).toBe('counsel');
       expect(request.routerClassification!.selectedSpecialists).toContain('risk-pricer');
     });
   });
@@ -251,12 +251,12 @@ describe('Router', () => {
       expect(prompt).toContain('MINIMUM VIABLE WORKFLOW');
     });
 
-    it('should include all 4 workflow IDs', () => {
+    it('should include all workflow IDs', () => {
       const prompt = getRouterPromptWithContext();
       expect(prompt).toContain('legal-design');
-      expect(prompt).toContain('simple-query');
-      expect(prompt).toContain('contract-review');
-      expect(prompt).toContain('research-memo');
+      expect(prompt).toContain('counsel');
+      expect(prompt).toContain('review');
+      expect(prompt).toContain('adversarial');
     });
 
     it('should include v6 specialists', async () => {
@@ -267,125 +267,45 @@ describe('Router', () => {
     });
   });
 
-  // ── V11 Name Mapping (LLM Router Safety Net) ───────────────────────
+  // ── Canonical Workflow IDs ───────────────────────────────────────────
 
-  describe('V11 → Canonical Template Mapping', () => {
-    // These test the V11_TO_TEMPLATE mapping in router.ts, which is
-    // critical for LLM-based routing. When the LLM returns v11 names
-    // (counsel, review, adversarial, roundtable), they must map to the
-    // correct canonical template IDs so the registry resolves the
-    // templates with correct step definitions.
-
-    it('should map LLM v11 "counsel" to canonical "simple-query"', async () => {
-      // Simulate what happens when LLM returns selectedWorkflow: 'counsel'
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-
-      // The LLM would return 'counsel' — verify the canonical template exists
-      const counselTemplate = workflowRegistry.get('counsel');
-      const simpleQueryTemplate = workflowRegistry.get('simple-query');
-
-      expect(counselTemplate).toBeDefined();
-      expect(simpleQueryTemplate).toBeDefined();
-
-      // Canonical template should have the correct step definitions
-      expect(simpleQueryTemplate!.steps).toContain('specialist_execution');
-    });
-
-    it('should map LLM v11 "review" to canonical "contract-review"', async () => {
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-
-      const reviewTemplate = workflowRegistry.get('review');
-      const contractReviewTemplate = workflowRegistry.get('contract-review');
-
-      expect(reviewTemplate).toBeDefined();
-      expect(contractReviewTemplate).toBeDefined();
-
-      // Canonical template should have contract_analysis step, not specialist_analysis
-      expect(contractReviewTemplate!.steps).toContain('contract_analysis');
-    });
-
-    it('should map LLM v11 "adversarial" to canonical "research-memo"', async () => {
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-
-      const adversarialTemplate = workflowRegistry.get('adversarial');
-      const researchMemoTemplate = workflowRegistry.get('research-memo');
-
-      expect(adversarialTemplate).toBeDefined();
-      expect(researchMemoTemplate).toBeDefined();
-
-      // Canonical template should have research-specific steps
-      expect(researchMemoTemplate!.steps).toContain('research_execution');
-    });
-
-    it('should map LLM v11 "roundtable" to canonical "legal-design"', async () => {
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-
-      const roundtableTemplate = workflowRegistry.get('roundtable');
-      const legalDesignTemplate = workflowRegistry.get('legal-design');
-
-      expect(roundtableTemplate).toBeDefined();
-      expect(legalDesignTemplate).toBeDefined();
-
-      // Canonical template should have parallel_analysis step
-      expect(legalDesignTemplate!.steps).toContain('parallel_analysis');
-    });
-
-    it('should keep "full-bench" as-is (no rename)', async () => {
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-      const fullBenchTemplate = workflowRegistry.get('full-bench');
-      expect(fullBenchTemplate).toBeDefined();
-    });
-
-    it('should have v11 templates with different step definitions than canonical', async () => {
-      const { workflowRegistry } = await import('../../src/workflows/registry.js');
-
-      // v11 'review' has specialist_analysis; canonical 'contract-review' has contract_analysis
-      const v11Review = workflowRegistry.get('review');
-      const canonicalReview = workflowRegistry.get('contract-review');
-
-      expect(v11Review!.steps).toContain('specialist_analysis');
-      expect(canonicalReview!.steps).toContain('contract_analysis');
-      // They should NOT be the same object (different step definitions)
-      expect(v11Review!.id).not.toBe(canonicalReview!.id);
-    });
-
-    it('deterministic classifier should return canonical names only', () => {
+  describe('Canonical Workflow IDs', () => {
+    it('deterministic classifier should return v11 canonical names', () => {
       const designResult = classifyRequest({ type: 'document_redesign', documentPath: '/doc.pdf' });
       expect(designResult.selectedWorkflow).toBe('legal-design');
 
       const reviewResult = classifyRequest({ type: 'contract_review', documentPath: '/doc.pdf' });
-      expect(reviewResult.selectedWorkflow).toBe('contract-review');
+      expect(reviewResult.selectedWorkflow).toBe('review');
 
       const researchResult = classifyRequest({ type: 'legal_research', requestText: 'Research this' });
-      expect(researchResult.selectedWorkflow).toBe('research-memo');
+      expect(researchResult.selectedWorkflow).toBe('adversarial');
 
       const questionResult = classifyRequest({ type: 'legal_question', requestText: 'What is X?' });
-      expect(questionResult.selectedWorkflow).toBe('simple-query');
-
-      // None should return v11 names
-      const allWorkflows = [
-        designResult.selectedWorkflow,
-        reviewResult.selectedWorkflow,
-        researchResult.selectedWorkflow,
-        questionResult.selectedWorkflow,
-      ];
-      expect(allWorkflows).not.toContain('counsel');
-      expect(allWorkflows).not.toContain('review');
-      expect(allWorkflows).not.toContain('adversarial');
-      expect(allWorkflows).not.toContain('roundtable');
+      expect(questionResult.selectedWorkflow).toBe('counsel');
     });
 
-    it('all canonical workflow IDs should resolve to templates with correct step types', async () => {
+    it('all canonical workflow IDs should resolve to templates', async () => {
       const { workflowRegistry } = await import('../../src/workflows/registry.js');
 
-      // Each canonical template should exist and have unique step names
-      const canonicals = ['simple-query', 'contract-review', 'research-memo', 'legal-design'];
+      const canonicals = ['counsel', 'review', 'adversarial', 'legal-design'];
       for (const id of canonicals) {
         const template = workflowRegistry.get(id);
         expect(template, `Template "${id}" should exist`).toBeDefined();
         expect(template!.steps.length).toBeGreaterThan(0);
         expect(template!.id).toBe(id);
       }
+    });
+
+    it('should keep "full-bench" as-is', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+      const fullBenchTemplate = workflowRegistry.get('full-bench');
+      expect(fullBenchTemplate).toBeDefined();
+    });
+
+    it('should keep "roundtable" as-is', async () => {
+      const { workflowRegistry } = await import('../../src/workflows/registry.js');
+      const roundtableTemplate = workflowRegistry.get('roundtable');
+      expect(roundtableTemplate).toBeDefined();
     });
   });
 });

@@ -18,11 +18,8 @@ import { colors, fonts, spacing, radii } from './styles/tokens.js';
 
 const WORKFLOW_ORCHESTRATOR: Record<string, string> = {
   'counsel': 'orchestrator-fixer',
-  'simple-query': 'orchestrator-fixer',
   'review': 'orchestrator-closer',
-  'contract-review': 'orchestrator-closer',
   'adversarial': 'orchestrator-professor',
-  'research-memo': 'orchestrator-professor',
   'roundtable': 'orchestrator-conductor',
   'legal-design': 'orchestrator-conductor',
 };

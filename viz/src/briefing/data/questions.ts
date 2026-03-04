@@ -254,8 +254,5 @@ export const WORKFLOW_QUESTIONS: Record<string, BriefingQuestion[]> = {
   ],
 };
 
-// Backward-compatible aliases for old workflow IDs
+// Backward-compatible alias for old workflow ID
 WORKFLOW_QUESTIONS['legal-design'] = WORKFLOW_QUESTIONS['roundtable'];
-WORKFLOW_QUESTIONS['contract-review'] = WORKFLOW_QUESTIONS['review'];
-WORKFLOW_QUESTIONS['research-memo'] = WORKFLOW_QUESTIONS['adversarial'];
-WORKFLOW_QUESTIONS['simple-query'] = WORKFLOW_QUESTIONS['counsel'];

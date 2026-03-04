@@ -345,7 +345,7 @@ describe('Claw Mode Pipeline Integration', () => {
 
     function makeMockInference(): InferenceResult {
       return {
-        request: { type: 'contract-review', requestText: 'Review this contract' } as any,
+        request: { type: 'contract_review', requestText: 'Review this contract' } as any,
         workflow: 'review',
         intensity: 'standard' as IntensityLevel,
         method: 'heuristic',

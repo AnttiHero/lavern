@@ -44,48 +44,46 @@ describe('Dispatch Integration', () => {
     });
   });
 
-  describe('Routing to Contract Review', () => {
-    it('should classify contract_review as contract-review workflow', () => {
+  describe('Routing to Review', () => {
+    it('should classify contract_review as review workflow', () => {
       const request: LegalRequest = {
         type: 'contract_review',
         documentPath: '/path/to/contract.pdf',
       };
 
       const classification = classifyRequest(request);
-      expect(classification.selectedWorkflow).toBe('contract-review');
+      expect(classification.selectedWorkflow).toBe('review');
       expect(classification.requestType).toBe('single_specialist');
     });
 
-    it('should find contract-review template in registry', () => {
-      const template = workflowRegistry.get('contract-review');
+    it('should find review template in registry', () => {
+      const template = workflowRegistry.get('review');
       expect(template).toBeDefined();
-      expect(template!.id).toBe('contract-review');
-      expect(template!.steps).toHaveLength(6);
+      expect(template!.id).toBe('review');
     });
 
     it('should include contract-reviewer in required agents', () => {
-      const template = workflowRegistry.get('contract-review');
+      const template = workflowRegistry.get('review');
       expect(template!.requiredAgents).toContain('contract-reviewer');
     });
   });
 
-  describe('Routing to Simple Query', () => {
-    it('should classify legal_question as simple-query workflow', () => {
+  describe('Routing to Counsel', () => {
+    it('should classify legal_question as counsel workflow', () => {
       const request: LegalRequest = {
         type: 'legal_question',
         requestText: 'What is force majeure?',
       };
 
       const classification = classifyRequest(request);
-      expect(classification.selectedWorkflow).toBe('simple-query');
+      expect(classification.selectedWorkflow).toBe('counsel');
       expect(classification.requestType).toBe('direct_answer');
     });
 
-    it('should find simple-query template in registry', () => {
-      const template = workflowRegistry.get('simple-query');
+    it('should find counsel template in registry', () => {
+      const template = workflowRegistry.get('counsel');
       expect(template).toBeDefined();
-      expect(template!.id).toBe('simple-query');
-      expect(template!.steps).toHaveLength(4);
+      expect(template!.id).toBe('counsel');
     });
   });
 
@@ -97,15 +95,15 @@ describe('Dispatch Integration', () => {
         documentPath: '/path/to/doc.pdf',
       };
 
-      // Without force, general+doc goes to contract-review
+      // Without force, general+doc goes to review
       const naturalClassification = classifyRequest(request);
-      expect(naturalClassification.selectedWorkflow).toBe('contract-review');
+      expect(naturalClassification.selectedWorkflow).toBe('review');
 
       // With force, we can override to any workflow
-      const forcedWorkflow = 'simple-query';
+      const forcedWorkflow = 'counsel';
       const template = workflowRegistry.get(forcedWorkflow);
       expect(template).toBeDefined();
-      expect(template!.id).toBe('simple-query');
+      expect(template!.id).toBe('counsel');
     });
 
     it('should detect unknown workflow templates', () => {
@@ -116,13 +114,13 @@ describe('Dispatch Integration', () => {
 
   describe('Session Setup', () => {
     it('should set workflowTemplateId on session', () => {
-      const template = workflowRegistry.get('contract-review');
+      const template = workflowRegistry.get('review');
       session.workflowTemplateId = template!.id;
-      expect(session.workflowTemplateId).toBe('contract-review');
+      expect(session.workflowTemplateId).toBe('review');
     });
 
     it('should initialize genericWorkflow state for non-legal-design workflows', () => {
-      const template = workflowRegistry.get('simple-query');
+      const template = workflowRegistry.get('counsel');
       session.genericWorkflow = {
         templateId: template!.id,
         currentStep: template!.steps[0],
@@ -135,7 +133,7 @@ describe('Dispatch Integration', () => {
       };
 
       expect(session.genericWorkflow).toBeDefined();
-      expect(session.genericWorkflow!.templateId).toBe('simple-query');
+      expect(session.genericWorkflow!.templateId).toBe('counsel');
       expect(session.genericWorkflow!.currentStep).toBe('intake');
     });
   });
@@ -152,24 +150,24 @@ describe('Dispatch Integration', () => {
         expectedWorkflow: 'legal-design',
       },
       {
-        name: 'contract_review → contract-review',
+        name: 'contract_review → review',
         request: { type: 'contract_review', documentPath: '/contract.pdf' },
-        expectedWorkflow: 'contract-review',
+        expectedWorkflow: 'review',
       },
       {
-        name: 'legal_question → simple-query',
+        name: 'legal_question → counsel',
         request: { type: 'legal_question', requestText: 'What is GDPR?' },
-        expectedWorkflow: 'simple-query',
+        expectedWorkflow: 'counsel',
       },
       {
-        name: 'general with doc → contract-review',
+        name: 'general with doc → review',
         request: { type: 'general', documentPath: '/some.pdf' },
-        expectedWorkflow: 'contract-review',
+        expectedWorkflow: 'review',
       },
       {
-        name: 'general without doc → simple-query',
+        name: 'general without doc → counsel',
         request: { type: 'general', requestText: 'Help me' },
-        expectedWorkflow: 'simple-query',
+        expectedWorkflow: 'counsel',
       },
     ];
 
@@ -206,7 +204,7 @@ describe('Dispatch Integration', () => {
       };
 
       const classification = classifyRequest(request);
-      // contract-review ≠ 'legal-design' → goes through runGenericWorkflow()
+      // review ≠ 'legal-design' → goes through runGenericWorkflow()
       expect(classification.selectedWorkflow).not.toBe('legal-design');
     });
   });
@@ -227,7 +225,7 @@ describe('Dispatch Integration', () => {
 
       expect(events).toHaveLength(1);
       const event = events[0] as Record<string, unknown>;
-      expect(event.selectedWorkflow).toBe('contract-review');
+      expect(event.selectedWorkflow).toBe('review');
     });
   });
 });

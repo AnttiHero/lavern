@@ -22,11 +22,8 @@ import type { AgentProfile } from '../hooks/useAgentProfiles.js';
 /** Branded workflow names for the connector sentence. */
 const WORKFLOW_BRANDED: Record<string, string> = {
   'counsel': 'Quick Counsel',
-  'simple-query': 'Quick Counsel',
   'review': 'Deep Review',
-  'contract-review': 'Deep Review',
   'adversarial': 'Stress Test',
-  'research-memo': 'Stress Test',
   'roundtable': 'The Roundtable',
   'legal-design': 'The Roundtable',
 };

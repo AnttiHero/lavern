@@ -12,11 +12,8 @@ const WORKFLOW_LABELS: Record<string, string> = {
   'roundtable': 'Roundtable',
   'full-bench': 'Full Bench',
   'pre-engagement': 'Client Onboarding',
-  // Backward-compatible aliases for old workflow IDs
+  // Backward-compatible alias for old workflow ID
   'legal-design': 'Roundtable',
-  'contract-review': 'Review',
-  'research-memo': 'Adversarial',
-  'simple-query': 'Counsel',
 };
 
 interface Props {

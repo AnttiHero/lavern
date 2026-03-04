@@ -1,8 +1,9 @@
 /**
- * Integration Test — Research Memo Workflow.
+ * Integration Test — Adversarial Workflow.
  *
- * Tests the research-memo workflow stepping through all 5 stages,
- * evaluator gate integration, red-team review step, and risk assessment.
+ * Tests the adversarial workflow stepping through all 5 stages
+ * (intake → build → attack → synthesize → delivered),
+ * quality check iterations, phase permissions, and state tracking.
  *
  * Does NOT call the Claude API — simulates the orchestrator's
  * progression through the generic state machine.
@@ -86,37 +87,34 @@ function advanceGenericStep(
   return { advanced: next };
 }
 
-describe('Research Memo Workflow Integration', () => {
+describe('Adversarial Workflow Integration', () => {
   let session: SessionState;
 
   beforeEach(() => {
-    session = new SessionState('test-research-memo');
+    session = new SessionState('test-adversarial');
   });
 
   describe('Full Path — Happy Path', () => {
-    it('should complete all 5 steps: intake → research → evaluator → red_team → delivered', () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should complete all 5 steps: intake → build → attack → synthesize → delivered', () => {
+      const template = workflowRegistry.get('adversarial')!;
       expect(template).toBeDefined();
       initGenericWorkflow(session, template);
 
       // Step 1: intake
       expect(session.genericWorkflow!.currentStep).toBe('intake');
       const step1 = advanceGenericStep(session, template, 'intake');
-      expect(step1.advanced).toBe('research_execution');
+      expect(step1.advanced).toBe('build');
 
-      // Step 2: research_execution
-      const step2 = advanceGenericStep(session, template, 'research_execution');
-      expect(step2.advanced).toBe('evaluator_gate');
+      // Step 2: build
+      const step2 = advanceGenericStep(session, template, 'build');
+      expect(step2.advanced).toBe('attack');
 
-      // Step 3: evaluator_gate (requires gate decision)
-      const step3NoDecision = advanceGenericStep(session, template, 'evaluator_gate');
-      expect(step3NoDecision.error).toContain('requires a gate decision');
+      // Step 3: attack (no gate — adversarial has no evaluator gate)
+      const step3 = advanceGenericStep(session, template, 'attack');
+      expect(step3.advanced).toBe('synthesize');
 
-      const step3 = advanceGenericStep(session, template, 'evaluator_gate', 'approved');
-      expect(step3.advanced).toBe('red_team_review');
-
-      // Step 4: red_team_review
-      const step4 = advanceGenericStep(session, template, 'red_team_review');
+      // Step 4: synthesize
+      const step4 = advanceGenericStep(session, template, 'synthesize');
       expect(step4.advanced).toBe('delivered');
 
       // Step 5: delivered
@@ -125,31 +123,42 @@ describe('Research Memo Workflow Integration', () => {
 
       // Verify state
       expect(session.genericWorkflow!.completedSteps).toHaveLength(5);
-      expect(session.genericWorkflow!.gateDecisions['evaluator_gate']).toBe('approved');
+      expect(Object.keys(session.genericWorkflow!.gateDecisions)).toHaveLength(0);
     });
   });
 
-  describe('Evaluator Gate Rejection', () => {
-    it('should handle evaluator gate rejection (revision loop)', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      initGenericWorkflow(session, template);
-
-      advanceGenericStep(session, template, 'intake');
-      advanceGenericStep(session, template, 'research_execution');
-
-      // Evaluator rejects — stays at evaluator_gate
-      const result = advanceGenericStep(session, template, 'evaluator_gate', 'rejected');
-      expect(result.rejected).toBe(true);
-      expect(session.genericWorkflow!.currentStep).toBe('evaluator_gate');
+  describe('Quality Check Iterations', () => {
+    it('should have no evaluator gate — adversarial uses self-checks only', () => {
+      const template = workflowRegistry.get('adversarial')!;
+      const hasEvaluatorGate = Object.values(template.stepDefinitions)
+        .some(s => s.requiresEvaluatorGate);
+      const hasHumanGate = Object.values(template.stepDefinitions)
+        .some(s => s.requiresGateApproval);
+      expect(hasEvaluatorGate).toBe(false);
+      expect(hasHumanGate).toBe(false);
     });
 
-    it('should track evaluator results across revision loops', () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should support self-check iterations on build step', () => {
+      const template = workflowRegistry.get('adversarial')!;
+      const buildDef = template.stepDefinitions['build'];
+      expect(buildDef.maxIterations).toBe(2);
+      expect(buildDef.qualityCheckType).toBe('self');
+    });
+
+    it('should support self-check iterations on synthesize step', () => {
+      const template = workflowRegistry.get('adversarial')!;
+      const synthDef = template.stepDefinitions['synthesize'];
+      expect(synthDef.maxIterations).toBe(2);
+      expect(synthDef.qualityCheckType).toBe('self');
+    });
+
+    it('should track evaluator results for quality checks', () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
 
-      // First evaluation: fail
+      // First self-check on build: fail
       session.genericWorkflow!.evaluatorResults.push({
-        step: 'evaluator_gate',
+        step: 'build',
         passed: false,
         failureReasons: ['Insufficient citation depth', 'Missing opposing authorities'],
         score: 0.45,
@@ -158,9 +167,9 @@ describe('Research Memo Workflow Integration', () => {
       });
       session.genericWorkflow!.revisionCount = 1;
 
-      // Second evaluation: pass
+      // Second self-check on build: pass
       session.genericWorkflow!.evaluatorResults.push({
-        step: 'evaluator_gate',
+        step: 'build',
         passed: true,
         failureReasons: [],
         score: 0.88,
@@ -172,74 +181,61 @@ describe('Research Memo Workflow Integration', () => {
       expect(session.genericWorkflow!.evaluatorResults[0].passed).toBe(false);
       expect(session.genericWorkflow!.evaluatorResults[1].passed).toBe(true);
     });
-
-    it('should escalate after max revisions (2)', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      initGenericWorkflow(session, template);
-
-      // Simulate two failed evaluations
-      for (let i = 1; i <= 2; i++) {
-        session.genericWorkflow!.evaluatorResults.push({
-          step: 'evaluator_gate',
-          passed: false,
-          failureReasons: [`Research quality failure ${i}`],
-          score: 0.40,
-          revisionNumber: i,
-          timestamp: new Date().toISOString(),
-        });
-      }
-      session.genericWorkflow!.revisionCount = 2;
-
-      const maxRevisions = template.stepDefinitions['evaluator_gate'].maxRevisionLoops ?? 2;
-      expect(session.genericWorkflow!.revisionCount).toBeGreaterThanOrEqual(maxRevisions);
-    });
   });
 
   describe('Step Preconditions', () => {
-    it('should not allow skipping to research_execution without intake', () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should not allow skipping to build without intake', () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
 
-      // Try to advance research_execution directly (not current step)
-      const result = advanceGenericStep(session, template, 'research_execution');
+      // Try to advance build directly (not current step)
+      const result = advanceGenericStep(session, template, 'build');
       expect(result.error).toBeTruthy();
     });
 
-    it('should enforce evaluator_gate precondition on red_team_review', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      const redTeamDef = template.stepDefinitions['red_team_review'];
-      expect(redTeamDef.preconditions).toContain('evaluator_gate');
+    it('should enforce build precondition on attack', () => {
+      const template = workflowRegistry.get('adversarial')!;
+      const attackDef = template.stepDefinitions['attack'];
+      expect(attackDef.preconditions).toContain('build');
     });
 
-    it('should enforce red_team_review precondition on delivered', () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should enforce attack precondition on synthesize', () => {
+      const template = workflowRegistry.get('adversarial')!;
+      const synthDef = template.stepDefinitions['synthesize'];
+      expect(synthDef.preconditions).toContain('attack');
+    });
+
+    it('should enforce synthesize precondition on delivered', () => {
+      const template = workflowRegistry.get('adversarial')!;
       const deliveredDef = template.stepDefinitions['delivered'];
-      expect(deliveredDef.preconditions).toContain('red_team_review');
+      expect(deliveredDef.preconditions).toContain('synthesize');
     });
   });
 
   describe('Dynamic Permissions', () => {
-    it('should deny evaluator tools during intake phase', async () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should deny debate tools during intake phase', async () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
 
       const canUseTool = createDynamicPermissions(session, template);
 
+      // intake denies post_finding, post_challenge, post_response, resolve_debate
       const result = await canUseTool(
-        'mcp__shem__run_evaluator_gate',
-        {},
+        'mcp__shem__post_finding',
+        { agent_role: 'researcher', finding_type: 'legal-issue' },
         { signal: AbortSignal.timeout(5000), toolUseID: 'test-1' },
       );
       expect(result.behavior).toBe('deny');
     });
 
-    it('should deny risk pricing tools during research execution phase', async () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should deny risk pricing tools during build phase', async () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
-      session.genericWorkflow!.currentStep = 'research_execution';
+      session.genericWorkflow!.currentStep = 'build';
 
       const canUseTool = createDynamicPermissions(session, template);
 
+      // build denies request_risk_assessment, record_risk_assessment
       const result = await canUseTool(
         'mcp__shem__request_risk_assessment',
         {},
@@ -248,13 +244,14 @@ describe('Research Memo Workflow Integration', () => {
       expect(result.behavior).toBe('deny');
     });
 
-    it('should allow debate tools during red team review phase', async () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should allow debate tools during attack phase', async () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
-      session.genericWorkflow!.currentStep = 'red_team_review';
+      session.genericWorkflow!.currentStep = 'attack';
 
       const canUseTool = createDynamicPermissions(session, template);
 
+      // attack only denies risk pricing — all debate tools allowed
       const result = await canUseTool(
         'mcp__shem__post_finding',
         { agent_role: 'red-team', finding_type: 'adversarial-vulnerability' },
@@ -263,26 +260,43 @@ describe('Research Memo Workflow Integration', () => {
       expect(result.behavior).toBe('allow');
     });
 
-    it('should deny evaluator tools during red team review phase', async () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should deny risk pricing tools during attack phase', async () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
-      session.genericWorkflow!.currentStep = 'red_team_review';
+      session.genericWorkflow!.currentStep = 'attack';
 
       const canUseTool = createDynamicPermissions(session, template);
 
+      // attack denies request_risk_assessment, record_risk_assessment
       const result = await canUseTool(
-        'mcp__shem__run_evaluator_gate',
+        'mcp__shem__request_risk_assessment',
         {},
         { signal: AbortSignal.timeout(5000), toolUseID: 'test-4' },
       );
       expect(result.behavior).toBe('deny');
     });
+
+    it('should deny new findings during synthesize phase', async () => {
+      const template = workflowRegistry.get('adversarial')!;
+      initGenericWorkflow(session, template);
+      session.genericWorkflow!.currentStep = 'synthesize';
+
+      const canUseTool = createDynamicPermissions(session, template);
+
+      // synthesize denies post_finding, post_challenge, post_response
+      const result = await canUseTool(
+        'mcp__shem__post_challenge',
+        { challenger_role: 'red-team' },
+        { signal: AbortSignal.timeout(5000), toolUseID: 'test-5' },
+      );
+      expect(result.behavior).toBe('deny');
+    });
   });
 
-  describe('MCP Server with Research Memo Template', () => {
-    it('should create MCP server for research-memo template', async () => {
+  describe('MCP Server with Adversarial Template', () => {
+    it('should create MCP server for adversarial template', async () => {
       const { createShemMcpServer } = await import('../../src/mcp/server.js');
-      const template = workflowRegistry.get('research-memo')!;
+      const template = workflowRegistry.get('adversarial')!;
 
       const server = createShemMcpServer(session, template);
       expect(server).toBeDefined();
@@ -290,15 +304,15 @@ describe('Research Memo Workflow Integration', () => {
   });
 
   describe('Workflow State Tracking', () => {
-    it('should track templateId as research-memo', () => {
-      const template = workflowRegistry.get('research-memo')!;
+    it('should track templateId as adversarial', () => {
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
 
-      expect(session.genericWorkflow!.templateId).toBe('research-memo');
+      expect(session.genericWorkflow!.templateId).toBe('adversarial');
     });
 
     it('should update lastTransitionAt on each advancement', () => {
-      const template = workflowRegistry.get('research-memo')!;
+      const template = workflowRegistry.get('adversarial')!;
       initGenericWorkflow(session, template);
 
       const beforeTime = session.genericWorkflow!.lastTransitionAt;

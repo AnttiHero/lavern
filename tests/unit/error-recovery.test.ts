@@ -110,7 +110,7 @@ describe('Error Recovery', () => {
 
   it('should capture generic workflow step if active', () => {
     session.genericWorkflow = {
-      templateId: 'contract-review',
+      templateId: 'review',
       currentStep: 'analysis',
       completedSteps: ['intake'],
       gateDecisions: {},

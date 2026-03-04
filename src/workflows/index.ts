@@ -19,11 +19,7 @@ import './templates/pre-engagement.js';
 // v16: Verification pipeline (standalone + post-production)
 import './templates/verification.js';
 
-// Original templates — canonical IDs used by the deterministic router
-// (simple-query, contract-review, research-memo, legal-design)
-import './templates/simple-query.js';
-import './templates/contract-review.js';
-import './templates/research-memo.js';
+// Original legal-design template (10-step flagship pipeline, distinct from roundtable)
 import './templates/legal-design.js';
 
 // Re-export the registry for consumers

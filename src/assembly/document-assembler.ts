@@ -74,7 +74,7 @@ export async function assembleDocument(
   const requestType = request?.type
     ?? (session.workflowTemplateId === 'roundtable' ? 'document_redesign'
       : session.workflowTemplateId === 'review' ? 'contract_review'
-      : session.workflowTemplateId === 'research-memo' ? 'legal_research'
+      : session.workflowTemplateId === 'adversarial' ? 'legal_research'
       : 'general');
 
   const systemPrompt = getAssemblySystemPrompt(requestType);

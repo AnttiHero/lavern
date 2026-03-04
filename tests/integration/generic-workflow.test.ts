@@ -94,9 +94,9 @@ describe('Generic Workflow Integration', () => {
     session = new SessionState('test-generic-workflow');
   });
 
-  describe('Simple Query Workflow — Full Path', () => {
-    it('should complete all 4 steps: intake → specialist → evaluator → delivered', () => {
-      const template = workflowRegistry.get('simple-query')!;
+  describe('Counsel Workflow — Full Path', () => {
+    it('should complete all 3 steps: intake → specialist_execution → delivered', () => {
+      const template = workflowRegistry.get('counsel')!;
       initGenericWorkflow(session, template);
 
       // Step 1: intake
@@ -106,50 +106,39 @@ describe('Generic Workflow Integration', () => {
 
       // Step 2: specialist_execution
       const step2 = advanceGenericStep(session, template, 'specialist_execution');
-      expect(step2.advanced).toBe('evaluator_gate');
+      expect(step2.advanced).toBe('delivered');
 
-      // Step 3: evaluator_gate (requires gate decision)
-      const step3NoDecision = advanceGenericStep(session, template, 'evaluator_gate');
-      expect(step3NoDecision.error).toContain('requires a gate decision');
-
-      const step3 = advanceGenericStep(session, template, 'evaluator_gate', 'approved');
-      expect(step3.advanced).toBe('delivered');
-
-      // Step 4: delivered
-      const step4 = advanceGenericStep(session, template, 'delivered');
-      expect(step4.complete).toBe(true);
+      // Step 3: delivered
+      const step3 = advanceGenericStep(session, template, 'delivered');
+      expect(step3.complete).toBe(true);
 
       // Verify state
-      expect(session.genericWorkflow!.completedSteps).toHaveLength(4);
-      expect(session.genericWorkflow!.gateDecisions['evaluator_gate']).toBe('approved');
+      expect(session.genericWorkflow!.completedSteps).toHaveLength(3);
+      expect(Object.keys(session.genericWorkflow!.gateDecisions)).toHaveLength(0);
     });
 
-    it('should handle evaluator gate rejection (revision loop)', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      initGenericWorkflow(session, template);
-
-      advanceGenericStep(session, template, 'intake');
-      advanceGenericStep(session, template, 'specialist_execution');
-
-      // Evaluator rejects
-      const result = advanceGenericStep(session, template, 'evaluator_gate', 'rejected');
-      expect(result.rejected).toBe(true);
-      // Stays at evaluator_gate
-      expect(session.genericWorkflow!.currentStep).toBe('evaluator_gate');
+    it('should have no gates — counsel is gate-free', () => {
+      const template = workflowRegistry.get('counsel')!;
+      const hasEvaluatorGate = Object.values(template.stepDefinitions)
+        .some(s => s.requiresEvaluatorGate);
+      const hasHumanGate = Object.values(template.stepDefinitions)
+        .some(s => s.requiresGateApproval);
+      expect(hasEvaluatorGate).toBe(false);
+      expect(hasHumanGate).toBe(false);
     });
   });
 
-  describe('Contract Review Workflow — Full Path', () => {
-    it('should complete all 6 steps with gates', () => {
-      const template = workflowRegistry.get('contract-review')!;
+  describe('Review Workflow — Full Path', () => {
+    it('should complete all 7 steps with gates', () => {
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
       // Step 1: intake
       const step1 = advanceGenericStep(session, template, 'intake');
-      expect(step1.advanced).toBe('contract_analysis');
+      expect(step1.advanced).toBe('specialist_analysis');
 
-      // Step 2: contract_analysis
-      const step2 = advanceGenericStep(session, template, 'contract_analysis');
+      // Step 2: specialist_analysis
+      const step2 = advanceGenericStep(session, template, 'specialist_analysis');
       expect(step2.advanced).toBe('evaluator_gate');
 
       // Step 3: evaluator_gate (automated)
@@ -158,30 +147,35 @@ describe('Generic Workflow Integration', () => {
 
       // Step 4: plain_language_review
       const step4 = advanceGenericStep(session, template, 'plain_language_review');
-      expect(step4.advanced).toBe('final_gate');
+      expect(step4.advanced).toBe('verification_pass');
 
-      // Step 5: final_gate (human gate)
-      const step5 = advanceGenericStep(session, template, 'final_gate', 'approved');
-      expect(step5.advanced).toBe('delivered');
+      // Step 5: verification_pass
+      const step5 = advanceGenericStep(session, template, 'verification_pass');
+      expect(step5.advanced).toBe('final_gate');
 
-      // Step 6: delivered
-      const step6 = advanceGenericStep(session, template, 'delivered');
-      expect(step6.complete).toBe(true);
+      // Step 6: final_gate (human gate)
+      const step6 = advanceGenericStep(session, template, 'final_gate', 'approved');
+      expect(step6.advanced).toBe('delivered');
+
+      // Step 7: delivered
+      const step7 = advanceGenericStep(session, template, 'delivered');
+      expect(step7.complete).toBe(true);
 
       // Verify state
-      expect(session.genericWorkflow!.completedSteps).toHaveLength(6);
+      expect(session.genericWorkflow!.completedSteps).toHaveLength(7);
       expect(session.genericWorkflow!.gateDecisions['evaluator_gate']).toBe('approved');
       expect(session.genericWorkflow!.gateDecisions['final_gate']).toBe('approved');
     });
 
     it('should block at final_gate rejection', () => {
-      const template = workflowRegistry.get('contract-review')!;
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
       advanceGenericStep(session, template, 'intake');
-      advanceGenericStep(session, template, 'contract_analysis');
+      advanceGenericStep(session, template, 'specialist_analysis');
       advanceGenericStep(session, template, 'evaluator_gate', 'approved');
       advanceGenericStep(session, template, 'plain_language_review');
+      advanceGenericStep(session, template, 'verification_pass');
 
       const result = advanceGenericStep(session, template, 'final_gate', 'rejected');
       expect(result.rejected).toBe(true);
@@ -191,19 +185,19 @@ describe('Generic Workflow Integration', () => {
 
   describe('Generic Workflow State on Session', () => {
     it('should track templateId on genericWorkflow', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('counsel')!;
       initGenericWorkflow(session, template);
 
-      expect(session.genericWorkflow!.templateId).toBe('simple-query');
+      expect(session.genericWorkflow!.templateId).toBe('counsel');
     });
 
     it('should track workflowTemplateId on session', () => {
-      session.workflowTemplateId = 'contract-review';
-      expect(session.workflowTemplateId).toBe('contract-review');
+      session.workflowTemplateId = 'review';
+      expect(session.workflowTemplateId).toBe('review');
     });
 
     it('should accumulate completedSteps', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('counsel')!;
       initGenericWorkflow(session, template);
 
       advanceGenericStep(session, template, 'intake');
@@ -214,7 +208,7 @@ describe('Generic Workflow Integration', () => {
     });
 
     it('should update lastTransitionAt on advancement', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('counsel')!;
       initGenericWorkflow(session, template);
 
       const beforeTime = session.genericWorkflow!.lastTransitionAt;
@@ -227,7 +221,7 @@ describe('Generic Workflow Integration', () => {
 
   describe('Evaluator Gate Integration', () => {
     it('should support evaluator results on session state', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
       // Simulate evaluator result
@@ -245,7 +239,7 @@ describe('Generic Workflow Integration', () => {
     });
 
     it('should track revision count after evaluator rejection', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
       // Simulate evaluator failure
@@ -264,7 +258,7 @@ describe('Generic Workflow Integration', () => {
     });
 
     it('should escalate after max revisions', () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
       // Two failed evaluations → escalation
@@ -288,10 +282,10 @@ describe('Generic Workflow Integration', () => {
 
   describe('Dynamic Permissions with Templates', () => {
     it('should use template phasePermissions for generic workflows', async () => {
-      const template = workflowRegistry.get('contract-review')!;
+      const template = workflowRegistry.get('review')!;
       initGenericWorkflow(session, template);
 
-      // If the contract-review template has phasePermissions, they should be respected
+      // If the review template has phasePermissions, they should be respected
       if (template.phasePermissions) {
         const canUseTool = createDynamicPermissions(session, template);
 
@@ -318,7 +312,7 @@ describe('Generic Workflow Integration', () => {
     });
 
     it('should deny orchestrator-only tools for subagents regardless of template', async () => {
-      const template = workflowRegistry.get('simple-query')!;
+      const template = workflowRegistry.get('counsel')!;
       const canUseTool = createDynamicPermissions(session, template);
 
       const result = await canUseTool(
@@ -334,8 +328,8 @@ describe('Generic Workflow Integration', () => {
     it('should include all registered workflows in router summary', () => {
       const summary = workflowRegistry.getSummaryForRouter();
       expect(summary).toContain('legal-design');
-      expect(summary).toContain('simple-query');
-      expect(summary).toContain('contract-review');
+      expect(summary).toContain('counsel');
+      expect(summary).toContain('review');
     });
 
     it('should list all registered templates', () => {
@@ -344,15 +338,15 @@ describe('Generic Workflow Integration', () => {
 
       const ids = templates.map(t => t.id);
       expect(ids).toContain('legal-design');
-      expect(ids).toContain('simple-query');
-      expect(ids).toContain('contract-review');
+      expect(ids).toContain('counsel');
+      expect(ids).toContain('review');
     });
   });
 
   describe('MCP Server with Template', () => {
     it('should create MCP server with generic workflow tools for non-legal-design', async () => {
       const { createShemMcpServer } = await import('../../src/mcp/server.js');
-      const template = workflowRegistry.get('contract-review')!;
+      const template = workflowRegistry.get('review')!;
 
       // Should not throw — creates MCP server with generic workflow engine
       const server = createShemMcpServer(session, template);

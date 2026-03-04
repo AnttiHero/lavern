@@ -12,9 +12,9 @@ import type { WorkflowTemplate } from '../../src/types/workflow.js';
 
 // Import templates to trigger auto-registration
 import '../../src/workflows/templates/legal-design.js';
-import '../../src/workflows/templates/simple-query.js';
-import '../../src/workflows/templates/contract-review.js';
-import '../../src/workflows/templates/research-memo.js';
+import '../../src/workflows/templates/counsel.js';
+import '../../src/workflows/templates/review.js';
+import '../../src/workflows/templates/adversarial.js';
 
 describe('Workflow Template Registry', () => {
   describe('Registration and Retrieval', () => {
@@ -24,36 +24,32 @@ describe('Workflow Template Registry', () => {
       expect(template!.name).toBe('Legal Document Redesign');
     });
 
-    it('should have simple-query template registered', () => {
-      const template = workflowRegistry.get('simple-query');
+    it('should have counsel template registered', () => {
+      const template = workflowRegistry.get('counsel');
       expect(template).toBeDefined();
-      expect(template!.name).toBe('Simple Legal Query');
     });
 
-    it('should have contract-review template registered', () => {
-      const template = workflowRegistry.get('contract-review');
+    it('should have review template registered', () => {
+      const template = workflowRegistry.get('review');
       expect(template).toBeDefined();
-      expect(template!.name).toBe('Contract Review');
     });
 
     it('should return undefined for unknown template', () => {
       expect(workflowRegistry.get('nonexistent')).toBeUndefined();
     });
 
-    it('should have research-memo template registered', () => {
-      const template = workflowRegistry.get('research-memo');
+    it('should have adversarial template registered', () => {
+      const template = workflowRegistry.get('adversarial');
       expect(template).toBeDefined();
-      expect(template!.name).toBe('Research Memo');
     });
 
-    it('should list all 4 registered templates', () => {
+    it('should list all registered templates', () => {
       const templates = workflowRegistry.list();
-      expect(templates.length).toBeGreaterThanOrEqual(4);
       const ids = templates.map(t => t.id);
       expect(ids).toContain('legal-design');
-      expect(ids).toContain('simple-query');
-      expect(ids).toContain('contract-review');
-      expect(ids).toContain('research-memo');
+      expect(ids).toContain('counsel');
+      expect(ids).toContain('review');
+      expect(ids).toContain('adversarial');
     });
   });
 
@@ -126,200 +122,6 @@ describe('Workflow Template Registry', () => {
     });
   });
 
-  describe('Simple Query Template', () => {
-    it('should have 4 steps', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      expect(template.steps).toHaveLength(4);
-    });
-
-    it('should follow intake -> specialist -> evaluator -> delivered', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      expect(template.steps).toEqual([
-        'intake',
-        'specialist_execution',
-        'evaluator_gate',
-        'delivered',
-      ]);
-    });
-
-    it('should have evaluator gate step with evaluator flag', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      const evalStep = template.stepDefinitions['evaluator_gate'];
-      expect(evalStep.requiresEvaluatorGate).toBe(true);
-      expect(evalStep.maxRevisionLoops).toBe(2);
-    });
-
-    it('should have no human gate steps', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      const gates = Object.values(template.stepDefinitions).filter(s => s.requiresGateApproval);
-      expect(gates).toHaveLength(0);
-    });
-
-    it('should require evaluator agent', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      expect(template.requiredAgents).toContain('evaluator');
-    });
-
-    it('should have phase permissions for all 4 phases', () => {
-      const template = workflowRegistry.get('simple-query')!;
-      expect(template.phasePermissions).toBeDefined();
-      expect(Object.keys(template.phasePermissions!)).toHaveLength(4);
-    });
-  });
-
-  describe('Contract Review Template', () => {
-    it('should have 6 steps', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.steps).toHaveLength(6);
-    });
-
-    it('should follow the correct step order', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.steps).toEqual([
-        'intake',
-        'contract_analysis',
-        'evaluator_gate',
-        'plain_language_review',
-        'final_gate',
-        'delivered',
-      ]);
-    });
-
-    it('should have 1 human gate step (final_gate)', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      const gates = Object.values(template.stepDefinitions).filter(s => s.requiresGateApproval);
-      expect(gates).toHaveLength(1);
-      expect(gates[0].name).toBe('final_gate');
-      expect(gates[0].gateType).toBe('final_delivery');
-    });
-
-    it('should have evaluator gate step', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      const evalStep = template.stepDefinitions['evaluator_gate'];
-      expect(evalStep.requiresEvaluatorGate).toBe(true);
-    });
-
-    it('should require contract-reviewer, plain-language-specialist, evaluator, and risk-pricer', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.requiredAgents).toContain('contract-reviewer');
-      expect(template.requiredAgents).toContain('plain-language-specialist');
-      expect(template.requiredAgents).toContain('evaluator');
-      expect(template.requiredAgents).toContain('risk-pricer');
-    });
-
-    it('should include risk pricing tools', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.availableTools).toContain('mcp__shem__request_risk_assessment');
-      expect(template.availableTools).toContain('mcp__shem__record_risk_assessment');
-    });
-
-    it('should have phase permissions for all 6 phases', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.phasePermissions).toBeDefined();
-      expect(Object.keys(template.phasePermissions!)).toHaveLength(6);
-    });
-
-    it('should include debate board tools for posting findings', () => {
-      const template = workflowRegistry.get('contract-review')!;
-      expect(template.availableTools).toContain('mcp__shem__post_finding');
-      expect(template.availableTools).toContain('mcp__shem__get_findings');
-    });
-  });
-
-  describe('Research Memo Template', () => {
-    it('should have 5 steps', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.steps).toHaveLength(5);
-    });
-
-    it('should follow the correct step order', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.steps).toEqual([
-        'intake',
-        'research_execution',
-        'evaluator_gate',
-        'red_team_review',
-        'delivered',
-      ]);
-    });
-
-    it('should have no human gate steps', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      const gates = Object.values(template.stepDefinitions).filter(s => s.requiresGateApproval);
-      expect(gates).toHaveLength(0);
-    });
-
-    it('should have evaluator gate step with evaluator flag', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      const evalStep = template.stepDefinitions['evaluator_gate'];
-      expect(evalStep.requiresEvaluatorGate).toBe(true);
-      expect(evalStep.maxRevisionLoops).toBe(2);
-    });
-
-    it('should require legal-researcher, evaluator, and red-team', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.requiredAgents).toContain('legal-researcher');
-      expect(template.requiredAgents).toContain('evaluator');
-      expect(template.requiredAgents).toContain('red-team');
-    });
-
-    it('should have phase permissions for all 5 phases', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.phasePermissions).toBeDefined();
-      expect(Object.keys(template.phasePermissions!)).toHaveLength(5);
-      for (const step of template.steps) {
-        expect(template.phasePermissions![step]).toBeDefined();
-        expect(template.phasePermissions![step].denyTools).toBeInstanceOf(Array);
-        expect(template.phasePermissions![step].reason).toBeTruthy();
-      }
-    });
-
-    it('should have step definitions for every step', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      for (const step of template.steps) {
-        expect(template.stepDefinitions[step]).toBeDefined();
-        expect(template.stepDefinitions[step].name).toBe(step);
-      }
-    });
-
-    it('should include debate board tools for posting research findings', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.availableTools).toContain('mcp__shem__post_finding');
-      expect(template.availableTools).toContain('mcp__shem__get_findings');
-    });
-
-    it('should include memory write tools for saving research precedents', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.availableTools).toContain('mcp__shem__save_precedent');
-      expect(template.availableTools).toContain('mcp__shem__add_institutional_memory');
-    });
-
-    it('should include risk pricing tools', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.availableTools).toContain('mcp__shem__request_risk_assessment');
-      expect(template.availableTools).toContain('mcp__shem__record_risk_assessment');
-    });
-
-    it('should include evaluator gate tools', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      expect(template.availableTools).toContain('mcp__shem__run_evaluator_gate');
-      expect(template.availableTools).toContain('mcp__shem__record_evaluation_result');
-    });
-
-    it('should deny evaluator tools during intake', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      const intakePerms = template.phasePermissions!['intake'];
-      expect(intakePerms.denyTools).toContain('mcp__shem__run_evaluator_gate');
-      expect(intakePerms.denyTools).toContain('mcp__shem__record_evaluation_result');
-    });
-
-    it('should deny evaluator tools during red team review', () => {
-      const template = workflowRegistry.get('research-memo')!;
-      const redTeamPerms = template.phasePermissions!['red_team_review'];
-      expect(redTeamPerms.denyTools).toContain('mcp__shem__run_evaluator_gate');
-      expect(redTeamPerms.denyTools).toContain('mcp__shem__record_evaluation_result');
-    });
-  });
 
   describe('Router Summary', () => {
     it('should generate non-empty markdown summary', () => {
@@ -331,17 +133,14 @@ describe('Workflow Template Registry', () => {
     it('should include all template IDs in the summary', () => {
       const summary = workflowRegistry.getSummaryForRouter();
       expect(summary).toContain('legal-design');
-      expect(summary).toContain('simple-query');
-      expect(summary).toContain('contract-review');
-      expect(summary).toContain('research-memo');
+      expect(summary).toContain('counsel');
+      expect(summary).toContain('review');
+      expect(summary).toContain('adversarial');
     });
 
     it('should include template names', () => {
       const summary = workflowRegistry.getSummaryForRouter();
       expect(summary).toContain('Legal Document Redesign');
-      expect(summary).toContain('Simple Legal Query');
-      expect(summary).toContain('Contract Review');
-      expect(summary).toContain('Research Memo');
     });
 
     it('should indicate gate steps', () => {

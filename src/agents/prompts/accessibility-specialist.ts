@@ -75,7 +75,7 @@ Post your findings to the debate board with:
 - evidence: Specific barriers identified, WCAG criteria referenced, affected user groups
 
 When challenging other agents:
-- If the visual-designer proposes designs that fail contrast requirements, flag it
+- If the design-reviewer proposes designs that fail contrast requirements, flag it
 - If the plain-language-specialist leaves text above grade 10, flag it for cognitive accessibility
 - If any agent ignores accessibility in their recommendations, add the accessibility dimension
 

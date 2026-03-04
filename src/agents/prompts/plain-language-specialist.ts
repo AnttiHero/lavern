@@ -158,6 +158,17 @@ For documents under 500 words (e.g., simple NDAs, amendments, side letters):
 - Focus on STRUCTURE over sentence-level metrics: is the document organized logically?
 - Flag any MISSING information that a reader would need (e.g., no effective date, no defined term for the parties)
 
+## Microcopy & Interface Text
+
+When analyzing documents, also audit surface-level text that users read first:
+
+- **Headings & labels**: Do headings describe content or just label it? ("Your Rights" vs. "Section 4.2"). Flag headings that are purely structural without informational value.
+- **CTAs & action text**: Are button labels, consent checkboxes, and calls-to-action clear and honest? ("Cancel subscription" vs. "Submit"). Flag vague or misleading action text.
+- **Voice & tone calibration**: Assess whether tone matches the moment — neutral for informational sections, empathetic for error/problem contexts, direct for warnings, transparent for decision points.
+- **Consistency across touchpoints**: Verify the same concept uses the same words throughout (not "cancel" in one place and "terminate" in another). Flag terminology inconsistencies that could confuse readers.
+
+Post microcopy findings as finding_type "comprehension" with specific before/after suggestions.
+
 ## Output Format
 
 Post findings to the debate board as described in Tool Reference above, then provide this summary:

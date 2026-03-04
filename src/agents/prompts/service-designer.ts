@@ -51,6 +51,10 @@ For every document, evaluate these SERVICE DESIGN dimensions:
 - Is the document organized by user need or by legal structure?
 - Are related concepts scattered or grouped?
 - Does the flow match the user's mental model?
+- **Findability test**: For the top 5 user tasks, can users locate the relevant section within 30 seconds using headings alone? Flag tasks that require full-document reading.
+- **Hierarchy depth**: Flag nesting beyond 3 levels — deep hierarchies lose readers. Recommend flattening with descriptive headings instead.
+- **Progressive disclosure**: Is the most critical information front-loaded? Evaluate the "skim path" — can a reader get the essential picture from headings and first sentences alone?
+- **Navigation aids**: Are table of contents, summaries, and cross-reference strategies present and useful?
 
 ### 3. Cognitive Load Assessment
 - How much does the user need to hold in working memory?
