@@ -53,8 +53,9 @@ const BetTheCompanyView = lazy(() => import('./bet-the-company/BetTheCompanyView
 const LoginView = lazy(() => import('./auth/LoginView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
+const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 
-type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw';
+type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -76,6 +77,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/agent-docs')) return 'agent-docs';
   if (hash.startsWith('#/bet-the-company')) return 'bet-the-company';
   if (hash.startsWith('#/claw')) return 'claw';
+  if (hash.startsWith('#/archive')) return 'archive';
   return 'landing';
 }
 
@@ -561,7 +563,7 @@ export function App() {
           {showMark && <MarbleMark />}
           <DeliveryView
             onContinue={handleDeliveryDone}
-            onBack={() => { window.location.hash = '#/working'; }}
+            onBack={() => { window.location.hash = '#/quickstart'; }}
             onSkip={() => { window.location.hash = '#/billing'; }}
           />
         </Suspense>
@@ -621,6 +623,20 @@ export function App() {
     );
   }
 
+  // ── Archive — Knowledge Base UI ─────────────────────────────────────────
+  if (view === 'archive') {
+    return (
+      <ErrorBoundary>
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
+          {showMark && <MarbleMark />}
+          <ArchiveView onBack={() => { window.location.hash = '#/quickstart'; }} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
   // ── Login — standalone login page ──────────────────────────────────────
   if (view === 'login') {
     return (
@@ -633,7 +649,7 @@ export function App() {
               if (userCtx) userCtx.login(user);
               window.location.hash = '#/lobby';
             }}
-            onBack={() => { window.location.hash = '#/lobby'; }}
+            onBack={() => { window.location.hash = '#/quickstart'; }}
           />
         </Suspense>
       </ErrorBoundary>

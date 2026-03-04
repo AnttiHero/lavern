@@ -42,7 +42,7 @@ import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
-import { convertToDocx, convertToHtml, type DocumentStyle } from '../../assembly/format-converter.js';
+import { convertToDocx, convertToHtml, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 
 /** Safely parse JSON, returning fallback on failure. */
@@ -393,6 +393,7 @@ export function registerSessionRoutes(
     // finalOutput contains the orchestrator's internal thinking/process log — serving
     // that as a work product would be catastrophic for credibility.
     const deliverable = session.assembledDocument || '';
+    const soulBranding = extractSoulBranding(session.soul);
 
     // For document formats (md, docx, pdf), validate before serving
     if (format === 'md' || format === 'docx' || format === 'pdf') {
@@ -417,7 +418,7 @@ export function registerSessionRoutes(
 
     if (format === 'docx') {
       try {
-        const docxBuffer = await convertToDocx(deliverable, title, style);
+        const docxBuffer = await convertToDocx(deliverable, title, style, soulBranding);
         const filename = `${id}-workproduct.docx`;
         return reply
           .header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -433,7 +434,7 @@ export function registerSessionRoutes(
       // Serve as HTML with print-optimized CSS — browsers can print to PDF,
       // or client-side can use the HTML directly for rendering
       try {
-        const html = convertToHtml(deliverable, title, style);
+        const html = convertToHtml(deliverable, title, style, soulBranding);
         const filename = `${id}-workproduct.html`;
         return reply
           .header('Content-Type', 'text/html; charset=utf-8')
@@ -617,10 +618,11 @@ export function registerSessionRoutes(
 
       const format = body.format ?? 'md';
       const style = body.style as DocumentStyle | undefined;
+      const derivBranding = extractSoulBranding(session.soul);
 
       // Convert to requested format
       if (format === 'docx') {
-        const docxBuffer = await convertToDocx(generatedContent, derivativeType.title, style);
+        const docxBuffer = await convertToDocx(generatedContent, derivativeType.title, style, derivBranding);
         const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
         reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.docx"`);
@@ -628,7 +630,7 @@ export function registerSessionRoutes(
       }
 
       if (format === 'html') {
-        const html = convertToHtml(generatedContent, derivativeType.title, style);
+        const html = convertToHtml(generatedContent, derivativeType.title, style, derivBranding);
         const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
         reply.header('Content-Type', 'text/html; charset=utf-8');
         reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.html"`);

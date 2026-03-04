@@ -22,6 +22,67 @@ import {
 } from 'docx';
 import { marked } from 'marked';
 
+// ── Soul Branding ────────────────────────────────────────────────────────
+
+export interface SoulBranding {
+  firmName?: string;
+  tagline?: string;
+}
+
+/**
+ * Extract firm name and tagline from a soul string.
+ * Looks for patterns like "We are [FIRM]", "At [FIRM]", or uses the first
+ * heading/short line as the firm name.
+ */
+export function extractSoulBranding(soul?: string): SoulBranding | undefined {
+  if (!soul || !soul.trim()) return undefined;
+
+  const lines = soul.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return undefined;
+
+  let firmName: string | undefined;
+  let tagline: string | undefined;
+
+  // Strategy 1: Look for explicit patterns
+  for (const line of lines) {
+    const stripped = line.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+
+    // "We are Baker & Associates" / "We are Baker & Associates."
+    const weAre = stripped.match(/^We\s+are\s+(.{3,60}?)\.?\s*$/i);
+    if (weAre) { firmName = weAre[1].trim(); continue; }
+
+    // "At Baker & Associates, we..."
+    const atFirm = stripped.match(/^At\s+(.{3,60}?),/i);
+    if (atFirm && !firmName) { firmName = atFirm[1].trim(); continue; }
+
+    // "Baker & Associates is..."
+    const firmIs = stripped.match(/^([A-Z][A-Za-z&,.\s']{2,55}?)\s+(?:is|was|has|provides|delivers|offers)\b/);
+    if (firmIs && !firmName) { firmName = firmIs[1].trim(); continue; }
+  }
+
+  // Strategy 2: If first line is a short heading or phrase, treat it as firm name
+  if (!firmName) {
+    const first = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+    if (first.length >= 3 && first.length <= 60 && !first.includes('.') && !/^(we|our|the|a|an|i)\s/i.test(first)) {
+      firmName = first;
+    }
+  }
+
+  // Extract tagline: first short descriptive line that isn't the firm name
+  for (const line of lines) {
+    const stripped = line.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+    if (stripped === firmName) continue;
+    if (stripped.length >= 5 && stripped.length <= 80) {
+      // Skip lines that are clearly soul instructions rather than taglines
+      if (/^(we|our|at|the)\s/i.test(stripped) || /\b(always|never|must|should)\b/i.test(stripped)) continue;
+      tagline = stripped;
+      break;
+    }
+  }
+
+  return firmName ? { firmName, tagline } : undefined;
+}
+
 // ── Style System ────────────────────────────────────────────────────────
 
 export type DocumentStyle = 'traditional' | 'elegant' | 'accessible';
@@ -150,7 +211,7 @@ const STYLE_TRADITIONAL: StyleProfile = {
   coverMarginTop: 2.0,
   coverMarginSides: 1.5,
   bodyMarginTop: 1.0,
-  bodyMarginSides: 1.25,
+  bodyMarginSides: 1.3,
 
   htmlFontImport: '',
   htmlBodyFontFamily: "'Times New Roman', Times, Georgia, serif",
@@ -189,7 +250,7 @@ const STYLE_ELEGANT: StyleProfile = {
 
   lineSpacing: 276,
   lineHeightCss: 1.7,
-  paragraphAfter: 180,
+  paragraphAfter: 200,
   letterSpacingEm: 0,
 
   tableBorderStyle: 'open',
@@ -461,7 +522,7 @@ function parseInlineToRuns(text: string, profile: StyleProfile, fontSize?: numbe
 
 // ── DOCX Cover Pages ────────────────────────────────────────────────────
 
-function buildCoverPage(title: string, profile: StyleProfile): Paragraph[] {
+function buildCoverPage(title: string, profile: StyleProfile, branding?: SoulBranding): Paragraph[] {
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -553,7 +614,10 @@ function buildCoverPage(title: string, profile: StyleProfile): Paragraph[] {
     paragraphs.push(new Paragraph({ spacing: { after: 2400 } }));
   }
 
-  // "Prepared by" block
+  // "Prepared by" block — uses soul branding when available
+  const brandName = branding?.firmName ?? 'Marble';
+  const hasSoul = !!branding?.firmName;
+
   paragraphs.push(new Paragraph({
     alignment: align,
     children: [new TextRun({
@@ -561,6 +625,7 @@ function buildCoverPage(title: string, profile: StyleProfile): Paragraph[] {
       font: profile.bodyFont,
       size: profile.id === 'accessible' ? profile.smallSize : profile.tinySize,
       color: profile.inkDim,
+      characterSpacing: 60,
     })],
     spacing: { after: 80 },
   }));
@@ -568,19 +633,36 @@ function buildCoverPage(title: string, profile: StyleProfile): Paragraph[] {
   paragraphs.push(new Paragraph({
     alignment: align,
     children: [new TextRun({
-      text: 'Marble',
+      text: profile.id === 'traditional' ? brandName.toUpperCase() : brandName,
       font: profile.headingFont,
       size: profile.id === 'accessible' ? 32 : 28,
       color: profile.inkMuted,
       bold: profile.id === 'traditional',
+      characterSpacing: profile.id === 'traditional' ? 80 : undefined,
     })],
-    spacing: { after: 40 },
+    spacing: { after: hasSoul && branding.tagline ? 40 : 60 },
   }));
 
+  // Tagline from soul (if available)
+  if (hasSoul && branding.tagline) {
+    paragraphs.push(new Paragraph({
+      alignment: align,
+      children: [new TextRun({
+        text: branding.tagline,
+        font: profile.bodyFont,
+        size: profile.id === 'accessible' ? profile.smallSize : profile.tinySize,
+        color: profile.inkDim,
+        italics: profile.id !== 'accessible',
+      })],
+      spacing: { after: 60 },
+    }));
+  }
+
+  // Engine credit — "Powered by Marble" when soul provides firm name, otherwise subtitle
   paragraphs.push(new Paragraph({
     alignment: align,
     children: [new TextRun({
-      text: 'Multi-Agent Legal Design System',
+      text: hasSoul ? 'Powered by Marble' : 'Multi-Agent Legal Design System',
       font: profile.bodyFont,
       size: profile.id === 'accessible' ? profile.smallSize : profile.tinySize,
       color: profile.inkDim,
@@ -611,7 +693,7 @@ function buildCoverPage(title: string, profile: StyleProfile): Paragraph[] {
 
 // ── DOCX Conversion ─────────────────────────────────────────────────────
 
-export async function convertToDocx(markdown: string, title: string, style?: DocumentStyle): Promise<Buffer> {
+export async function convertToDocx(markdown: string, title: string, style?: DocumentStyle, branding?: SoulBranding): Promise<Buffer> {
   const profile = getStyleProfile(style);
   const sections = parseMarkdownToSections(markdown);
   const bodyChildren: (Paragraph | Table)[] = [];
@@ -698,6 +780,7 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
         bodyChildren.push(new Paragraph({
           children: parseInlineToRuns(section.text, profile),
           spacing: { after: profile.paragraphAfter, line: profile.lineSpacing },
+          widowControl: true,
         }));
         break;
       }
@@ -818,12 +901,14 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
   }
 
   // Build Document
-  const coverChildren = buildCoverPage(title, profile);
+  const coverChildren = buildCoverPage(title, profile, branding);
 
   const doc = new Document({
     title,
-    creator: 'Marble — Multi-Agent Legal Design System',
+    subject: title,
+    creator: branding?.firmName ?? 'Marble',
     description: `Generated deliverable: ${title}`,
+    lastModifiedBy: 'Marble Legal Design System',
     numbering: {
       config: [{
         reference: 'default-numbering',
@@ -879,7 +964,9 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
             children: [new Paragraph({
               children: [
                 new TextRun({
-                  text: profile.id === 'traditional' ? 'MARBLE' : 'MARBLE',
+                  text: (branding?.firmName
+                    ? (profile.id === 'traditional' ? branding.firmName.toUpperCase() : branding.firmName)
+                    : 'MARBLE'),
                   font: profile.bodyFont,
                   size: profile.tinySize,
                   color: profile.inkDim,
@@ -906,14 +993,31 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
         footers: {
           default: new Footer({
             children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
               children: [
+                new TextRun({
+                  text: 'AI-Assisted Analysis',
+                  font: profile.bodyFont,
+                  size: profile.tinySize - 2,
+                  color: profile.inkDim,
+                }),
+                new TextRun({ children: [new Tab()] }),
                 new TextRun({
                   children: [PageNumber.CURRENT],
                   font: profile.bodyFont,
                   size: profile.tinySize,
                   color: profile.inkDim,
                 }),
+                new TextRun({ children: [new Tab()] }),
+                new TextRun({
+                  text: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                  font: profile.bodyFont,
+                  size: profile.tinySize - 2,
+                  color: profile.inkDim,
+                }),
+              ],
+              tabStops: [
+                { type: TabStopType.CENTER, position: Math.floor(TabStopPosition.MAX / 2) },
+                { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
               ],
               border: {
                 top: { style: BorderStyle.SINGLE, size: 1, color: profile.borderLight },
@@ -932,7 +1036,13 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
 
 // ── HTML / PDF Conversion ───────────────────────────────────────────────
 
-function getHtmlCover(title: string, dateStr: string, profile: StyleProfile): string {
+function getHtmlCover(title: string, dateStr: string, profile: StyleProfile, branding?: SoulBranding): string {
+  const brandName = branding?.firmName ?? 'Marble';
+  const hasSoul = !!branding?.firmName;
+  const engineCredit = hasSoul ? 'Powered by Marble' : 'Multi-Agent Legal Design System';
+  const taglineHtml = hasSoul && branding.tagline
+    ? `<p class="tagline">${escapeHtml(branding.tagline)}</p>` : '';
+
   if (profile.id === 'traditional') {
     return `
   <div class="cover">
@@ -943,8 +1053,9 @@ function getHtmlCover(title: string, dateStr: string, profile: StyleProfile): st
     <hr class="cover-rule-double" aria-hidden="true">
     <div class="cover-meta">
       <span class="label">Prepared by</span>
-      <span class="brand">Marble</span>
-      <p class="subtitle">Multi-Agent Legal Design System</p>
+      <span class="brand">${escapeHtml(brandName.toUpperCase())}</span>
+      ${taglineHtml}
+      <p class="subtitle">${escapeHtml(engineCredit)}</p>
       <p class="disclaimer">This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.</p>
     </div>
   </div>`;
@@ -957,7 +1068,9 @@ function getHtmlCover(title: string, dateStr: string, profile: StyleProfile): st
     <hr class="cover-rule-thick" aria-hidden="true">
     <div class="cover-date">${escapeHtml(dateStr)}</div>
     <div class="cover-meta">
-      <p><strong>Prepared by:</strong> Marble &mdash; Multi-Agent Legal Design System</p>
+      <p><strong>Prepared by:</strong> ${escapeHtml(brandName)}</p>
+      ${taglineHtml}
+      <p class="subtitle">${escapeHtml(engineCredit)}</p>
       <p class="disclaimer">This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.</p>
     </div>
   </div>`;
@@ -971,7 +1084,9 @@ function getHtmlCover(title: string, dateStr: string, profile: StyleProfile): st
     <div class="cover-date">${escapeHtml(dateStr)}</div>
     <div class="cover-meta">
       <span class="label">Prepared by</span>
-      <span class="brand">Marble</span>
+      <span class="brand">${escapeHtml(brandName)}</span>
+      ${taglineHtml}
+      <p class="subtitle">${escapeHtml(engineCredit)}</p>
       <p class="disclaimer">This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.</p>
     </div>
   </div>`;
@@ -1054,10 +1169,17 @@ function getHtmlStyles(profile: StyleProfile): string {
       font-weight: ${p.id === 'traditional' ? '700' : '400'};
     }
 
-    .cover-meta .subtitle {
+    .cover-meta .tagline {
       font-size: ${p.tinySize / 2}pt;
       color: #${p.inkDim};
+      ${p.id !== 'accessible' ? 'font-style: italic;' : ''}
       margin: 0.2rem 0 0;
+    }
+
+    .cover-meta .subtitle {
+      font-size: ${(p.tinySize - 2) / 2}pt;
+      color: #${p.inkDim};
+      margin: 0.3rem 0 0;
     }
 
     .cover-meta .disclaimer {
@@ -1277,7 +1399,7 @@ function getHtmlStyles(profile: StyleProfile): string {
   return css;
 }
 
-export function convertToHtml(markdown: string, title: string, style?: DocumentStyle): string {
+export function convertToHtml(markdown: string, title: string, style?: DocumentStyle, branding?: SoulBranding): string {
   const profile = getStyleProfile(style);
   let htmlBody = marked.parse(markdown, { async: false }) as string;
 
@@ -1291,7 +1413,7 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
     year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const cover = getHtmlCover(title, dateStr, profile);
+  const cover = getHtmlCover(title, dateStr, profile, branding);
   const styles = getHtmlStyles(profile);
 
   return `<!DOCTYPE html>
@@ -1300,6 +1422,9 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
+  <meta name="author" content="${escapeHtml(branding?.firmName ?? 'Marble')}">
+  <meta name="description" content="${escapeHtml(title)}">
+  <meta name="generator" content="Marble Legal Design System">
   ${profile.htmlFontImport}
   <style>${styles}</style>
 </head>
@@ -1311,8 +1436,8 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
   </div>
 
   <div class="doc-footer">
-    <p class="brand-mark">Marble</p>
-    <p>Multi-Agent Legal Design System</p>
+    <p class="brand-mark">${escapeHtml(branding?.firmName ?? 'Marble')}</p>
+    <p>${escapeHtml(branding?.firmName ? 'Powered by Marble' : 'Multi-Agent Legal Design System')}</p>
     <p>Generated ${escapeHtml(dateStr)}</p>
   </div>
 </body>
@@ -1323,7 +1448,7 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export async function convertToPdf(markdown: string, title: string, style?: DocumentStyle): Promise<Buffer> {
-  const html = convertToHtml(markdown, title, style);
+export async function convertToPdf(markdown: string, title: string, style?: DocumentStyle, branding?: SoulBranding): Promise<Buffer> {
+  const html = convertToHtml(markdown, title, style, branding);
   return Buffer.from(html, 'utf-8');
 }

@@ -342,6 +342,17 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
               : (showConversationalChat ? 'Interview complete' : 'Questions answered')}
           </div>
 
+          {phase === 'questions' && useLLMMode && interview.fallbackToStatic && (
+            <div className="text-xs font-sans rounded-sm px-3 py-2 mb-4"
+              style={{
+                color: colors.textMuted,
+                backgroundColor: 'rgba(26, 26, 26, 0.03)',
+                border: '1px solid rgba(26, 26, 26, 0.08)',
+              }}>
+              Live interviews require an API connection. Using guided questions instead.
+            </div>
+          )}
+
           {phase === 'questions' && showConversationalChat && (
             <ConversationalChat
               messages={interview.messages}

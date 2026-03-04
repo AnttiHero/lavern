@@ -3,7 +3,7 @@
  * Warm editorial — amber warning, no neon glow.
  */
 
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 
 interface Props {
@@ -40,7 +40,7 @@ export function YoloToggle({ enabled, onToggle }: Props) {
           <motion.div
             style={styles.knob}
             animate={{
-              x: enabled ? 16 : 0,
+              x: enabled ? 18 : 0,
             }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
           />
@@ -56,16 +56,19 @@ export function YoloToggle({ enabled, onToggle }: Props) {
           : 'Human-in-the-loop at gate checkpoints.'}
       </span>
 
-      {enabled && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          style={styles.warning}
-        >
-          {'\u26A0'} Agents will proceed through all gates without stopping for human review.
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {enabled && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={styles.warning}
+          >
+            {'\u26A0'} Agents will proceed through all gates without stopping for human review.
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -104,9 +107,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   switch: {
     position: 'relative',
-    width: 36,
-    height: 20,
-    borderRadius: 10,
+    width: 40,
+    height: 22,
+    borderRadius: 11,
     transition: 'background-color 0.2s ease',
     flexShrink: 0,
   },
@@ -114,8 +117,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 2,
     left: 2,
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     borderRadius: '50%',
     backgroundColor: '#fff',
   },

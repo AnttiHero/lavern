@@ -83,11 +83,20 @@ export function CustomCursor({ variant = 'light' }: Props) {
       if (trailRef.current) trailRef.current.style.opacity = '0';
     };
 
+    // Hide cursor when window loses focus (file picker dialogs, tab switches)
+    const onBlur = () => {
+      visible.current = false;
+      if (dotRef.current) dotRef.current.style.opacity = '0';
+      if (trailRef.current) trailRef.current.style.opacity = '0';
+    };
+
     document.addEventListener('mousemove', onMove, { passive: true });
     document.documentElement.addEventListener('mouseleave', onLeave);
+    window.addEventListener('blur', onBlur);
     return () => {
       document.removeEventListener('mousemove', onMove);
       document.documentElement.removeEventListener('mouseleave', onLeave);
+      window.removeEventListener('blur', onBlur);
     };
   }, []);
 

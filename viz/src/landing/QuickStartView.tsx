@@ -189,6 +189,9 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       >
         <div />
         <div className="flex flex-wrap items-center gap-2">
+          <ShimmerButton onClick={() => { window.location.hash = '#/archive'; }}>
+            Archive
+          </ShimmerButton>
           <ShimmerButton onClick={() => { window.location.hash = '#/my-cases'; }}>
             My Cases
           </ShimmerButton>

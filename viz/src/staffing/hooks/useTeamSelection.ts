@@ -3,7 +3,7 @@
  * budget calculation, and team confirmation API call.
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { AgentProfile } from './useAgentProfiles.js';
 import type { TeamPreset } from './useTeamPresets.js';
 
@@ -14,6 +14,11 @@ export function useTeamSelection(
   const [selectedRoles, setSelectedRoles] = useState<Set<string>>(new Set());
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [atCapFlash, setAtCapFlash] = useState(false);
+  const capFlashTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Clean up timer on unmount
+  useEffect(() => () => { clearTimeout(capFlashTimer.current); }, []);
 
   // Track when a preset was last applied — prevents recommendation effect
   // from overwriting a just-applied preset (race condition guard).
@@ -33,7 +38,10 @@ export function useTeamSelection(
       if (next.has(role)) {
         next.delete(role);
       } else if (next.size >= MAX_TEAM_SIZE) {
-        // At cap — don't add
+        // At cap — flash warning, don't add
+        setAtCapFlash(true);
+        clearTimeout(capFlashTimer.current);
+        capFlashTimer.current = setTimeout(() => setAtCapFlash(false), 2000);
         return prev;
       } else {
         next.add(role);
@@ -126,6 +134,7 @@ export function useTeamSelection(
     isSelected: (role: string) => selectedRoles.has(role),
     maxTeamSize: MAX_TEAM_SIZE,
     isAtCap: selectedRoles.size >= MAX_TEAM_SIZE,
+    atCapFlash,
     /** Returns true if a preset was applied within the last 500ms (race guard). */
     wasPresetRecentlyApplied: () => Date.now() - presetAppliedAtRef.current < 500,
   };

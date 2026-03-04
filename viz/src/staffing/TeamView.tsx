@@ -173,6 +173,7 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
     selectedRoles, activePreset, toggleAgent, applyPreset, clearSelection, setRoles,
     totalCost, teamSize, selectedProfiles, confirming,
     confirmTeam, isSelected, wasPresetRecentlyApplied,
+    atCapFlash, maxTeamSize,
   } = useTeamSelection(allProfiles, presets);
 
   const { play } = useSoundEffects();
@@ -304,9 +305,14 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
           {onSkip && (
             <button
               onClick={onSkip}
-              style={styles.skipButton}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.borderColor = colors.text; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; b.style.borderColor = colors.border; }}
+              disabled={teamSize === 0}
+              style={{
+                ...styles.skipButton,
+                opacity: teamSize === 0 ? 0.35 : 1,
+                cursor: teamSize === 0 ? 'default' : 'pointer',
+              }}
+              onMouseEnter={e => { if (teamSize === 0) return; const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.borderColor = colors.text; }}
+              onMouseLeave={e => { if (teamSize === 0) return; const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; b.style.borderColor = colors.border; }}
             >
               Skip {'\u2192'}
             </button>
@@ -444,6 +450,8 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
         onClear={clearSelection}
         intensity={engagementConfig.intensity}
         yoloMode={engagementConfig.yoloMode}
+        atCapFlash={atCapFlash}
+        maxTeamSize={maxTeamSize}
       />
     </div>
   );
