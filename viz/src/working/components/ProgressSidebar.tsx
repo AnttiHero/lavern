@@ -256,6 +256,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontWeight: 500,
     lineHeight: '16px',
+    transition: 'color 0.3s ease',
   },
   stepLabelCurrent: {
     color: colors.text,

@@ -284,6 +284,10 @@ body {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+@keyframes thinkingPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
 
 /* TrophyShelf */
 @keyframes trophyEnter {

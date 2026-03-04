@@ -134,7 +134,10 @@ export function TheWorkTab({ data }: Props) {
                   <span style={styles.scoreArrow}>{'\u2192'}</span>
                   <span style={styles.scoreAfter}>{dim.after.toFixed(1)}</span>
                 </div>
-                <div style={styles.deltaTag}>+{dim.delta.toFixed(1)}</div>
+                <div style={{
+                  ...styles.deltaTag,
+                  ...(dim.delta < 0 ? { color: colors.danger, backgroundColor: 'rgba(196, 93, 62, 0.06)' } : {}),
+                }}>{dim.delta >= 0 ? '+' : ''}{dim.delta.toFixed(1)}</div>
               </div>
             ))}
           </div>

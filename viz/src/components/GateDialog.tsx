@@ -6,7 +6,7 @@
  * Sends approve/reject/modify back via API.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 
 interface GateDialogProps {
@@ -36,6 +36,15 @@ export function GateDialog({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !submitting) onDismiss();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onDismiss, submitting]);
 
   const handleDecision = async (decision: 'approve' | 'reject' | 'modify') => {
     setSubmitting(true);
@@ -111,7 +120,7 @@ export function GateDialog({
 
         {/* Error */}
         {errorMsg && (
-          <div style={{ padding: '0 24px 12px', color: '#C45D3E', fontSize: 12, fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
             {errorMsg}
           </div>
         )}

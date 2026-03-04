@@ -23,18 +23,24 @@ interface Props {
 export function TabBar({ activeTab, onTabChange }: Props) {
   return (
     <div style={styles.bar}>
-      {TABS.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(tab.id)}
-          style={{
-            ...styles.tab,
-            ...(activeTab === tab.id ? styles.tabActive : {}),
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
+      {TABS.map(tab => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            aria-current={isActive ? 'page' : undefined}
+            style={{
+              ...styles.tab,
+              ...(isActive ? styles.tabActive : {}),
+            }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = colors.text; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = colors.textMuted; }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

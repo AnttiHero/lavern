@@ -69,7 +69,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
   },
-  center: { textAlign: 'center' as const, flex: 1 },
+  center: { textAlign: 'center' as const, flex: 1, minWidth: 0, overflow: 'hidden' as const },
   logoType: {
     fontSize: 10,
     fontWeight: 600,
@@ -92,5 +92,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textMuted,
     marginTop: 8,
     textTransform: 'capitalize' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+    whiteSpace: 'nowrap' as const,
   },
 };

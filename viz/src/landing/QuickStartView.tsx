@@ -394,6 +394,8 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
                     backgroundColor: active ? colors.text : 'transparent',
                     borderColor: active ? colors.text : colors.border,
                   }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = colors.borderHover; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = colors.border; }}
                 >
                   <span style={{
                     fontSize: 11,

@@ -6,7 +6,7 @@
  * Clicking navigates home (landing page).
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
 interface MarbleMarkProps {
@@ -20,6 +20,12 @@ interface MarbleMarkProps {
 
 export function MarbleMark({ size = 28, onClick, hideCursor }: MarbleMarkProps) {
   const [hovered, setHovered] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 100);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleClick = () => {
     if (onClick) {
@@ -50,7 +56,7 @@ export function MarbleMark({ size = 28, onClick, hideCursor }: MarbleMarkProps) 
         color: colors.text,
         letterSpacing: 1,
         lineHeight: 1,
-        opacity: hovered ? 1 : 0.5,
+        opacity: mounted ? (hovered ? 1 : 0.5) : 0,
         transition: 'opacity 0.3s ease',
         userSelect: 'none' as const,
       }}

@@ -50,6 +50,8 @@ export function ErrorToast({ message, onDismiss }: ErrorToastProps) {
           onClick={handleDismiss}
           style={styles.dismissBtn}
           aria-label="Dismiss error"
+          onMouseEnter={e => { e.currentTarget.style.color = colors.text; }}
+          onMouseLeave={e => { e.currentTarget.style.color = colors.textDim; }}
         >
           &times;
         </button>
@@ -116,5 +118,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     padding: '0 2px',
     marginTop: -2,
+    transition: 'color 0.2s ease',
   },
 };

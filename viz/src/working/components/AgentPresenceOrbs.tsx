@@ -121,11 +121,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.bg,
     borderRadius: 6,
     padding: '6px 10px',
-    whiteSpace: 'nowrap' as const,
+    whiteSpace: 'normal' as const,
     zIndex: 100,
     pointerEvents: 'none' as const,
     minWidth: 100,
     maxWidth: 220,
+    textAlign: 'center' as const,
   },
   tooltipName: {
     fontSize: 11,

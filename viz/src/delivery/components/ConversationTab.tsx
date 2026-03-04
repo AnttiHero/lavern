@@ -181,13 +181,28 @@ export function ConversationTab({
           <div style={styles.emptyState}>
             <div style={styles.emptyTitle}>What would you like to know?</div>
             <div style={styles.emptyHints}>
-              <button style={styles.hint} onClick={() => setInput('Summarize the key risks in plain language')}>
+              <button
+                style={styles.hint}
+                onClick={() => setInput('Summarize the key risks in plain language')}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
+              >
                 Summarize the key risks
               </button>
-              <button style={styles.hint} onClick={() => setInput('Draft an alternative clause for the most critical finding')}>
+              <button
+                style={styles.hint}
+                onClick={() => setInput('Draft an alternative clause for the most critical finding')}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
+              >
                 Draft an alternative clause
               </button>
-              <button style={styles.hint} onClick={() => setInput('What should we prioritize fixing first?')}>
+              <button
+                style={styles.hint}
+                onClick={() => setInput('What should we prioritize fixing first?')}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
+              >
                 What to fix first?
               </button>
             </div>
@@ -201,7 +216,7 @@ export function ConversationTab({
           >
             <div style={msg.role === 'user' ? styles.userBubble : styles.assistantBubble}>
               {msg.role === 'assistant' && msg.content === '' && streaming ? (
-                <span style={styles.thinking}>Thinking...</span>
+                <span style={styles.thinking}>Thinking<span style={styles.thinkingDots}>...</span></span>
               ) : (
                 <div style={styles.messageText}>{msg.content}</div>
               )}
@@ -230,6 +245,7 @@ export function ConversationTab({
           style={{
             ...styles.sendBtn,
             opacity: streaming || input.trim().length === 0 ? 0.4 : 1,
+            cursor: streaming || input.trim().length === 0 ? 'not-allowed' : 'pointer',
           }}
         >
           Send
@@ -356,6 +372,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  thinkingDots: {
+    animation: 'thinkingPulse 1.4s ease-in-out infinite',
   },
 
   inputRow: {

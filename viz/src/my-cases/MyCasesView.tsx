@@ -151,7 +151,12 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
 
         <div style={styles.activeGrid}>
           {activeSessions.map((s) => (
-            <div key={s.id} style={styles.activeCard}>
+            <div
+              key={s.id}
+              style={styles.activeCard}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = colors.borderHover; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; }}
+            >
               <div style={styles.activeCardTop}>
                 <div style={styles.activeCardInfo}>
                   <span style={styles.stepBadge}>{s.currentStep.replace(/_/g, ' ')}</span>
@@ -195,7 +200,12 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
               ? new Date(s.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
               : '';
             return (
-              <div key={s.id} style={styles.pastCard}>
+              <div
+                key={s.id}
+                style={styles.pastCard}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.borderHover; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; }}
+              >
                 <div style={styles.pastCardHeader}>
                   <span style={styles.pastTitle}>{s.title}</span>
                   {tierLabel && <span style={styles.tierBadge}>{tierLabel}</span>}
@@ -328,7 +338,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: '14px 18px',
-    transition: 'border-color 0.15s ease',
+    transition: 'border-color 0.2s ease',
   },
   activeCardTop: {
     display: 'flex',
@@ -392,6 +402,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 8,
+    transition: 'border-color 0.2s ease',
   },
   pastCardHeader: {
     display: 'flex',

@@ -189,6 +189,8 @@ export function DownloadPanel({ data }: Props) {
             ...(saveStatus === 'done' ? styles.saveToFolderDone : {}),
             ...(saveStatus === 'error' ? styles.saveToFolderError : {}),
           }}
+          onMouseEnter={e => { if (saveStatus === 'idle') e.currentTarget.style.backgroundColor = colors.accentLight; }}
+          onMouseLeave={e => { if (saveStatus === 'idle') e.currentTarget.style.backgroundColor = colors.bgCard; }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0 }}>
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -399,7 +401,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardDisabled: {
     opacity: 0.5,
-    cursor: 'default',
+    cursor: 'not-allowed',
   },
   cardIcon: {
     fontSize: 22,
@@ -453,13 +455,13 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background-color 0.15s ease, border-color 0.15s ease',
   },
   saveToFolderDone: {
-    borderColor: '#4a9',
-    color: '#4a9',
+    borderColor: colors.success,
+    color: colors.success,
     cursor: 'default',
   },
   saveToFolderError: {
-    borderColor: '#c66',
-    color: '#c66',
+    borderColor: colors.danger,
+    color: colors.danger,
     cursor: 'default',
   },
 };
