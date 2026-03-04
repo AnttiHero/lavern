@@ -264,7 +264,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           className="text-[13px] sm:text-sm font-serif text-text-muted mt-4 tracking-[0.3px] leading-normal"
           style={{ animation: 'qsFadeIn 0.5s ease 0.3s both' }}
         >
-          57 agents. Every discipline. Waiting on your instruction.
+          49 agents. Every discipline. Waiting on your instruction.
         </p>
         {/* Decorative rule */}
         <div
