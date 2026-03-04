@@ -1,6 +1,6 @@
 # Marble (The Shem)
 
-Multi-agent legal design system. Transforms legal documents through collaborative AI analysis and human-centered design.
+The world's first driverless law firm. Multi-agent legal design system that transforms legal documents through collaborative AI analysis and human-centered design.
 
 > **Disclaimer:** This system assists with document design and accessibility. It does not provide legal advice. Always verify outputs with qualified legal professionals.
 
@@ -13,16 +13,16 @@ npm install
 # Run in CLI mode (interactive)
 npm run dev -- ./path/to/document.pdf
 
-# Run as API server
+# Run as API server + dashboard
 npm run serve
 
-# Run as API server with custom port
-npm run serve:dev
+# Start dashboard dev server
+npm run dev:viz
 ```
 
 ## Architecture
 
-Marble uses a multi-agent pipeline where 66 specialist agents collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
+Marble uses a multi-agent pipeline where 64 agents (57 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
 
 ### Core Concepts
 
@@ -31,23 +31,40 @@ Marble uses a multi-agent pipeline where 66 specialist agents collaborate to ana
 - **Human Gates** — Mandatory approval checkpoints before irreversible actions
 - **Verification Pipeline** — 10-pass verification with self-check, cross-check, and score dimensions
 - **Dual Artifacts** — Every engagement produces both a deliverable and an audit trail
+- **Soul** — User-defined firm personality that shapes how agents communicate and make decisions
+- **Document Assembly** — Post-pipeline assembly step produces clean deliverables (Markdown, HTML, DOCX)
+
+### Dashboard
+
+React SPA with editorial design language (Inter + Cormorant Garamond, warm cream palette).
+
+**Flow:** Landing → Briefing → Strategy → Team → Working → Delivery
+
+- **Landing** — QuickStart with 3-tier express engagement (Quick / Standard / Deep)
+- **Briefing** — LLM-powered intake with document upload
+- **Strategy** — Workflow, intensity, budget configuration
+- **Team** — Agent selection with DiceBear avatars, personality bars, skill radars
+- **Working** — Live progress sidebar, agent presence orbs, insight feed, debate threads
+- **Delivery** — Tabbed view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), Cowork folder save, derivative document generation
+- **My Page** — User profile, custom instructions, Marble's Soul editor, saved teams
+- **My Cases** — Session history (active + past engagements)
 
 ### Claw Mode (Law Firm on Retainer)
 
-Autonomous document processing. Drop files in a watched folder; Marble reviews them in the background and delivers analysis bundles. Supports dual-model confidentiality: documents matching sensitivity patterns (e.g., `*confidential*`, `*privileged*`) are analyzed entirely on-device using a local model (Ollama) to preserve attorney-client privilege.
+Autonomous document processing. Drop files in a watched folder; Marble reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins and dual-model confidentiality (sensitive documents analyzed on-device via Ollama).
 
 ```bash
 # Initialize Claw Mode
 npm run dev -- --claw init
 
-# Start the daemon
+# Start watching
 npm run dev -- --claw start
 ```
 
 ## Development
 
 ```bash
-# Run tests
+# Run tests (565 tests across 31 files)
 npm test
 
 # Run tests in watch mode
@@ -85,7 +102,13 @@ Default: `http://localhost:3000`
 | `/api/sessions` | POST | Create analysis session |
 | `/api/sessions/:id/events` | GET | WebSocket event stream |
 | `/api/sessions/:id/gate` | POST | Submit gate decision |
+| `/api/sessions/:id/download` | GET | Download work product |
+| `/api/sessions/:id/derivatives` | POST | Generate derivative document |
+| `/api/sessions/:id/conversation` | POST | Ask the team (SSE streaming) |
 | `/api/engage` | POST | Agent-native engagement (sync + webhook) |
+| `/api/auth/signup` | POST | User registration |
+| `/api/auth/login` | POST | User login (sets cookie) |
+| `/api/auth/profile` | PUT | Update profile (incl. soul) |
 | `/api/capabilities` | GET | Machine-readable service manifest |
 | `/.well-known/agent.json` | GET | A2A agent card |
 | `/dashboard/` | GET | Visual dashboard (if built) |
@@ -106,10 +129,10 @@ curl -X POST http://localhost:3000/api/clients \
 
 ### Configuration
 
-All settings are environment-variable configurable. See `scripts/env.production.template` for the full list.
+All settings are environment-variable configurable. See `.env.example` for the full list.
 
 ```bash
-cp scripts/env.production.template .env
+cp .env.example .env
 # Edit .env with your values
 ```
 
@@ -123,27 +146,39 @@ Key variables:
 
 ```
 src/
-├── agents/          # 66 agent definitions and prompts
+├── agents/          # 64 agent prompts (57 specialists + 7 orchestrators)
 ├── api/             # Fastify API server + WebSocket
-│   ├── middleware/   # Auth, validation, payment
-│   └── routes/      # Session, engage, matters, auth, claw, etc.
-├── claw/            # Claw Mode (autonomous document processing)
-├── db/              # SQLite persistence
+│   ├── middleware/   # Auth, validation, x402 payment
+│   └── routes/      # 16 route modules
+├── assembly/        # Document assembly + format conversion (HTML, DOCX)
+├── claw/            # Claw Mode (13 modules: watch, plan, process, deliver, heartbeat)
+├── db/              # SQLite persistence (users, tokens, sessions, matters)
 ├── documents/       # Document parser (PDF, DOCX, MD, TXT)
 ├── events/          # Event bus for real-time streaming
-├── gates/           # Human gate resolvers
+├── gates/           # Human gate resolvers (readline, async, webhook, auto-approve)
 ├── hooks/           # Audit logging, gate enforcement, cost tracking
 ├── knowledge-base/  # Reference document collections (FTS)
 ├── mcp/tools/       # 21 MCP tool modules
 ├── router/          # LLM request router + deterministic fallback
 ├── session/         # Session state + session manager
-├── workflows/       # 11 workflow templates
+├── workflows/       # 11 workflow templates + executor
 ├── config.ts        # Centralized configuration
 └── index.ts         # CLI entry point
 
-viz/                 # React + Phaser dashboard
-tests/               # 557 tests across 31 files
-scripts/             # Production templates, Caddyfile, keychain setup
+viz/                 # React dashboard (23 feature directories)
+├── landing/         # Landing, QuickStart, YOLO launcher
+├── briefing/        # LLM intake + document upload
+├── staffing/        # Strategy, team selection, agent cards
+├── working/         # Live progress (23 components)
+├── delivery/        # Tabbed delivery (12 components)
+├── my-page/         # Profile + soul editor
+├── my-cases/        # Session history
+├── cowork/          # Cowork folder mode (File System Access API)
+└── components/      # Shared (GateDialog, ErrorToast, MarbleMark)
+
+tests/               # 565 tests across 31 files
+SOUL.md              # Default firm personality (CLI/Claw fallback)
+CLAUDE.md            # Project documentation
 ```
 
 ## License
