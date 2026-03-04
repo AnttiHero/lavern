@@ -131,6 +131,9 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /api/reputation',    // Machine-readable trust signal
     // Session creation — QuickStart express lane (no login required)
     'POST /api/sessions',
+    // Briefing — intake flow before login
+    'POST /api/briefing/interview',
+    'POST /api/briefing/analyze',
     // User auth routes (public by definition)
     'POST /api/auth/signup',
     'POST /api/auth/login',

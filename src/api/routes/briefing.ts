@@ -53,7 +53,7 @@ async function callAnthropic(params: {
     method: 'POST',
     headers: {
       'x-api-key': API_KEY,
-      'anthropic-version': '2025-04-15',
+      'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
     body: JSON.stringify({
@@ -207,7 +207,7 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
         method: 'POST',
         headers: {
           'x-api-key': API_KEY,
-          'anthropic-version': '2025-04-15',
+          'anthropic-version': '2023-06-01',
           'content-type': 'application/json',
         },
         body: JSON.stringify({

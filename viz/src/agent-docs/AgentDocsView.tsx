@@ -428,7 +428,7 @@ export default function AgentDocsView({ onBack }: Props) {
           </div>
 
           <div style={sty.metricGrid}>
-            <MetricCard value="57" label="Specialist Agents" />
+            <MetricCard value="49" label="Specialist Agents" />
             <MetricCard value="40+" label="MCP Tools" />
             <MetricCard value="4" label="Workflows" />
             <MetricCard value="5" label="Jurisdictions" />

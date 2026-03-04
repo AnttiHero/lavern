@@ -326,7 +326,7 @@ export default function BetTheCompanyView({ onBack }: Props) {
         {/* ---- By the Numbers ------------------------------------------ */}
         <Section label="By the Numbers" delay={0.3}>
           <div style={sty.metricGrid}>
-            <MetricCard value="57" label="Specialist Agents" />
+            <MetricCard value="49" label="Specialist Agents" />
             <MetricCard value="14+" label="Senior Team" />
             <MetricCard value="Human" label="Expert Review" />
             <MetricCard value="All" label="Gates Manual" />
