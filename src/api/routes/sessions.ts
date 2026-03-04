@@ -150,6 +150,7 @@ export function registerSessionRoutes(
         intensity: body.options?.intensity,
         effort: body.options?.effort,
         yoloMode: body.options?.yoloMode,
+        verification: body.options?.verification,
       }).catch((err) => {
         console.error(`[API] Session ${session.id} failed:`, err);
         session.events.emitEvent({

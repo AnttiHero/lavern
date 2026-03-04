@@ -43,7 +43,7 @@ function ShimmerButton({
         'relative overflow-hidden border-[1.5px] border-text rounded-sm',
         'font-sans text-[11px] font-semibold tracking-[1.5px] uppercase',
         'px-3 py-1.5 sm:px-5 sm:py-2',
-        'lg:cursor-none cursor-pointer',
+        'cursor-pointer',
         'transition-[background-color,color,border-color] duration-250 ease-in-out',
         className,
       )}
@@ -107,44 +107,15 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const [ready, setReady] = useState(false);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const mousePos = useRef({ x: 0, y: 0 });
-  const ringPos = useRef({ x: 0, y: 0 });
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  // Ring follows with spring-like lag
-  useEffect(() => {
-    if (!ready) return;
-    const animate = () => {
-      const dx = mousePos.current.x - ringPos.current.x;
-      const dy = mousePos.current.y - ringPos.current.y;
-      ringPos.current.x += dx * 0.12;
-      ringPos.current.y += dy * 0.12;
-      if (ringRef.current) {
-        ringRef.current.style.transform =
-          `translate(${ringPos.current.x}px, ${ringPos.current.y}px)`;
-      }
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [ready]);
-
-  // Custom cursor + subtle marble parallax
+  // Subtle marble parallax on mouse move
   const onMouseMove = useCallback((e: React.MouseEvent) => {
-    mousePos.current = { x: e.clientX, y: e.clientY };
-    if (dotRef.current) {
-      dotRef.current.style.opacity = '1';
-      dotRef.current.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    }
-    if (ringRef.current) ringRef.current.style.opacity = '1';
     if (imgRef.current) {
       const cx = (e.clientX / window.innerWidth - 0.5) * 8;
       const cy = (e.clientY / window.innerHeight - 0.5) * 8;
@@ -153,8 +124,6 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
   }, []);
 
   const onMouseLeave = useCallback(() => {
-    if (dotRef.current) dotRef.current.style.opacity = '0';
-    if (ringRef.current) ringRef.current.style.opacity = '0';
     if (imgRef.current) imgRef.current.style.transform = 'scale(1.03)';
   }, []);
 
@@ -164,20 +133,10 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8] cursor-auto lg:cursor-none"
+      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8]"
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Custom cursor (desktop only via JS opacity) ─────────── */}
-      <div
-        ref={dotRef}
-        className="fixed -top-1 -left-1 w-2 h-2 rounded-full bg-text pointer-events-none z-[9999] will-change-transform opacity-0 transition-opacity duration-300 hidden lg:block"
-      />
-      <div
-        ref={ringRef}
-        className="fixed -top-4 -left-4 w-8 h-8 rounded-full bg-[rgba(26,26,26,0.06)] blur-[8px] pointer-events-none z-[9998] will-change-transform opacity-0 transition-opacity duration-300 hidden lg:block"
-      />
-
       {/* ── Full-bleed marble texture ──────────────────────────── */}
       <img
         ref={imgRef}

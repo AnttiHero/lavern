@@ -1,11 +1,13 @@
 /**
- * ChallengeCard — An adversarial challenge against a finding.
+ * ChallengeCard — An adversarial challenge against a finding, as a speech bubble.
  *
- * Amber left border. Shows the challenger name, the target finding reference,
- * the challenge argument text, and supporting evidence quotes.
+ * Layout: AgentAvatar (32px) left, speech-bubble with amber left border.
+ * Rendered indented in debate threads to read as a reply.
  */
 
 import type { StreamCard } from '../hooks/useWorkingState.js';
+import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
+import { AgentAvatar } from './AgentAvatar.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 type ChallengeData = Extract<StreamCard, { kind: 'challenge' }>;
@@ -14,63 +16,68 @@ interface ChallengeCardProps {
   card: ChallengeData;
   resolveAgentName: (role: string) => string;
   agentColor: string;
+  profile?: AgentProfile;
 }
 
-export function ChallengeCard({ card, resolveAgentName, agentColor }: ChallengeCardProps) {
+export function ChallengeCard({ card, resolveAgentName, agentColor, profile }: ChallengeCardProps) {
   const agentName = resolveAgentName(card.challenger);
   const time = new Date(card.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   return (
-    <div style={styles.card}>
-      <div style={styles.header}>
-        <div style={{ ...styles.agentDot, backgroundColor: agentColor }} />
-        <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
-        <span style={styles.challengeLabel}>challenges</span>
-        <span style={styles.targetRef}>{card.targetFindingId}</span>
-        <span style={styles.time}>{time}</span>
+    <div style={styles.row}>
+      <AgentAvatar role={card.challenger} size="md" profile={profile} />
+
+      <div style={styles.bubble}>
+        <div style={styles.header}>
+          <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
+          <span style={styles.challengeLabel}>challenges</span>
+          <span style={styles.targetRef}>{card.targetFindingId}</span>
+          <span style={styles.time}>{time}</span>
+        </div>
+
+        {/* Challenge argument */}
+        {card.challengeText && (
+          <div style={styles.body}>
+            <span style={styles.content}>{card.challengeText}</span>
+          </div>
+        )}
+
+        {/* Evidence quotes */}
+        {card.evidence.length > 0 && (
+          <div style={styles.evidenceBlock}>
+            {card.evidence.map((e, i) => (
+              <div key={i} style={styles.evidenceLine}>
+                <span style={styles.evidenceBar} />
+                <span style={styles.evidenceText}>{e}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Challenge argument */}
-      {card.challengeText && (
-        <div style={styles.body}>
-          <span style={styles.content}>{card.challengeText}</span>
-        </div>
-      )}
-
-      {/* Evidence quotes */}
-      {card.evidence.length > 0 && (
-        <div style={styles.evidenceBlock}>
-          {card.evidence.map((e, i) => (
-            <div key={i} style={styles.evidenceLine}>
-              <span style={styles.evidenceBar} />
-              <span style={styles.evidenceText}>{e}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: {
-    backgroundColor: colors.bgCard,
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  bubble: {
+    flex: 1,
+    backgroundColor: 'rgba(184, 134, 11, 0.03)',
     border: `1px solid ${colors.border}`,
     borderLeft: `3px solid ${colors.warning}`,
     borderRadius: radii.md,
     padding: '12px 14px',
+    minWidth: 0,
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
     marginBottom: 8,
-  },
-  agentDot: {
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
-    flexShrink: 0,
   },
   agentName: {
     fontSize: 12,

@@ -4,6 +4,9 @@
  * One generous input card. Bold serif heading. Everything else
  * inside the card's bottom bar. Extreme restraint.
  *
+ * v2: "More Marble" — tier hints, shimmer buttons, stronger
+ *     marble texture, decorative rule, card elevation.
+ *
  * Inspired by Cowork's "one thing" design, but with
  * law-firm gravity instead of productivity-tool energy.
  */
@@ -20,29 +23,78 @@ import type { FrontendParsedDocument } from '../briefing/hooks/useDocumentUpload
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-type EngagementTier = 'advisory' | 'comprehensive';
+type EngagementTier = 'counsel' | 'review' | 'full-bench';
 
 const TIER_MAP: Record<EngagementTier, YoloTier> = {
-  advisory: 'standard',
-  comprehensive: 'white-shoe',
+  counsel: 'standard',
+  review: 'white-shoe',
+  'full-bench': 'elite',
 };
 
 interface QuickStartProps {
   onQuickStart: (question: string, tier: YoloTier, parsedDocs: FrontendParsedDocument[]) => Promise<void>;
   onGuidedFlow: () => void;
+  onBetTheCompany?: () => void;
+}
+
+// ── Shimmer Button (borrowed from LobbyView) ──────────────────────────
+
+function ShimmerButton({
+  onClick,
+  className,
+  style: btnStyle,
+  children,
+}: {
+  onClick: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'relative overflow-hidden border-[1.5px] border-text rounded-sm',
+        'font-sans text-[11px] font-semibold tracking-[1px] uppercase',
+        'px-[18px] py-2 cursor-pointer',
+        'transition-[background-color,color,border-color] duration-250 ease-in-out',
+        className,
+      )}
+      style={{
+        ...btnStyle,
+        backgroundColor: hovered ? colors.text : 'transparent',
+        color: hovered ? '#fff' : colors.text,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+      {hovered && (
+        <span
+          className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
+            animation: 'marbleShimmer 0.6s ease forwards',
+          }}
+        />
+      )}
+    </button>
+  );
 }
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStartProps) {
+export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCompany }: QuickStartProps) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Core state
   const [question, setQuestion] = useState('');
-  const [tier, setTier] = useState<EngagementTier>('advisory');
+  const [tier, setTier] = useState<EngagementTier>('counsel');
   const [submitting, setSubmitting] = useState(false);
+  const [instructHovered, setInstructHovered] = useState(false);
 
   // Document upload
   const {
@@ -62,7 +114,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
 
   // Smart defaults
   useEffect(() => {
-    setTier(documents.length > 0 ? 'comprehensive' : 'advisory');
+    setTier(documents.length > 0 ? 'review' : 'counsel');
   }, [documents.length]);
 
   // Auto-focus textarea on mount
@@ -91,15 +143,10 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
     }
   }, [handleSubmit]);
 
-  // ── Shared hover handler for nav buttons ──
-  const navBtnEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = colors.text;
-    e.currentTarget.style.color = '#fff';
-  };
-  const navBtnLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = 'transparent';
-    e.currentTarget.style.color = colors.text;
-  };
+  // Tier configs for hints
+  const counselConfig = YOLO_CONFIGS['standard'];
+  const reviewConfig = YOLO_CONFIGS['white-shoe'];
+  const eliteConfig = YOLO_CONFIGS['elite'];
 
   return (
     <div
@@ -108,83 +155,39 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {/* ── Marble texture — very faint ───────────────────── */}
+      {/* ── Marble texture — subtle but visible ──────────── */}
       <img
-        src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+        src={`${import.meta.env.BASE_PATH ?? import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-        style={{ filter: 'contrast(0.6) brightness(1.25) saturate(0.15)', opacity: 0.12 }}
+        style={{ filter: 'contrast(0.65) brightness(1.2) saturate(0.2)', opacity: 0.18 }}
       />
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: `linear-gradient(180deg, ${colors.bg} 0%, rgba(250,249,246,0.85) 40%, ${colors.bg} 100%)` }}
+        style={{ background: `linear-gradient(180deg, ${colors.bg} 0%, rgba(250,249,246,0.82) 40%, ${colors.bg} 100%)` }}
       />
 
-      {/* ── Top nav ──────────────────────────────────────── */}
+      {/* ── Top nav (shimmer buttons) ────────────────────── */}
       <div
         className="relative z-2 w-full flex justify-between items-center pt-5 px-7 box-border"
         style={{ animation: 'qsFadeIn 0.6s ease 0.8s both' }}
       >
         <div />
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => { window.location.hash = '#/my-cases'; }}
-            className={cn(
-              'flex items-center px-[18px] py-2 rounded-sm border-[1.5px] border-text',
-              'bg-transparent font-sans text-[11px] font-semibold cursor-pointer',
-              'tracking-[1px] uppercase whitespace-nowrap',
-              'transition-[background-color,color] duration-250 ease-in-out',
-            )}
-            style={{ color: colors.text }}
-            onMouseEnter={navBtnEnter}
-            onMouseLeave={navBtnLeave}
-          >
+          <ShimmerButton onClick={() => { window.location.hash = '#/my-cases'; }}>
             My Cases
-          </button>
-          <button
-            onClick={() => { window.location.hash = '#/my-page'; }}
-            className={cn(
-              'flex items-center px-[18px] py-2 rounded-sm border-[1.5px] border-text',
-              'bg-transparent font-sans text-[11px] font-semibold cursor-pointer',
-              'tracking-[1px] uppercase whitespace-nowrap',
-              'transition-[background-color,color] duration-250 ease-in-out',
-            )}
-            style={{ color: colors.text }}
-            onMouseEnter={navBtnEnter}
-            onMouseLeave={navBtnLeave}
-          >
+          </ShimmerButton>
+          <ShimmerButton onClick={() => { window.location.hash = '#/my-page'; }}>
             My Page
-          </button>
+          </ShimmerButton>
           {!isLoggedIn ? (
-            <button
-              onClick={() => { window.location.hash = '#/login'; }}
-              className={cn(
-                'flex items-center px-[18px] py-2 rounded-sm border-[1.5px] border-text',
-                'bg-transparent font-sans text-[11px] font-semibold cursor-pointer',
-                'tracking-[1px] uppercase whitespace-nowrap',
-                'transition-[background-color,color] duration-250 ease-in-out',
-              )}
-              style={{ color: colors.text }}
-              onMouseEnter={navBtnEnter}
-              onMouseLeave={navBtnLeave}
-            >
+            <ShimmerButton onClick={() => { window.location.hash = '#/login'; }}>
               Sign In
-            </button>
+            </ShimmerButton>
           ) : (
-            <button
-              onClick={() => { userCtx!.logout(); }}
-              className={cn(
-                'flex items-center px-[18px] py-2 rounded-sm border-[1.5px] border-text',
-                'bg-transparent font-sans text-[11px] font-semibold cursor-pointer',
-                'tracking-[1px] uppercase whitespace-nowrap',
-                'transition-[background-color,color] duration-250 ease-in-out',
-              )}
-              style={{ color: colors.text }}
-              onMouseEnter={navBtnEnter}
-              onMouseLeave={navBtnLeave}
-            >
+            <ShimmerButton onClick={() => { userCtx!.logout(); }}>
               Sign Out
-            </button>
+            </ShimmerButton>
           )}
         </div>
       </div>
@@ -195,14 +198,19 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
           className="text-3xl sm:text-4xl lg:text-[52px] font-light font-serif text-text m-0 tracking-tight leading-[1.15]"
           style={{ animation: 'qsFadeUp 0.8s ease 0.15s both' }}
         >
-          Your firm is ready.
+          Your firm is{' '}<span className="italic">ready.</span>
         </h1>
         <p
-          className="text-sm font-sans text-text-muted mt-4 tracking-[0.3px] leading-normal"
+          className="text-[13px] sm:text-sm font-serif text-text-muted mt-4 tracking-[0.3px] leading-normal"
           style={{ animation: 'qsFadeIn 0.6s ease 0.5s both' }}
         >
           57 agents. Every discipline. Waiting on your instruction.
         </p>
+        {/* Decorative rule */}
+        <div
+          className="mx-auto mt-5 w-16 h-px bg-border origin-center"
+          style={{ animation: 'qsLineGrow 0.6s ease 0.65s both' }}
+        />
       </div>
 
       {/* ── The Card — unified input area ─────────────────── */}
@@ -210,12 +218,12 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
         className={cn(
           'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto',
           'bg-bg-card rounded-xl p-0 box-border overflow-hidden',
-          'shadow-[0_2px_20px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)]',
-          'transition-[border-color] duration-300 ease-in-out',
+          'transition-[border-color,box-shadow] duration-300 ease-in-out',
         )}
         style={{
           animation: 'qsFadeUp 0.6s ease 0.3s both',
-          border: `1.5px solid ${isDragOver ? colors.accent : 'rgba(0,0,0,0.08)'}`,
+          border: `1.5px solid ${isDragOver ? colors.accent : 'rgba(0,0,0,0.06)'}`,
+          boxShadow: '0 2px 24px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)',
         }}
       >
         {/* Textarea */}
@@ -231,6 +239,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
             'text-base lg:text-[17px] font-serif text-text',
             'bg-transparent border-none resize-none outline-none',
             'leading-[1.7] box-border min-h-[120px]',
+            'placeholder:font-serif placeholder:italic placeholder:text-text-dim',
           )}
         />
 
@@ -269,10 +278,8 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
               'font-sans text-[13px] cursor-pointer',
               'py-1.5 px-2.5 rounded-sm',
               'transition-colors duration-200 ease-in-out whitespace-nowrap',
+              'text-text-muted hover:text-text',
             )}
-            style={{ color: colors.textMuted }}
-            onMouseEnter={e => { e.currentTarget.style.color = colors.text; }}
-            onMouseLeave={e => { e.currentTarget.style.color = colors.textMuted; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
@@ -291,43 +298,58 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
           />
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            {/* Tier toggle */}
-            <div className="flex rounded-sm border border-border overflow-hidden">
-              <button
-                onClick={() => setTier('advisory')}
-                className={cn(
-                  'py-1.5 px-3.5 text-[11px] font-sans font-semibold',
-                  'tracking-[0.5px] border-none cursor-pointer',
-                  'transition-[background-color,color] duration-200 ease-in-out whitespace-nowrap',
-                )}
-                style={{
-                  backgroundColor: tier === 'advisory' ? colors.text : 'transparent',
-                  color: tier === 'advisory' ? '#fff' : colors.textMuted,
-                }}
-              >
-                Advisory
-              </button>
-              <button
-                onClick={() => setTier('comprehensive')}
-                className={cn(
-                  'py-1.5 px-3.5 text-[11px] font-sans font-semibold',
-                  'tracking-[0.5px] border-none cursor-pointer',
-                  'transition-[background-color,color] duration-200 ease-in-out whitespace-nowrap',
-                )}
-                style={{
-                  backgroundColor: tier === 'comprehensive' ? colors.text : 'transparent',
-                  color: tier === 'comprehensive' ? '#fff' : colors.textMuted,
-                }}
-              >
-                Full Review
-              </button>
+            {/* ── Tier selector with hints ────────────────── */}
+            <div className="flex gap-1.5 flex-1">
+              {([
+                { key: 'counsel' as EngagementTier, name: 'Counsel', hint: `Expert opinion \u00B7 up to $${counselConfig.budgetUsd}` },
+                { key: 'review' as EngagementTier, name: 'Review', hint: `Dedicated team \u00B7 up to $${reviewConfig.budgetUsd}` },
+                { key: 'full-bench' as EngagementTier, name: 'Full Bench', hint: `Every specialist \u00B7 up to $${eliteConfig.budgetUsd}` },
+              ]).map(t => {
+                const active = tier === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTier(t.key)}
+                    className={cn(
+                      'flex-1 flex flex-col items-start py-2 px-3 rounded-md border cursor-pointer',
+                      'transition-all duration-200 ease-in-out',
+                    )}
+                    style={{
+                      backgroundColor: active ? colors.text : 'transparent',
+                      borderColor: active ? colors.text : colors.border,
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-sans)',
+                      letterSpacing: 0.5,
+                      color: active ? '#fff' : colors.text,
+                      transition: 'color 0.2s ease',
+                    }}>
+                      {t.name}
+                    </span>
+                    <span style={{
+                      fontSize: 10,
+                      fontFamily: 'var(--font-sans)',
+                      color: active ? 'rgba(255,255,255,0.6)' : colors.textDim,
+                      marginTop: 1,
+                      transition: 'color 0.2s ease',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {t.hint}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Submit */}
+            {/* ── Submit with shimmer ─────────────────────── */}
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
               className={cn(
+                'relative overflow-hidden',
                 'py-2.5 px-7 rounded-sm border-none',
                 'font-sans text-sm font-semibold tracking-[0.5px]',
                 'transition-[background-color,opacity] duration-200 ease-in-out whitespace-nowrap',
@@ -338,16 +360,19 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
                 opacity: canSubmit ? 1 : 0.35,
                 cursor: canSubmit ? 'pointer' : 'default',
               }}
-              onMouseEnter={e => {
-                if (!canSubmit) return;
-                e.currentTarget.style.backgroundColor = '#a04a2e';
-              }}
-              onMouseLeave={e => {
-                if (!canSubmit) return;
-                e.currentTarget.style.backgroundColor = colors.accent;
-              }}
+              onMouseEnter={() => canSubmit && setInstructHovered(true)}
+              onMouseLeave={() => setInstructHovered(false)}
             >
               {submitting ? 'Instructing\u2026' : 'Instruct \u2192'}
+              {instructHovered && canSubmit && (
+                <span
+                  className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                    animation: 'marbleShimmer 0.6s ease forwards',
+                  }}
+                />
+              )}
             </button>
           </div>
         </div>
@@ -388,6 +413,18 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
         }}
       >
         <div className="flex-1">
+          <span style={{
+              fontSize: 10,
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 600,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase' as const,
+              color: colors.textDim,
+              marginBottom: 4,
+              display: 'block',
+            }}>
+              Recommended
+            </span>
           <h3 className="text-[22px] font-light font-serif text-text m-0 tracking-tight">
             The Full Engagement
           </h3>
@@ -400,6 +437,46 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow }: QuickStar
           <span className="text-xl text-text">{'\u2192'}</span>
         </div>
       </div>
+
+      {/* ── Bet the Company ─────────────────────────────── */}
+      {onBetTheCompany && (
+        <div
+          className={cn(
+            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-3 box-border',
+            'flex flex-col sm:flex-row items-start sm:items-center gap-6',
+            'p-5 sm:p-6 lg:px-8 lg:py-7',
+            'rounded-xl cursor-pointer',
+            'transition-[border-color,background-color,box-shadow] duration-300 ease-in-out',
+          )}
+          style={{
+            animation: 'qsFadeUp 0.6s ease 0.9s both',
+            backgroundColor: 'rgba(255,255,255,0.7)',
+            border: '1.5px solid rgba(0,0,0,0.06)',
+          }}
+          onClick={onBetTheCompany}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = colors.borderHover;
+            e.currentTarget.style.backgroundColor = colors.bgCard;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.7)';
+          }}
+        >
+          <div className="flex-1">
+            <h3 className="text-[22px] font-light font-serif text-text m-0 tracking-tight">
+              Bet the Company
+            </h3>
+            <p className="text-[13px] font-sans text-text-muted mt-2 leading-relaxed tracking-[0.15px]">
+              White-glove service. AI analysis reviewed by human legal professionals
+              before anything reaches you. For when the stakes are highest.
+            </p>
+          </div>
+          <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
+            <span className="text-xl text-text">{'\u2192'}</span>
+          </div>
+        </div>
+      )}
 
       {/* ── Footer ───────────────────────────────────────── */}
       <div

@@ -28,6 +28,7 @@ export const fullBenchTemplate: WorkflowTemplate = {
     'workstream_execution',
     'senior_review',
     'synthesis',
+    'verification_pass',
     'final_gate',
     'delivered',
   ],
@@ -64,10 +65,15 @@ export const fullBenchTemplate: WorkflowTemplate = {
       maxIterations: 2,
       qualityCheckType: 'self',
     },
+    verification_pass: {
+      name: 'verification_pass',
+      description: '10-pass verification pipeline on the synthesized deliverable. Context, UX, clarity, structure, accuracy, completeness, risk, formatting, legal design, delivery readiness. Produces Verification Report with severity-categorized findings and verdict.',
+      preconditions: ['synthesis'],
+    },
     final_gate: {
       name: 'final_gate',
       description: 'Human approval before delivering the full bench analysis.',
-      preconditions: ['synthesis'],
+      preconditions: ['verification_pass'],
       requiresGateApproval: true,
       gateType: 'final_delivery',
     },
@@ -139,6 +145,14 @@ export const fullBenchTemplate: WorkflowTemplate = {
     // Quality check iteration loops
     'mcp__shem__run_quality_check',
     'mcp__shem__record_quality_result',
+    // Verification pipeline (10-pass quality check)
+    'mcp__shem__start_verification_pipeline',
+    'mcp__shem__record_pass_result',
+    'mcp__shem__get_verification_status',
+    'mcp__shem__compile_verification_report',
+    'mcp__shem__calculate_findability_score',
+    'mcp__shem__check_document_structure',
+    'mcp__shem__check_document_formatting',
   ],
   requiredAgents: [
     'managing-partner',
@@ -204,6 +218,18 @@ export const fullBenchTemplate: WorkflowTemplate = {
         'mcp__shem__record_anti_pattern',
       ],
       reason: 'Synthesis phase: assemble artifacts, save precedents, compile report card.',
+    },
+    verification_pass: {
+      denyTools: [
+        'mcp__shem__post_finding',
+        'mcp__shem__post_challenge',
+        'mcp__shem__post_response',
+        'mcp__shem__resolve_debate',
+        'mcp__shem__request_approval',
+        'mcp__shem__run_evaluator_gate',
+        'mcp__shem__record_evaluation_result',
+      ],
+      reason: 'Verification phase: 10-pass quality pipeline in progress.',
     },
     final_gate: {
       denyTools: [

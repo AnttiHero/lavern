@@ -72,6 +72,7 @@ export interface WorkingState {
 
 export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
+  const completionFiredRef = useRef(false);
 
   // Connection
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -118,6 +119,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     } else if (event.type === 'gate_decided') {
       setPendingGate(null);
     } else if (event.type === 'session_end') {
+      completionFiredRef.current = true;
       setCompletedSteps(prev =>
         prev.includes('delivered') ? prev : [...prev, 'delivered']
       );
@@ -174,6 +176,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     setCompletedSteps([]);
     setCost(undefined);
     setPendingGate(null);
+    completionFiredRef.current = false;
 
     // Demo sessions are handled by useDemoSimulator — skip WS connection
     if (id.startsWith('demo-session-')) {
@@ -238,6 +241,39 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Periodic completion check ─────────────────────────────────────────
+  // If the session_end WebSocket event is lost (e.g. archive error), this
+  // poll detects that the workflow reached 'delivered' and navigates.
+
+  useEffect(() => {
+    if (!sessionId || sessionId.startsWith('demo-session-') || completionFiredRef.current) return;
+
+    const poll = setInterval(async () => {
+      if (completionFiredRef.current) { clearInterval(poll); return; }
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const step = data.workflow?.currentStep;
+        const steps = data.workflow?.completedSteps ?? [];
+        const isDelivered = step === 'delivered' || steps.includes('delivered');
+
+        if (isDelivered && !completionFiredRef.current) {
+          completionFiredRef.current = true;
+          clearInterval(poll);
+          // Sync final state
+          if (data.workflow?.currentStep) setCurrentStep(data.workflow.currentStep);
+          if (data.workflow?.completedSteps?.length) setCompletedSteps(data.workflow.completedSteps);
+          if (data.cost) setCost({ accumulated: data.cost.accumulated, budget: data.cost.budget });
+          if (onSessionEnd) setTimeout(onSessionEnd, 1500);
+        }
+      } catch { /* ignore */ }
+    }, 5_000);
+
+    return () => clearInterval(poll);
+  }, [sessionId, onSessionEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Demo simulator ──────────────────────────────────────────────────
 

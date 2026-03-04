@@ -1,12 +1,13 @@
 /**
- * FindingCard — A finding posted by an agent, with severity badge,
- * the actual finding text, evidence quotes, and confidence bar.
+ * FindingCard — A finding posted by an agent, rendered as a speech bubble.
  *
- * v11: Shows content + evidence. DebateThread removed — challenges
- * and responses are now standalone cards in the stream.
+ * Layout: AgentAvatar (32px) on the left, speech-bubble card on the right
+ * with category-color left border, severity badge, body, evidence, confidence.
  */
 
 import type { StreamCard } from '../hooks/useWorkingState.js';
+import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
+import { AgentAvatar } from './AgentAvatar.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 type FindingData = Extract<StreamCard, { kind: 'finding' }>;
@@ -15,6 +16,7 @@ interface FindingCardProps {
   card: FindingData;
   resolveAgentName: (role: string) => string;
   agentColor: string;
+  profile?: AgentProfile;
 }
 
 const SEVERITY_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -23,77 +25,82 @@ const SEVERITY_COLORS: Record<string, { bg: string; fg: string }> = {
   GREEN: { bg: 'rgba(74, 124, 80, 0.1)', fg: colors.success },
 };
 
-export function FindingCard({ card, resolveAgentName, agentColor }: FindingCardProps) {
+export function FindingCard({ card, resolveAgentName, agentColor, profile }: FindingCardProps) {
   const sevStyle = SEVERITY_COLORS[card.severity] ?? SEVERITY_COLORS.YELLOW;
   const agentName = resolveAgentName(card.agent);
   const time = new Date(card.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const confidencePct = Math.round(card.confidence * 100);
 
   return (
-    <div style={styles.card}>
-      <div style={styles.header}>
-        <div style={{ ...styles.agentDot, backgroundColor: agentColor }} />
-        <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
-        <span style={{
-          ...styles.severityBadge,
-          backgroundColor: sevStyle.bg,
-          color: sevStyle.fg,
-        }}>
-          {card.severity}
-        </span>
-        <span style={styles.time}>{time}</span>
-      </div>
+    <div style={styles.row}>
+      <AgentAvatar role={card.agent} size="md" profile={profile} />
 
-      {/* The actual finding text */}
-      <div style={styles.body}>
-        <span style={styles.content}>{card.content}</span>
-      </div>
-
-      {/* Evidence quotes */}
-      {card.evidence.length > 0 && (
-        <div style={styles.evidenceBlock}>
-          {card.evidence.map((e, i) => (
-            <div key={i} style={styles.evidenceLine}>
-              <span style={styles.evidenceBar} />
-              <span style={styles.evidenceText}>{e}</span>
-            </div>
-          ))}
+      <div style={{ ...styles.bubble, borderLeftColor: agentColor }}>
+        <div style={styles.header}>
+          <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
+          <span style={{
+            ...styles.severityBadge,
+            backgroundColor: sevStyle.bg,
+            color: sevStyle.fg,
+          }}>
+            {card.severity}
+          </span>
+          <span style={styles.time}>{time}</span>
         </div>
-      )}
 
-      <div style={styles.confidenceRow}>
-        <span style={styles.confidenceLabel}>Confidence</span>
-        <div style={styles.confidenceBar}>
-          <div style={{
-            ...styles.confidenceFill,
-            width: `${confidencePct}%`,
-            backgroundColor: confidencePct > 80 ? colors.success : confidencePct > 50 ? colors.warning : colors.danger,
-          }} />
+        {/* The actual finding text */}
+        <div style={styles.body}>
+          <span style={styles.content}>{card.content}</span>
         </div>
-        <span style={styles.confidenceValue}>{confidencePct}%</span>
+
+        {/* Evidence quotes */}
+        {card.evidence.length > 0 && (
+          <div style={styles.evidenceBlock}>
+            {card.evidence.map((e, i) => (
+              <div key={i} style={styles.evidenceLine}>
+                <span style={styles.evidenceBar} />
+                <span style={styles.evidenceText}>{e}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={styles.confidenceRow}>
+          <span style={styles.confidenceLabel}>Confidence</span>
+          <div style={styles.confidenceBar}>
+            <div style={{
+              ...styles.confidenceFill,
+              width: `${confidencePct}%`,
+              backgroundColor: confidencePct > 80 ? colors.success : confidencePct > 50 ? colors.warning : colors.danger,
+            }} />
+          </div>
+          <span style={styles.confidenceValue}>{confidencePct}%</span>
+        </div>
       </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: {
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  bubble: {
+    flex: 1,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
+    borderLeft: '3px solid',
     borderRadius: radii.md,
     padding: '12px 14px',
+    minWidth: 0,
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
     marginBottom: 8,
-  },
-  agentDot: {
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
-    flexShrink: 0,
   },
   agentName: {
     fontSize: 12,

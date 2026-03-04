@@ -105,10 +105,9 @@ export async function startApiServer(port: number): Promise<void> {
 
   // ── Public paths ──────────────────────────────────────────────────
   // Paths listed here bypass auth (no Bearer token or cookie required).
-  // POST mutations are NOT listed here — the dashboard authenticates
-  // via marble_token cookie (set by /api/auth/login), which the auth
-  // middleware validates in its cookie path. Only read-only (GET) and
-  // auth/discovery endpoints are public.
+  // Most POST mutations require a marble_token cookie (set by
+  // /api/auth/login). Exceptions: session creation is public so the
+  // QuickStart express lane works without login.
   const publicPaths: string[] = [
     '/health',
     '/',
@@ -130,6 +129,8 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /llms.txt',          // AI crawler guidance
     'GET /api/pricing',       // Deterministic cost estimates
     'GET /api/reputation',    // Machine-readable trust signal
+    // Session creation — QuickStart express lane (no login required)
+    'POST /api/sessions',
     // User auth routes (public by definition)
     'POST /api/auth/signup',
     'POST /api/auth/login',

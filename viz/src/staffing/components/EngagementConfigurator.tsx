@@ -12,6 +12,7 @@ import { WorkflowPicker } from './WorkflowPicker.js';
 import { IntensitySelector } from './IntensitySelector.js';
 import { TeamCostSummary } from './TeamCostSummary.js';
 import { YoloToggle } from './YoloToggle.js';
+import { VerificationToggle } from './VerificationToggle.js';
 import { OrchestratorMiniCard } from './OrchestratorMiniCard.js';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
@@ -42,6 +43,7 @@ interface Props {
   onWorkflowChange: (id: string) => void;
   onIntensityChange: (level: IntensityLevel) => void;
   onYoloChange: (yolo: boolean) => void;
+  onVerificationChange: (enabled: boolean) => void;
   showCostSummary?: boolean;
 }
 
@@ -57,6 +59,7 @@ export function EngagementConfigurator({
   onWorkflowChange,
   onIntensityChange,
   onYoloChange,
+  onVerificationChange,
   showCostSummary = true,
 }: Props) {
   const brandedName = WORKFLOW_BRANDED[config.workflowId] ?? config.workflowId;
@@ -121,6 +124,12 @@ export function EngagementConfigurator({
             <YoloToggle
               enabled={config.yoloMode}
               onToggle={onYoloChange}
+            />
+          </div>
+          <div style={{ marginTop: spacing.md }}>
+            <VerificationToggle
+              enabled={config.verification}
+              onToggle={onVerificationChange}
             />
           </div>
         </div>

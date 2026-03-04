@@ -1,11 +1,13 @@
 /**
- * ResponseCard — An agent's response to a challenge.
+ * ResponseCard — An agent's response to a challenge, as a speech bubble.
  *
- * Shows whether the agent defends or concedes, with the response text
- * and optional revised position.
+ * Layout: AgentAvatar (32px) left, speech-bubble with agent-color left border.
+ * Shows concede/defend verb and optional revised position.
  */
 
 import type { StreamCard } from '../hooks/useWorkingState.js';
+import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
+import { AgentAvatar } from './AgentAvatar.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 type ResponseData = Extract<StreamCard, { kind: 'response' }>;
@@ -14,60 +16,65 @@ interface ResponseCardProps {
   card: ResponseData;
   resolveAgentName: (role: string) => string;
   agentColor: string;
+  profile?: AgentProfile;
 }
 
-export function ResponseCard({ card, resolveAgentName, agentColor }: ResponseCardProps) {
+export function ResponseCard({ card, resolveAgentName, agentColor, profile }: ResponseCardProps) {
   const agentName = resolveAgentName(card.responder);
   const time = new Date(card.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const verb = card.accepted ? 'concedes' : 'defends';
   const verbColor = card.accepted ? colors.warning : colors.success;
 
   return (
-    <div style={{ ...styles.card, borderLeftColor: agentColor }}>
-      <div style={styles.header}>
-        <div style={{ ...styles.agentDot, backgroundColor: agentColor }} />
-        <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
-        <span style={{ ...styles.verb, color: verbColor }}>{verb}</span>
-        <span style={styles.time}>{time}</span>
+    <div style={styles.row}>
+      <AgentAvatar role={card.responder} size="md" profile={profile} />
+
+      <div style={{ ...styles.bubble, borderLeftColor: agentColor }}>
+        <div style={styles.header}>
+          <span style={{ ...styles.agentName, color: agentColor }}>{agentName}</span>
+          <span style={{ ...styles.verb, color: verbColor }}>{verb}</span>
+          <span style={styles.time}>{time}</span>
+        </div>
+
+        {/* Response text */}
+        {card.responseText && (
+          <div style={styles.body}>
+            <span style={styles.content}>{card.responseText}</span>
+          </div>
+        )}
+
+        {/* Revised position (when conceding) */}
+        {card.revisedPosition && (
+          <div style={styles.revisedBlock}>
+            <span style={styles.revisedLabel}>Revised position:</span>
+            <span style={styles.revisedText}>{card.revisedPosition}</span>
+          </div>
+        )}
       </div>
-
-      {/* Response text */}
-      {card.responseText && (
-        <div style={styles.body}>
-          <span style={styles.content}>{card.responseText}</span>
-        </div>
-      )}
-
-      {/* Revised position (when conceding) */}
-      {card.revisedPosition && (
-        <div style={styles.revisedBlock}>
-          <span style={styles.revisedLabel}>Revised position:</span>
-          <span style={styles.revisedText}>{card.revisedPosition}</span>
-        </div>
-      )}
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: {
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  bubble: {
+    flex: 1,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderLeft: '3px solid',
     borderRadius: radii.md,
     padding: '12px 14px',
+    minWidth: 0,
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
     marginBottom: 8,
-  },
-  agentDot: {
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
-    flexShrink: 0,
   },
   agentName: {
     fontSize: 12,

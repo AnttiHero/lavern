@@ -71,6 +71,13 @@ body {
   color: var(--color-text);
 }
 
+/* Custom cursor — hide native cursor on fine-pointer (desktop) devices */
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
 /* ── Utility classes ───────────────────────────────────────────────── */
 
 /* Marble spotlight text (LandingView) */
@@ -213,6 +220,14 @@ body {
 @keyframes orbFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
+}
+@keyframes thinkingGlow {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
 }
 @keyframes narrativeFade {
   0% { opacity: 0; }

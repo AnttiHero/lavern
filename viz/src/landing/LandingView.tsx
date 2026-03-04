@@ -70,35 +70,26 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   const [ready, setReady] = useState(false);
   const [hoveredChoice, setHoveredChoice] = useState<'human' | 'agent' | null>(null);
   const [exiting, setExiting] = useState(false);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const welcomeRef = useRef<HTMLParagraphElement>(null);
   const mousePos = useRef({ x: 0, y: 0 });
-  const ringPos = useRef({ x: 0, y: 0 });
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  // ── Custom cursor — light dot + trailing ring on dark ──────────────────
+  // ── Parallax + welcome spotlight ───────────────────────────────────────
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     mousePos.current = { x: e.clientX, y: e.clientY };
-    if (dotRef.current) {
-      dotRef.current.style.opacity = '1';
-      dotRef.current.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    }
-    if (ringRef.current) ringRef.current.style.opacity = '1';
     // Subtle marble parallax
     if (imgRef.current) {
       const cx = (e.clientX / window.innerWidth - 0.5) * 6;
       const cy = (e.clientY / window.innerHeight - 0.5) * 6;
       imgRef.current.style.transform = `scale(1.05) translate(${cx}px, ${cy}px)`;
     }
-    // ── Welcome text spotlight — flashlight on carved stone ────────────
+    // Welcome text spotlight — flashlight on carved stone
     if (welcomeRef.current) {
       const rect = welcomeRef.current.getBoundingClientRect();
       const relX = e.clientX - rect.left;
@@ -122,29 +113,9 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   }, []);
 
   const onMouseLeave = useCallback(() => {
-    if (dotRef.current) dotRef.current.style.opacity = '0';
-    if (ringRef.current) ringRef.current.style.opacity = '0';
     if (imgRef.current) imgRef.current.style.transform = 'scale(1.05)';
     if (welcomeRef.current) welcomeRef.current.style.background = 'rgba(250, 249, 246, 0.25)';
   }, []);
-
-  // Ring follows with spring-like lag
-  useEffect(() => {
-    if (!ready) return;
-    const animate = () => {
-      const dx = mousePos.current.x - ringPos.current.x;
-      const dy = mousePos.current.y - ringPos.current.y;
-      ringPos.current.x += dx * 0.09;
-      ringPos.current.y += dy * 0.09;
-      if (ringRef.current) {
-        ringRef.current.style.transform =
-          `translate(${ringPos.current.x}px, ${ringPos.current.y}px)`;
-      }
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [ready]);
 
   // ── Choice handler — fade then navigate ────────────────────────────────
 
@@ -167,7 +138,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden z-[9999] bg-[#080808] cursor-auto lg:cursor-none"
+      className="fixed inset-0 overflow-hidden z-[9999] bg-[#080808]"
       style={{
         opacity: exiting ? 0 : 1,
         transition: 'opacity 0.7s ease',
@@ -175,24 +146,6 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Custom cursor ──────────────────────────────────────────── */}
-      <div
-        ref={dotRef}
-        className={cn(
-          'fixed -top-1 -left-1 w-2 h-2 rounded-full pointer-events-none z-[9999]',
-          'bg-[rgba(250,249,246,0.85)] will-change-transform opacity-0 transition-opacity duration-300 ease-in-out',
-          'hidden lg:block',
-        )}
-      />
-      <div
-        ref={ringRef}
-        className={cn(
-          'fixed -top-[18px] -left-[18px] w-9 h-9 rounded-full pointer-events-none z-[9998]',
-          'bg-[rgba(250,249,246,0.03)] blur-[10px] will-change-transform opacity-0 transition-opacity duration-300 ease-in-out',
-          'hidden lg:block',
-        )}
-      />
-
       {/* ── Marble texture — barely visible in the dark ────────────── */}
       <img
         ref={imgRef}

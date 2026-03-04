@@ -54,6 +54,8 @@ const SessionOptionsSchema = z.object({
   /** Claude API effort — overrides intensity-derived effort when set explicitly. */
   effort: z.enum(['low', 'medium', 'high', 'max']).optional(),
   yoloMode: z.boolean().optional(),
+  /** Enable 10-pass verification pipeline before delivery (default: true for review/full-bench). */
+  verification: z.boolean().optional(),
 }).strict().optional();
 
 // ── Context Schema ────────────────────────────────────────────────────────

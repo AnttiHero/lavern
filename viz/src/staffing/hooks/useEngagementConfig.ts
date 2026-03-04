@@ -18,6 +18,8 @@ export interface EngagementConfig {
   intensity: IntensityLevel;
   budgetUsd: number;
   yoloMode: boolean;
+  /** Enable 10-pass verification pipeline before delivery (default: true). */
+  verification: boolean;
 }
 
 interface RecommendationResult {
@@ -59,6 +61,7 @@ function getProfileDefaults() {
         intensity: (ss.intensity || 'standard') as IntensityLevel,
         budgetUsd: ss.budgetUsd || 10,
         yoloMode: ss.yoloMode || false,
+        verification: ss.verification !== false,
       };
     }
   } catch { /* ignore */ }
@@ -73,11 +76,12 @@ function getProfileDefaults() {
         intensity: (p.defaultIntensity || 'standard') as IntensityLevel,
         budgetUsd: p.defaultBudgetUsd || 10,
         yoloMode: p.yoloModeDefault || false,
+        verification: p.verification !== false,
       };
     }
   } catch { /* ignore */ }
 
-  return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false };
+  return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false, verification: true };
 }
 
 export function useEngagementConfig() {
@@ -86,6 +90,7 @@ export function useEngagementConfig() {
   const [intensity, setIntensity] = useState<IntensityLevel>(defaults.intensity);
   const [budgetUsd, setBudgetUsd] = useState(defaults.budgetUsd);
   const [yoloMode, setYoloMode] = useState(defaults.yoloMode);
+  const [verification, setVerificationState] = useState(defaults.verification);
 
   // In standalone mode, generate initial recommendation synchronously
   const initialRec = IS_STANDALONE ? generateLocalRecommendation(defaults.intensity) : null;
@@ -148,11 +153,13 @@ export function useEngagementConfig() {
     intensity,
     budgetUsd,
     yoloMode,
+    verification,
   };
 
   const setWorkflow = useCallback((id: string) => setWorkflowId(id), []);
   const setBudget = useCallback((budget: number) => setBudgetUsd(budget), []);
   const setYolo = useCallback((yolo: boolean) => setYoloMode(yolo), []);
+  const setVerification = useCallback((v: boolean) => setVerificationState(v), []);
 
   return {
     config,
@@ -165,5 +172,6 @@ export function useEngagementConfig() {
     targetTeamSize,
     loading,
     demoMode,
+    setVerification,
   };
 }

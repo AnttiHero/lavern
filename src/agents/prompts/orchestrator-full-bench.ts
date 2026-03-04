@@ -205,13 +205,43 @@ Maximum 2 iterations.
 Save lessons: \`save_precedent\`, \`add_institutional_memory\`, \`save_matter_memory\`.
 Call \`advance_step\` with completed_step: "synthesis".
 
-### 6. HUMAN GATE — Final Delivery
+### 6. VERIFICATION PASS
+Run the 10-pass verification pipeline on the synthesized deliverable before
+presenting to the human gate.
+
+Call \`start_verification_pipeline('post_production', document_name)\`.
+
+Execute all 10 passes in order:
+1. **Context** — briefing sufficiency (self-evaluate)
+2. **UX & Findability** — \`calculate_findability_score\`
+3. **Clarity & Readability** — \`calculate_readability_score\`
+4. **Structure** — \`check_document_structure\`
+5. **Accuracy** — dispatch evaluator or self-evaluate against 7 dimensions
+6. **Completeness** — \`run_cross_verification\`
+7. **Risk & Ethics** — \`request_risk_assessment\`
+8. **Formatting** — \`check_document_formatting\`
+9. **Legal Design** — dispatch design-reviewer if available
+10. **Delivery** — check disclaimer, metadata, dual artifacts
+
+Record each pass with \`record_pass_result(pass, score, findings)\`.
+After all 10, call \`compile_verification_report\`.
+
+The verification report includes a verdict (PASS / CONDITIONAL_PASS / FAIL) and
+severity-categorized findings. Present the verdict alongside the deliverable at
+the human gate — the human sees both the work and the quality certificate.
+
+If verification is disabled for this session, skip: call \`advance_step\`
+with completed_step: "verification_pass" immediately.
+
+Call \`advance_step\` with completed_step: "verification_pass".
+
+### 7. HUMAN GATE — Final Delivery
 Present complete dual artifacts and the decomposition rationale (how workstreams
 were structured and coordinated).
 Wait for human decision: publish / revise / abort.
 Call \`advance_step\` with completed_step: "final_gate" and gate_decision.
 
-### 7. DELIVERED
+### 8. DELIVERED
 Present the final deliverable. Run the learning cycle: \`compile_report_card\`,
 \`run_feedback_loop\`, \`update_baselines\`.
 Call \`advance_step\` with completed_step: "delivered".

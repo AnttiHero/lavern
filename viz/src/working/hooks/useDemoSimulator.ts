@@ -1,11 +1,17 @@
 /**
  * useDemoSimulator — Generates fake ShemEvents on a timer for demo mode.
  *
- * v12: Added tool_used events between agent_start and first finding
- *      to fill silence gaps. Each tool event includes agent field.
+ * v13: "The Counsel Room" — richer thinking sequences with more tool_used
+ *      events and slower pacing so users can watch thinking bubbles fill.
+ *
+ * Pattern for each agent:
+ *   1. agent_start (agent begins — thinking bubble appears)
+ *   2. 2-4 tool_used events (spaced 600-900ms apart) — bubble shows activity
+ *   3. finding_posted (conclusion — bubble fades, finding card appears)
+ *   4. agent_stop (or continue to next finding)
  *
  * When the session ID starts with "demo-session-", this hook fires
- * a scripted sequence of events so the thinking stream is populated
+ * a scripted sequence of events so the feed is populated
  * without a live backend.
  */
 
@@ -58,24 +64,30 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Analysis ──
   add(500, { type: 'workflow_step', step: 'parallel_analysis', previousStep: 'intake', timestamp: ts() });
 
+  // Agent 0: Design Reviewer — thinking sequence
   add(400, { type: 'agent_start', agentId: `${a(0)}-1`, role: a(0), task: 'Analyzing document structure and visual hierarchy', timestamp: ts() });
-  // Tool events to fill the silence
-  add(300, { type: 'tool_used', tool: 'analyze_heading_structure', agent: a(0), timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'measure_visual_hierarchy', agent: a(0), timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: a(0), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'analyze_heading_structure', agent: a(0), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'measure_visual_hierarchy', agent: a(0), timestamp: ts() });
 
-  add(250, { type: 'agent_start', agentId: `${a(1)}-1`, role: a(1), task: 'Reviewing ethical compliance and accessibility standards', timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'check_wcag_compliance', agent: a(1), timestamp: ts() });
-  add(250, { type: 'tool_used', tool: 'run_contrast_check', agent: a(1), timestamp: ts() });
+  // Agent 1: Ethics Auditor — thinking sequence
+  add(400, { type: 'agent_start', agentId: `${a(1)}-1`, role: a(1), task: 'Reviewing ethical compliance and accessibility standards', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: a(1), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'check_wcag_compliance', agent: a(1), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'run_contrast_check', agent: a(1), timestamp: ts() });
 
-  add(200, { type: 'agent_start', agentId: `${a(2)}-1`, role: a(2), task: 'Evaluating readability and plain language compliance', timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'calculate_readability_score', agent: a(2), timestamp: ts() });
-  add(250, { type: 'tool_used', tool: 'measure_sentence_length', agent: a(2), timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'count_passive_voice', agent: a(2), timestamp: ts() });
+  // Agent 2: Plain Language Specialist — thinking sequence
+  add(400, { type: 'agent_start', agentId: `${a(2)}-1`, role: a(2), task: 'Evaluating readability and plain language compliance', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: a(2), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'calculate_readability_score', agent: a(2), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'measure_sentence_length', agent: a(2), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'count_passive_voice', agent: a(2), timestamp: ts() });
 
-  add(200, { type: 'cost_update', totalUsd: 0.42, budgetUsd: 10.00, timestamp: ts() });
+  add(300, { type: 'cost_update', totalUsd: 0.42, budgetUsd: 10.00, timestamp: ts() });
 
+  // Finding from Agent 0 (thinking bubble fades → finding card appears)
   const f1 = fid();
-  add(400, {
+  add(800, {
     type: 'finding_posted', findingId: f1, agent: a(0),
     category: 'Visual Hierarchy',
     severity: 'YELLOW' as Severity, confidence: 0.87,
@@ -87,8 +99,9 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
     timestamp: ts(),
   });
 
+  // Finding from Agent 2
   const f2 = fid();
-  add(800, {
+  add(1200, {
     type: 'finding_posted', findingId: f2, agent: a(2),
     category: 'Readability',
     severity: 'RED' as Severity, confidence: 0.93,
@@ -101,8 +114,9 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
 
   add(600, { type: 'agent_stop', agentId: `${a(2)}-1`, role: a(2), durationMs: 3400, timestamp: ts() });
 
+  // Finding from Agent 1
   const f3 = fid();
-  add(500, {
+  add(900, {
     type: 'finding_posted', findingId: f3, agent: a(1),
     category: 'Accessibility',
     severity: 'RED' as Severity, confidence: 0.91,
@@ -114,8 +128,8 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
     timestamp: ts(),
   });
 
-  add(400, { type: 'agent_stop', agentId: `${a(0)}-1`, role: a(0), durationMs: 4200, timestamp: ts() });
-  add(300, { type: 'agent_stop', agentId: `${a(1)}-1`, role: a(1), durationMs: 4800, timestamp: ts() });
+  add(500, { type: 'agent_stop', agentId: `${a(0)}-1`, role: a(0), durationMs: 4200, timestamp: ts() });
+  add(400, { type: 'agent_stop', agentId: `${a(1)}-1`, role: a(1), durationMs: 4800, timestamp: ts() });
 
   add(200, { type: 'cost_update', totalUsd: 1.28, budgetUsd: 10.00, timestamp: ts() });
 
@@ -124,7 +138,7 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
 
   // Challenge on f1
   const c1 = cid();
-  add(800, {
+  add(1000, {
     type: 'challenge_posted', challengeId: c1, challenger: a(1), targetFindingId: f1,
     challengeText: 'The heading inconsistency finding understates the severity. In accessibility testing, broken heading hierarchy is a WCAG 2.1 Level A failure (SC 1.3.1 Info and Relationships), not merely a visual issue. Screen reader users cannot navigate the document at all.',
     evidence: [
@@ -134,14 +148,14 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   });
 
   const r1 = rid();
-  add(1000, {
+  add(1200, {
     type: 'response_posted', responseId: r1, responder: a(0), challengeId: c1, accepted: true,
     responseText: 'Accepted — the accessibility impact was underweighted. Revising severity from YELLOW to RED. The heading structure issue is both a visual design problem and a programmatic accessibility failure.',
     revisedPosition: 'Upgrade to RED severity. Heading restructuring must be completed before any other transformations to establish correct document outline for screen readers.',
     timestamp: ts(),
   });
 
-  add(600, {
+  add(800, {
     type: 'debate_resolved', resolutionId: resid(), topic: 'Visual hierarchy severity',
     resolution: 'Upgraded to RED — structural issue affects both comprehension and programmatic accessibility.',
     confidence: 0.89,
@@ -164,19 +178,22 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Transformation ──
   add(400, { type: 'workflow_step', step: 'transformation', previousStep: 'ethics_gate', timestamp: ts() });
 
-  add(300, { type: 'agent_start', agentId: `${a(3 % agents.length)}-1`, role: a(3 % agents.length), task: 'Restructuring document with improved visual hierarchy', timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'restructure_heading_tree', agent: a(3 % agents.length), timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'rebuild_pdf_bookmarks', agent: a(3 % agents.length), timestamp: ts() });
+  // Agent 3: Transformation Specialist — thinking sequence
+  add(400, { type: 'agent_start', agentId: `${a(3 % agents.length)}-1`, role: a(3 % agents.length), task: 'Restructuring document with improved visual hierarchy', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'read_document', agent: a(3 % agents.length), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'restructure_heading_tree', agent: a(3 % agents.length), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'rebuild_pdf_bookmarks', agent: a(3 % agents.length), timestamp: ts() });
 
-  add(200, { type: 'agent_start', agentId: `${a(2)}-2`, role: a(2), task: 'Rewriting content to Grade 8 reading level', timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'simplify_sentence_structure', agent: a(2), timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'convert_passive_to_active', agent: a(2), timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'split_compound_sentences', agent: a(2), timestamp: ts() });
+  // Agent 2 (again): Rewriting — thinking sequence
+  add(300, { type: 'agent_start', agentId: `${a(2)}-2`, role: a(2), task: 'Rewriting content to Grade 8 reading level', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'simplify_sentence_structure', agent: a(2), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'convert_passive_to_active', agent: a(2), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'split_compound_sentences', agent: a(2), timestamp: ts() });
 
   add(400, { type: 'cost_update', totalUsd: 2.94, budgetUsd: 10.00, timestamp: ts() });
 
   // Quality check — fail first attempt
-  add(800, {
+  add(1000, {
     type: 'quality_check_result',
     step: 'transformation',
     passed: false,
@@ -194,11 +211,11 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   });
 
   // Tools for revision
-  add(400, { type: 'tool_used', tool: 'apply_revision_guidance', agent: a(2), timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'recalculate_readability', agent: a(2), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'apply_revision_guidance', agent: a(2), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'recalculate_readability', agent: a(2), timestamp: ts() });
 
   // Quality check — pass second attempt
-  add(500, {
+  add(700, {
     type: 'quality_check_result',
     step: 'transformation',
     passed: true,
@@ -210,7 +227,7 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   });
 
   const f4 = fid();
-  add(800, {
+  add(1000, {
     type: 'finding_posted', findingId: f4, agent: a(3 % agents.length),
     category: 'Structure',
     severity: 'GREEN' as Severity, confidence: 0.95,
@@ -228,16 +245,16 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Verification ──
   add(400, { type: 'workflow_step', step: 'parallel_verification', previousStep: 'transformation', timestamp: ts() });
 
-  add(500, { type: 'verification_run', verificationId: vid(), verificationType: 'readability', passed: true, confidence: 0.92, timestamp: ts() });
-  add(400, { type: 'verification_run', verificationId: vid(), verificationType: 'accessibility', passed: true, confidence: 0.88, timestamp: ts() });
-  add(300, { type: 'verification_run', verificationId: vid(), verificationType: 'legal-accuracy', passed: true, confidence: 0.94, timestamp: ts() });
+  add(600, { type: 'verification_run', verificationId: vid(), verificationType: 'readability', passed: true, confidence: 0.92, timestamp: ts() });
+  add(500, { type: 'verification_run', verificationId: vid(), verificationType: 'accessibility', passed: true, confidence: 0.88, timestamp: ts() });
+  add(400, { type: 'verification_run', verificationId: vid(), verificationType: 'legal-accuracy', passed: true, confidence: 0.94, timestamp: ts() });
 
   add(200, { type: 'cost_update', totalUsd: 3.67, budgetUsd: 10.00, timestamp: ts() });
 
   // ── Phase: Second Review ──
   add(400, { type: 'workflow_step', step: 'debate_2', previousStep: 'parallel_verification', timestamp: ts() });
 
-  add(800, {
+  add(1000, {
     type: 'debate_resolved', resolutionId: resid(), topic: 'Transformation quality',
     resolution: 'All verification checks passed. Document meets readability, accessibility, and accuracy targets.',
     confidence: 0.93,
@@ -250,13 +267,15 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Meaning Check ──
   add(400, { type: 'workflow_step', step: 'meaning_gate', previousStep: 'debate_2', timestamp: ts() });
 
-  add(300, { type: 'agent_start', agentId: `${a(4 % agents.length)}-1`, role: a(4 % agents.length), task: 'Verifying legal meaning preserved after transformation', timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'semantic_diff', agent: a(4 % agents.length), timestamp: ts() });
-  add(300, { type: 'tool_used', tool: 'clause_comparison', agent: a(4 % agents.length), timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'defined_term_consistency_check', agent: a(4 % agents.length), timestamp: ts() });
+  // Agent 4: Meaning Guardian — thinking sequence
+  add(400, { type: 'agent_start', agentId: `${a(4 % agents.length)}-1`, role: a(4 % agents.length), task: 'Verifying legal meaning preserved after transformation', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'read_document', agent: a(4 % agents.length), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'semantic_diff', agent: a(4 % agents.length), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'clause_comparison', agent: a(4 % agents.length), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'defined_term_consistency_check', agent: a(4 % agents.length), timestamp: ts() });
 
   const f5 = fid();
-  add(400, {
+  add(800, {
     type: 'finding_posted', findingId: f5, agent: a(4 % agents.length),
     category: 'Meaning Preservation',
     severity: 'GREEN' as Severity, confidence: 0.96,
@@ -275,10 +294,12 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
   // ── Phase: Synthesis ──
   add(400, { type: 'workflow_step', step: 'synthesis', previousStep: 'meaning_gate', timestamp: ts() });
 
-  add(300, { type: 'agent_start', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), task: 'Compiling final document with all revisions', timestamp: ts() });
-  add(400, { type: 'tool_used', tool: 'merge_revision_layers', agent: a(5 % agents.length), timestamp: ts() });
-  add(350, { type: 'tool_used', tool: 'generate_change_log', agent: a(5 % agents.length), timestamp: ts() });
-  add(500, { type: 'agent_stop', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), durationMs: 1800, timestamp: ts() });
+  // Agent 5: Synthesis Editor — thinking sequence
+  add(400, { type: 'agent_start', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), task: 'Compiling final document with all revisions', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'read_document', agent: a(5 % agents.length), timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'merge_revision_layers', agent: a(5 % agents.length), timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'generate_change_log', agent: a(5 % agents.length), timestamp: ts() });
+  add(600, { type: 'agent_stop', agentId: `${a(5 % agents.length)}-1`, role: a(5 % agents.length), durationMs: 1800, timestamp: ts() });
 
   add(200, { type: 'cost_update', totalUsd: 4.58, budgetUsd: 10.00, timestamp: ts() });
 

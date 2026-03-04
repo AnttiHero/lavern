@@ -1,7 +1,8 @@
 /**
- * ResolutionCard — Debate resolution summary card.
+ * ResolutionCard — Debate resolution verdict bar.
  *
- * v11: Shows winning position, evidence weight, and escalation warning.
+ * Full-width centered layout with green/amber left border.
+ * Not a speech bubble — this is a neutral verdict announcement.
  */
 
 import type { StreamCard } from '../hooks/useWorkingState.js';
@@ -16,9 +17,10 @@ interface ResolutionCardProps {
 export function ResolutionCard({ card }: ResolutionCardProps) {
   const time = new Date(card.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const confidencePct = Math.round(card.confidence * 100);
+  const borderColor = card.escalationNeeded ? colors.warning : colors.success;
 
   return (
-    <div style={styles.card}>
+    <div style={{ ...styles.card, borderLeftColor: borderColor }}>
       <div style={styles.header}>
         <span style={styles.icon}>{'\u2713'}</span>
         <span style={styles.label}>Resolved</span>
@@ -26,6 +28,7 @@ export function ResolutionCard({ card }: ResolutionCardProps) {
         {card.escalationNeeded && (
           <span style={styles.escalationBadge}>Escalation needed</span>
         )}
+        <span style={styles.confidenceBadge}>{confidencePct}%</span>
         <span style={styles.time}>{time}</span>
       </div>
 
@@ -44,10 +47,6 @@ export function ResolutionCard({ card }: ResolutionCardProps) {
           <span style={styles.detailText}>{card.evidenceWeight}</span>
         </div>
       )}
-
-      <div style={styles.confidence}>
-        Confidence: {confidencePct}%
-      </div>
     </div>
   );
 }
@@ -56,6 +55,7 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     backgroundColor: colors.successBg,
     border: `1px solid rgba(74, 124, 80, 0.2)`,
+    borderLeft: `3px solid ${colors.success}`,
     borderRadius: radii.md,
     padding: '10px 14px',
   },
@@ -66,7 +66,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 6,
   },
   icon: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 700,
     color: colors.success,
   },
@@ -96,6 +96,15 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.3,
     textTransform: 'uppercase' as const,
   },
+  confidenceBadge: {
+    fontSize: 10,
+    fontFamily: fonts.mono,
+    fontWeight: 600,
+    color: colors.success,
+    backgroundColor: 'rgba(74, 124, 80, 0.1)',
+    padding: '2px 6px',
+    borderRadius: radii.sm,
+  },
   time: {
     fontSize: 10,
     color: colors.textDim,
@@ -103,18 +112,18 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   resolution: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: fonts.sans,
     fontWeight: 400,
     color: colors.textSecondary,
     lineHeight: '1.5',
-    paddingLeft: 18,
+    paddingLeft: 20,
     marginBottom: 6,
   },
   detailRow: {
     display: 'flex',
     gap: 6,
-    paddingLeft: 18,
+    paddingLeft: 20,
     marginBottom: 2,
   },
   detailLabel: {
@@ -132,12 +141,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 400,
     color: colors.textSecondary,
     lineHeight: '1.4',
-  },
-  confidence: {
-    fontSize: 10,
-    fontFamily: fonts.mono,
-    color: colors.success,
-    marginTop: 6,
-    paddingLeft: 18,
   },
 };

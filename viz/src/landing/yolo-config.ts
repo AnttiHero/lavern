@@ -1,18 +1,19 @@
 /**
  * YOLO Express Lane — tier configurations.
  *
- * Two lanes for the repeat client who trusts the machine:
- *   Standard:    balanced team, standard intensity, medium effort, $10 budget
- *   White-Shoe:  full-service team, maximal intensity, max effort, $40 budget
+ * Three service levels for the client who trusts the machine:
+ *   Counsel:     solo expert, direct answer, medium effort, $10 budget
+ *   Review:      dedicated team, debate + quality checks, max effort, $40 budget
+ *   Full Bench:  every specialist, senior oversight at both ends, max effort, $125 budget
  *
- * Both set yoloMode: true (auto-approve all gates).
+ * All set yoloMode: true (auto-approve all gates).
  *
  * The `effort` field maps to Claude's API effort parameter:
- *   'medium' = balanced token spend (standard tier)
- *   'max'    = white-shoe effort — no token limits, deepest reasoning (Opus 4.6 only)
+ *   'medium' = balanced token spend (counsel tier)
+ *   'max'    = no token limits, deepest reasoning (Opus 4.6 only)
  */
 
-export type YoloTier = 'standard' | 'white-shoe';
+export type YoloTier = 'standard' | 'white-shoe' | 'elite';
 
 export type EffortLevel = 'low' | 'medium' | 'high' | 'max';
 
@@ -33,12 +34,12 @@ export interface YoloConfig {
 
 /**
  * Team roles are from DEMO_PRESETS in staffing/data/demoProfiles.ts.
- * Balanced = 8 agents, Full Service = 14 agents.
+ * Counsel = 1 dispatched, Review = 14 agents, Full Bench = 23 agents.
  */
 export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
   standard: {
     tier: 'standard',
-    label: 'Advisory',
+    label: 'Counsel',
     workflowId: 'counsel',
     requestType: 'legal_question',
     intensity: 'standard',
@@ -54,7 +55,7 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
   },
   'white-shoe': {
     tier: 'white-shoe',
-    label: 'Full Service',
+    label: 'Review',
     workflowId: 'review',
     requestType: 'contract_review',
     intensity: 'maximal',
@@ -67,6 +68,33 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
       'managing-partner', 'supervising-partner', 'corporate-generalist', 'contract-specialist',
       'regulatory-counsel', 'privacy-counsel', 'service-designer', 'plain-language-specialist',
       'client-proxy', 'ethics-auditor', 'data-analyst', 'evaluator', 'risk-pricer', 'qa-tester',
+    ],
+  },
+  elite: {
+    tier: 'elite',
+    label: 'Full Bench',
+    workflowId: 'full-bench',
+    requestType: 'transformative_engagement',
+    intensity: 'maximum',
+    effort: 'max',
+    budgetUsd: 125,
+    yoloMode: true,
+    teamPreset: 'elite',
+    teamSize: 23,
+    teamRoles: [
+      // Senior leadership
+      'managing-partner', 'supervising-partner', 'of-counsel', 'innovation-partner',
+      // Practice specialists
+      'corporate-generalist', 'contract-specialist', 'regulatory-counsel', 'privacy-counsel',
+      'tax-counsel', 'ip-specialist', 'litigation-associate', 'international-counsel',
+      // Design & accessibility
+      'service-designer', 'plain-language-specialist', 'client-proxy',
+      // Advisory & risk
+      'ethics-auditor', 'data-analyst', 'ai-ethics-specialist',
+      // Operations & control
+      'evaluator', 'risk-pricer', 'qa-tester', 'synthesis-editor',
+      // Support
+      'junior-associate',
     ],
   },
 };

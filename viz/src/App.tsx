@@ -33,6 +33,7 @@ import { MarbleMark } from './components/MarbleMark.js';
 import { LoadingM } from './components/LoadingM.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
+import { CustomCursor } from './components/CustomCursor.js';
 
 // Lazy-load all views (separate code-split chunks)
 const LandingView = lazy(() => import('./landing/LandingView.js'));
@@ -160,6 +161,7 @@ export function App() {
             intensity: config.intensity,
             effort: config.effort,
             yoloMode: true,
+            verification: config.workflowId !== 'counsel',
           },
         }),
       });
@@ -263,6 +265,7 @@ export function App() {
             intensity: config.intensity,
             effort: config.effort,
             yoloMode: true,
+            verification: config.workflowId !== 'counsel',
           },
         }),
       });
@@ -343,7 +346,7 @@ export function App() {
     const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
-    let config = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false };
+    let config = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false, verification: true };
     try { if (configStr) config = JSON.parse(configStr); } catch { /* use defaults */ }
 
     // Store team for downstream
@@ -386,6 +389,7 @@ export function App() {
             budget: config.budgetUsd,
             intensity: config.intensity,
             yoloMode: config.yoloMode,
+            verification: config.verification !== false,
           },
         }),
       });
@@ -441,15 +445,21 @@ export function App() {
     <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
   ) : null;
 
+  // ── Custom cursor — dark on light pages, light on dark pages ─────────
+  const cursorVariant = (view === 'landing') ? 'dark' : 'light';
+  const cursor = <CustomCursor variant={cursorVariant} />;
+
   // ── Quick Start — fast-track entry point ────────────────────────────
   if (view === 'quickstart') {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <QuickStartView
             onQuickStart={handleQuickStart}
             onGuidedFlow={() => { window.location.hash = '#/intake'; }}
+            onBetTheCompany={() => { window.location.hash = '#/bet-the-company'; }}
           />
         </Suspense>
       </ErrorBoundary>
@@ -460,12 +470,13 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading intake..." />}>
           {showMark && <MarbleMark />}
           <IntakeView
             onComplete={handleIntakeComplete}
             onSkip={handleIntakeSkip}
-            onBack={() => { window.location.hash = '#/dashboard'; }}
+            onBack={() => { window.location.hash = '#/quickstart'; }}
           />
         </Suspense>
       </ErrorBoundary>
@@ -476,6 +487,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
           {showMark && <MarbleMark />}
           <BriefingView
@@ -492,6 +504,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
           {showMark && <MarbleMark />}
           <StrategyView
@@ -508,6 +521,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading team..." />}>
           {showMark && <MarbleMark />}
           <TeamView
@@ -524,6 +538,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
           {showMark && <MarbleMark />}
           <WorkingView
@@ -540,6 +555,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
           {showMark && <MarbleMark />}
           <DeliveryView
@@ -556,6 +572,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading billing..." />}>
           {showMark && <MarbleMark />}
           <BillingView
@@ -570,9 +587,10 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading profile..." />}>
           {showMark && <MarbleMark />}
-          <MyPageView onBack={() => { window.location.hash = '#/dashboard'; }} />
+          <MyPageView onBack={() => { window.location.hash = '#/quickstart'; }} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -582,6 +600,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading cases..." />}>
           {showMark && <MarbleMark />}
           <MyCasesView
@@ -593,7 +612,7 @@ export function App() {
               sessionStorage.setItem('shem-session-id', id);
               window.location.hash = '#/working';
             }}
-            onBack={() => { window.location.hash = '#/dashboard'; }}
+            onBack={() => { window.location.hash = '#/quickstart'; }}
           />
         </Suspense>
       </ErrorBoundary>
@@ -605,6 +624,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <LoginView
             onAuth={(user) => {
@@ -623,6 +643,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
           {showMark && <MarbleMark />}
           <AgentDocsView onBack={() => { window.location.hash = ''; }} />
@@ -636,8 +657,9 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
-          <BetTheCompanyView onBack={() => { window.location.hash = '#/dashboard'; }} />
+          <BetTheCompanyView onBack={() => { window.location.hash = '#/quickstart'; }} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -648,9 +670,10 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
           {showMark && <MarbleMark />}
-          <ClawView onBack={() => { window.location.hash = '#/dashboard'; }} />
+          <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -661,6 +684,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <LobbyView
             onEnter={() => { window.location.hash = '#/quickstart'; }}
@@ -678,6 +702,7 @@ export function App() {
     return (
       <ErrorBoundary>
         {toast}
+        {cursor}
         <div style={styles.app}>
           {showMark && <MarbleMark />}
           <div style={styles.sessionOverlay}>
@@ -704,6 +729,7 @@ export function App() {
   return (
     <ErrorBoundary>
       {toast}
+      {cursor}
       <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
         <MarbleMark hideCursor />
         <LandingView

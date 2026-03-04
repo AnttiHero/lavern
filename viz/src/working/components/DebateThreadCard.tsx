@@ -1,8 +1,9 @@
 /**
  * DebateThreadCard — Composite thread: Finding → indented Challenges/Responses → Resolution.
  *
- * Open (unresolved) threads pulse with amber border.
+ * Open (unresolved) threads pulse with amber left border.
  * Resolved threads are collapsible — collapsed by default to keep the stream scannable.
+ * Children receive avatar profiles for the speech-bubble layout.
  */
 
 import { useState } from 'react';
@@ -25,7 +26,7 @@ export function DebateThreadCard({ thread, profileMap }: DebateThreadCardProps) 
   const [expanded, setExpanded] = useState(thread.isOpen);
 
   const resolveAgentName = (role: string): string =>
-    profileMap.get(role)?.displayName ?? role.replace(/-/g, ' ');
+    profileMap.get(role)?.displayName ?? role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   const resolveAgentColor = (role: string): string => {
     const p = profileMap.get(role);
@@ -42,11 +43,14 @@ export function DebateThreadCard({ thread, profileMap }: DebateThreadCardProps) 
       borderColor: thread.isOpen ? colors.warning : colors.border,
     }}>
       {/* Finding (always visible) */}
-      <FindingCard
-        card={thread.finding}
-        resolveAgentName={resolveAgentName}
-        agentColor={resolveAgentColor(thread.finding.agent)}
-      />
+      <div style={styles.findingWrapper}>
+        <FindingCard
+          card={thread.finding}
+          resolveAgentName={resolveAgentName}
+          agentColor={resolveAgentColor(thread.finding.agent)}
+          profile={profileMap.get(thread.finding.agent)}
+        />
+      </div>
 
       {/* Thread summary / toggle bar */}
       <button
@@ -88,6 +92,7 @@ export function DebateThreadCard({ thread, profileMap }: DebateThreadCardProps) 
                     card={exchange.challenge}
                     resolveAgentName={resolveAgentName}
                     agentColor={resolveAgentColor(exchange.challenge.challenger)}
+                    profile={profileMap.get(exchange.challenge.challenger)}
                   />
                 </div>
 
@@ -98,6 +103,7 @@ export function DebateThreadCard({ thread, profileMap }: DebateThreadCardProps) 
                       card={exchange.response}
                       resolveAgentName={resolveAgentName}
                       agentColor={resolveAgentColor(exchange.response.responder)}
+                      profile={profileMap.get(exchange.response.responder)}
                     />
                   </div>
                 )}
@@ -125,6 +131,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column' as const,
     transition: 'border-color 0.3s ease',
+  },
+  findingWrapper: {
+    padding: '10px 10px 0 10px',
   },
   toggleBar: {
     display: 'flex',
@@ -171,10 +180,10 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '4px 0',
   },
   indented: {
-    marginLeft: 20,
-    paddingRight: 4,
+    marginLeft: 52,
+    paddingRight: 10,
   },
   resolutionWrapper: {
-    padding: '4px 4px 4px 4px',
+    padding: '4px 10px 8px 10px',
   },
 };

@@ -23,6 +23,7 @@ export const reviewTemplate: WorkflowTemplate = {
     'specialist_analysis',
     'evaluator_gate',
     'plain_language_review',
+    'verification_pass',
     'final_gate',
     'delivered',
   ],
@@ -51,10 +52,15 @@ export const reviewTemplate: WorkflowTemplate = {
       description: 'Translate findings into actionable business language. Executive summary, top concerns, negotiation priorities.',
       preconditions: ['evaluator_gate'],
     },
+    verification_pass: {
+      name: 'verification_pass',
+      description: '10-pass verification pipeline on the deliverable. Context, UX, clarity, structure, accuracy, completeness, risk, formatting, legal design, delivery readiness. Produces Verification Report with severity-categorized findings and verdict.',
+      preconditions: ['plain_language_review'],
+    },
     final_gate: {
       name: 'final_gate',
       description: 'Human approval before delivery.',
-      preconditions: ['plain_language_review'],
+      preconditions: ['verification_pass'],
       requiresGateApproval: true,
       gateType: 'final_delivery',
     },
@@ -102,6 +108,14 @@ export const reviewTemplate: WorkflowTemplate = {
     // Quality check iteration loops
     'mcp__shem__run_quality_check',
     'mcp__shem__record_quality_result',
+    // Verification pipeline (10-pass quality check)
+    'mcp__shem__start_verification_pipeline',
+    'mcp__shem__record_pass_result',
+    'mcp__shem__get_verification_status',
+    'mcp__shem__compile_verification_report',
+    'mcp__shem__calculate_findability_score',
+    'mcp__shem__check_document_structure',
+    'mcp__shem__check_document_formatting',
   ],
   requiredAgents: [
     'contract-reviewer',
@@ -148,6 +162,15 @@ export const reviewTemplate: WorkflowTemplate = {
         'mcp__shem__record_evaluation_result',
       ],
       reason: 'Plain language phase: translate findings, no re-evaluation.',
+    },
+    verification_pass: {
+      denyTools: [
+        'mcp__shem__resolve_debate',
+        'mcp__shem__request_approval',
+        'mcp__shem__run_evaluator_gate',
+        'mcp__shem__record_evaluation_result',
+      ],
+      reason: 'Verification phase: 10-pass quality pipeline in progress.',
     },
     final_gate: {
       denyTools: [

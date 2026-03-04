@@ -104,9 +104,11 @@ export function useNarrativeStatus({
 
     // Priority 5: Generic reassurance (for really long silences)
     if (silenceSec > 30) {
-      const agentCount = activeAgents.length || teamSize;
-      if (agentCount > 0) {
+      const agentCount = teamSize || activeAgents.length;
+      if (agentCount > 1) {
         messages.push(`Your team of ${agentCount} agents is working together on your document`);
+      } else if (agentCount === 1) {
+        messages.push('Your specialist is working on your document');
       }
       messages.push('Complex analysis requires deep thinking — this is normal');
     }

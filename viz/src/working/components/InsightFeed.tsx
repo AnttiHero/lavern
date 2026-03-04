@@ -1,21 +1,16 @@
 /**
  * InsightFeed — Main center area: scrollable feed of HIGH-VALUE insight cards only.
  *
- * v16: Replaced ThinkingStream. Removed all noise:
- *   - tool_used cards (invisible — feeds HeartbeatBand orb tooltips)
- *   - agent_start/stop cards (invisible — feeds HeartbeatBand orb glow)
- *   - search bar (removed)
- *   - ActiveThinkingCards at bottom (moved to HeartbeatBand narrative)
+ * v17: "The Counsel Room" — cards now render as speech bubbles with agent avatars.
+ *      Added thinking bubbles at the bottom for active agents.
  *
  * Kept: findings, debate threads, quality checks, gates, resolutions,
  *       workflow transitions, verifications, errors.
- *
- * Added: sticky insight counter at top.
  */
 
 import { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
-import type { StreamCard } from '../hooks/useWorkingState.js';
+import type { StreamCard, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
 import type { DebateThread } from '../hooks/useDebateThreads.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { useInsightCounts } from '../hooks/useInsightFilter.js';
@@ -27,8 +22,9 @@ import { QualityCheckCard } from './QualityCheckCard.js';
 import { GateCard } from './GateCard.js';
 import { WorkflowStepCard } from './WorkflowStepCard.js';
 import { DebateThreadCard } from './DebateThreadCard.js';
+import { AgentThinkingBubble } from './AgentThinkingBubble.js';
 import { EmptyState } from './EmptyState.js';
-import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
+import { colors, fonts, radii, categoryColor } from '../../staffing/styles/tokens.js';
 import { streamCardEntrance } from '../styles/animations.js';
 
 interface InsightFeedProps {
@@ -37,6 +33,7 @@ interface InsightFeedProps {
   onGateClick: () => void;
   isConnected: boolean;
   debateThreads: Map<string, DebateThread>;
+  activeThinkingAgents?: Map<string, ActiveThinkingAgent>;
 }
 
 export function InsightFeed({
@@ -45,6 +42,7 @@ export function InsightFeed({
   onGateClick,
   isConnected,
   debateThreads,
+  activeThinkingAgents,
 }: InsightFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -56,25 +54,22 @@ export function InsightFeed({
   }, [team]);
 
   const resolveAgentName = (role: string): string => {
-    return profileMap.get(role)?.displayName ?? role.replace(/-/g, ' ');
+    return profileMap.get(role)?.displayName ?? role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
   const resolveAgentColor = (role: string): string => {
     const p = profileMap.get(role);
     if (!p) return colors.textMuted;
-    if (p.category === 'lawyer') return colors.lawyer;
-    if (p.category === 'specialist') return colors.specialist;
-    if (p.category === 'infrastructure') return colors.infrastructure;
-    if (p.category === 'orchestrator') return colors.orchestrator;
-    return colors.textMuted;
+    return categoryColor(p.category);
   };
 
-  // Auto-scroll to bottom on new cards
+  // Auto-scroll to bottom on new cards or thinking agents
+  const thinkingCount = activeThinkingAgents?.size ?? 0;
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [cards.length]);
+  }, [cards.length, thinkingCount]);
 
   // Insight counts for sticky counter
   const counts = useInsightCounts(cards);
@@ -92,7 +87,7 @@ export function InsightFeed({
           )}
           {counts.debates > 0 && (
             <>
-              <span style={styles.counterDot}>·</span>
+              <span style={styles.counterDot}>{'\u00B7'}</span>
               <span style={styles.counterItem}>
                 <span style={styles.counterNum}>{counts.debates}</span>
                 {' '}{counts.debates === 1 ? 'debate' : 'debates'}
@@ -101,7 +96,7 @@ export function InsightFeed({
           )}
           {counts.checks > 0 && (
             <>
-              <span style={styles.counterDot}>·</span>
+              <span style={styles.counterDot}>{'\u00B7'}</span>
               <span style={styles.counterItem}>
                 <span style={styles.counterNum}>{counts.checks}</span>
                 {' '}{counts.checks === 1 ? 'check' : 'checks'}
@@ -113,117 +108,138 @@ export function InsightFeed({
 
       {/* Feed */}
       <div ref={scrollRef} style={styles.stream}>
-        {cards.length === 0 ? (
+        {cards.length === 0 && !thinkingCount ? (
           <EmptyState isConnected={isConnected} />
         ) : (
-          cards.map((card, i) => {
-            const key = `${card.kind}-${i}`;
+          <>
+            {cards.map((card, i) => {
+              const key = `${card.kind}-${i}`;
 
-            // Finding with debate thread → composite card
-            if (card.kind === 'finding') {
-              const thread = debateThreads.get(card.findingId);
-              if (thread) {
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <DebateThreadCard thread={thread} profileMap={profileMap} />
-                  </motion.div>
-                );
+              // Finding with debate thread → composite card
+              if (card.kind === 'finding') {
+                const thread = debateThreads.get(card.findingId);
+                if (thread) {
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <DebateThreadCard thread={thread} profileMap={profileMap} />
+                    </motion.div>
+                  );
+                }
               }
-            }
 
-            switch (card.kind) {
-              case 'workflow_step':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <WorkflowStepCard card={card} />
-                  </motion.div>
-                );
+              switch (card.kind) {
+                case 'workflow_step':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <WorkflowStepCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'finding':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <FindingCard
-                      card={card}
-                      resolveAgentName={resolveAgentName}
-                      agentColor={resolveAgentColor(card.agent)}
-                    />
-                  </motion.div>
-                );
+                case 'finding':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <FindingCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.agent)}
+                        profile={profileMap.get(card.agent)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'challenge':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <ChallengeCard
-                      card={card}
-                      resolveAgentName={resolveAgentName}
-                      agentColor={resolveAgentColor(card.challenger)}
-                    />
-                  </motion.div>
-                );
+                case 'challenge':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ChallengeCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.challenger)}
+                        profile={profileMap.get(card.challenger)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'response':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <ResponseCard
-                      card={card}
-                      resolveAgentName={resolveAgentName}
-                      agentColor={resolveAgentColor(card.responder)}
-                    />
-                  </motion.div>
-                );
+                case 'response':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ResponseCard
+                        card={card}
+                        resolveAgentName={resolveAgentName}
+                        agentColor={resolveAgentColor(card.responder)}
+                        profile={profileMap.get(card.responder)}
+                      />
+                    </motion.div>
+                  );
 
-              case 'resolution':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <ResolutionCard card={card} />
-                  </motion.div>
-                );
+                case 'resolution':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ResolutionCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'quality_check':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <QualityCheckCard card={card} />
-                  </motion.div>
-                );
+                case 'quality_check':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <QualityCheckCard card={card} />
+                    </motion.div>
+                  );
 
-              case 'gate':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <GateCard card={card} onClick={onGateClick} />
-                  </motion.div>
-                );
+                case 'gate':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <GateCard card={card} onClick={onGateClick} />
+                    </motion.div>
+                  );
 
-              case 'verification':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <div style={styles.verificationCard}>
-                      <span style={styles.verificationIcon}>
-                        {card.passed ? '\u2713' : '\u2717'}
-                      </span>
-                      <span style={styles.verificationText}>
-                        {card.verificationType}: {card.passed ? 'Passed' : 'Failed'}
-                      </span>
-                      <span style={styles.verificationConf}>
-                        {Math.round(card.confidence * 100)}%
-                      </span>
-                    </div>
-                  </motion.div>
-                );
+                case 'verification':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <div style={styles.verificationCard}>
+                        <span style={styles.verificationIcon}>
+                          {card.passed ? '\u2713' : '\u2717'}
+                        </span>
+                        <span style={styles.verificationText}>
+                          {card.verificationType}: {card.passed ? 'Passed' : 'Failed'}
+                        </span>
+                        <span style={styles.verificationConf}>
+                          {Math.round(card.confidence * 100)}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
 
-              case 'error':
-                return (
-                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
-                    <div style={styles.errorCard}>
-                      <span style={styles.errorIcon}>!</span>
-                      <span style={styles.errorText}>{card.message}</span>
-                    </div>
-                  </motion.div>
-                );
+                case 'error':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <div style={styles.errorCard}>
+                        <span style={styles.errorIcon}>!</span>
+                        <span style={styles.errorText}>{card.message}</span>
+                      </div>
+                    </motion.div>
+                  );
 
-              default:
-                return null;
-            }
-          })
+                default:
+                  return null;
+              }
+            })}
+
+            {/* Active agent thinking bubbles — ephemeral, at bottom of feed */}
+            {activeThinkingAgents && Array.from(activeThinkingAgents.entries()).map(([role, agent]) => (
+              <motion.div
+                key={`thinking-${role}`}
+                variants={streamCardEntrance}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, x: -12, transition: { duration: 0.2 } }}
+              >
+                <AgentThinkingBubble
+                  agent={agent}
+                  profile={profileMap.get(role)}
+                />
+              </motion.div>
+            ))}
+          </>
         )}
       </div>
     </div>

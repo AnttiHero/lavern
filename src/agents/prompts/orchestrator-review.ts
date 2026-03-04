@@ -134,7 +134,36 @@ liability-related findings) into a single resolution. For each resolution:
 
 This creates the formal audit trail. Every finding must be accounted for.
 
-### 5. HUMAN GATE
+### 5. VERIFICATION PASS
+Run the 10-pass verification pipeline on the deliverable before presenting to the human.
+
+Call \`start_verification_pipeline('post_production', document_name)\`.
+
+Execute all 10 passes in order:
+1. **Context** — briefing sufficiency (self-evaluate)
+2. **UX & Findability** — \`calculate_findability_score\`
+3. **Clarity & Readability** — \`calculate_readability_score\`
+4. **Structure** — \`check_document_structure\`
+5. **Accuracy** — dispatch evaluator or self-evaluate against 7 dimensions
+6. **Completeness** — \`run_cross_verification\`
+7. **Risk & Ethics** — \`request_risk_assessment\`
+8. **Formatting** — \`check_document_formatting\`
+9. **Legal Design** — dispatch design-reviewer if available
+10. **Delivery** — check disclaimer, metadata, dual artifacts
+
+Record each pass with \`record_pass_result(pass, score, findings)\`.
+After all 10, call \`compile_verification_report\`.
+
+The verification report includes a verdict (PASS / CONDITIONAL_PASS / FAIL) and
+severity-categorized findings. Present the verdict alongside the deliverable at
+the human gate — the human sees both the work and the quality certificate.
+
+If verification is disabled for this session, skip: call \`advance_step\`
+with completed_step: "verification_pass" immediately.
+
+Call \`advance_step\` with completed_step: "verification_pass".
+
+### 6. HUMAN GATE
 Present findings in DECISION ORDER, not document order:
 1. Deal-breakers — things that should stop the process
 2. Negotiation priorities — things to push back on, ranked by importance
@@ -146,7 +175,7 @@ record the override clearly. This is an audit trail, not a suggestion box.
 
 Call \`advance_step\` with completed_step: "final_gate" and gate_decision.
 
-### 6. DELIVERED
+### 7. DELIVERED
 Present the final deliverable. Save patterns with \`save_precedent\` and new
 lessons with \`add_institutional_memory\` — especially novel risk patterns the
 evaluator flagged.

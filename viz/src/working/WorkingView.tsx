@@ -158,6 +158,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
         isConnected={state.connectionStatus === 'connected'}
         debateThreads={debateThreads}
+        activeThinkingAgents={state.activeThinkingAgents}
       />
 
       {/* Session list overlay when disconnected */}

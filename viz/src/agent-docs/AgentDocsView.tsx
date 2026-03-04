@@ -355,6 +355,7 @@ export default function AgentDocsView({ onBack }: Props) {
   const [reputation, setReputation] = useState<ReputationData | null>(null);
   const [activeLang, setActiveLang] = useState<CodeLang>('curl');
   const [backHover, setBackHover] = useState(false);
+  const [clawHover, setClawHover] = useState(false);
 
   const baseUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.host}`
@@ -403,6 +404,7 @@ export default function AgentDocsView({ onBack }: Props) {
       >
         {'\u2190'} Back
       </button>
+
 
       <div style={sty.container}>
         {/* ── Header ─────────────────────────────────────── */}
@@ -733,6 +735,62 @@ export default function AgentDocsView({ onBack }: Props) {
             </div>
           </div>
         </Section>
+
+        {/* ── Claw Mode — the secret door ────────────── */}
+        <div
+          style={{
+            marginTop: 80,
+            paddingTop: 48,
+            borderTop: `1px solid ${D.border}`,
+            textAlign: 'center',
+            animation: 'agentFadeIn 0.8s ease 2.5s both',
+          }}
+        >
+          <div style={{
+            fontSize: 11,
+            fontFamily: fonts.sans,
+            fontWeight: 600,
+            letterSpacing: 3,
+            textTransform: 'uppercase' as const,
+            color: D.textDim,
+            marginBottom: 20,
+            opacity: 0.5,
+          }}>
+            {'\u00b7 \u00b7 \u00b7'}
+          </div>
+          <button
+            onClick={() => { window.location.hash = '#/claw'; }}
+            onMouseEnter={() => setClawHover(true)}
+            onMouseLeave={() => setClawHover(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '16px 32px',
+              cursor: 'pointer',
+              transition: 'all 0.5s ease',
+              opacity: clawHover ? 1 : 0.3,
+            }}
+          >
+            <div style={{
+              fontSize: 32,
+              marginBottom: 8,
+              transition: 'transform 0.5s ease',
+              transform: clawHover ? 'scale(1.2) rotate(-10deg)' : 'scale(1)',
+            }}>
+              {'\uD83E\uDD80'}
+            </div>
+            <div style={{
+              fontFamily: fonts.serif,
+              fontStyle: 'italic',
+              fontSize: 14,
+              color: clawHover ? 'rgba(250, 249, 246, 0.7)' : D.textDim,
+              letterSpacing: 1,
+              transition: 'color 0.5s ease',
+            }}>
+              Let it watch. Let it work.
+            </div>
+          </button>
+        </div>
 
         {/* ── Footer ──────────────────────────────────── */}
         <div style={sty.footer}>

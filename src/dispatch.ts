@@ -40,6 +40,8 @@ export interface DispatchOptions extends SchemOptions {
   intensity?: IntensityLevel;
   /** v9: YOLO mode — auto-approve all gates, fully automated */
   yoloMode?: boolean;
+  /** v9: Enable 10-pass verification pipeline before delivery */
+  verification?: boolean;
 }
 
 /**
