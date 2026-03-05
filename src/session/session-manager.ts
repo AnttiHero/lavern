@@ -114,12 +114,16 @@ export class SessionManager {
     const now = Date.now();
     let evicted = 0;
 
-    // Phase 1: TTL eviction
+    // Phase 1: TTL eviction (collect first to avoid modifying map during iteration)
+    const expired: [string, SessionEntry][] = [];
     for (const [id, entry] of this.sessions) {
       if (now - entry.createdAt > config.sessionTtlMs) {
-        this.evictSession(id, entry);
-        evicted++;
+        expired.push([id, entry]);
       }
+    }
+    for (const [id, entry] of expired) {
+      this.evictSession(id, entry);
+      evicted++;
     }
 
     // Phase 2: Cap enforcement — remove oldest sessions if still over limit
@@ -127,7 +131,8 @@ export class SessionManager {
       const sorted = [...this.sessions.entries()].sort(
         (a, b) => a[1].createdAt - b[1].createdAt
       );
-      const toRemove = sorted.slice(0, this.sessions.size - config.maxSessions + 1);
+      const excess = Math.max(1, this.sessions.size - config.maxSessions);
+      const toRemove = sorted.slice(0, excess);
       for (const [id, entry] of toRemove) {
         this.evictSession(id, entry);
         evicted++;

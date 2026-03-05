@@ -245,7 +245,7 @@ export function useLLMInterview(
           // Remove the user message we just optimistically added
           if (userMessage) {
             const lastUser = cleaned[cleaned.length - 1];
-            if (lastUser && lastUser.role === 'user' && lastUser.content === userMessage) {
+            if (lastUser && lastUser.role === 'user' && lastUser.content.trim() === userMessage.trim()) {
               cleaned = cleaned.slice(0, -1);
             }
           }

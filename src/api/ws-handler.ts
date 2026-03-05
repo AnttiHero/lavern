@@ -109,6 +109,7 @@ export function attachReplayStream(
   let index = 0;
   let playing = true;
   let currentSpeed = speed;
+  let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
   const meta = {
     type: 'replay_start',
@@ -156,8 +157,14 @@ export function attachReplayStream(
 
     // Calculate delay based on speed (base: 200ms per event)
     const delay = Math.max(20, 200 / currentSpeed);
-    setTimeout(playNext, delay);
+    pendingTimer = setTimeout(playNext, delay);
   }
+
+  // Clean up timer on disconnect
+  socket.on('close', () => {
+    playing = false;
+    if (pendingTimer) clearTimeout(pendingTimer);
+  });
 
   // Start playback
   playNext();

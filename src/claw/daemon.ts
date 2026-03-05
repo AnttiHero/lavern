@@ -247,8 +247,10 @@ export function tailLogs(): void {
     const tail = spawn('tail', ['-f', ...files], { stdio: 'inherit' });
 
     process.on('SIGINT', () => {
-      tail.kill();
-      process.exit(0);
+      tail.kill('SIGTERM');
+      tail.on('exit', () => process.exit(0));
+      // Force exit after 2s if tail doesn't terminate
+      setTimeout(() => process.exit(0), 2000).unref();
     });
   } catch (err) {
     console.error('Failed to tail logs:', err);

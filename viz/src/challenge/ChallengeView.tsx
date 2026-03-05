@@ -178,10 +178,10 @@ function DimensionBar({
   const bWins = dim.scoreB > dim.scoreA;
 
   const labelA = revealed && assignment
-    ? (assignment.A === 'marble' ? 'MARBLE' : 'YOUR LAWYER')
+    ? (assignment.A === 'marble' ? 'MARBLE' : 'CHALLENGER')
     : 'DOCUMENT A';
   const labelB = revealed && assignment
-    ? (assignment.B === 'marble' ? 'MARBLE' : 'YOUR LAWYER')
+    ? (assignment.B === 'marble' ? 'MARBLE' : 'CHALLENGER')
     : 'DOCUMENT B';
 
   const colorA = revealed && assignment
@@ -410,7 +410,7 @@ export default function ChallengeView({ onBack }: Props) {
           <h1 style={sty.logoWrap}>MARBLE</h1>
           <div style={sty.rule} />
           <h2 style={sty.heroTitle}>The Marble Challenge</h2>
-          <p style={sty.heroSubtitle}>We will beat your lawyer.</p>
+          <p style={sty.heroSubtitle}>We will beat your lawyer. And their AI.</p>
         </div>
 
         {/* ── Rules ──────────────────────────────────── */}
@@ -419,7 +419,7 @@ export default function ChallengeView({ onBack }: Props) {
             <div style={sty.rulesGrid}>
               <div style={sty.ruleCard}>
                 <div style={sty.ruleNum}>1</div>
-                <div style={sty.ruleText}>Upload the Marble-created document and the human-created document.</div>
+                <div style={sty.ruleText}>Upload the Marble version and the challenger. Your lawyer, Harvey, Legora. Anyone.</div>
               </div>
               <div style={sty.ruleCard}>
                 <div style={sty.ruleNum}>2</div>
@@ -431,10 +431,10 @@ export default function ChallengeView({ onBack }: Props) {
               </div>
               <div style={sty.ruleCard}>
                 <div style={sty.ruleNum}>4</div>
-                <div style={sty.ruleText}>If your lawyer wins, the engagement is free.</div>
+                <div style={sty.ruleText}>If the challenger wins, the engagement is free.</div>
               </div>
             </div>
-            <p style={sty.bravado}>{"We've never lost."}</p>
+            <p style={sty.bravado}>{"We don't like to lose. Luckily, it doesn't happen often."}</p>
           </Section>
         )}
 
@@ -449,8 +449,8 @@ export default function ChallengeView({ onBack }: Props) {
               />
               <div style={sty.uploadVs}>vs</div>
               <UploadZone
-                label="YOUR LAWYER"
-                prompt="Drop the human document"
+                label="THE CHALLENGER"
+                prompt="Drop the challenger's document"
                 upload={humanUpload}
               />
             </div>
@@ -523,7 +523,7 @@ export default function ChallengeView({ onBack }: Props) {
                     transition: 'all 0.5s ease',
                   }}>
                     {revealed
-                      ? (result.assignment.A === 'marble' ? 'MARBLE' : 'YOUR LAWYER')
+                      ? (result.assignment.A === 'marble' ? 'MARBLE' : 'CHALLENGER')
                       : 'DOCUMENT A'}
                   </div>
                   <div style={{
@@ -545,7 +545,7 @@ export default function ChallengeView({ onBack }: Props) {
                     transition: 'all 0.5s ease',
                   }}>
                     {revealed
-                      ? (result.assignment.B === 'marble' ? 'MARBLE' : 'YOUR LAWYER')
+                      ? (result.assignment.B === 'marble' ? 'MARBLE' : 'CHALLENGER')
                       : 'DOCUMENT B'}
                   </div>
                   <div style={{
@@ -607,9 +607,14 @@ export default function ChallengeView({ onBack }: Props) {
                 )}
                 {result.winner === 'human' && (
                   <>
-                    <div style={sty.resultTitle}>You win. We pay.</div>
+                    <div style={{
+                      ...sty.resultTitle,
+                      animation: 'chWinnerGlow 2s ease-in-out infinite',
+                    }}>
+                      Credit where it's due.
+                    </div>
                     <div style={sty.resultSummary}>
-                      {"This doesn't happen often. Your refund is on the way."}
+                      {"The challenger took this one. The engagement is on us."}
                     </div>
                     <div style={sty.resultSummary}>{result.summary}</div>
                   </>
@@ -618,7 +623,7 @@ export default function ChallengeView({ onBack }: Props) {
                   <>
                     <div style={sty.resultTitle}>Dead heat.</div>
                     <div style={sty.resultSummary}>
-                      {"We'll take that as a win. Your lawyer charges more."}
+                      {"Both documents held their own. We respect a worthy opponent."}
                     </div>
                   </>
                 )}

@@ -73,6 +73,9 @@ export interface WorkingState {
 export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
   const completionFiredRef = useRef(false);
+  // Stable ref for onSessionEnd to avoid restarting effects when callback identity changes
+  const onSessionEndRef = useRef(onSessionEnd);
+  onSessionEndRef.current = onSessionEnd;
 
   // Connection
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -123,11 +126,11 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       setCompletedSteps(prev =>
         prev.includes('delivered') ? prev : [...prev, 'delivered']
       );
-      if (onSessionEnd) {
-        setTimeout(onSessionEnd, 2000);
+      if (onSessionEndRef.current) {
+        setTimeout(onSessionEndRef.current, 2000);
       }
     }
-  }, [onSessionEnd]);
+  }, []);
 
   // Stable ref for handleEvent to avoid re-creating WS client on every render
   const handleEventRef = useRef(handleEvent);
@@ -271,13 +274,13 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           if (data.workflow?.currentStep) setCurrentStep(data.workflow.currentStep);
           if (data.workflow?.completedSteps?.length) setCompletedSteps(data.workflow.completedSteps);
           if (data.cost) setCost({ accumulated: data.cost.accumulated, budget: data.cost.budget });
-          if (onSessionEnd) setTimeout(onSessionEnd, 1500);
+          if (onSessionEndRef.current) setTimeout(onSessionEndRef.current, 1500);
         }
       } catch { /* ignore */ }
     }, 5_000);
 
     return () => clearInterval(poll);
-  }, [sessionId, onSessionEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Demo simulator ──────────────────────────────────────────────────
 

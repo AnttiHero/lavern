@@ -173,6 +173,14 @@ export function registerSessionRoutes(
           source: 'orchestrator',
           timestamp: new Date().toISOString(),
         });
+        // Emit session_end so frontend transitions and session gets archived
+        session.events.emitEvent({
+          type: 'session_end',
+          sessionId: session.id,
+          totalCost: session.accumulatedCost,
+          duration: Date.now() - new Date(session.workflow.startedAt).getTime(),
+          timestamp: new Date().toISOString(),
+        });
       });
     } else if (body.documentPath) {
       // Legacy mode — runTheShem directly

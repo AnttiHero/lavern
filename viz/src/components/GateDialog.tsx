@@ -6,7 +6,7 @@
  * Sends approve/reject/modify back via API.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 
 interface GateDialogProps {
@@ -37,14 +37,18 @@ export function GateDialog({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
+  // Stable ref to avoid re-registering listener when onDismiss identity changes
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !submitting) onDismiss();
+      if (e.key === 'Escape' && !submitting) onDismissRef.current();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onDismiss, submitting]);
+  }, [submitting]);
 
   const handleDecision = async (decision: 'approve' | 'reject' | 'modify') => {
     setSubmitting(true);

@@ -15,7 +15,7 @@
  * without a live backend.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import type { ShemEvent, Severity } from '../../types/events.js';
 
 interface DemoSimulatorOptions {
@@ -320,6 +320,9 @@ function buildDemoScript(teamRoles: string[]): Array<{ delayMs: number; event: S
 
 export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulatorOptions) {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Stable ref for onEvent to avoid restarting demo when callback identity changes
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
 
   useEffect(() => {
     // Clean up previous timers
@@ -332,7 +335,7 @@ export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulato
 
     for (const { delayMs, event } of script) {
       const timer = setTimeout(() => {
-        onEvent(event);
+        onEventRef.current(event);
       }, delayMs);
       timersRef.current.push(timer);
     }
@@ -341,5 +344,5 @@ export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulato
       for (const t of timersRef.current) clearTimeout(t);
       timersRef.current = [];
     };
-  }, [sessionId, teamRoles.join(','), onEvent]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId, teamRoles.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 }

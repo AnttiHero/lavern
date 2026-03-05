@@ -41,8 +41,8 @@ function estimateTurnCost(usage: Record<string, number> | undefined, model?: str
   const cacheRead = usage.cache_read_input_tokens ?? 0;
   const cacheCreate = usage.cache_creation_input_tokens ?? 0;
 
-  // Non-cached input = total input minus cached portions
-  const regularInput = Math.max(0, inputTokens - cacheRead - cacheCreate);
+  // Non-cached input = total input minus cache-read tokens (cacheCreate is billed separately)
+  const regularInput = Math.max(0, inputTokens - cacheRead);
 
   return (
     (regularInput * prices.input / 1_000_000) +

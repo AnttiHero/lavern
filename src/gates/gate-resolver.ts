@@ -104,7 +104,7 @@ export class AsyncGateResolver implements GateResolver {
     request: GateRequest;
     resolve: (decision: GateDecision) => void;
     createdAt: number;
-    timer: ReturnType<typeof setTimeout>;
+    timer: ReturnType<typeof setTimeout> | null;
   } | null = null;
 
   /** Gate timeout in ms. Default 5 minutes. Set to 0 to disable. */
@@ -117,7 +117,7 @@ export class AsyncGateResolver implements GateResolver {
   async resolve(request: GateRequest): Promise<GateDecision> {
     // Clear any stale pending gate (safety net)
     if (this.pendingGate) {
-      clearTimeout(this.pendingGate.timer);
+      if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
       this.pendingGate.resolve({ decision: 'approve', notes: 'Superseded by new gate request' });
       this.pendingGate = null;
     }
@@ -134,7 +134,7 @@ export class AsyncGateResolver implements GateResolver {
               });
             }
           }, this.timeoutMs)
-        : setTimeout(() => {}, 0); // no-op timer if disabled
+        : null; // no timer when timeout disabled
 
       this.pendingGate = {
         request,
@@ -171,7 +171,7 @@ export class AsyncGateResolver implements GateResolver {
    */
   submitDecision(decision: GateDecision): boolean {
     if (!this.pendingGate) return false;
-    clearTimeout(this.pendingGate.timer);
+    if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
     this.pendingGate.resolve(decision);
     this.pendingGate = null;
     return true;
@@ -182,7 +182,7 @@ export class AsyncGateResolver implements GateResolver {
    */
   cancel(): void {
     if (this.pendingGate) {
-      clearTimeout(this.pendingGate.timer);
+      if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
       this.pendingGate.resolve({ decision: 'reject', notes: 'Session cancelled' });
       this.pendingGate = null;
     }
