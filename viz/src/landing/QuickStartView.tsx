@@ -37,6 +37,8 @@ interface QuickStartProps {
   onQuickStart: (question: string, tier: YoloTier, parsedDocs: FrontendParsedDocument[]) => Promise<void>;
   onGuidedFlow: () => void;
   onBetTheCompany?: () => void;
+  onPricing?: () => void;
+  onChallenge?: () => void;
 }
 
 // ── Shimmer Button (borrowed from LobbyView) ──────────────────────────
@@ -87,7 +89,7 @@ function ShimmerButton({
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCompany }: QuickStartProps) {
+export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCompany, onPricing, onChallenge }: QuickStartProps) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -99,7 +101,9 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const [instructHovered, setInstructHovered] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [archiveHovered, setArchiveHovered] = useState(false);
+  const [pricingHovered, setPricingHovered] = useState(false);
   const [agentsHovered, setAgentsHovered] = useState(false);
+  const [challengeHovered, setChallengeHovered] = useState(false);
 
   // Document upload
   const {
@@ -191,25 +195,68 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         className="relative z-2 w-full flex justify-between items-center pt-5 px-7 box-border"
         style={{ animation: 'qsFadeIn 0.5s ease 0.7s both' }}
       >
-        {/* The Archive — quiet serif, just typography */}
-        <button
-          onClick={() => { window.location.hash = '#/archive'; }}
-          className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
-          style={{
-            padding: '4px 0',
-            color: archiveHovered ? colors.text : colors.textMuted,
-            fontFamily: fonts.serif,
-            fontStyle: 'italic',
-            fontSize: 15,
-            fontWeight: 400,
-            letterSpacing: 0.5,
-            borderBottom: archiveHovered ? `1px solid ${colors.text}` : '1px solid transparent',
-          }}
-          onMouseEnter={() => setArchiveHovered(true)}
-          onMouseLeave={() => setArchiveHovered(false)}
-        >
-          The Archive
-        </button>
+        <div className="flex items-center gap-5">
+          {/* The Archive — quiet serif, just typography */}
+          <button
+            onClick={() => { window.location.hash = '#/archive'; }}
+            className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
+            style={{
+              padding: '4px 0',
+              color: archiveHovered ? colors.text : colors.textMuted,
+              fontFamily: fonts.serif,
+              fontStyle: 'italic',
+              fontSize: 15,
+              fontWeight: 400,
+              letterSpacing: 0.5,
+              borderBottom: archiveHovered ? `1px solid ${colors.text}` : '1px solid transparent',
+            }}
+            onMouseEnter={() => setArchiveHovered(true)}
+            onMouseLeave={() => setArchiveHovered(false)}
+          >
+            The Archive
+          </button>
+          {/* Billable Hours — pricing */}
+          {onPricing && (
+            <button
+              onClick={onPricing}
+              className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
+              style={{
+                padding: '4px 0',
+                color: pricingHovered ? colors.text : colors.textMuted,
+                fontFamily: fonts.serif,
+                fontStyle: 'italic',
+                fontSize: 15,
+                fontWeight: 400,
+                letterSpacing: 0.5,
+                borderBottom: pricingHovered ? `1px solid ${colors.text}` : '1px solid transparent',
+              }}
+              onMouseEnter={() => setPricingHovered(true)}
+              onMouseLeave={() => setPricingHovered(false)}
+            >
+              The Billable Hours
+            </button>
+          )}
+          {onChallenge && (
+            <button
+              onClick={onChallenge}
+              className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
+              style={{
+                padding: '4px 0',
+                color: challengeHovered ? colors.text : colors.textMuted,
+                fontFamily: fonts.serif,
+                fontStyle: 'italic',
+                fontSize: 15,
+                fontWeight: 400,
+                letterSpacing: 0.5,
+                borderBottom: challengeHovered ? `1px solid ${colors.text}` : '1px solid transparent',
+              }}
+              onMouseEnter={() => setChallengeHovered(true)}
+              onMouseLeave={() => setChallengeHovered(false)}
+            >
+              The Challenge
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Claw — the night shift */}
@@ -585,9 +632,58 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         </div>
       )}
 
+      {/* ── The Marble Challenge ────────────────────────── */}
+      {onChallenge && (
+        <div
+          className={cn(
+            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-3 box-border',
+            'flex flex-col sm:flex-row items-start sm:items-center gap-6',
+            'p-5 sm:p-6 lg:px-8 lg:py-7',
+            'rounded-xl cursor-pointer',
+            'transition-[border-color,background-color,box-shadow] duration-300 ease-in-out',
+          )}
+          style={{
+            animation: 'qsFadeUp 0.6s ease 1s both',
+            backgroundColor: 'rgba(10, 10, 15, 0.85)',
+            border: '1.5px solid rgba(184, 150, 11, 0.2)',
+          }}
+          onClick={onChallenge}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'rgba(184, 150, 11, 0.5)';
+            e.currentTarget.style.backgroundColor = 'rgba(10, 10, 15, 0.95)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'rgba(184, 150, 11, 0.2)';
+            e.currentTarget.style.backgroundColor = 'rgba(10, 10, 15, 0.85)';
+          }}
+        >
+          <div className="flex-1">
+            <h3
+              className="text-[22px] font-light m-0 tracking-tight"
+              style={{ fontFamily: fonts.serif, color: '#B8960B' }}
+            >
+              The Marble Challenge
+            </h3>
+            <p
+              className="text-[13px] mt-2 leading-relaxed tracking-[0.15px]"
+              style={{ fontFamily: fonts.sans, color: 'rgba(250, 249, 246, 0.7)' }}
+            >
+              We will beat your lawyer. Upload any document. Blind judge.
+              If yours wins, it's free.
+            </p>
+          </div>
+          <div
+            className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-[border-color] duration-300 ease-in-out"
+            style={{ border: '1.5px solid rgba(184, 150, 11, 0.3)' }}
+          >
+            <span className="text-xl" style={{ color: '#B8960B' }}>{'\u2192'}</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Footer ───────────────────────────────────────── */}
       <div
-        className="relative z-2 mt-auto pt-12 pb-8 text-center"
+        className="relative z-2 mt-auto pt-12 pb-8 text-center flex flex-col items-center gap-4"
         style={{ animation: 'qsFadeIn 0.4s ease 1s both' }}
       >
         <MarbleIlluminated

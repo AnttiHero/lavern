@@ -92,7 +92,8 @@ function buildBillingData(): BillingData | null {
   const matterStr = sessionStorage.getItem('shem-matter-data');
   const sessionId = sessionStorage.getItem('shem-session-id') ?? 'N/A';
 
-  let matter: Record<string, unknown> | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let matter: any = null;
   if (matterStr) {
     try { matter = JSON.parse(matterStr); } catch { /* corrupt data — use defaults */ }
   }

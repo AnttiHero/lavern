@@ -43,6 +43,7 @@ import { registerDocumentRoutes } from './routes/documents.js';
 import { registerKnowledgeBaseRoutes } from './routes/knowledge-base.js';
 import { registerVerifyRoutes } from './routes/verify.js';
 import { registerClawRoutes } from './routes/claw.js';
+import { registerChallengeRoutes } from './routes/challenge.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { initDatabase, cleanExpiredTokens } from '../db/database.js';
@@ -139,6 +140,8 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    // The Marble Challenge — zero-friction, no auth required
+    'POST /api/challenge',
     // Frontend static files (prefix match — trailing /)
     '/dashboard/',
   ];
@@ -240,6 +243,9 @@ export async function startApiServer(port: number): Promise<void> {
         deleteCollection: 'DELETE /api/knowledge-base/collections/:id',
         deleteDocument: 'DELETE /api/knowledge-base/documents/:id',
       },
+      challenge: {
+        compare: 'POST /api/challenge',
+      },
       health: 'GET /health',
     },
   }));
@@ -272,6 +278,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerVerifyRoutes(fastify, sessionManager);
   // Claw Mode — remote monitoring & control
   registerClawRoutes(fastify);
+  // v19: The Marble Challenge — blind document comparison
+  registerChallengeRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

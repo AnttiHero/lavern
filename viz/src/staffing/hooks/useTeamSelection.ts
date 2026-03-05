@@ -15,7 +15,7 @@ export function useTeamSelection(
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [atCapFlash, setAtCapFlash] = useState(false);
-  const capFlashTimer = useRef<ReturnType<typeof setTimeout>>();
+  const capFlashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Clean up timer on unmount
   useEffect(() => () => { clearTimeout(capFlashTimer.current); }, []);

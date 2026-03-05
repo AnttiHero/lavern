@@ -20,8 +20,8 @@ export function useKbSearch() {
   const [results, setResults] = useState<KbSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const abortRef = useRef<AbortController>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const abortRef = useRef<AbortController>(undefined);
 
   const search = useCallback((q: string) => {
     setQuery(q);

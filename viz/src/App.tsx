@@ -16,6 +16,8 @@
  *   #/my-cases   → Active & past sessions
  *   #/my-page    → User profile & settings
  *   #/claw       → Claw Mode remote monitoring dashboard
+ *   #/pricing    → Billable Hours — pricing page
+ *   #/challenge  → The Marble Challenge — blind document comparison
  *
  * All views are lazy-loaded React components in their own directories.
  * App.tsx handles routing and cross-view data flow via sessionStorage.
@@ -54,8 +56,10 @@ const LoginView = lazy(() => import('./auth/LoginView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
 const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
+const PricingView = lazy(() => import('./pricing/PricingView.js'));
+const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
 
-type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive';
+type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -78,6 +82,8 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/bet-the-company')) return 'bet-the-company';
   if (hash.startsWith('#/claw')) return 'claw';
   if (hash.startsWith('#/archive')) return 'archive';
+  if (hash.startsWith('#/pricing')) return 'pricing';
+  if (hash.startsWith('#/challenge')) return 'challenge';
   return 'landing';
 }
 
@@ -459,6 +465,8 @@ export function App() {
             onQuickStart={handleQuickStart}
             onGuidedFlow={() => { window.location.hash = '#/intake'; }}
             onBetTheCompany={() => { window.location.hash = '#/bet-the-company'; }}
+            onPricing={() => { window.location.hash = '#/pricing'; }}
+            onChallenge={() => { window.location.hash = '#/challenge'; }}
           />
         </Suspense>
       </ErrorBoundary>
@@ -674,6 +682,32 @@ export function App() {
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <BetTheCompanyView onBack={() => { window.location.hash = '#/quickstart'; }} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Pricing — Billable Hours ───────────────────────────────────────
+  if (view === 'pricing') {
+    return (
+      <ErrorBoundary>
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Loading..." />}>
+          <PricingView onBack={() => { window.location.hash = '#/quickstart'; }} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── The Marble Challenge — blind document comparison ────────────────
+  if (view === 'challenge') {
+    return (
+      <ErrorBoundary>
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Loading..." />}>
+          <ChallengeView onBack={() => { window.location.hash = '#/quickstart'; }} />
         </Suspense>
       </ErrorBoundary>
     );
