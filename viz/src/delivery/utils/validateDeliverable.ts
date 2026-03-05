@@ -139,7 +139,8 @@ export function analyzeContentDensity(text: string): {
 // ── Main Validation ───────────────────────────────────────────────────────
 
 /**
- * Validate that text is a legitimate deliverable document.
+ * Structural validation only — no placeholder detection (that's the LLM quality
+ * gate's job, since regex can't tell legitimate template fields from garbage).
  */
 export function validateDeliverable(text: string): { valid: boolean; reason?: string } {
   if (!text) return { valid: false, reason: 'empty' };
@@ -152,9 +153,6 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: st
 
   const headingCount = (trimmed.match(/^#{1,6}\s/gm) || []).length;
   if (headingCount < 3) return { valid: false, reason: 'no_structure' };
-
-  const placeholders = countPlaceholders(trimmed);
-  if (placeholders >= 2) return { valid: false, reason: 'placeholders' };
 
   const density = analyzeContentDensity(trimmed);
   if (density.sectionsWithContent < 2 || density.avgCharsPerSection < 100) {

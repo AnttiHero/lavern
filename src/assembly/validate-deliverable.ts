@@ -198,7 +198,6 @@ export type ValidationReason =
   | 'no_heading'
   | 'process_text'
   | 'no_structure'
-  | 'placeholders'
   | 'thin_content'
   | 'process_contamination';
 
@@ -208,15 +207,19 @@ export type ValidationReason =
  * Returns { valid: true } if the text passes ALL checks, or
  * { valid: false, reason } describing why it failed.
  *
- * Checks (in order):
+ * Checks (in order — all mechanical, no semantic judgment):
  *   1. Not empty
  *   2. At least 500 chars
  *   3. Starts with markdown heading
  *   4. Head is not a process dump (first 500 chars)
  *   5. Has at least 3 markdown headings (structure)
- *   6. No placeholder text ([Insert X], [TBD], etc.)
- *   7. Sufficient content density (sections have real content)
- *   8. Full-text process contamination < 20%
+ *   6. Sufficient content density (sections have real content)
+ *   7. Full-text process contamination < 20%
+ *
+ * NOTE: Placeholder detection (e.g., [Insert Date], [TBD]) is intentionally
+ * NOT here. Regex cannot distinguish legitimate template fields from garbage.
+ * The LLM quality gate handles this — it reads the document and judges whether
+ * placeholders are appropriate in context.
  */
 export function validateDeliverable(text: string): { valid: boolean; reason?: ValidationReason } {
   if (!text) return { valid: false, reason: 'empty' };
@@ -236,11 +239,7 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: Va
   const headingCount = (trimmed.match(/^#{1,6}\s/gm) || []).length;
   if (headingCount < 3) return { valid: false, reason: 'no_structure' };
 
-  // 5. No placeholder text
-  const placeholders = countPlaceholders(trimmed);
-  if (placeholders >= 2) return { valid: false, reason: 'placeholders' };
-
-  // 6. Content density — at least 2 sections with ≥150 chars of body text
+  // 5. Content density — at least 2 sections with ≥150 chars of body text
   //    Average threshold is 100 (not 150) because title headings often have
   //    zero body text, dragging the average down for legitimate documents.
   const density = analyzeContentDensity(trimmed);

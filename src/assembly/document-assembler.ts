@@ -73,11 +73,10 @@ RULES (violations will cause rejection):
 3. The output must be the COMPLETE document — not a summary, not a plan, not commentary.
 4. The output must have clear section structure with multiple markdown headings.
 5. ONLY output the deliverable. Nothing else.
-6. Do NOT use placeholder text like [Insert Date], [TBD], [PLACEHOLDER].
-7. Every section must have substantial content (at least a full paragraph).
-8. The document must SPECIFICALLY address the client's request — not generic boilerplate.
-9. Reference SPECIFIC clauses, issues, and provisions from the source document.
-10. A quality reviewer will READ your output. If it is generic filler, it will be rejected.`;
+6. Every section must have substantial content (at least a full paragraph).
+7. The document must SPECIFICALLY address the client's request — not generic boilerplate.
+8. Reference SPECIFIC clauses, issues, and provisions from the source document.
+9. A quality reviewer will READ your output. If it is generic filler, it will be rejected.`;
 
 /** Addendum for attempt 3: final attempt with explicit validation rules. */
 const RETRY_ADDENDUM_3 = `
@@ -92,15 +91,14 @@ STRUCTURAL RULES (automated validator):
 1. Must start with "#" (markdown heading) — NO preamble of any kind
 2. Must be at least 500 characters long
 3. Must have at least 3 markdown headings (##)
-4. Must NOT contain placeholder text like [Insert ...], [TBD], [PLACEHOLDER], [Current Date]
-5. Must have at least 2 sections with 150+ characters of body text each
-6. Must NOT contain process language ("I'll", "Let me", "Based on my analysis", etc.)
+4. Must have at least 2 sections with 150+ characters of body text each
+5. Must NOT contain process language ("I'll", "Let me", "Based on my analysis", etc.)
 
 SUBSTANCE RULES (quality reviewer reads your output):
-7. Must SPECIFICALLY address the client's original request — not generic analysis
-8. Must reference SPECIFIC provisions, clauses, or issues from the source document
-9. Must contain ACTIONABLE, specific analysis — not vague observations
-10. A paying client who waited 10 minutes for this must feel they received real value
+6. Must SPECIFICALLY address the client's original request — not generic analysis
+7. Must reference SPECIFIC provisions, clauses, or issues from the source document
+8. Must contain ACTIONABLE, specific analysis — not vague observations
+9. A paying client who waited 10 minutes for this must feel they received real value
 
 Produce the FULL, SUBSTANTIVE document now.`;
 
@@ -161,6 +159,7 @@ Judge this document on these criteria:
 2. SUBSTANCE — Does it contain specific, actionable analysis? Or is it generic boilerplate that could apply to any document? Look for specific clause references, specific risk assessments, specific recommendations.
 3. COMPLETENESS — Does it cover the key issues you'd expect? A contract review should cover liability, termination, IP, indemnification, etc. A research memo should have analysis and conclusions.
 4. CLIENT VALUE — Would a paying client be satisfied receiving this? Or would they feel ripped off?
+5. PLACEHOLDERS — Does it contain garbage placeholders like [TBD], [PLACEHOLDER], [TODO], [SECTION TITLE], or [Analysis goes here]? That's a FAIL. But template fields like [Insert Date], [Company Name], [Effective Date] in a drafted document (policy, contract, terms of service) are EXPECTED and fine — that's a PASS.
 
 Respond with EXACTLY one of these two formats (no other text):
 PASS
@@ -301,7 +300,8 @@ export async function assembleDocument(
 
       // ── Validate the assembled output ──────────────────────────────
 
-      // Step 1: Structural validation (fast, no API call)
+      // Step 1: Structural validation (fast, no API call).
+      // Catches mechanical failures only — placeholder judgment is the quality gate's job.
       const validation = validateDeliverable(assembledText);
 
       if (!validation.valid) {
