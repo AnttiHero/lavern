@@ -7,20 +7,20 @@
  */
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
+import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { SimpleMarkdown } from './SimpleMarkdown.js';
-import { validateDeliverable } from '../utils/validateDeliverable.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
   data: DeliveryData;
+  assemblyStatus: AssemblyStatus;
+  onRetryAssembly?: () => void;
 }
 
-export function TheWorkTab({ data }: Props) {
-  // v18: Use shared validator to detect process dumps
-  const hasDocument = data.finalOutput
-    && validateDeliverable(data.finalOutput).valid;
+export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
+  const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 0;
 
   return (
     <div>
@@ -32,7 +32,7 @@ export function TheWorkTab({ data }: Props) {
       </div>
 
       {/* ── Downloads first — this is what the client wants ───── */}
-      <DownloadPanel data={data} />
+      <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
 
       {/* ── Document preview — show a snippet of the actual doc ── */}
       {hasDocument && (
@@ -142,7 +142,7 @@ export function TheWorkTab({ data }: Props) {
       )}
 
       {/* ── Derivative Document Generation ────────────────────────── */}
-      <DerivativesPanel data={data} />
+      <DerivativesPanel data={data} assemblyStatus={assemblyStatus} />
     </div>
   );
 }

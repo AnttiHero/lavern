@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { validateDeliverable } from '../utils/validateDeliverable.js';
 
 // ── Public types ─────────────────────────────────────────────────────────
 
@@ -117,16 +118,22 @@ export interface DeliveryData {
 const POLL_INTERVAL_MS = 3_000;
 const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 
+export type AssemblyStatus = 'polling' | 'ready' | 'timeout' | 'error';
+
 export function useDeliveryData(): {
   data: DeliveryData | null;
   loading: boolean;
   error: string | null;
+  assemblyStatus: AssemblyStatus;
+  retryAssembly: () => Promise<void>;
 } {
   const [data, setData] = useState<DeliveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [assemblyStatus, setAssemblyStatus] = useState<AssemblyStatus>('polling');
   const cancelledRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const startTimeRef = useRef(Date.now());
 
   const fetchSession = useCallback(async (sessionId: string, startTime: number) => {
     if (cancelledRef.current) return;
@@ -142,6 +149,7 @@ export function useDeliveryData(): {
           if (cancelledRef.current) return;
           setData(mapArchiveResponse(sessionId, raw));
           setLoading(false);
+          setAssemblyStatus('ready');
           return; // No polling for archived sessions
         }
         throw new Error('Session not found');
@@ -155,9 +163,23 @@ export function useDeliveryData(): {
       setData(mapped);
       setLoading(false);
 
-      // Keep polling if not complete and within time limit
+      // Keep polling if not complete OR if complete but document assembly hasn't
+      // finished yet. Assembly runs AFTER the workflow reaches 'delivered' and takes
+      // ~30 seconds — without this check the frontend stops polling before
+      // assembledDocument is available, showing the "assembly not completed" warning.
+      const deliverableValid = validateDeliverable(mapped.finalOutput).valid;
+      const assemblyPending = mapped.status === 'Complete' && !deliverableValid;
       const elapsed = Date.now() - startTime;
-      if (mapped.status !== 'Complete' && elapsed < MAX_POLL_DURATION_MS) {
+
+      if (deliverableValid) {
+        setAssemblyStatus('ready');
+      } else if (mapped.status === 'Complete' && elapsed >= MAX_POLL_DURATION_MS) {
+        setAssemblyStatus('timeout');
+      } else if (mapped.status === 'Complete') {
+        setAssemblyStatus('polling');
+      }
+
+      if ((mapped.status !== 'Complete' || assemblyPending) && elapsed < MAX_POLL_DURATION_MS) {
         timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), POLL_INTERVAL_MS);
       }
     } catch (err) {
@@ -167,6 +189,34 @@ export function useDeliveryData(): {
     }
   }, []);
 
+  const retryAssembly = useCallback(async () => {
+    const sessionId = sessionStorage.getItem('shem-session-id');
+    if (!sessionId) return;
+
+    setAssemblyStatus('polling');
+
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/reassemble`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[Retry] Reassembly failed:', body);
+        setAssemblyStatus('error');
+        return;
+      }
+
+      // Reset polling — give it another 5 minutes to pick up the new assembly
+      startTimeRef.current = Date.now();
+      fetchSession(sessionId, startTimeRef.current);
+    } catch {
+      console.error('[Retry] Could not reach server');
+      setAssemblyStatus('error');
+    }
+  }, [fetchSession]);
+
   useEffect(() => {
     cancelledRef.current = false;
     const sessionId = sessionStorage.getItem('shem-session-id');
@@ -174,16 +224,19 @@ export function useDeliveryData(): {
     if (!sessionId) {
       setData(buildDemoData('demo-session-preview'));
       setLoading(false);
+      setAssemblyStatus('ready');
       return;
     }
 
     if (sessionId.startsWith('demo-session-')) {
       setData(buildDemoData(sessionId));
       setLoading(false);
+      setAssemblyStatus('ready');
       return;
     }
 
-    fetchSession(sessionId, Date.now());
+    startTimeRef.current = Date.now();
+    fetchSession(sessionId, startTimeRef.current);
 
     return () => {
       cancelledRef.current = true;
@@ -191,7 +244,7 @@ export function useDeliveryData(): {
     };
   }, [fetchSession]);
 
-  return { data, loading, error };
+  return { data, loading, error, assemblyStatus, retryAssembly };
 }
 
 // ── API response mapping ──────────────────────────────────────────────────

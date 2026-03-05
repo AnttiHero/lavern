@@ -163,6 +163,7 @@ export function App() {
             type: config.requestType,
             requestText: question,
           },
+          team: config.teamRoles,
           workflow: config.workflowId,
           options: {
             budget: config.budgetUsd,
@@ -267,6 +268,7 @@ export function App() {
             requestText: questionText,
           },
           ...(hasDocuments ? { documents: parsedDocs } : {}),
+          team: config.teamRoles,
           workflow: config.workflowId,
           options: {
             budget: config.budgetUsd,

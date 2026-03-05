@@ -40,7 +40,7 @@ export interface DispatchOptions extends SchemOptions {
   intensity?: IntensityLevel;
   /** v9: YOLO mode — auto-approve all gates, fully automated */
   yoloMode?: boolean;
-  /** v9: Enable 10-pass verification pipeline before delivery */
+  /** v9: Enable 10-pass verification pipeline before delivery (currently unused — verification is baked into workflow templates) */
   verification?: boolean;
 }
 
@@ -61,12 +61,8 @@ export async function dispatch(
     budgetUsd: options.maxBudgetUsd,
   });
 
-  // v8: If a matterId is provided, attach matter record context to the session
-  // (The matter's selectedTeam will be used by the executor to filter agents)
-  if (options.matterId && request.matterId) {
-    // Matter data is expected to be pre-loaded on the session by the API layer
-    // This is a signal to the executor to use session.selectedTeam
-  }
+  // v8: Matter data (including selectedTeam) is pre-loaded on the session by
+  // the API layer when a matterId is provided. The executor reads session.selectedTeam.
 
   // v10: Resolve effort — explicit effort wins, otherwise derive from intensity
   if (!options.effort && options.intensity) {

@@ -71,10 +71,15 @@ export async function assembleDocument(
   request?: LegalRequest,
 ): Promise<string> {
   // Determine request type for prompt selection
-  const requestType = request?.type
+  // Map workflow template to assembly prompt type.
+  // For counsel workflows, the specialist already produced the document —
+  // the assembly step extracts and cleans it (not reformats as a memo/report).
+  const requestType = request?.type === 'legal_question' ? 'counsel_extraction'
+    : request?.type
     ?? (session.workflowTemplateId === 'roundtable' ? 'document_redesign'
       : session.workflowTemplateId === 'review' ? 'contract_review'
       : session.workflowTemplateId === 'adversarial' ? 'legal_research'
+      : session.workflowTemplateId === 'counsel' ? 'counsel_extraction'
       : 'general');
 
   const systemPrompt = getAssemblySystemPrompt(requestType);

@@ -41,7 +41,7 @@ interface MatterInfo {
 }
 
 export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
-  const { data, loading, error } = useDeliveryData();
+  const { data, loading, error, assemblyStatus, retryAssembly } = useDeliveryData();
   const [activeTab, setActiveTab] = useState<DeliveryTab>('work');
 
   // Conversation state lives here so it persists across tab switches
@@ -105,7 +105,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           <ConfettiBurst />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {activeTab === 'work' && <TheWorkTab data={data} />}
+          {activeTab === 'work' && <TheWorkTab data={data} assemblyStatus={assemblyStatus} onRetryAssembly={retryAssembly} />}
           {activeTab === 'review' && <ReviewTab data={data} />}
           {activeTab === 'story' && <TheStoryTab data={data} />}
           {activeTab === 'scorecard' && <TheScorecardTab data={data} />}

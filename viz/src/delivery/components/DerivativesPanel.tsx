@@ -11,11 +11,12 @@
 
 import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
-import { validateDeliverable } from '../utils/validateDeliverable.js';
+import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
   data: DeliveryData;
+  assemblyStatus: AssemblyStatus;
 }
 
 type CardStatus = 'idle' | 'generating' | 'done' | 'error';
@@ -113,13 +114,13 @@ function generateDemoDerivative(typeId: string, data: DeliveryData): string {
   return lines.join('\n');
 }
 
-export function DerivativesPanel({ data }: Props) {
+export function DerivativesPanel({ data, assemblyStatus }: Props) {
   const [statuses, setStatuses] = useState<Record<string, CardStatus>>({});
+  const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat>('docx');
   const isDemo = data.sessionId.startsWith('demo-session');
-  const deliverableValid = data.finalOutput ? validateDeliverable(data.finalOutput).valid : false;
-  const generationBlocked = !isDemo && !deliverableValid;
+  const generationBlocked = !isDemo && assemblyStatus !== 'ready';
 
   const handleGenerate = async (typeId: string) => {
     setStatuses(prev => ({ ...prev, [typeId]: 'generating' }));
@@ -147,8 +148,10 @@ export function DerivativesPanel({ data }: Props) {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Generation failed' }));
-        throw new Error(err.error || 'Generation failed');
+        const err = await res.json().catch(() => ({ error: `Generation failed (${res.status})` }));
+        const msg = err.error || `Generation failed (${res.status})`;
+        console.error(`[DerivativesPanel] API error for ${typeId}: ${res.status}`, err);
+        throw new Error(msg);
       }
 
       // Binary formats (DOCX) → download blob; text formats → download text
@@ -178,8 +181,13 @@ export function DerivativesPanel({ data }: Props) {
       setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 3000);
     } catch (err) {
       console.error(`[DerivativesPanel] Generation failed for ${typeId}:`, err);
+      const msg = err instanceof Error ? err.message : 'Generation failed';
       setStatuses(prev => ({ ...prev, [typeId]: 'error' }));
-      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
+      setErrorMessages(prev => ({ ...prev, [typeId]: msg }));
+      setTimeout(() => {
+        setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
+        setErrorMessages(prev => { const next = { ...prev }; delete next[typeId]; return next; });
+      }, 8000);
     }
   };
 
@@ -232,7 +240,13 @@ export function DerivativesPanel({ data }: Props) {
 
       {generationBlocked && (
         <div style={styles.blockedWarning}>
-          Primary work product is not ready — derivative generation is unavailable until document assembly completes.
+          {assemblyStatus === 'polling'
+            ? 'Document is still being assembled — derivative generation will be available once assembly completes.'
+            : assemblyStatus === 'timeout'
+              ? 'Document assembly timed out. Retry assembly above, then generate derivatives.'
+              : assemblyStatus === 'error'
+                ? 'Document assembly failed. Retry assembly above, then generate derivatives.'
+                : 'Primary work product is not ready — derivative generation is unavailable until document assembly completes.'}
         </div>
       )}
 
@@ -275,7 +289,7 @@ export function DerivativesPanel({ data }: Props) {
                   <span style={styles.doneLabel}>{'\u2713'} Done</span>
                 )}
                 {status === 'error' && (
-                  <span style={styles.errorLabel}>Failed</span>
+                  <span style={styles.errorLabel} title={errorMessages[d.id] || 'Failed'}>Failed</span>
                 )}
               </div>
             </button>

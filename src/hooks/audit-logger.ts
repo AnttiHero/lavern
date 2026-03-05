@@ -60,6 +60,19 @@ export function createAuditHooks(session: SessionState) {
       pendingTaskCalls.push({ role: role || 'unknown', task: desc || task });
     }
 
+    // CRITICAL: Capture subagent output in session.finalOutput.
+    // The SDK's tool_response for Task calls is an OBJECT (not a string).
+    // It contains the specialist's full work product which the assembly step
+    // needs to produce the clean deliverable document.
+    if (toolName === 'Task' && toolResponse) {
+      const responseStr = typeof toolResponse === 'string'
+        ? toolResponse
+        : JSON.stringify(toolResponse);
+      if (responseStr.length > 100) {
+        session.finalOutput += '\n\n' + responseStr;
+      }
+    }
+
     const entry: AuditEntry = {
       timestamp: new Date().toISOString(),
       sessionId: session.id,

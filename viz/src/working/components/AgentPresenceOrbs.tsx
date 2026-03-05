@@ -1,16 +1,19 @@
 /**
  * AgentPresenceOrbs — Horizontal row of mini agent avatars representing team members.
  *
- * Replaces the old 20px colored dots with 24px DiceBear avatars.
- * Active agents glow with their category color. Complete agents are slightly dimmed.
- * Hover shows agent name + current task in a tooltip.
+ * v2: Orbs respond to real events:
+ *   - Entrance animation when agent first appears
+ *   - Active glow and float when agent is working
+ *   - Tooltip shows latest tool action
+ *   - Completed agents show green checkmark with brief flash
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
 import { AgentAvatar } from './AgentAvatar.js';
 import { categoryColor, colors, fonts } from '../../staffing/styles/tokens.js';
+import { formatToolAction } from '../utils/formatToolAction.js';
 
 interface AgentPresenceOrbsProps {
   team: AgentProfile[];
@@ -25,10 +28,32 @@ export function AgentPresenceOrbs({
 }: AgentPresenceOrbsProps) {
   const [hoveredRole, setHoveredRole] = useState<string | null>(null);
 
+  // Track which agents have been seen to trigger entrance animations
+  const seenAgentsRef = useRef(new Set<string>());
+  const [newAgents, setNewAgents] = useState(new Set<string>());
+
   // Only show agents that have actually been dispatched (have a status or are active)
   const visibleTeam = team.filter(agent =>
     agentStatuses.has(agent.role) || activeThinkingAgents.has(agent.role)
   );
+
+  // Detect newly appeared agents for entrance animation
+  useEffect(() => {
+    const currentlyVisible = new Set(visibleTeam.map(a => a.role));
+    const brandNew = new Set<string>();
+    for (const role of currentlyVisible) {
+      if (!seenAgentsRef.current.has(role)) {
+        brandNew.add(role);
+        seenAgentsRef.current.add(role);
+      }
+    }
+    if (brandNew.size > 0) {
+      setNewAgents(brandNew);
+      // Clear "new" state after entrance animation completes
+      const timer = setTimeout(() => setNewAgents(new Set()), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [visibleTeam]);
 
   return (
     <div style={styles.container}>
@@ -36,18 +61,32 @@ export function AgentPresenceOrbs({
         const status = agentStatuses.get(agent.role);
         const isActive = activeThinkingAgents.has(agent.role);
         const isComplete = status?.status === 'complete';
+        const isNew = newAgents.has(agent.role);
         const color = categoryColor(agent.category);
         const thinkingAgent = activeThinkingAgents.get(agent.role);
+
+        // Get latest tool action for tooltip
+        const latestTool = thinkingAgent?.toolsUsed?.[thinkingAgent.toolsUsed.length - 1];
+        const toolDesc = latestTool ? formatToolAction(latestTool) : null;
 
         const opacity = isActive ? 1 : isComplete ? 0.65 : 0.5;
         const glowShadow = isActive
           ? `0 0 6px ${color}, 0 0 12px ${color}40`
           : 'none';
 
+        // Entrance animation: scale up from 0
+        const entranceStyle = isNew ? {
+          animation: 'orbEntrance 0.5s ease-out forwards',
+        } : {};
+
         return (
           <div
             key={agent.role}
-            style={{ position: 'relative' as const, display: 'inline-block' }}
+            style={{
+              position: 'relative' as const,
+              display: 'inline-block',
+              ...entranceStyle,
+            }}
             onMouseEnter={() => setHoveredRole(agent.role)}
             onMouseLeave={() => setHoveredRole(null)}
           >
@@ -77,7 +116,10 @@ export function AgentPresenceOrbs({
               transition: 'opacity 0.2s ease, transform 0.2s ease',
             }}>
               <div style={styles.tooltipName}>{agent.displayName}</div>
-              {isActive && thinkingAgent?.task && (
+              {isActive && toolDesc && (
+                <div style={styles.tooltipTask}>{toolDesc}</div>
+              )}
+              {isActive && !toolDesc && thinkingAgent?.task && (
                 <div style={styles.tooltipTask}>
                   {thinkingAgent.task.length > 60
                     ? thinkingAgent.task.slice(0, 57) + '...'

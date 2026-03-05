@@ -1,28 +1,58 @@
 /**
  * ProgressSidebar — Vertical checklist showing workflow progress.
  *
- * Inspired by "plan-ahead" sidebars: shows every step in the pipeline
- * with clear status (done / active / upcoming) so the client always
- * knows where they are and what's next.
+ * v2: Added live activity feed below the current step showing real-time
+ * agent actions (tool usage, agent joins/completions, findings).
  *
  * Layout: vertical list of steps connected by a thin line.
- *   ✓  Done steps — green check, muted label
- *   ●  Current step — pulsing dot, bold label, description visible
- *   ○  Upcoming steps — gray circle, dim label, description visible
+ *   Done steps — green check, muted label
+ *   Current step — pulsing dot, bold label, live activity feed below
+ *   Upcoming steps — gray circle, dim label, description visible
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import type { WorkflowStep } from '../../types/events.js';
+import type { StreamCard } from '../hooks/useWorkingState.js';
 import { WORKFLOW_STEP_MAP, WORKFLOW_STEPS, STEP_LABELS } from '../../types/events.js';
 import { PHASE_DESCRIPTIONS } from '../data/phase-descriptions.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
+import { formatActivity } from '../utils/formatToolAction.js';
 
 interface ProgressSidebarProps {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
+  streamCards?: StreamCard[];
 }
 
-export function ProgressSidebar({ currentStep, completedSteps }: ProgressSidebarProps) {
+/** Format a role string for display. */
+function displayRole(role: string): string {
+  return role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/** Build a compact activity line from a stream card. */
+function cardToActivity(card: StreamCard): string | null {
+  switch (card.kind) {
+    case 'agent_start':
+      return `${displayRole(card.role)} joined`;
+    case 'agent_stop':
+      return `${displayRole(card.role)} finished (${(card.durationMs / 1000).toFixed(0)}s)`;
+    case 'tool_used':
+      if (card.agent) return formatActivity(card.agent, card.tool);
+      return null; // Skip tool_used without agent
+    case 'finding':
+      return `${displayRole(card.agent)} flagged ${card.severity} finding`;
+    case 'challenge':
+      return `${displayRole(card.challenger)} challenged a finding`;
+    case 'resolution':
+      return `Debate resolved: ${card.topic.slice(0, 40)}`;
+    case 'gate':
+      return `Gate: ${card.gateType.replace(/_/g, ' ')}`;
+    default:
+      return null;
+  }
+}
+
+export function ProgressSidebar({ currentStep, completedSteps, streamCards }: ProgressSidebarProps) {
   // Resolve the correct pipeline for this workflow
   const [workflowId] = useState<string>(() => {
     try {
@@ -78,6 +108,26 @@ export function ProgressSidebar({ currentStep, completedSteps }: ProgressSidebar
   const progressLabel = currentIndex >= 0
     ? `${Math.min(currentIndex + 1, totalSteps)} of ${totalSteps}`
     : '';
+
+  // Live activity feed: last 6 actionable stream cards
+  const activityItems = useMemo(() => {
+    if (!streamCards || streamCards.length === 0) return [];
+    const items: string[] = [];
+    // Process from most recent, take last 6
+    for (let i = streamCards.length - 1; i >= 0 && items.length < 6; i--) {
+      const text = cardToActivity(streamCards[i]);
+      if (text) items.push(text);
+    }
+    return items.reverse(); // Chronological order
+  }, [streamCards]);
+
+  // Auto-scroll activity feed
+  const activityRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (activityRef.current) {
+      activityRef.current.scrollTop = activityRef.current.scrollHeight;
+    }
+  }, [activityItems]);
 
   return (
     <div style={styles.container}>
@@ -150,6 +200,23 @@ export function ProgressSidebar({ currentStep, completedSteps }: ProgressSidebar
                   >
                     {phase.description}
                   </span>
+                )}
+
+                {/* Live activity feed — only under current step */}
+                {isCurrent && activityItems.length > 0 && (
+                  <div ref={activityRef} style={styles.activityFeed}>
+                    {activityItems.map((text, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          ...styles.activityItem,
+                          opacity: i === activityItems.length - 1 ? 1 : 0.6,
+                        }}
+                      >
+                        {text}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -277,6 +344,26 @@ const styles: Record<string, React.CSSProperties> = {
   stepDescCurrent: {
     color: colors.textMuted,
   },
+
+  // Live activity feed
+  activityFeed: {
+    marginTop: 6,
+    maxHeight: 120,
+    overflow: 'auto' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 3,
+  },
+  activityItem: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    lineHeight: 1.3,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+
   footer: {
     padding: '10px 16px',
     borderTop: `1px solid ${colors.border}`,

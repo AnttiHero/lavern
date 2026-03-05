@@ -99,6 +99,23 @@ You have been given the results of a comprehensive multi-agent analysis — lega
 4. Be precise about legal citations and references.
 5. Use Markdown formatting. Professional but accessible tone.` + NO_PROCESS_TEXT;
 
+const COUNSEL_SYSTEM_PROMPT = `You are a senior legal professional preparing a client-facing deliverable document.
+
+You have been given the output from a specialist who produced a complete document (e.g., a Terms of Service, contract, memo, policy). Your job is to EXTRACT that document, clean it up, and deliver it as a polished work product.
+
+## Rules
+
+1. Produce ONLY the document. No preamble, no commentary, no review notes. Just the deliverable.
+2. The specialist's document is embedded in the ORCHESTRATOR OUTPUT section. It may be surrounded by process text (agent thinking, coordination, instructions). Strip ALL process text and return ONLY the document itself.
+3. If the specialist produced a complete Terms of Service, return a complete Terms of Service — not a review, not a memo, not a summary.
+4. Preserve the document's structure: headings, sections, clauses, defined terms, formatting.
+5. Clean up any rough edges: fix inconsistent heading levels, add a Table of Contents if missing, ensure consistent formatting.
+6. Do NOT add your own analysis, commentary, or "findings" — the document IS the deliverable.
+7. If the specialist's output contains a review/analysis section AND a document draft, extract ONLY the document draft.
+8. Use Markdown formatting with proper heading hierarchy (# → ## → ###).
+9. Preserve ALL legal provisions, defined terms, obligations, and rights exactly as the specialist wrote them.
+10. If information is incomplete or placeholder, keep the specialist's brackets [like this] intact.` + NO_PROCESS_TEXT;
+
 const GENERAL_SYSTEM_PROMPT = `You are a senior legal professional producing a deliverable document.
 
 You have been given the results of a comprehensive multi-agent analysis. Your job is to produce a clear, professional document that incorporates all of the expert findings and debate resolutions.
@@ -123,7 +140,9 @@ export function getAssemblySystemPrompt(requestType: string): string {
     case 'legal_research':
       return RESEARCH_SYSTEM_PROMPT;
     case 'legal_question':
-      return RESEARCH_SYSTEM_PROMPT;
+      return COUNSEL_SYSTEM_PROMPT;
+    case 'counsel_extraction':
+      return COUNSEL_SYSTEM_PROMPT;
     case 'risk_assessment':
       return REVIEW_SYSTEM_PROMPT;
     default:
@@ -233,11 +252,26 @@ export function buildAssemblyContext(session: SessionState, request?: LegalReque
     parts.push('');
   }
 
+  // ── Orchestrator Output (the raw work product) ──
+  // This is critical for workflows without structured debate data (e.g., counsel).
+  // The specialist's actual deliverable is embedded in finalOutput, mixed with
+  // orchestrator process text. The assembler needs it to extract/clean the document.
+  if (session.finalOutput && session.finalOutput.length > 100) {
+    parts.push('# ORCHESTRATOR OUTPUT');
+    parts.push('The following is the raw output from the multi-agent pipeline. It may contain');
+    parts.push('process text (agent thinking, tool calls, coordination) mixed with the actual');
+    parts.push('deliverable content. Extract ONLY the deliverable document from this output.');
+    parts.push('Strip all process text, agent commentary, and internal coordination.\n');
+    parts.push(session.finalOutput);
+    parts.push('');
+  }
+
   // ── Instructions ──
   parts.push('# YOUR TASK');
-  parts.push('Using ALL of the expert analysis above, produce the final deliverable document.');
-  parts.push('Incorporate every relevant finding directly into the document — do not produce a report about findings, produce the actual document that reflects them.');
-  parts.push('The multi-agent analysis is your guide. Use it to make every provision better than what a single drafter could produce alone.');
+  parts.push('Using ALL of the expert analysis and orchestrator output above, produce the final deliverable document.');
+  parts.push('If the orchestrator output contains a complete document (e.g., a Terms of Service, contract, memo), extract and clean it — remove all process text, agent thinking, and internal coordination.');
+  parts.push('If expert findings are available, incorporate them into the document. If no findings exist but a complete document is in the orchestrator output, your job is to extract and polish that document.');
+  parts.push('The output must be ONLY the clean deliverable. No preamble, no commentary.');
 
   return parts.join('\n');
 }

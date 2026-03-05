@@ -35,8 +35,9 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   // Inject CSS keyframes for animations
   useEffect(() => { injectWorkingKeyframes(); }, []);
 
-  const { team } = useTeamRoster();
-  const teamRoles = useMemo(() => team.map(t => t.role), [team]);
+  // First render: load team from sessionStorage with no event roles
+  const { team: initialTeam } = useTeamRoster();
+  const initialRoles = useMemo(() => initialTeam.map(t => t.role), [initialTeam]);
 
   const {
     state,
@@ -47,7 +48,19 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     pause,
     resume,
     setSpeed,
-  } = useWorkingState(onComplete, teamRoles);
+  } = useWorkingState(onComplete, initialRoles);
+
+  // Extract all roles from SSE events to dynamically expand the team
+  const eventRoles = useMemo(() => {
+    const roles: string[] = [];
+    for (const role of state.agentStatuses.keys()) {
+      if (role) roles.push(role);
+    }
+    return roles;
+  }, [state.agentStatuses]);
+
+  // Team with dynamic expansion from event roles
+  const { team } = useTeamRoster(eventRoles);
 
   // Thread debates from flat stream
   const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
@@ -151,6 +164,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         <ProgressSidebar
           currentStep={state.currentStep}
           completedSteps={state.completedSteps}
+          streamCards={state.streamCards}
         />
 
         <div style={styles.feedColumn}>

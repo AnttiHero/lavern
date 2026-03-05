@@ -44,6 +44,7 @@ import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
+import { assembleDocument } from '../../assembly/document-assembler.js';
 
 /** Safely parse JSON, returning fallback on failure. */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
@@ -543,6 +544,52 @@ export function registerSessionRoutes(
     }
 
     return reply.status(400).send({ error: `Unknown format: ${format}. Use md, docx, pdf, json, summary, or raw.` });
+  });
+
+  // ── POST /api/sessions/:id/reassemble — Retry document assembly ────────
+  //
+  // Called when assembly timed out or failed. Re-runs assembleDocument()
+  // using the session's existing finalOutput and legalRequest.
+
+  fastify.post('/api/sessions/:id/reassemble', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    // Guard: already have a valid assembled document
+    if (session.assembledDocument && validateDeliverable(session.assembledDocument).valid) {
+      return reply.send({ success: true, hasDocument: true, message: 'Document already assembled.' });
+    }
+
+    // Guard: need finalOutput to assemble from
+    if (!session.finalOutput || session.finalOutput.length < 100) {
+      return reply.status(409).send({
+        error: 'Session has no pipeline output to assemble from. The workflow may still be running.',
+      });
+    }
+
+    try {
+      const result = await assembleDocument(session, session.legalRequest);
+
+      if (result && result.length > 0) {
+        session.assembledDocument = result;
+        return reply.send({ success: true, hasDocument: true });
+      }
+
+      return reply.status(503).send({
+        error: 'Assembly produced no output. Please try again.',
+        success: false,
+      });
+    } catch (err) {
+      console.error(`[API] Reassembly failed for session ${id}:`, err);
+      return reply.status(500).send({
+        error: 'Assembly failed',
+        details: err instanceof Error ? err.message : String(err),
+      });
+    }
   });
 
   // ── POST /api/sessions/:id/derivatives — Generate derivative document ──

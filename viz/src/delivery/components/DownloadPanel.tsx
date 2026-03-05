@@ -7,12 +7,14 @@
 
 import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
+import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { getCoworkState, setCoworkStatus } from '../../cowork/coworkStore.js';
-import { validateDeliverable } from '../utils/validateDeliverable.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
   data: DeliveryData;
+  assemblyStatus: AssemblyStatus;
+  onRetry?: () => void;
 }
 
 type DocStyle = 'traditional' | 'elegant' | 'accessible';
@@ -68,13 +70,13 @@ function generateClientSummary(data: DeliveryData): string {
   return lines.join('\n');
 }
 
-export function DownloadPanel({ data }: Props) {
+export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'writing' | 'done' | 'error'>('idle');
 
-  // v18: Validate the deliverable — disable document downloads if invalid
-  const deliverableValid = data.finalOutput ? validateDeliverable(data.finalOutput).valid : false;
+  // Assembly status drives download availability
+  const deliverableValid = assemblyStatus === 'ready';
 
   // Check if cowork folder is available for write-back
   const coworkActive = sessionStorage.getItem('shem-cowork-active') === 'true';
@@ -234,10 +236,31 @@ export function DownloadPanel({ data }: Props) {
         </div>
       </div>
 
-      {/* v18: Warning when document is not ready */}
-      {!deliverableValid && !isDemo && (
-        <div style={styles.assemblyWarning}>
-          Document assembly is in progress or was not completed. Structured data and executive brief are still available.
+      {/* Assembly status messages */}
+      {assemblyStatus === 'polling' && !isDemo && (
+        <div style={styles.assemblyPolling}>
+          <span style={styles.spinner} />
+          Assembling document — this usually takes 30–60 seconds. The page will update automatically.
+        </div>
+      )}
+      {assemblyStatus === 'timeout' && !isDemo && (
+        <div style={styles.assemblyError}>
+          Document assembly timed out. Structured data and executive brief are still available.
+          {onRetry && (
+            <button onClick={onRetry} style={styles.retryBtn}>
+              Retry Assembly
+            </button>
+          )}
+        </div>
+      )}
+      {assemblyStatus === 'error' && !isDemo && (
+        <div style={styles.assemblyError}>
+          Document assembly failed. Try again or download structured data below.
+          {onRetry && (
+            <button onClick={onRetry} style={styles.retryBtn}>
+              Retry Assembly
+            </button>
+          )}
         </div>
       )}
 
@@ -337,17 +360,59 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
   },
 
-  // Assembly warning
-  assemblyWarning: {
+  // Assembly status
+  assemblyPolling: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.warning,
-    backgroundColor: 'rgba(184, 134, 11, 0.06)',
-    border: `1px solid rgba(184, 134, 11, 0.2)`,
+    color: colors.textMuted,
+    backgroundColor: 'rgba(139, 115, 85, 0.06)',
+    border: `1px solid rgba(139, 115, 85, 0.15)`,
     borderRadius: radii.sm,
     padding: '10px 16px',
     marginBottom: spacing.md,
     lineHeight: 1.5,
+  },
+  assemblyError: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap' as const,
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.danger,
+    backgroundColor: 'rgba(180, 60, 60, 0.06)',
+    border: `1px solid rgba(180, 60, 60, 0.2)`,
+    borderRadius: radii.sm,
+    padding: '10px 16px',
+    marginBottom: spacing.md,
+    lineHeight: 1.5,
+  },
+  spinner: {
+    display: 'inline-block',
+    width: 14,
+    height: 14,
+    border: `2px solid rgba(139, 115, 85, 0.2)`,
+    borderTopColor: colors.textMuted,
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+    flexShrink: 0,
+  },
+  retryBtn: {
+    marginLeft: 'auto',
+    padding: '4px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.danger,
+    backgroundColor: 'transparent',
+    border: `1px solid ${colors.danger}`,
+    borderRadius: radii.sm,
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
+    whiteSpace: 'nowrap' as const,
   },
 
   // Style selector
