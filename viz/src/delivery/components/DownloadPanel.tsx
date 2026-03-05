@@ -105,14 +105,37 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
         await w.close();
       };
 
-      // 1. Deliverable markdown
-      if (data.finalOutput) {
+      // 1. Deliverable markdown — write failure notice if assembly failed
+      if (data.finalOutput && data.finalOutput.length > 100) {
         await writeText(`${data.sessionId}-deliverable.md`, data.finalOutput);
+      } else {
+        // v19: Write a clear failure notice instead of nothing or garbage
+        const failureNotice = [
+          '# Assembly Failed',
+          '',
+          'The agents completed their analysis but document assembly failed.',
+          '',
+          'What happened: The multi-agent pipeline ran successfully, but the final assembly step',
+          'could not produce a valid document from the analysis results.',
+          '',
+          '## What you can do',
+          '',
+          '- **Retry assembly** from the Delivery page in the dashboard',
+          '- **Download structured data** (JSON) which contains all findings and debate resolutions',
+          '- **Start a new session** with the same document',
+          '',
+          `Session ID: ${data.sessionId}`,
+          `Date: ${new Date().toISOString()}`,
+        ].join('\n');
+        await writeText(`${data.sessionId}-deliverable.md`, failureNotice);
       }
 
-      // 2. Executive summary
-      const summary = generateClientSummary(data);
-      await writeText(`${data.sessionId}-summary.md`, summary);
+      // 2. Executive summary — only write if deliverable was valid
+      // v19: Don't write a summary skeleton that could be mistaken for the deliverable
+      if (data.finalOutput && data.finalOutput.length > 100) {
+        const summary = generateClientSummary(data);
+        await writeText(`${data.sessionId}-summary.md`, summary);
+      }
 
       // 3. Structured data (findings, debates)
       const jsonData = {
@@ -306,9 +329,10 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
         <DownloadCard
           icon={'\u2139\uFE0F'}
           title="Executive Brief"
-          description="One-page summary"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : 'One-page summary'}
           format=".md"
           onClick={() => handleDownload('summary')}
+          disabled={!deliverableValid && !isDemo}
         />
       </div>
     </div>

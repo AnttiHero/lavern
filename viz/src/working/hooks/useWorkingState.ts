@@ -73,6 +73,10 @@ export interface WorkingState {
 export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
   const completionFiredRef = useRef(false);
+  /** Timestamp when 'delivered' step was first detected (for assembly wait timeout). */
+  const deliveredAtRef = useRef<number | null>(null);
+  /** Stable ref for current sessionId (accessible inside handleEvent without deps). */
+  const sessionIdRef = useRef<string | undefined>();
   // Stable ref for onSessionEnd to avoid restarting effects when callback identity changes
   const onSessionEndRef = useRef(onSessionEnd);
   onSessionEndRef.current = onSessionEnd;
@@ -122,12 +126,19 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     } else if (event.type === 'gate_decided') {
       setPendingGate(null);
     } else if (event.type === 'session_end') {
-      completionFiredRef.current = true;
       setCompletedSteps(prev =>
         prev.includes('delivered') ? prev : [...prev, 'delivered']
       );
-      if (onSessionEndRef.current) {
-        setTimeout(onSessionEndRef.current, 2000);
+      setCurrentStep('delivered');
+
+      if (sessionIdRef.current?.startsWith('demo-session-')) {
+        // Demo sessions: transition immediately (no assembly to wait for)
+        completionFiredRef.current = true;
+        if (onSessionEndRef.current) setTimeout(onSessionEndRef.current, 2000);
+      } else {
+        // Live sessions: don't transition yet — periodic poll will confirm
+        // assembledDocument is ready before navigating to Delivery
+        if (!deliveredAtRef.current) deliveredAtRef.current = Date.now();
       }
     }
   }, []);
@@ -177,6 +188,8 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   const connectToSession = useCallback((id: string) => {
     setSessionId(id);
+    sessionIdRef.current = id;
+    deliveredAtRef.current = null;
     setIsReplay(false);
     setEvents([]);
     setCurrentStep('intake');
@@ -209,6 +222,8 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   const disconnect = useCallback(() => {
     wsClientRef.current?.disconnect();
     setSessionId(undefined);
+    sessionIdRef.current = undefined;
+    deliveredAtRef.current = null;
     setConnectionStatus('disconnected');
     setEvents([]);
     setCurrentStep('intake');
@@ -250,11 +265,14 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Periodic completion check ─────────────────────────────────────────
-  // If the session_end WebSocket event is lost (e.g. archive error), this
-  // poll detects that the workflow reached 'delivered' and navigates.
+  // Polls the session API to detect completion AND confirm the assembled
+  // document is ready before transitioning to Delivery. This ensures the
+  // user never sees an "assembling document" spinner on the Delivery screen.
 
   useEffect(() => {
     if (!sessionId || sessionId.startsWith('demo-session-') || completionFiredRef.current) return;
+
+    const MAX_ASSEMBLY_WAIT_MS = 120_000; // 2 min fallback
 
     const poll = setInterval(async () => {
       if (completionFiredRef.current) { clearInterval(poll); return; }
@@ -267,17 +285,27 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
         const steps = data.workflow?.completedSteps ?? [];
         const isDelivered = step === 'delivered' || steps.includes('delivered');
 
-        if (isDelivered && !completionFiredRef.current) {
-          completionFiredRef.current = true;
-          clearInterval(poll);
-          // Sync final state
-          if (data.workflow?.currentStep) setCurrentStep(data.workflow.currentStep);
-          if (data.workflow?.completedSteps?.length) setCompletedSteps(data.workflow.completedSteps);
-          if (data.cost) setCost({ accumulated: data.cost.accumulated, budget: data.cost.budget });
-          if (onSessionEndRef.current) setTimeout(onSessionEndRef.current, 1500);
+        // Always sync visible state (step progress, cost) while on Working screen
+        if (data.workflow?.currentStep) setCurrentStep(data.workflow.currentStep);
+        if (data.workflow?.completedSteps?.length) setCompletedSteps(data.workflow.completedSteps);
+        if (data.cost) setCost({ accumulated: data.cost.accumulated, budget: data.cost.budget });
+
+        if (isDelivered) {
+          // Record when we first saw 'delivered'
+          if (!deliveredAtRef.current) deliveredAtRef.current = Date.now();
+
+          const hasAssembledDoc = !!data.assembledDocument && data.assembledDocument.length > 100;
+          const waitedMs = Date.now() - deliveredAtRef.current;
+
+          // Transition when: assembled document is ready, OR 2-min fallback exceeded
+          if ((hasAssembledDoc || waitedMs > MAX_ASSEMBLY_WAIT_MS) && !completionFiredRef.current) {
+            completionFiredRef.current = true;
+            clearInterval(poll);
+            if (onSessionEndRef.current) setTimeout(onSessionEndRef.current, 1500);
+          }
         }
       } catch { /* ignore */ }
-    }, 5_000);
+    }, 3_000);
 
     return () => clearInterval(poll);
   }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps

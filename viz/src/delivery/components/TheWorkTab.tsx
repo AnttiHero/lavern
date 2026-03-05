@@ -20,7 +20,9 @@ interface Props {
 }
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
-  const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 0;
+  const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
+  const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error'
+    || (data.status === 'Complete' && !data.finalOutput);
 
   return (
     <div>
@@ -30,6 +32,26 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         <h2 style={styles.heroTitle}>{data.documentTitle}</h2>
         <div style={styles.heroDivider} />
       </div>
+
+      {/* ── Assembly failure notice ────────────────────────────── */}
+      {assemblyFailed && !data.sessionId.startsWith('demo-session') && (
+        <div style={styles.assemblyFailedNotice}>
+          <div style={styles.assemblyFailedIcon}>⚠</div>
+          <div style={styles.assemblyFailedContent}>
+            <div style={styles.assemblyFailedTitle}>Document assembly did not complete</div>
+            <div style={styles.assemblyFailedBody}>
+              The agents completed their analysis, but the final document could not be assembled.
+              You can retry assembly, or download the structured analysis data (JSON) which contains
+              all findings, debate resolutions, and recommendations.
+            </div>
+            {onRetryAssembly && (
+              <button onClick={onRetryAssembly} style={styles.assemblyFailedRetry}>
+                Retry Assembly
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Downloads first — this is what the client wants ───── */}
       <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
@@ -217,6 +239,51 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
     marginTop: 20,
     textAlign: 'right' as const,
+  },
+
+  // ── Assembly Failed Notice ─────────────────────────────────────
+  assemblyFailedNotice: {
+    display: 'flex',
+    gap: 16,
+    padding: '20px 24px',
+    backgroundColor: 'rgba(180, 60, 60, 0.04)',
+    border: '1px solid rgba(180, 60, 60, 0.2)',
+    borderRadius: radii.sm,
+    marginBottom: spacing.xxl,
+  },
+  assemblyFailedIcon: {
+    fontSize: 24,
+    flexShrink: 0,
+    lineHeight: 1,
+  },
+  assemblyFailedContent: {
+    flex: 1,
+  },
+  assemblyFailedTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.text,
+    marginBottom: 8,
+  },
+  assemblyFailedBody: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    lineHeight: 1.6,
+    marginBottom: 12,
+  },
+  assemblyFailedRetry: {
+    padding: '6px 16px',
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: '#fff',
+    backgroundColor: colors.accent,
+    border: 'none',
+    borderRadius: radii.sm,
+    cursor: 'pointer',
+    transition: 'opacity 0.15s ease',
   },
 
   // ── Document Preview ──────────────────────────────────────────

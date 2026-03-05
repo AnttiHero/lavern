@@ -110,6 +110,8 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   for (const role of teamRoles) {
     if (role in agentDefinitions) {
       filteredAgents[role] = agentDefinitions[role as keyof typeof agentDefinitions];
+    } else {
+      console.warn(`[TEAM] Agent "${role}" requested but not defined — skipping`);
     }
   }
   // Always include evaluator if the workflow has evaluator gates

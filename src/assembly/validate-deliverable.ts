@@ -1,17 +1,26 @@
 /**
- * Validate Deliverable — Shared validation for assembled documents.
+ * Validate Deliverable — Hardened validation for assembled documents.
  *
- * Ensures that the output served to clients is an actual legal document,
- * not orchestrator internal thinking / process logs.
+ * Ensures that the output served to clients is a REAL, SUBSTANTIVE legal
+ * document — not orchestrator thinking, not a skeleton, not placeholder text.
+ *
+ * v19: Defense-in-depth validation. Every check exists because a real
+ * failure mode was observed in production:
+ *   - Skeleton documents with correct structure but no substance
+ *   - Placeholder text like [Insert Date], [PLACEHOLDER]
+ *   - Process dumps with agent reasoning mixed into middle sections
+ *   - Documents meeting minimum length with thin/empty sections
  *
  * Used by:
  *   - document-assembler.ts (post-assembly validation)
  *   - sessions.ts download endpoint (final safety gate)
  *   - claw/delivery.ts (Claw mode delivery gate)
  *
- * The frontend has a mirror of isProcessDump() in
- * viz/src/delivery/utils/validateDeliverable.ts.
+ * The frontend has a mirror in viz/src/delivery/utils/validateDeliverable.ts.
+ * KEEP BOTH FILES IN SYNC.
  */
+
+// ── Process Dump Detection ────────────────────────────────────────────────
 
 /**
  * Detect whether text looks like orchestrator process output
@@ -39,6 +48,10 @@ export function isProcessDump(text: string): boolean {
     // Agent coordination
     /^Clean slate/i, /^The specialist/i, /^Both specialists/i,
     /^Let me check/i, /^I'll start/i, /^I'll now/i,
+    // Additional patterns observed in production
+    /^I'll get started/i, /^Looking at/i, /^After review/i,
+    /^Once analyzed/i, /^The process/i, /^In summary,? here/i,
+    /^To begin/i, /^Starting with/i, /^Moving on/i,
   ];
 
   if (processPatterns.some(p => p.test(head))) return true;
@@ -56,29 +69,188 @@ export function isProcessDump(text: string): boolean {
   return false;
 }
 
+// ── Full-Text Process Scan ────────────────────────────────────────────────
+
+/**
+ * Scan the ENTIRE document for process text contamination.
+ * Returns the ratio of process-contaminated paragraphs (0.0 to 1.0).
+ *
+ * Unlike isProcessDump() which only checks the first 500 chars,
+ * this catches agent reasoning that leaked into middle sections.
+ */
+export function processTextRatio(text: string): number {
+  const paragraphs = text.split(/\n\n+/).filter(p => {
+    const t = p.trim();
+    // Skip headings, horizontal rules, and very short lines
+    return t.length > 30 && !t.startsWith('#') && t !== '---';
+  });
+
+  if (paragraphs.length === 0) return 0;
+
+  const processPatterns = [
+    /^I'll /im, /^I will /im, /^Let me /im, /^I need to/im,
+    /^I can see/im, /^I have /im, /^I've /im, /^I see /im,
+    /^First,/im, /^Now,/im, /^Next,/im, /^Now let/im,
+    /^OK[,.\s]/im, /^Okay/im, /^Sure/im, /^Certainly/im,
+    /^Good\./im, /^Good —/im, /^Great/im, /^Excellent/im, /^Perfect/im,
+    /^Here is/im, /^Here's /im, /^Based on my/im,
+    /^Looking at/im, /^After review/im, /^To begin/im,
+    /^Starting with/im, /^Moving on/im, /^I'll get started/im,
+  ];
+
+  let contaminated = 0;
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (processPatterns.some(p => p.test(trimmed))) {
+      contaminated++;
+    }
+  }
+
+  return contaminated / paragraphs.length;
+}
+
+// ── Placeholder Detection ─────────────────────────────────────────────────
+
+/**
+ * Detect bracketed placeholder text that indicates an unfinished document.
+ * Returns the number of placeholder occurrences found.
+ */
+export function countPlaceholders(text: string): number {
+  // Specific known placeholders
+  const knownPlaceholders = [
+    /\[Insert [^\]]+\]/gi,
+    /\[To be (filled|completed|added|determined)[^\]]*\]/gi,
+    /\[PLACEHOLDER[^\]]*\]/gi,
+    /\[TBD[^\]]*\]/gi,
+    /\[TODO[^\]]*\]/gi,
+    /\[Current Date\]/gi,
+    /\[Effective Date\]/gi,
+    /\[Your Name\]/gi,
+    /\[Client Name\]/gi,
+    /\[Company Name\]/gi,
+    /\[PENDING[^\]]*\]/gi,
+    /\[DRAFT[^\]]*\]/gi,
+    /\[SECTION [^\]]*\]/gi,
+  ];
+
+  let count = 0;
+  for (const pattern of knownPlaceholders) {
+    const matches = text.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  // Generic uppercase bracketed patterns (e.g., [ANALYSIS], [FINDINGS])
+  // Only flag if 3+ found (some legal docs legitimately use [brackets])
+  const genericBrackets = text.match(/\[[A-Z][A-Z\s]{2,30}\]/g);
+  if (genericBrackets && genericBrackets.length >= 3) {
+    count += genericBrackets.length;
+  }
+
+  return count;
+}
+
+// ── Content Density Check ─────────────────────────────────────────────────
+
+/**
+ * Analyze content density: checks that sections have real substance,
+ * not just headings with minimal text underneath.
+ *
+ * Returns { sectionsWithContent, totalSections, avgCharsPerSection }.
+ */
+export function analyzeContentDensity(text: string): {
+  sectionsWithContent: number;
+  totalSections: number;
+  avgCharsPerSection: number;
+} {
+  // Split by headings
+  const sections = text.split(/^(?=#{1,6}\s)/m).filter(s => s.trim());
+
+  if (sections.length === 0) {
+    return { sectionsWithContent: 0, totalSections: 0, avgCharsPerSection: 0 };
+  }
+
+  let totalBodyChars = 0;
+  let sectionsWithContent = 0;
+
+  for (const section of sections) {
+    // Strip the heading line itself and any horizontal rules
+    const bodyLines = section.split('\n').filter(line => {
+      const t = line.trim();
+      return t && !t.startsWith('#') && t !== '---' && t !== '***';
+    });
+    const bodyChars = bodyLines.join(' ').trim().length;
+    totalBodyChars += bodyChars;
+    if (bodyChars >= 150) sectionsWithContent++;
+  }
+
+  return {
+    sectionsWithContent,
+    totalSections: sections.length,
+    avgCharsPerSection: sections.length > 0 ? Math.round(totalBodyChars / sections.length) : 0,
+  };
+}
+
+// ── Main Validation ───────────────────────────────────────────────────────
+
+export type ValidationReason =
+  | 'empty'
+  | 'too_short'
+  | 'no_heading'
+  | 'process_text'
+  | 'no_structure'
+  | 'placeholders'
+  | 'thin_content'
+  | 'process_contamination';
+
 /**
  * Validate that a text is a legitimate deliverable document.
  *
- * Returns { valid: true } if the text passes all checks, or
+ * Returns { valid: true } if the text passes ALL checks, or
  * { valid: false, reason } describing why it failed.
+ *
+ * Checks (in order):
+ *   1. Not empty
+ *   2. At least 500 chars
+ *   3. Starts with markdown heading
+ *   4. Head is not a process dump (first 500 chars)
+ *   5. Has at least 3 markdown headings (structure)
+ *   6. No placeholder text ([Insert X], [TBD], etc.)
+ *   7. Sufficient content density (sections have real content)
+ *   8. Full-text process contamination < 20%
  */
-export function validateDeliverable(text: string): { valid: boolean; reason?: string } {
+export function validateDeliverable(text: string): { valid: boolean; reason?: ValidationReason } {
   if (!text) return { valid: false, reason: 'empty' };
 
   const trimmed = text.trim();
 
-  // A real legal document is at least 500 chars
+  // 1. Minimum length — a real legal document is at least 500 chars
   if (trimmed.length < 500) return { valid: false, reason: 'too_short' };
 
-  // Must start with a markdown heading — not process text
+  // 2. Must start with a markdown heading
   if (!trimmed.startsWith('#')) return { valid: false, reason: 'no_heading' };
 
-  // Must not be a process dump
+  // 3. Head must not be a process dump
   if (isProcessDump(text)) return { valid: false, reason: 'process_text' };
 
-  // A real document has structure — at least 3 headings
+  // 4. Must have structural headings
   const headingCount = (trimmed.match(/^#{1,6}\s/gm) || []).length;
   if (headingCount < 3) return { valid: false, reason: 'no_structure' };
+
+  // 5. No placeholder text
+  const placeholders = countPlaceholders(trimmed);
+  if (placeholders >= 2) return { valid: false, reason: 'placeholders' };
+
+  // 6. Content density — at least 2 sections with ≥150 chars of body text
+  //    Average threshold is 100 (not 150) because title headings often have
+  //    zero body text, dragging the average down for legitimate documents.
+  const density = analyzeContentDensity(trimmed);
+  if (density.sectionsWithContent < 2 || density.avgCharsPerSection < 100) {
+    return { valid: false, reason: 'thin_content' };
+  }
+
+  // 7. Full-text process contamination check
+  const contamination = processTextRatio(trimmed);
+  if (contamination > 0.2) return { valid: false, reason: 'process_contamination' };
 
   return { valid: true };
 }

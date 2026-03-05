@@ -416,12 +416,12 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
                   'font-sans text-[13px] cursor-pointer',
                   'py-1.5 px-2.5 rounded-sm',
                   'transition-colors duration-200 ease-in-out whitespace-nowrap',
-                  hasFolder ? 'text-text-dim cursor-default opacity-40' : 'text-text-muted hover:text-text',
+                  hasFolder ? 'text-text-dim cursor-default opacity-40' : 'text-text-muted hover:text-text hover:bg-black/[0.04]',
                 )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                  <path d="M14 2v6h6" />
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
                 {documents.length > 0 ? `${documents.length} document${documents.length > 1 ? 's' : ''}` : 'Attach'}
               </button>
@@ -439,7 +439,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
                       ? 'text-text-dim cursor-default opacity-40'
                       : hasFolder
                         ? 'text-accent'
-                        : 'text-text-muted hover:text-text',
+                        : 'text-text-muted hover:text-text hover:bg-black/[0.04]',
                   )}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 6 }}>
@@ -588,7 +588,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           </p>
         </div>
         <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
-          <span className="text-xl text-text">{'\u2192'}</span>
+          <span className="text-xl text-text-muted">{'\u2192'}</span>
         </div>
       </div>
 
@@ -627,7 +627,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             </p>
           </div>
           <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
-            <span className="text-xl text-text">{'\u2192'}</span>
+            <span className="text-xl text-text-muted">{'\u2192'}</span>
           </div>
         </div>
       )}

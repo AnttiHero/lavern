@@ -196,17 +196,17 @@ describe('validateDeliverable', () => {
   });
 
   it('rejects process dump that starts with heading-like pattern', () => {
-    // A document that starts with # but the body is process text
+    // A document that starts with # but the body is entirely process text
     const sneakyDump = "# Analysis\n\n" +
       "I'll start by reviewing the contract. ".repeat(15) +
       '\n## Sub1\n## Sub2\n## Sub3';
     expect(sneakyDump.length).toBeGreaterThan(500);
-    // isProcessDump only checks the first 500 chars of trimmed text
-    // This starts with # so it passes the heading check
-    // But isProcessDump won't catch it because head starts with #
-    // This is actually the CORRECT behavior — if it starts with #, it's structured
+    // v19: The full-text process contamination scan now catches this even though
+    // it starts with a heading — the body paragraphs are all process text.
     const result = validateDeliverable(sneakyDump);
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    // Could be 'process_contamination' or 'thin_content' depending on structure
+    expect(['process_contamination', 'thin_content']).toContain(result.reason);
   });
 
   it('rejects text with fewer than 3 headings', () => {
@@ -228,9 +228,9 @@ describe('validateDeliverable', () => {
 
   it('accepts document with many headings', () => {
     const sections = Array.from({ length: 10 }, (_, i) =>
-      `## Section ${i + 1}\n\nContent for section ${i + 1} with enough text to pass validation.`
+      `## Section ${i + 1}\n\nContent for section ${i + 1} with enough text to pass the content density validation check. This section covers important legal provisions and analysis that the client needs to review carefully before proceeding.`
     ).join('\n\n');
-    const doc = `# Master Agreement\n\n${sections}\n\n${'Additional content. '.repeat(10)}`;
+    const doc = `# Master Agreement\n\n${sections}`;
     expect(validateDeliverable(doc).valid).toBe(true);
   });
 

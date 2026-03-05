@@ -488,6 +488,20 @@ export function registerSessionRoutes(
     }
 
     if (format === 'summary') {
+      // v19: Block summary download when assembly failed AND no findings exist.
+      // A summary without assembled document AND without findings is a skeleton.
+      const hasAssembledDoc = !!session.assembledDocument && session.assembledDocument.length > 100;
+      const hasFindings = session.debate.findings.length > 0;
+      const hasResolutions = session.debate.resolutions.length > 0;
+
+      if (!hasAssembledDoc && !hasFindings && !hasResolutions) {
+        console.error(`[DOWNLOAD] Blocked empty summary for session ${id}: no document, no findings, no resolutions`);
+        return reply.status(503).send({
+          error: 'Summary not available. Document assembly failed and no analysis findings were produced. Try downloading structured data (JSON) instead.',
+          reason: 'no_content',
+        });
+      }
+
       const lines: string[] = [];
       lines.push(`# ${title}`, '');
       lines.push(`**Date:** ${new Date().toLocaleDateString()}`, '');
@@ -522,6 +536,16 @@ export function registerSessionRoutes(
           lines.push(`- **${r.debateTopic}:** ${r.resolution}`);
         }
         lines.push('');
+      }
+
+      // v19: Validate the assembled summary has substance before serving
+      const summaryContent = lines.join('\n');
+      if (summaryContent.length < 200) {
+        console.error(`[DOWNLOAD] Blocked thin summary for session ${id}: only ${summaryContent.length} chars`);
+        return reply.status(503).send({
+          error: 'Summary content is insufficient. The analysis may not have produced enough findings. Try downloading structured data (JSON) instead.',
+          reason: 'thin_summary',
+        });
       }
 
       lines.push('---', '', '*This summary was generated from AI-assisted analysis. For matters involving regulatory filings, litigation, or binding contractual obligations, independent counsel verification is recommended.*', '');

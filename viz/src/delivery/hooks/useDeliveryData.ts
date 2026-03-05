@@ -262,9 +262,11 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const agentPerf = raw.agentPerformance as Array<{ role: string; durationMs?: number; findingsPosted?: number; challengesIssued?: number }> | undefined;
   const matterTitle = raw.matterTitle as string | null;
   const durationMs = raw.durationMs as number | undefined;
-  // v15: Use assembledDocument (clean deliverable) over finalOutput (process log)
+  // v19: Use assembledDocument ONLY. NEVER fall back to finalOutput (process log).
+  // finalOutput contains orchestrator thinking/coordination — serving it as a
+  // deliverable is catastrophic. If assembledDocument is null, the deliverable is empty.
   const rawAssembledDocument = raw.assembledDocument as string | null;
-  const rawFinalOutput = rawAssembledDocument || (raw.finalOutput as string | null);
+  const rawFinalOutput = rawAssembledDocument || null;
   const rawDebateResolutions = raw.debateResolutions as Array<{ topic: string; resolution: string; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; confidence: number }> | undefined;
   const rawGateDecisions = raw.gateDecisionRecords as Array<{ gateType: string; decision: string; notes?: string }> | undefined;
   const rawFindings = raw.findings as Array<{ id: string; agent: string; category: string; severity: string; content: string; evidence: string[]; confidence: number }> | undefined;

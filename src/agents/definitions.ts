@@ -77,6 +77,9 @@ import { mediaSpecialistPrompt } from './prompts/media-specialist.js';
 import { energySpecialistPrompt } from './prompts/energy-specialist.js';
 // v8: Experts — Quality & Infrastructure (evaluator/risk-pricer already imported)
 import { projectManagerPrompt } from './prompts/project-manager.js';
+// v19: Missing agents for Full Bench workflow
+import { innovationPartnerPrompt } from './prompts/innovation-partner.js';
+import { internationalCounselPrompt } from './prompts/international-counsel.js';
 import { outputFormats } from '../types/output-schemas.js';
 
 // Shared read-only tools available to all agents
@@ -609,6 +612,26 @@ export const agentDefinitions = {
     model: 'sonnet' as const,
     maxTurns: 8,
     outputFormat: outputFormats['quality-expert'],
+  },
+
+  // ── v19: Missing agents for Full Bench workflow ────────────────────────
+
+  'innovation-partner': {
+    description: 'Legal innovation and emerging technology specialist. AI contracts, smart contracts, RegTech, novel business models, emerging regulatory frameworks.',
+    prompt: innovationPartnerPrompt,
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['specialist-lawyer'],
+  },
+
+  'international-counsel': {
+    description: 'Cross-border regulation and multi-jurisdictional compliance. Conflict of laws, treaty frameworks, international regulatory coordination.',
+    prompt: internationalCounselPrompt,
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['specialist-lawyer'],
   },
 
 };

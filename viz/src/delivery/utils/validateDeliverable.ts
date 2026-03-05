@@ -1,14 +1,14 @@
 /**
  * Validate Deliverable — Frontend mirror of src/assembly/validate-deliverable.ts.
  *
- * Used by TheWorkTab and DownloadPanel to detect process dumps before
- * showing previews or enabling downloads.
+ * KEEP IN SYNC with the backend version. Changes here must be reflected there.
+ *
+ * v19: Hardened validation — placeholder detection, content density,
+ * full-text process contamination scan.
  */
 
-/**
- * Detect whether text looks like orchestrator process output
- * rather than an actual deliverable document.
- */
+// ── Process Dump Detection ────────────────────────────────────────────────
+
 export function isProcessDump(text: string): boolean {
   const head = text.trimStart().substring(0, 500);
 
@@ -22,6 +22,9 @@ export function isProcessDump(text: string): boolean {
     /^Below is/i, /^What follows/i, /^The following/i,
     /^Clean slate/i, /^The specialist/i, /^Both specialists/i,
     /^Let me check/i, /^I'll start/i, /^I'll now/i,
+    /^I'll get started/i, /^Looking at/i, /^After review/i,
+    /^Once analyzed/i, /^The process/i, /^In summary,? here/i,
+    /^To begin/i, /^Starting with/i, /^Moving on/i,
   ];
 
   if (processPatterns.some(p => p.test(head))) return true;
@@ -38,6 +41,103 @@ export function isProcessDump(text: string): boolean {
   return false;
 }
 
+// ── Full-Text Process Scan ────────────────────────────────────────────────
+
+export function processTextRatio(text: string): number {
+  const paragraphs = text.split(/\n\n+/).filter(p => {
+    const t = p.trim();
+    return t.length > 30 && !t.startsWith('#') && t !== '---';
+  });
+
+  if (paragraphs.length === 0) return 0;
+
+  const processPatterns = [
+    /^I'll /im, /^I will /im, /^Let me /im, /^I need to/im,
+    /^I can see/im, /^I have /im, /^I've /im, /^I see /im,
+    /^First,/im, /^Now,/im, /^Next,/im, /^Now let/im,
+    /^OK[,.\s]/im, /^Okay/im, /^Sure/im, /^Certainly/im,
+    /^Good\./im, /^Good —/im, /^Great/im, /^Excellent/im, /^Perfect/im,
+    /^Here is/im, /^Here's /im, /^Based on my/im,
+    /^Looking at/im, /^After review/im, /^To begin/im,
+    /^Starting with/im, /^Moving on/im, /^I'll get started/im,
+  ];
+
+  let contaminated = 0;
+  for (const para of paragraphs) {
+    if (processPatterns.some(p => p.test(para.trim()))) contaminated++;
+  }
+
+  return contaminated / paragraphs.length;
+}
+
+// ── Placeholder Detection ─────────────────────────────────────────────────
+
+export function countPlaceholders(text: string): number {
+  const knownPlaceholders = [
+    /\[Insert [^\]]+\]/gi,
+    /\[To be (filled|completed|added|determined)[^\]]*\]/gi,
+    /\[PLACEHOLDER[^\]]*\]/gi,
+    /\[TBD[^\]]*\]/gi,
+    /\[TODO[^\]]*\]/gi,
+    /\[Current Date\]/gi,
+    /\[Effective Date\]/gi,
+    /\[Your Name\]/gi,
+    /\[Client Name\]/gi,
+    /\[Company Name\]/gi,
+    /\[PENDING[^\]]*\]/gi,
+    /\[DRAFT[^\]]*\]/gi,
+    /\[SECTION [^\]]*\]/gi,
+  ];
+
+  let count = 0;
+  for (const pattern of knownPlaceholders) {
+    const matches = text.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  const genericBrackets = text.match(/\[[A-Z][A-Z\s]{2,30}\]/g);
+  if (genericBrackets && genericBrackets.length >= 3) {
+    count += genericBrackets.length;
+  }
+
+  return count;
+}
+
+// ── Content Density Check ─────────────────────────────────────────────────
+
+export function analyzeContentDensity(text: string): {
+  sectionsWithContent: number;
+  totalSections: number;
+  avgCharsPerSection: number;
+} {
+  const sections = text.split(/^(?=#{1,6}\s)/m).filter(s => s.trim());
+
+  if (sections.length === 0) {
+    return { sectionsWithContent: 0, totalSections: 0, avgCharsPerSection: 0 };
+  }
+
+  let totalBodyChars = 0;
+  let sectionsWithContent = 0;
+
+  for (const section of sections) {
+    const bodyLines = section.split('\n').filter(line => {
+      const t = line.trim();
+      return t && !t.startsWith('#') && t !== '---' && t !== '***';
+    });
+    const bodyChars = bodyLines.join(' ').trim().length;
+    totalBodyChars += bodyChars;
+    if (bodyChars >= 150) sectionsWithContent++;
+  }
+
+  return {
+    sectionsWithContent,
+    totalSections: sections.length,
+    avgCharsPerSection: sections.length > 0 ? Math.round(totalBodyChars / sections.length) : 0,
+  };
+}
+
+// ── Main Validation ───────────────────────────────────────────────────────
+
 /**
  * Validate that text is a legitimate deliverable document.
  */
@@ -52,6 +152,17 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: st
 
   const headingCount = (trimmed.match(/^#{1,6}\s/gm) || []).length;
   if (headingCount < 3) return { valid: false, reason: 'no_structure' };
+
+  const placeholders = countPlaceholders(trimmed);
+  if (placeholders >= 2) return { valid: false, reason: 'placeholders' };
+
+  const density = analyzeContentDensity(trimmed);
+  if (density.sectionsWithContent < 2 || density.avgCharsPerSection < 100) {
+    return { valid: false, reason: 'thin_content' };
+  }
+
+  const contamination = processTextRatio(trimmed);
+  if (contamination > 0.2) return { valid: false, reason: 'process_contamination' };
 
   return { valid: true };
 }

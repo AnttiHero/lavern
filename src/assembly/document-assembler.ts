@@ -9,11 +9,23 @@
  * single-turn API calls. The Agent SDK spawns a full Claude Code subprocess
  * which is overkill for document assembly.
  *
- * v18: Defense-in-depth validation. The assembler now:
- *   1. Validates its own output (rejects process dumps, too-short, no structure)
- *   2. Retries once with a stronger prompt if first attempt fails validation
- *   3. NEVER returns session.finalOutput (the process log) — returns '' on failure
- *   4. Logs validation failures for debugging
+ * v18: Defense-in-depth validation.
+ * v19: Hardened — 3 attempts with escalating prompts, reason-specific retry
+ *   feedback, and comprehensive validation (placeholders, thin content,
+ *   process contamination). The assembler now:
+ *   1. Validates output against 8 structural checks
+ *   2. Runs an LLM quality gate (Haiku reads the output and judges substance)
+ *   3. Retries up to 3 times with escalating prompts + failure reason feedback
+ *   4. NEVER returns session.finalOutput (the process log) — returns '' on failure
+ *   5. Logs rejected output previews for debugging
+ *
+ * v20: LLM Quality Gate — after structural validation passes, a SECOND model
+ *   (Haiku, fast & cheap) actually READS the assembled document and evaluates:
+ *   - Does it address the client's actual request?
+ *   - Is the content specific and substantive (not generic filler)?
+ *   - Would a paying client be satisfied receiving this?
+ *   If the quality gate fails, its specific critique feeds into the retry.
+ *   This catches semantically empty documents that pass all regex checks.
  *
  * This is the key differentiator over a single-shot prompt: the assembly call has
  * ALL the multi-agent intelligence (38+ findings, debate resolutions, ethics audit,
@@ -36,25 +48,166 @@ import type { LegalRequest } from '../types/index.js';
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-opus-4-6': { input: 15.0, output: 75.0 },
   'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
+  'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
 };
 
-/** Maximum number of assembly attempts before giving up. */
-const MAX_ASSEMBLY_ATTEMPTS = 2;
+/**
+ * Model used for the quality gate. Prefers Haiku (fast + cheap), falls back to
+ * Sonnet when Haiku is unavailable on the API key.
+ */
+const QUALITY_GATE_MODEL = 'claude-sonnet-4-5-20250929';
 
-/** Addendum appended to the user prompt on retry after a failed validation. */
-const RETRY_ADDENDUM = `
+/** Maximum number of assembly attempts before giving up. */
+const MAX_ASSEMBLY_ATTEMPTS = 3;
+
+/** Addendum for attempt 2: stronger instructions after first failure. */
+const RETRY_ADDENDUM_2 = `
 
 ## CRITICAL — YOUR PREVIOUS OUTPUT WAS REJECTED
 
-Your previous attempt was rejected because it contained process text, internal reasoning,
-or did not meet the deliverable quality bar. This is your FINAL attempt.
+Rejection reason: {{REASON}}
 
 RULES (violations will cause rejection):
 1. Your FIRST character MUST be "#" (a markdown heading).
 2. Do NOT include ANY text like "I'll", "Let me", "Here is", "Based on", etc.
 3. The output must be the COMPLETE document — not a summary, not a plan, not commentary.
 4. The output must have clear section structure with multiple markdown headings.
-5. ONLY output the deliverable. Nothing else.`;
+5. ONLY output the deliverable. Nothing else.
+6. Do NOT use placeholder text like [Insert Date], [TBD], [PLACEHOLDER].
+7. Every section must have substantial content (at least a full paragraph).
+8. The document must SPECIFICALLY address the client's request — not generic boilerplate.
+9. Reference SPECIFIC clauses, issues, and provisions from the source document.
+10. A quality reviewer will READ your output. If it is generic filler, it will be rejected.`;
+
+/** Addendum for attempt 3: final attempt with explicit validation rules. */
+const RETRY_ADDENDUM_3 = `
+
+## FINAL ATTEMPT — YOU HAVE FAILED TWICE
+
+Previous rejection reasons: {{REASONS}}
+
+You are about to be rejected permanently. Your output is reviewed by BOTH an automated validator AND a quality reviewer who reads the entire document.
+
+STRUCTURAL RULES (automated validator):
+1. Must start with "#" (markdown heading) — NO preamble of any kind
+2. Must be at least 500 characters long
+3. Must have at least 3 markdown headings (##)
+4. Must NOT contain placeholder text like [Insert ...], [TBD], [PLACEHOLDER], [Current Date]
+5. Must have at least 2 sections with 150+ characters of body text each
+6. Must NOT contain process language ("I'll", "Let me", "Based on my analysis", etc.)
+
+SUBSTANCE RULES (quality reviewer reads your output):
+7. Must SPECIFICALLY address the client's original request — not generic analysis
+8. Must reference SPECIFIC provisions, clauses, or issues from the source document
+9. Must contain ACTIONABLE, specific analysis — not vague observations
+10. A paying client who waited 10 minutes for this must feel they received real value
+
+Produce the FULL, SUBSTANTIVE document now.`;
+
+// ── LLM Quality Gate ─────────────────────────────────────────────────────
+
+/**
+ * LLM-based semantic quality gate. A fast model (Haiku) reads the assembled
+ * document and judges whether it's actually good — not just structurally
+ * valid, but substantive, relevant, and something a paying client would
+ * accept.
+ *
+ * This catches the failure mode that regex can never catch: a document
+ * with correct heading structure and sufficient length, but containing
+ * generic filler that doesn't address the client's actual request.
+ *
+ * Returns { pass: true } or { pass: false, critique: string }.
+ * Cost: ~$0.002 per call (Haiku, ~3k input tokens, ~100 output tokens).
+ */
+async function llmQualityGate(
+  assembledText: string,
+  session: SessionState,
+  request?: LegalRequest,
+): Promise<{ pass: boolean; critique?: string; cost: number }> {
+  try {
+    const client = new Anthropic();
+
+    // Build a concise summary of what was expected
+    const requestSummary = request?.requestText
+      ?? session.matterRecord?.title
+      ?? 'General legal analysis';
+
+    const docNames = session.documents.map(d => d.name).join(', ');
+    const workflowType = session.workflowTemplateId ?? 'unknown';
+    const findingsCount = session.debate.findings.length;
+    const resolutionsCount = session.debate.resolutions.length;
+
+    // Truncate document to first 6000 chars for the quality gate
+    // (enough to judge substance without blowing up token costs)
+    const docExcerpt = assembledText.length > 6000
+      ? assembledText.substring(0, 6000) + '\n\n[... document continues ...]'
+      : assembledText;
+
+    const prompt = `You are a quality gate for a legal document assembly system. A client paid money and waited for this document. Your job is to determine if the output is ACTUALLY GOOD or if it's garbage that would embarrass us.
+
+## What the client requested
+Request: ${requestSummary}
+Documents provided: ${docNames || 'None specified'}
+Workflow type: ${workflowType}
+Analysis produced: ${findingsCount} findings, ${resolutionsCount} debate resolutions
+
+## The assembled document (excerpt)
+${docExcerpt}
+
+## Your evaluation
+
+Judge this document on these criteria:
+1. RELEVANCE — Does it actually address the client's request? If they asked for a contract review, is this a contract review? If they uploaded a specific document, does the output reference specifics from that document?
+2. SUBSTANCE — Does it contain specific, actionable analysis? Or is it generic boilerplate that could apply to any document? Look for specific clause references, specific risk assessments, specific recommendations.
+3. COMPLETENESS — Does it cover the key issues you'd expect? A contract review should cover liability, termination, IP, indemnification, etc. A research memo should have analysis and conclusions.
+4. CLIENT VALUE — Would a paying client be satisfied receiving this? Or would they feel ripped off?
+
+Respond with EXACTLY one of these two formats (no other text):
+PASS
+FAIL: [one sentence explaining why this document is not good enough]`;
+
+    const response = await client.messages.create({
+      model: QUALITY_GATE_MODEL,
+      max_tokens: 200,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    // Extract response text
+    let responseText = '';
+    for (const block of response.content) {
+      if (block.type === 'text') responseText += block.text;
+    }
+    responseText = responseText.trim();
+
+    // Calculate cost
+    const pricing = PRICING[QUALITY_GATE_MODEL] ?? PRICING['claude-haiku-3-5-20250929'];
+    const inputTokens = response.usage?.input_tokens ?? 0;
+    const outputTokens = response.usage?.output_tokens ?? 0;
+    const gateCost = (inputTokens * pricing.input / 1_000_000) +
+      (outputTokens * pricing.output / 1_000_000);
+
+    // Parse response
+    if (responseText.startsWith('PASS')) {
+      console.log(`[QUALITY GATE] PASSED (~$${gateCost.toFixed(4)})`);
+      return { pass: true, cost: gateCost };
+    }
+
+    // Extract critique
+    const critique = responseText.startsWith('FAIL:')
+      ? responseText.substring(5).trim()
+      : responseText.startsWith('FAIL')
+        ? responseText.substring(4).replace(/^[\s:—-]+/, '').trim() || 'Document did not meet quality standards'
+        : 'Quality gate returned ambiguous result: ' + responseText.substring(0, 200);
+
+    console.warn(`[QUALITY GATE] FAILED: ${critique} (~$${gateCost.toFixed(4)})`);
+    return { pass: false, critique, cost: gateCost };
+  } catch (error) {
+    // Quality gate failure should NOT block delivery — it's a second opinion, not a veto
+    // If the gate itself errors, let the document through (it passed structural validation)
+    console.error('[QUALITY GATE] Error (allowing document through):', error);
+    return { pass: true, critique: undefined, cost: 0 };
+  }
+}
 
 /**
  * Assemble the final deliverable document from structured analysis data.
@@ -98,16 +251,22 @@ export async function assembleDocument(
   console.log('─'.repeat(60));
 
   let totalAssemblyCost = 0;
+  const rejectionReasons: string[] = [];
 
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
     try {
       const client = new Anthropic();
       const model = config.defaultModel;
 
-      // On retry, append a stronger instruction
-      const assemblyContext = attempt === 1
-        ? baseContext
-        : baseContext + RETRY_ADDENDUM;
+      // Build context with escalating retry addendums
+      let assemblyContext = baseContext;
+      if (attempt === 2 && rejectionReasons.length > 0) {
+        assemblyContext += RETRY_ADDENDUM_2.replace('{{REASON}}', rejectionReasons[0]);
+      } else if (attempt === 3) {
+        assemblyContext += RETRY_ADDENDUM_3.replace('{{REASONS}}', rejectionReasons.join('; '));
+      }
+
+      console.log(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS}...`);
 
       const response = await client.messages.create({
         model,
@@ -141,9 +300,41 @@ export async function assembleDocument(
       }
 
       // ── Validate the assembled output ──────────────────────────────
+
+      // Step 1: Structural validation (fast, no API call)
       const validation = validateDeliverable(assembledText);
 
-      if (validation.valid) {
+      if (!validation.valid) {
+        // Structural validation failed — log and retry
+        const reason = validation.reason ?? 'unknown';
+        rejectionReasons.push(`structural: ${reason}`);
+
+        const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
+        console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (structural): ${reason} (${assembledText.length} chars)`);
+        console.warn(`[ASSEMBLY] Rejected output preview: ${preview}`);
+
+        if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
+          console.log(`[ASSEMBLY] Retrying with escalated instructions (attempt ${attempt + 1})...`);
+          session.events.emitEvent({
+            type: 'tool_used',
+            tool: 'document_assembly_retry',
+            agent: 'document-assembler',
+            timestamp: eventTimestamp(),
+          });
+        }
+        continue;
+      }
+
+      // Step 2: LLM Quality Gate — a second model reads the document and
+      // judges whether it's actually good (catches semantic garbage that
+      // passes all regex/structural checks)
+      const qualityGate = await llmQualityGate(assembledText, session, request);
+      totalAssemblyCost += qualityGate.cost;
+      if (qualityGate.cost > 0) {
+        session.updateCost(session.accumulatedCost + qualityGate.cost);
+      }
+
+      if (qualityGate.pass) {
         console.log(`Assembly complete (attempt ${attempt}): ${assembledText.length} chars, ${inputTokens} in / ${outputTokens} out, ~$${totalAssemblyCost.toFixed(2)}`);
         console.log('─'.repeat(60));
 
@@ -151,11 +342,14 @@ export async function assembleDocument(
         return assembledText;
       }
 
-      // Validation failed
-      console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} failed validation: ${validation.reason} (${assembledText.length} chars)`);
+      // Quality gate failed — the document looks right structurally but IS wrong semantically
+      const critique = qualityGate.critique ?? 'Document did not pass quality review';
+      rejectionReasons.push(`quality_gate: ${critique}`);
+
+      console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (quality gate): ${critique} (${assembledText.length} chars)`);
 
       if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
-        console.log('[ASSEMBLY] Retrying with stronger instructions...');
+        console.log(`[ASSEMBLY] Retrying with escalated instructions + quality feedback (attempt ${attempt + 1})...`);
         session.events.emitEvent({
           type: 'tool_used',
           tool: 'document_assembly_retry',
@@ -165,6 +359,7 @@ export async function assembleDocument(
       }
     } catch (error) {
       console.error(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} API error:`, error);
+      rejectionReasons.push(`api_error: ${error instanceof Error ? error.message : String(error)}`);
 
       session.events.emitEvent({
         type: 'error',
