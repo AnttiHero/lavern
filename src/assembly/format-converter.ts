@@ -683,9 +683,9 @@ function buildCoverPage(title: string, profile: StyleProfile, branding?: SoulBra
     spacing: { after: 200 },
   }));
 
-  // Page break
+  // Page break after cover page
   paragraphs.push(new Paragraph({
-    children: [new TextRun({ break: 1, children: [new PageBreak()] })],
+    children: [new PageBreak()],
   }));
 
   return paragraphs;

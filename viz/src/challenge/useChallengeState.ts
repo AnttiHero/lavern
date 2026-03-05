@@ -51,16 +51,30 @@ export function useChallengeState() {
     const humanDoc = humanUpload.documents[0];
     if (!marbleDoc || !humanDoc) return;
 
-    // Get text from parsed documents or raw content
-    const marbleText = marbleUpload.parsedDocuments[0]?.fullText ?? marbleDoc.content;
-    const humanText = humanUpload.parsedDocuments[0]?.fullText ?? humanDoc.content;
+    // Get text from parsed documents — only fall back to raw content for text files.
+    // For binary files (PDF, DOCX), .content is a base64 data URL which is useless for comparison.
+    const marbleParsed = marbleUpload.parsedDocuments[0]?.fullText;
+    const humanParsed = humanUpload.parsedDocuments[0]?.fullText;
+    const isMarbleText = marbleDoc.type.startsWith('text/') || marbleDoc.name.endsWith('.md') || marbleDoc.name.endsWith('.txt');
+    const isHumanText = humanDoc.type.startsWith('text/') || humanDoc.name.endsWith('.md') || humanDoc.name.endsWith('.txt');
 
-    if (!marbleText || marbleText.length < 50) {
-      setError('Marble document is too short or could not be read.');
+    const marbleText = marbleParsed ?? (isMarbleText ? marbleDoc.content : null);
+    const humanText = humanParsed ?? (isHumanText ? humanDoc.content : null);
+
+    if (!marbleText) {
+      setError('Could not extract text from the Marble document. Try a different format (TXT, MD, PDF, DOCX).');
       return;
     }
-    if (!humanText || humanText.length < 50) {
-      setError('Human document is too short or could not be read.');
+    if (!humanText) {
+      setError('Could not extract text from the challenger document. Try a different format (TXT, MD, PDF, DOCX).');
+      return;
+    }
+    if (marbleText.length < 50) {
+      setError('Marble document is too short (minimum 50 characters).');
+      return;
+    }
+    if (humanText.length < 50) {
+      setError('Challenger document is too short (minimum 50 characters).');
       return;
     }
 
