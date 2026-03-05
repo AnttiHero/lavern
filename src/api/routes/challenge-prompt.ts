@@ -1,7 +1,7 @@
 /**
  * Blind Comparison Prompt — The Marble Challenge.
  *
- * Opus receives two documents labeled ONLY as "Document A" and "Document B".
+ * Sonnet receives two documents labeled ONLY as "Document A" and "Document B".
  * It does NOT know which is human or AI.
  * Scores each on 6 dimensions (0–100) with evidence.
  * Returns structured JSON.
@@ -41,7 +41,7 @@ export const CHALLENGE_DIMENSIONS = [
 ] as const;
 
 /**
- * Build the blind comparison system prompt for the judge (Opus).
+ * Build the blind comparison system prompt for the judge (Sonnet).
  */
 export function buildComparisonSystemPrompt(): string {
   return `You are a senior legal document quality judge. You have been retained to perform a BLIND evaluation of two legal documents.

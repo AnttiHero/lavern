@@ -489,7 +489,7 @@ export default function ChallengeView({ onBack }: Props) {
             <div style={sty.processingCard}>
               <div style={sty.pulseOrb} />
               <div style={sty.processingStep}>
-                Opus is scoring both documents blind...
+                The judge is scoring both documents blind...
               </div>
             </div>
           </Section>

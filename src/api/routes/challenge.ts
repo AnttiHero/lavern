@@ -1,17 +1,17 @@
 /**
  * Challenge Routes — The Marble Challenge.
  *
- * POST /api/challenge — Upload two documents, get a blind comparison from Opus.
+ * POST /api/challenge — Upload two documents, get a blind comparison from Sonnet.
  *
  * Simple: no sessions, no workflows, no waiting.
- * User uploads two documents (Marble-created + human-created),
- * Opus scores both blind, returns scores. One API call. ~$0.50.
+ * User uploads two documents (Marble-created + challenger),
+ * Sonnet scores both blind, returns scores. One API call. ~5 seconds.
  */
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import Anthropic from '@anthropic-ai/sdk';
 import { validateBody } from '../middleware/validation.js';
-import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import {
   CHALLENGE_DIMENSIONS,
   buildComparisonSystemPrompt,
@@ -48,6 +48,14 @@ interface ComparisonResult {
   summary: string;
 }
 
+// ── Anthropic client (singleton) ─────────────────────────────────────────
+
+let client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!client) client = new Anthropic();
+  return client;
+}
+
 // ── Route Registration ──────────────────────────────────────────────────
 
 export function registerChallengeRoutes(
@@ -70,43 +78,32 @@ export function registerChallengeRoutes(
     };
 
     try {
-      // Call Opus for blind comparison
+      // Call Sonnet directly via Anthropic SDK with assistant prefill to force JSON
       const systemPrompt = buildComparisonSystemPrompt();
       const userPrompt = buildComparisonUserPrompt(docA, docB);
 
-      const result = sdkQuery({
-        prompt: userPrompt,
-        options: {
-          systemPrompt,
-          model: 'claude-sonnet-4-5-20250929',
-          maxTurns: 1,
-        },
+      const response = await getClient().messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: userPrompt },
+          { role: 'assistant', content: '{' },  // Prefill forces JSON output
+        ],
       });
 
-      // Consume the async generator
-      let responseText = '';
-      for await (const message of result) {
-        if (!('type' in message)) continue;
-        if (message.type === 'assistant' && message.message?.content) {
-          for (const block of message.message.content) {
-            if ('text' in block) {
-              responseText += block.text;
-            }
-          }
-        }
-        if (message.type === 'result') {
-          if ('subtype' in message && message.subtype !== 'success') {
-            const errors = (message as Record<string, unknown>).errors;
-            throw new Error(`Comparison failed: ${JSON.stringify(errors)}`);
-          }
+      // Extract text from response
+      let responseText = '{';  // Start with the prefilled brace
+      for (const block of response.content) {
+        if (block.type === 'text') {
+          responseText += block.text;
         }
       }
 
-      if (!responseText) {
+      if (responseText.length <= 1) {
         throw new Error('No response from judge');
       }
 
-      // Parse the JSON response from Opus
       // Strip markdown code fences if present
       let cleanJson = responseText.trim();
       if (cleanJson.startsWith('```')) {
