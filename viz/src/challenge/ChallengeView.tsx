@@ -585,47 +585,109 @@ export default function ChallengeView({ onBack }: Props) {
               </div>
             )}
 
-            {/* Result banner */}
+            {/* Result share card — designed to be screenshot-worthy for LinkedIn */}
             {phase === 'result' && (
-              <div style={{ ...sty.resultBanner, animation: 'chEnvelope 0.8s ease 0.2s both' }}>
-                {result.winner === 'marble' && (
-                  <>
+              <div style={{ ...sty.shareCard, animation: 'chEnvelope 0.8s ease 0.2s both' }}>
+                {/* Card header — Marble branding */}
+                <div style={sty.shareCardHeader}>
+                  <span style={sty.shareCardLogo}>MARBLE</span>
+                  <span style={sty.shareCardDivider} />
+                  <span style={sty.shareCardLabel}>THE CHALLENGE</span>
+                </div>
+
+                {/* Headline */}
+                <div style={{
+                  ...sty.resultTitle,
+                  animation: (result.winner === 'marble' || result.winner === 'human')
+                    ? 'chWinnerGlow 2s ease-in-out infinite' : undefined,
+                }}>
+                  {result.winner === 'marble' && 'As expected.'}
+                  {result.winner === 'human' && "Credit where it's due."}
+                  {result.winner === 'tie' && 'Dead heat.'}
+                </div>
+
+                {/* Score face-off */}
+                <div style={sty.shareFaceoff}>
+                  <div style={sty.shareSide}>
                     <div style={{
-                      ...sty.resultTitle,
-                      animation: 'chWinnerGlow 2s ease-in-out infinite',
+                      ...sty.shareSideLabel,
+                      color: result.winner === 'marble'
+                        ? D.gold
+                        : result.winner === 'human' ? D.textDim : D.text,
+                    }}>MARBLE</div>
+                    <div style={{
+                      ...sty.shareSideScore,
+                      color: result.winner === 'marble' ? D.gold : D.textDim,
                     }}>
-                      As expected.
+                      {result.assignment.A === 'marble' ? result.overallA : result.overallB}
                     </div>
-                    <div style={sty.resultSummary}>{result.summary}</div>
+                  </div>
+                  <div style={sty.shareSideVs}>vs</div>
+                  <div style={sty.shareSide}>
+                    <div style={{
+                      ...sty.shareSideLabel,
+                      color: result.winner === 'human'
+                        ? D.gold
+                        : result.winner === 'marble' ? D.textDim : D.text,
+                    }}>CHALLENGER</div>
+                    <div style={{
+                      ...sty.shareSideScore,
+                      color: result.winner === 'human' ? D.gold : D.textDim,
+                    }}>
+                      {result.assignment.A === 'human' ? result.overallA : result.overallB}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compact dimension bars */}
+                <div style={sty.shareDims}>
+                  {result.dimensions.map((dim) => {
+                    const mScore = result.assignment.A === 'marble' ? dim.scoreA : dim.scoreB;
+                    const cScore = result.assignment.A === 'human' ? dim.scoreA : dim.scoreB;
+                    const mWins = mScore > cScore;
+                    return (
+                      <div key={dim.name} style={sty.shareDimRow}>
+                        <span style={sty.shareDimName}>{dim.name}</span>
+                        <span style={{ ...sty.shareDimScore, color: mWins ? D.gold : D.textDim }}>{mScore}</span>
+                        <span style={sty.shareDimDash}>{'\u2013'}</span>
+                        <span style={{ ...sty.shareDimScore, color: !mWins ? D.gold : D.textDim }}>{cScore}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary */}
+                <div style={sty.resultSummary}>{result.summary}</div>
+
+                {/* Subtext for loser acknowledgment */}
+                {result.winner === 'human' && (
+                  <div style={{ ...sty.resultSummary, color: D.gold, fontWeight: 600, fontSize: 13, marginTop: 4 }}>
+                    The challenger took this one. The engagement is on us.
+                  </div>
+                )}
+                {result.winner === 'tie' && (
+                  <div style={{ ...sty.resultSummary, fontStyle: 'italic', marginTop: 4 }}>
+                    Both documents held their own. We respect a worthy opponent.
+                  </div>
+                )}
+
+                {/* Card footer */}
+                <div style={sty.shareCardFooter}>
+                  <span style={sty.shareCardFooterText}>marble.law</span>
+                  <span style={sty.shareCardFooterText}>{'\u00B7'}</span>
+                  <span style={sty.shareCardFooterText}>Blind AI comparison</span>
+                </div>
+
+                {/* CTA below card */}
+                {result.winner === 'marble' && (
+                  <div style={{ textAlign: 'center', marginTop: 20 }}>
                     <button
                       onClick={() => { window.location.hash = '#/quickstart'; }}
                       style={sty.resultCta}
                     >
                       Ready to hire us?
                     </button>
-                  </>
-                )}
-                {result.winner === 'human' && (
-                  <>
-                    <div style={{
-                      ...sty.resultTitle,
-                      animation: 'chWinnerGlow 2s ease-in-out infinite',
-                    }}>
-                      Credit where it's due.
-                    </div>
-                    <div style={sty.resultSummary}>
-                      {"The challenger took this one. The engagement is on us."}
-                    </div>
-                    <div style={sty.resultSummary}>{result.summary}</div>
-                  </>
-                )}
-                {result.winner === 'tie' && (
-                  <>
-                    <div style={sty.resultTitle}>Dead heat.</div>
-                    <div style={sty.resultSummary}>
-                      {"Both documents held their own. We respect a worthy opponent."}
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -1057,14 +1119,44 @@ const sty: Record<string, React.CSSProperties> = {
     marginTop: 16,
   },
 
-  // Result
-  resultBanner: {
+  // Share card — self-contained, screenshot-worthy result card
+  shareCard: {
     textAlign: 'center' as const,
-    padding: '48px 32px',
+    padding: '40px 40px 32px',
     border: `1px solid ${D.gold}`,
     borderRadius: radii.md,
-    backgroundColor: D.goldFaint,
+    backgroundColor: 'rgba(10, 10, 15, 0.95)',
     marginTop: 32,
+    // Subtle gold gradient border glow
+    boxShadow: `0 0 40px rgba(184, 150, 11, 0.08), inset 0 1px 0 rgba(184, 150, 11, 0.15)`,
+  },
+  shareCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  shareCardLogo: {
+    fontSize: 14,
+    fontFamily: fonts.serif,
+    fontWeight: 400,
+    color: D.white,
+    letterSpacing: 6,
+    textTransform: 'uppercase' as const,
+  },
+  shareCardDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: D.textFaint,
+  },
+  shareCardLabel: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: D.textDim,
+    letterSpacing: 3,
+    textTransform: 'uppercase' as const,
   },
   resultTitle: {
     fontSize: 36,
@@ -1072,7 +1164,73 @@ const sty: Record<string, React.CSSProperties> = {
     fontWeight: 300,
     fontStyle: 'italic' as const,
     color: D.gold,
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  shareFaceoff: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 32,
+    marginBottom: 28,
+    padding: '20px 0',
+    borderTop: `1px solid ${D.border}`,
+    borderBottom: `1px solid ${D.border}`,
+  },
+  shareSide: {
+    textAlign: 'center' as const,
+    minWidth: 100,
+  },
+  shareSideLabel: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    letterSpacing: 3,
+    textTransform: 'uppercase' as const,
+    marginBottom: 6,
+  },
+  shareSideScore: {
+    fontSize: 56,
+    fontFamily: fonts.serif,
+    fontWeight: 300,
+    lineHeight: 1,
+  },
+  shareSideVs: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: D.textFaint,
+    fontStyle: 'italic' as const,
+  },
+  shareDims: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    marginBottom: 24,
+    padding: '0 20px',
+  },
+  shareDimRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  shareDimName: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: D.textDim,
+    width: 180,
+    textAlign: 'right' as const,
+    flexShrink: 0,
+  },
+  shareDimScore: {
+    fontSize: 13,
+    fontFamily: fonts.mono,
+    fontWeight: 600,
+    width: 28,
+    textAlign: 'center' as const,
+  },
+  shareDimDash: {
+    fontSize: 10,
+    color: D.textFaint,
   },
   resultSummary: {
     fontSize: 14,
@@ -1081,6 +1239,23 @@ const sty: Record<string, React.CSSProperties> = {
     lineHeight: 1.7,
     maxWidth: 500,
     margin: '0 auto 16px',
+  },
+  shareCardFooter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingTop: 16,
+    borderTop: `1px solid ${D.border}`,
+  },
+  shareCardFooterText: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 500,
+    color: D.textFaint,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
   },
   resultCta: {
     padding: '10px 24px',
