@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fonts, radii } from '../staffing/styles/tokens.js';
 import { useChallengeState } from './useChallengeState.js';
-import type { DimensionScore } from './useChallengeState.js';
+import type { DimensionScore, ComparisonResult } from './useChallengeState.js';
 
 // -- Confetti engine (zero dependencies) ----------------------------------------
 
@@ -109,6 +109,180 @@ function useConfetti() {
 
 interface Props {
   onBack: () => void;
+}
+
+// -- Share card image renderer (canvas-based PNG export) -----------------------
+
+function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
+  const W = 1200;
+  const H = 630; // LinkedIn recommended image size
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = '#0A0A0F';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle gold vignette
+  const grad = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W * 0.6);
+  grad.addColorStop(0, 'rgba(184, 150, 11, 0.06)');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Gold border
+  ctx.strokeStyle = 'rgba(184, 150, 11, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24, 24, W - 48, H - 48);
+
+  // Header: MARBLE | THE CHALLENGE
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.92)';
+  ctx.font = '400 16px "Cormorant Garamond", Georgia, serif';
+  ctx.letterSpacing = '6px';
+  ctx.textAlign = 'center';
+  ctx.fillText('MARBLE', W / 2 - 80, 72);
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
+  ctx.fillRect(W / 2 - 18, 60, 1, 16);
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.6)';
+  ctx.font = '600 10px Inter, system-ui, sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('THE CHALLENGE', W / 2 + 70, 72);
+
+  // Headline
+  const headline = result.winner === 'marble' ? 'As expected.'
+    : result.winner === 'human' ? "Credit where it's due."
+    : 'Dead heat.';
+  ctx.fillStyle = '#B8960B';
+  ctx.font = 'italic 300 42px "Cormorant Garamond", Georgia, serif';
+  ctx.letterSpacing = '0px';
+  ctx.fillText(headline, W / 2, 130);
+
+  // Divider line
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.10)';
+  ctx.fillRect(100, 155, W - 200, 1);
+
+  // Score face-off
+  const mScore = result.assignment.A === 'marble' ? result.overallA : result.overallB;
+  const cScore = result.assignment.A === 'human' ? result.overallA : result.overallB;
+
+  // MARBLE score
+  ctx.fillStyle = result.winner === 'marble' ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
+  ctx.font = '700 11px Inter, system-ui, sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('MARBLE', W / 2 - 160, 200);
+  ctx.font = '300 72px "Cormorant Garamond", Georgia, serif';
+  ctx.letterSpacing = '0px';
+  ctx.fillText(String(mScore), W / 2 - 160, 275);
+
+  // vs
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
+  ctx.font = 'italic 16px Inter, system-ui, sans-serif';
+  ctx.fillText('vs', W / 2, 250);
+
+  // CHALLENGER score
+  ctx.fillStyle = result.winner === 'human' ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
+  ctx.font = '700 11px Inter, system-ui, sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('CHALLENGER', W / 2 + 160, 200);
+  ctx.font = '300 72px "Cormorant Garamond", Georgia, serif';
+  ctx.letterSpacing = '0px';
+  ctx.fillText(String(cScore), W / 2 + 160, 275);
+
+  // Divider
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.10)';
+  ctx.fillRect(100, 300, W - 200, 1);
+
+  // Dimension scores — compact two-column
+  const dims = result.dimensions;
+  const colW = 500;
+  const startY = 330;
+  const rowH = 28;
+  const leftX = W / 2 - colW / 2;
+
+  ctx.textAlign = 'right';
+  for (let i = 0; i < dims.length; i++) {
+    const y = startY + i * rowH;
+    const dm = result.assignment.A === 'marble' ? dims[i].scoreA : dims[i].scoreB;
+    const dc = result.assignment.A === 'human' ? dims[i].scoreA : dims[i].scoreB;
+    const mWins = dm > dc;
+
+    // Dimension name
+    ctx.fillStyle = 'rgba(250, 249, 246, 0.6)';
+    ctx.font = '400 13px Inter, system-ui, sans-serif';
+    ctx.letterSpacing = '0px';
+    ctx.fillText(dims[i].name, leftX + 240, y);
+
+    // Marble score
+    ctx.fillStyle = mWins ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
+    ctx.font = '600 14px "SF Mono", "Fira Code", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(dm), leftX + 290, y);
+
+    // Dash
+    ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
+    ctx.font = '400 12px Inter, system-ui, sans-serif';
+    ctx.fillText('\u2013', leftX + 325, y);
+
+    // Challenger score
+    ctx.fillStyle = !mWins ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
+    ctx.font = '600 14px "SF Mono", "Fira Code", monospace';
+    ctx.fillText(String(dc), leftX + 360, y);
+
+    ctx.textAlign = 'right';
+  }
+
+  // Summary (wrap text)
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.85)';
+  ctx.font = '400 14px Inter, system-ui, sans-serif';
+  ctx.letterSpacing = '0px';
+  const summary = result.summary;
+  const maxLineW = W - 200;
+  const words = summary.split(' ');
+  let line = '';
+  let sumY = 520;
+  for (const word of words) {
+    const test = line + (line ? ' ' : '') + word;
+    if (ctx.measureText(test).width > maxLineW && line) {
+      ctx.fillText(line, W / 2, sumY);
+      line = word;
+      sumY += 20;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, W / 2, sumY);
+
+  // Footer
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.10)';
+  ctx.fillRect(100, H - 55, W - 200, 1);
+  ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
+  ctx.font = '500 10px Inter, system-ui, sans-serif';
+  ctx.letterSpacing = '2px';
+  ctx.fillText('MARBLE.LAW  \u00B7  BLIND AI COMPARISON', W / 2, H - 32);
+
+  return canvas;
+}
+
+function downloadShareCard(result: ComparisonResult) {
+  const canvas = renderShareCardToCanvas(result);
+  const link = document.createElement('a');
+  link.download = 'marble-challenge-result.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function shareOnLinkedIn(result: ComparisonResult) {
+  const mScore = result.assignment.A === 'marble' ? result.overallA : result.overallB;
+  const cScore = result.assignment.A === 'human' ? result.overallA : result.overallB;
+  const headline = result.winner === 'marble' ? 'Marble wins.'
+    : result.winner === 'human' ? 'The challenger wins.'
+    : 'Dead heat.';
+  const text = `${headline} ${mScore}\u2013${cScore}.\n\nWe put our AI-drafted legal document against a challenger in a blind comparison. Six dimensions. Independent judge. Neither side knew which was which.\n\n${result.summary}\n\nTry the Marble Challenge yourself \u2192 marble.law/challenge`;
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://marble.law/challenge')}&text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 // -- Dark palette -------------------------------------------------------------
@@ -299,6 +473,8 @@ export default function ChallengeView({ onBack }: Props) {
   const [ctaHover, setCtaHover] = useState(false);
   const [revealCtaHover, setRevealCtaHover] = useState(false);
   const [envelopeOpen, setEnvelopeOpen] = useState(false);
+  const [shareHover, setShareHover] = useState(false);
+  const [dlHover, setDlHover] = useState(false);
   const { canvasRef, fire: fireConfetti } = useConfetti();
 
   const {
@@ -676,6 +852,38 @@ export default function ChallengeView({ onBack }: Props) {
                   <span style={sty.shareCardFooterText}>marble.law</span>
                   <span style={sty.shareCardFooterText}>{'\u00B7'}</span>
                   <span style={sty.shareCardFooterText}>Blind AI comparison</span>
+                </div>
+
+                {/* Share + Download actions */}
+                <div style={sty.shareActions}>
+                  <button
+                    onClick={() => shareOnLinkedIn(result)}
+                    style={{
+                      ...sty.shareBtn,
+                      backgroundColor: shareHover ? D.gold : 'transparent',
+                      color: shareHover ? '#0A0A0F' : D.gold,
+                    }}
+                    onMouseEnter={() => setShareHover(true)}
+                    onMouseLeave={() => setShareHover(false)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+                    </svg>
+                    Share on LinkedIn
+                  </button>
+                  <button
+                    onClick={() => downloadShareCard(result)}
+                    style={{
+                      ...sty.dlBtn,
+                      backgroundColor: dlHover ? 'rgba(250, 249, 246, 0.12)' : 'transparent',
+                      color: dlHover ? D.white : D.textDim,
+                      borderColor: dlHover ? D.borderHover : D.border,
+                    }}
+                    onMouseEnter={() => setDlHover(true)}
+                    onMouseLeave={() => setDlHover(false)}
+                  >
+                    {'\u2913'} Download Image
+                  </button>
                 </div>
 
                 {/* CTA below card */}
@@ -1256,6 +1464,47 @@ const sty: Record<string, React.CSSProperties> = {
     color: D.textFaint,
     letterSpacing: 2,
     textTransform: 'uppercase' as const,
+  },
+  shareActions: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 20,
+  },
+  shareBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 20px',
+    border: `1.5px solid ${D.gold}`,
+    borderRadius: radii.sm,
+    backgroundColor: 'transparent',
+    color: D.gold,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'all 0.25s ease',
+  },
+  dlBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 20px',
+    border: `1.5px solid ${D.border}`,
+    borderRadius: radii.sm,
+    backgroundColor: 'transparent',
+    color: D.textDim,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'all 0.25s ease',
   },
   resultCta: {
     padding: '10px 24px',
