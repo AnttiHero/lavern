@@ -78,7 +78,7 @@ export function registerChallengeRoutes(
         prompt: userPrompt,
         options: {
           systemPrompt,
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-5-20250929',
           maxTurns: 1,
         },
       });
