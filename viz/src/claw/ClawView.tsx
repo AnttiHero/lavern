@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react';
 import { colors, fonts, spacing } from '../staffing/styles/tokens.js';
 import { LoadingM } from '../components/LoadingM.js';
 import { useClawData } from './hooks/useClawData.js';
-import { useClawDemoSimulator } from './hooks/useClawDemoSimulator.js';
+import { useClawDemoSimulator, type ClawLogEntry } from './hooks/useClawDemoSimulator.js';
 import { ClawHeader } from './components/ClawHeader.js';
 import { CommandStrip } from './components/CommandStrip.js';
 import { ClawTabBar, type ClawTab } from './components/ClawTabBar.js';
@@ -26,12 +26,14 @@ export default function ClawView({ onBack }: Props) {
   const { status, documents, deliveries, loading, demoMode, scanning, triggerScan, setStatus, setDocuments, setDeliveries } = useClawData();
   const [activeTab, setActiveTab] = useState<ClawTab>('overview');
   const [demoPlaying, setDemoPlaying] = useState(false);
+  const [activityLog, setActivityLog] = useState<ClawLogEntry[]>([]);
 
   useClawDemoSimulator({
     active: demoPlaying,
     onStatusUpdate: useCallback((fn: (s: any) => any) => setStatus(prev => prev ? fn(prev) : prev), [setStatus]),
     onDocumentsUpdate: setDocuments,
     onDeliveriesUpdate: setDeliveries,
+    onLogEntry: useCallback((entry: ClawLogEntry) => setActivityLog(prev => [...prev, entry]), []),
     onComplete: useCallback(() => setDemoPlaying(false), []),
   });
 
@@ -79,7 +81,7 @@ export default function ClawView({ onBack }: Props) {
           onScan={triggerScan}
           demoMode={demoMode}
           demoPlaying={demoPlaying}
-          onWatchDemo={() => setDemoPlaying(true)}
+          onWatchDemo={() => { setActivityLog([]); setDemoPlaying(true); }}
         />
 
         {/* Tab navigation */}
@@ -97,6 +99,7 @@ export default function ClawView({ onBack }: Props) {
             documents={documents}
             deliveries={deliveries}
             demoMode={demoMode}
+            activityLog={activityLog}
           />
         )}
         {activeTab === 'documents' && (

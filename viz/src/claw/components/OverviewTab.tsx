@@ -3,8 +3,10 @@
  * "What is the night shift doing?"
  */
 
+import { useEffect, useRef } from 'react';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 import type { ClawStatus, ClawDocument, ClawDelivery } from '../hooks/useClawData.js';
+import type { ClawLogEntry } from '../hooks/useClawDemoSimulator.js';
 import { BudgetGauge } from './BudgetGauge.js';
 
 interface Props {
@@ -12,6 +14,7 @@ interface Props {
   documents: ClawDocument[];
   deliveries: ClawDelivery[];
   demoMode: boolean;
+  activityLog?: ClawLogEntry[];
 }
 
 // ── Activity synthesis ──────────────────────────────────────────────────
@@ -74,11 +77,73 @@ const TYPE_LABELS: Record<string, string> = {
 
 // ── Component ───────────────────────────────────────────────────────────
 
-export function OverviewTab({ status, documents, deliveries, demoMode }: Props) {
+// ── Live Activity Feed ──────────────────────────────────────────────────
+
+function LiveActivityFeed({ entries }: { entries: ClawLogEntry[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new entries appear
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries.length]);
+
+  return (
+    <div style={styles.liveSection}>
+      <div style={styles.liveHeader}>
+        <span style={styles.liveDot} />
+        <span style={styles.sectionLabel}>Live Activity</span>
+      </div>
+      <div ref={scrollRef} style={styles.liveFeed}>
+        {entries.map((entry, i) => (
+          <div
+            key={entry.id}
+            style={{
+              ...styles.liveEntry,
+              animation: 'clawFadeIn 0.4s ease-out',
+              animationFillMode: 'backwards',
+              animationDelay: `${Math.max(0, (i - Math.max(0, entries.length - 3)) * 0.05)}s`,
+            }}
+          >
+            <span style={styles.liveIcon}>{entry.icon}</span>
+            <div style={styles.liveBody}>
+              <div style={styles.liveLine}>
+                {entry.agent && <span style={styles.liveAgent}>{entry.agent}</span>}
+                <span style={styles.liveMessage}>{entry.message}</span>
+              </div>
+              {entry.detail && (
+                <div style={styles.liveDetail}>{entry.detail}</div>
+              )}
+            </div>
+            {entry.type === 'agent' && <span style={styles.liveWorking} />}
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes clawFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes clawPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export function OverviewTab({ status, documents, deliveries, demoMode, activityLog }: Props) {
   const activity = synthesizeActivity(documents, deliveries);
 
   return (
     <div>
+      {/* Live activity feed (during demo) */}
+      {activityLog && activityLog.length > 0 && (
+        <LiveActivityFeed entries={activityLog} />
+      )}
+
       {/* Stats grid */}
       <div style={styles.statsGrid}>
         <StatCard label="Documents" value={status.documents.total} />
@@ -203,6 +268,84 @@ const styles: Record<string, React.CSSProperties> = {
   modelLabel: { fontSize: 13, fontWeight: 600, color: colors.text, fontFamily: fonts.sans },
   modelSublabel: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.sans },
 
+  liveSection: {
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  liveHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: colors.success,
+    animation: 'clawPulse 1.5s ease-in-out infinite',
+    flexShrink: 0,
+  },
+  liveFeed: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    maxHeight: 320,
+    overflowY: 'auto' as const,
+  },
+  liveEntry: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: '8px 10px',
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  },
+  liveIcon: {
+    fontSize: 14,
+    flexShrink: 0,
+    lineHeight: '20px',
+  },
+  liveBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  liveLine: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 6,
+    flexWrap: 'wrap' as const,
+  },
+  liveAgent: {
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.text,
+  },
+  liveMessage: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+  },
+  liveDetail: {
+    fontSize: 11,
+    fontFamily: fonts.mono,
+    color: colors.textDim,
+    marginTop: 2,
+    lineHeight: 1.4,
+  },
+  liveWorking: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#B8860B',
+    animation: 'clawPulse 1s ease-in-out infinite',
+    flexShrink: 0,
+    marginTop: 7,
+  },
   activitySection: {
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
