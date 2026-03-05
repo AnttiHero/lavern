@@ -607,7 +607,7 @@ export function registerSessionRoutes(
         if (message.type === 'result') {
           if ('subtype' in message && message.subtype !== 'success') {
             const errors = (message as Record<string, unknown>).errors;
-            throw new Error(`Generation failed: ${JSON.stringify(errors)}`);
+            throw new Error(`Generation failed (${message.subtype}): ${JSON.stringify(errors)}`);
           }
         }
       }
@@ -779,7 +779,7 @@ ${buildFullContext(session)}`;
         if (message.type === 'result') {
           if ('subtype' in message && message.subtype !== 'success') {
             const errors = (message as Record<string, unknown>).errors;
-            reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: `Generation failed: ${JSON.stringify(errors)}` })}\n\n`);
+            reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: `Generation failed (${message.subtype}): ${JSON.stringify(errors)}` })}\n\n`);
           }
         }
       }
