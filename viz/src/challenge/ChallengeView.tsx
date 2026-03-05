@@ -277,10 +277,15 @@ function downloadShareCard(result: ComparisonResult) {
 function shareOnLinkedIn(result: ComparisonResult) {
   const mScore = result.assignment.A === 'marble' ? result.overallA : result.overallB;
   const cScore = result.assignment.A === 'human' ? result.overallA : result.overallB;
-  const headline = result.winner === 'marble' ? 'Marble wins.'
-    : result.winner === 'human' ? 'The challenger wins.'
-    : 'Dead heat.';
-  const text = `${headline} ${mScore}\u2013${cScore}.\n\nWe put our AI-drafted legal document against a challenger in a blind comparison. Six dimensions. Independent judge. Neither side knew which was which.\n\n${result.summary}\n\nTry the Marble Challenge yourself \u2192 marble.law/challenge`;
+  const n = result.dimensions.length;
+  let text: string;
+  if (result.winner === 'marble') {
+    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nBlind comparison. ${n} dimensions. Independent AI judge. Neither side knew which document was which.\n\nTry the Marble Challenge \u2192 marble.law/challenge`;
+  } else if (result.winner === 'human') {
+    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nWe lost. Blind comparison, ${n} dimensions, independent judge. We publish every result \u2014 wins and losses. The engagement was free.\n\nThink you can beat us too? \u2192 marble.law/challenge`;
+  } else {
+    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nDead heat. ${n} dimensions, blind comparison, independent judge. Neither blinked.\n\nTry the Marble Challenge \u2192 marble.law/challenge`;
+  }
   const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://marble.law/challenge')}&text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
@@ -776,9 +781,10 @@ export default function ChallengeView({ onBack }: Props) {
                   ...sty.resultTitle,
                   animation: (result.winner === 'marble' || result.winner === 'human')
                     ? 'chWinnerGlow 2s ease-in-out infinite' : undefined,
+                  color: result.winner === 'human' ? D.text : D.gold,
                 }}>
                   {result.winner === 'marble' && 'As expected.'}
-                  {result.winner === 'human' && "Credit where it's due."}
+                  {result.winner === 'human' && 'Humans are still better at this.'}
                   {result.winner === 'tie' && 'Dead heat.'}
                 </div>
 
@@ -815,37 +821,12 @@ export default function ChallengeView({ onBack }: Props) {
                   </div>
                 </div>
 
-                {/* Compact dimension bars */}
-                <div style={sty.shareDims}>
-                  {result.dimensions.map((dim) => {
-                    const mScore = result.assignment.A === 'marble' ? dim.scoreA : dim.scoreB;
-                    const cScore = result.assignment.A === 'human' ? dim.scoreA : dim.scoreB;
-                    const mWins = mScore > cScore;
-                    return (
-                      <div key={dim.name} style={sty.shareDimRow}>
-                        <span style={sty.shareDimName}>{dim.name}</span>
-                        <span style={{ ...sty.shareDimScore, color: mWins ? D.gold : D.textDim }}>{mScore}</span>
-                        <span style={sty.shareDimDash}>{'\u2013'}</span>
-                        <span style={{ ...sty.shareDimScore, color: !mWins ? D.gold : D.textDim }}>{cScore}</span>
-                      </div>
-                    );
-                  })}
+                {/* Punchy one-liner — designed for screenshots */}
+                <div style={sty.resultTagline}>
+                  {result.winner === 'marble' && `Blind comparison. ${result.dimensions.length} dimensions. One clear winner.`}
+                  {result.winner === 'human' && 'Blind. Fair. Published. The engagement is on us.'}
+                  {result.winner === 'tie' && `${result.dimensions.length} dimensions. Neither blinked.`}
                 </div>
-
-                {/* Summary */}
-                <div style={sty.resultSummary}>{result.summary}</div>
-
-                {/* Subtext for loser acknowledgment */}
-                {result.winner === 'human' && (
-                  <div style={{ ...sty.resultSummary, color: D.gold, fontWeight: 600, fontSize: 13, marginTop: 4 }}>
-                    The challenger took this one. The engagement is on us.
-                  </div>
-                )}
-                {result.winner === 'tie' && (
-                  <div style={{ ...sty.resultSummary, fontStyle: 'italic', marginTop: 4 }}>
-                    Both documents held their own. We respect a worthy opponent.
-                  </div>
-                )}
 
                 {/* Card footer */}
                 <div style={sty.shareCardFooter}>
@@ -887,16 +868,46 @@ export default function ChallengeView({ onBack }: Props) {
                 </div>
 
                 {/* CTA below card */}
-                {result.winner === 'marble' && (
-                  <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <div style={{ textAlign: 'center', marginTop: 20 }}>
+                  {result.winner === 'marble' && (
                     <button
                       onClick={() => { window.location.hash = '#/quickstart'; }}
                       style={sty.resultCta}
                     >
                       Ready to hire us?
                     </button>
-                  </div>
-                )}
+                  )}
+                  {result.winner === 'human' && (
+                    <button
+                      onClick={() => { window.location.hash = '#/quickstart'; }}
+                      style={{ ...sty.resultCta, borderColor: D.text, color: D.text }}
+                    >
+                      Challenge us again
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed breakdown — outside the share card, for people who want the numbers */}
+            {phase === 'result' && result && (
+              <div style={{ maxWidth: 520, margin: '32px auto 0', animation: 'chFadeIn 0.6s ease 1s both' }}>
+                <div style={sty.shareDims}>
+                  {result.dimensions.map((dim) => {
+                    const mScore = result.assignment.A === 'marble' ? dim.scoreA : dim.scoreB;
+                    const cScore = result.assignment.A === 'human' ? dim.scoreA : dim.scoreB;
+                    const mWins = mScore > cScore;
+                    return (
+                      <div key={dim.name} style={sty.shareDimRow}>
+                        <span style={sty.shareDimName}>{dim.name}</span>
+                        <span style={{ ...sty.shareDimScore, color: mWins ? D.gold : D.textDim }}>{mScore}</span>
+                        <span style={sty.shareDimDash}>{'\u2013'}</span>
+                        <span style={{ ...sty.shareDimScore, color: !mWins ? D.gold : D.textDim }}>{cScore}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ ...sty.resultSummary, marginTop: 20 }}>{result.summary}</div>
               </div>
             )}
           </>
@@ -1440,10 +1451,20 @@ const sty: Record<string, React.CSSProperties> = {
     fontSize: 10,
     color: D.textFaint,
   },
+  resultTagline: {
+    fontSize: 16,
+    fontFamily: fonts.sans,
+    fontWeight: 500,
+    letterSpacing: '0.02em',
+    color: D.text,
+    lineHeight: 1.6,
+    maxWidth: 400,
+    margin: '0 auto 8px',
+  },
   resultSummary: {
     fontSize: 14,
     fontFamily: fonts.sans,
-    color: D.text,
+    color: D.textDim,
     lineHeight: 1.7,
     maxWidth: 500,
     margin: '0 auto 16px',
