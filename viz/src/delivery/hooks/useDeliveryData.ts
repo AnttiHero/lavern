@@ -116,6 +116,7 @@ export interface DeliveryData {
 // ── Hook ──────────────────────────────────────────────────────────────────
 
 const POLL_INTERVAL_MS = 3_000;
+const SLOW_POLL_INTERVAL_MS = 10_000;
 const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 
 export type AssemblyStatus = 'polling' | 'ready' | 'timeout' | 'error';
@@ -179,8 +180,12 @@ export function useDeliveryData(): {
         setAssemblyStatus('polling');
       }
 
-      if ((mapped.status !== 'Complete' || assemblyPending) && elapsed < MAX_POLL_DURATION_MS) {
-        timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), POLL_INTERVAL_MS);
+      // Continue polling as long as the document isn't ready.
+      // After the initial timeout, slow down to avoid hammering the server,
+      // but NEVER stop — assembly may complete at any time.
+      if (mapped.status !== 'Complete' || assemblyPending) {
+        const interval = elapsed >= MAX_POLL_DURATION_MS ? SLOW_POLL_INTERVAL_MS : POLL_INTERVAL_MS;
+        timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), interval);
       }
     } catch (err) {
       if (cancelledRef.current) return;
@@ -196,6 +201,20 @@ export function useDeliveryData(): {
     setAssemblyStatus('polling');
 
     try {
+      // First, check if the document is already there (assembly may have
+      // completed after our polling timeout — no need to reassemble).
+      const checkRes = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        if (checkData.assembledDocument && checkData.assembledDocument.length > 100) {
+          // Document exists! Just refresh the data — no reassembly needed.
+          startTimeRef.current = Date.now();
+          fetchSession(sessionId, startTimeRef.current);
+          return;
+        }
+      }
+
+      // No document yet — trigger actual reassembly
       const res = await fetch(`/api/sessions/${sessionId}/reassemble`, {
         method: 'POST',
         credentials: 'include',
