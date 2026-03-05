@@ -140,6 +140,8 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    // Document parsing — needed by Challenge and Briefing before login
+    'POST /api/documents/parse',
     // The Marble Challenge — zero-friction, no auth required
     'POST /api/challenge',
     // Frontend static files (prefix match — trailing /)
