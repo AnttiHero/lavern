@@ -100,6 +100,22 @@ After the red-team completes:
   evidence weight, confidence, escalation needs
 
 Check \`get_unresolved_debates\` — ALL debates must be resolved before advancing.
+
+#### 3b. AUDIT DEBATE COHERENCE
+After resolving all debates, call \`audit_debate_coherence\` to check for:
+- Contradictions between resolutions (same finding resolved in conflicting directions)
+- Confidence inversions (resolution weaker than the findings it resolves)
+- Unresolved RED findings
+- Ignored challenges
+
+If the audit returns RED issues:
+- Re-examine the flagged resolutions
+- Call \`resolve_debate\` again with corrected resolution if needed
+- Re-run \`audit_debate_coherence\` to confirm fixes
+
+If the audit returns only YELLOW or GREEN issues, note them but proceed.
+Do NOT advance to synthesis until the coherence audit passes (no RED issues).
+
 Call \`advance_step\` with completed_step: "attack".
 
 ### 4. SYNTHESIZE

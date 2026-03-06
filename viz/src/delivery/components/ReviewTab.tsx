@@ -13,6 +13,19 @@ interface Props {
   data: DeliveryData;
 }
 
+function scoreColor(score: number, passed: boolean): string {
+  if (!passed) return colors.danger;
+  if (score >= 0.85) return colors.success;
+  if (score >= 0.70) return colors.warning;
+  return colors.danger;
+}
+
+function confidenceColor(confidence: number): string {
+  if (confidence >= 0.85) return colors.success;
+  if (confidence >= 0.70) return colors.warning;
+  return colors.danger;
+}
+
 export function ReviewTab({ data }: Props) {
   const limitations = data.limitations ?? {
     flaggedForHumanReview: [],
@@ -43,23 +56,39 @@ export function ReviewTab({ data }: Props) {
         <div style={styles.section}>
           <div style={styles.sectionTitle}>What Was Checked</div>
           <div style={styles.checkList}>
-            {data.verificationChecks.map((check, i) => (
-              <div key={i} style={styles.checkItem}>
-                <span style={{
-                  ...styles.checkIcon,
-                  color: check.passed ? colors.success : colors.danger,
-                }}>
-                  {check.passed ? '\u2713' : '\u2717'}
-                </span>
-                <span style={styles.checkLabel}>{check.label}</span>
-                <span style={{
-                  ...styles.checkResult,
-                  color: check.passed ? colors.success : colors.danger,
-                }}>
-                  {check.passed ? 'Passed' : 'Failed'}
-                </span>
-              </div>
-            ))}
+            {data.verificationChecks.map((check, i) => {
+              const hasScore = check.score != null && check.score > 0;
+              const color = hasScore
+                ? scoreColor(check.score!, check.passed)
+                : check.passed ? colors.success : colors.danger;
+              const pct = hasScore ? Math.round(check.score! * 100) : null;
+
+              return (
+                <div key={i} style={styles.checkItem}>
+                  <span style={{ ...styles.checkIcon, color }}>
+                    {check.passed ? '\u2713' : '\u2717'}
+                  </span>
+                  <span style={styles.checkLabel}>{check.label}</span>
+                  {pct !== null ? (
+                    <span style={{
+                      ...styles.scorePill,
+                      backgroundColor: color === colors.warning
+                        ? colors.warningBg
+                        : color === colors.danger
+                          ? 'rgba(196, 93, 62, 0.1)'
+                          : colors.successBg,
+                      color,
+                    }}>
+                      {pct}%
+                    </span>
+                  ) : (
+                    <span style={{ ...styles.checkResult, color }}>
+                      {check.passed ? 'Passed' : 'Failed'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -75,6 +104,19 @@ export function ReviewTab({ data }: Props) {
                   <span style={styles.resIcon}>{'\u2713'}</span>
                   <span style={styles.resLabel}>Resolved</span>
                   <span style={styles.resTopic}>{res.topic}</span>
+                  {res.confidence != null && res.confidence > 0 && (
+                    <span style={{
+                      ...styles.confidencePill,
+                      backgroundColor: confidenceColor(res.confidence) === colors.warning
+                        ? colors.warningBg
+                        : confidenceColor(res.confidence) === colors.danger
+                          ? 'rgba(196, 93, 62, 0.1)'
+                          : colors.successBg,
+                      color: confidenceColor(res.confidence),
+                    }}>
+                      {Math.round(res.confidence * 100)}%
+                    </span>
+                  )}
                   {res.escalationNeeded && (
                     <span style={styles.escalationBadge}>Escalation needed</span>
                   )}
@@ -241,6 +283,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontWeight: 600,
   },
+  scorePill: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    padding: '2px 10px',
+    borderRadius: radii.pill,
+    letterSpacing: 0.2,
+  },
 
   // Resolutions
   resolutionsList: {
@@ -279,6 +329,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     color: colors.textSecondary,
     flex: 1,
+  },
+  confidencePill: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    padding: '2px 8px',
+    borderRadius: radii.pill,
+    letterSpacing: 0.2,
+    flexShrink: 0,
   },
   escalationBadge: {
     fontSize: 9,

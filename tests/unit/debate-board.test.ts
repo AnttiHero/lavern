@@ -280,4 +280,240 @@ describe('Debate Board', () => {
       expect(result.content[0].text).toContain('Unresolved Debates (1)');
     });
   });
+
+  describe('Audit Debate Coherence', () => {
+    let auditDebateCoherence: any;
+    let postResponse: any;
+
+    beforeEach(() => {
+      auditDebateCoherence = tools.find(t => t.name === 'audit_debate_coherence');
+      postResponse = tools.find(t => t.name === 'post_response');
+    });
+
+    it('should pass with no findings or resolutions', async () => {
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('PASSED');
+      expect(text).toContain('**Issues**: 0');
+    });
+
+    it('should pass when all findings are properly resolved', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-risk',
+        content: 'Liability cap too low',
+        severity: 'RED',
+        evidence: ['Clause 7.3'],
+        confidence: 0.9,
+      });
+
+      await resolveDebate.handler({
+        debate_topic: 'Liability cap',
+        finding_ids: ['F-001'],
+        resolution: 'Negotiate higher cap',
+        winning_position: 'Raise to 2x annual fees',
+        evidence_weight: 'Market standard analysis',
+        confidence: 0.85,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('PASSED');
+      expect(text).toContain('RED coverage: 1/1');
+    });
+
+    it('should flag coverage gap for unresolved RED finding', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-risk',
+        content: 'Missing indemnification clause',
+        severity: 'RED',
+        evidence: ['No indemnification section found'],
+        confidence: 0.95,
+      });
+
+      // No resolution created
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('FAILED');
+      expect(text).toContain('coverage_gap');
+      expect(text).toContain('F-001');
+      expect(text).toContain('RED coverage: 0/1');
+    });
+
+    it('should flag confidence inversion when resolution is much weaker', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-risk',
+        content: 'Unlimited liability exposure',
+        severity: 'RED',
+        evidence: ['Clause 12'],
+        confidence: 0.9,
+      });
+
+      await resolveDebate.handler({
+        debate_topic: 'Liability exposure',
+        finding_ids: ['F-001'],
+        resolution: 'Probably fine',
+        winning_position: 'Accept as-is',
+        evidence_weight: 'Gut feeling',
+        confidence: 0.5,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('confidence_inversion');
+      expect(text).toContain('DR-001');
+      expect(text).toContain('50%');
+      expect(text).toContain('90%');
+    });
+
+    it('should flag topic overlap when same finding in multiple resolutions', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-risk',
+        content: 'Ambiguous termination clause',
+        severity: 'YELLOW',
+        evidence: ['Clause 15'],
+      });
+
+      await resolveDebate.handler({
+        debate_topic: 'Termination rights',
+        finding_ids: ['F-001'],
+        resolution: 'Keep termination as-is',
+        winning_position: 'Acceptable risk',
+        evidence_weight: 'Standard language',
+        confidence: 0.8,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      await resolveDebate.handler({
+        debate_topic: 'Exit provisions',
+        finding_ids: ['F-001'],
+        resolution: 'Renegotiate termination',
+        winning_position: 'Need clearer exit',
+        evidence_weight: 'Client priority',
+        confidence: 0.7,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('FAILED');
+      expect(text).toContain('topic_overlap');
+      expect(text).toContain('F-001');
+      expect(text).toContain('DR-001');
+      expect(text).toContain('DR-002');
+    });
+
+    it('should flag ignored challenge on resolved finding', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-standard',
+        content: 'Standard boilerplate',
+        severity: 'GREEN',
+        evidence: ['Standard terms'],
+        confidence: 0.8,
+      });
+
+      // Challenge posted but never responded to
+      await postChallenge.handler({
+        challenger_role: 'red-team',
+        target_finding_id: 'F-001',
+        challenge_text: 'This boilerplate has a hidden trap',
+        evidence: ['Clause 3.2 contradicts Clause 8.1'],
+      });
+
+      // Finding resolved without addressing the challenge
+      await resolveDebate.handler({
+        debate_topic: 'Boilerplate review',
+        finding_ids: ['F-001'],
+        resolution: 'Standard boilerplate confirmed',
+        winning_position: 'No issues',
+        evidence_weight: 'Common language',
+        confidence: 0.8,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('ignored_challenge');
+      expect(text).toContain('C-001');
+      expect(text).toContain('F-001');
+    });
+
+    it('should not flag ignored challenge when response was posted', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-standard',
+        content: 'Standard boilerplate',
+        severity: 'GREEN',
+        evidence: ['Standard terms'],
+        confidence: 0.8,
+      });
+
+      await postChallenge.handler({
+        challenger_role: 'red-team',
+        target_finding_id: 'F-001',
+        challenge_text: 'Hidden trap',
+        evidence: ['Clause 3.2'],
+      });
+
+      await postResponse.handler({
+        responder_role: 'contract-reviewer',
+        challenge_id: 'C-001',
+        response_text: 'No trap — clauses are consistent',
+        accepted: false,
+      });
+
+      await resolveDebate.handler({
+        debate_topic: 'Boilerplate review',
+        finding_ids: ['F-001'],
+        resolution: 'Standard boilerplate confirmed',
+        winning_position: 'No issues',
+        evidence_weight: 'Common language',
+        confidence: 0.8,
+        escalation_needed: false,
+        resolved_by: 'orchestrator',
+      });
+
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('PASSED');
+      expect(text).not.toContain('ignored_challenge');
+    });
+
+    it('should treat YELLOW orphans as issues but GREEN orphans as acceptable', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-risk',
+        content: 'Minor ambiguity',
+        severity: 'YELLOW',
+        evidence: ['Clause 4'],
+      });
+
+      await postFinding.handler({
+        agent_role: 'contract-reviewer',
+        finding_type: 'contract-standard',
+        content: 'Normal clause',
+        severity: 'GREEN',
+        evidence: ['Clause 5'],
+      });
+
+      // Neither resolved
+      const result = await auditDebateCoherence.handler({});
+      const text = result.content[0].text;
+      expect(text).toContain('orphan_finding');
+      expect(text).toContain('F-001'); // YELLOW orphan flagged
+      expect(text).not.toContain('F-002'); // GREEN orphan not flagged
+    });
+  });
 });

@@ -76,10 +76,12 @@ Post findings to the debate board using adversarial types:
 - Use \`adversarial-edge-case\` for scenarios that break the deliverable
 - Use \`adversarial-ambiguity\` for language open to hostile interpretation
 
-Severity mapping:
-- **GREEN**: Minor — unlikely to be exploited, low impact
-- **YELLOW**: Moderate — plausible exploitation, meaningful impact
-- **RED**: Critical — likely to be exploited, significant impact
+Severity mapping — each severity MUST include justification:
+- **GREEN**: Minor — unlikely to be exploited, low impact. Justification: state WHY exploitation is unlikely (e.g., "Requires collusion between counterparty and regulator, which is implausible for a standard commercial relationship").
+- **YELLOW**: Moderate — plausible exploitation, meaningful impact. Justification: describe the REALISTIC exploitation scenario with a specific actor and action (e.g., "A sophisticated counterparty could interpret 'reasonable efforts' as requiring only minimal compliance, reducing vendor service quality without breaching").
+- **RED**: Critical — likely to be exploited, significant impact. Justification: demonstrate the exploitation path step-by-step and explain WHY a rational counterparty WOULD take it (e.g., "Step 1: Counterparty notices no cap on consequential damages. Step 2: In a dispute, counterparty claims lost profits of 10x contract value. Step 3: No contractual limit prevents this. A rational party would always take this approach because the upside is uncapped.").
+
+Severity without justification will be treated as YELLOW regardless of the label you assign. The evaluator auto-fails RED findings that lack a step-by-step exploitation path.
 
 ## Memory Protocol
 
@@ -103,7 +105,25 @@ At start:
 3. **Prioritize by exploitability** — how easy is it for a counterparty to actually use this?
 4. **Consider the realistic counterparty** — a Fortune 500 acts differently than a startup
 5. **Credit what works** — noting strengths makes your criticisms more credible
-6. **Propose fixes** — every vulnerability should come with a recommended fix
+6. **Draft the fix** — every vulnerability MUST include replacement clause text, not general advice. "Tighten this clause" is not a fix. Draft the actual words. BANNED phrases in fixes: "tighten", "strengthen", "clarify", "add more specificity", "improve" (without replacement text following)
+
+## Pre-Submission Self-Check
+
+Before returning your JSON output, verify every finding against this checklist:
+
+1. **Exploitation Scenario Is Concrete**: Does each vulnerability describe WHO would exploit it, HOW they would do it, and WHAT they would gain?
+   - FAIL: "This clause could be exploited" / "A counterparty might use this"
+   - PASS: "A counterparty facing a dispute would invoke Section 4.2's broad force majeure definition to excuse non-performance for supply chain delays that are foreseeable and manageable, avoiding penalty under Section 9.1"
+
+2. **Recommended Fix Is Draftable**: Does each fix contain specific language changes, not general advice?
+   - FAIL: "Tighten the force majeure clause" / "Add more specificity"
+   - PASS: "Replace 'any event beyond reasonable control' with 'natural disasters, acts of war, or government actions that directly prevent performance, excluding supply chain disruptions, market changes, or financial difficulties'"
+
+3. **Severity Matches Evidence**: Is the severity justified by the exploitation scenario's realism, not just theoretical possibility?
+   - FAIL: RED severity with "could theoretically be exploited in certain circumstances"
+   - PASS: RED severity with "a rational counterparty would exploit this because [specific incentive] with [specific mechanism] yielding [quantifiable benefit]"
+
+If ANY finding fails this checklist, fix it before submitting. The evaluator auto-fails vague output.
 
 ## Output Format
 

@@ -307,6 +307,7 @@ const EvaluatorDimensionSchema = z.object({
     'jurisdictional_accuracy',
     'internal_consistency',
     'completeness',
+    'actionability',
   ]),
   score: z.number().min(0).max(1),
   evidence: z.array(z.string()),
@@ -314,7 +315,7 @@ const EvaluatorDimensionSchema = z.object({
 });
 
 /**
- * Evaluator: 7-dimension quality rubric evaluation
+ * Evaluator: 8-dimension quality rubric evaluation
  */
 export const EvaluatorOutputSchema = z.object({
   agentRole: z.literal('evaluator'),

@@ -77,8 +77,10 @@ For EVERY material clause, evaluate:
    - **YELLOW**: Non-standard but negotiable — flag for counsel
    - **RED**: Unfavorable or dangerous — requires immediate attention
 
-4. **Recommended Change**: If risk score >= 3, provide SPECIFIC redline language.
-   Not "consider negotiating" — draft the actual replacement clause text.
+4. **Recommended Change**: If risk score >= 3, you MUST provide SPECIFIC redline language — the exact words that should replace the existing clause text. This is not optional.
+   - BANNED phrases in recommendations: "consider", "should review", "may want to", "it is advisable", "we recommend exploring", "parties should discuss", "worth noting", "it may be prudent"
+   - REQUIRED format: "Replace [exact existing text] with: '[your drafted replacement clause]'"
+   - If you cannot draft a replacement, state exactly WHY (e.g., "Replacement requires knowledge of the target liability cap amount — request client input on acceptable cap")
 
 ### Phase 3: Key Risk Areas
 
@@ -181,6 +183,7 @@ At start:
 - Do NOT score from the wrong party's perspective. Always state whose perspective the risk score reflects.
 - Do NOT treat a ToS as a negotiable bilateral contract. ToS are take-it-or-leave-it — your recommendations should focus on what the consumer should KNOW, not what they should "negotiate."
 - Do NOT provide vague redlines. "Consider adding a liability cap" is useless. Write: "Add to Section 8: 'Contractor's aggregate liability under this Agreement shall not exceed the total fees paid in the 12 months preceding the claim.'"
+- Do NOT use hedge language in recommendations. The following phrases trigger auto-fail at the evaluator gate: "consider", "should review", "may want to", "it is advisable", "we recommend exploring", "parties should discuss", "worth noting", "it may be prudent". Either draft the fix or explain what information you need from the client to draft it.
 - Do NOT flag standard boilerplate as RED. Merger clauses, severability clauses, counterpart execution clauses, and notice provisions are standard — score them 1 unless there's a specific deviation.
 - Do NOT miss the ABSENCE of standard protections. A contract that says nothing about liability caps has an implied unlimited liability — that's a risk 5 finding.
 - Do NOT list more than 10 Top Concerns. If there are more than 10 risk-4+ items, the contract may be fundamentally flawed — say so in the Executive Summary.
@@ -192,6 +195,28 @@ For documents under 500 words (e.g., simple NDAs, amendments, side letters):
 - Focus on COMPLETENESS: what's missing?
 - Common missing items in short agreements: governing law, dispute resolution, term/duration, notice provisions, survival clauses
 - A 200-word NDA without a term is a risk 5 finding — flag it
+
+## Pre-Submission Self-Check
+
+Before returning your JSON output, verify EVERY finding with risk >= 3 against this checklist:
+
+1. **Redline Specificity**: Does the recommendedChange contain ACTUAL replacement clause text?
+   - FAIL: "Consider adding a liability cap" / "Should review this clause" / "May want to negotiate"
+   - PASS: "Add to Section 8: 'Contractor's aggregate liability under this Agreement shall not exceed the total fees paid in the 12 months preceding the claim.'"
+
+2. **Business Impact Stated**: Does each topConcern.businessImpact explain the CONCRETE consequence?
+   - FAIL: "This could be problematic" / "May create exposure"
+   - PASS: "Unlimited exposure to consequential damages including lost profits, with no temporal limit"
+
+3. **Standard Position Grounded**: Does standardPosition reference a SPECIFIC market norm?
+   - FAIL: "This is non-standard"
+   - PASS: "Market standard for SaaS agreements of this size is 12-24 months of fees as the liability cap"
+
+4. **Evidence Quoted**: Does evidence contain an EXACT quote from the document, not a paraphrase?
+   - FAIL: "The liability section is broad"
+   - PASS: "Section 8.2: 'Contractor shall indemnify Company for all losses, damages, and expenses without limitation...'"
+
+If ANY finding fails this checklist, fix it before submitting. Do not submit vague output — the evaluator will auto-fail it.
 
 ## Output Format
 

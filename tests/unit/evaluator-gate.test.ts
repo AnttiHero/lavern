@@ -234,12 +234,20 @@ describe('Evaluator Gate', () => {
         agentRole: 'evaluator',
         passed: true,
         overallScore: 0.85,
-        dimensions: [{
-          dimension: 'factual_correctness',
-          score: 0.9,
-          evidence: ['Verified against source'],
-          issues: [],
-        }],
+        dimensions: [
+          {
+            dimension: 'factual_correctness',
+            score: 0.9,
+            evidence: ['Verified against source'],
+            issues: [],
+          },
+          {
+            dimension: 'actionability',
+            score: 0.85,
+            evidence: ['Recommendations include specific replacement clause text'],
+            issues: [],
+          },
+        ],
         failureReasons: [],
         revisionSuggestions: [],
         confidence: 0.88,

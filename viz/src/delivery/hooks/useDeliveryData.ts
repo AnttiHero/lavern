@@ -56,6 +56,7 @@ export interface DebateResolutionRecord {
   winningPosition: string;
   evidenceWeight: string;
   escalationNeeded: boolean;
+  confidence?: number;
 }
 
 export interface GateDecisionRecord {
@@ -68,6 +69,7 @@ export interface VerificationCheck {
   type: string;
   passed: boolean;
   label: string;
+  score?: number;
 }
 
 export interface DeliveryData {
@@ -435,6 +437,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     winningPosition: r.winningPosition,
     evidenceWeight: r.evidenceWeight,
     escalationNeeded: r.escalationNeeded,
+    confidence: r.confidence,
   }));
 
   const gateDecisions: GateDecisionRecord[] = (rawGateDecisions ?? []).map(g => ({
@@ -455,6 +458,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
       type: 'evaluator',
       passed: r.passed,
       label: `${r.step.replace(/_/g, ' ')} evaluator`,
+      score: r.score,
     });
   }
 
@@ -657,8 +661,8 @@ function buildDemoData(sessionId: string): DeliveryData {
       '## Termination\n\nEither party may terminate this agreement with 30 days written notice. Upon termination, you have 60 days to export your data before it is deleted.\n',
 
     debateResolutions: [
-      { topic: 'Visual hierarchy severity', resolution: 'Upgraded to RED \u2014 structural issue affects both comprehension and programmatic accessibility.', winningPosition: 'Ethics auditor\'s accessibility argument prevailed \u2014 heading hierarchy is a Level A WCAG failure, not merely cosmetic.', evidenceWeight: 'WCAG 2.1 SC 1.3.1 requirement is dispositive. Screen reader navigation testing confirmed complete failure.', escalationNeeded: false },
-      { topic: 'Transformation quality', resolution: 'All verification checks passed. Document meets readability, accessibility, and accuracy targets.', winningPosition: 'Transformation specialist\'s restructuring and plain language rewrite both validated by cross-verification.', evidenceWeight: 'Three independent verification checks (readability, accessibility, legal-accuracy) all passed.', escalationNeeded: false },
+      { topic: 'Visual hierarchy severity', resolution: 'Upgraded to RED \u2014 structural issue affects both comprehension and programmatic accessibility.', winningPosition: 'Ethics auditor\'s accessibility argument prevailed \u2014 heading hierarchy is a Level A WCAG failure, not merely cosmetic.', evidenceWeight: 'WCAG 2.1 SC 1.3.1 requirement is dispositive. Screen reader navigation testing confirmed complete failure.', escalationNeeded: false, confidence: 0.92 },
+      { topic: 'Transformation quality', resolution: 'All verification checks passed. Document meets readability, accessibility, and accuracy targets.', winningPosition: 'Transformation specialist\'s restructuring and plain language rewrite both validated by cross-verification.', evidenceWeight: 'Three independent verification checks (readability, accessibility, legal-accuracy) all passed.', escalationNeeded: false, confidence: 0.88 },
     ],
 
     gateDecisions: [
@@ -667,9 +671,9 @@ function buildDemoData(sessionId: string): DeliveryData {
     ],
 
     verificationChecks: [
-      { type: 'readability', passed: true, label: 'Readability' },
-      { type: 'accessibility', passed: true, label: 'Accessibility' },
-      { type: 'legal-accuracy', passed: true, label: 'Legal Accuracy' },
+      { type: 'readability', passed: true, label: 'Readability', score: 0.93 },
+      { type: 'accessibility', passed: true, label: 'Accessibility', score: 0.78 },
+      { type: 'legal-accuracy', passed: true, label: 'Legal Accuracy', score: 0.91 },
     ],
 
     narrative: [

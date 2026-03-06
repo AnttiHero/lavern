@@ -134,6 +134,21 @@ liability-related findings) into a single resolution. For each resolution:
 
 This creates the formal audit trail. Every finding must be accounted for.
 
+### 4c. AUDIT DEBATE COHERENCE
+After resolving all debates, call \`audit_debate_coherence\` to check for:
+- Contradictions between resolutions (same finding resolved in conflicting directions)
+- Confidence inversions (resolution weaker than the findings it resolves)
+- Unresolved RED findings
+- Ignored challenges
+
+If the audit returns RED issues:
+- Re-examine the flagged resolutions
+- Call \`resolve_debate\` again with corrected resolution if needed
+- Re-run \`audit_debate_coherence\` to confirm fixes
+
+If the audit returns only YELLOW or GREEN issues, note them but proceed.
+Do NOT advance to verification until the coherence audit passes (no RED issues).
+
 ### 5. VERIFICATION PASS
 Run the 10-pass verification pipeline on the deliverable before presenting to the human.
 

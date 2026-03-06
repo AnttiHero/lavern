@@ -316,6 +316,153 @@ export function createDebateBoardTools(session: SessionState) {
     { annotations: { readOnly: true } }
   );
 
+  const auditDebateCoherence = tool(
+    'audit_debate_coherence',
+    'Audit debate resolutions for coherence before synthesis. Checks for contradictions, confidence inversions, orphan findings, topic overlaps, and ignored challenges. Run this AFTER resolving all debates and BEFORE advancing to verification or synthesis.',
+    {},
+    async () => {
+      const issues: Array<{
+        type: 'coverage_gap' | 'confidence_inversion' | 'orphan_finding' | 'topic_overlap' | 'ignored_challenge';
+        severity: 'RED' | 'YELLOW' | 'GREEN';
+        description: string;
+        resolutionIds: string[];
+        findingIds: string[];
+      }> = [];
+
+      // Check 1: Coverage — every RED finding must appear in at least one resolution
+      const redFindings = state.findings.filter(f => f.severity === 'RED');
+      const resolvedFindingIds = new Set(state.resolutions.flatMap(r => r.findingIds));
+      for (const f of redFindings) {
+        if (!resolvedFindingIds.has(f.id)) {
+          issues.push({
+            type: 'coverage_gap',
+            severity: 'RED',
+            description: `RED finding ${f.id} ("${f.content.slice(0, 80)}") is not covered by any resolution`,
+            resolutionIds: [],
+            findingIds: [f.id],
+          });
+        }
+      }
+
+      // Check 2: Confidence inversion — resolution confidence >0.2 below finding average
+      for (const r of state.resolutions) {
+        const resolvedFindings = state.findings.filter(f => r.findingIds.includes(f.id));
+        if (resolvedFindings.length === 0) continue;
+        const avgFindingConfidence = resolvedFindings.reduce((s, f) => s + f.confidence, 0) / resolvedFindings.length;
+        const delta = avgFindingConfidence - r.confidence;
+        if (delta > 0.2) {
+          issues.push({
+            type: 'confidence_inversion',
+            severity: 'YELLOW',
+            description: `Resolution ${r.id} ("${r.debateTopic}") has confidence ${(r.confidence * 100).toFixed(0)}% but resolves findings averaging ${(avgFindingConfidence * 100).toFixed(0)}% — gap of ${(delta * 100).toFixed(0)}pp`,
+            resolutionIds: [r.id],
+            findingIds: r.findingIds,
+          });
+        }
+      }
+
+      // Check 3: Orphan detection — findings not in ANY resolution (YELLOW/RED only)
+      for (const f of state.findings) {
+        if (f.severity === 'GREEN') continue;
+        if (!resolvedFindingIds.has(f.id)) {
+          // RED orphans already caught in Check 1; only add YELLOW here
+          if (f.severity === 'YELLOW') {
+            issues.push({
+              type: 'orphan_finding',
+              severity: 'YELLOW',
+              description: `YELLOW finding ${f.id} ("${f.content.slice(0, 80)}") is not referenced by any resolution`,
+              resolutionIds: [],
+              findingIds: [f.id],
+            });
+          }
+        }
+      }
+
+      // Check 4: Topic overlap — same finding referenced by multiple resolutions
+      const findingToResolutions = new Map<string, string[]>();
+      for (const r of state.resolutions) {
+        for (const fid of r.findingIds) {
+          const existing = findingToResolutions.get(fid) || [];
+          existing.push(r.id);
+          findingToResolutions.set(fid, existing);
+        }
+      }
+      for (const [fid, rids] of findingToResolutions) {
+        if (rids.length > 1) {
+          issues.push({
+            type: 'topic_overlap',
+            severity: 'RED',
+            description: `Finding ${fid} is resolved by multiple resolutions (${rids.join(', ')}) — potential contradiction`,
+            resolutionIds: rids,
+            findingIds: [fid],
+          });
+        }
+      }
+
+      // Check 5: Challenge coverage — unanswered challenges on resolved findings
+      for (const c of state.challenges) {
+        const hasResponse = state.responses.some(r => r.challengeId === c.id);
+        if (!hasResponse) {
+          const finding = state.findings.find(f => f.id === c.targetFindingId);
+          if (finding?.resolved) {
+            issues.push({
+              type: 'ignored_challenge',
+              severity: 'YELLOW',
+              description: `Challenge ${c.id} against ${c.targetFindingId} ("${c.challengeText.slice(0, 80)}") was never answered but finding was resolved anyway`,
+              resolutionIds: state.resolutions.filter(r => r.findingIds.includes(c.targetFindingId)).map(r => r.id),
+              findingIds: [c.targetFindingId],
+            });
+          }
+        }
+      }
+
+      // Metrics
+      const redFindingsTotal = redFindings.length;
+      const redFindingsCovered = redFindings.filter(f => resolvedFindingIds.has(f.id)).length;
+      const avgResConf = state.resolutions.length > 0
+        ? state.resolutions.reduce((s, r) => s + r.confidence, 0) / state.resolutions.length
+        : 0;
+      const avgFindConf = state.findings.length > 0
+        ? state.findings.reduce((s, f) => s + f.confidence, 0) / state.findings.length
+        : 0;
+
+      const passed = !issues.some(i => i.severity === 'RED' || i.severity === 'YELLOW');
+
+      const report = {
+        passed,
+        issues,
+        metrics: {
+          totalResolutions: state.resolutions.length,
+          totalFindings: state.findings.length,
+          redFindingsCovered,
+          redFindingsTotal,
+          averageResolutionConfidence: Math.round(avgResConf * 100) / 100,
+          averageFindingConfidence: Math.round(avgFindConf * 100) / 100,
+        },
+      };
+
+      const issueText = issues.length > 0
+        ? issues.map(i => `- [${i.severity}] ${i.type}: ${i.description}`).join('\n')
+        : '(none)';
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `## Debate Coherence Audit — ${passed ? '\u2705 PASSED' : '\u274c FAILED'}
+
+**Issues**: ${issues.length} (RED: ${issues.filter(i => i.severity === 'RED').length}, YELLOW: ${issues.filter(i => i.severity === 'YELLOW').length}, GREEN: ${issues.filter(i => i.severity === 'GREEN').length})
+${issueText}
+
+**Metrics**:
+- Resolutions: ${report.metrics.totalResolutions} | Findings: ${report.metrics.totalFindings}
+- RED coverage: ${redFindingsCovered}/${redFindingsTotal}
+- Avg resolution confidence: ${(avgResConf * 100).toFixed(0)}% | Avg finding confidence: ${(avgFindConf * 100).toFixed(0)}%`,
+        }],
+      };
+    },
+    { annotations: { readOnly: true } }
+  );
+
   const getDebateSummary = tool(
     'get_debate_summary',
     'Get a full summary of the debate board \u2014 all findings, challenges, resolutions, and formal debate closures.',
@@ -364,5 +511,6 @@ ${state.challenges.filter(c => !c.resolved).map(c => `- ${c.id}: ${c.challengeTe
     getChallenges,
     getUnresolvedDebates,
     getDebateSummary,
+    auditDebateCoherence,
   ];
 }

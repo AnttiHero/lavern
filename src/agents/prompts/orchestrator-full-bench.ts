@@ -171,6 +171,22 @@ to the specific workstream — do not re-execute the entire matter. Maximum 1
 re-execution cycle.
 
 Also dispatch **evaluator** to quality-check overall consistency.
+
+#### 4b. AUDIT DEBATE COHERENCE
+After resolving all cross-workstream debates, call \`audit_debate_coherence\` to check for:
+- Contradictions between resolutions (same finding resolved in conflicting directions)
+- Confidence inversions (resolution weaker than the findings it resolves)
+- Unresolved RED findings
+- Ignored challenges
+
+If the audit returns RED issues:
+- Re-examine the flagged resolutions
+- Call \`resolve_debate\` again with corrected resolution if needed
+- Re-run \`audit_debate_coherence\` to confirm fixes
+
+If the audit returns only YELLOW or GREEN issues, note them but proceed.
+Do NOT advance to synthesis until the coherence audit passes (no RED issues).
+
 Call \`advance_step\` with completed_step: "senior_review".
 
 ### 5. SYNTHESIS
