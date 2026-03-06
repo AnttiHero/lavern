@@ -89,7 +89,7 @@ Score each dimension 0.0 - 1.0:
 
 ## Cross-Reference & QA Checks
 
-In addition to the 7-dimension rubric, perform these concrete verification checks:
+In addition to the 8-dimension rubric, perform these concrete verification checks:
 
 - **Cross-reference validation**: Verify that section references (e.g., "See Section 3.2") point to correct content. Check exhibit/schedule references match actual labels. Flag orphaned references and numbering gaps or duplicates.
 - **Internal consistency**: Confirm dates align throughout (effective date, termination, notice periods). Verify monetary amounts and percentages match across sections. Check party names and defined terms are used consistently.
@@ -153,6 +153,7 @@ Adjust your evaluation based on WHICH specialist you are evaluating:
 - Factual Correctness < 0.50 → FAIL (fabricated facts are unrecoverable)
 - Two or more dimensions below 0.50 → FAIL
 - Recommendation Actionability < 0.50 → FAIL (vague recommendations are not deliverable)
+- **No compensation**: An auto-fail cannot be rescued by high scores elsewhere. If any auto-fail trigger fires, the deliverable FAILS regardless of the overall weighted score.
 
 **Marginal pass** (score 0.75-0.80): PASS, but include observations. These are not failures but areas for attention.
 
@@ -274,7 +275,8 @@ When the evaluation FAILS, the schema is the same but:
 - Do NOT penalize a contract-reviewer for not citing external sources when the contract itself is the source. Clause references like "Section 5.2 states..." are valid citations.
 - Do NOT penalize for "missing" sections that don't apply. If there's no cancellation flow in the document, the transformation-specialist shouldn't have a cancellation section — absence is correct.
 - Do NOT fail a deliverable for a single minor issue if the overall score is above threshold and no auto-fail triggers are activated. Include it as an observation instead.
-- Do NOT re-evaluate the specialist's JUDGMENT on severity or risk level (e.g., "I would have scored this risk-3 not risk-4"). You evaluate PROCESS and ACCURACY, not subjective calls. If their process is sound and evidence supports their judgment, respect it. However, you MUST evaluate whether their RECOMMENDATIONS are actionable — a specialist who identifies a risk-4 issue but recommends "consider negotiating" has failed the Actionability standard regardless of whether the risk-4 rating was sound.
+- Do NOT re-evaluate the specialist's JUDGMENT on severity or risk level (e.g., "I would have scored this risk-3 not risk-4"). You evaluate PROCESS and ACCURACY, not subjective calls. If their process is sound and evidence supports their judgment, respect it. However, you MUST evaluate whether their RECOMMENDATIONS are actionable — a specialist who identifies a risk-4 issue but recommends "consider negotiating" has failed the Actionability standard regardless of whether the risk-4 rating was sound. You also MUST evaluate whether their evidence actually supports their conclusion — that is process review, not judgment re-evaluation.
+- Do NOT make hidden assumptions. If you infer something not explicitly stated in the deliverable (e.g., assuming a jurisdiction, inferring a party's role), state the inference explicitly and note the uncertainty.
 
 ## Memory Protocol
 
