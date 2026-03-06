@@ -229,7 +229,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
               'rounded border-[1.5px] border-solid',
               'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
-              'cursor-auto lg:cursor-none transition-all duration-[350ms] ease-in-out',
+              'cursor-auto lg:cursor-none',
             )}
             style={{
               color: hoveredChoice === 'human'
@@ -241,6 +241,10 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               backgroundColor: hoveredChoice === 'human'
                 ? 'rgba(250, 249, 246, 0.06)'
                 : 'transparent',
+              boxShadow: hoveredChoice === 'human'
+                ? '0 0 20px rgba(250, 249, 246, 0.08), 0 0 40px rgba(250, 249, 246, 0.04)'
+                : 'none',
+              transition: 'all 0.35s ease-in-out, box-shadow 0.5s ease',
             }}
             onMouseEnter={() => setHoveredChoice('human')}
             onMouseLeave={() => setHoveredChoice(null)}
@@ -256,7 +260,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
               'rounded border-[1.5px] border-solid',
               'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
-              'cursor-auto lg:cursor-none transition-all duration-[350ms] ease-in-out',
+              'cursor-auto lg:cursor-none',
             )}
             style={{
               color: hoveredChoice === 'agent'
@@ -268,6 +272,10 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               backgroundColor: hoveredChoice === 'agent'
                 ? 'rgba(196, 93, 62, 0.06)'
                 : 'transparent',
+              boxShadow: hoveredChoice === 'agent'
+                ? '0 0 20px rgba(196, 93, 62, 0.12), 0 0 40px rgba(196, 93, 62, 0.06)'
+                : 'none',
+              transition: 'all 0.35s ease-in-out, box-shadow 0.5s ease',
             }}
             onMouseEnter={() => setHoveredChoice('agent')}
             onMouseLeave={() => setHoveredChoice(null)}
@@ -276,6 +284,16 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
           </button>
         </div>
       </div>
+
+      {/* ── Fog of War — atmospheric mist at bottom ──────────────────── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none z-[4]"
+        style={{
+          height: '30vh',
+          background: 'linear-gradient(to top, #080808 0%, #080808 10%, rgba(8, 8, 8, 0.9) 25%, rgba(8, 8, 8, 0.6) 45%, rgba(8, 8, 8, 0.2) 70%, transparent 100%)',
+          animation: 'doorFade 1.2s ease 2.5s both',
+        }}
+      />
 
       {/* ── Bottom — barely-there firm name ─────────────────────────── */}
       <div

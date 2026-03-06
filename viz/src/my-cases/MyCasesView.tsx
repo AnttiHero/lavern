@@ -151,8 +151,8 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
             <div
               key={s.id}
               style={styles.activeCard}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = colors.borderHover; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; }}
+              onMouseEnter={e => { const c = e.currentTarget; c.style.borderColor = colors.borderHover; c.style.transform = 'translateY(-2px)'; c.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
+              onMouseLeave={e => { const c = e.currentTarget; c.style.borderColor = colors.border; c.style.transform = 'translateY(0)'; c.style.boxShadow = 'none'; }}
             >
               <div style={styles.activeCardTop}>
                 <div style={styles.activeCardInfo}>
@@ -200,8 +200,8 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
               <div
                 key={s.id}
                 style={styles.pastCard}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.borderHover; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; }}
+                onMouseEnter={e => { const c = e.currentTarget; c.style.borderColor = colors.borderHover; c.style.transform = 'translateY(-2px)'; c.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
+                onMouseLeave={e => { const c = e.currentTarget; c.style.borderColor = colors.border; c.style.transform = 'translateY(0)'; c.style.boxShadow = 'none'; }}
               >
                 <div style={styles.pastCardHeader}>
                   <span style={styles.pastTitle}>{s.title}</span>
@@ -335,7 +335,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: '14px 18px',
-    transition: 'border-color 0.2s ease',
+    transition: 'border-color 0.25s ease, box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   activeCardTop: {
     display: 'flex',
@@ -399,7 +399,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 8,
-    transition: 'border-color 0.2s ease',
+    transition: 'border-color 0.25s ease, box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   pastCardHeader: {
     display: 'flex',

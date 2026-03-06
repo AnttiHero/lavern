@@ -9,7 +9,7 @@
  * you set the budget, pay only what agents use.
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 
@@ -133,9 +133,25 @@ function ComparisonCard({ doc, marble, firm, savings }: {
 
 export default function PricingView({ onBack }: Props) {
   const [backHover, setBackHover] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const fogRef = useRef<HTMLDivElement>(null);
+
+  // Fog of war — dark mist at bottom, dissolves on scroll
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) return;
+    const onScroll = () => {
+      if (!fogRef.current) return;
+      const t = Math.min(1, page.scrollTop / 300);
+      fogRef.current.style.opacity = String(1 - t);
+    };
+    page.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => page.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <div style={sty.page}>
+    <div ref={pageRef} style={sty.page}>
       {/* Subtle marble texture */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
@@ -358,6 +374,22 @@ export default function PricingView({ onBack }: Props) {
           Billable Hours
         </div>
       </div>
+
+      {/* ── Fog of War — dark mist that dissolves on scroll ──── */}
+      <div
+        ref={fogRef}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '40vh',
+          background: `linear-gradient(to top, ${D.bg} 0%, ${D.bg} 15%, rgba(10, 10, 15, 0.92) 30%, rgba(10, 10, 15, 0.7) 45%, rgba(10, 10, 15, 0.35) 65%, transparent 100%)`,
+          pointerEvents: 'none',
+          zIndex: 50,
+          transition: 'opacity 0.3s ease-out',
+        }}
+      />
 
       {/* Keyframe animation */}
       <style>{`

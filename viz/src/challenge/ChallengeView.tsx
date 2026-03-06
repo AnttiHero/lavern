@@ -481,6 +481,19 @@ export default function ChallengeView({ onBack }: Props) {
   const [shareHover, setShareHover] = useState(false);
   const [dlHover, setDlHover] = useState(false);
   const { canvasRef, fire: fireConfetti } = useConfetti();
+  const fogRef = useRef<HTMLDivElement>(null);
+
+  // Fog of war — dark mist at bottom, dissolves on scroll
+  useEffect(() => {
+    const onScroll = () => {
+      if (!fogRef.current) return;
+      const t = Math.min(1, window.scrollY / 300);
+      fogRef.current.style.opacity = String(1 - t);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const {
     phase,
@@ -918,6 +931,22 @@ export default function ChallengeView({ onBack }: Props) {
           <span style={sty.footerText}>{'MARBLE \u00B7 THE CHALLENGE'}</span>
         </div>
       </div>
+
+      {/* ── Fog of War — dark mist that dissolves on scroll ──── */}
+      <div
+        ref={fogRef}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '40vh',
+          background: `linear-gradient(to top, ${D.bg} 0%, ${D.bg} 15%, rgba(10, 10, 15, 0.92) 30%, rgba(10, 10, 15, 0.7) 45%, rgba(10, 10, 15, 0.35) 65%, transparent 100%)`,
+          pointerEvents: 'none',
+          zIndex: 50,
+          transition: 'opacity 0.3s ease-out',
+        }}
+      />
     </div>
   );
 }

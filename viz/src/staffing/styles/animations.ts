@@ -7,18 +7,18 @@
 export const staggerContainer = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.04 },
+    transition: { staggerChildren: 0.05, delayChildren: 0.04 },
   },
 };
 
-/** Individual card entrance — fade up, gentle. */
+/** Individual card entrance — fade up with spring-like ease. */
 export const cardEntrance = {
-  hidden: { opacity: 0, y: 16, scale: 0.97 },
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.35, ease: 'easeOut' },
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
   },
 };
 

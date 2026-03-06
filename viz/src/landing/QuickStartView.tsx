@@ -105,6 +105,21 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const [agentsHovered, setAgentsHovered] = useState(false);
   const [challengeHovered, setChallengeHovered] = useState(false);
 
+  // Tier fill animation — black slides inside each pill
+  const prevTierRef = useRef<EngagementTier>(tier);
+  const [tierBounce, setTierBounce] = useState(false);
+  const [tierAnimKey, setTierAnimKey] = useState(0); // bumped to retrigger pass-through
+  const TIER_ORDER: EngagementTier[] = ['counsel', 'review', 'full-bench'];
+  const tierIdx = TIER_ORDER.indexOf(tier);
+  const prevIdx = TIER_ORDER.indexOf(prevTierRef.current);
+  const tierDistance = Math.abs(tierIdx - prevIdx);
+  const tierDirection = tierIdx > prevIdx ? 'ltr' : 'rtl'; // left-to-right or right-to-left
+
+  // Instruct button "ready" pulse
+  const [instructPulsed, setInstructPulsed] = useState(false);
+  const prevCanSubmit = useRef(false);
+
+
   // Document upload
   const {
     documents,
@@ -137,8 +152,29 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
     return () => clearTimeout(t);
   }, []);
 
+  // Track tier changes for slide direction + micro-bounce + pass-through key
+  useEffect(() => {
+    setTierBounce(true);
+    setTierAnimKey(k => k + 1);
+    const t = setTimeout(() => {
+      setTierBounce(false);
+      prevTierRef.current = tier;
+    }, 400); // update prevTier after animation completes
+    return () => clearTimeout(t);
+  }, [tier]);
+
   // Submission
   const canSubmit = (question.trim().length > 0 || documents.length > 0 || folderHasSelected) && !submitting && !parsing;
+
+  // Instruct button ready pulse — fire once when canSubmit goes false→true
+  useEffect(() => {
+    if (canSubmit && !prevCanSubmit.current) {
+      setInstructPulsed(true);
+      const t = setTimeout(() => setInstructPulsed(false), 600);
+      return () => clearTimeout(t);
+    }
+    prevCanSubmit.current = canSubmit;
+  }, [canSubmit]);
 
   const handleSubmit = useCallback(async () => {
     if (submitting || parsing) return;
@@ -343,8 +379,10 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
         )}
         style={{
           animation: 'qsFadeUp 0.6s ease 0.5s both',
-          border: `1.5px solid ${isDragOver ? colors.accent : 'rgba(0,0,0,0.06)'}`,
-          boxShadow: '0 2px 24px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)',
+          border: `1.5px solid ${isDragOver ? colors.accent : inputFocused ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.06)'}`,
+          boxShadow: inputFocused
+            ? '0 8px 40px rgba(0,0,0,0.10), 0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)'
+            : '0 2px 24px rgba(0,0,0,0.06), 0 1px 6px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02)',
         }}
       >
         {/* Textarea */}
@@ -456,15 +494,23 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
               disabled={!canSubmit}
               className={cn(
                 'relative overflow-hidden',
-                'py-2.5 px-7 rounded-sm border-none',
+                'py-2.5 px-7 rounded-lg border-none',
                 'font-sans text-sm font-semibold tracking-[0.5px]',
-                'transition-[background-color,opacity] duration-200 ease-in-out whitespace-nowrap',
+                'transition-[background-color,opacity,box-shadow,transform] duration-200 ease-in-out whitespace-nowrap',
               )}
               style={{
-                backgroundColor: colors.accent,
+                backgroundColor: instructHovered && canSubmit ? '#B5523A' : colors.accent,
                 color: '#fff',
                 opacity: canSubmit ? 1 : 0.35,
                 cursor: canSubmit ? 'pointer' : 'default',
+                boxShadow: instructPulsed
+                  ? '0 0 0 4px rgba(196, 93, 62, 0.15), 0 4px 16px rgba(196, 93, 62, 0.25)'
+                  : instructHovered && canSubmit
+                    ? '0 4px 16px rgba(196, 93, 62, 0.35), 0 2px 6px rgba(196, 93, 62, 0.2)'
+                    : '0 1px 4px rgba(196, 93, 62, 0.15)',
+                transform: instructPulsed
+                  ? 'scale(1.04)'
+                  : instructHovered && canSubmit ? 'translateY(-1px)' : 'none',
               }}
               onMouseEnter={() => canSubmit && setInstructHovered(true)}
               onMouseLeave={() => setInstructHovered(false)}
@@ -482,46 +528,100 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             </button>
           </div>
 
-          {/* Row 2: Tier selector */}
+          {/* Row 2: Tier selector — black slides inside each pill */}
           <div className="flex gap-1.5 px-4 sm:px-5 pb-3">
             {([
               { key: 'counsel' as EngagementTier, name: 'Counsel', hint: `Expert opinion \u00B7 up to $${counselConfig.budgetUsd}` },
               { key: 'review' as EngagementTier, name: 'Review', hint: `Dedicated team \u00B7 up to $${reviewConfig.budgetUsd}` },
               { key: 'full-bench' as EngagementTier, name: 'Full Bench', hint: `Every specialist \u00B7 up to $${eliteConfig.budgetUsd}` },
-            ]).map(t => {
+            ]).map((t, i) => {
               const active = tier === t.key;
+              const myIdx = i;
+
+              // Is this a "middle" pill being jumped over?
+              const isPassThrough = tierDistance > 1 && tierBounce
+                && !active && t.key !== prevTierRef.current
+                && ((tierDirection === 'ltr' && myIdx > prevIdx && myIdx < tierIdx)
+                  || (tierDirection === 'rtl' && myIdx < prevIdx && myIdx > tierIdx));
+
+              // Fill rests on the side NEAREST to the active pill,
+              // so it always enters/exits in the direction of travel.
+              const fillTranslate = active
+                ? 'translateX(0)'
+                : myIdx < tierIdx
+                  ? 'translateX(105%)'   // left of active → hidden right (toward active)
+                  : 'translateX(-105%)'; // right of active → hidden left (toward active)
+
+              // Fill style: pass-through uses keyframe animation, others use transition
+              const fillStyle: React.CSSProperties = isPassThrough
+                ? {
+                    backgroundColor: colors.text,
+                    animation: `${tierDirection === 'ltr' ? 'tierPassLTR' : 'tierPassRTL'} 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0.06s both`,
+                  }
+                : {
+                    backgroundColor: colors.text,
+                    transform: fillTranslate,
+                    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  };
+
+              // Stagger: when becoming active, text waits for fill to arrive;
+              // when becoming inactive, text changes first before fill leaves.
+              const textTransition = active
+                ? 'color 0.18s ease 0.12s'   // delay — fill arrives first, then text lightens
+                : 'color 0.12s ease';         // instant — text darkens before fill slides away
+
               return (
                 <button
                   key={t.key}
                   onClick={() => setTier(t.key)}
                   className={cn(
-                    'flex-1 flex flex-col items-start py-2 px-3 rounded-md border cursor-pointer',
-                    'transition-all duration-200 ease-in-out',
+                    'relative flex-1 flex flex-col items-start py-2 px-3 rounded-md border cursor-pointer overflow-hidden',
                   )}
                   style={{
-                    backgroundColor: active ? colors.text : 'transparent',
                     borderColor: active ? colors.text : colors.border,
+                    boxShadow: active ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                    transition: active
+                      ? 'border-color 0.25s ease 0.08s, box-shadow 0.3s ease 0.1s'
+                      : 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = colors.borderHover; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = colors.border; }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      e.currentTarget.style.borderColor = colors.borderHover;
+                      e.currentTarget.style.boxShadow = '0 1px 6px rgba(0,0,0,0.08)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }
+                  }}
                 >
-                  <span style={{
+                  {/* ── Black fill — slides in/out within this pill, waves through middle ── */}
+                  <div
+                    key={isPassThrough ? tierAnimKey : undefined}
+                    className="absolute inset-0 rounded-[5px] pointer-events-none"
+                    style={fillStyle}
+                  />
+                  <span className="relative" style={{
                     fontSize: 11,
                     fontWeight: 600,
                     fontFamily: 'var(--font-sans)',
                     letterSpacing: 0.5,
                     color: active ? '#fff' : colors.text,
-                    transition: 'color 0.2s ease',
+                    transition: textTransition,
+                    zIndex: 1,
                   }}>
                     {t.name}
                   </span>
-                  <span style={{
+                  <span className="relative" style={{
                     fontSize: 10,
                     fontFamily: 'var(--font-sans)',
                     color: active ? 'rgba(255,255,255,0.6)' : colors.textDim,
                     marginTop: 1,
-                    transition: 'color 0.2s ease',
+                    transition: textTransition,
                     whiteSpace: 'nowrap',
+                    zIndex: 1,
                   }}>
                     {t.hint}
                   </span>
@@ -549,21 +649,30 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           'flex flex-col sm:flex-row items-start sm:items-center gap-6',
           'p-5 sm:p-6 lg:px-8 lg:py-7',
           'rounded-xl box-border cursor-pointer',
-          'transition-[border-color,background-color,box-shadow] duration-300 ease-in-out',
+          'transition-[border-color,background-color,box-shadow,transform] duration-300 ease-in-out',
         )}
         style={{
           animation: 'qsFadeUp 0.6s ease 0.8s both',
           backgroundColor: 'rgba(255,255,255,0.7)',
           border: '1.5px solid rgba(0,0,0,0.06)',
+          boxShadow: '0 1px 8px rgba(0,0,0,0.03)',
         }}
         onClick={onGuidedFlow}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = colors.borderHover;
           e.currentTarget.style.backgroundColor = colors.bgCard;
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+          if (arrow) arrow.style.transform = 'translateX(3px)';
         }}
         onMouseLeave={e => {
           e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
           e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.7)';
+          e.currentTarget.style.boxShadow = '0 1px 8px rgba(0,0,0,0.03)';
+          e.currentTarget.style.transform = 'none';
+          const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+          if (arrow) arrow.style.transform = 'none';
         }}
       >
         <div className="flex-1">
@@ -588,7 +697,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           </p>
         </div>
         <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
-          <span className="text-xl text-text-muted">{'\u2192'}</span>
+          <span className="arrow-nudge text-xl text-text-muted" style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>{'\u2192'}</span>
         </div>
       </div>
 
@@ -600,21 +709,30 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             'flex flex-col sm:flex-row items-start sm:items-center gap-6',
             'p-5 sm:p-6 lg:px-8 lg:py-7',
             'rounded-xl cursor-pointer',
-            'transition-[border-color,background-color,box-shadow] duration-300 ease-in-out',
+            'transition-[border-color,background-color,box-shadow,transform] duration-300 ease-in-out',
           )}
           style={{
             animation: 'qsFadeUp 0.6s ease 0.9s both',
             backgroundColor: 'rgba(255,255,255,0.7)',
             border: '1.5px solid rgba(0,0,0,0.06)',
+            boxShadow: '0 1px 8px rgba(0,0,0,0.03)',
           }}
           onClick={onBetTheCompany}
           onMouseEnter={e => {
             e.currentTarget.style.borderColor = colors.borderHover;
             e.currentTarget.style.backgroundColor = colors.bgCard;
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+            if (arrow) arrow.style.transform = 'translateX(3px)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
             e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.7)';
+            e.currentTarget.style.boxShadow = '0 1px 8px rgba(0,0,0,0.03)';
+            e.currentTarget.style.transform = 'none';
+            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+            if (arrow) arrow.style.transform = 'none';
           }}
         >
           <div className="flex-1">
@@ -627,7 +745,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             </p>
           </div>
           <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
-            <span className="text-xl text-text-muted">{'\u2192'}</span>
+            <span className="arrow-nudge text-xl text-text-muted" style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>{'\u2192'}</span>
           </div>
         </div>
       )}
@@ -640,21 +758,30 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             'flex flex-col sm:flex-row items-start sm:items-center gap-6',
             'p-5 sm:p-6 lg:px-8 lg:py-7',
             'rounded-xl cursor-pointer',
-            'transition-[border-color,background-color,box-shadow] duration-300 ease-in-out',
+            'transition-[border-color,background-color,box-shadow,transform] duration-300 ease-in-out',
           )}
           style={{
             animation: 'qsFadeUp 0.6s ease 1s both',
             backgroundColor: 'rgba(10, 10, 15, 0.85)',
             border: '1.5px solid rgba(184, 150, 11, 0.2)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
           }}
           onClick={onChallenge}
           onMouseEnter={e => {
             e.currentTarget.style.borderColor = 'rgba(184, 150, 11, 0.5)';
             e.currentTarget.style.backgroundColor = 'rgba(10, 10, 15, 0.95)';
+            e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.25), 0 0 20px rgba(184, 150, 11, 0.08)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+            if (arrow) arrow.style.transform = 'translateX(3px)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.borderColor = 'rgba(184, 150, 11, 0.2)';
             e.currentTarget.style.backgroundColor = 'rgba(10, 10, 15, 0.85)';
+            e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)';
+            e.currentTarget.style.transform = 'none';
+            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
+            if (arrow) arrow.style.transform = 'none';
           }}
         >
           <div className="flex-1">
@@ -676,10 +803,53 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
             className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-[border-color] duration-300 ease-in-out"
             style={{ border: '1.5px solid rgba(184, 150, 11, 0.3)' }}
           >
-            <span className="text-xl" style={{ color: '#B8960B' }}>{'\u2192'}</span>
+            <span className="arrow-nudge text-xl" style={{ color: '#B8960B', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>{'\u2192'}</span>
           </div>
         </div>
       )}
+
+      {/* ── Book a Demo — fixed floating pill ────────────── */}
+      <div
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60]"
+        style={{ animation: 'qsFadeIn 0.6s ease 2s both' }}
+      >
+        <button
+          onClick={() => window.open('https://calendly.com', '_blank')}
+          onMouseEnter={e => {
+            const b = e.currentTarget;
+            b.style.borderColor = 'rgba(184, 150, 11, 0.5)';
+            b.style.color = colors.text;
+            b.style.backgroundColor = colors.bgCard;
+            b.style.transform = 'translateY(-2px)';
+            b.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(184, 150, 11, 0.15)';
+          }}
+          onMouseLeave={e => {
+            const b = e.currentTarget;
+            b.style.borderColor = colors.border;
+            b.style.color = colors.textMuted;
+            b.style.backgroundColor = colors.bgCard;
+            b.style.transform = 'translateY(0)';
+            b.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+          }}
+          style={{
+            padding: '9px 28px',
+            borderRadius: 999,
+            border: `1.5px solid ${colors.border}`,
+            backgroundColor: colors.bgCard,
+            fontFamily: fonts.sans,
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: 2,
+            textTransform: 'uppercase' as React.CSSProperties['textTransform'],
+            color: colors.textMuted,
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+          }}
+        >
+          Book a Demo
+        </button>
+      </div>
 
       {/* ── Footer ───────────────────────────────────────── */}
       <div
@@ -692,6 +862,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           style={{ fontSize: 9, letterSpacing: 4 }}
         />
       </div>
+
     </div>
   );
 }

@@ -2,9 +2,10 @@
  * SuggestionChip — Clickable pill suggesting a way to improve the briefing.
  *
  * Design: warm pill with accent left border, subtle bg, hover effect.
+ * Micro-delight: click scales down + fades out briefly before activating.
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { Suggestion } from '../hooks/useSmartSuggestions.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
@@ -15,16 +16,31 @@ interface Props {
 
 export function SuggestionChip({ suggestion, onActivate }: Props) {
   const [hovered, setHovered] = useState(false);
+  const [activating, setActivating] = useState(false);
+
+  const handleClick = useCallback(() => {
+    setActivating(true);
+    // Brief scale-down + fade before triggering
+    setTimeout(() => {
+      onActivate(suggestion);
+    }, 180);
+  }, [onActivate, suggestion]);
 
   return (
     <button
-      onClick={() => onActivate(suggestion)}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         ...styles.chip,
-        backgroundColor: hovered ? 'rgba(196, 93, 62, 0.08)' : colors.bgCard,
-        borderColor: hovered ? colors.accent : colors.border,
+        backgroundColor: activating
+          ? 'rgba(196, 93, 62, 0.12)'
+          : hovered ? 'rgba(196, 93, 62, 0.08)' : colors.bgCard,
+        borderColor: activating
+          ? colors.accent
+          : hovered ? colors.accent : colors.border,
+        transform: activating ? 'scale(0.92)' : 'scale(1)',
+        opacity: activating ? 0.4 : 1,
       }}
       title={suggestion.description}
     >
@@ -49,7 +65,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     color: colors.textSecondary,
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
     whiteSpace: 'nowrap',
   },
   icon: {
