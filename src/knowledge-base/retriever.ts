@@ -74,7 +74,8 @@ function ftsSearch(
   const db = getDb();
 
   // Build WHERE clause for metadata filters
-  const conditions: string[] = ['c.user_id = ?'];
+  // Include user's own collections + global reference collections
+  const conditions: string[] = ['(c.user_id = ? OR col.is_global = 1)'];
   const params: unknown[] = [options.userId];
 
   if (options.collectionId) {
@@ -127,7 +128,8 @@ function fallbackLikeSearch(
   const db = getDb();
   const queryLower = options.query.toLowerCase();
 
-  const conditions: string[] = ['c.user_id = ?'];
+  // Include user's own collections + global reference collections
+  const conditions: string[] = ['(c.user_id = ? OR col.is_global = 1)'];
   const params: unknown[] = [options.userId];
 
   if (options.collectionId) {
@@ -208,7 +210,7 @@ export function listCollections(userId: string): KbCollectionSummary[] {
     FROM kb_collections col
     LEFT JOIN kb_documents d ON d.collection_id = col.id
     LEFT JOIN kb_chunks c ON c.document_id = d.id
-    WHERE col.user_id = ?
+    WHERE (col.user_id = ? OR col.is_global = 1)
     GROUP BY col.id
     ORDER BY col.created_at DESC
   `).all(userId) as KbCollectionSummary[];
@@ -238,6 +240,6 @@ export function getChunkById(chunkId: string, userId: string): KbSearchResult | 
     FROM kb_chunks c
     JOIN kb_documents d ON d.id = c.document_id
     JOIN kb_collections col ON col.id = c.collection_id
-    WHERE c.id = ? AND c.user_id = ?
+    WHERE c.id = ? AND (c.user_id = ? OR col.is_global = 1)
   `).get(chunkId, userId) as KbSearchResult | undefined;
 }

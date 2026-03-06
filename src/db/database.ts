@@ -190,6 +190,12 @@ function runMigrations(db: Database.Database): void {
   try {
     db.exec(`ALTER TABLE session_archive ADD COLUMN assembled_document TEXT`);
   } catch { /* column already exists */ }
+
+  // v19 migration: Add is_global flag to kb_collections for shared reference data
+  try {
+    db.exec(`ALTER TABLE kb_collections ADD COLUMN is_global INTEGER DEFAULT 0`);
+  } catch { /* column already exists */ }
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_kb_collections_global ON kb_collections(is_global)`);
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────

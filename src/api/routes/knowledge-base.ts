@@ -218,11 +218,15 @@ export function registerKnowledgeBaseRoutes(fastify: FastifyInstance): void {
     const { collectionId } = request.params as { collectionId: string };
 
     const collection = getDb().prepare(
-      'SELECT id FROM kb_collections WHERE id = ? AND user_id = ?',
-    ).get(collectionId, userId);
+      'SELECT id, is_global FROM kb_collections WHERE id = ? AND (user_id = ? OR is_global = 1)',
+    ).get(collectionId, userId) as { id: string; is_global: number } | undefined;
 
     if (!collection) {
       return reply.status(404).send({ error: `Collection not found: ${collectionId}` });
+    }
+
+    if (collection.is_global) {
+      return reply.status(403).send({ error: 'Cannot delete reference collections.' });
     }
 
     // CASCADE handles kb_documents and kb_chunks
