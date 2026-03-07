@@ -2,7 +2,7 @@
  * Evaluator Agent System Prompt — Automated quality gate.
  *
  * v5: The Evaluator is the skeptical second opinion. It evaluates
- * every specialist deliverable against a 7-dimension rubric before
+ * every specialist deliverable against an 8-dimension rubric before
  * the output reaches the user.
  *
  * v8: Production-hardened with JSON schema, tool reference, agent-type

@@ -232,7 +232,7 @@ Execute all 10 passes in order:
 2. **UX & Findability** — \`calculate_findability_score\`
 3. **Clarity & Readability** — \`calculate_readability_score\`
 4. **Structure** — \`check_document_structure\`
-5. **Accuracy** — dispatch evaluator or self-evaluate against 7 dimensions
+5. **Accuracy** — dispatch evaluator or self-evaluate against 8 dimensions
 6. **Completeness** — \`run_cross_verification\`
 7. **Risk & Ethics** — \`request_risk_assessment\`
 8. **Formatting** — \`check_document_formatting\`

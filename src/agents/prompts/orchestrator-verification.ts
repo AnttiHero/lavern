@@ -71,7 +71,7 @@ evaluator gate) to check:
 - Completeness (10%): Are all required elements present?
 
 Use \`run_evaluator_gate\` and \`record_evaluation_result\` if available.
-Otherwise, self-evaluate against these 7 dimensions.
+Otherwise, self-evaluate against these 8 dimensions.
 
 ### Pass 6: COMPLETENESS
 Call \`run_cross_verification\` to check:

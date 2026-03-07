@@ -219,7 +219,7 @@ export const agentDefinitions = {
   // ── v5: New Adaptive Pipeline Agents ─────────────────────────────────
 
   'evaluator': {
-    description: 'Automated quality gate. Evaluates specialist deliverables against a 7-dimension rubric (factual correctness, citation validity, policy compliance, tool consistency, jurisdictional accuracy, internal consistency, completeness). MUST use a different model than the specialist to prevent correlated errors.',
+    description: 'Automated quality gate. Evaluates specialist deliverables against an 8-dimension rubric (factual correctness, citation validity, policy compliance, tool consistency, jurisdictional accuracy, internal consistency, completeness). MUST use a different model than the specialist to prevent correlated errors.',
     prompt: evaluatorPrompt,
     tools: [...readOnlyTools, ...memoryReadTools, 'mcp__shem__record_evaluation_result'],
     model: 'opus' as const,  // Different from Sonnet specialists — prevents correlated errors

@@ -10,7 +10,6 @@ import { SessionState } from '../../src/session/session-state.js';
 import { createEvaluatorGateTools } from '../../src/mcp/tools/evaluator-gate.js';
 import { agentDefinitions } from '../../src/agents/definitions.js';
 import { EvaluatorOutputSchema, ContractReviewOutputSchema } from '../../src/types/output-schemas.js';
-import type { GenericWorkflowState } from '../../src/types/workflow.js';
 
 describe('Evaluator Gate', () => {
   let session: SessionState;

@@ -36,7 +36,8 @@ with qualified legal professionals.
 ## Project Structure
 
 ### Core Engine
-- `src/agents/` — 64 agent prompts (57 specialists + 7 orchestrators), 57 agent definitions
+- `src/agents/` — 58 agent prompts (51 specialists + 7 orchestrators), 51 agent definitions
+- `src/agents/profiles.ts` — 70-agent profile registry (skill ratings, personality, DiceBear avatars)
 - `src/mcp/tools/` — 21 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
@@ -52,11 +53,12 @@ with qualified legal professionals.
 - `SOUL.md` — Default firm personality (CLI/Claw fallback; browser users set soul in My Page)
 
 ### Workflows
-- `src/workflows/` — 11 workflow templates:
-  - `counsel` / `simple-query` — Quick legal questions
-  - `review` / `contract-review` — Full contract review with debate
-  - `adversarial` / `research-memo` — Builder + attacker + synthesizer
-  - `roundtable` / `legal-design` — Parallel expert panel + debate + synthesis
+- `src/workflows/` — 8 workflow templates:
+  - `counsel` — Quick legal questions
+  - `review` — Full contract review with debate
+  - `adversarial` — Builder + attacker + synthesizer
+  - `roundtable` — Parallel expert panel + debate + synthesis
+  - `legal-design` — Legal design transformation
   - `full-bench` — Maximum team engagement
   - `pre-engagement` — Intake and team selection
   - `verification` — Standalone document verification pipeline
@@ -65,7 +67,7 @@ with qualified legal professionals.
 ### API Server
 - `src/api/` — Fastify API server with WebSocket event streaming
   - `src/api/middleware/` — Auth (Bearer + cookie), Zod validation, x402 payment
-  - `src/api/routes/` — 16 route modules:
+  - `src/api/routes/` — 18 route modules:
     - `sessions.ts` — Session CRUD + gate decisions + soul injection from user profile
     - `engage.ts` — Agent-native engagement (sync + webhook modes)
     - `verify.ts` — Standalone document verification
@@ -73,6 +75,8 @@ with qualified legal professionals.
     - `briefing.ts` — LLM-powered briefing analysis for intake
     - `auth-routes.ts` — User signup, login, logout, profile (incl. soul)
     - `claw.ts` — Claw Mode remote monitoring & control
+    - `challenge.ts` — Marble Challenge blind document comparison
+    - `challenge-prompt.ts` — Challenge prompt builder
     - `well-known.ts` — A2A agent card, OpenAI plugin manifest, OpenAPI spec
     - `agents.ts`, `capabilities.ts`, `documents.ts`, `knowledge-base.ts`, `pricing.ts`, `replay.ts`, `reputation.ts`, `workflows.ts`
 
@@ -90,6 +94,8 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/my-cases/` — Session history (active + past engagements)
 - `viz/src/cowork/` — Cowork folder mode (File System Access API for non-destructive local saves)
 - `viz/src/components/` — Shared components (GateDialog, ErrorToast, MarbleMark)
+- `viz/src/challenge/` — Marble Challenge blind document comparison
+- `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
 - `viz/src/auth/` — Login/signup views
 
 ### Claw Mode (Law Firm on Retainer)
@@ -110,12 +116,13 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 
 ### Data Layer
 - `src/db/` — SQLite database (user auth, tokens, session archive, matter storage)
-- `src/knowledge-base/` — Reference document collections (FTS search, retrieval)
+- `src/knowledge-base/` — Reference document collections (FTS search, retrieval, global CUAD/MAUD datasets)
 - `src/assembly/` — Document assembly and format conversion (HTML, DOCX)
 - `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text)
+- `scripts/seed-knowledge-base.ts` — CUAD + MAUD dataset seeder (36K reference chunks)
 
 ### Tests
-- `tests/` — 565 tests across 31 files (24 unit + 7 integration)
+- `tests/` — 610 tests across 33 files (26 unit + 7 integration)
 
 ## Version History
 
