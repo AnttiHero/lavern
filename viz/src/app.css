@@ -93,10 +93,16 @@ body::after {
 /* ── Accessibility ─────────────────────────────────────────────────── */
 
 /* Focus indicators — warm terracotta ring on keyboard navigation only.
-   :focus-visible triggers on Tab, not on mouse click. */
+   :focus-visible triggers on Tab, not on mouse click.
+   Textareas/inputs inside styled cards handle their own focus (border/shadow),
+   so we scope the ring to elements that don't already carry outline-none. */
 :focus-visible {
   outline: 2px solid rgba(196, 93, 62, 0.6);
   outline-offset: 2px;
+}
+textarea:focus-visible,
+input:focus-visible {
+  outline: none;
 }
 
 /* Suppress browser default outline on mouse clicks */
