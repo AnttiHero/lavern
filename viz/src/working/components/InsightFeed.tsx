@@ -78,8 +78,12 @@ export function InsightFeed({
     }
   }, [cards.length, thinkingCount]);
 
-  // Insight counts for sticky counter (only counts high-value cards)
-  const counts = useInsightCounts(cards as StreamCard[]);
+  // Insight counts for sticky counter — filter out reassurance items (not StreamCards)
+  const streamOnly = useMemo(
+    () => cards.filter((c): c is StreamCard => c.kind !== 'reassurance'),
+    [cards],
+  );
+  const counts = useInsightCounts(streamOnly);
 
   return (
     <div style={styles.container}>
@@ -119,8 +123,16 @@ export function InsightFeed({
           <EmptyState isConnected={isConnected} team={team} />
         ) : (
           <>
-            {cards.map((card, i) => {
-              const key = `${card.kind}-${i}`;
+            {cards.map((card) => {
+              // Stable keys: use unique card IDs where available, timestamp as fallback
+              const key = card.kind === 'reassurance'
+                ? `reassurance-${card.timestamp}`
+                : 'findingId' in card ? `${card.kind}-${card.findingId}`
+                : 'challengeId' in card ? `${card.kind}-${card.challengeId}`
+                : 'responseId' in card ? `${card.kind}-${card.responseId}`
+                : 'resolutionId' in card ? `${card.kind}-${card.resolutionId}`
+                : 'agentId' in card ? `${card.kind}-${card.agentId}-${card.timestamp}`
+                : `${card.kind}-${card.timestamp}`;
 
               // Reassurance messages (injected by useReassuranceInjector)
               if (card.kind === 'reassurance') {

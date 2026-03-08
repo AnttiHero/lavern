@@ -12,7 +12,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
-import { useInsightFilter } from './hooks/useInsightFilter.js';
 import { useReassuranceInjector } from './hooks/useReassuranceInjector.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
@@ -79,11 +78,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   // Thread debates from flat stream
   const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
 
-  // v18: Pass all cards through (no longer filtering activity events)
-  const allCards = useInsightFilter(threadedStream);
-
   // Inject reassurance messages during silent periods
-  const feedItems = useReassuranceInjector(allCards, state.currentStep);
+  const feedItems = useReassuranceInjector(threadedStream, state.currentStep);
 
   const handleGateDecision = useCallback(
     (_decision: 'approve' | 'reject' | 'modify', _notes?: string) => {
@@ -167,9 +163,6 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
       <HeartbeatBand
         currentStep={state.currentStep}
         completedSteps={state.completedSteps}
-        activeThinkingAgents={state.activeThinkingAgents}
-        agentStatuses={state.agentStatuses}
-        team={team}
         cost={state.cost}
         certaintyPct={runningCertainty}
         findingCount={totalFindings}

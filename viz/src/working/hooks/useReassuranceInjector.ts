@@ -88,32 +88,35 @@ export function useReassuranceInjector(
     return () => clearInterval(timer);
   }, [currentStep, streamCards.length]);
 
-  // Reset when step changes
+  // Reset when step changes — clear stale reassurances to prevent memory leak
   useEffect(() => {
     messageIndexRef.current = 0;
     lastHighValueTimeRef.current = Date.now();
     lastInjectionTimeRef.current = 0;
+    setReassurances([]);
   }, [currentStep]);
 
-  // Merge stream cards + reassurance items, sorted by timestamp
+  // Merge stream cards + reassurance items via single-pass merge (O(n+m))
   return useMemo(() => {
     if (reassurances.length === 0) return streamCards;
 
-    const merged: FeedItem[] = [...streamCards];
+    const merged: FeedItem[] = [];
+    let ri = 0; // reassurance index
 
-    // Insert reassurance items at the correct positions by timestamp
-    for (const r of reassurances) {
-      const rTime = new Date(r.timestamp).getTime();
-      let insertIdx = merged.length;
-      for (let i = merged.length - 1; i >= 0; i--) {
-        const itemTime = new Date(merged[i].timestamp).getTime();
-        if (itemTime <= rTime) {
-          insertIdx = i + 1;
-          break;
-        }
-        if (i === 0) insertIdx = 0;
+    for (let si = 0; si < streamCards.length; si++) {
+      const cardTime = new Date(streamCards[si].timestamp).getTime();
+      // Insert any reassurances that belong before this stream card
+      while (ri < reassurances.length && new Date(reassurances[ri].timestamp).getTime() <= cardTime) {
+        merged.push(reassurances[ri]);
+        ri++;
       }
-      merged.splice(insertIdx, 0, r);
+      merged.push(streamCards[si]);
+    }
+
+    // Append remaining reassurances (those after all stream cards)
+    while (ri < reassurances.length) {
+      merged.push(reassurances[ri]);
+      ri++;
     }
 
     return merged;

@@ -34,10 +34,11 @@ const GREETING_VERBS = [
   'Working on it!',
 ];
 
-function pickGreeting(role: string): string {
-  // Deterministic pick based on role name
+function pickGreeting(role: string, timestamp: string): string {
+  // Mix role name + timestamp so the same agent says different things each time
+  const seed = role + timestamp;
   let hash = 0;
-  for (let i = 0; i < role.length; i++) hash = ((hash << 5) - hash + role.charCodeAt(i)) | 0;
+  for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   return GREETING_VERBS[Math.abs(hash) % GREETING_VERBS.length];
 }
 
@@ -52,7 +53,7 @@ export function ActivityCard({ card, profileMap }: ActivityCardProps) {
   if (card.kind === 'agent_start') {
     const { profile, displayName, color } = resolveAgent(card.role, profileMap);
     const task = card.task.length > 70 ? card.task.slice(0, 67) + '...' : card.task;
-    const greeting = pickGreeting(card.role);
+    const greeting = pickGreeting(card.role, card.timestamp);
 
     return (
       <div style={styles.row}>

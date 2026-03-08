@@ -11,8 +11,6 @@
 
 import { useMemo, useState } from 'react';
 import type { WorkflowStep } from '../../types/events.js';
-import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
-import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
 import { RunningStats } from './RunningStats.js';
 import { WORKFLOW_STEPS, WORKFLOW_STEP_MAP, STEP_LABELS } from '../../types/events.js';
 import { colors, fonts } from '../../staffing/styles/tokens.js';
@@ -20,9 +18,6 @@ import { colors, fonts } from '../../staffing/styles/tokens.js';
 interface HeartbeatBandProps {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
-  activeThinkingAgents: Map<string, ActiveThinkingAgent>;
-  agentStatuses: Map<string, AgentStatus>;
-  team: AgentProfile[];
   cost: { accumulated: number; budget: number } | undefined;
   certaintyPct: number | undefined;
   findingCount: number;
@@ -43,9 +38,6 @@ function getStepColor(index: number): string {
 export function HeartbeatBand({
   currentStep,
   completedSteps,
-  activeThinkingAgents,
-  agentStatuses,
-  team,
   cost,
   certaintyPct,
   findingCount,

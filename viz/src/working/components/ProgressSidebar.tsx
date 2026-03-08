@@ -116,9 +116,12 @@ function buildStepAgents(streamCards: StreamCard[]): Map<string, StepAgentInfo[]
         : card.challengeText;
       agent.items.push({ kind: 'challenge', label: summary, completed: true });
     } else if (card.kind === 'agent_stop') {
-      // Mark the agent and all their items as completed
-      for (const [, agents] of result) {
-        const agent = agents.find(a => a.role === card.role && !a.completed);
+      // Mark the agent and all their items as completed.
+      // Search in REVERSE step order so we match the most recent step first
+      // (an agent can appear in multiple steps — e.g. Ethics Auditor in Analysis + First Review)
+      const entries = Array.from(result.entries());
+      for (let j = entries.length - 1; j >= 0; j--) {
+        const agent = entries[j][1].find(a => a.role === card.role && !a.completed);
         if (agent) {
           agent.completed = true;
           for (const item of agent.items) item.completed = true;
@@ -540,14 +543,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textDim,
     lineHeight: 1.35,
   },
-  stepDescCurrent: {
-    fontSize: 11,
-    fontFamily: fonts.sans,
-    color: colors.textMuted,
-    lineHeight: 1.35,
-    fontStyle: 'italic' as const,
-  },
-
   // Agent blocks with real checklist
   agentList: {
     marginTop: 4,
