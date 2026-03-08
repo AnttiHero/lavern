@@ -163,16 +163,26 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
   } = useAgentProfiles();
 
   const { presets } = useTeamPresets();
+  const { play } = useSoundEffects();
+  const { agents: customAgents } = useCustomAgents();
+
+  // Merge custom agents into the full profile list so useTeamSelection can
+  // look them up by role when computing selectedProfiles + totalCost.
+  const mergedProfiles = useMemo(() => {
+    const customProfiles = customAgents.map(ca => ({
+      ...ca.profile as AgentProfile,
+      role: ca.id, // custom agent ID is used as its role key
+    }));
+    return [...allProfiles, ...customProfiles];
+  }, [allProfiles, customAgents]);
 
   const {
     selectedRoles, activePreset, toggleAgent, applyPreset, clearSelection, setRoles,
     totalCost, teamSize, selectedProfiles, confirming,
     confirmTeam, isSelected, wasPresetRecentlyApplied,
     atCapFlash, maxTeamSize,
-  } = useTeamSelection(allProfiles, presets);
+  } = useTeamSelection(mergedProfiles, presets);
 
-  const { play } = useSoundEffects();
-  const { agents: customAgents } = useCustomAgents();
   const {
     config: engagementConfig,
     recommendedRoles, loading: recommendationLoading,
@@ -392,7 +402,7 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
             {customAgents.map(ca => (
               <FlippableCard
                 key={ca.id}
-                profile={ca.profile as AgentProfile}
+                profile={{ ...ca.profile as AgentProfile, role: ca.id }}
                 selected={isSelected(ca.id)}
                 onToggle={handleToggle}
               />
