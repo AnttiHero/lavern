@@ -24,6 +24,7 @@ import { TeamCostSummary } from './components/TeamCostSummary.js';
 import { staggerContainer } from './styles/animations.js';
 import { colors, fonts, spacing, radii } from './styles/tokens.js';
 import { useUserProfile } from '../my-page/hooks/useUserProfile.js';
+import { useCustomAgents } from '../agent-builder/hooks/useCustomAgents.js';
 import type { AgentProfile } from './hooks/useAgentProfiles.js';
 
 // ── Specialist sub-group mapping ─────────────────────────────────────────
@@ -171,6 +172,7 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
   } = useTeamSelection(allProfiles, presets);
 
   const { play } = useSoundEffects();
+  const { agents: customAgents } = useCustomAgents();
   const {
     config: engagementConfig,
     recommendedRoles, loading: recommendationLoading,
@@ -357,6 +359,73 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
       {error && (
         <div style={styles.errorMessage}>
           Failed to load profiles: {error}
+        </div>
+      )}
+
+      {/* Your Custom Agents */}
+      {!loading && customAgents.length > 0 && (
+        <div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+          }}>
+            <SectionHeader
+              title="Your Custom Agents"
+              subtitle="Built in the Agent Builder"
+              count={customAgents.length}
+              accentColor={colors.accent}
+            />
+          </div>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: spacing.xl,
+              padding: `${spacing.lg}px 0`,
+            }}
+          >
+            {customAgents.map(ca => (
+              <FlippableCard
+                key={ca.id}
+                profile={ca.profile as AgentProfile}
+                selected={isSelected(ca.id)}
+                onToggle={handleToggle}
+              />
+            ))}
+          </motion.div>
+        </div>
+      )}
+
+      {/* + Build Agent button */}
+      {!loading && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: spacing.xl,
+        }}>
+          <button
+            onClick={() => { window.location.hash = '#/agent-builder'; }}
+            style={{
+              padding: '10px 24px',
+              fontSize: 12,
+              fontFamily: fonts.sans,
+              fontWeight: 600,
+              color: colors.textSecondary,
+              backgroundColor: colors.bgPanel,
+              border: `1.5px dashed ${colors.border}`,
+              borderRadius: radii.md,
+              cursor: 'pointer',
+              letterSpacing: 0.5,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            + Build Custom Agent
+          </button>
         </div>
       )}
 

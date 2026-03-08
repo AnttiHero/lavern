@@ -405,3 +405,137 @@ body::after {
   0% { stroke-dashoffset: var(--path-length); }
   100% { stroke-dashoffset: 0; }
 }
+
+/* ── Agent Builder — Slider Thumbs ─────────────────────────────────── */
+
+/* Skill sliders (0-99) — dark editorial thumbs */
+.builder-skill-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.builder-skill-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1A1A1A;
+  border: 2px solid #FAF9F6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(26, 26, 26, 0.1);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: -6px;
+}
+
+.builder-skill-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(26, 26, 26, 0.15);
+}
+
+.builder-skill-slider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+.builder-skill-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1A1A1A;
+  border: 2px solid #FAF9F6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(26, 26, 26, 0.1);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.builder-skill-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(26, 26, 26, 0.15);
+}
+
+.builder-skill-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+}
+
+.builder-skill-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+}
+
+/* Personality sliders (1-10) — teal/blue tinted thumbs */
+.builder-personality-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.builder-personality-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2E7D9C;
+  border: 2px solid #FAF9F6;
+  box-shadow: 0 1px 4px rgba(46, 125, 156, 0.3), 0 0 0 1px rgba(46, 125, 156, 0.15);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: -5px;
+}
+
+.builder-personality-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 2px 8px rgba(46, 125, 156, 0.4), 0 0 0 2px rgba(46, 125, 156, 0.2);
+}
+
+.builder-personality-slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  box-shadow: 0 1px 4px rgba(46, 125, 156, 0.45), 0 0 0 3px rgba(46, 125, 156, 0.15);
+}
+
+.builder-personality-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2E7D9C;
+  border: 2px solid #FAF9F6;
+  box-shadow: 0 1px 4px rgba(46, 125, 156, 0.3), 0 0 0 1px rgba(46, 125, 156, 0.15);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.builder-personality-slider::-moz-range-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 2px 8px rgba(46, 125, 156, 0.4), 0 0 0 2px rgba(46, 125, 156, 0.2);
+}
+
+.builder-personality-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+}
+
+.builder-personality-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+}
+
+/* ── Agent Builder — Variant Strip Scrollbar ─────────────────────────── */
+
+.variant-strip::-webkit-scrollbar { display: none; }
+
+/* ── Agent Builder — Card Reveal Animation ────────────────────────── */
+@keyframes revealPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
+}

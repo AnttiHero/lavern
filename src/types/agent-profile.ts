@@ -106,6 +106,9 @@ export interface AgentProfile {
   /** Whether this agent is selected by default for new matters */
   defaultSelected: boolean;
 
+  /** Optional DiceBear seed (defaults to displayName if absent) */
+  avatarSeed?: string;
+
   /** Optional DiceBear URL params to override avatar features (e.g. "lips=variant02") */
   avatarExtra?: string;
 }

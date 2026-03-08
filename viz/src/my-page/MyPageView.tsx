@@ -14,6 +14,7 @@
 import { useCallback, useState } from 'react';
 import { colors, fonts, spacing, radii } from '../staffing/styles/tokens.js';
 import { useUserProfile } from './hooks/useUserProfile.js';
+import { useCustomAgents } from '../agent-builder/hooks/useCustomAgents.js';
 import type { UserProfile } from './hooks/useUserProfile.js';
 
 interface Props {
@@ -45,6 +46,8 @@ const MAX_SOUL = 5000;
 
 export default function MyPageView({ onBack }: Props) {
   const { profile, updateProfile, deleteTeam, hasSavedTeams } = useUserProfile();
+  const { agents: customAgents, removeAgent } = useCustomAgents();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Simple field updater
   const field = useCallback(
@@ -267,6 +270,107 @@ export default function MyPageView({ onBack }: Props) {
         <p style={styles.emptyState}>
           No saved teams yet. Build a team in Staffing and save it from there.
         </p>
+      )}
+
+      {/* ── Section 6: Custom Agents ────────────────────────────────── */}
+      <SectionDivider label="Custom Agents" />
+
+      {customAgents.length > 0 ? (
+        <div style={styles.agentList}>
+          {customAgents.map(agent => {
+            const p = agent.profile;
+            const avatarSeed = p.avatarSeed || p.displayName;
+            const avatarSrc = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundColor=transparent&size=48${p.avatarExtra ? '&' + p.avatarExtra : ''}`;
+            const isDeleting = deletingId === agent.id;
+            const archetype = p.personality?.archetype || p.category;
+            return (
+              <div key={agent.id} style={styles.agentCard}>
+                <div style={styles.agentLeft}>
+                  {/* Avatar */}
+                  <div style={styles.agentAvatar}>
+                    <img
+                      src={avatarSrc}
+                      alt={p.displayName}
+                      width={44}
+                      height={44}
+                      style={{ display: 'block', borderRadius: '50%' }}
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div style={styles.agentInfo}>
+                    <span style={styles.agentName}>{p.displayName}</span>
+                    <span style={styles.agentTagline}>
+                      {archetype} {'\u00B7'} {p.category}
+                    </span>
+                    <span style={styles.agentMeta}>
+                      Created {new Date(agent.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={styles.agentActions}>
+                  <TeamActionButton
+                    label="Edit"
+                    onClick={() => {
+                      // TODO: Pre-fill builder with agent data (future enhancement)
+                      window.location.hash = '#/agent-builder';
+                    }}
+                  />
+                  {isDeleting ? (
+                    <div style={styles.deleteConfirm}>
+                      <span style={{ fontSize: 11, color: colors.danger, fontFamily: fonts.sans }}>
+                        Delete?
+                      </span>
+                      <TeamActionButton
+                        label="Yes"
+                        danger
+                        onClick={() => {
+                          removeAgent(agent.id);
+                          setDeletingId(null);
+                        }}
+                      />
+                      <TeamActionButton
+                        label="No"
+                        onClick={() => setDeletingId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <TeamActionButton
+                      label="Delete"
+                      danger
+                      onClick={() => setDeletingId(agent.id)}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Build new agent link */}
+          <button
+            onClick={() => { window.location.hash = '#/agent-builder'; }}
+            style={styles.buildAgentLink}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.text; e.currentTarget.style.color = colors.text; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textMuted; }}
+          >
+            + Build New Agent
+          </button>
+        </div>
+      ) : (
+        <div style={styles.agentEmptyState}>
+          <p style={styles.emptyState}>
+            No custom agents yet.
+          </p>
+          <button
+            onClick={() => { window.location.hash = '#/agent-builder'; }}
+            style={styles.buildAgentBtn}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+          >
+            Build Your First Agent
+          </button>
+        </div>
       )}
 
       {/* Bottom spacer */}
@@ -688,5 +792,104 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: 'italic',
     textAlign: 'center',
     padding: `${spacing.xxl}px 0`,
+  },
+
+  // Custom agents
+  agentList: {
+    width: '100%',
+    maxWidth: 640,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
+  agentCard: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: `${spacing.md}px ${spacing.lg}px`,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.md,
+    transition: 'border-color 0.15s ease',
+  },
+  agentLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  agentAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: '50%',
+    overflow: 'hidden',
+    border: `2px solid ${colors.border}`,
+    backgroundColor: colors.bgPanel,
+    flexShrink: 0,
+  },
+  agentInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+  },
+  agentName: {
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    color: colors.text,
+  },
+  agentTagline: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+  },
+  agentMeta: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+  },
+  agentActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  deleteConfirm: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  buildAgentLink: {
+    width: '100%',
+    padding: `${spacing.md}px`,
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.textMuted,
+    backgroundColor: 'transparent',
+    border: `1.5px dashed ${colors.border}`,
+    borderRadius: radii.md,
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'border-color 0.2s ease, color 0.2s ease',
+  },
+  agentEmptyState: {
+    width: '100%',
+    maxWidth: 640,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  buildAgentBtn: {
+    padding: '10px 24px',
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    border: `1.5px solid ${colors.text}`,
+    borderRadius: radii.sm,
+    cursor: 'pointer',
+    letterSpacing: 0.5,
+    transition: 'background-color 0.2s ease, color 0.2s ease',
   },
 };

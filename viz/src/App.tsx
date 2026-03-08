@@ -18,6 +18,7 @@
  *   #/claw       → Claw Mode remote monitoring dashboard
  *   #/pricing    → Billable Hours — pricing page
  *   #/challenge  → The Marble Challenge — blind document comparison
+ *   #/agent-builder → NBA2K-style custom agent builder wizard
  *
  * All views are lazy-loaded React components in their own directories.
  * App.tsx handles routing and cross-view data flow via sessionStorage.
@@ -58,8 +59,9 @@ const ClawView = lazy(() => import('./claw/ClawView.js'));
 const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 const PricingView = lazy(() => import('./pricing/PricingView.js'));
 const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
+const AgentBuilderView = lazy(() => import('./agent-builder/AgentBuilderView.js'));
 
-type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge';
+type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -84,6 +86,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/archive')) return 'archive';
   if (hash.startsWith('#/pricing')) return 'pricing';
   if (hash.startsWith('#/challenge')) return 'challenge';
+  if (hash.startsWith('#/agent-builder')) return 'agent-builder';
   return 'landing';
 }
 
@@ -710,6 +713,20 @@ export function App() {
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <ChallengeView onBack={() => { window.location.hash = '#/quickstart'; }} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Agent Builder — NBA2K-style custom agent creator ────────────────
+  if (view === 'agent-builder') {
+    return (
+      <ErrorBoundary>
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
+          {showMark && <MarbleMark />}
+          <AgentBuilderView onBack={() => { window.location.hash = '#/team'; }} />
         </Suspense>
       </ErrorBoundary>
     );
