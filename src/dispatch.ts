@@ -8,9 +8,9 @@
  * 4. Run runGenericWorkflow() with the selected template
  *
  * v11: The legacy runTheShem() backward compat path is sunset.
- * All workflows (including roundtable, formerly legal-design) go through
- * runGenericWorkflow(). The five engagement patterns (counsel, review,
- * adversarial, roundtable, full-bench) are all WorkflowTemplates.
+ * All workflows go through runGenericWorkflow(). Eight workflow templates:
+ * counsel, review, adversarial, roundtable, full-bench, legal-design,
+ * pre-engagement, verification.
  */
 
 import { type SchemOptions } from './orchestrator.js';

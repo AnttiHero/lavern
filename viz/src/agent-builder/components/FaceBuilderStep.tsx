@@ -1,14 +1,13 @@
 /**
  * FaceBuilderStep — Step 2: DiceBear avatar customizer.
  *
- * Large avatar preview + seed input + horizontal variant strips per feature.
- * Each strip shows small circular previews; click to apply.
+ * Large avatar preview + seed input + 🎲 Randomize button.
+ * Randomize picks random features internally; seed controls the base face.
  */
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 import { AVATAR_FEATURES, avatarUrl } from '../data/dicebear-variants.js';
-import { AvatarVariantStrip } from './AvatarVariantStrip.js';
 import type { BuilderState } from '../hooks/useAgentBuilder.js';
 
 interface Props {
@@ -69,7 +68,7 @@ export function FaceBuilderStep({ state, avatarExtra, onUpdateField, onUpdateAva
           color: colors.textMuted,
           margin: 0,
         }}>
-          Customize each feature or hit randomize for inspiration.
+          Hit randomize for a new face, or type a seed.
         </p>
       </div>
 
@@ -183,23 +182,6 @@ export function FaceBuilderStep({ state, avatarExtra, onUpdateField, onUpdateAva
         </div>
       </div>
 
-      {/* Feature strips */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-      }}>
-        {AVATAR_FEATURES.map(feature => (
-          <AvatarVariantStrip
-            key={feature.key}
-            feature={feature}
-            seed={state.avatarSeed}
-            currentValue={state.avatarFeatures[feature.key]}
-            currentSelections={state.avatarFeatures}
-            onSelect={onUpdateAvatarFeature}
-          />
-        ))}
-      </div>
     </div>
   );
 }
