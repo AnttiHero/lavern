@@ -707,7 +707,6 @@ const sty: Record<string, React.CSSProperties> = {
     color: D.white,
     fontFamily: fonts.sans,
     fontSize: 13,
-    outline: 'none',
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.2s ease',
   },

@@ -127,7 +127,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.text,
-    outline: 'none',
     marginBottom: spacing.sm,
     boxSizing: 'border-box' as const,
   },
@@ -158,7 +157,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.text,
-    outline: 'none',
   },
   error: {
     fontSize: 11,

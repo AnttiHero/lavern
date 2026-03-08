@@ -150,7 +150,6 @@ export function FilterBar({
             fontFamily: fonts.sans,
             fontSize: 12,
             cursor: 'pointer',
-            outline: 'none',
           }}
         >
           {sortOptions.map(opt => (
@@ -173,7 +172,6 @@ export function FilterBar({
             fontFamily: fonts.sans,
             fontSize: 12,
             width: 180,
-            outline: 'none',
           }}
         />
       </div>

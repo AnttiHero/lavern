@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import type { ConnectionStatus } from '../../connection/ws-client.js';
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 interface WorkingHeaderProps {
@@ -55,11 +56,25 @@ export function WorkingHeader({
   provider,
 }: WorkingHeaderProps) {
   const [inputId, setInputId] = useState('');
+  const { isMobile } = useResponsive();
 
   return (
-    <div style={styles.container}>
+    <header style={{
+      ...styles.container,
+      ...(isMobile ? { flexWrap: 'wrap' as const, height: 'auto', padding: '8px 12px' } : {}),
+    }} role="banner">
+      {/* Visually-hidden status announcer for screen readers */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {connectionStatus === 'connected' ? 'Connected to session' :
+         connectionStatus === 'disconnected' ? 'Disconnected' :
+         connectionStatus === 'connecting' ? 'Connecting...' :
+         'Reconnecting...'}
+      </span>
       {/* Left: back + title + status */}
-      <div style={styles.left}>
+      <div style={{
+        ...styles.left,
+        ...(isMobile ? { minWidth: 0 } : {}),
+      }}>
         <button
           onClick={onBack}
           style={styles.navButton}
@@ -80,7 +95,9 @@ export function WorkingHeader({
       <div style={styles.center}>
         {connectionStatus === 'disconnected' ? (
           <>
+            <label htmlFor="session-connect-input" className="sr-only">Session ID</label>
             <input
+              id="session-connect-input"
               type="text"
               placeholder="Session ID..."
               value={inputId}
@@ -134,7 +151,10 @@ export function WorkingHeader({
       </div>
 
       {/* Right: certainty + cost + skip */}
-      <div style={styles.right}>
+      <div style={{
+        ...styles.right,
+        ...(isMobile ? { minWidth: 0 } : {}),
+      }}>
         <div style={styles.certaintyBadge}>
           <div style={{
             ...styles.certaintyDot,
@@ -175,7 +195,7 @@ export function WorkingHeader({
           onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
         >Skip &rarr;</button>
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -281,7 +301,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     padding: '5px 10px',
     width: 200,
-    outline: 'none',
   },
   btnPrimary: {
     backgroundColor: colors.text,

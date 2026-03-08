@@ -106,7 +106,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 12,
     padding: '8px 12px',
-    outline: 'none',
   },
   button: {
     padding: '8px 16px',

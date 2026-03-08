@@ -216,7 +216,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     padding: '5px 10px',
     width: 200,
-    outline: 'none',
     transition: 'border-color 0.15s ease',
   },
   buttonPrimary: {

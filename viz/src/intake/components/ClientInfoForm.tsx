@@ -461,7 +461,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.text,
-    outline: 'none',
     textAlign: 'center',
     transition: 'border-color 0.2s ease',
   },
@@ -474,7 +473,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.text,
-    outline: 'none',
     resize: 'vertical',
     lineHeight: 1.5,
   },
@@ -487,7 +485,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.text,
-    outline: 'none',
     marginTop: 4,
   },
   stepActions: {
@@ -659,6 +656,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 300,
     color: colors.text,
     textAlign: 'center',
-    outline: 'none',
   },
 };

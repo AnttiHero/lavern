@@ -656,7 +656,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgInput,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.sm,
-    outline: 'none',
     width: 200,
   },
   saveTeamBtn: {

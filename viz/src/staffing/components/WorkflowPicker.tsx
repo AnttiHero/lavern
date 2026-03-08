@@ -8,6 +8,7 @@
  */
 
 import { motion } from 'motion/react';
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
 
@@ -52,6 +53,8 @@ interface Props {
 }
 
 export function WorkflowPicker({ workflows, activeWorkflow, onSelect, loading }: Props) {
+  const { isMobile } = useResponsive();
+
   if (loading) {
     return (
       <div style={styles.container}>
@@ -66,7 +69,10 @@ export function WorkflowPicker({ workflows, activeWorkflow, onSelect, loading }:
   return (
     <div style={styles.container}>
       <span style={styles.label}>Approach</span>
-      <div style={styles.grid}>
+      <div style={{
+          ...styles.grid,
+          ...(isMobile ? { gridTemplateColumns: '1fr' } : {}),
+        }} role="radiogroup" aria-label="Engagement approach">
         {visible.map(w => {
           const isActive = w.id === activeWorkflow;
           const display = WORKFLOW_DISPLAY[w.id];
@@ -77,6 +83,8 @@ export function WorkflowPicker({ workflows, activeWorkflow, onSelect, loading }:
           return (
             <motion.button
               key={w.id}
+              role="radio"
+              aria-checked={isActive}
               onClick={() => onSelect(w.id)}
               whileHover={{ y: -2 }}
               transition={{ duration: 0.15 }}

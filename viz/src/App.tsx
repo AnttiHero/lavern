@@ -460,10 +460,14 @@ export function App() {
   // ── Custom cursor — auto-inverts via mix-blend-mode ──────────────────
   const cursor = <CustomCursor />;
 
+  // ── Skip link for keyboard accessibility ─────────────────────────────
+  const skipLink = <a href="#main-content" className="skip-to-content">Skip to main content</a>;
+
   // ── Quick Start — fast-track entry point ────────────────────────────
   if (view === 'quickstart') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -482,6 +486,7 @@ export function App() {
   if (view === 'intake') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading intake..." />}>
@@ -499,6 +504,7 @@ export function App() {
   if (view === 'briefing') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
@@ -516,6 +522,7 @@ export function App() {
   if (view === 'strategy') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
@@ -533,6 +540,7 @@ export function App() {
   if (view === 'team') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading team..." />}>
@@ -550,6 +558,7 @@ export function App() {
   if (view === 'working') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
@@ -567,6 +576,7 @@ export function App() {
   if (view === 'delivery') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
@@ -584,6 +594,7 @@ export function App() {
   if (view === 'billing') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading billing..." />}>
@@ -599,6 +610,7 @@ export function App() {
   if (view === 'my-page') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading profile..." />}>
@@ -612,6 +624,7 @@ export function App() {
   if (view === 'my-cases') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading cases..." />}>
@@ -637,6 +650,7 @@ export function App() {
   if (view === 'archive') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
@@ -651,6 +665,7 @@ export function App() {
   if (view === 'login') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -670,6 +685,7 @@ export function App() {
   if (view === 'agent-docs') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
@@ -684,6 +700,7 @@ export function App() {
   if (view === 'bet-the-company') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -697,6 +714,7 @@ export function App() {
   if (view === 'pricing') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -710,6 +728,7 @@ export function App() {
   if (view === 'challenge') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -723,6 +742,7 @@ export function App() {
   if (view === 'agent-builder') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
@@ -737,6 +757,7 @@ export function App() {
   if (view === 'claw') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
@@ -751,6 +772,7 @@ export function App() {
   if (view === 'lobby') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -769,6 +791,7 @@ export function App() {
   if (view === 'dashboard') {
     return (
       <ErrorBoundary>
+        {skipLink}
         {toast}
         {cursor}
         <div style={styles.app}>
@@ -796,6 +819,7 @@ export function App() {
   // ── Landing — cinematic dark door (default entry) ──────────────────
   return (
     <ErrorBoundary>
+      {skipLink}
       {toast}
       {cursor}
       <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>

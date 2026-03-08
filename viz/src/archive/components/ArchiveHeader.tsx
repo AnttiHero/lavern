@@ -93,7 +93,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 13,
     color: colors.text,
-    outline: 'none',
     transition: 'border-color 0.2s ease',
     boxSizing: 'border-box' as const,
   },

@@ -37,8 +37,8 @@ export const colors = {
   // Text — warm darks
   text: '#1A1A1A',
   textSecondary: '#4A4A4A',
-  textMuted: '#7A7A76',
-  textDim: '#A3A39E',
+  textMuted: '#6B6B67',
+  textDim: '#767670',
 
   // Semantic — desaturated
   success: '#4A7C50',

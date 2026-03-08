@@ -76,18 +76,18 @@ export function GateDialog({
   };
 
   return (
-    <div style={styles.overlay}>
+    <div style={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="gate-dialog-title">
       <div style={styles.dialog}>
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.gateIcon}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 3v6M8 11.5v.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
           <div style={styles.headerText}>
             <span style={styles.headerLabel}>HUMAN GATE</span>
-            <span style={styles.gateLabel}>
+            <span id="gate-dialog-title" style={styles.gateLabel}>
               {GATE_LABELS[gateType] || gateType}
             </span>
           </div>
@@ -112,7 +112,9 @@ export function GateDialog({
 
         {/* Notes */}
         <div style={styles.notesSection}>
+          <label htmlFor="gate-notes-input" className="sr-only">Notes</label>
           <input
+            id="gate-notes-input"
             type="text"
             placeholder="Notes (optional)..."
             value={notes}
@@ -286,7 +288,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontSize: 13,
     padding: '10px 14px',
-    outline: 'none',
     boxSizing: 'border-box',
     transition: 'border-color 0.2s ease',
   },

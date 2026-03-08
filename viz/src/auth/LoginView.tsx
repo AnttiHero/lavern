@@ -302,7 +302,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     border: `1.5px solid rgba(26, 26, 26, 0.1)`,
     borderRadius: radii.sm,
-    outline: 'none',
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.2s ease',
     letterSpacing: 0.2,

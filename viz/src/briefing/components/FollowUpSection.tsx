@@ -352,7 +352,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.5,
     padding: '10px 12px',
-    outline: 'none',
     resize: 'vertical' as const,
     minHeight: 60,
     boxSizing: 'border-box' as const,

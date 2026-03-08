@@ -86,7 +86,7 @@ export function InsightFeed({
   const counts = useInsightCounts(streamOnly);
 
   return (
-    <div style={styles.container}>
+    <main style={styles.container} aria-label="Agent activity feed">
       {/* Sticky insight counter */}
       {(counts.findings > 0 || counts.debates > 0 || counts.checks > 0) && (
         <div style={styles.counterBar}>
@@ -118,7 +118,7 @@ export function InsightFeed({
       )}
 
       {/* Feed */}
-      <div ref={scrollRef} style={styles.stream}>
+      <div ref={scrollRef} style={styles.stream} aria-live="polite" aria-relevant="additions">
         {cards.length === 0 && !thinkingCount ? (
           <EmptyState isConnected={isConnected} team={team} />
         ) : (
@@ -280,7 +280,7 @@ export function InsightFeed({
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }
 

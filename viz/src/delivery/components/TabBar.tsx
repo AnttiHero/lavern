@@ -7,6 +7,7 @@
  */
 
 import { useRef, useLayoutEffect, useState, useCallback } from 'react';
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
 export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'next-steps' | 'conversation';
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function TabBar({ activeTab, onTabChange }: Props) {
+  const { isMobile } = useResponsive();
   const barRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<DeliveryTab, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -56,19 +58,21 @@ export function TabBar({ activeTab, onTabChange }: Props) {
   }, [measure]);
 
   return (
-    <div ref={barRef} style={styles.bar}>
+    <nav ref={barRef} style={styles.bar} role="tablist" aria-label="Delivery sections">
       {TABS.map(tab => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={isActive}
             ref={el => { if (el) tabRefs.current.set(tab.id, el); }}
             onClick={() => onTabChange(tab.id)}
-            aria-current={isActive ? 'page' : undefined}
             style={{
               ...styles.tab,
               color: isActive ? colors.text : colors.textMuted,
               fontWeight: isActive ? 600 : 500,
+              ...(isMobile ? { padding: '8px 12px', fontSize: 12 } : {}),
             }}
             onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = colors.text; }}
             onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = colors.textMuted; }}
@@ -91,7 +95,7 @@ export function TabBar({ activeTab, onTabChange }: Props) {
           pointerEvents: 'none',
         }}
       />
-    </div>
+    </nav>
   );
 }
 

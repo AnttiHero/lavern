@@ -327,7 +327,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: colors.text,
     resize: 'none' as const,
-    outline: 'none',
     lineHeight: 1.5,
     transition: 'border-color 0.15s ease',
   },

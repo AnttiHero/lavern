@@ -346,7 +346,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgInput, border: `1px solid ${colors.border}`,
     borderRadius: radii.md, fontFamily: fonts.sans, fontSize: 13,
     color: colors.text, resize: 'vertical', lineHeight: 1.5,
-    outline: 'none',
   },
   pasteActions: {
     display: 'flex', justifyContent: 'space-between',
@@ -390,7 +389,7 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1, padding: '6px 10px',
     backgroundColor: colors.bgInput, border: `1px solid ${colors.border}`,
     borderRadius: radii.sm, fontFamily: fonts.sans, fontSize: 13,
-    color: colors.text, outline: 'none',
+    color: colors.text,
   },
   typeBadge: {
     fontSize: 12, fontFamily: fonts.sans, fontWeight: 500,

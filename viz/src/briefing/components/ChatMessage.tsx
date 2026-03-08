@@ -71,7 +71,6 @@ const inputBase: React.CSSProperties = {
   fontFamily: fonts.sans,
   fontSize: 14,
   padding: '10px 14px',
-  outline: 'none',
   transition: 'border-color 0.15s ease',
   marginTop: 8,
 };

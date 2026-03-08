@@ -37,6 +37,8 @@ interface ProgressSidebarProps {
   streamCards?: StreamCard[];
   activeThinkingAgents?: Map<string, ActiveThinkingAgent>;
   team?: AgentProfile[];
+  isMobile?: boolean;
+  isTablet?: boolean;
 }
 
 /** Format a role string for display. */
@@ -228,6 +230,8 @@ export function ProgressSidebar({
   streamCards,
   activeThinkingAgents,
   team,
+  isMobile,
+  isTablet,
 }: ProgressSidebarProps) {
   // Resolve the correct pipeline for this workflow
   const [workflowId] = useState<string>(() => {
@@ -298,7 +302,17 @@ export function ProgressSidebar({
   }, [activeThinkingAgents]);
 
   return (
-    <div style={styles.container}>
+    <aside style={{
+      ...styles.container,
+      ...(isMobile ? {
+        width: '100%',
+        maxHeight: '40vh',
+        borderRight: 'none',
+        borderBottom: `1px solid ${colors.border}`,
+      } : isTablet ? {
+        width: 200,
+      } : {}),
+    }} id="progress-sidebar" aria-label="Workflow progress">
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.headerLabel}>Checklist</span>
@@ -433,7 +447,7 @@ export function ProgressSidebar({
           </span>
         </div>
       )}
-    </div>
+    </aside>
   );
 }
 

@@ -158,7 +158,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1.5px solid ${colors.border}`,
     borderRadius: radii.sm,
     resize: 'vertical' as const,
-    outline: 'none',
     lineHeight: 1.6,
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.25s ease',

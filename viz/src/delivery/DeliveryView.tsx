@@ -14,6 +14,7 @@
  */
 
 import { useState } from 'react';
+import { useResponsive } from '../hooks/useMediaQuery.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { useDeliveryData } from './hooks/useDeliveryData.js';
 import { DeliveryHeader } from './components/DeliveryHeader.js';
@@ -43,6 +44,7 @@ interface MatterInfo {
 export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   const { data, loading, error, assemblyStatus, retryAssembly } = useDeliveryData();
   const [activeTab, setActiveTab] = useState<DeliveryTab>('work');
+  const { isMobile } = useResponsive();
 
   // Conversation state lives here so it persists across tab switches
   const [convMessages, setConvMessages] = useState<ConversationMessage[]>([]);
@@ -68,7 +70,10 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   });
 
   return (
-    <div style={styles.container}>
+    <main style={{
+      ...styles.container,
+      ...(isMobile ? { padding: spacing.lg } : {}),
+    }} id="main-content">
       <DeliveryHeader
         matterNumber={matterInfo.matterNumber}
         matterType={matterInfo.matterType}
@@ -156,7 +161,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           </button>
         )}
       </div>
-    </div>
+    </main>
   );
 }
 

@@ -34,8 +34,8 @@
   /* Text — warm darks */
   --color-text: #1A1A1A;
   --color-text-secondary: #4A4A4A;
-  --color-text-muted: #7A7A76;
-  --color-text-dim: #A3A39E;
+  --color-text-muted: #6B6B67;
+  --color-text-dim: #767670;
 
   /* Semantic */
   --color-success: #4A7C50;
@@ -88,6 +88,63 @@ body::after {
   *, *::before, *::after {
     cursor: none !important;
   }
+}
+
+/* ── Accessibility ─────────────────────────────────────────────────── */
+
+/* Focus indicators — warm terracotta ring on keyboard navigation only.
+   :focus-visible triggers on Tab, not on mouse click. */
+:focus-visible {
+  outline: 2px solid rgba(196, 93, 62, 0.6);
+  outline-offset: 2px;
+}
+
+/* Suppress browser default outline on mouse clicks */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip-to-content link — invisible until focused via keyboard */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 99999;
+  padding: 8px 16px;
+  background-color: #1A1A1A;
+  color: #FAF9F6;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+}
+.skip-to-content:focus {
+  left: 0;
+}
+
+/* Reduced motion — kill all animations and transitions when user prefers */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visually hidden — accessible to screen readers but invisible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* ── Utility classes ───────────────────────────────────────────────── */
@@ -412,8 +469,12 @@ body::after {
 .builder-skill-slider {
   -webkit-appearance: none;
   appearance: none;
-  outline: none;
   cursor: pointer;
+}
+.builder-skill-slider:focus-visible {
+  outline: 2px solid rgba(196, 93, 62, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .builder-skill-slider::-webkit-slider-thumb {
@@ -471,8 +532,12 @@ body::after {
 .builder-personality-slider {
   -webkit-appearance: none;
   appearance: none;
-  outline: none;
   cursor: pointer;
+}
+.builder-personality-slider:focus-visible {
+  outline: 2px solid rgba(46, 125, 156, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .builder-personality-slider::-webkit-slider-thumb {

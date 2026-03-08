@@ -12,6 +12,7 @@ import { motion } from 'motion/react';
 import { useEngagementConfig } from './hooks/useEngagementConfig.js';
 import { useWorkflows } from './hooks/useWorkflows.js';
 import { useAgentProfiles } from './hooks/useAgentProfiles.js';
+import { useResponsive } from '../hooks/useMediaQuery.js';
 import { EngagementConfigurator } from './components/EngagementConfigurator.js';
 import { colors, fonts, spacing, radii } from './styles/tokens.js';
 
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
+  const { isMobile, isTablet } = useResponsive();
   const { allProfiles } = useAgentProfiles();
   const { workflows, loading: workflowsLoading } = useWorkflows();
   const {
@@ -61,7 +63,10 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
   }, [persistAndComplete]);
 
   return (
-    <div style={styles.container}>
+    <div style={{
+      ...styles.container,
+      ...(isMobile ? { padding: spacing.lg } : isTablet ? { padding: spacing.xl } : {}),
+    }} id="main-content">
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>

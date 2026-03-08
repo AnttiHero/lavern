@@ -147,7 +147,6 @@ export function FaceBuilderStep({ state, avatarExtra, onUpdateField, onUpdateAva
                 backgroundColor: colors.bgInput,
                 border: `1px solid ${colors.border}`,
                 borderRadius: radii.md,
-                outline: 'none',
                 boxSizing: 'border-box',
               }}
             />

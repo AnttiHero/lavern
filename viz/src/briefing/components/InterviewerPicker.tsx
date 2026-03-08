@@ -136,7 +136,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 'inherit',
     color: 'inherit',
     lineHeight: 'inherit',
-    outline: 'none',
     WebkitAppearance: 'none' as const,
   },
   portrait: {

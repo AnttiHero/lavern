@@ -76,7 +76,7 @@ export function HeartbeatBand({
   }, [workflowId, currentStep, completedSteps]);
 
   return (
-    <div style={styles.band}>
+    <nav style={styles.band} aria-label="Workflow phases">
       {/* Phase progress dots + current label */}
       <div style={styles.phaseRow}>
         {pipelineSteps.map((step, idx) => {
@@ -128,7 +128,7 @@ export function HeartbeatBand({
         cost={cost}
         certaintyPct={certaintyPct}
       />
-    </div>
+    </nav>
   );
 }
 

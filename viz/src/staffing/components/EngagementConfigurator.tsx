@@ -8,6 +8,7 @@
  */
 
 import { motion } from 'motion/react';
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { WorkflowPicker } from './WorkflowPicker.js';
 import { IntensitySelector } from './IntensitySelector.js';
 import { TeamCostSummary } from './TeamCostSummary.js';
@@ -62,6 +63,7 @@ export function EngagementConfigurator({
   onProviderChange,
   showCostSummary = true,
 }: Props) {
+  const { isMobile } = useResponsive();
   const brandedName = WORKFLOW_BRANDED[config.workflowId] ?? config.workflowId;
 
   return (
@@ -102,7 +104,10 @@ export function EngagementConfigurator({
       )}
 
       {/* Two-column: Depth + Autopilot */}
-      <div style={styles.columns}>
+      <div style={{
+        ...styles.columns,
+        ...(isMobile ? { gridTemplateColumns: '1fr' } : {}),
+      }}>
         {/* Left column: Intensity */}
         <div style={styles.column}>
           <IntensitySelector

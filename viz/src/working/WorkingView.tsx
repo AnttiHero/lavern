@@ -14,6 +14,7 @@ import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useReassuranceInjector } from './hooks/useReassuranceInjector.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
+import { useResponsive } from '../hooks/useMediaQuery.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
 import { HeartbeatBand } from './components/HeartbeatBand.js';
 import { ProgressSidebar } from './components/ProgressSidebar.js';
@@ -21,7 +22,7 @@ import { InsightFeed } from './components/InsightFeed.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
 import { GateDialog } from '../components/GateDialog.js';
 import { VerificationFeed } from '../verification/VerificationFeed.js';
-import { colors, radii, spacing } from '../staffing/styles/tokens.js';
+import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { injectWorkingKeyframes } from './styles/animations.js';
 
 const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
@@ -127,6 +128,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     !state.sessionId && state.connectionStatus === 'disconnected';
 
   const [showPacMan, setShowPacMan] = useState(false);
+  const { isMobile, isTablet } = useResponsive();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if verification pipeline events are present
   const hasVerificationEvents = useMemo(() =>
@@ -170,15 +173,34 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         lastEventTimestamp={state.lastEventTimestamp}
       />
 
+      {/* Mobile sidebar toggle */}
+      {isMobile && (
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={styles.sidebarToggle}
+          aria-expanded={sidebarOpen}
+          aria-controls="progress-sidebar"
+        >
+          {sidebarOpen ? '\u25B2 Hide checklist' : '\u25BC Show checklist'}
+        </button>
+      )}
+
       {/* Main content: sidebar + feed */}
-      <div style={styles.mainContent}>
-        <ProgressSidebar
-          currentStep={state.currentStep}
-          completedSteps={state.completedSteps}
-          streamCards={state.streamCards}
-          activeThinkingAgents={state.activeThinkingAgents}
-          team={team}
-        />
+      <div style={{
+        ...styles.mainContent,
+        ...(isMobile ? { flexDirection: 'column' as const } : {}),
+      }} id="main-content">
+        {(!isMobile || sidebarOpen) && (
+          <ProgressSidebar
+            currentStep={state.currentStep}
+            completedSteps={state.completedSteps}
+            streamCards={state.streamCards}
+            activeThinkingAgents={state.activeThinkingAgents}
+            team={team}
+            isMobile={isMobile}
+            isTablet={isTablet}
+          />
+        )}
 
         <div style={styles.feedColumn}>
           {/* Verification pipeline display — shown when verification events are streaming */}
@@ -271,6 +293,26 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column' as const,
     overflow: 'hidden',
     minWidth: 0,
+  },
+  sidebarToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '6px 12px',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderBottom: `1px solid ${colors.border}`,
+    backgroundColor: colors.bgPanel,
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    width: '100%',
+    flexShrink: 0,
   },
   ghostBtn: {
     position: 'absolute' as const,

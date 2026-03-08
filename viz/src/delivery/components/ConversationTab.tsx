@@ -394,7 +394,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bgInput,
     border: `1.5px solid ${colors.border}`,
     borderRadius: radii.sm,
-    outline: 'none',
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.2s ease',
   },
