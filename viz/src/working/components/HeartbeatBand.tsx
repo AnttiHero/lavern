@@ -1,25 +1,18 @@
 /**
- * HeartbeatBand — The anti-anxiety zone.
+ * HeartbeatBand — Slim progress + stats strip.
  *
- * A persistent horizontal band below the header that is always visible,
- * always animating. The user NEVER stares at a frozen screen.
+ * v18: Slimmed from 2-row layout to single compact row.
+ * ActivityRing, NarrativeStatus, and AgentPresenceOrbs removed —
+ * narrative messages now flow in the conversation feed via
+ * ReassuranceCard, and activity is visible through ActivityCard.
  *
- * v17: Workflow-aware — reads the workflow ID from sessionStorage and
- *      shows the correct pipeline steps via WORKFLOW_STEP_MAP.
- *
- * Layout:
- *   Top row:  ActivityRing | NarrativeStatus | AgentPresenceOrbs
- *   Bottom:   Inline phase progress (from PhaseStrip) + RunningStats
+ * Layout: [Phase dots] · [Current phase label] | [Stats]
  */
 
 import { useMemo, useState } from 'react';
 import type { WorkflowStep } from '../../types/events.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import type { AgentStatus, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
-import { useNarrativeStatus } from '../hooks/useNarrativeStatus.js';
-import { ActivityRing } from './ActivityRing.js';
-import { AgentPresenceOrbs } from './AgentPresenceOrbs.js';
-import { NarrativeStatus } from './NarrativeStatus.js';
 import { RunningStats } from './RunningStats.js';
 import { WORKFLOW_STEPS, WORKFLOW_STEP_MAP, STEP_LABELS } from '../../types/events.js';
 import { colors, fonts } from '../../staffing/styles/tokens.js';
@@ -37,7 +30,7 @@ interface HeartbeatBandProps {
   lastEventTimestamp: string | null;
 }
 
-/** Rotating color palette for phase dots — deterministic by step index. */
+/** Rotating color palette for phase dots. */
 const STEP_COLOR_PALETTE = [
   '#2E7D9C', '#4A7C50', '#B8860B', '#C45D3E',
   '#7B5EA7', '#9C7B3E', '#8B6914', '#2E7D9C',
@@ -59,7 +52,6 @@ export function HeartbeatBand({
   sessionStartTime,
   lastEventTimestamp,
 }: HeartbeatBandProps) {
-  // Resolve the correct pipeline for this workflow
   const [workflowId] = useState<string>(() => {
     try {
       const configStr = sessionStorage.getItem('shem-briefing-config');
@@ -72,13 +64,10 @@ export function HeartbeatBand({
   });
 
   const pipelineSteps = useMemo(() => {
-    // 1. Try the known workflow map
     if (workflowId && WORKFLOW_STEP_MAP[workflowId]) {
       return WORKFLOW_STEP_MAP[workflowId];
     }
-    // 2. If current step is not in legacy pipeline, build from events
     if (currentStep && !WORKFLOW_STEPS.includes(currentStep)) {
-      // Build a dynamic pipeline from completed steps + current
       const seen = new Set<WorkflowStep>();
       const ordered: WorkflowStep[] = [];
       for (const s of completedSteps) {
@@ -91,94 +80,62 @@ export function HeartbeatBand({
       if (!seen.has('delivered')) ordered.push('delivered');
       return ordered;
     }
-    // 3. Fallback to legacy
     return WORKFLOW_STEPS;
   }, [workflowId, currentStep, completedSteps]);
 
-  const totalSteps = pipelineSteps.filter(s => s !== 'delivered').length;
-  const progress = totalSteps > 0 ? Math.min(completedSteps.length / totalSteps, 1) : 0;
-
-  const narrativeMessage = useNarrativeStatus({
-    currentStep,
-    activeThinkingAgents,
-    lastEventTimestamp,
-    findingCount,
-    teamSize: team.length,
-  });
-
-  const insightCount = findingCount;
-
   return (
     <div style={styles.band}>
-      {/* Top row: Ring | Narrative | Orbs */}
-      <div style={styles.topRow}>
-        <ActivityRing
-          progress={progress}
-          activeCount={activeThinkingAgents.size}
-        />
+      {/* Phase progress dots + current label */}
+      <div style={styles.phaseRow}>
+        {pipelineSteps.map((step, idx) => {
+          const isCompleted = completedSteps.includes(step);
+          const isCurrent = step === currentStep;
+          const stepColor = getStepColor(idx);
 
-        <NarrativeStatus message={narrativeMessage} />
+          if (step === 'delivered' && currentStep !== 'delivered') return null;
 
-        <AgentPresenceOrbs
-          team={team}
-          agentStatuses={agentStatuses}
-          activeThinkingAgents={activeThinkingAgents}
-        />
-      </div>
-
-      {/* Bottom row: Phase progress + Stats */}
-      <div style={styles.bottomRow}>
-        {/* Inline phase progress */}
-        <div style={styles.phaseRow}>
-          {pipelineSteps.map((step, idx) => {
-            const isCompleted = completedSteps.includes(step);
-            const isCurrent = step === currentStep;
-            const stepColor = getStepColor(idx);
-
-            if (step === 'delivered' && currentStep !== 'delivered') return null;
-
-            return (
-              <div key={step} style={styles.phaseItem}>
-                <div
+          return (
+            <div key={step} style={styles.phaseItem}>
+              <div
+                style={{
+                  width: isCurrent ? 8 : 6,
+                  height: isCurrent ? 8 : 6,
+                  borderRadius: '50%',
+                  backgroundColor: isCompleted
+                    ? colors.success
+                    : isCurrent
+                      ? stepColor
+                      : colors.border,
+                  transition: 'all 0.3s ease',
+                  flexShrink: 0,
+                  ...(isCurrent ? { animation: 'activeThinkingPulse 2s ease-in-out infinite' } : {}),
+                }}
+              />
+              {(isCurrent || isCompleted) && (
+                <span
                   style={{
-                    width: isCurrent ? 8 : 6,
-                    height: isCurrent ? 8 : 6,
-                    borderRadius: '50%',
-                    backgroundColor: isCompleted
-                      ? colors.success
-                      : isCurrent
-                        ? stepColor
-                        : colors.border,
-                    transition: 'all 0.3s ease',
-                    flexShrink: 0,
+                    fontSize: 10,
+                    fontFamily: fonts.sans,
+                    color: isCurrent ? stepColor : colors.textDim,
+                    fontWeight: isCurrent ? 600 : 400,
+                    whiteSpace: 'nowrap' as const,
                   }}
-                />
-                {(isCurrent || isCompleted) && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontFamily: fonts.sans,
-                      color: isCurrent ? stepColor : colors.textDim,
-                      fontWeight: isCurrent ? 600 : 400,
-                      whiteSpace: 'nowrap' as const,
-                    }}
-                  >
-                    {STEP_LABELS[step] ?? step.replace(/_/g, ' ')}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Running stats */}
-        <RunningStats
-          sessionStartTime={sessionStartTime}
-          insightCount={insightCount}
-          cost={cost}
-          certaintyPct={certaintyPct}
-        />
+                >
+                  {STEP_LABELS[step] ?? step.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* Running stats */}
+      <RunningStats
+        sessionStartTime={sessionStartTime}
+        insightCount={findingCount}
+        cost={cost}
+        certaintyPct={certaintyPct}
+      />
     </div>
   );
 }
@@ -188,17 +145,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
     backgroundColor: colors.bgCard,
     borderBottom: `1px solid ${colors.border}`,
-    padding: '14px 20px 10px',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 12,
-  },
-  topRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 16,
-  },
-  bottomRow: {
+    padding: '8px 20px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

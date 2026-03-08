@@ -1,24 +1,18 @@
 /**
- * useInsightFilter — Filters stream cards to only show high-value insights.
+ * useInsightFilter — Stream card filter for the conversation feed.
  *
- * SHOWN: findings, debates, quality checks, gates, resolutions, verifications,
- *        workflow transitions, errors.
- * HIDDEN: tool_used, agent_start, agent_stop — pure noise to human clients.
- *
- * The hidden events still flow through useWorkingState and feed the HeartbeatBand
- * (agent orbs, narrative status) — they're just not rendered as cards.
+ * v18: The filter is now a pass-through. All events (including tool_used,
+ * agent_start, agent_stop) are shown in the feed as lightweight activity
+ * messages via ActivityCard. This is the single most impactful change in
+ * the Working view redesign — it ensures users ALWAYS see their agents
+ * working, even during long analysis phases with no findings.
  */
 
 import { useMemo } from 'react';
 import type { StreamCard } from './useWorkingState.js';
 
-const NOISE_KINDS = new Set(['tool_used', 'agent_start', 'agent_stop']);
-
 export function useInsightFilter(streamCards: StreamCard[]): StreamCard[] {
-  return useMemo(
-    () => streamCards.filter(card => !NOISE_KINDS.has(card.kind)),
-    [streamCards],
-  );
+  return useMemo(() => streamCards, [streamCards]);
 }
 
 /** Count insight cards by category for the sticky counter. */

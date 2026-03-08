@@ -1,16 +1,21 @@
 /**
- * InsightFeed — Main center area: scrollable feed of HIGH-VALUE insight cards only.
+ * InsightFeed — The conversation feed: watch your team work.
  *
- * v17: "The Counsel Room" — cards now render as speech bubbles with agent avatars.
- *      Added thinking bubbles at the bottom for active agents.
+ * v18: "The Team Chat Room" — ALL events render in the feed, not just
+ *      high-value ones. Activity events (tool_used, agent_start, agent_stop)
+ *      appear as lightweight ActivityCard messages. Reassurance cards appear
+ *      during silent periods. The feed feels alive and continuous.
  *
- * Kept: findings, debate threads, quality checks, gates, resolutions,
- *       workflow transitions, verifications, errors.
+ * Visual hierarchy:
+ *   Rich cards  — FindingCard, ChallengeCard, etc. (white bg, borders, evidence)
+ *   Activity    — ActivityCard (no bg, inline text — visually light)
+ *   System      — WorkflowStepCard, ReassuranceCard (centered, serif italic)
  */
 
 import { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
 import type { StreamCard, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
+import type { FeedItem } from '../hooks/useReassuranceInjector.js';
 import type { DebateThread } from '../hooks/useDebateThreads.js';
 import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { useInsightCounts } from '../hooks/useInsightFilter.js';
@@ -23,12 +28,14 @@ import { GateCard } from './GateCard.js';
 import { WorkflowStepCard } from './WorkflowStepCard.js';
 import { DebateThreadCard } from './DebateThreadCard.js';
 import { AgentThinkingBubble } from './AgentThinkingBubble.js';
+import { ActivityCard } from './ActivityCard.js';
+import { ReassuranceCard } from './ReassuranceCard.js';
 import { EmptyState } from './EmptyState.js';
 import { colors, fonts, radii, categoryColor } from '../../staffing/styles/tokens.js';
 import { streamCardEntrance } from '../styles/animations.js';
 
 interface InsightFeedProps {
-  cards: StreamCard[];
+  cards: FeedItem[];
   team: AgentProfile[];
   onGateClick: () => void;
   isConnected: boolean;
@@ -71,8 +78,8 @@ export function InsightFeed({
     }
   }, [cards.length, thinkingCount]);
 
-  // Insight counts for sticky counter
-  const counts = useInsightCounts(cards);
+  // Insight counts for sticky counter (only counts high-value cards)
+  const counts = useInsightCounts(cards as StreamCard[]);
 
   return (
     <div style={styles.container}>
@@ -109,11 +116,20 @@ export function InsightFeed({
       {/* Feed */}
       <div ref={scrollRef} style={styles.stream}>
         {cards.length === 0 && !thinkingCount ? (
-          <EmptyState isConnected={isConnected} />
+          <EmptyState isConnected={isConnected} team={team} />
         ) : (
           <>
             {cards.map((card, i) => {
               const key = `${card.kind}-${i}`;
+
+              // Reassurance messages (injected by useReassuranceInjector)
+              if (card.kind === 'reassurance') {
+                return (
+                  <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                    <ReassuranceCard message={card.message} />
+                  </motion.div>
+                );
+              }
 
               // Finding with debate thread → composite card
               if (card.kind === 'finding') {
@@ -132,6 +148,16 @@ export function InsightFeed({
                   return (
                     <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
                       <WorkflowStepCard card={card} />
+                    </motion.div>
+                  );
+
+                // Activity events — lightweight speech bubble messages
+                case 'agent_start':
+                case 'agent_stop':
+                case 'tool_used':
+                  return (
+                    <motion.div key={key} variants={streamCardEntrance} initial="hidden" animate="visible">
+                      <ActivityCard card={card} profileMap={profileMap} />
                     </motion.div>
                   );
 
@@ -285,7 +311,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '16px 20px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 10,
+    gap: 6,
   },
   verificationCard: {
     display: 'flex',

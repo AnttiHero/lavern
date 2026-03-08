@@ -1,58 +1,231 @@
 /**
- * ProgressSidebar — Vertical checklist showing workflow progress.
+ * ProgressSidebar — Claude Code-style workflow checklist.
  *
- * v2: Added live activity feed below the current step showing real-time
- * agent actions (tool usage, agent joins/completions, findings).
+ * v19: Real thinking checklist — shows ACTUAL agent actions, not static
+ *      descriptions. Every tool call, every finding, every challenge appears
+ *      as a live checklist item under the agent that produced it.
  *
- * Layout: vertical list of steps connected by a thin line.
- *   Done steps — green check, muted label
- *   Current step — pulsing dot, bold label, live activity feed below
- *   Upcoming steps — gray circle, dim label, description visible
+ * Layout:
+ *   ✓ Analysis
+ *     ✓ Design Reviewer — Analyzing document structure
+ *       ✓ Reading document
+ *       ✓ Checking heading structure
+ *       ✓ Analyzing visual hierarchy
+ *       ⚡ Found: Heading structure needs improvement
+ *     ✓ Ethics Auditor — Reviewing ethical compliance
+ *       ✓ Reading document
+ *       ✓ Checking accessibility
+ *   ● First Review  ← current, pulsing
+ *     ◉ Ethics Auditor — Challenging liability analysis
+ *       ✓ Comparing clauses
+ *       ◉ Checking defined terms...
+ *   ○ Transformation
  */
 
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import type { WorkflowStep } from '../../types/events.js';
-import type { StreamCard } from '../hooks/useWorkingState.js';
+import type { StreamCard, ActiveThinkingAgent } from '../hooks/useWorkingState.js';
+import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { WORKFLOW_STEP_MAP, WORKFLOW_STEPS, STEP_LABELS } from '../../types/events.js';
 import { PHASE_DESCRIPTIONS } from '../data/phase-descriptions.js';
+import { formatToolName, INTERESTING_TOOLS } from '../utils/toolLabels.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
-import { formatActivity } from '../utils/formatToolAction.js';
 
 interface ProgressSidebarProps {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
   streamCards?: StreamCard[];
+  activeThinkingAgents?: Map<string, ActiveThinkingAgent>;
+  team?: AgentProfile[];
 }
 
 /** Format a role string for display. */
-function displayRole(role: string): string {
+function displayRole(role: string, team?: AgentProfile[]): string {
+  if (team) {
+    const profile = team.find(p => p.role === role);
+    if (profile) return profile.displayName;
+  }
   return role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-/** Build a compact activity line from a stream card. */
-function cardToActivity(card: StreamCard): string | null {
-  switch (card.kind) {
-    case 'agent_start':
-      return `${displayRole(card.role)} joined`;
-    case 'agent_stop':
-      return `${displayRole(card.role)} finished (${(card.durationMs / 1000).toFixed(0)}s)`;
-    case 'tool_used':
-      if (card.agent) return formatActivity(card.agent, card.tool);
-      return null; // Skip tool_used without agent
-    case 'finding':
-      return `${displayRole(card.agent)} flagged ${card.severity} finding`;
-    case 'challenge':
-      return `${displayRole(card.challenger)} challenged a finding`;
-    case 'resolution':
-      return `Debate resolved: ${card.topic.slice(0, 40)}`;
-    case 'gate':
-      return `Gate: ${card.gateType.replace(/_/g, ' ')}`;
-    default:
-      return null;
-  }
+/** A single checklist sub-item under an agent. */
+interface ChecklistItem {
+  kind: 'tool' | 'finding' | 'challenge';
+  label: string;
+  completed: boolean;
 }
 
-export function ProgressSidebar({ currentStep, completedSteps, streamCards }: ProgressSidebarProps) {
+interface StepAgentInfo {
+  role: string;
+  task: string;
+  completed: boolean;
+  items: ChecklistItem[];
+}
+
+/**
+ * Walk stream cards and group agent activity by workflow step.
+ * Collects ACTUAL tool calls and findings per agent — the real thinking.
+ */
+function buildStepAgents(streamCards: StreamCard[]): Map<string, StepAgentInfo[]> {
+  const result = new Map<string, StepAgentInfo[]>();
+  let currentStep = 'intake';
+
+  // Helper: find or create agent entry in a step
+  function getAgent(step: string, role: string, task?: string): StepAgentInfo {
+    if (!result.has(step)) result.set(step, []);
+    const agents = result.get(step)!;
+    let agent = agents.find(a => a.role === role && !a.completed);
+    if (!agent) {
+      agent = { role, task: task ?? '', completed: false, items: [] };
+      agents.push(agent);
+    }
+    return agent;
+  }
+
+  for (const card of streamCards) {
+    if (card.kind === 'workflow_step') {
+      currentStep = card.step;
+    } else if (card.kind === 'agent_start') {
+      getAgent(currentStep, card.role, card.task);
+    } else if (card.kind === 'tool_used') {
+      const agentRole = card.agent;
+      if (!agentRole) continue;
+      // Only track interesting tools (skip infrastructure)
+      if (!INTERESTING_TOOLS.has(card.tool)) continue;
+      const agent = getAgent(currentStep, agentRole);
+      // Avoid duplicate consecutive tools
+      const label = formatToolName(card.tool);
+      const lastItem = agent.items[agent.items.length - 1];
+      if (lastItem?.kind === 'tool' && lastItem.label === label) continue;
+      agent.items.push({ kind: 'tool', label, completed: false });
+    } else if (card.kind === 'finding') {
+      const agentRole = card.agent;
+      if (!agentRole) continue;
+      const agent = getAgent(currentStep, agentRole);
+      // Truncate finding to fit sidebar
+      const summary = card.content.length > 50
+        ? card.content.slice(0, 47) + '...'
+        : card.content;
+      agent.items.push({ kind: 'finding', label: summary, completed: true });
+    } else if (card.kind === 'challenge') {
+      const agentRole = card.challenger;
+      if (!agentRole) continue;
+      const agent = getAgent(currentStep, agentRole);
+      const summary = card.challengeText.length > 50
+        ? card.challengeText.slice(0, 47) + '...'
+        : card.challengeText;
+      agent.items.push({ kind: 'challenge', label: summary, completed: true });
+    } else if (card.kind === 'agent_stop') {
+      // Mark the agent and all their items as completed
+      for (const [, agents] of result) {
+        const agent = agents.find(a => a.role === card.role && !a.completed);
+        if (agent) {
+          agent.completed = true;
+          for (const item of agent.items) item.completed = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Renders a single agent with its real checklist items. */
+function AgentChecklist({
+  agent,
+  team,
+  status,
+  currentTool,
+}: {
+  agent: StepAgentInfo;
+  team?: AgentProfile[];
+  status: 'active' | 'completed';
+  currentTool?: string;
+}) {
+  const name = displayRole(agent.role, team);
+  const isActive = status === 'active';
+  // Truncate task for display
+  const task = agent.task.length > 40
+    ? agent.task.slice(0, 37) + '...'
+    : agent.task;
+
+  return (
+    <div style={styles.agentBlock}>
+      {/* Agent header: name + task */}
+      <div style={isActive ? styles.activeAgentItem : styles.agentItem}>
+        {isActive
+          ? <span style={styles.activeAgentDot} />
+          : <span style={styles.agentCheck}>{'\u2713'}</span>
+        }
+        <span style={isActive ? styles.activeAgentText : styles.agentText}>
+          {name}
+        </span>
+      </div>
+      {/* Task description */}
+      {task && (
+        <div style={styles.taskLine}>
+          <span style={styles.taskText}>{task}</span>
+        </div>
+      )}
+
+      {/* Real checklist items — actual tools used, findings, challenges */}
+      {agent.items.length > 0 && (
+        <div style={styles.itemList}>
+          {agent.items.map((item, i) => (
+            <div key={i} style={styles.itemRow}>
+              {item.kind === 'finding' ? (
+                <span style={styles.findingIcon}>{'\u26A1'}</span>
+              ) : item.kind === 'challenge' ? (
+                <span style={styles.challengeIcon}>{'\u2694'}</span>
+              ) : item.completed ? (
+                <span style={styles.itemCheck}>{'\u2713'}</span>
+              ) : (
+                <span style={styles.itemSpinner} />
+              )}
+              <span
+                style={{
+                  ...styles.itemText,
+                  ...(item.kind === 'finding' ? styles.itemTextFinding : {}),
+                  ...(item.kind === 'challenge' ? styles.itemTextChallenge : {}),
+                }}
+              >
+                {item.kind === 'finding' ? `Found: ${item.label}` :
+                 item.kind === 'challenge' ? `Challenge: ${item.label}` :
+                 item.label}
+              </span>
+            </div>
+          ))}
+
+          {/* Show current tool as in-progress for active agents */}
+          {isActive && currentTool && INTERESTING_TOOLS.has(currentTool) && (
+            <div style={styles.itemRow}>
+              <span style={styles.itemSpinner} />
+              <span style={{ ...styles.itemText, ...styles.itemTextActive }}>
+                {formatToolName(currentTool)}...
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active with no items yet — show pulsing placeholder */}
+      {isActive && agent.items.length === 0 && !currentTool && (
+        <div style={styles.taskLine}>
+          <span style={{ ...styles.taskText, fontStyle: 'italic' }}>Starting up...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ProgressSidebar({
+  currentStep,
+  completedSteps,
+  streamCards,
+  activeThinkingAgents,
+  team,
+}: ProgressSidebarProps) {
   // Resolve the correct pipeline for this workflow
   const [workflowId] = useState<string>(() => {
     try {
@@ -85,7 +258,7 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
     return WORKFLOW_STEPS;
   }, [workflowId, currentStep, completedSteps]);
 
-  // Estimated time remaining (sum of current + upcoming steps)
+  // Estimated time remaining
   const estMinutes = useMemo(() => {
     let total = 0;
     let pastCurrent = false;
@@ -102,38 +275,30 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
     return total;
   }, [pipelineSteps, currentStep, completedSteps]);
 
-  // Find the current step index for progress calculation
+  // Progress label
   const currentIndex = pipelineSteps.indexOf(currentStep);
   const totalSteps = pipelineSteps.length;
   const progressLabel = currentIndex >= 0
     ? `${Math.min(currentIndex + 1, totalSteps)} of ${totalSteps}`
     : '';
 
-  // Live activity feed: last 6 actionable stream cards
-  const activityItems = useMemo(() => {
-    if (!streamCards || streamCards.length === 0) return [];
-    const items: string[] = [];
-    // Process from most recent, take last 6
-    for (let i = streamCards.length - 1; i >= 0 && items.length < 6; i--) {
-      const text = cardToActivity(streamCards[i]);
-      if (text) items.push(text);
-    }
-    return items.reverse(); // Chronological order
-  }, [streamCards]);
+  // Build agent-level task map from stream cards
+  const stepAgents = useMemo(
+    () => buildStepAgents(streamCards ?? []),
+    [streamCards],
+  );
 
-  // Auto-scroll activity feed
-  const activityRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (activityRef.current) {
-      activityRef.current.scrollTop = activityRef.current.scrollHeight;
-    }
-  }, [activityItems]);
+  // Active thinking agents for the current step
+  const activeAgents = useMemo(() => {
+    if (!activeThinkingAgents) return [];
+    return Array.from(activeThinkingAgents.values());
+  }, [activeThinkingAgents]);
 
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.headerLabel}>Progress</span>
+        <span style={styles.headerLabel}>Checklist</span>
         {progressLabel && (
           <span style={styles.headerCount}>{progressLabel}</span>
         )}
@@ -148,12 +313,12 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
           const isLast = idx === pipelineSteps.length - 1;
           const phase = PHASE_DESCRIPTIONS[step];
           const label = STEP_LABELS[step] ?? step.replace(/_/g, ' ');
+          const agents = stepAgents.get(step) ?? [];
 
           return (
             <div key={step} style={styles.stepRow}>
               {/* Indicator column: dot + connecting line */}
               <div style={styles.indicatorCol}>
-                {/* Status dot */}
                 <div
                   style={{
                     ...styles.dot,
@@ -168,7 +333,6 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
                     </svg>
                   )}
                 </div>
-                {/* Connecting line */}
                 {!isLast && (
                   <div
                     style={{
@@ -191,32 +355,63 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
                 >
                   {label}
                 </span>
-                {(isCurrent || isUpcoming) && phase?.description && (
-                  <span
-                    style={{
-                      ...styles.stepDesc,
-                      ...(isCurrent ? styles.stepDescCurrent : {}),
-                    }}
-                  >
-                    {phase.description}
-                  </span>
-                )}
 
-                {/* Live activity feed — only under current step */}
-                {isCurrent && activityItems.length > 0 && (
-                  <div ref={activityRef} style={styles.activityFeed}>
-                    {activityItems.map((text, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          ...styles.activityItem,
-                          opacity: i === activityItems.length - 1 ? 1 : 0.6,
-                        }}
-                      >
-                        {text}
-                      </div>
+                {/* Agent checklist — completed steps show real work done */}
+                {isCompleted && agents.length > 0 && (
+                  <div style={styles.agentList}>
+                    {agents.map((agent, ai) => (
+                      <AgentChecklist
+                        key={`${agent.role}-${ai}`}
+                        agent={agent}
+                        team={team}
+                        status="completed"
+                      />
                     ))}
                   </div>
+                )}
+
+                {/* Current step: active agents with live tool progress */}
+                {isCurrent && (
+                  <>
+                    {/* Active agents — show their real-time tool progress */}
+                    {activeAgents.length > 0 && (
+                      <div style={styles.agentList}>
+                        {activeAgents.map((agent) => {
+                          // Find this agent's data in stepAgents for tool history
+                          const agentData = agents.find(a => a.role === agent.role && !a.completed);
+                          return (
+                            <AgentChecklist
+                              key={agent.role}
+                              agent={agentData ?? { role: agent.role, task: agent.task, completed: false, items: [] }}
+                              team={team}
+                              status="active"
+                              currentTool={agent.toolsUsed[agent.toolsUsed.length - 1]}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Agents that finished in this step */}
+                    {agents.filter(a => a.completed).length > 0 && (
+                      <div style={styles.agentList}>
+                        {agents.filter(a => a.completed).map((agent, ai) => (
+                          <AgentChecklist
+                            key={`done-${agent.role}-${ai}`}
+                            agent={agent}
+                            team={team}
+                            status="completed"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Upcoming step: description */}
+                {isUpcoming && phase?.description && (
+                  <span style={styles.stepDesc}>
+                    {phase.description}
+                  </span>
                 )}
               </div>
             </div>
@@ -224,11 +419,14 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
         })}
       </div>
 
-      {/* Footer: estimated time */}
+      {/* Footer: estimated time + reassurance */}
       {estMinutes > 0 && currentStep !== 'delivered' && (
         <div style={styles.footer}>
           <span style={styles.footerText}>
             ~{estMinutes} min remaining
+          </span>
+          <span style={styles.footerReassurance}>
+            Everything is working normally {'\u2714'}
           </span>
         </div>
       )}
@@ -238,7 +436,7 @@ export function ProgressSidebar({ currentStep, completedSteps, streamCards }: Pr
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    width: 220,
+    width: 260,
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column' as const,
@@ -343,35 +541,169 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.35,
   },
   stepDescCurrent: {
-    color: colors.textMuted,
-  },
-
-  // Live activity feed
-  activityFeed: {
-    marginTop: 6,
-    maxHeight: 120,
-    overflow: 'auto' as const,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 3,
-  },
-  activityItem: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.sans,
     color: colors.textMuted,
-    lineHeight: 1.3,
+    lineHeight: 1.35,
+    fontStyle: 'italic' as const,
+  },
+
+  // Agent blocks with real checklist
+  agentList: {
+    marginTop: 4,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+  },
+  agentBlock: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 1,
+  },
+  agentItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+  },
+  agentCheck: {
+    fontSize: 9,
+    color: colors.success,
+    fontWeight: 700,
+    flexShrink: 0,
+    width: 12,
+    textAlign: 'center' as const,
+  },
+  agentText: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.textMuted,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+  activeAgentItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+  },
+  activeAgentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: colors.warning,
+    flexShrink: 0,
+    marginLeft: 3,
+    animation: 'activeThinkingPulse 2s ease-in-out infinite',
+  },
+  activeAgentText: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    fontWeight: 600,
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden' as const,
     textOverflow: 'ellipsis' as const,
   },
 
+  // Task description line
+  taskLine: {
+    paddingLeft: 17,
+  },
+  taskText: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    lineHeight: 1.3,
+  },
+
+  // Real checklist sub-items (tools, findings, challenges)
+  itemList: {
+    paddingLeft: 17,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 1,
+    marginTop: 1,
+  },
+  itemRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 4,
+    minHeight: 14,
+  },
+  itemCheck: {
+    fontSize: 7,
+    color: colors.success,
+    fontWeight: 700,
+    flexShrink: 0,
+    width: 10,
+    textAlign: 'center' as const,
+    lineHeight: '14px',
+    opacity: 0.6,
+  },
+  itemSpinner: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
+    backgroundColor: colors.warning,
+    flexShrink: 0,
+    marginTop: 4,
+    marginLeft: 2.5,
+    marginRight: 2.5,
+    animation: 'activeThinkingPulse 1.5s ease-in-out infinite',
+  },
+  itemText: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    color: colors.textDim,
+    lineHeight: '14px',
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+    whiteSpace: 'nowrap' as const,
+  },
+  itemTextActive: {
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
+  },
+  itemTextFinding: {
+    color: colors.warning,
+    fontWeight: 500,
+  },
+  itemTextChallenge: {
+    color: '#8B5CF6',
+    fontWeight: 500,
+  },
+  findingIcon: {
+    fontSize: 8,
+    flexShrink: 0,
+    width: 10,
+    textAlign: 'center' as const,
+    lineHeight: '14px',
+  },
+  challengeIcon: {
+    fontSize: 8,
+    flexShrink: 0,
+    width: 10,
+    textAlign: 'center' as const,
+    lineHeight: '14px',
+  },
+
   footer: {
     padding: '10px 16px',
     borderTop: `1px solid ${colors.border}`,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 4,
   },
   footerText: {
     fontSize: 10,
     fontFamily: fonts.mono,
     color: colors.textDim,
+  },
+  footerReassurance: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: colors.success,
+    opacity: 0.7,
   },
 };

@@ -1,17 +1,19 @@
 /**
- * WorkingView — Live agent dashboard.
+ * WorkingView — The Team Chat Room.
  *
- * v16: Replaced TeamPanel + ThinkingStream with HeartbeatBand + InsightFeed.
+ * v18: Redesigned for engagement — all agent activity now visible in the
+ *      conversation feed (tool_used, agent_start, agent_stop shown as
+ *      speech bubble ActivityCards). Reassurance messages injected during
+ *      silent periods. Sidebar upgraded to Claude Code-style checklist.
  *
- * Layout: WorkingHeader → HeartbeatBand → InsightFeed (full width)
- * Data: WebSocket events processed by useWorkingState into stream cards,
- *       filtered by useInsightFilter to remove noise (tool_used, agent_start/stop).
+ * Layout: WorkingHeader → SlimHeartbeatBand → (ChecklistSidebar | ConversationFeed)
  */
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useInsightFilter } from './hooks/useInsightFilter.js';
+import { useReassuranceInjector } from './hooks/useReassuranceInjector.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
 import { HeartbeatBand } from './components/HeartbeatBand.js';
@@ -77,8 +79,11 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   // Thread debates from flat stream
   const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
 
-  // Filter to insights only — no tool_used, agent_start, agent_stop
-  const insightCards = useInsightFilter(threadedStream);
+  // v18: Pass all cards through (no longer filtering activity events)
+  const allCards = useInsightFilter(threadedStream);
+
+  // Inject reassurance messages during silent periods
+  const feedItems = useReassuranceInjector(allCards, state.currentStep);
 
   const handleGateDecision = useCallback(
     (_decision: 'approve' | 'reject' | 'modify', _notes?: string) => {
@@ -178,6 +183,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           currentStep={state.currentStep}
           completedSteps={state.completedSteps}
           streamCards={state.streamCards}
+          activeThinkingAgents={state.activeThinkingAgents}
+          team={team}
         />
 
         <div style={styles.feedColumn}>
@@ -189,7 +196,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           )}
 
           <InsightFeed
-            cards={insightCards}
+            cards={feedItems}
             team={team}
             onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
             isConnected={state.connectionStatus === 'connected'}

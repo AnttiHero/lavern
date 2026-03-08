@@ -1,89 +1,74 @@
 /**
- * EmptyState — Shown when no events have arrived yet or in demo mode.
+ * EmptyState — Warm team greeting when waiting for events.
+ *
+ * v18: Replaced cold SVG document icon with team avatars and
+ * personalized greeting text. Makes the user feel like they're
+ * in a room with their legal team, about to get started.
  */
 
+import type { AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
+import { AgentAvatar } from './AgentAvatar.js';
 import { colors, fonts } from '../../staffing/styles/tokens.js';
 
 interface EmptyStateProps {
   isConnected: boolean;
+  team?: AgentProfile[];
 }
 
-export function EmptyState({ isConnected }: EmptyStateProps) {
+export function EmptyState({ isConnected, team }: EmptyStateProps) {
+  // Pick up to 4 team members for the avatar row
+  const visibleTeam = (team ?? []).slice(0, 4);
+  const teamNames = visibleTeam.map(p => p.displayName.split(' ')[0]);
+
+  const nameList = teamNames.length > 2
+    ? `${teamNames.slice(0, -1).join(', ')}, and ${teamNames[teamNames.length - 1]}`
+    : teamNames.length > 0
+      ? teamNames.join(' and ')
+      : '';
+
   return (
     <div style={styles.container}>
-      <div style={styles.icon}>
-        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-          {/* Document outline — draws on */}
-          <path
-            d="M18 8 L18 56 L46 56 L46 16 L38 8 Z"
-            stroke={colors.border}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              strokeDasharray: 180,
-              strokeDashoffset: 180,
-              animation: 'svgDrawOn 1.4s ease forwards 0.2s',
-              '--path-length': '180',
-            } as React.CSSProperties}
-          />
-          {/* Page fold */}
-          <path
-            d="M38 8 L38 16 L46 16"
-            stroke={colors.border}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              strokeDasharray: 16,
-              strokeDashoffset: 16,
-              animation: 'svgDrawOn 0.4s ease forwards 1.4s',
-              '--path-length': '16',
-            } as React.CSSProperties}
-          />
-          {/* Text lines — staggered draw-on */}
-          {[26, 32, 38, 44].map((y, i) => (
-            <path
-              key={y}
-              d={`M24 ${y} L${36 + (i % 2 === 0 ? 4 : -2)} ${y}`}
-              stroke={colors.textDim}
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              opacity={0.4}
+      {/* Team avatar row */}
+      {visibleTeam.length > 0 && (
+        <div style={styles.avatarRow}>
+          {visibleTeam.map((profile, i) => (
+            <div
+              key={profile.role}
               style={{
-                strokeDasharray: 18,
-                strokeDashoffset: 18,
-                animation: `svgDrawOn 0.3s ease forwards ${1.6 + i * 0.15}s`,
-                '--path-length': '18',
-              } as React.CSSProperties}
-            />
+                marginLeft: i > 0 ? -8 : 0,
+                zIndex: visibleTeam.length - i,
+                animation: `fadeSlideUp 0.4s ease ${0.1 + i * 0.1}s both`,
+              }}
+            >
+              <AgentAvatar role={profile.role} size="lg" profile={profile} />
+            </div>
           ))}
-          {/* Pen nib — appears last */}
-          <path
-            d="M10 48 L14 40 L18 48 Z"
-            stroke={colors.textDim}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity={0.35}
-            style={{
-              strokeDasharray: 30,
-              strokeDashoffset: 30,
-              animation: 'svgDrawOn 0.5s ease forwards 2.2s',
-              '--path-length': '30',
-            } as React.CSSProperties}
-          />
-        </svg>
-      </div>
+        </div>
+      )}
+
       <h3 style={styles.title}>
-        {isConnected ? 'Waiting for the team to begin...' : 'No session connected'}
+        {isConnected
+          ? visibleTeam.length > 0
+            ? 'Your team is getting ready...'
+            : 'Waiting for the team to begin...'
+          : 'Welcome to Marble'
+        }
       </h3>
+
       <p style={styles.description}>
         {isConnected
-          ? 'Events will appear here as your agents start working. Each finding, challenge, and decision will be visible in real time.'
-          : 'Running in demo mode — no backend connected. Connect to a live session or go back to start a new engagement.'
+          ? nameList
+            ? `${nameList} ${teamNames.length === 1 ? 'is' : 'are'} reviewing your briefing. They\u2019ll share their findings here as they work.`
+            : 'Events will appear here as your agents start working. Each finding, challenge, and decision will be visible in real time.'
+          : 'Running in demo mode \u2014 no backend connected. Connect to a live session or go back to start a new engagement.'
         }
       </p>
+
+      {isConnected && (
+        <p style={styles.reassurance}>
+          This is completely normal \u2014 sit back and watch the magic happen {'\u2728'}
+        </p>
+      )}
     </div>
   );
 }
@@ -97,9 +82,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '60px 40px',
     textAlign: 'center' as const,
   },
-  icon: {
+  avatarRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
-    opacity: 0.5,
   },
   title: {
     fontSize: 18,
@@ -115,5 +102,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textDim,
     lineHeight: '1.6',
     maxWidth: 400,
+    marginBottom: 12,
+  },
+  reassurance: {
+    fontSize: 12,
+    fontFamily: fonts.serif,
+    fontWeight: 400,
+    fontStyle: 'italic' as const,
+    color: colors.textDim,
+    opacity: 0.7,
+    margin: 0,
   },
 };
