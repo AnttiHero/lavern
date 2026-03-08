@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Marble v0.9.0, a multi-agent legal design system that transforms
+You are part of Marble v0.9.1, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Marble is the world's first driverless law firm.
 
@@ -38,7 +38,7 @@ with qualified legal professionals.
 ### Core Engine
 - `src/agents/` — 58 agent prompts (51 specialists + 7 orchestrators), 51 agent definitions
 - `src/agents/profiles.ts` — 70-agent profile registry (skill ratings, personality, DiceBear avatars)
-- `src/mcp/tools/` — 21 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks)
+- `src/mcp/tools/` — 18 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
 - `src/orchestrator.ts` — Core orchestration loop (dispatch agents, manage turns)
@@ -87,7 +87,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 
 - `viz/src/landing/` — Landing page, QuickStart (3-tier express engagement), YOLO launcher
 - `viz/src/briefing/` — LLM-powered intake with document upload
-- `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars
+- `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars, ProviderToggle (Claude / EU Sovereign)
 - `viz/src/working/` — Live progress view with ProgressSidebar, agent presence orbs, narrative status, insight feed, debate threads, HeartbeatBand
 - `viz/src/delivery/` — Tabbed delivery view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), DownloadPanel with Cowork folder save, derivatives generation
 - `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Marble's Soul (firm personality editor), Saved Teams
@@ -96,37 +96,72 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/components/` — Shared components (GateDialog, ErrorToast, MarbleMark)
 - `viz/src/challenge/` — Marble Challenge blind document comparison
 - `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
+- `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats)
+- `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
 - `viz/src/auth/` — Login/signup views
+
+### Providers
+- `src/providers/` — LLM provider abstraction layer:
+  - `mistral.ts` — Mistral AI client wrapper (EU sovereign)
+  - `mistral-executor.ts` — Workflow execution via Mistral
+  - `mistral-assembler.ts` — Document assembly from Mistral output
+  - `tool-converter.ts` — MCP → Mistral tool format conversion
+  - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
 ### Claw Mode (Law Firm on Retainer)
 - `src/claw/` — Autonomous document processing pipeline (13 modules):
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
-  - `planner.ts` — Budget-aware work planning with sensitivity pattern matching
+  - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
   - `processor.ts` — Document processing (parse, infer, dispatch, deliver)
   - `watcher.ts` — Filesystem watcher with debounce and symlink protection
   - `delivery.ts` — Output bundle generation (manifest, deliverable, findings)
   - `local-analysis.ts` — On-device analysis via Ollama for confidential docs
   - `daemon.ts` — macOS LaunchAgent daemon management
   - `notify.ts` — Webhook + macOS native notifications with dedup (incl. heartbeat)
-  - `init.ts` — Interactive onboarding (profile creation)
+  - `init.ts` — Interactive onboarding (profile creation, ethical mode question)
   - `inference.ts` — Document type inference
   - `terminal.ts` — Rich terminal output formatting
-  - `index.ts` — CLI entry point with heartbeat timer in continuous mode
-  - `types.ts` — Claw-specific type definitions
+  - `index.ts` — CLI entry point with heartbeat timer, `--ethical` flag
+  - `types.ts` — Claw-specific type definitions (incl. ethicalMode)
 
 ### Data Layer
 - `src/db/` — SQLite database (user auth, tokens, session archive, matter storage)
-- `src/knowledge-base/` — Reference document collections (FTS search, retrieval, global CUAD/MAUD datasets)
+- `src/knowledge-base/` — Reference document collections (FTS5 search, retrieval, global datasets)
 - `src/assembly/` — Document assembly and format conversion (HTML, DOCX)
 - `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text)
-- `scripts/seed-knowledge-base.ts` — CUAD + MAUD dataset seeder (36K reference chunks)
+- `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets):
+  - CUAD (510 contracts, 41 clause types, CC BY 4.0)
+  - MAUD (152 merger agreements, 92 deal points, CC BY 4.0)
+  - ACORD (126K+ clause retrieval pairs, CC BY 4.0)
+  - UNFAIR-ToS (5.5K sentences, 8 unfair clause types, CC BY-SA 4.0)
+  - ContractNLI (10K+ premise/hypothesis NLI pairs, CC BY-NC-SA 4.0)
+  - LEDGAR (60K SEC provisions, 98 clause types, CC BY-SA 4.0)
 
 ### Tests
 - `tests/` — 610 tests across 33 files (26 unit + 7 integration)
 
 ## Version History
 
-### v0.9.0 (Current) — Soul, Heartbeat, Dashboard Polish
+### v0.9.1 (Current) — EU Sovereign Provider, Ethical Mode, Knowledge Base Expansion
+- **Mistral EU Provider** — Full alternative LLM backend for EU data sovereignty
+  - `src/providers/` — 5 new modules (client, executor, assembler, tool converter, types)
+  - Per-session provider selection: Claude (US) or EU Sovereign (Mistral)
+  - ProviderToggle segmented selector in Strategy view
+  - EU badge in Working view header when Mistral active
+- **Maximum Ethical Mode** — One-click toggle for Claw Mode
+  - EU-only processing (Mistral), all docs confidential, conservative risk
+  - CLI: `marble claw start --ethical`
+  - Dashboard: Config tab card with ON/OFF toggle, CommandStrip shield badge
+  - PATCH `/api/claw/ethical` endpoint
+- **Knowledge Base Expansion** — 4 new datasets (6 total)
+  - ACORD: 126K+ expert-rated clause retrieval pairs (Atticus Project)
+  - UNFAIR-ToS: EU unfair terms of service clauses (LexGLUE)
+  - ContractNLI: Contract natural language inference pairs
+  - LEDGAR: 60K SEC contract provisions, 98 clause types (LexGLUE)
+- **Agent Builder Simplification** — Face step reduced to avatar + seed + randomize
+- **Cleanup** — Removed 3 dead MCP tool files (formatting-check, structure-check, verification-pipeline)
+
+### v0.9.0 — Soul, Heartbeat, Dashboard Polish
 - **Soul** — User-defined firm personality (voice, principles, style, values)
   - My Page soul editor (5000 char textarea, persists in profile)
   - Injected into orchestrator system prompt for every engagement
