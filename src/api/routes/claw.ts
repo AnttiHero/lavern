@@ -6,10 +6,11 @@
  * your main machine or the dashboard.
  *
  * Endpoints:
- *   GET  /api/claw/status      — Profile + registry summary + budget + daemon
- *   GET  /api/claw/documents   — List all tracked documents with status
- *   GET  /api/claw/deliveries  — List completed delivery sessions
- *   POST /api/claw/scan        — Trigger an immediate rescan of watch paths
+ *   GET   /api/claw/status      — Profile + registry summary + budget + daemon
+ *   GET   /api/claw/documents   — List all tracked documents with status
+ *   GET   /api/claw/deliveries  — List completed delivery sessions
+ *   PATCH /api/claw/ethical     — Toggle maximum ethical mode
+ *   POST  /api/claw/scan        — Trigger an immediate rescan of watch paths
  */
 
 import * as fs from 'node:fs';
@@ -19,6 +20,7 @@ import { config } from '../../config.js';
 import { loadProfile } from '../../claw/init.js';
 import { DocumentRegistry } from '../../claw/registry.js';
 import { getDaemonStatus } from '../../claw/daemon.js';
+import { writeJsonFileAtomic } from '../../utils/fs-helpers.js';
 
 // ── Singleton registry cache — prevents concurrent read-overwrite races ──
 const registryCache = new Map<string, DocumentRegistry>();
@@ -70,6 +72,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
         riskAppetite: profile.preferences.riskAppetite,
         createdAt: profile.createdAt,
       },
+      ethicalMode: profile.ethicalMode ?? false,
       watchPaths: profile.watchPaths,
       budget: {
         totalUsd: state.budget.totalUsd,
@@ -163,6 +166,40 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     );
 
     return reply.send({ deliveries, total: deliveries.length });
+  });
+
+  // ── PATCH /api/claw/ethical ────────────────────────────────────────
+  fastify.patch('/api/claw/ethical', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+
+    if (!profile) {
+      return reply.status(404).send({ error: 'No profile found' });
+    }
+
+    const body = request.body as { enabled?: boolean } | null;
+    if (!body || typeof body.enabled !== 'boolean') {
+      return reply.status(400).send({ error: 'Body must include { enabled: boolean }' });
+    }
+
+    profile.ethicalMode = body.enabled;
+
+    // When enabling, also set risk appetite to conservative
+    if (body.enabled) {
+      profile.preferences.riskAppetite = 'conservative';
+    }
+
+    const profilePath = path.join(dir, 'profile.json');
+    writeJsonFileAtomic(profilePath, profile);
+
+    return reply.send({ ethicalMode: body.enabled });
   });
 
   // ── POST /api/claw/scan ─────────────────────────────────────────────

@@ -13,6 +13,8 @@ import { IS_STANDALONE } from '../../standalone.js';
 
 export type IntensityLevel = 'quick' | 'standard' | 'thorough' | 'maximal';
 
+export type LLMProvider = 'anthropic' | 'mistral';
+
 export interface EngagementConfig {
   workflowId: string;
   intensity: IntensityLevel;
@@ -20,6 +22,8 @@ export interface EngagementConfig {
   yoloMode: boolean;
   /** Enable 10-pass verification pipeline before delivery (default: true). */
   verification: boolean;
+  /** v18: LLM provider — 'anthropic' (default) or 'mistral' (EU sovereign). */
+  provider: LLMProvider;
 }
 
 interface RecommendationResult {
@@ -62,6 +66,7 @@ function getProfileDefaults() {
         budgetUsd: ss.budgetUsd || 10,
         yoloMode: ss.yoloMode || false,
         verification: ss.verification !== false,
+        provider: (ss.provider || 'anthropic') as LLMProvider,
       };
     }
   } catch { /* ignore */ }
@@ -77,11 +82,12 @@ function getProfileDefaults() {
         budgetUsd: p.defaultBudgetUsd || 10,
         yoloMode: p.yoloModeDefault || false,
         verification: p.verification !== false,
+        provider: (p.defaultProvider || 'anthropic') as LLMProvider,
       };
     }
   } catch { /* ignore */ }
 
-  return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false, verification: true };
+  return { workflowId: 'counsel', intensity: 'standard' as IntensityLevel, budgetUsd: 10, yoloMode: false, verification: true, provider: 'anthropic' as LLMProvider };
 }
 
 export function useEngagementConfig() {
@@ -91,6 +97,7 @@ export function useEngagementConfig() {
   const [budgetUsd, setBudgetUsd] = useState(defaults.budgetUsd);
   const [yoloMode, setYoloMode] = useState(defaults.yoloMode);
   const [verification, setVerificationState] = useState(defaults.verification);
+  const [provider, setProviderState] = useState<LLMProvider>(defaults.provider);
 
   // In standalone mode, generate initial recommendation synchronously
   const initialRec = IS_STANDALONE ? generateLocalRecommendation(defaults.intensity) : null;
@@ -154,12 +161,14 @@ export function useEngagementConfig() {
     budgetUsd,
     yoloMode,
     verification,
+    provider,
   };
 
   const setWorkflow = useCallback((id: string) => setWorkflowId(id), []);
   const setBudget = useCallback((budget: number) => setBudgetUsd(budget), []);
   const setYolo = useCallback((yolo: boolean) => setYoloMode(yolo), []);
   const setVerification = useCallback((v: boolean) => setVerificationState(v), []);
+  const setProvider = useCallback((p: LLMProvider) => setProviderState(p), []);
 
   return {
     config,
@@ -173,5 +182,6 @@ export function useEngagementConfig() {
     loading,
     demoMode,
     setVerification,
+    setProvider,
   };
 }

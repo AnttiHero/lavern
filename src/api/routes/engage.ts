@@ -55,6 +55,8 @@ const EngageConstraintsSchema = z.object({
   maxBudgetUsd: z.number().min(0.01).max(100).optional(),
   intensity: z.enum(['quick', 'standard', 'thorough', 'maximal']).optional(),
   workflow: z.string().min(1).max(100).optional(),
+  /** v18: LLM provider — per-engagement override. */
+  provider: z.enum(['anthropic', 'mistral']).optional(),
 }).strict().optional();
 
 export const EngageRequestSchema = z.object({
@@ -394,6 +396,7 @@ export function registerEngageRoutes(
         intensity,
         maxBudgetUsd: budgetUsd,
         yoloMode: true,
+        provider: body.constraints?.provider,
       }).then(() => {
         // Session completed — POST results to callback
         const response = buildEngageResponse(session, 'completed', startTime);
@@ -435,6 +438,7 @@ export function registerEngageRoutes(
         intensity,
         maxBudgetUsd: budgetUsd,
         yoloMode: true,
+        provider: body.constraints?.provider,
       });
 
       // Wait for the session to emit session_end or fail

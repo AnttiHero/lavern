@@ -17,6 +17,7 @@
 import type { FastifyInstance } from 'fastify';
 import { workflowRegistry } from '../../workflows/registry.js';
 import { INTENSITY_PROFILES, type IntensityLevel } from '../../types/engagement.js';
+import { config } from '../../config.js';
 
 export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
 
@@ -30,6 +31,8 @@ export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
         tagline: 'AI law firm — structured legal intelligence for humans and agents.',
         version: '10.0.0',
         description: 'Multi-agent legal orchestration platform. Upload documents, describe tasks, and receive structured legal analysis. Same engine serves human clients through a visual interface and AI agents through this API.',
+        provider: config.provider,
+        providerModel: config.provider === 'mistral' ? config.mistral.defaultModel : config.defaultModel,
       },
 
       // ── Available Workflows ──

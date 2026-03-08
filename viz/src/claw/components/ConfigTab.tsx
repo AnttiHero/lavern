@@ -1,21 +1,105 @@
 /**
- * ConfigTab — Profile, watch paths, sensitivity patterns.
+ * ConfigTab — Profile, watch paths, sensitivity patterns, ethical mode.
  * "What is the night shift watching?"
  */
 
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 import type { ClawProfile } from '../hooks/useClawData.js';
 
+/** EU sovereign blue — same as ProviderToggle. */
+const EU_COLOR = '#2E5D9C';
+const EU_BG = 'rgba(46, 93, 156, 0.07)';
+
 interface Props {
   profile: ClawProfile;
   watchPaths: string[];
   budget: { totalUsd: number; perDocMax?: number };
   demoMode: boolean;
+  ethicalMode: boolean;
+  onToggleEthical: (enabled: boolean) => void;
 }
 
-export function ConfigTab({ profile, watchPaths, budget, demoMode }: Props) {
+export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, onToggleEthical }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: spacing.md }}>
+      {/* Ethical Mode — prominent, top of config */}
+      <div style={{
+        ...styles.card,
+        borderColor: ethicalMode ? EU_COLOR : colors.border,
+        borderWidth: ethicalMode ? 2 : 1,
+        backgroundColor: ethicalMode ? EU_BG : colors.bgCard,
+      }}>
+        <div style={styles.ethicalHeader}>
+          <div style={styles.ethicalLeft}>
+            <span style={styles.ethicalIcon}>{'\uD83D\uDEE1\uFE0F'}</span>
+            <div>
+              <div style={{
+                ...styles.cardTitle,
+                marginBottom: 2,
+                color: ethicalMode ? EU_COLOR : colors.text,
+              }}>
+                Maximum Ethical Mode
+              </div>
+              <div style={{
+                fontSize: 12,
+                fontFamily: fonts.sans,
+                color: ethicalMode ? EU_COLOR : colors.textMuted,
+              }}>
+                One setting. Maximum protection.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => onToggleEthical(!ethicalMode)}
+            style={{
+              ...styles.ethicalToggle,
+              backgroundColor: ethicalMode ? EU_COLOR : 'transparent',
+              color: ethicalMode ? '#fff' : colors.textSecondary,
+              borderColor: ethicalMode ? EU_COLOR : colors.border,
+            }}
+            onMouseEnter={e => {
+              if (!ethicalMode) {
+                e.currentTarget.style.borderColor = EU_COLOR;
+                e.currentTarget.style.color = EU_COLOR;
+              }
+            }}
+            onMouseLeave={e => {
+              if (!ethicalMode) {
+                e.currentTarget.style.borderColor = colors.border;
+                e.currentTarget.style.color = colors.textSecondary;
+              }
+            }}
+          >
+            {ethicalMode ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
+        <div style={styles.ethicalDetails}>
+          <div style={styles.ethicalBullet}>
+            <span style={styles.bulletCheck}>{ethicalMode ? '\u2713' : '\u2022'}</span>
+            EU-only processing (Mistral)
+          </div>
+          <div style={styles.ethicalBullet}>
+            <span style={styles.bulletCheck}>{ethicalMode ? '\u2713' : '\u2022'}</span>
+            All documents treated as confidential
+          </div>
+          <div style={styles.ethicalBullet}>
+            <span style={styles.bulletCheck}>{ethicalMode ? '\u2713' : '\u2022'}</span>
+            Local analysis when available ($0)
+          </div>
+          <div style={styles.ethicalBullet}>
+            <span style={styles.bulletCheck}>{ethicalMode ? '\u2713' : '\u2022'}</span>
+            Conservative risk assessment
+          </div>
+        </div>
+
+        {ethicalMode && (
+          <div style={styles.ethicalNote}>
+            Your data never leaves Europe. When a local model is available, it never leaves your machine.
+          </div>
+        )}
+      </div>
+
       {/* Profile */}
       <div style={styles.card}>
         <div style={styles.cardTitle}>Client Profile</div>
@@ -48,7 +132,7 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode }: Props) {
           <ul style={styles.pathList}>
             {watchPaths.map((p, i) => (
               <li key={i} style={styles.pathItem}>
-                <span style={styles.folderIcon}>📁</span>
+                <span style={styles.folderIcon}>{'\uD83D\uDCC1'}</span>
                 {p}
               </li>
             ))}
@@ -83,6 +167,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'border-color 0.2s ease, background-color 0.2s ease',
   },
   cardTitle: {
     fontFamily: fonts.serif,
@@ -90,6 +175,67 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  ethicalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  ethicalLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  ethicalIcon: {
+    fontSize: 24,
+    flexShrink: 0,
+  },
+  ethicalToggle: {
+    padding: '6px 18px',
+    borderRadius: radii.sm,
+    border: `1.5px solid ${colors.border}`,
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+    flexShrink: 0,
+  },
+  ethicalDetails: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    paddingTop: spacing.sm,
+    borderTop: `1px solid rgba(46, 93, 156, 0.15)`,
+  },
+  ethicalBullet: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bulletCheck: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: EU_COLOR,
+    width: 14,
+    textAlign: 'center' as const,
+    flexShrink: 0,
+  },
+  ethicalNote: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: EU_COLOR,
+    marginTop: spacing.sm,
+    padding: '6px 10px',
+    borderRadius: radii.sm,
+    backgroundColor: 'rgba(46, 93, 156, 0.04)',
+    fontStyle: 'italic' as const,
   },
   fieldGrid: {
     display: 'grid',

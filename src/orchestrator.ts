@@ -38,6 +38,8 @@ export interface SchemOptions {
   session?: SessionState;
   /** Optional gate resolver override (for API/testing). */
   gateResolver?: GateResolver;
+  /** v18: LLM provider override for this session. Overrides global MARBLE_PROVIDER. */
+  provider?: 'anthropic' | 'mistral';
 }
 
 export async function runTheShem(

@@ -359,7 +359,7 @@ export function App() {
     const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
-    let config = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false, verification: true };
+    let config: { workflowId: string; intensity: string; budgetUsd: number; yoloMode: boolean; verification: boolean; provider?: string } = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false, verification: true };
     try { if (configStr) config = JSON.parse(configStr); } catch { /* use defaults */ }
 
     // Store team for downstream
@@ -400,6 +400,7 @@ export function App() {
             intensity: config.intensity,
             yoloMode: config.yoloMode,
             verification: config.verification !== false,
+            provider: config.provider,
           },
         }),
       });

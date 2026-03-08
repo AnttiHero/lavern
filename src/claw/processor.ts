@@ -157,6 +157,8 @@ export async function processDocument(
       maxBudgetUsd: clawConfig.perDocBudget,
       intensity: inference.intensity,
       forceWorkflow: inference.workflow,
+      // Ethical mode: use EU provider even for non-confidential docs
+      ...(clawConfig.ethicalMode ? { provider: 'mistral' as const } : {}),
     };
 
     if (clawConfig.dryRun) {

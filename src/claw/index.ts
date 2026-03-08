@@ -50,6 +50,8 @@ export interface ClawCliArgs {
   dryRun?: boolean;
   debug?: boolean;
   force?: boolean;
+  /** Maximum ethical mode — EU provider, all-confidential, conservative. */
+  ethical?: boolean;
 }
 
 export function parseClawArgs(args: string[]): ClawCliArgs {
@@ -80,6 +82,7 @@ export function parseClawArgs(args: string[]): ClawCliArgs {
     dryRun: getFlag('--dry-run'),
     debug: getFlag('--debug'),
     force: getFlag('--force'),
+    ethical: getFlag('--ethical'),
   };
 }
 
@@ -115,6 +118,7 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
     once: args.once ?? false,
     dryRun: args.dryRun ?? false,
     debug: args.debug ?? false,
+    ethicalMode: args.ethical ?? profile?.ethicalMode ?? false,
   };
 }
 

@@ -23,7 +23,7 @@ interface Props {
 }
 
 export default function ClawView({ onBack }: Props) {
-  const { status, documents, deliveries, loading, demoMode, scanning, triggerScan, setStatus, setDocuments, setDeliveries } = useClawData();
+  const { status, documents, deliveries, loading, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries } = useClawData();
   const [activeTab, setActiveTab] = useState<ClawTab>('overview');
   const [demoPlaying, setDemoPlaying] = useState(false);
   const [activityLog, setActivityLog] = useState<ClawLogEntry[]>([]);
@@ -82,6 +82,7 @@ export default function ClawView({ onBack }: Props) {
           demoMode={demoMode}
           demoPlaying={demoPlaying}
           onWatchDemo={() => { setActivityLog([]); setDemoPlaying(true); }}
+          ethicalMode={status.ethicalMode}
         />
 
         {/* Tab navigation */}
@@ -120,6 +121,8 @@ export default function ClawView({ onBack }: Props) {
             watchPaths={status.watchPaths}
             budget={{ totalUsd: status.budget.totalUsd }}
             demoMode={demoMode}
+            ethicalMode={status.ethicalMode}
+            onToggleEthical={toggleEthicalMode}
           />
         )}
 

@@ -28,6 +28,8 @@ export interface ClawProfile {
   };
   /** Glob patterns for filenames requiring local-only processing (privilege preservation) */
   sensitivityPatterns?: string[];
+  /** Maximum ethical mode — EU provider, all-confidential, conservative risk. One toggle, full protection. */
+  ethicalMode?: boolean;
   createdAt: string;
 }
 
@@ -181,6 +183,8 @@ export interface ClawConfig {
   once: boolean;               // Batch mode: process once, then exit
   dryRun: boolean;
   debug: boolean;
+  /** When true, use EU provider for all frontier processing + treat all docs as confidential. */
+  ethicalMode: boolean;
 }
 
 // ── Shared Helpers ─────────────────────────────────────────────────────

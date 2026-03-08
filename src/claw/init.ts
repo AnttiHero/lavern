@@ -117,6 +117,14 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
       ? [...DEFAULT_SENSITIVITY_PATTERNS, ...patternsStr.split(',').map(p => p.trim()).filter(p => p)]
       : [...DEFAULT_SENSITIVITY_PATTERNS];
 
+    // Ethical mode — one toggle, maximum protection
+    console.log('\nMaximum Ethical Mode \u2014 one setting, full protection:');
+    console.log('  \u2022 All documents treated as confidential (local analysis when possible)');
+    console.log('  \u2022 EU-only processing via Mistral (no data to US servers)');
+    console.log('  \u2022 Conservative risk appetite (flag everything)');
+    const ethicalChoice = await ask('Enable ethical mode? (y/N): ');
+    const ethicalMode = ethicalChoice.toLowerCase().startsWith('y');
+
     // Build profile
     const profile: ClawProfile = {
       company,
@@ -127,7 +135,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
       preferences: {
         style,
         intensity: 'standard' as IntensityLevel,
-        riskAppetite,
+        riskAppetite: ethicalMode ? 'conservative' : riskAppetite,
       },
       watchPaths,
       budget: {
@@ -135,6 +143,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
         perDocumentMaxUsd,
       },
       sensitivityPatterns,
+      ethicalMode,
       createdAt: new Date().toISOString(),
     };
 
@@ -146,6 +155,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
     console.log(`  Profile saved to ${profilePath}`);
     console.log(`  Watching: ${watchPaths.join(', ')}`);
     console.log(`  Budget: $${totalUsd.toFixed(2)} ($${perDocumentMaxUsd.toFixed(2)} per document)`);
+    if (ethicalMode) console.log('  \uD83D\uDEE1\uFE0F  Ethical Mode: ON');
     console.log('───────────────────────────────────────────────────────');
     console.log('\n  Run `marble claw start` to begin.\n');
 

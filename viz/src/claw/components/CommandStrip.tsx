@@ -4,6 +4,9 @@
 
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
+/** EU sovereign blue — same as ProviderToggle / ConfigTab. */
+const EU_COLOR = '#2E5D9C';
+
 interface Props {
   lastScan: string;
   scanning: boolean;
@@ -12,6 +15,7 @@ interface Props {
   demoMode: boolean;
   demoPlaying?: boolean;
   onWatchDemo?: () => void;
+  ethicalMode?: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -24,12 +28,19 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, demoPlaying, onWatchDemo }: Props) {
+export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, demoPlaying, onWatchDemo, ethicalMode }: Props) {
   return (
     <div style={styles.strip}>
-      <span style={styles.scanTime}>
-        Last scan: {timeAgo(lastScan)}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={styles.scanTime}>
+          Last scan: {timeAgo(lastScan)}
+        </span>
+        {ethicalMode && (
+          <span style={styles.ethicalBadge}>
+            {'\uD83D\uDEE1\uFE0F'} ETHICAL
+          </span>
+        )}
+      </div>
 
       <div style={styles.right}>
         <span style={styles.budgetCompact}>
@@ -116,6 +127,18 @@ const styles: Record<string, React.CSSProperties> = {
   budgetCompact: {
     fontSize: 12,
     fontFamily: fonts.mono,
+  },
+  ethicalBadge: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    letterSpacing: 1,
+    color: EU_COLOR,
+    backgroundColor: 'rgba(46, 93, 156, 0.08)',
+    border: `1px solid rgba(46, 93, 156, 0.2)`,
+    borderRadius: radii.sm,
+    padding: '3px 8px',
+    whiteSpace: 'nowrap' as const,
   },
   scanBtn: {
     padding: '5px 14px',

@@ -150,6 +150,11 @@ export function registerSessionRoutes(
       session.selectedTeam = body.team as string[];
     }
 
+    // v18: Per-session provider selection
+    if (body.options?.provider) {
+      session.provider = body.options.provider;
+    }
+
     if (body.request) {
       // v5 dispatch mode
       const legalRequest = body.request;
@@ -166,6 +171,7 @@ export function registerSessionRoutes(
         effort: body.options?.effort,
         yoloMode: body.options?.yoloMode,
         verification: body.options?.verification,
+        provider: body.options?.provider,
       }).catch((err) => {
         console.error(`[API] Session ${session.id} failed:`, err);
         session.events.emitEvent({
@@ -366,6 +372,7 @@ export function registerSessionRoutes(
       reportCard: session.reportCard ?? null,
       matterTitle: session.matterRecord?.title ?? null,
       workflowTemplateId: session.workflowTemplateId ?? null,
+      provider: session.provider ?? config.provider,
       selectedTeam: session.selectedTeam,
       halted: session.isHalted(),
       haltReason: session.haltReason,

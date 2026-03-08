@@ -17,9 +17,14 @@ import type { SessionState } from '../session/session-state.js';
 // ── Token Pricing (per million tokens) ────────────────────────────────
 // Source: Anthropic pricing as of 2025. Updated here if prices change.
 export const PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+  // Anthropic / Claude
   'claude-opus-4-6':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-sonnet-4-5-20250929': { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
+  // Mistral AI (EU-sovereign)
+  'mistral-large-latest':       { input: 2.0,  output: 6.0,  cacheRead: 0,    cacheWrite: 0 },
+  'mistral-medium-latest':      { input: 0.4,  output: 1.2,  cacheRead: 0,    cacheWrite: 0 },
+  'mistral-small-latest':       { input: 0.1,  output: 0.3,  cacheRead: 0,    cacheWrite: 0 },
 };
 
 // Default pricing if model isn't in the table (use Sonnet pricing as safe middle ground)

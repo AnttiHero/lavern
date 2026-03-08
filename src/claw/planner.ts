@@ -110,7 +110,10 @@ export function planWork(
   for (const doc of actionable) {
     // ── Sensitivity check ──────────────────────────────────────────
     const matchedPattern = matchesSensitivityPattern(doc.name, patterns);
-    const isConfidential = !!matchedPattern;
+    // Ethical mode: treat ALL docs as confidential when local model available
+    const isConfidential = config.ethicalMode
+      ? !!globalConfig.claw.localModel   // ethical: all docs → local if model exists
+      : !!matchedPattern;                 // normal: only sensitivity-matched docs
 
     if (isConfidential && !globalConfig.claw.localModel) {
       // No local model — flag for human review, don't process
@@ -207,7 +210,10 @@ export function planSingleJob(
   const filename = path.basename(documentPath);
   const patterns = config.profile.sensitivityPatterns ?? DEFAULT_SENSITIVITY_PATTERNS;
   const matchedPattern = matchesSensitivityPattern(filename, patterns);
-  const isConfidential = !!matchedPattern;
+  // Ethical mode: treat ALL docs as confidential when local model available
+  const isConfidential = config.ethicalMode
+    ? !!globalConfig.claw.localModel
+    : !!matchedPattern;
 
   // Confidential document with no local model → flag, don't process
   if (isConfidential && !globalConfig.claw.localModel) {

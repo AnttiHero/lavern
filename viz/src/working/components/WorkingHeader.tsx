@@ -25,6 +25,8 @@ interface WorkingHeaderProps {
   onBack: () => void;
   onSkip: () => void;
   certaintyPct?: number;
+  /** v18: Active LLM provider for this session. */
+  provider?: 'anthropic' | 'mistral';
 }
 
 const STATUS_COLORS: Record<ConnectionStatus, string> = {
@@ -50,6 +52,7 @@ export function WorkingHeader({
   onBack,
   onSkip,
   certaintyPct,
+  provider,
 }: WorkingHeaderProps) {
   const [inputId, setInputId] = useState('');
 
@@ -68,6 +71,9 @@ export function WorkingHeader({
         <div style={{ ...styles.statusDot, backgroundColor: STATUS_COLORS[connectionStatus] }} />
         <span style={styles.statusText}>{connectionStatus}</span>
         {sessionId && <span style={styles.sessionId}>{sessionId}</span>}
+        {provider === 'mistral' && (
+          <span style={styles.euBadge}>{'\uD83C\uDDEA\uD83C\uDDFA'} EU</span>
+        )}
       </div>
 
       {/* Center: connection or replay controls */}
@@ -223,6 +229,18 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 120,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  euBadge: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    letterSpacing: 0.8,
+    color: '#2E5D9C',
+    backgroundColor: 'rgba(46, 93, 156, 0.08)',
+    border: '1px solid rgba(46, 93, 156, 0.2)',
+    borderRadius: radii.sm,
+    padding: '2px 6px',
     whiteSpace: 'nowrap' as const,
   },
   center: {

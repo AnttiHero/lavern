@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
+import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { ClawProfile, SidecarConfig } from './types.js';
@@ -111,6 +112,40 @@ async function llmInfer(
   };
 }
 
+/** Mistral-based task inference — uses the Mistral chat API. */
+async function mistralInfer(
+  documentExcerpt: string,
+  filename: string,
+  profile: ClawProfile,
+): Promise<{ type: string; workflow: string | null; reasoning: string; documentType: string; riskLevel: string }> {
+  const result = await mistralChat({
+    model: config.mistral.routerModel,
+    messages: [
+      { role: 'system', content: INFERENCE_PROMPT },
+      {
+        role: 'user',
+        content: `DOCUMENT: ${filename}\n\nCLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})\nCONCERNS: ${profile.concerns.join(', ')}\nRISK APPETITE: ${profile.preferences.riskAppetite}\n\nDOCUMENT EXCERPT (first 2000 chars):\n${documentExcerpt.slice(0, 2000)}`,
+      },
+    ],
+    temperature: 0.1,
+    maxTokens: 300,
+  });
+
+  const text = result.message.content ?? '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
+
+  return {
+    type: 'contract_review',
+    workflow: null,
+    reasoning: 'Mistral response did not contain valid JSON, falling back to contract review.',
+    documentType: 'Document',
+    riskLevel: 'medium',
+  };
+}
+
 // ── Heuristic Inference ──────────────────────────────────────────────────
 
 function heuristicInfer(
@@ -187,9 +222,11 @@ export async function inferTask(
     };
   }
 
-  // 2. Try LLM inference
+  // 2. Try LLM inference (provider-aware)
   try {
-    const llmResult = await llmInfer(documentContent, filename, profile);
+    const llmResult = config.provider === 'mistral'
+      ? await mistralInfer(documentContent, filename, profile)
+      : await llmInfer(documentContent, filename, profile);
 
     const request: LegalRequest = {
       type: llmResult.type as LegalRequest['type'],

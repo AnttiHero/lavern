@@ -35,6 +35,18 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   // Inject CSS keyframes for animations
   useEffect(() => { injectWorkingKeyframes(); }, []);
 
+  // v18: Read provider from engagement config (persisted to sessionStorage by StrategyView)
+  const sessionProvider = useMemo<'anthropic' | 'mistral' | undefined>(() => {
+    try {
+      const raw = sessionStorage.getItem('shem-briefing-config');
+      if (raw) {
+        const cfg = JSON.parse(raw);
+        if (cfg.provider === 'mistral') return 'mistral';
+      }
+    } catch { /* ignore */ }
+    return undefined;
+  }, []);
+
   // First render: load team from sessionStorage with no event roles
   const { team: initialTeam } = useTeamRoster();
   const initialRoles = useMemo(() => initialTeam.map(t => t.role), [initialTeam]);
@@ -144,6 +156,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         onBack={onBack}
         onSkip={onSkip}
         certaintyPct={runningCertainty}
+        provider={sessionProvider}
       />
 
       <HeartbeatBand

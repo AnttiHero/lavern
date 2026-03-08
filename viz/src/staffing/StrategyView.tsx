@@ -38,7 +38,7 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
   const { workflows, loading: workflowsLoading } = useWorkflows();
   const {
     config: engagementConfig,
-    setWorkflow, setIntensity, setYolo, setVerification,
+    setWorkflow, setIntensity, setYolo, setVerification, setProvider,
     loading: recommendationLoading,
   } = useEngagementConfig();
 
@@ -98,6 +98,7 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
         onIntensityChange={setIntensity}
         onYoloChange={setYolo}
         onVerificationChange={setVerification}
+        onProviderChange={setProvider}
         showCostSummary={false}
       />
 

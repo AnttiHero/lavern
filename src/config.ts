@@ -16,9 +16,21 @@ export const config = {
   baselinesDir: process.env.SHEM_BASELINES_DIR ?? '.shem/baselines',
   dbPath: process.env.SHEM_DB_PATH ?? './data/marble.db',
 
+  // ── Provider ──────────────────────────────────────────────────────────
+  provider: (process.env.MARBLE_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral',
+
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-6',
   routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-5-20250929',
+
+  // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────
+  mistral: {
+    apiKey: process.env.MISTRAL_API_KEY ?? '',
+    baseUrl: process.env.MISTRAL_BASE_URL ?? 'https://api.mistral.ai/v1',
+    defaultModel: process.env.MISTRAL_MODEL ?? 'mistral-large-latest',
+    routerModel: process.env.MISTRAL_ROUTER_MODEL ?? 'mistral-small-latest',
+    assemblyModel: process.env.MISTRAL_ASSEMBLY_MODEL ?? 'mistral-large-latest',
+  },
 
   // ── API ────────────────────────────────────────────────────────────────
   port: parseInt(process.env.SHEM_PORT ?? '3000', 10),

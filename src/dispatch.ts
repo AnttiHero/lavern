@@ -61,6 +61,11 @@ export async function dispatch(
     budgetUsd: options.maxBudgetUsd,
   });
 
+  // v18: Store provider on session for per-session override
+  if (options.provider) {
+    session.provider = options.provider;
+  }
+
   // v8: Matter data (including selectedTeam) is pre-loaded on the session by
   // the API layer when a matterId is provided. The executor reads session.selectedTeam.
 
@@ -91,6 +96,7 @@ export async function dispatch(
     const classification = await routeRequest(request, session, {
       useLlm: options.useLlmRouter ?? true,
       model: options.routerModel,
+      provider: options.provider,
     });
     workflowId = classification.selectedWorkflow;
   }

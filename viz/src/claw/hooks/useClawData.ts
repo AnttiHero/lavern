@@ -23,6 +23,8 @@ export interface ClawProfile {
 
 export interface ClawStatus {
   profile: ClawProfile;
+  /** Maximum ethical mode — EU provider, all-confidential, conservative. */
+  ethicalMode: boolean;
   watchPaths: string[];
   budget: {
     totalUsd: number;
@@ -93,6 +95,8 @@ export interface ClawData {
   demoMode: boolean;
   scanning: boolean;
   triggerScan: () => Promise<void>;
+  /** Toggle maximum ethical mode via PATCH /api/claw/ethical. */
+  toggleEthicalMode: (enabled: boolean) => Promise<void>;
   // Exposed for demo simulator
   setStatus: React.Dispatch<React.SetStateAction<ClawStatus | null>>;
   setDocuments: React.Dispatch<React.SetStateAction<ClawDocument[]>>;
@@ -193,5 +197,22 @@ export function useClawData(): ClawData {
     }
   }, [demoMode, fetchData]);
 
-  return { status, documents, deliveries, loading, error, demoMode, scanning, triggerScan, setStatus, setDocuments, setDeliveries };
+  const toggleEthicalMode = useCallback(async (enabled: boolean) => {
+    if (demoMode) {
+      // In demo mode, update status locally
+      setStatus(prev => prev ? { ...prev, ethicalMode: enabled } : prev);
+      return;
+    }
+    try {
+      await fetch('/api/claw/ethical', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ enabled }),
+      });
+      await fetchData();
+    } catch { /* ignore — will refresh on next poll */ }
+  }, [demoMode, fetchData]);
+
+  return { status, documents, deliveries, loading, error, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries };
 }

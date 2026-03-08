@@ -25,6 +25,8 @@ import { routerPrompt } from './router-prompt.js';
 import { RouterClassificationSchema } from './router-schema.js';
 import { zodToOutputFormat } from '../types/output-schemas.js';
 import { eventTimestamp } from '../events/event-bus.js';
+import { config } from '../config.js';
+import { mistralChat } from '../providers/mistral.js';
 
 // Ensure templates are registered
 import '../workflows/index.js';
@@ -46,6 +48,8 @@ export interface RouterOptions {
   useLlm?: boolean;
   /** Model to use for LLM routing (default: claude-sonnet-4-5-20250929) */
   model?: string;
+  /** v18: Per-session provider override. */
+  provider?: 'anthropic' | 'mistral';
 }
 
 /**
@@ -66,9 +70,13 @@ export async function routeRequest(
   let routingMethod: 'llm' | 'deterministic' = 'deterministic';
 
   if (options?.useLlm !== false) {
-    // Try LLM-based routing
+    // Try LLM-based routing (provider-aware)
+    // v18: Per-session provider override (options > global config)
+    const provider = options?.provider ?? config.provider;
     try {
-      const llmResult = await llmClassify(request, options?.model);
+      const llmResult = provider === 'mistral'
+        ? await mistralClassify(request)
+        : await llmClassify(request, options?.model);
 
       // Validate the LLM's selected workflow actually exists
       const template = workflowRegistry.get(llmResult.selectedWorkflow);
@@ -153,6 +161,46 @@ async function llmClassify(
   }
 
   return classificationResult;
+}
+
+/**
+ * Mistral-based classification — uses chat completion with JSON output.
+ *
+ * Mistral doesn't support structured output schemas like the Agent SDK,
+ * so we ask for JSON in the prompt and parse the response.
+ */
+async function mistralClassify(
+  request: LegalRequest,
+): Promise<RouterClassification> {
+  const workflowSummary = workflowRegistry.getSummaryForRouter();
+  const userPrompt = buildRouterUserPrompt(request);
+
+  const systemPromptText = `${routerPrompt}\n\n## Currently Registered Workflows\n\n${workflowSummary}\n\nRespond with ONLY valid JSON matching the RouterClassification schema. No other text.`;
+
+  const result = await mistralChat({
+    model: config.mistral.routerModel,
+    messages: [
+      { role: 'system', content: systemPromptText },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.1,
+    maxTokens: 500,
+  });
+
+  const content = result.message.content ?? '';
+
+  // Extract JSON from response
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('Mistral router did not return valid JSON');
+  }
+
+  const parsed = RouterClassificationSchema.safeParse(JSON.parse(jsonMatch[0]));
+  if (!parsed.success) {
+    throw new Error(`Mistral router returned invalid classification: ${parsed.error.message}`);
+  }
+
+  return parsed.data;
 }
 
 /**

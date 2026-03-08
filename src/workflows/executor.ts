@@ -28,6 +28,7 @@ import { streamMessages } from '../utils/stream-messages.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { assembleDocument } from '../assembly/document-assembler.js';
 import { config } from '../config.js';
+import { runMistralWorkflow } from '../providers/mistral-executor.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
@@ -41,6 +42,14 @@ export async function runGenericWorkflow(
   session: SessionState,
   options: SchemOptions = {},
 ): Promise<SessionState> {
+  // ── Provider Branch — Mistral parallel execution path ──────────────
+  // v18: Per-session provider override (options > session > global config)
+  const provider = options.provider ?? session.provider ?? config.provider;
+  if (provider === 'mistral') {
+    return runMistralWorkflow(request, template, classification, session, options);
+  }
+
+  // ── Anthropic / Claude Agent SDK path (default) ────────────────────
   const {
     maxBudgetUsd = config.defaultBudgetUsd,
     model = config.defaultModel,

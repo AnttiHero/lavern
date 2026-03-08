@@ -208,6 +208,10 @@ export class SessionState {
   /** Shapes how agents communicate, make decisions, and present their work. */
   public soul?: string;
 
+  // ── v18: Per-Session Provider Selection ──
+  /** LLM provider for this session. When set, overrides the global config.provider. */
+  public provider?: 'anthropic' | 'mistral';
+
   // ── v12: Document Storage ──
   /** Parsed documents uploaded by the client, available to agents via MCP tools. */
   public documents: ParsedDocument[] = [];

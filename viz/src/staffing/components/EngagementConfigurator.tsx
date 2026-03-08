@@ -13,10 +13,11 @@ import { IntensitySelector } from './IntensitySelector.js';
 import { TeamCostSummary } from './TeamCostSummary.js';
 import { YoloToggle } from './YoloToggle.js';
 import { VerificationToggle } from './VerificationToggle.js';
+import { ProviderToggle } from './ProviderToggle.js';
 import { OrchestratorMiniCard } from './OrchestratorMiniCard.js';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { WorkflowSummary } from '../hooks/useWorkflows.js';
-import type { IntensityLevel, EngagementConfig } from '../hooks/useEngagementConfig.js';
+import type { IntensityLevel, LLMProvider, EngagementConfig } from '../hooks/useEngagementConfig.js';
 import type { AgentProfile } from '../hooks/useAgentProfiles.js';
 
 /** Branded workflow names for the connector sentence. */
@@ -41,6 +42,7 @@ interface Props {
   onIntensityChange: (level: IntensityLevel) => void;
   onYoloChange: (yolo: boolean) => void;
   onVerificationChange: (enabled: boolean) => void;
+  onProviderChange: (provider: LLMProvider) => void;
   showCostSummary?: boolean;
 }
 
@@ -57,6 +59,7 @@ export function EngagementConfigurator({
   onIntensityChange,
   onYoloChange,
   onVerificationChange,
+  onProviderChange,
   showCostSummary = true,
 }: Props) {
   const brandedName = WORKFLOW_BRANDED[config.workflowId] ?? config.workflowId;
@@ -127,6 +130,12 @@ export function EngagementConfigurator({
             <VerificationToggle
               enabled={config.verification}
               onToggle={onVerificationChange}
+            />
+          </div>
+          <div style={{ marginTop: spacing.md }}>
+            <ProviderToggle
+              provider={config.provider}
+              onToggle={onProviderChange}
             />
           </div>
         </div>
