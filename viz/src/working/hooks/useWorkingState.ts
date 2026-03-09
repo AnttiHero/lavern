@@ -279,7 +279,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   useEffect(() => {
     if (!sessionId || sessionId.startsWith('demo-session-') || completionFiredRef.current) return;
 
-    const MAX_ASSEMBLY_WAIT_MS = 120_000; // 2 min fallback
+    const MAX_ASSEMBLY_WAIT_MS = 30_000; // 30s fallback (assembly usually takes <15s)
 
     const poll = setInterval(async () => {
       if (completionFiredRef.current) { clearInterval(poll); return; }

@@ -140,6 +140,10 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    // Session-scoped POST mutations — scoped by session ID, work without login
+    // so the QuickStart → Working → Delivery flow doesn't require auth.
+    // Session ID acts as the auth token (only the user who created it has it).
+    'POST /api/sessions/*',
     // Document parsing — needed by Challenge and Briefing before login
     'POST /api/documents/parse',
     // The Marble Challenge — zero-friction, no auth required

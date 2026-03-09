@@ -229,6 +229,22 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         </div>
       </div>
 
+      {/* "View Results" button — shown when session reaches delivered state
+          as a failsafe in case auto-navigation doesn't fire */}
+      {state.currentStep === 'delivered' && (
+        <div style={styles.deliveredBanner}>
+          <span style={styles.deliveredText}>Your results are ready</span>
+          <button
+            onClick={onComplete}
+            style={styles.deliveredBtn}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+          >
+            View Results {'\u2192'}
+          </button>
+        </div>
+      )}
+
       {/* Session list overlay when disconnected */}
       {showSessionOverlay && (
         <SessionOverlay
@@ -343,6 +359,37 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#B8860B',
     animation: 'activeThinkingPulse 2s ease-in-out infinite',
     flexShrink: 0,
+  },
+  deliveredBanner: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    padding: '12px 24px',
+    backgroundColor: colors.bgCard,
+    borderBottom: `1.5px solid ${colors.accent}`,
+  },
+  deliveredText: {
+    fontSize: 13,
+    fontFamily: fonts.serif,
+    fontWeight: 400,
+    color: colors.text,
+    letterSpacing: 0.2,
+  },
+  deliveredBtn: {
+    padding: '8px 24px',
+    borderRadius: radii.sm,
+    border: `2px solid ${colors.text}`,
+    backgroundColor: colors.text,
+    color: '#fff',
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+    cursor: 'pointer',
+    transition: 'background-color 0.25s ease, color 0.25s ease',
   },
   ghostBtn: {
     position: 'absolute' as const,

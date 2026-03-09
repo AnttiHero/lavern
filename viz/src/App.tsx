@@ -455,7 +455,7 @@ export function App() {
   // ── View rendering ────────────────────────────────────────────────────
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
-  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login';
+  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
   const userCtx = useContext(UserContext);
 
   // ── ErrorToast rendered globally above all views ─────────────────────

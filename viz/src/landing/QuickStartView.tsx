@@ -194,10 +194,14 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       }
 
       await onQuickStart(question.trim(), TIER_MAP[tier], docs);
-    } catch {
-      // Reset ref on failure so user can retry
-      submittedRef.current = false;
     } finally {
+      // Reset ref if we're still on this page (successful submit navigates away).
+      // This handles the case where onQuickStart catches errors internally
+      // without re-throwing — the catch block here would never fire,
+      // leaving submittedRef stuck at true and blocking all future clicks.
+      if (!window.location.hash.includes('#/working')) {
+        submittedRef.current = false;
+      }
       setSubmitting(false);
     }
   }, [submitting, parsing, question, documents.length, folderHasSelected, tier, parsedDocuments, hasFolder, cowork, onQuickStart]);
