@@ -24,13 +24,18 @@ export function HumanReviewSection({
   disclaimer,
 }: Props) {
   const pct = Math.round(confidence * 100);
+  const hasConfidence = confidence > 0 && dimensionCount > 0;
 
   return (
     <div style={styles.container} data-testid="human-review-section">
       <h3 style={styles.heading}>What If This Advice Is Wrong?</h3>
 
       <p style={styles.statement}>
-        This analysis scores <strong>{pct}% certainty</strong> across {dimensionCount} verification dimension{dimensionCount !== 1 ? 's' : ''}.
+        {hasConfidence ? (
+          <>This analysis scores <strong>{pct}% certainty</strong> across {dimensionCount} verification dimension{dimensionCount !== 1 ? 's' : ''}.</>
+        ) : (
+          <>This analysis has not yet been scored against formal verification dimensions. We recommend independent review.</>
+        )}
       </p>
 
       {flaggedItems.length > 0 && (

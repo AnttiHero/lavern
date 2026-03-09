@@ -76,7 +76,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   /** Timestamp when 'delivered' step was first detected (for assembly wait timeout). */
   const deliveredAtRef = useRef<number | null>(null);
   /** Stable ref for current sessionId (accessible inside handleEvent without deps). */
-  const sessionIdRef = useRef<string | undefined>();
+  const sessionIdRef = useRef<string | undefined>(undefined);
   // Stable ref for onSessionEnd to avoid restarting effects when callback identity changes
   const onSessionEndRef = useRef(onSessionEnd);
   onSessionEndRef.current = onSessionEnd;

@@ -131,7 +131,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
         const markdown = generateDemoDerivative(typeId, data);
         triggerBlobDownload(markdown, `${data.sessionId}-${typeId}.md`, 'text/markdown');
         setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
-        setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 3000);
+        setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
         return;
       }
 
@@ -178,7 +178,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
       }
 
       setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
-      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 3000);
+      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
     } catch (err) {
       console.error(`[DerivativesPanel] Generation failed for ${typeId}:`, err);
       const msg = err instanceof Error ? err.message : 'Generation failed';
@@ -253,7 +253,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
       <div style={styles.grid}>
         {DERIVATIVES.map(d => {
           const status = statuses[d.id] ?? 'idle';
-          const disabled = status === 'generating' || generationBlocked;
+          const disabled = status === 'generating' || (generationBlocked && status !== 'error');
 
           return (
             <button
@@ -289,7 +289,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
                   <span style={styles.doneLabel}>{'\u2713'} Done</span>
                 )}
                 {status === 'error' && (
-                  <span style={styles.errorLabel} title={errorMessages[d.id] || 'Failed'}>Failed</span>
+                  <span style={styles.errorLabel} title={errorMessages[d.id] || 'Failed'}>Retry</span>
                 )}
               </div>
             </button>
@@ -370,7 +370,7 @@ const styles: Record<string, React.CSSProperties> = {
   // Grid
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
     gap: spacing.sm,
   },
 

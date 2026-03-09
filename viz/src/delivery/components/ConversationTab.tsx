@@ -53,7 +53,7 @@ export function ConversationTab({
     const history = [...messages];
 
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setInput(''); // Clear immediately for responsiveness — restored on error below
     setStreaming(true);
 
     // Add empty assistant message that we'll stream into
@@ -79,6 +79,7 @@ export function ConversationTab({
           updated[updated.length - 1] = { role: 'assistant', content: `Error: ${err.error || 'Something went wrong.'}` };
           return updated;
         });
+        setInput(text); // Restore user input so they can retry
         setStreaming(false);
         return;
       }
@@ -86,6 +87,12 @@ export function ConversationTab({
       // Read SSE stream
       const reader = res.body?.getReader();
       if (!reader) {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: 'No response received from the server.' };
+          return updated;
+        });
+        setInput(text);
         setStreaming(false);
         return;
       }
@@ -146,6 +153,7 @@ export function ConversationTab({
         };
         return updated;
       });
+      setInput(text); // Restore user input so they can retry
     } finally {
       if (!controller.signal.aborted) {
         setStreaming(false);
@@ -181,30 +189,22 @@ export function ConversationTab({
           <div style={styles.emptyState}>
             <div style={styles.emptyTitle}>What would you like to know?</div>
             <div style={styles.emptyHints}>
-              <button
-                style={styles.hint}
-                onClick={() => setInput('Summarize the key risks in plain language')}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
-              >
-                Summarize the key risks
-              </button>
-              <button
-                style={styles.hint}
-                onClick={() => setInput('Draft an alternative clause for the most critical finding')}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
-              >
-                Draft an alternative clause
-              </button>
-              <button
-                style={styles.hint}
-                onClick={() => setInput('What should we prioritize fixing first?')}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
-              >
-                What to fix first?
-              </button>
+              {[
+                { text: 'Summarize the key risks', prompt: 'Summarize the key risks in plain language' },
+                { text: 'Draft an alternative clause', prompt: 'Draft an alternative clause for the most critical finding' },
+                { text: 'What to fix first?', prompt: 'What should we prioritize fixing first?' },
+              ].map(({ text, prompt }) => (
+                <button
+                  key={text}
+                  style={{ ...styles.hint, ...(streaming ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+                  disabled={streaming}
+                  onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
+                  onMouseEnter={e => { if (!streaming) { e.currentTarget.style.borderColor = colors.textMuted; e.currentTarget.style.color = colors.text; } }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textSecondary; }}
+                >
+                  {text}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -264,7 +264,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: 'calc(100vh - 260px)',
-    minHeight: 400,
+    minHeight: 360,
+    maxHeight: 'calc(100vh - 180px)',
   },
 
   header: {

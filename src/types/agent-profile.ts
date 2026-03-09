@@ -15,7 +15,7 @@
 
 export type AgentCategory = 'lawyer' | 'specialist' | 'infrastructure' | 'orchestrator';
 
-export type SeniorityTier = 'partner' | 'senior-associate' | 'associate' | 'junior' | 'specialist';
+export type SeniorityTier = 'partner' | 'senior-associate' | 'associate' | 'junior' | 'specialist' | 'counsel';
 
 /** Maps to Claude model tier — determines actual API cost. */
 export type CostTier = 'opus' | 'sonnet' | 'haiku';

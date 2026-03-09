@@ -11,9 +11,10 @@ interface Props {
 }
 
 export function TheScorecardTab({ data }: Props) {
-  const resolutionRate = data.debate.challengesCount > 0
+  const hasDebate = data.debate.challengesCount > 0;
+  const resolutionRate = hasDebate
     ? Math.round((data.debate.resolutionsCount / data.debate.challengesCount) * 100)
-    : 100;
+    : null;
 
   const budgetUsed = data.cost.budget > 0
     ? (data.cost.accumulated / data.cost.budget) * 100
@@ -30,18 +31,25 @@ export function TheScorecardTab({ data }: Props) {
               <div key={i} style={styles.dimRow}>
                 <div style={styles.dimLabel}>{dim.dimension}</div>
                 <div style={styles.dimBarWrap}>
-                  <div style={styles.dimBarTrack}>
-                    <div style={{
-                      ...styles.dimBarBefore,
-                      width: `${(dim.before / 5) * 100}%`,
-                    }} />
-                    <div style={{
-                      ...styles.dimBarAfter,
-                      width: `${(dim.after / 5) * 100}%`,
-                    }} />
+                  <div style={styles.dimBarStack}>
+                    <div style={styles.dimBarTrack}>
+                      <div style={{
+                        ...styles.dimBarBefore,
+                        width: `${(dim.before / 5) * 100}%`,
+                      }} />
+                    </div>
+                    <div style={styles.dimBarTrack}>
+                      <div style={{
+                        ...styles.dimBarAfter,
+                        width: `${(dim.after / 5) * 100}%`,
+                      }} />
+                    </div>
                   </div>
                 </div>
-                <div style={styles.dimDelta}>+{dim.delta.toFixed(1)}</div>
+                <div style={{
+                  ...styles.dimDelta,
+                  ...(dim.delta < 0 ? { color: colors.danger } : {}),
+                }}>{dim.delta >= 0 ? '+' : ''}{dim.delta.toFixed(1)}</div>
               </div>
             ))}
             <div style={styles.dimFooter}>
@@ -93,20 +101,24 @@ export function TheScorecardTab({ data }: Props) {
               color={colors.success}
             />
           </div>
-          <div style={styles.rateRow}>
-            <span style={styles.rateLabel}>Resolution rate</span>
-            <div style={styles.rateBarTrack}>
-              <div style={{
-                ...styles.rateBarFill,
-                width: `${resolutionRate}%`,
-                backgroundColor: data.debate.unresolvedCount === 0 ? colors.success : colors.warning,
-              }} />
+          {hasDebate ? (
+            <div style={styles.rateRow}>
+              <span style={styles.rateLabel}>Resolution rate</span>
+              <div style={styles.rateBarTrack}>
+                <div style={{
+                  ...styles.rateBarFill,
+                  width: `${resolutionRate}%`,
+                  backgroundColor: data.debate.unresolvedCount === 0 ? colors.success : colors.warning,
+                }} />
+              </div>
+              <span style={styles.rateValue}>{resolutionRate}%</span>
             </div>
-            <span style={styles.rateValue}>{resolutionRate}%</span>
-          </div>
+          ) : (
+            <div style={styles.noDebateNote}>No challenges were raised — findings accepted by consensus</div>
+          )}
           {data.debate.unresolvedCount > 0 && (
             <div style={styles.unresolvedNote}>
-              {data.debate.unresolvedCount} unresolved {data.debate.unresolvedCount === 1 ? 'finding' : 'findings'}
+              {data.debate.unresolvedCount} unresolved {data.debate.unresolvedCount === 1 ? 'finding' : 'findings'} — flagged for human review
             </div>
           )}
         </div>
@@ -219,7 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
   // Stats grid
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
     gap: spacing.md,
     marginBottom: spacing.xl,
   },
@@ -267,29 +279,27 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   dimBarWrap: { flex: 1 },
+  dimBarStack: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
   dimBarTrack: {
-    height: 16,
+    height: 7,
     backgroundColor: colors.bgPanel,
     borderRadius: 3,
-    position: 'relative' as const,
     overflow: 'hidden',
   },
   dimBarBefore: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
-    backgroundColor: 'rgba(196, 93, 62, 0.12)',
+    backgroundColor: 'rgba(26, 26, 26, 0.15)',
     borderRadius: 3,
   },
   dimBarAfter: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
     backgroundColor: colors.accent,
     borderRadius: 3,
-    opacity: 0.65,
+    opacity: 0.7,
   },
   dimDelta: {
     width: 40,
@@ -353,9 +363,14 @@ const styles: Record<string, React.CSSProperties> = {
   rateValue: { fontSize: 13, fontWeight: 600, fontFamily: fonts.mono, color: colors.text, width: 40, textAlign: 'right' as const },
   unresolvedNote: {
     fontSize: 12,
-    color: colors.danger,
+    color: colors.warning,
     marginTop: spacing.sm,
     fontWeight: 500,
+  },
+  noDebateNote: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
 
   // Cost

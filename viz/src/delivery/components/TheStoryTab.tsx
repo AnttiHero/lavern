@@ -50,11 +50,18 @@ export function TheStoryTab({ data }: Props) {
                 <div key={i} style={styles.dimensionRow}>
                   <div style={styles.dimensionLabel}>{d.dimension}</div>
                   <div style={styles.barContainer}>
-                    <div style={{ ...styles.barBefore, width: `${beforePct}%` }} />
-                    <div style={{ ...styles.barAfter, width: `${afterPct}%` }} />
+                    <div style={styles.barTrack}>
+                      <div style={{ ...styles.barBefore, width: `${beforePct}%` }} />
+                    </div>
+                    <div style={styles.barTrack}>
+                      <div style={{ ...styles.barAfter, width: `${afterPct}%` }} />
+                    </div>
                   </div>
-                  <div style={styles.dimensionDelta}>
-                    +{d.delta.toFixed(1)}
+                  <div style={{
+                    ...styles.dimensionDelta,
+                    ...(d.delta < 0 ? { color: colors.danger } : {}),
+                  }}>
+                    {d.delta >= 0 ? '+' : ''}{d.delta.toFixed(1)}
                   </div>
                 </div>
               );
@@ -171,7 +178,7 @@ const styles: Record<string, React.CSSProperties> = {
   intro: {
     fontSize: 14,
     color: colors.textMuted,
-    lineHeight: 1.7,
+    lineHeight: 1.6,
     margin: '0 0 32px',
     maxWidth: 660,
   },
@@ -185,9 +192,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     fontFamily: fonts.sans,
     color: colors.text,
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
-    margin: '0 0 6px',
+    margin: '0 0 12px',
   },
   sectionIntro: {
     fontSize: 13,
@@ -218,28 +225,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   barContainer: {
     flex: 1,
-    height: 6,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  barTrack: {
+    height: 4,
     backgroundColor: colors.bgPanel,
-    borderRadius: 3,
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
+    borderRadius: 2,
+    overflow: 'hidden',
   },
   barBefore: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
-    backgroundColor: colors.border,
-    borderRadius: 3,
+    backgroundColor: 'rgba(26, 26, 26, 0.15)',
+    borderRadius: 2,
     transition: 'width 0.6s ease',
   },
   barAfter: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
     backgroundColor: colors.accent,
-    borderRadius: 3,
+    borderRadius: 2,
     opacity: 0.7,
     transition: 'width 0.6s ease',
   },
@@ -318,14 +323,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   beforeAfterRow: {
     display: 'flex',
+    flexWrap: 'wrap' as const,
     alignItems: 'stretch',
     gap: spacing.md,
   },
   beforeCol: {
-    flex: 1,
+    flex: '1 1 200px',
+    minWidth: 0,
   },
   afterCol: {
-    flex: 1,
+    flex: '1 1 200px',
+    minWidth: 0,
   },
   arrow: {
     display: 'flex',

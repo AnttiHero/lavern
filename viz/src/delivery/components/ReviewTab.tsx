@@ -52,9 +52,9 @@ export function ReviewTab({ data }: Props) {
       </div>
 
       {/* ── What was checked ────────────────────────────────────── */}
-      {data.verificationChecks.length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>What Was Checked</div>
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>What Was Checked</div>
+        {data.verificationChecks.length > 0 ? (
           <div style={styles.checkList}>
             {data.verificationChecks.map((check, i) => {
               const hasScore = check.score != null && check.score > 0;
@@ -90,13 +90,17 @@ export function ReviewTab({ data }: Props) {
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div style={styles.emptyState}>
+            No formal verification checks were run on this engagement.
+          </div>
+        )}
+      </div>
 
       {/* ── What was debated ─────────────────────────────────────── */}
-      {data.debateResolutions.length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>What Was Debated</div>
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>What Was Debated</div>
+        {data.debateResolutions.length > 0 ? (
           <div style={styles.resolutionsList}>
             {data.debateResolutions.map((res, i) => (
               <div key={i} style={styles.resolutionCard}>
@@ -137,8 +141,12 @@ export function ReviewTab({ data }: Props) {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div style={styles.emptyState}>
+            No debates occurred — all findings were accepted without challenge.
+          </div>
+        )}
+      </div>
 
       {/* ── What was escalated ──────────────────────────────────── */}
       {data.gateDecisions.length > 0 && (
@@ -427,5 +435,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textSecondary,
     lineHeight: 1.6,
     paddingLeft: 26,
+  },
+
+  // Empty state
+  emptyState: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
+    padding: `${spacing.lg}px ${spacing.xl}px`,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.md,
+    lineHeight: 1.6,
   },
 };

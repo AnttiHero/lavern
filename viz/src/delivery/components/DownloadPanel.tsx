@@ -348,9 +348,17 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const [clicked, setClicked] = useState(false);
+
+  const handleClick = () => {
+    onClick();
+    setClicked(true);
+    setTimeout(() => setClicked(false), 2000);
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       style={{
         ...styles.card,
@@ -362,7 +370,7 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
     >
       <div style={styles.cardIcon}>{icon}</div>
       <div style={styles.cardTitle}>{title}</div>
-      <div style={styles.cardDesc}>{description}</div>
+      <div style={styles.cardDesc}>{clicked ? 'Downloading\u2026' : description}</div>
       <div style={styles.cardFormat}>{format}</div>
       {disabled && <div style={styles.cardNote}>Live session only</div>}
     </button>
@@ -452,6 +460,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   stylePills: {
     display: 'flex',
+    flexWrap: 'wrap' as const,
     gap: spacing.sm,
   },
   pill: {
@@ -486,13 +495,13 @@ const styles: Record<string, React.CSSProperties> = {
   // Download cards
   primaryRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: spacing.md,
     marginBottom: spacing.md,
   },
   secondaryRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
     gap: spacing.sm,
   },
   card: {

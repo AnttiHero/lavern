@@ -40,7 +40,7 @@ function renderInline(text: string): React.ReactNode[] {
     } else if (match[5] && match[6]) {
       // [link text](url)
       parts.push(
-        <span key={match.index} style={sty.link}>{match[5]}</span>
+        <a key={match.index} href={match[6]} target="_blank" rel="noopener noreferrer" style={sty.link}>{match[5]}</a>
       );
     }
     lastIndex = match.index + match[0].length;
@@ -129,6 +129,28 @@ export function SimpleMarkdown({ content }: Props) {
       continue;
     }
 
+    // Fenced code block: ```
+    if (line.trim().startsWith('```')) {
+      const langMatch = line.trim().match(/^```(\w*)/);
+      const lang = langMatch?.[1] || '';
+      i++; // skip opening fence
+      const codeLines: string[] = [];
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      if (i < lines.length) i++; // skip closing fence
+      elements.push(
+        <div key={`code-${i}`} style={sty.codeBlockWrapper}>
+          {lang && <div style={sty.codeBlockLang}>{lang}</div>}
+          <pre style={sty.codeBlock}>
+            <code>{codeLines.join('\n')}</code>
+          </pre>
+        </div>
+      );
+      continue;
+    }
+
     // Blockquote: collect consecutive > lines
     if (line.trim().startsWith('>')) {
       const quoteLines: string[] = [];
@@ -204,6 +226,7 @@ export function SimpleMarkdown({ content }: Props) {
       !isBulletLine(lines[i]) &&
       !lines[i].trim().startsWith('|') &&
       !lines[i].trim().startsWith('>') &&
+      !lines[i].trim().startsWith('```') &&
       !/^---+$/.test(lines[i].trim()) &&
       !/^\*\*\*+$/.test(lines[i].trim()) &&
       !/^\d+\.\s/.test(lines[i])
@@ -302,7 +325,40 @@ const sty: Record<string, React.CSSProperties> = {
   },
   link: {
     color: colors.accent,
+    textDecoration: 'none',
     borderBottom: `1px solid rgba(196, 93, 62, 0.3)`,
+    cursor: 'pointer',
+    transition: 'border-color 0.15s ease',
+  },
+  codeBlockWrapper: {
+    position: 'relative' as const,
+    marginBottom: spacing.md,
+  },
+  codeBlockLang: {
+    position: 'absolute' as const,
+    top: 1,
+    right: 1,
+    fontSize: 9,
+    fontFamily: fonts.mono,
+    color: colors.textDim,
+    backgroundColor: colors.bgPanel,
+    padding: '3px 10px',
+    borderRadius: '0 3px 0 3px',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  codeBlock: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    lineHeight: 1.6,
+    backgroundColor: colors.bgPanel,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 4,
+    padding: `${spacing.lg}px ${spacing.lg}px ${spacing.md}px`,
+    overflow: 'auto' as const,
+    margin: 0,
+    whiteSpace: 'pre' as const,
+    color: colors.text,
   },
   tableWrapper: {
     overflowX: 'auto' as const,
@@ -320,7 +376,6 @@ const sty: Record<string, React.CSSProperties> = {
     color: colors.text,
     padding: '8px 12px',
     borderBottom: `2px solid ${colors.border}`,
-    whiteSpace: 'nowrap' as const,
   },
   td: {
     padding: '6px 12px',

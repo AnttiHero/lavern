@@ -139,14 +139,20 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
               >
                 <div style={styles.dimensionLabel}>{dim.dimension}</div>
                 <div style={styles.barOuter}>
-                  <div style={{
-                    ...styles.barBefore,
-                    width: `${(dim.before / 5) * 100}%`,
-                  }} />
-                  <div style={{
-                    ...styles.barAfter,
-                    width: `${(dim.after / 5) * 100}%`,
-                  }} />
+                  <div style={styles.barRow}>
+                    <div style={styles.barTrack}>
+                      <div style={{
+                        ...styles.barBefore,
+                        width: `${(dim.before / 5) * 100}%`,
+                      }} />
+                    </div>
+                    <div style={styles.barTrack}>
+                      <div style={{
+                        ...styles.barAfter,
+                        width: `${(dim.after / 5) * 100}%`,
+                      }} />
+                    </div>
+                  </div>
                 </div>
                 <div style={styles.scoreGroup}>
                   <span style={styles.scoreBefore}>{dim.before.toFixed(1)}</span>
@@ -360,7 +366,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   changeColumns: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: spacing.lg,
   },
   changeBefore: {
@@ -429,28 +435,28 @@ const styles: Record<string, React.CSSProperties> = {
   },
   barOuter: {
     flex: 1,
-    height: 6,
-    position: 'relative' as const,
+  },
+  barRow: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  barTrack: {
+    height: 4,
     backgroundColor: colors.bgPanel,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   barBefore: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
-    backgroundColor: 'rgba(26, 26, 26, 0.08)',
-    borderRadius: 3,
+    backgroundColor: 'rgba(26, 26, 26, 0.15)',
+    borderRadius: 2,
   },
   barAfter: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
     height: '100%',
     backgroundColor: colors.accent,
-    borderRadius: 3,
-    opacity: 0.65,
+    borderRadius: 2,
+    opacity: 0.7,
   },
   scoreGroup: {
     display: 'flex',
