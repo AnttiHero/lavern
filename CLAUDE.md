@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Marble v0.9.1, a multi-agent legal design system that transforms
+You are part of Marble v0.10, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Marble is the world's first driverless law firm.
 
@@ -81,22 +81,23 @@ with qualified legal professionals.
     - `agents.ts`, `capabilities.ts`, `documents.ts`, `knowledge-base.ts`, `pricing.ts`, `replay.ts`, `reputation.ts`, `workflows.ts`
 
 ### Dashboard (`viz/`)
-React single-page app with editorial design language (Inter + Cormorant Garamond, warm cream palette).
+React single-page app with editorial design language (Inter + Cormorant Garamond, warm cream palette). WCAG AA accessible, responsive (mobile/tablet/desktop), desktop layout unchanged.
 
 **Navigation flow:** Landing → Briefing → Strategy → Team → Working → Delivery
 
 - `viz/src/landing/` — Landing page, QuickStart (3-tier express engagement), YOLO launcher
-- `viz/src/briefing/` — LLM-powered intake with document upload
-- `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars, ProviderToggle (Claude / EU Sovereign)
-- `viz/src/working/` — Live progress view with ProgressSidebar, agent presence orbs, narrative status, insight feed, debate threads, HeartbeatBand
-- `viz/src/delivery/` — Tabbed delivery view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), DownloadPanel with Cowork folder save, derivatives generation
+- `viz/src/briefing/` — LLM-powered intake with document upload, analysis retry
+- `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars, ProviderToggle (Claude / EU Sovereign), offline indicator
+- `viz/src/working/` — Team chat room with real-time checklist (ProgressSidebar), activity feed (ActivityCard), reassurance messaging (ReassuranceCard), HeartbeatBand, connection lost banner, session expired overlay, duplicate tab protection
+- `viz/src/delivery/` — Tabbed delivery view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), DownloadPanel with Cowork folder save, derivatives generation, loading skeleton
 - `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Marble's Soul (firm personality editor), Saved Teams
 - `viz/src/my-cases/` — Session history (active + past engagements)
 - `viz/src/cowork/` — Cowork folder mode (File System Access API for non-destructive local saves)
-- `viz/src/components/` — Shared components (GateDialog, ErrorToast, MarbleMark)
+- `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, MarbleMark)
+- `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
 - `viz/src/challenge/` — Marble Challenge blind document comparison
 - `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
-- `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats)
+- `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
 - `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
 - `viz/src/auth/` — Login/signup views
 
@@ -129,7 +130,8 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `src/knowledge-base/` — Reference document collections (FTS5 search, retrieval, global datasets)
 - `src/assembly/` — Document assembly and format conversion (HTML, DOCX)
 - `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text)
-- `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets):
+- `src/utils/logger.ts` — Structured logging utility
+- Legal dataset seeder (`scripts/seed-knowledge-base.ts`, 6 datasets):
   - CUAD (510 contracts, 41 clause types, CC BY 4.0)
   - MAUD (152 merger agreements, 92 deal points, CC BY 4.0)
   - ACORD (126K+ clause retrieval pairs, CC BY 4.0)
@@ -137,12 +139,62 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - ContractNLI (10K+ premise/hypothesis NLI pairs, CC BY-NC-SA 4.0)
   - LEDGAR (60K SEC provisions, 98 clause types, CC BY-SA 4.0)
 
+### Scripts
+- `scripts/smoke-test.sh` — API end-to-end lifecycle smoke test (health → create → verify → delete)
+- `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
+
 ### Tests
 - `tests/` — 610 tests across 33 files (26 unit + 7 integration)
 
 ## Version History
 
-### v0.9.1 (Current) — EU Sovereign Provider, Ethical Mode, Knowledge Base Expansion
+### v0.10 (Current) — Soft Launch Hardening + Working View Redesign
+
+**Working View Redesign** — Transformed from static dashboard to lively team chat room:
+- ActivityCard speech bubbles for agent start/stop/tool activity
+- ReassuranceCard warm messages during processing silences (25s idle trigger)
+- ProgressSidebar redesigned as Claude Code-style real-time checklist
+- HeartbeatBand slimmed to single row (phase dots + stats)
+- Warm team-avatar empty state with personalized greetings
+
+**WCAG AA Accessibility** — Full keyboard navigation and screen reader support:
+- Focus-visible indicators, skip-to-content link, ARIA landmarks
+- Live regions for dynamic content, dialog/tablist/radiogroup semantics
+- Color contrast raised to 4.5:1+ ratio, `prefers-reduced-motion` support
+- GateDialog focus trap prevents background interaction
+
+**Responsive Layouts** — Mobile/tablet/desktop via `useMediaQuery` hook:
+- Sidebar stacking with toggle, grid collapse, header wrapping
+- Desktop layout unchanged (conditional breakpoints only)
+
+**Production Hardening** — 36 security and stability fixes:
+- SSRF prevention, command injection fix, TOCTOU race condition fix
+- Session ID collision prevention, FTS5/LIKE injection fix
+- Gate timeout now rejects (was auto-approving), WebSocket reconnect resume
+- Server-side WebSocket heartbeat (30s ping, 60s timeout)
+- Webhook retry with exponential backoff (3 retries)
+- Structured logger (`src/utils/logger.ts`)
+
+**Error Surfaces** — Users see what went wrong instead of silent failures:
+- Connection Lost amber banner on WebSocket drop
+- Session Expired overlay on server 4004
+- Search error state in archive, offline indicator on team selection
+- Analysis retry button in briefing, double-submit guard on QuickStart
+- BetTheCompanyView: 404/offline shows "Coming Soon" (not fake success)
+
+**UX Polish:**
+- View transition animations (350ms fade-up on non-landing views)
+- Delivery loading skeleton (DeliverySkeleton component)
+- Duplicate tab protection via BroadcastChannel (useTabLock hook)
+- Back-navigation cleanup (stale sessionStorage keys removed)
+- Custom agent edit mode in Agent Builder
+- Error copy consistency (removed technical jargon from user-facing messages)
+- Delivery view polish: responsive grids, markdown links, empty states, download feedback
+
+**Dev Tooling:**
+- `scripts/smoke-test.sh` — API end-to-end lifecycle test (no `jq` dependency)
+
+### v0.9.1 — EU Sovereign Provider, Ethical Mode, Knowledge Base Expansion
 - **Mistral EU Provider** — Full alternative LLM backend for EU data sovereignty
   - `src/providers/` — 5 new modules (client, executor, assembler, tool converter, types)
   - Per-session provider selection: Claude (US) or EU Sovereign (Mistral)

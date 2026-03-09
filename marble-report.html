@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marble — Driverless Law Firm</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fdfdfd;
+    --text: #1a1a2e;
+    --text-secondary: #4a4a6a;
+    --accent: #2d2d5e;
+    --accent-light: #e8e8f0;
+    --border: #d8d8e8;
+    --border-light: #ececf4;
+    --code-bg: #f4f4f8;
+    --green: #1a8a4a;
+    --yellow: #b8860b;
+    --red: #c42b2b;
+    --blue: #2563eb;
+    --shipped-bg: #e8f5e9;
+    --shipped-text: #1a6b3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.7;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ---- COVER PAGE ---- */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 0;
+    page-break-after: always;
+  }
+
+  .cover-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+  }
+
+  .cover h1 {
+    font-size: 4.5rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+
+  .cover-quote {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-weight: 300;
+  }
+
+  .cover-tagline {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 40px;
+  }
+
+  .cover-stats {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  .cover-stats span {
+    margin: 0 6px;
+    opacity: 0.4;
+  }
+
+  /* ---- TABLE OF CONTENTS ---- */
+  .toc {
+    page-break-after: always;
+    padding: 80px 0 60px;
+  }
+
+  .toc h2 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    padding: 12px 24px 12px 0;
+    border-bottom: 1px solid var(--border-light);
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .toc-item:hover {
+    background: var(--accent-light);
+  }
+
+  .toc-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    min-width: 36px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .toc-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  /* ---- SECTIONS ---- */
+  .section {
+    padding: 72px 0 48px;
+    page-break-inside: avoid;
+  }
+
+  .section + .section {
+    border-top: 1px solid var(--border-light);
+  }
+
+  .section-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--accent);
+    margin-bottom: 28px;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 48px;
+    margin-bottom: 16px;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 32px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin-bottom: 20px;
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  .lead {
+    font-size: 1.35rem;
+    line-height: 1.55;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 28px;
+  }
+
+  .lead-secondary {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  .callout {
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--accent);
+    padding: 16px 24px;
+    margin: 36px 0;
+    background: var(--accent-light);
+    border-radius: 0 6px 6px 0;
+    line-height: 1.65;
+  }
+
+  /* ---- FLOW DIAGRAMS ---- */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 32px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .flow-step {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.4;
+    min-width: 90px;
+  }
+
+  .flow-step.highlight {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .flow-arrow {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .flow-meta {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+  }
+
+  .flow-meta-item {
+    text-align: center;
+  }
+
+  .flow-meta-num {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .flow-meta-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* ---- 3-COLUMN FLOW ---- */
+  .flow-three {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: start;
+    gap: 0;
+    margin: 32px 0;
+  }
+
+  .flow-three-box {
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .flow-three-box h4 {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .flow-three-box p {
+    font-size: 0.8rem;
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+
+  .flow-three-box .meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .flow-three-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    padding: 0 8px;
+    margin-top: 30px;
+  }
+
+  /* ---- TABLES ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0 32px;
+    font-size: 0.85rem;
+  }
+
+  thead th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--accent);
+    background: var(--accent-light);
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: rgba(45, 45, 94, 0.02);
+  }
+
+  td:first-child {
+    font-weight: 500;
+  }
+
+  /* ---- CODE BLOCKS ---- */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.65;
+    margin: 20px 0 28px;
+    color: var(--text);
+  }
+
+  code {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* ---- AGENT GROUPS ---- */
+  .agent-group {
+    margin: 40px 0 32px;
+    page-break-inside: avoid;
+  }
+
+  .agent-group-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 0;
+  }
+
+  .agent-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .agent-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .agent-desc {
+    color: var(--text-secondary);
+  }
+
+  /* ---- FLAG COLORS ---- */
+  .flag-green {
+    display: inline-block;
+    background: #e8f5e9;
+    color: var(--green);
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .flag-yellow {
+    display: inline-block;
+    background: #fff8e1;
+    color: var(--yellow);
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .flag-red {
+    display: inline-block;
+    background: #fce4e4;
+    color: var(--red);
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .flag-shipped {
+    display: inline-block;
+    background: var(--shipped-bg);
+    color: var(--shipped-text);
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---- STATS GRID ---- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 24px;
+    margin: 40px 0;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 24px 12px;
+    background: var(--accent-light);
+    border-radius: 10px;
+  }
+
+  .stat-num {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-top: 8px;
+  }
+
+  /* ---- PERMISSION FLOW ---- */
+  .perm-flow {
+    background: var(--code-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin: 28px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 2;
+  }
+
+  .perm-flow .question {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .perm-flow .answer {
+    padding-left: 24px;
+    color: var(--text-secondary);
+  }
+
+  .perm-flow .result-allow {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .perm-flow .result-deny {
+    color: var(--red);
+    font-weight: 600;
+  }
+
+  /* ---- TWO-COLUMN INFO ---- */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 28px 0;
+  }
+
+  .info-card {
+    padding: 24px;
+    background: var(--accent-light);
+    border-radius: 8px;
+  }
+
+  .info-card h4 {
+    margin: 0 0 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .info-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ---- FILE MAP ---- */
+  .file-map {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    background: var(--code-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 20px 0 28px;
+    overflow-x: auto;
+  }
+
+  .file-map .path {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .file-map .desc {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .file-map .dir {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---- FOOTER ---- */
+  .footer {
+    text-align: center;
+    padding: 100px 0 80px;
+    page-break-before: always;
+  }
+
+  .footer h2 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+
+  .footer-stats {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  .footer-quote {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+
+  /* ---- DESIGN Q&A ---- */
+  .qa {
+    margin: 36px 0;
+    page-break-inside: avoid;
+  }
+
+  .qa-question {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .qa-answer {
+    font-size: 0.95rem;
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 8px;
+  }
+
+  /* ---- PRINT ---- */
+  @media print {
+    body {
+      max-width: 100%;
+      padding: 0 48px;
+      font-size: 14px;
+    }
+    .cover { min-height: auto; padding: 140px 0; }
+    .section { page-break-inside: auto; }
+    .agent-group, .flow, table, pre { page-break-inside: avoid; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  /* ---- SEPARATOR ---- */
+  hr.section-break {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ======== COVER ======== -->
+<div class="cover">
+  <div class="cover-badge">Built on the Claude Agent SDK</div>
+  <h1>Marble</h1>
+  <p class="cover-quote">"We know what's written in the Golem's mouth."</p>
+  <p class="cover-tagline">The world's first driverless law firm.</p>
+  <p class="cover-stats">Multi-agent legal design system <span>·</span> 10 workflows <span>·</span> 70 agents <span>·</span> 610 tests <span>·</span> WCAG AA dashboard</p>
+</div>
+
+<!-- ======== TABLE OF CONTENTS ======== -->
+<div class="toc">
+  <h2>Contents</h2>
+  <div class="toc-grid">
+    <a class="toc-item" href="#s01"><span class="toc-num">01</span><span class="toc-label">The Problem</span></a>
+    <a class="toc-item" href="#s11"><span class="toc-num">11</span><span class="toc-label">Auth &amp; Persistence</span></a>
+    <a class="toc-item" href="#s02"><span class="toc-num">02</span><span class="toc-label">The Idea</span></a>
+    <a class="toc-item" href="#s12"><span class="toc-num">12</span><span class="toc-label">The Session</span></a>
+    <a class="toc-item" href="#s03"><span class="toc-num">03</span><span class="toc-label">How It Works</span></a>
+    <a class="toc-item" href="#s13"><span class="toc-num">13</span><span class="toc-label">Permissions</span></a>
+    <a class="toc-item" href="#s04"><span class="toc-num">04</span><span class="toc-label">The Router</span></a>
+    <a class="toc-item" href="#s14"><span class="toc-num">14</span><span class="toc-label">Workflow Templates</span></a>
+    <a class="toc-item" href="#s05"><span class="toc-num">05</span><span class="toc-label">Ten Workflows</span></a>
+    <a class="toc-item" href="#s15"><span class="toc-num">15</span><span class="toc-label">Design Decisions</span></a>
+    <a class="toc-item" href="#s06"><span class="toc-num">06</span><span class="toc-label">The Evaluator Gate</span></a>
+    <a class="toc-item" href="#s16"><span class="toc-num">16</span><span class="toc-label">Using Marble</span></a>
+    <a class="toc-item" href="#s07"><span class="toc-num">07</span><span class="toc-label">The Agents</span></a>
+    <a class="toc-item" href="#s17"><span class="toc-num">17</span><span class="toc-label">The Numbers</span></a>
+    <a class="toc-item" href="#s08"><span class="toc-num">08</span><span class="toc-label">The Dashboard</span></a>
+    <a class="toc-item" href="#s18"><span class="toc-num">18</span><span class="toc-label">What's Next</span></a>
+    <a class="toc-item" href="#s09"><span class="toc-num">09</span><span class="toc-label">Document Ingestion</span></a>
+    <a class="toc-item" href="#s19"><span class="toc-num">19</span><span class="toc-label">File Map</span></a>
+    <a class="toc-item" href="#s10"><span class="toc-num">10</span><span class="toc-label">Knowledge Base</span></a>
+    <a class="toc-item" href="#footer" style="opacity:0;pointer-events:none;"></a>
+  </div>
+</div>
+
+<!-- ======== 01 — THE PROBLEM ======== -->
+<div class="section" id="s01">
+  <span class="section-num">01</span>
+  <h2>Legal documents are hostile to the people who need to understand them.</h2>
+  <p class="lead-secondary">Terms of service written at a graduate reading level. Contracts with risk buried in boilerplate. Privacy policies designed to obscure, not inform. And on the other side: legal questions that require expensive professional time even when the answer is straightforward.</p>
+  <p>The legal industry has a scaling problem. The work is important, the stakes are high, and there are never enough qualified people to do it.</p>
+</div>
+
+<!-- ======== 02 — THE IDEA ======== -->
+<div class="section" id="s02">
+  <span class="section-num">02</span>
+  <h2>What if a law firm had no lawyers — only agents?</h2>
+  <p class="lead-secondary">Not one agent. A team. Specialists that analyze, debate, challenge each other, transform documents, verify their own work, and learn from every engagement. A system where the agents genuinely collaborate: one proposes, another challenges, a third verifies, a human approves.</p>
+  <p>Marble is that system. Named after the act of turning rough stone into something polished and precise, it animates a team of AI legal specialists inside a workflow state machine with human gates, quality checks, and institutional memory.</p>
+  <p>Built on the Claude Agent SDK. Built by Legit (wearelegit.ai).</p>
+</div>
+
+<!-- ======== 03 — HOW IT WORKS ======== -->
+<div class="section" id="s03">
+  <span class="section-num">03</span>
+  <h2>How It Works</h2>
+  <p class="lead">A request comes in. The system reads it and asks one question:</p>
+  <p class="callout">What is the minimum viable workflow to handle this well?</p>
+
+  <div class="flow-three">
+    <div class="flow-three-box">
+      <h4>counsel</h4>
+      <p>3 steps · 1 agent</p>
+      <span class="meta">0 human gates</span>
+    </div>
+    <div class="flow-three-arrow">→</div>
+    <div class="flow-three-box">
+      <h4>review</h4>
+      <p>6 steps · 2–4 agents</p>
+      <span class="meta">1 human gate</span>
+    </div>
+    <div class="flow-three-arrow">→</div>
+    <div class="flow-three-box">
+      <h4>roundtable</h4>
+      <p>7 steps · 3–8 agents</p>
+      <span class="meta">2 human gates</span>
+    </div>
+  </div>
+
+  <p>The principle: don't use eight agents and three human gates to answer a question that needs one sentence. Default to the simplest path. Escalate complexity only when required.</p>
+</div>
+
+<!-- ======== 04 — THE ROUTER ======== -->
+<div class="section" id="s04">
+  <span class="section-num">04</span>
+  <h2>The Router</h2>
+  <p>The highest-leverage component. A single classification determines the entire processing path.</p>
+
+  <table>
+    <thead><tr><th>What came in</th><th>What runs</th></tr></thead>
+    <tbody>
+      <tr><td>"Redesign this document"</td><td><strong>roundtable</strong></td></tr>
+      <tr><td>"Review this contract"</td><td><strong>review</strong></td></tr>
+      <tr><td>"What is force majeure?"</td><td><strong>counsel</strong></td></tr>
+      <tr><td>"Research the implications of GDPR Art. 17"</td><td><strong>research-memo</strong></td></tr>
+      <tr><td>"Stress-test this M&amp;A opinion"</td><td><strong>adversarial</strong></td></tr>
+      <tr><td>Complex multi-domain engagement</td><td><strong>full-bench</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Router Flags</h3>
+  <table>
+    <thead><tr><th>Flag</th><th>Fires when</th></tr></thead>
+    <tbody>
+      <tr><td><code>requiresEthicsFirst</code></td><td>Consumer data, privacy, consent</td></tr>
+      <tr><td><code>requiresConsistencyCheck</code></td><td>Existing client/matter involved</td></tr>
+      <tr><td><code>requiresDebate</code></td><td>Multi-specialist, conflicting concerns</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Output Schema</h3>
+  <pre><code>{
+  requestType: 'direct_answer' | 'single_specialist' | 'full_pipeline'
+  complexity: 'low' | 'medium' | 'high'
+  riskLevel: 'low' | 'medium' | 'high'
+  selectedWorkflow: 'counsel' | 'review' | 'roundtable' | 'full-bench' | 'adversarial' | ...
+  selectedSpecialists: string[]
+  requiresDebate: boolean
+  requiresEthicsFirst: boolean
+  requiresConsistencyCheck: boolean
+  reasoning: string
+}</code></pre>
+</div>
+
+<!-- ======== 05 — TEN WORKFLOWS ======== -->
+<div class="section" id="s05">
+  <span class="section-num">05</span>
+  <h2>Ten Workflows</h2>
+  <p>Each designed for a different kind of legal work. The original three have been joined by seven more — from solo counsel sessions to full-bench adversarial reviews with red teams.</p>
+
+  <h3>Counsel — The Fast Path</h3>
+  <p>Someone asks a legal question. One specialist answers it. No evaluator, no debate, no gates. Trust the expert and deliver. Sub-30-second response time.</p>
+  <div class="flow">
+    <div class="flow-step">Intake</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step highlight">Specialist</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Delivered</div>
+  </div>
+  <div class="flow-meta">
+    <div class="flow-meta-item"><div class="flow-meta-num">3</div><div class="flow-meta-label">Steps</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">1</div><div class="flow-meta-label">Specialist</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">0</div><div class="flow-meta-label">Human Gates</div></div>
+  </div>
+  <p class="callout">Speed is the feature. If you need checking, use Review instead.</p>
+
+  <h3>Review — The Middle Path</h3>
+  <p>A specialist does the analysis. An evaluator on a different model tier checks quality. A plain-language specialist translates findings into business language. A human approves before delivery. The second pair of eyes decorrelates errors.</p>
+  <div class="flow">
+    <div class="flow-step">Intake</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Analysis</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step highlight">Evaluator<br><small>Score ≥ 0.75?</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Plain Lang</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Final Gate</div>
+  </div>
+  <div class="flow-meta">
+    <div class="flow-meta-item"><div class="flow-meta-num">6</div><div class="flow-meta-label">Steps</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">3</div><div class="flow-meta-label">Agents</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">1</div><div class="flow-meta-label">Human Gate</div></div>
+  </div>
+
+  <p>Used for contract reviews, compliance checks, risk assessments — any task that benefits from a second pair of eyes. The evaluator produces structured output with risk scores:</p>
+  <table>
+    <thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="flag-green">GREEN</span></td><td>Standard terms, acceptable as-is</td></tr>
+      <tr><td><span class="flag-yellow">YELLOW</span></td><td>Non-standard but negotiable</td></tr>
+      <tr><td><span class="flag-red">RED</span></td><td>Unfavorable or dangerous, requires action</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Roundtable — The Full Pipeline</h3>
+  <p>This is the big one. Multiple specialist agents analyze in parallel, debate their findings, challenge each other through structured exchanges, and synthesize into a unified deliverable. Multidisciplinary perspectives collide and resolve into work no single expert could produce.</p>
+  <div class="flow">
+    <div class="flow-step">Intake</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Parallel<br>Analysis</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step highlight">Debate</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Gate</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Synthesis</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Final</div>
+  </div>
+  <div class="flow-meta">
+    <div class="flow-meta-item"><div class="flow-meta-num">7</div><div class="flow-meta-label">Steps</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">3–8</div><div class="flow-meta-label">Specialists</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">2</div><div class="flow-meta-label">Human Gates</div></div>
+  </div>
+
+  <h3>The Full Workflow Registry</h3>
+  <p>Beyond the original three, seven additional workflows handle everything from pre-engagement screening to multi-team adversarial review.</p>
+  <table>
+    <thead><tr><th>Workflow</th><th>Purpose</th><th>Team Shape</th></tr></thead>
+    <tbody>
+      <tr><td><strong>counsel</strong></td><td>Solo expert, direct answer. Sub-30-second.</td><td>1 specialist</td></tr>
+      <tr><td><strong>review</strong></td><td>Specialist + evaluator with revision loop</td><td>2–4 agents</td></tr>
+      <tr><td><strong>roundtable</strong></td><td>Parallel expert panel, debate, synthesis</td><td>3–8 specialists</td></tr>
+      <tr><td><strong>full-bench</strong></td><td>Senior decomposition, delegated workstreams</td><td>8+ specialists</td></tr>
+      <tr><td><strong>adversarial</strong></td><td>Builder + attacker + synthesizer. Stress-tested.</td><td>Specialists + red team</td></tr>
+      <tr><td><strong>research-memo</strong></td><td>Structured legal research with citations</td><td>Researcher + evaluator + red team</td></tr>
+      <tr><td><strong>pre-engagement</strong></td><td>Conflict check, KYC, engagement letter</td><td>Intake + compliance</td></tr>
+      <tr><td><strong>simple-query</strong></td><td>Legacy: specialist + evaluator gate</td><td>1 specialist + evaluator</td></tr>
+      <tr><td><strong>contract-review</strong></td><td>Legacy: clause-by-clause contract analysis</td><td>3 agents</td></tr>
+      <tr><td><strong>legal-design</strong></td><td>Legacy: 11-step document redesign pipeline</td><td>8 specialists</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ======== 06 — THE EVALUATOR GATE ======== -->
+<div class="section" id="s06">
+  <span class="section-num">06</span>
+  <h2>The Evaluator Gate</h2>
+  <p>Every workflow passes through an Evaluator Gate before delivery. This is Marble's core quality mechanism.</p>
+  <p><strong>The problem it solves: correlated errors.</strong> If the same model writes an answer and checks its own answer, it makes the same mistakes both times. The writer can't see its own blind spots. You need a different model — a skeptic — to catch what the first one missed.</p>
+
+  <div class="info-grid" style="margin: 40px 0;">
+    <div class="info-card">
+      <h4>Writer</h4>
+      <p><strong>Specialist (Sonnet)</strong> — Produces the answer. Executes the work. Has domain knowledge but also has blind spots.</p>
+    </div>
+    <div class="info-card">
+      <h4>Checker</h4>
+      <p><strong>Evaluator (Opus)</strong> — Scores on 7 dimensions. Different model eliminates correlated confidence. Must be specific in critique.</p>
+    </div>
+  </div>
+
+  <h3>Seven Evaluation Dimensions</h3>
+  <table>
+    <thead><tr><th>Dimension</th><th>Weight</th><th>What it checks</th></tr></thead>
+    <tbody>
+      <tr><td>Factual Correctness</td><td>0.20</td><td>Are the legal claims accurate?</td></tr>
+      <tr><td>Citation Validity</td><td>0.15</td><td>Do sources exist and support claims?</td></tr>
+      <tr><td>Policy Compliance</td><td>0.15</td><td>Does output follow firm standards?</td></tr>
+      <tr><td>Tool Consistency</td><td>0.10</td><td>Do tool calls match the reasoning?</td></tr>
+      <tr><td>Jurisdictional Accuracy</td><td>0.15</td><td>Right law for the right jurisdiction?</td></tr>
+      <tr><td>Internal Consistency</td><td>0.15</td><td>Does the output contradict itself?</td></tr>
+      <tr><td>Completeness</td><td>0.10</td><td>Are all parts of the request addressed?</td></tr>
+    </tbody>
+  </table>
+  <div class="flow-meta">
+    <div class="flow-meta-item"><div class="flow-meta-num">0.75</div><div class="flow-meta-label">Pass Threshold</div></div>
+    <div class="flow-meta-item"><div class="flow-meta-num">2</div><div class="flow-meta-label">Max Revisions</div></div>
+  </div>
+  <p>The Evaluator doesn't grade on style — that's the plain-language specialist's job. It evaluates correctness. A wrong legal citation is a hard fail. A missing comma is not.</p>
+</div>
+
+<!-- ======== 07 — THE AGENTS ======== -->
+<div class="section" id="s07">
+  <span class="section-num">07</span>
+  <h2>The Agents</h2>
+  <p>70 specialist agents organized across 16 practice groups — from a managing partner who assigns cases to a junior intern who does the legwork. Each agent has its own system prompt, defined role, NBA2K-style skill ratings, and model assignment. The router selects the right team for each engagement.</p>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Firm Leadership</div>
+    <div class="agent-row"><span class="agent-name">managing-partner</span><span class="agent-desc">Assigns matters, selects workflows, oversees quality. The decision-maker when practice areas conflict.</span></div>
+    <div class="agent-row"><span class="agent-name">supervising-partner</span><span class="agent-desc">Reviews junior work product. Ensures compliance with firm standards before delivery.</span></div>
+    <div class="agent-row"><span class="agent-name">of-counsel</span><span class="agent-desc">Senior advisory role. Provides strategic counsel on high-stakes engagements.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Design &amp; Analysis</div>
+    <div class="agent-row"><span class="agent-name">design-reviewer</span><span class="agent-desc">Scores documents on 5 dimensions: readability, findability, clarity, visual design, ethics. 0–4 scale. Calculates Complexity Tax.</span></div>
+    <div class="agent-row"><span class="agent-name">ethics-auditor</span><span class="agent-desc">Detects 7 categories of dark patterns. Maps to GDPR / FTC / CCPA / CPA regulations.</span></div>
+    <div class="agent-row"><span class="agent-name">service-designer</span><span class="agent-desc">Analyzes the full user journey. Touchpoints, tasks, emotional arcs.</span></div>
+    <div class="agent-row"><span class="agent-name">plain-language-specialist</span><span class="agent-desc">Cognitive load analysis. Flesch-Kincaid grade level. Plain language transformation.</span></div>
+    <div class="agent-row"><span class="agent-name">client-proxy</span><span class="agent-desc">Role-plays as the actual reader. Tests document against user personas.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Transformation &amp; Synthesis</div>
+    <div class="agent-row"><span class="agent-name">transformation-specialist</span><span class="agent-desc">Rewrites the document, preserving legal meaning while improving design.</span></div>
+    <div class="agent-row"><span class="agent-name">meaning-guardian</span><span class="agent-desc">Verifies no legal meaning was lost during transformation.</span></div>
+    <div class="agent-row"><span class="agent-name">synthesis-editor</span><span class="agent-desc">Assembles the final dual-artifact output: redesigned doc + review package.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Corporate &amp; Transactional</div>
+    <div class="agent-row"><span class="agent-name">corporate-generalist</span><span class="agent-desc">General corporate matters. Governance, formations, board resolutions.</span></div>
+    <div class="agent-row"><span class="agent-name">ma-specialist</span><span class="agent-desc">Mergers and acquisitions. Due diligence, deal structuring, purchase agreements.</span></div>
+    <div class="agent-row"><span class="agent-name">contract-specialist</span><span class="agent-desc">Contract drafting and negotiation across all commercial agreements.</span></div>
+    <div class="agent-row"><span class="agent-name">banking-finance</span><span class="agent-desc">Lending, structured finance, security agreements, regulatory capital.</span></div>
+    <div class="agent-row"><span class="agent-name">capital-markets</span><span class="agent-desc">Securities offerings, prospectus review, exchange compliance.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Disputes &amp; Litigation</div>
+    <div class="agent-row"><span class="agent-name">litigation-partner</span><span class="agent-desc">Senior trial strategy. Case theory, motion practice, settlement analysis.</span></div>
+    <div class="agent-row"><span class="agent-name">litigation-associate</span><span class="agent-desc">Research, brief drafting, discovery management, deposition preparation.</span></div>
+    <div class="agent-row"><span class="agent-name">arbitration-specialist</span><span class="agent-desc">International and domestic arbitration. Institutional rules, procedural strategy.</span></div>
+    <div class="agent-row"><span class="agent-name">dispute-resolution</span><span class="agent-desc">Mediation, negotiation strategy, settlement frameworks.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Regulatory &amp; Compliance</div>
+    <div class="agent-row"><span class="agent-name">regulatory-counsel</span><span class="agent-desc">Regulatory framework analysis. Licensing, reporting obligations, agency interactions.</span></div>
+    <div class="agent-row"><span class="agent-name">compliance-officer</span><span class="agent-desc">Internal compliance programs. Policy development, training, monitoring systems.</span></div>
+    <div class="agent-row"><span class="agent-name">antitrust-specialist</span><span class="agent-desc">Competition law. Merger clearance, cartel risk, dominance analysis.</span></div>
+    <div class="agent-row"><span class="agent-name">sanctions-specialist</span><span class="agent-desc">Trade sanctions, export controls, OFAC screening, embargo compliance.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Specialist Practice Areas</div>
+    <div class="agent-row"><span class="agent-name">tax-counsel</span><span class="agent-desc">Tax structuring, transfer pricing, treaty analysis, tax controversy.</span></div>
+    <div class="agent-row"><span class="agent-name">ip-specialist</span><span class="agent-desc">Patents, trademarks, copyright, trade secrets, licensing.</span></div>
+    <div class="agent-row"><span class="agent-name">privacy-counsel</span><span class="agent-desc">GDPR, CCPA, data protection impact assessments, cross-border transfers.</span></div>
+    <div class="agent-row"><span class="agent-name">employment-counsel</span><span class="agent-desc">Employment contracts, workplace policies, discrimination claims, benefits.</span></div>
+    <div class="agent-row"><span class="agent-name">real-estate-counsel</span><span class="agent-desc">Property transactions, leases, land use, zoning, title review.</span></div>
+    <div class="agent-row"><span class="agent-name">environmental-counsel</span><span class="agent-desc">Environmental compliance, permitting, contamination liability, ESG.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Risk &amp; Adversarial</div>
+    <div class="agent-row"><span class="agent-name">risk-pricer</span><span class="agent-desc">Quantitative risk assessment. Probability-weighted exposure, financial modeling.</span></div>
+    <div class="agent-row"><span class="agent-name">red-team</span><span class="agent-desc">Adversarial challenge. Finds weaknesses in legal positions, tests arguments from opposing counsel's perspective.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Industry Specialists</div>
+    <div class="agent-row"><span class="agent-name">fintech-specialist</span><span class="agent-desc">Financial technology regulation. Payment services, crypto, lending platforms.</span></div>
+    <div class="agent-row"><span class="agent-name">healthcare-specialist</span><span class="agent-desc">Healthcare regulation. HIPAA, clinical trials, pharmaceutical compliance.</span></div>
+    <div class="agent-row"><span class="agent-name">media-specialist</span><span class="agent-desc">Media and entertainment law. Content licensing, defamation, platform regulation.</span></div>
+    <div class="agent-row"><span class="agent-name">energy-specialist</span><span class="agent-desc">Energy regulation. Power purchase agreements, grid access, renewable incentives.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Design &amp; Communication</div>
+    <div class="agent-row"><span class="agent-name">ux-writer</span><span class="agent-desc">Microcopy, interface text, error messages. Makes legal concepts navigable.</span></div>
+    <div class="agent-row"><span class="agent-name">information-architect</span><span class="agent-desc">Document structure, navigation patterns, content hierarchy optimization.</span></div>
+    <div class="agent-row"><span class="agent-name">visual-designer</span><span class="agent-desc">Layout, typography, visual hierarchy. Transforms wall-of-text into scannable design.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Quality &amp; Infrastructure</div>
+    <div class="agent-row"><span class="agent-name">evaluator</span><span class="agent-desc">Automated quality gate. Different model from specialists. 7-dimension rubric. Max 2 revision loops, then escalate.</span></div>
+    <div class="agent-row"><span class="agent-name">contract-reviewer</span><span class="agent-desc">Clause-by-clause contract analysis. Risk scores (1–5). Deviation flags. Redline drafting.</span></div>
+    <div class="agent-row"><span class="agent-name">legal-researcher</span><span class="agent-desc">Case law research, statutory analysis, secondary source compilation.</span></div>
+    <div class="agent-row"><span class="agent-name">project-manager</span><span class="agent-desc">Engagement coordination, timeline tracking, resource allocation.</span></div>
+    <div class="agent-row"><span class="agent-name">knowledge-manager</span><span class="agent-desc">Curates institutional knowledge, maintains precedent libraries, extracts lessons learned.</span></div>
+  </div>
+
+  <div class="agent-group">
+    <div class="agent-group-title">Junior Team</div>
+    <div class="agent-row"><span class="agent-name">junior-associate</span><span class="agent-desc">First-pass research, document review, initial drafting under supervision.</span></div>
+    <div class="agent-row"><span class="agent-name">paralegal</span><span class="agent-desc">Document assembly, filing management, citation checking, procedural support.</span></div>
+    <div class="agent-row"><span class="agent-name">legal-intern</span><span class="agent-desc">Basic research tasks, summarization, document organization.</span></div>
+  </div>
+
+  <p>Each agent has a dedicated system prompt file (58 prompt files total, including 7 orchestrator variants for different workflow types). The router selects not just the workflow but the specific team composition — a simple NDA review might use 3 agents, while an adversarial M&amp;A review could deploy 12.</p>
+  <p class="callout">This isn't round-robin. It's genuine collaboration — the kind where the output is better because the agents disagree.</p>
+</div>
+
+<!-- ======== 08 — THE DASHBOARD ======== -->
+<div class="section" id="s08">
+  <span class="section-num">08</span>
+  <h2>The Dashboard</h2>
+  <p>Marble has a full-stack web interface — a React single-page application with WCAG AA accessibility, responsive layouts, and an editorial design language (Inter + Cormorant Garamond, warm cream palette).</p>
+
+  <div class="flow">
+    <div class="flow-step">Landing<br><small>My Cases</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Briefing<br><small>Upload docs</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Strategy<br><small>Configure</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Team<br><small>Select agents</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step highlight">Working<br><small>Live team chat</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Delivery<br><small>Results + chat</small></div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h4>Briefing</h4>
+      <p>Upload PDFs and DOCX files, import from URLs. AI-powered briefing analysis extracts key issues and suggests workflows. Retry on failure.</p>
+    </div>
+    <div class="info-card">
+      <h4>Strategy &amp; Team</h4>
+      <p>Configure engagement parameters, select workflow. Choose from team presets or hand-pick agents. Provider toggle: Claude (US) or EU Sovereign (Mistral). Offline indicator when API is unreachable.</p>
+    </div>
+    <div class="info-card">
+      <h4>Working</h4>
+      <p>Team chat room with real-time activity feed: agent speech bubbles, tool-use indicators, progress checklist, and reassurance messages during processing silences. Human gates appear as focus-trapped dialogs. Connection lost banner on WebSocket drop. Duplicate tab protection.</p>
+    </div>
+    <div class="info-card">
+      <h4>Delivery</h4>
+      <p>Six-tab editorial layout (The Work, The Story, The Scorecard, Review, Conversation, Next Steps). Derivative document generation. Loading skeleton. Responsive grids. Cowork folder save via File System Access API.</p>
+    </div>
+    <div class="info-card">
+      <h4>Billing</h4>
+      <p>Per-turn cost tracking with model-specific pricing (Opus, Sonnet, Haiku). Token usage breakdown. Cache read/write accounting.</p>
+    </div>
+    <div class="info-card">
+      <h4>Accessibility</h4>
+      <p>WCAG AA compliant: keyboard navigation with focus-visible indicators, skip-to-content, ARIA landmarks, live regions, dialog semantics, 4.5:1+ color contrast, <code>prefers-reduced-motion</code> support. Responsive on mobile, tablet, and desktop.</p>
+    </div>
+  </div>
+
+  <h3>Additional Views</h3>
+  <p>My Cases (active + archived engagements), My Page (profile, custom instructions, firm personality editor), Agent Builder (NBA2K-style custom agent creator with edit mode), Marble Challenge (blind document comparison), Bet The Company (high-stakes engagement), Claw Mode (remote monitoring dashboard).</p>
+  <p>The dashboard connects to the Fastify API via authenticated fetch calls (cookie-based auth for browsers, Bearer tokens for API clients). View transitions animate navigation between screens.</p>
+</div>
+
+<!-- ======== 09 — DOCUMENT INGESTION ======== -->
+<div class="section" id="s09">
+  <span class="section-num">09</span>
+  <h2>Document Ingestion</h2>
+  <p>Legal work starts with documents. Marble has a full document ingestion pipeline that extracts text, detects structure, and makes documents available to agents.</p>
+
+  <h3>Format Support</h3>
+  <p>The parser accepts PDF (via pdf-parse), DOCX (via mammoth), and plain text formats. Each goes through format-specific extraction, then a shared structure detection pass.</p>
+
+  <h3>Structure Detection</h3>
+  <p>After text extraction, a structure detector identifies section headings, defined terms, and tables. This transforms a flat text blob into a navigable document tree that agents can reference by section.</p>
+
+  <h3>The Pipeline</h3>
+  <div class="flow">
+    <div class="flow-step">Upload<br><small>PDF / DOCX / TXT</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Parse<br><small>Format-specific</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Detect<br><small>Sections + terms</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Chunk<br><small>Section-based</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">Index<br><small>FTS5 search</small></div>
+  </div>
+
+  <p>Documents uploaded via the dashboard briefing step flow through this pipeline automatically. The parsed output feeds into both the session (for immediate agent use) and the knowledge base (for cross-session retrieval).</p>
+</div>
+
+<!-- ======== 10 — KNOWLEDGE BASE ======== -->
+<div class="section" id="s10">
+  <span class="section-num">10</span>
+  <h2>Knowledge Base</h2>
+  <p>Agents need reference materials — precedents, internal policies, regulatory guidance. The knowledge base provides searchable document collections that persist across sessions.</p>
+
+  <h3>Indexing</h3>
+  <p>Documents are chunked at section boundaries (target ~1500 words per chunk, max 2000). If no sections are detected, the fallback splits on paragraph boundaries. Each chunk is stored in SQLite with FTS5 full-text indexing.</p>
+
+  <h3>Retrieval</h3>
+  <p>Agents query the knowledge base via MCP tools during execution. The retriever performs ranked full-text search and returns the most relevant chunks with their source document and section heading. This gives agents citable references grounded in actual uploaded materials.</p>
+
+  <h3>Built-in Knowledge</h3>
+  <p>The system ships with curated knowledge files covering ethics audit frameworks, legal sanity checks, meaning preservation rules, pattern libraries, persona definitions, plain language guidelines, and scoring rubrics — seven knowledge domains that inform agent behavior.</p>
+</div>
+
+<!-- ======== 11 — AUTH & PERSISTENCE ======== -->
+<div class="section" id="s11">
+  <span class="section-num">11</span>
+  <h2>Auth &amp; Persistence</h2>
+  <p>The system runs on SQLite (better-sqlite3) with WAL mode for concurrent reads. Live sessions stay in memory; SQLite stores the archive.</p>
+
+  <h3>Dual Authentication</h3>
+  <p>Two auth paths serve different clients. Browser users authenticate via email/password and receive an HttpOnly cookie (<code>marble_token</code>). API clients and agents use Bearer tokens (<code>Authorization: Bearer shem_agent_...</code>). Both paths resolve to a user identity that scopes all data access.</p>
+
+  <h3>Data Model</h3>
+  <div class="info-grid">
+    <div class="info-card">
+      <h4>Users</h4>
+      <p>Email + bcrypt password hash. Auth tokens with expiry. User-scoped data isolation.</p>
+    </div>
+    <div class="info-card">
+      <h4>Matters</h4>
+      <p>Client engagements with metadata. Status tracking (active, completed, archived).</p>
+    </div>
+    <div class="info-card">
+      <h4>Sessions</h4>
+      <p>Workflow execution records. State snapshots, cost totals, timestamps. Linked to matters.</p>
+    </div>
+    <div class="info-card">
+      <h4>Knowledge Base</h4>
+      <p>FTS5-indexed document chunks. Collection-scoped. Source tracking for citations.</p>
+    </div>
+  </div>
+
+  <p>All API routes (11 route files) are protected by the auth middleware. Public routes (login, register) are explicitly exempted. The middleware checks cookies first, then Bearer tokens, and attaches the resolved user identity to every request.</p>
+</div>
+
+<!-- ======== 12 — THE SESSION ======== -->
+<div class="section" id="s12">
+  <span class="section-num">12</span>
+  <h2>The Session</h2>
+  <p>Every workflow — four steps or eleven — runs inside a session. The session is the system's memory for a single engagement.</p>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h4>Events</h4>
+      <p>Real-time event bus with WebSocket streaming. Routing decisions, gate results, workflow transitions, cost updates, errors.</p>
+    </div>
+    <div class="info-card">
+      <h4>Audit</h4>
+      <p>JSONL audit trail with SHA-256 checksum chain. Tamper-evident. Every tool call, gate decision, and cost event.</p>
+    </div>
+    <div class="info-card">
+      <h4>Cost</h4>
+      <p>Per-session budget tracking with hooks. Blocks tool calls when budget is exceeded.</p>
+    </div>
+    <div class="info-card">
+      <h4>Memory</h4>
+      <p>Institutional memory (lessons learned). Matter memory (per-client). Precedent library. Anti-pattern registry.</p>
+    </div>
+    <div class="info-card">
+      <h4>Gates</h4>
+      <p>Human-in-the-loop decision points. CLI (readline) or API (async resolver). Approve, reject, or modify.</p>
+    </div>
+    <div class="info-card">
+      <h4>Debate</h4>
+      <p>Shared debate board. Findings, challenges, responses, resolutions. RED/YELLOW/GREEN severity with confidence scores.</p>
+    </div>
+  </div>
+
+  <h3>Workflow</h3>
+  <p>State machine with preconditions. Phase-based tool permissions enforce what agents can do at each step — even if their prompt is ignored or manipulated.</p>
+  <p>The audit trail is particularly important. Each entry's hash includes the previous entry's hash. If a single line is modified, the chain breaks — tamper-evident by design.</p>
+</div>
+
+<!-- ======== 13 — PERMISSIONS ======== -->
+<div class="section" id="s13">
+  <span class="section-num">13</span>
+  <h2>Permissions</h2>
+  <p>Agents can only use tools appropriate for the current workflow phase. This is enforced at the SDK level — not in the prompt, where it could be ignored.</p>
+
+  <div class="perm-flow">
+    <div class="question">canUseTool(toolName, input, options)</div>
+    <div class="answer">Not a Marble tool? → <span class="result-allow">ALLOW</span></div>
+    <div class="answer">Orchestrator-only tool from subagent? → <span class="result-deny">DENY</span></div>
+    <div class="answer">Tool allowed in this phase? → <span class="result-allow">ALLOW</span> / <span class="result-deny">DENY</span></div>
+  </div>
+
+  <p>Each workflow template defines its own permission rules. During analysis, agents can post findings but cannot challenge each other. During synthesis, no one can run verification. The system enforces temporal boundaries on what's possible.</p>
+</div>
+
+<!-- ======== 14 — WORKFLOW TEMPLATES ======== -->
+<div class="section" id="s14">
+  <span class="section-num">14</span>
+  <h2>Workflow Templates</h2>
+  <p>Every workflow is defined declaratively as a template — a data structure that says what the workflow is, not how to execute it. Templates live in a registry. The Router reads the registry. The executor reads the template.</p>
+
+  <pre><code>interface WorkflowTemplate {
+  id: string
+  name: string
+  description: string
+  steps: string[]
+  stepDefinitions: Record&lt;string, GenericStepDef&gt;
+  availableTools: string[]
+  requiredAgents: string[]
+  orchestratorPrompt: string
+  phasePermissions?: Record&lt;string, DenyRule&gt;
+}</code></pre>
+
+  <p>Adding a new workflow takes one file. Register it, and the Router sees it.</p>
+
+  <pre><code>// src/workflows/templates/compliance-check.ts
+workflowRegistry.register({
+  id: 'compliance-check',
+  name: 'Compliance Check',
+  description: 'Regulatory compliance review.',
+  steps: ['intake', 'framework_selection', 'analysis',
+          'evaluator_gate', 'report', 'delivered'],
+  requiredAgents: ['compliance-specialist', 'evaluator'],
+  orchestratorPrompt: '...',
+});</code></pre>
+</div>
+
+<!-- ======== 15 — DESIGN DECISIONS ======== -->
+<div class="section" id="s15">
+  <span class="section-num">15</span>
+  <h2>Design Decisions</h2>
+
+  <div class="qa">
+    <div class="qa-question">Why different models for specialist and evaluator?</div>
+    <p class="qa-answer">Correlated errors. If the same model writes an answer and checks it, it makes the same mistakes both times. The #1 failure mode in multi-agent systems is correlated confidence — two instances of the same model agreeing on something that's wrong.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why phase-based tool permissions?</div>
+    <p class="qa-answer">Prompt compliance is not guaranteed. An agent might ignore instructions about what tools to use. The permission system enforces tool access at the SDK level — the agent literally cannot call a blocked tool.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why a state machine instead of free-form agent chatter?</div>
+    <p class="qa-answer">Legal work requires auditability. You need to prove what happened, in what order, and who approved it. A state machine with preconditions gives you that. Step 5 cannot happen before step 4. Gate decisions are recorded. The audit trail is tamper-evident.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why separate templates from executors?</div>
+    <p class="qa-answer">Separation of what from how. A template says "this workflow has six steps." The executor says "here's how to run them." New workflows don't need new executors.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why a revision loop instead of just failing?</div>
+    <p class="qa-answer">Most quality failures are fixable. A specialist that forgets to cite a source can add the citation. Two revision loops catches most correctable errors. After that, send it to a human.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why institutional memory?</div>
+    <p class="qa-answer">The system gets better over time. When it learns that a particular type of clause is commonly missed in NDA reviews, that lesson goes into memory. The next NDA review starts with that knowledge. Every engagement teaches the system something.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why SQLite instead of Postgres?</div>
+    <p class="qa-answer">Zero infrastructure. The system deploys as a single process with an embedded database file. WAL mode gives concurrent reads. FTS5 gives full-text search for the knowledge base. No connection pools, no separate database server, no Docker compose. One binary, one data directory.</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why per-turn cost tracking?</div>
+    <p class="qa-answer">The SDK only reports total cost at the end. But engagements can run for minutes. Users watching live agents want to see cost accumulate in real time, not discover a $12 bill after the fact. Per-turn estimation extracts token counts from each assistant message and multiplies by model-specific rates (Opus at $15/$75, Sonnet at $3/$15, Haiku at $0.80/$4 per million tokens).</p>
+  </div>
+
+  <div class="qa">
+    <div class="qa-question">Why 70 agents?</div>
+    <p class="qa-answer">A real law firm has specialists. You would not send a tax lawyer to handle a patent dispute. The router selects the right team for each engagement — a simple NDA review might use 3 agents, while an adversarial M&amp;A review could deploy 12. Each agent has a purpose-built system prompt tuned for its practice area. Users can also build custom agents via the Agent Builder. The cost is in prompt engineering, not compute — only the selected team runs.</p>
+  </div>
+</div>
+
+<!-- ======== 16 — USING MARBLE ======== -->
+<div class="section" id="s16">
+  <span class="section-num">16</span>
+  <h2>Using Marble</h2>
+
+  <h3>CLI</h3>
+  <pre><code># Counsel — quick legal question
+npx tsx src/index.ts --request "What is force majeure?" \
+  --workflow counsel
+
+# Review — analyze a contract with evaluator
+npx tsx src/index.ts ./nda.pdf \
+  --request "Review this NDA for red flags" --budget 3.00
+
+# Roundtable — multi-expert analysis with debate
+npx tsx src/index.ts ./terms-of-service.txt \
+  --workflow roundtable --audience consumer --jurisdiction EU
+
+# Adversarial — stress-test a legal position
+npx tsx src/index.ts ./opinion-letter.pdf \
+  --request "Stress-test this opinion" --workflow adversarial</code></pre>
+
+  <h3>API</h3>
+  <pre><code>POST /api/sessions
+{
+  "request": {
+    "type": "review",
+    "documentPath": "/path/to/contract.pdf",
+    "context": { "jurisdiction": "EU" }
+  },
+  "options": { "budget": 5.00 }
+}</code></pre>
+  <p>The API returns a session ID. Connect to the WebSocket endpoint for real-time event streaming. Submit gate decisions via POST.</p>
+
+  <h3>Dashboard</h3>
+  <p>The simplest way to use Marble: open the web dashboard, create a matter, upload your documents, select a team, and watch the agents work in real time. Gate approvals appear as interactive dialogs. Results are delivered in an editorial layout with derivative document generation.</p>
+  <pre><code># Start the server (serves both API and dashboard)
+npx tsx src/api/server.ts
+
+# Dashboard available at http://localhost:3000
+# API at http://localhost:3000/api/*
+# WebSocket at ws://localhost:3000/ws</code></pre>
+</div>
+
+<!-- ======== 17 — THE NUMBERS ======== -->
+<div class="section" id="s17">
+  <span class="section-num">17</span>
+  <h2>The Numbers</h2>
+
+  <div class="stats-grid">
+    <div class="stat-item"><div class="stat-num">610</div><div class="stat-label">Tests</div></div>
+    <div class="stat-item"><div class="stat-num">33</div><div class="stat-label">Test Files</div></div>
+    <div class="stat-item"><div class="stat-num">429</div><div class="stat-label">Source Files</div></div>
+    <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">Workflows</div></div>
+    <div class="stat-item"><div class="stat-num">70</div><div class="stat-label">Agents</div></div>
+    <div class="stat-item"><div class="stat-num">18</div><div class="stat-label">MCP Tools</div></div>
+    <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">TS Errors</div></div>
+  </div>
+
+  <p>The codebase spans two packages: the backend (190 TypeScript source files) and the frontend dashboard (239 TypeScript/React source files). Both compile with zero TypeScript errors. The build produces a clean production bundle in under 2 seconds.</p>
+
+  <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat-item"><div class="stat-num">18</div><div class="stat-label">API Routes</div></div>
+    <div class="stat-item"><div class="stat-num">58</div><div class="stat-label">Agent Prompts</div></div>
+    <div class="stat-item"><div class="stat-num">7</div><div class="stat-label">Knowledge Domains</div></div>
+    <div class="stat-item"><div class="stat-num">6</div><div class="stat-label">Legal Datasets</div></div>
+  </div>
+</div>
+
+<!-- ======== 18 — WHAT'S NEXT ======== -->
+<div class="section" id="s18">
+  <span class="section-num">18</span>
+  <h2>What's Next</h2>
+  <p>Most roadmap items from v1 are now shipped. Here is what was delivered and what remains.</p>
+
+  <table>
+    <thead><tr><th>Item</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>New workflow templates (7 additional)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Client portal / dashboard</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Document ingestion pipeline (PDF, DOCX)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Auth &amp; multi-tenancy (SQLite + user-scoped data)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Knowledge base (FTS5-indexed document search + 6 legal datasets)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Derivative document generation</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Post-delivery conversation mode</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Per-turn cost tracking with model-specific pricing</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>70-agent roster across 16 practice areas</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>WCAG AA accessibility + responsive layouts</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>EU sovereign provider (Mistral) + ethical mode</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Custom agent builder with edit mode</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Production hardening (36 security + stability fixes)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+      <tr><td>Claw Mode (autonomous document processing)</td><td><span class="flag-shipped">SHIPPED</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Remaining Roadmap</h3>
+  <table>
+    <thead><tr><th>Item</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Live testing &amp; tuning</td><td>Run real engagements end-to-end. Tune agent prompts based on actual output quality.</td></tr>
+      <tr><td>Cross-session learning</td><td>Report card, feedback loop, and baselines are built. Wire them into the engagement cycle.</td></tr>
+      <tr><td>Multi-jurisdiction</td><td>Parallel jurisdiction analysis within a single workflow run.</td></tr>
+      <tr><td>Document export</td><td>Generate formatted PDF/DOCX outputs from delivery results.</td></tr>
+      <tr><td>Collaboration</td><td>Multi-user access to matters. Comments, annotations, version history.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ======== 19 — FILE MAP ======== -->
+<div class="section" id="s19">
+  <span class="section-num">19</span>
+  <h2>File Map</h2>
+
+  <div class="file-map"><span class="dir">src/</span>
+├── dispatch.ts                    <span class="desc">Universal entry point</span>
+├── orchestrator.ts                <span class="desc">Legal design executor</span>
+├── config.ts                      <span class="desc">Centralized env-var config</span>
+│
+├── <span class="dir">router/</span>
+│   ├── router.ts                  <span class="desc">Classification + routing</span>
+│   ├── router-prompt.ts           <span class="desc">Router system prompt</span>
+│   └── router-schema.ts           <span class="desc">Zod schema</span>
+│
+├── <span class="dir">workflows/</span>
+│   ├── registry.ts                <span class="desc">Template registry</span>
+│   ├── executor.ts                <span class="desc">Generic workflow executor</span>
+│   ├── index.ts                   <span class="desc">Auto-registration</span>
+│   └── <span class="dir">templates/</span>               <span class="desc">8 workflow templates</span>
+│       ├── counsel.ts             <span class="desc">Solo expert, direct answer (3 steps)</span>
+│       ├── review.ts              <span class="desc">Specialist + evaluator (6 steps)</span>
+│       ├── roundtable.ts          <span class="desc">Parallel panel + debate (7 steps)</span>
+│       ├── full-bench.ts          <span class="desc">Senior decomposition (7 steps)</span>
+│       ├── adversarial.ts         <span class="desc">Builder + attacker (5 steps)</span>
+│       ├── research-memo.ts       <span class="desc">Research + citations (5 steps)</span>
+│       ├── pre-engagement.ts      <span class="desc">Client onboarding (7 steps)</span>
+│       ├── simple-query.ts        <span class="desc">Legacy: specialist + evaluator</span>
+│       ├── contract-review.ts     <span class="desc">Legacy: clause-by-clause</span>
+│       └── legal-design.ts        <span class="desc">Legacy: 11-step pipeline</span>
+│
+├── <span class="dir">agents/</span>
+│   ├── definitions.ts             <span class="desc">All 70 agent configs</span>
+│   ├── profiles.ts                <span class="desc">70-agent profile registry (skill ratings, DiceBear avatars)</span>
+│   └── <span class="dir">prompts/</span>                  <span class="desc">58 prompt files</span>
+│       ├── orchestrator.ts        <span class="desc">Lead orchestrator</span>
+│       ├── orchestrator-*.ts      <span class="desc">4 workflow-specific variants</span>
+│       ├── managing-partner.ts    <span class="desc">Firm leadership</span>
+│       ├── design-reviewer.ts     <span class="desc">5-dimension scorer</span>
+│       ├── ethics-auditor.ts      <span class="desc">Dark pattern detector</span>
+│       ├── litigation-partner.ts  <span class="desc">Trial strategy</span>
+│       ├── privacy-counsel.ts     <span class="desc">GDPR / CCPA specialist</span>
+│       ├── red-team.ts            <span class="desc">Adversarial challenge</span>
+│       └── ...                    <span class="desc">50 more specialist prompts</span>
+│
+├── <span class="dir">documents/</span>
+│   ├── parser.ts                  <span class="desc">Document extraction entry point</span>
+│   ├── pdf-parser.ts              <span class="desc">PDF text extraction</span>
+│   ├── docx-parser.ts             <span class="desc">DOCX text extraction</span>
+│   ├── structure-detector.ts      <span class="desc">Section/term/table detection</span>
+│   └── types.ts                   <span class="desc">ParsedDocument types</span>
+│
+├── <span class="dir">knowledge-base/</span>
+│   ├── indexer.ts                 <span class="desc">Section-based chunking + FTS5</span>
+│   └── retriever.ts               <span class="desc">Ranked full-text search</span>
+│
+├── <span class="dir">knowledge/</span>                     <span class="desc">7 built-in knowledge domains</span>
+│   ├── ethics-audit.ts            <span class="desc">Ethics framework</span>
+│   ├── legal-sanity-check.ts      <span class="desc">Sanity check rules</span>
+│   ├── meaning-preservation.ts    <span class="desc">Preservation rules</span>
+│   ├── pattern-library.ts         <span class="desc">Design patterns</span>
+│   ├── persona.ts                 <span class="desc">User personas</span>
+│   ├── plain-language.ts          <span class="desc">Plain language guidelines</span>
+│   └── scoring-rubric.ts          <span class="desc">Scoring dimensions</span>
+│
+├── <span class="dir">db/</span>
+│   └── database.ts                <span class="desc">SQLite (better-sqlite3) + migrations</span>
+│
+├── <span class="dir">mcp/</span>
+│   ├── server.ts                  <span class="desc">MCP server factory</span>
+│   └── <span class="dir">tools/</span>                    <span class="desc">18 MCP tool modules</span>
+│       ├── debate-board.ts        <span class="desc">Shared agent state</span>
+│       ├── scoring-engine.ts      <span class="desc">Computational scoring</span>
+│       ├── approval-gate.ts       <span class="desc">Human gates</span>
+│       ├── workflow-engine.ts     <span class="desc">11-step state machine</span>
+│       ├── generic-workflow-engine.ts <span class="desc">N-step state machine</span>
+│       ├── verification-engine.ts <span class="desc">Self/cross/score checks</span>
+│       ├── evaluator-gate.ts      <span class="desc">Quality gate tools</span>
+│       ├── memory-system.ts       <span class="desc">Institutional memory</span>
+│       ├── knowledge-base.ts      <span class="desc">Document retrieval for agents</span>
+│       ├── document-reader.ts     <span class="desc">Document access</span>
+│       ├── pre-engagement.ts      <span class="desc">Conflict check tools</span>
+│       ├── quality-check.ts       <span class="desc">Quality validation</span>
+│       ├── risk-pricing.ts        <span class="desc">Risk quantification</span>
+│       ├── report-card.ts         <span class="desc">Quality metrics</span>
+│       ├── feedback-loop.ts       <span class="desc">Post-session learning</span>
+│       ├── baselines.ts           <span class="desc">Quality expectations</span>
+│       ├── legal-md-compiler.ts   <span class="desc">Knowledge export</span>
+│       └── session-replay-testing.ts <span class="desc">Regression tests</span>
+│
+├── <span class="dir">session/</span>
+│   ├── session-state.ts           <span class="desc">Per-session state</span>
+│   └── session-manager.ts         <span class="desc">Multi-session management</span>
+│
+├── <span class="dir">permissions/</span>
+│   └── dynamic-permissions.ts     <span class="desc">Phase-based tool access</span>
+│
+├── <span class="dir">hooks/</span>
+│   ├── audit-logger.ts            <span class="desc">Audit trail hooks</span>
+│   ├── cost-tracker.ts            <span class="desc">Budget enforcement</span>
+│   └── human-gate.ts              <span class="desc">Gate enforcement</span>
+│
+├── <span class="dir">events/</span>
+│   └── event-bus.ts               <span class="desc">Real-time event system</span>
+│
+├── <span class="dir">gates/</span>
+│   └── gate-resolver.ts           <span class="desc">CLI + API + auto-approve</span>
+│
+├── <span class="dir">types/</span>                         <span class="desc">11 type definition files</span>
+│   ├── index.ts                   <span class="desc">Core types</span>
+│   ├── workflow.ts                <span class="desc">Workflow + template types</span>
+│   ├── debate.ts                  <span class="desc">Debate board types</span>
+│   ├── client.ts                  <span class="desc">Client identity types</span>
+│   ├── agent-profile.ts           <span class="desc">Agent config types</span>
+│   ├── engagement.ts              <span class="desc">Engagement + matter types</span>
+│   └── output-schemas.ts          <span class="desc">Agent output formats</span>
+│
+├── <span class="dir">api/</span>
+│   ├── server.ts                  <span class="desc">Fastify API + static serving</span>
+│   ├── ws-handler.ts              <span class="desc">WebSocket event streaming</span>
+│   ├── <span class="dir">middleware/</span>
+│   │   ├── auth.ts                <span class="desc">Dual auth (cookie + Bearer)</span>
+│   │   └── validation.ts          <span class="desc">Zod request validation</span>
+│   ├── <span class="dir">routes/</span>                   <span class="desc">18 route modules</span>
+│   │   ├── auth-routes.ts         <span class="desc">Login, register, logout</span>
+│   │   ├── sessions.ts            <span class="desc">Session CRUD + soul injection</span>
+│   │   ├── engage.ts              <span class="desc">Agent engagement (sync + webhook)</span>
+│   │   ├── verify.ts              <span class="desc">Standalone verification</span>
+│   │   ├── matters.ts             <span class="desc">Matter management</span>
+│   │   ├── briefing.ts            <span class="desc">AI briefing analysis</span>
+│   │   ├── claw.ts                <span class="desc">Claw Mode monitoring</span>
+│   │   ├── challenge.ts           <span class="desc">Blind document comparison</span>
+│   │   ├── agents.ts              <span class="desc">Agent profiles + presets</span>
+│   │   ├── documents.ts           <span class="desc">Document upload + parse</span>
+│   │   ├── knowledge-base.ts      <span class="desc">KB collection management</span>
+│   │   ├── workflows.ts           <span class="desc">Workflow template listing</span>
+│   │   ├── replay.ts              <span class="desc">Session replay + testing</span>
+│   │   └── ...                    <span class="desc">5 more (pricing, reputation, capabilities, well-known, challenge-prompt)</span>
+│   ├── <span class="dir">briefing/</span>
+│   │   ├── briefing-analyzer.ts   <span class="desc">AI-powered document analysis</span>
+│   │   ├── briefing-prompt.ts     <span class="desc">Briefing LLM prompt</span>
+│   │   └── briefing-schema.ts     <span class="desc">Briefing output schema</span>
+│   └── <span class="dir">derivatives/</span>
+│       └── derivative-types.ts    <span class="desc">Memo, checklist, brief types</span>
+│
+├── <span class="dir">providers/</span>
+│   ├── mistral.ts                 <span class="desc">Mistral AI client (EU sovereign)</span>
+│   ├── mistral-executor.ts        <span class="desc">Workflow execution via Mistral</span>
+│   ├── mistral-assembler.ts       <span class="desc">Document assembly from Mistral</span>
+│   ├── tool-converter.ts          <span class="desc">MCP → Mistral tool conversion</span>
+│   └── types.ts                   <span class="desc">Provider type definitions</span>
+│
+├── <span class="dir">claw/</span>                          <span class="desc">Autonomous document processing (13 modules)</span>
+│   ├── watcher.ts                 <span class="desc">Filesystem watcher with debounce</span>
+│   ├── processor.ts               <span class="desc">Document processing pipeline</span>
+│   ├── planner.ts                 <span class="desc">Budget-aware work planning</span>
+│   ├── registry.ts                <span class="desc">Document tracking (SHA-256)</span>
+│   ├── delivery.ts                <span class="desc">Output bundle generation</span>
+│   ├── local-analysis.ts          <span class="desc">On-device analysis (Ollama)</span>
+│   ├── daemon.ts                  <span class="desc">macOS LaunchAgent management</span>
+│   └── ...                        <span class="desc">6 more modules</span>
+│
+├── <span class="dir">assembly/</span>
+│   └── ...                        <span class="desc">Document assembly (HTML, DOCX)</span>
+│
+├── <span class="dir">utils/</span>
+│   ├── stream-messages.ts         <span class="desc">Message streaming + per-turn cost</span>
+│   ├── audit-persistence.ts       <span class="desc">JSONL + checksum chain</span>
+│   ├── error-recovery.ts          <span class="desc">Structured error handling</span>
+│   ├── logger.ts                  <span class="desc">Structured logging utility</span>
+│   └── fs-helpers.ts              <span class="desc">Atomic writes + backup recovery</span>
+│
+└── index.ts                       <span class="desc">CLI entry point</span>
+
+<span class="dir">viz/src/</span>                           <span class="desc">React dashboard (239 source files)</span>
+├── App.tsx                        <span class="desc">Root component + view routing + transitions</span>
+├── <span class="dir">auth/</span>                         <span class="desc">Login/register UI</span>
+├── <span class="dir">landing/</span>                      <span class="desc">Landing page, QuickStart, YOLO</span>
+├── <span class="dir">my-cases/</span>                     <span class="desc">Case management + archives</span>
+├── <span class="dir">my-page/</span>                      <span class="desc">Profile, custom instructions, soul editor</span>
+├── <span class="dir">briefing/</span>                     <span class="desc">Document upload + analysis + retry</span>
+├── <span class="dir">staffing/</span>                     <span class="desc">Strategy config, team selection, provider toggle</span>
+├── <span class="dir">working/</span>                      <span class="desc">Team chat room + real-time checklist</span>
+│   ├── <span class="dir">components/</span>               <span class="desc">ActivityCard, ReassuranceCard, ProgressSidebar</span>
+│   ├── <span class="dir">hooks/</span>                    <span class="desc">useWorkingState, useReassuranceInjector</span>
+│   └── <span class="dir">utils/</span>                    <span class="desc">toolLabels</span>
+├── <span class="dir">delivery/</span>                     <span class="desc">Results + derivatives + skeleton loading</span>
+├── <span class="dir">agent-builder/</span>                <span class="desc">Custom agent creator (3-step wizard + edit)</span>
+├── <span class="dir">challenge/</span>                    <span class="desc">Blind document comparison</span>
+├── <span class="dir">bet-the-company/</span>              <span class="desc">High-stakes engagement view</span>
+├── <span class="dir">claw/</span>                         <span class="desc">Remote monitoring dashboard</span>
+├── <span class="dir">cowork/</span>                       <span class="desc">File System Access API saves</span>
+├── <span class="dir">hooks/</span>                        <span class="desc">useMediaQuery, useTabLock</span>
+├── <span class="dir">components/</span>                   <span class="desc">GateDialog (focus trap), ErrorToast, MarbleMark</span>
+└── <span class="dir">archive/</span>                      <span class="desc">Knowledge base search UI</span></div>
+</div>
+
+<!-- ======== FOOTER ======== -->
+<div class="footer" id="footer">
+  <h2>Marble</h2>
+  <p class="footer-stats">610 tests · 70 agents · 10 workflows · WCAG AA · 0 TS errors</p>
+  <p class="footer-quote">"We know what's written in the Golem's mouth."</p>
+</div>
+
+</body>
+</html>
