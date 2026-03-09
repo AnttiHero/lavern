@@ -5,7 +5,7 @@
  * Shows active sessions (connect) and past sessions (replay).
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 
 interface ActiveSession {
@@ -65,10 +65,14 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
   const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const initialFetchDone = useRef(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isInitial = false) => {
     try {
-      setLoading(true);
+      // Only show loading spinner on the initial fetch to avoid UI flash on polls
+      if (isInitial || !initialFetchDone.current) {
+        setLoading(true);
+      }
       setError(null);
 
       const [sessionsRes, archiveRes] = await Promise.allSettled([
@@ -94,13 +98,46 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
       setError(e instanceof Error ? e.message : 'Failed to fetch sessions');
     } finally {
       setLoading(false);
+      initialFetchDone.current = true;
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    fetchData(true);
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(() => {
+          // Skip poll when tab is not visible
+          if (document.visibilityState === 'hidden') return;
+          fetchData(false);
+        }, 5000);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        // Fetch immediately when tab becomes visible again, then resume polling
+        fetchData(false);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchData]);
 
   return (
@@ -120,7 +157,7 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
         </h1>
         <button
           style={styles.refreshBtn}
-          onClick={fetchData}
+          onClick={() => fetchData(false)}
           onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
           onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
         >

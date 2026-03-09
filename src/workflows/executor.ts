@@ -65,9 +65,8 @@ export async function runGenericWorkflow(
   // Initialize audit log
   initAuditLog(session);
 
-  if (logLevel === 'debug') {
-    process.env.SHEM_LOG_LEVEL = 'debug';
-  }
+  // Note: debug logging is controlled via the SHEM_LOG_LEVEL env var at startup,
+  // not mutated per-session. The logLevel option is passed through to streamMessages.
 
   // Emit session start event
   session.events.emitEvent({
@@ -202,14 +201,17 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   } catch (error) {
     const sessionError = handleSessionError(session, error);
     console.error(`The Shem (${template.id}) encountered an error at step "${sessionError.step}":`, sessionError.cause);
-    // Still emit session_end on error so frontend isn't stuck
-    session.events.emitEvent({
-      type: 'session_end',
-      sessionId: session.id,
-      totalCost: session.accumulatedCost,
-      duration: 0,
-      timestamp: eventTimestamp(),
-    });
+    // Still emit session_end on error so frontend isn't stuck,
+    // but guard against double emission (streamMessages may have already emitted it)
+    if (session.workflow?.currentStep !== 'delivered') {
+      session.events.emitEvent({
+        type: 'session_end',
+        sessionId: session.id,
+        totalCost: session.accumulatedCost,
+        duration: 0,
+        timestamp: eventTimestamp(),
+      });
+    }
     throw error;
   }
 

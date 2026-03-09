@@ -108,7 +108,11 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   // ── Event processing ─────────────────────────────────────────────────
 
   const handleEvent = useCallback((event: ShemEvent) => {
-    setEvents(prev => [...prev, event]);
+    setEvents(prev => {
+      const next = [...prev, event];
+      if (next.length > 2000) return next.slice(next.length - 1500);
+      return next;
+    });
 
     if (event.type === 'workflow_step') {
       setCurrentStep(event.step);

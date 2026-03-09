@@ -207,8 +207,8 @@ export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(SCRYPT_SALT_LEN).toString('hex');
   return new Promise((resolve, reject) => {
     crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, derivedKey) => {
-      if (err) reject(err);
-      else resolve(`${salt}:${derivedKey.toString('hex')}`);
+      if (err) return reject(err);
+      resolve(`${salt}:${derivedKey.toString('hex')}`);
     });
   });
 }
@@ -220,8 +220,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   if (keyBuf.length !== SCRYPT_KEYLEN) return false;
   return new Promise((resolve, reject) => {
     crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, derivedKey) => {
-      if (err) reject(err);
-      else resolve(crypto.timingSafeEqual(keyBuf, derivedKey));
+      if (err) return reject(err);
+      resolve(crypto.timingSafeEqual(keyBuf, derivedKey));
     });
   });
 }

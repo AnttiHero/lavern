@@ -115,22 +115,22 @@ export class AsyncGateResolver implements GateResolver {
   }
 
   async resolve(request: GateRequest): Promise<GateDecision> {
-    // Clear any stale pending gate (safety net)
+    // Clear any stale pending gate (safety net) — reject, don't approve
     if (this.pendingGate) {
       if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
-      this.pendingGate.resolve({ decision: 'approve', notes: 'Superseded by new gate request' });
+      this.pendingGate.resolve({ decision: 'reject', notes: 'Superseded by new gate request — rejected for safety' });
       this.pendingGate = null;
     }
 
     return new Promise<GateDecision>((resolvePromise) => {
       const timer = this.timeoutMs > 0
         ? setTimeout(() => {
-            console.warn(`[GATE] Timeout after ${this.timeoutMs / 1000}s — auto-approving gate: ${request.gateType}`);
+            console.warn(`[GATE] Timeout after ${this.timeoutMs / 1000}s — rejecting gate for safety: ${request.gateType}`);
             if (this.pendingGate) {
               this.pendingGate = null;
               resolvePromise({
-                decision: 'approve',
-                notes: `Auto-approved: no response within ${Math.round(this.timeoutMs / 60000)} minutes`,
+                decision: 'reject',
+                notes: `Gate timed out — rejected for safety. No human response within ${Math.round(this.timeoutMs / 60000)} minutes.`,
               });
             }
           }, this.timeoutMs)

@@ -35,15 +35,13 @@ export function waitForSessionCompletion(
     };
 
     const onError = (event: ShemEvent) => {
-      if ('message' in event) {
-        const msg = (event as { message: string }).message;
-        // Reject on any fatal-looking error (not just hardcoded strings)
-        if (msg.includes('Session failed') || msg.includes('Emergency stop') ||
-            msg.includes('fatal') || msg.includes('crashed') || msg.includes('unrecoverable')) {
-          cleanup();
-          reject(new Error(msg));
-        }
-      }
+      const msg = 'message' in event
+        ? (event as { message: string }).message
+        : 'Unknown session error';
+      // Reject on ALL errors — don't filter by substring.
+      // Any error event should unblock the waiter rather than letting it hang.
+      cleanup();
+      reject(new Error(msg));
     };
 
     // Listen for completion and errors

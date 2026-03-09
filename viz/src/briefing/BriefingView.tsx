@@ -147,6 +147,9 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
 
   // Reset interview refs when user navigates back to earlier phases
   const interviewStarted = useRef(false);
+  // Stable ref for interview to avoid infinite loop from object reference in deps
+  const interviewRef = useRef(interview);
+  interviewRef.current = interview;
 
   useEffect(() => {
     if (phase === 'documents' || phase === 'interviewer') {
@@ -156,18 +159,19 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   }, [phase]);
 
   useEffect(() => {
+    const iv = interviewRef.current;
     if (
       phase === 'questions' &&
       useLLMMode &&
-      !interview.fallbackToStatic &&
-      interview.messages.length === 0 &&
-      !interview.isStreaming &&
+      !iv.fallbackToStatic &&
+      iv.messages.length === 0 &&
+      !iv.isStreaming &&
       !interviewStarted.current
     ) {
       interviewStarted.current = true;
-      interview.startInterview();
+      iv.startInterview();
     }
-  }, [phase, useLLMMode, interview]);
+  }, [phase, useLLMMode]);
 
   // Context completeness scoring
   const { breakdown, milestones, newMilestone } = useContextScore(

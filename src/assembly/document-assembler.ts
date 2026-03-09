@@ -251,10 +251,10 @@ export async function assembleDocument(
 
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
+  const client = new Anthropic();
 
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
     try {
-      const client = new Anthropic();
       const model = config.defaultModel;
 
       // Build context with escalating retry addendums

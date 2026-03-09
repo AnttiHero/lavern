@@ -34,6 +34,9 @@ export function ConversationTab({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Stable ref for messages to avoid recreating sendMessage on every streaming chunk
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -50,7 +53,7 @@ export function ConversationTab({
     if (!text || streaming) return;
 
     const userMessage: ConversationMessage = { role: 'user', content: text };
-    const history = [...messages];
+    const history = [...messagesRef.current];
 
     setMessages(prev => [...prev, userMessage]);
     setInput(''); // Clear immediately for responsiveness — restored on error below
@@ -161,7 +164,7 @@ export function ConversationTab({
       }
       abortRef.current = null;
     }
-  }, [input, streaming, messages, sessionId, setMessages, setInput, setStreaming]);
+  }, [input, streaming, sessionId, setMessages, setInput, setStreaming]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -11,6 +11,7 @@
  * through it. The EventBus is attached to the session for real-time events.
  */
 
+import * as crypto from 'node:crypto';
 import { ShemEventBus } from '../events/event-bus.js';
 import { config } from '../config.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
@@ -31,13 +32,19 @@ import type { VerificationPipelineState } from '../types/verification.js';
 
 const MAX_ARRAY_SIZE = 5_000;
 
+/** Tracks how many entries have been dropped by boundedPush across all arrays. */
+export let boundedPushDropCount = 0;
+
 /**
  * Push an item to an array with a size cap. When the limit is hit,
  * the oldest 10% of entries are dropped. Returns the array for chaining.
  */
 export function boundedPush<T>(arr: T[], item: T, max = MAX_ARRAY_SIZE): T[] {
   if (arr.length >= max) {
-    arr.splice(0, Math.ceil(max * 0.1));
+    const dropCount = Math.ceil(max * 0.1);
+    arr.splice(0, dropCount);
+    boundedPushDropCount += dropCount;
+    console.warn(`[SESSION] boundedPush: dropped ${dropCount} oldest entries (array at ${max} cap). Total dropped: ${boundedPushDropCount}`);
   }
   arr.push(item);
   return arr;
@@ -245,7 +252,7 @@ export class SessionState {
       baselinesDir?: string;
     }
   ) {
-    this.id = id || `shem-${Date.now()}`;
+    this.id = id || `shem-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     this.events = new ShemEventBus();
     this.gateResolver = options?.gateResolver || new ReadlineGateResolver();
     if (options?.budgetUsd !== undefined) this.budgetUsd = options.budgetUsd;

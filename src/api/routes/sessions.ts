@@ -246,6 +246,70 @@ export function registerSessionRoutes(
     });
   });
 
+  // ── GET /api/sessions/archive — List archived sessions for user ─────
+  // IMPORTANT: Registered BEFORE /api/sessions/:id to prevent route shadowing.
+  // Fastify's parametric `:id` would catch "archive" as the id value otherwise.
+
+  fastify.get('/api/sessions/archive', async (request, reply) => {
+    const userId = (request as typeof request & { userId?: string }).userId;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required for session archive.' });
+    }
+
+    const archived = getSessionArchive(userId);
+    return reply.send({
+      sessions: archived.map(s => ({
+        id: s.id,
+        title: s.title,
+        status: s.status,
+        workflowId: s.workflow_id,
+        teamRoles: safeJsonParse(s.team_roles, []),
+        findingsCount: s.findings_count,
+        resolutionsCount: s.resolutions_count,
+        costUsd: s.cost_usd,
+        budgetUsd: s.budget_usd,
+        createdAt: s.created_at,
+        completedAt: s.completed_at,
+        durationMs: s.duration_ms,
+      })),
+      total: archived.length,
+    });
+  });
+
+  // ── GET /api/sessions/archive/:id — Get single archived session ────
+
+  fastify.get('/api/sessions/archive/:id', async (request, reply) => {
+    const userId = (request as typeof request & { userId?: string }).userId;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required for session archive.' });
+    }
+
+    const { id } = request.params as { id: string };
+    const session = getArchivedSession(id, userId);
+
+    if (!session) {
+      return reply.status(404).send({ error: `Archived session not found: ${id}` });
+    }
+
+    // v18: Serve assembled_document (clean deliverable), not final_output (process dump)
+    return reply.send({
+      id: session.id,
+      title: session.title,
+      status: session.status,
+      workflowId: session.workflow_id,
+      teamRoles: safeJsonParse(session.team_roles, []),
+      findingsCount: session.findings_count,
+      resolutionsCount: session.resolutions_count,
+      costUsd: session.cost_usd,
+      budgetUsd: session.budget_usd,
+      assembledDocument: session.assembled_document || null,
+      summary: safeJsonParse(session.summary_json, {}),
+      createdAt: session.created_at,
+      completedAt: session.completed_at,
+      durationMs: session.duration_ms,
+    });
+  });
+
   // ── GET /api/sessions/:id — Get session status ─────────────────────
 
   fastify.get('/api/sessions/:id', async (request, reply) => {
@@ -785,7 +849,19 @@ export function registerSessionRoutes(
       return reply.status(400).send({ error: 'message must be under 10,000 characters.' });
     }
 
-    const history = Array.isArray(body.history) ? body.history.slice(-40) : []; // Cap at 40 turns
+    // Validate and sanitize conversation history — only allow user/assistant roles
+    // to prevent prompt injection via 'system' or other role values.
+    const rawHistory = Array.isArray(body.history) ? body.history.slice(-40) : []; // Cap at 40 turns
+    const validRoles = new Set(['user', 'assistant']);
+    const history = rawHistory.filter(
+      (entry): entry is { role: 'user' | 'assistant'; content: string } =>
+        entry != null &&
+        typeof entry === 'object' &&
+        typeof entry.role === 'string' &&
+        validRoles.has(entry.role) &&
+        typeof entry.content === 'string' &&
+        entry.content.length <= 50_000
+    );
 
     // Resolve orchestrator personality from workflow template
     const workflowId = session.workflowTemplateId ?? 'counsel';
@@ -881,69 +957,13 @@ ${buildFullContext(session)}`;
     }
   });
 
-  // ── GET /api/sessions/archive — List archived sessions for user ─────
-
-  fastify.get('/api/sessions/archive', async (request, reply) => {
-    const userId = (request as typeof request & { userId?: string }).userId;
-    if (!userId) {
-      return reply.status(401).send({ error: 'Authentication required for session archive.' });
-    }
-
-    const archived = getSessionArchive(userId);
-    return reply.send({
-      sessions: archived.map(s => ({
-        id: s.id,
-        title: s.title,
-        status: s.status,
-        workflowId: s.workflow_id,
-        teamRoles: safeJsonParse(s.team_roles, []),
-        findingsCount: s.findings_count,
-        resolutionsCount: s.resolutions_count,
-        costUsd: s.cost_usd,
-        budgetUsd: s.budget_usd,
-        createdAt: s.created_at,
-        completedAt: s.completed_at,
-        durationMs: s.duration_ms,
-      })),
-      total: archived.length,
-    });
-  });
-
-  // ── GET /api/sessions/archive/:id — Get single archived session ────
-
-  fastify.get('/api/sessions/archive/:id', async (request, reply) => {
-    const userId = (request as typeof request & { userId?: string }).userId;
-    if (!userId) {
-      return reply.status(401).send({ error: 'Authentication required for session archive.' });
-    }
-
-    const { id } = request.params as { id: string };
-    const session = getArchivedSession(id, userId);
-
-    if (!session) {
-      return reply.status(404).send({ error: `Archived session not found: ${id}` });
-    }
-
-    // v18: Serve assembled_document (clean deliverable), not final_output (process dump)
-    return reply.send({
-      id: session.id,
-      title: session.title,
-      status: session.status,
-      workflowId: session.workflow_id,
-      teamRoles: safeJsonParse(session.team_roles, []),
-      findingsCount: session.findings_count,
-      resolutionsCount: session.resolutions_count,
-      costUsd: session.cost_usd,
-      budgetUsd: session.budget_usd,
-      assembledDocument: session.assembled_document || null,
-      summary: safeJsonParse(session.summary_json, {}),
-      createdAt: session.created_at,
-      completedAt: session.completed_at,
-      durationMs: session.duration_ms,
-    });
-  });
-
   // ── GET /api/sessions/:id/events — WebSocket event stream ──────────
+  // SECURITY NOTE: WebSocket access is gated by session ID knowledge.
+  // For anonymous/QuickStart sessions (no userId), knowing the session ID
+  // is the auth token — this is by design since session IDs are unguessable
+  // UUIDs. For authenticated sessions, checkSessionOwnership() enforces
+  // that only the creating user can connect. This mirrors the REST API's
+  // session-ID-as-capability-token model used for POST /api/sessions/*.
 
   fastify.get('/api/sessions/:id/events', { websocket: true }, (socket, request) => {
     const { id } = request.params as { id: string };
@@ -955,7 +975,9 @@ ${buildFullContext(session)}`;
       return;
     }
 
-    // Verify the requesting user owns this session
+    // Verify the requesting user owns this session (for authenticated sessions).
+    // For anonymous sessions (no userId on session), access is granted to anyone
+    // who knows the session ID — the ID itself serves as a capability token.
     if (!checkSessionOwnership(request, session)) {
       socket.send(JSON.stringify({ error: `Session not found: ${id}` }));
       socket.close(4003, 'Forbidden');

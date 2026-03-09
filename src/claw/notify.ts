@@ -9,7 +9,7 @@
  * Deduplication: same type+title suppressed for 5 minutes.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { config } from '../config.js';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -87,15 +87,16 @@ function sendMacOsNotification(notification: ClawNotification): void {
   if (process.platform !== 'darwin') return;
 
   try {
-    // Sanitize for AppleScript: escape backslashes, double quotes, AND single quotes
+    // SECURITY: Strip all characters except safe alphanumerics and basic punctuation
     // to prevent command injection via crafted notification content.
-    const sanitize = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "'\\''");
-    const title = sanitize(notification.title);
-    const message = sanitize(notification.message);
-    execSync(
-      `osascript -e 'display notification "${message}" with title "Marble" subtitle "${title}"'`,
-      { timeout: 3000, stdio: 'ignore' },
-    );
+    // Using execFileSync with array args avoids shell interpolation entirely.
+    const clean = (s: string) => s.replace(/[^a-zA-Z0-9 .,!?_-]/g, '');
+    const title = clean(notification.title);
+    const message = clean(notification.message);
+    execFileSync('osascript', [
+      '-e',
+      `display notification "${message}" with title "Marble" subtitle "${title}"`,
+    ], { timeout: 3000, stdio: 'ignore' });
   } catch (err) {
     console.warn(`[CLAW] macOS notification failed for ${notification.type}:`, (err as Error).message ?? err);
   }

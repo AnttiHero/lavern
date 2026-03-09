@@ -131,6 +131,84 @@ interface EngageAcceptedResponse {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 /**
+ * Validate that a URL is safe to fetch (SSRF prevention).
+ * Blocks:
+ *  - Non-HTTPS schemes (except http://localhost in dev)
+ *  - Private/reserved IP ranges (10.x, 172.16-31.x, 192.168.x, 169.254.x, 127.x)
+ *  - Localhost and loopback addresses
+ *  - IPv6 loopback (::1) and link-local (fe80::)
+ */
+function isUrlSafe(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  // Only allow HTTPS (and HTTP localhost in dev mode)
+  const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+  if (parsed.protocol === 'http:') {
+    if (!isDev || !isLocalhostHostname(parsed.hostname)) {
+      return false;
+    }
+    // In dev, allow http://localhost but still block private IPs
+    return true;
+  }
+  if (parsed.protocol !== 'https:') {
+    return false;
+  }
+
+  // Block localhost / loopback
+  if (isLocalhostHostname(parsed.hostname)) {
+    return false;
+  }
+
+  // Block private/reserved IP ranges
+  if (isPrivateIp(parsed.hostname)) {
+    return false;
+  }
+
+  return true;
+}
+
+function isLocalhostHostname(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  return lower === 'localhost' || lower === '127.0.0.1' || lower === '::1'
+    || lower === '[::1]' || lower === '0.0.0.0';
+}
+
+function isPrivateIp(hostname: string): boolean {
+  // Strip IPv6 brackets if present
+  const clean = hostname.replace(/^\[|\]$/g, '');
+
+  // IPv6 loopback and link-local
+  if (clean === '::1' || clean.startsWith('fe80:') || clean.startsWith('fc00:') || clean.startsWith('fd00:')) {
+    return true;
+  }
+
+  // IPv4 checks
+  const ipv4Match = clean.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const [, a, b] = ipv4Match.map(Number);
+    // 10.0.0.0/8
+    if (a === 10) return true;
+    // 172.16.0.0/12
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    // 192.168.0.0/16
+    if (a === 192 && b === 168) return true;
+    // 127.0.0.0/8 (loopback)
+    if (a === 127) return true;
+    // 169.254.0.0/16 (link-local)
+    if (a === 169 && b === 254) return true;
+    // 0.0.0.0
+    if (a === 0 && b === 0) return true;
+  }
+
+  return false;
+}
+
+/**
  * Resolve a document's content from content, contentBase64, or contentUrl.
  * Priority: content > contentBase64 > contentUrl.
  */
@@ -146,6 +224,11 @@ async function resolveDocumentContent(doc: { name: string; content?: string; con
   }
 
   if (doc.contentUrl) {
+    // SSRF prevention — validate URL before fetching
+    if (!isUrlSafe(doc.contentUrl)) {
+      throw new Error(`Unsafe URL for document "${doc.name}": only HTTPS URLs pointing to public hosts are allowed.`);
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
     try {

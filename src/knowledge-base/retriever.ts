@@ -145,9 +145,10 @@ function fallbackLikeSearch(
     params.push(options.jurisdiction);
   }
 
-  // Simple LIKE fallback
-  conditions.push('(LOWER(c.content) LIKE ? OR LOWER(c.heading) LIKE ?)');
-  params.push(`%${queryLower}%`, `%${queryLower}%`);
+  // Simple LIKE fallback — escape LIKE wildcard characters to prevent injection
+  const escapedQuery = escapeLike(queryLower);
+  conditions.push(`(LOWER(c.content) LIKE ? ESCAPE '\\' OR LOWER(c.heading) LIKE ? ESCAPE '\\')`);
+  params.push(`%${escapedQuery}%`, `%${escapedQuery}%`);
 
   const sql = `
     SELECT
@@ -176,18 +177,34 @@ function fallbackLikeSearch(
 
 /**
  * Sanitize user query for FTS5 MATCH syntax.
- * Strips special characters, keeps meaningful words, uses OR matching.
+ * Strips special characters (including FTS5 operators: - for NOT, " for phrase),
+ * keeps meaningful words, uses OR matching.
  */
 function sanitizeFtsQuery(query: string): string {
-  const words = query
-    .replace(/[^\w\s-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 2);
+  // Strip everything except word chars and whitespace (removes -, ", *, etc.)
+  const cleaned = query.replace(/[^\w\s]/g, ' ');
 
-  if (words.length === 0) return '';
+  const words = cleaned
+    .split(/\s+/)
+    .filter(w => w.length >= 2)
+    // Strip any remaining hyphens/quotes from individual words (defense in depth)
+    .map(w => w.replace(/["\\-]/g, ''));
+
+  // Filter again after stripping (a word might become too short)
+  const validWords = words.filter(w => w.length >= 2);
+
+  if (validWords.length === 0) return '';
 
   // Quote each word and join with OR for broad matching
-  return words.map(w => `"${w}"`).join(' OR ');
+  return validWords.map(w => `"${w}"`).join(' OR ');
+}
+
+/**
+ * Escape LIKE wildcard characters (%, _, \) for safe use in SQL LIKE patterns.
+ * Must be used with ESCAPE '\\' in the SQL query.
+ */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, '\\$&');
 }
 
 // ── Collection Listing ────────────────────────────────────────────────

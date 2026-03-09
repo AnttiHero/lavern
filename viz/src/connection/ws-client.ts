@@ -103,8 +103,24 @@ export class ShemWsClient {
   private connect(): void {
     this.options.onStatusChange(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting');
 
+    // On reconnection, update the URL to resume from the last seen event index
+    // so we don't replay the entire stream from the beginning.
+    let connectUrl = this.url;
+    if (this.reconnectAttempts > 0 && this.lastEventIndex > 0) {
+      try {
+        const parsed = new URL(connectUrl);
+        if (parsed.searchParams.has('from')) {
+          parsed.searchParams.set('from', String(this.lastEventIndex));
+          connectUrl = parsed.toString();
+        }
+      } catch {
+        // If URL parsing fails (e.g. relative URL), do a simple regex replace
+        connectUrl = connectUrl.replace(/from=\d+/, `from=${this.lastEventIndex}`);
+      }
+    }
+
     try {
-      this.ws = new WebSocket(this.url);
+      this.ws = new WebSocket(connectUrl);
     } catch (err) {
       this.options.onError?.(`Failed to create WebSocket: ${err}`);
       this.scheduleReconnect();

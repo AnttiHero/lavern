@@ -54,32 +54,34 @@ export async function dispatch(
   request: LegalRequest,
   options: DispatchOptions = {},
 ): Promise<SessionState> {
+  // Clone options to avoid mutating the caller's object
+  const opts = { ...options };
 
   // Create session
-  const session = options.session ?? new SessionState(undefined, {
-    gateResolver: options.gateResolver,
-    budgetUsd: options.maxBudgetUsd,
+  const session = opts.session ?? new SessionState(undefined, {
+    gateResolver: opts.gateResolver,
+    budgetUsd: opts.maxBudgetUsd,
   });
 
   // v18: Store provider on session for per-session override
-  if (options.provider) {
-    session.provider = options.provider;
+  if (opts.provider) {
+    session.provider = opts.provider;
   }
 
   // v8: Matter data (including selectedTeam) is pre-loaded on the session by
   // the API layer when a matterId is provided. The executor reads session.selectedTeam.
 
   // v10: Resolve effort — explicit effort wins, otherwise derive from intensity
-  if (!options.effort && options.intensity) {
-    options.effort = effortForIntensity(options.intensity);
+  if (!opts.effort && opts.intensity) {
+    opts.effort = effortForIntensity(opts.intensity);
   }
 
   // Route request (or use forced workflow)
   let workflowId: string;
 
-  if (options.forceWorkflow) {
+  if (opts.forceWorkflow) {
     // Forced workflow — skip routing
-    workflowId = options.forceWorkflow;
+    workflowId = opts.forceWorkflow;
     request.routerClassification = {
       requestType: 'full_pipeline',
       complexity: 'medium',
@@ -94,9 +96,9 @@ export async function dispatch(
   } else {
     // Normal routing (LLM or deterministic)
     const classification = await routeRequest(request, session, {
-      useLlm: options.useLlmRouter ?? true,
-      model: options.routerModel,
-      provider: options.provider,
+      useLlm: opts.useLlmRouter ?? true,
+      model: opts.routerModel,
+      provider: opts.provider,
     });
     workflowId = classification.selectedWorkflow;
   }
@@ -113,5 +115,5 @@ export async function dispatch(
   const classification = request.routerClassification!;
   session.workflowTemplateId = template.id;
 
-  return runGenericWorkflow(request, template, classification, session, options);
+  return runGenericWorkflow(request, template, classification, session, opts);
 }

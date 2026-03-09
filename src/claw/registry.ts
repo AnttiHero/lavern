@@ -10,6 +10,7 @@
  */
 
 import * as fs from 'node:fs';
+import { constants } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
@@ -32,9 +33,33 @@ function emptyState(budgetUsd: number): ClawState {
 
 // ── Hash ──────────────────────────────────────────────────────────────────
 
-function hashFile(filePath: string): string {
-  const content = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(content).digest('hex');
+/**
+ * Hash a file's contents using SHA-256.
+ * SECURITY: Uses O_NOFOLLOW (when available) + fstat on the fd to eliminate
+ * the TOCTOU window between lstat and readFileSync. If O_NOFOLLOW is not
+ * available on the platform, falls back to O_RDONLY (lstat guard in indexFile
+ * still provides first-line defense against symlinks).
+ */
+function hashFile(filePath: string, maxSize?: number): string {
+  // O_NOFOLLOW may not be defined on all platforms (e.g., Windows)
+  const openFlags = (constants as Record<string, number>).O_NOFOLLOW !== undefined
+    ? constants.O_RDONLY | (constants as Record<string, number>).O_NOFOLLOW
+    : constants.O_RDONLY;
+
+  const fd = fs.openSync(filePath, openFlags);
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile()) {
+      throw new Error(`Not a regular file: ${filePath}`);
+    }
+    if (maxSize !== undefined && stat.size > maxSize) {
+      throw new Error(`File exceeds size limit: ${filePath}`);
+    }
+    const content = fs.readFileSync(fd);
+    return crypto.createHash('sha256').update(content).digest('hex');
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────
@@ -102,20 +127,30 @@ export class DocumentRegistry {
    * Index a single file. Returns 'new', 'changed', or 'unchanged'.
    */
   indexFile(filePath: string): 'new' | 'changed' | 'unchanged' {
-    // SECURITY: Use lstat only (no follow) to prevent TOCTOU symlink race
+    // SECURITY: Use lstat as a first-line guard against symlinks.
+    // The real symlink + size + regular-file check happens atomically inside
+    // hashFile via O_NOFOLLOW + fstat on the fd (eliminates TOCTOU window).
     const lstat = fs.lstatSync(filePath);
     if (lstat.isSymbolicLink() || !lstat.isFile()) {
       return 'unchanged';
     }
 
-    // SECURITY: Skip files exceeding size limit — prevent memory exhaustion
-    // Use lstat size (no second stat call) to close TOCTOU window
+    // Quick pre-check with lstat size (may race, but hashFile re-checks atomically)
     if (lstat.size > config.claw.maxFileSizeBytes) {
       console.warn(`[CLAW] Skipping ${filePath}: ${(lstat.size / 1024 / 1024).toFixed(1)}MB exceeds ${(config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0)}MB limit`);
       return 'unchanged';
     }
 
-    const hash = hashFile(filePath);
+    let hash: string;
+    try {
+      // SECURITY: hashFile opens with O_NOFOLLOW and re-validates via fstat on the fd,
+      // closing the TOCTOU window between the lstat above and the actual read.
+      hash = hashFile(filePath, config.claw.maxFileSizeBytes);
+    } catch (err) {
+      console.warn(`[CLAW] Skipping ${filePath}: ${(err as Error).message}`);
+      return 'unchanged';
+    }
+
     const name = path.basename(filePath);
     const ext = path.extname(filePath).toLowerCase();
     const now = new Date().toISOString();

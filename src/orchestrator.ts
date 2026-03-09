@@ -65,9 +65,8 @@ export async function runTheShem(
   // Initialize audit log
   initAuditLog(session);
 
-  if (logLevel === 'debug') {
-    process.env.SHEM_LOG_LEVEL = 'debug';
-  }
+  // Note: debug logging is controlled via the SHEM_LOG_LEVEL env var at startup,
+  // not mutated per-session. The logLevel option is passed through to streamMessages.
 
   // Emit session start event
   session.events.emitEvent({

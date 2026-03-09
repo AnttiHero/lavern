@@ -72,7 +72,6 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   const [exiting, setExiting] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const welcomeRef = useRef<HTMLParagraphElement>(null);
-  const mousePos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 80);
@@ -82,7 +81,6 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   // ── Parallax + welcome spotlight ───────────────────────────────────────
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
-    mousePos.current = { x: e.clientX, y: e.clientY };
     // Subtle marble parallax
     if (imgRef.current) {
       const cx = (e.clientX / window.innerWidth - 0.5) * 6;

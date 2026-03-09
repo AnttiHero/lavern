@@ -189,14 +189,6 @@ export function buildAssemblyContext(session: SessionState, request?: LegalReque
     parts.push('# EXPERT ANALYSIS FINDINGS');
     parts.push(`${findings.length} findings from the multi-agent analysis panel:\n`);
 
-    // Group by finding type for better organization
-    const byType = new Map<string, typeof findings>();
-    for (const f of findings) {
-      const type = f.findingType || 'general';
-      if (!byType.has(type)) byType.set(type, []);
-      byType.get(type)!.push(f);
-    }
-
     // Show RED findings first, then YELLOW, then GREEN
     const severityOrder = ['RED', 'YELLOW', 'GREEN'];
     for (const severity of severityOrder) {

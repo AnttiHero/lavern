@@ -33,6 +33,11 @@ import type { WorkflowTemplate } from '../types/workflow.js';
 import type { SchemOptions } from '../orchestrator.js';
 import type OpenAI from 'openai';
 
+// ── Constants ────────────────────────────────────────────────────────────
+
+/** Maximum size for session.finalOutput to prevent unbounded memory growth. */
+const MAX_FINAL_OUTPUT_BYTES = 500_000;
+
 // ── Types ───────────────────────────────────────────────────────────────
 
 type ChatMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
@@ -180,8 +185,10 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
           timestamp: eventTimestamp(),
         });
 
-        // Capture output
-        session.finalOutput += msg.content;
+        // Capture output (capped to prevent unbounded memory growth)
+        if (session.finalOutput.length < MAX_FINAL_OUTPUT_BYTES) {
+          session.finalOutput += msg.content;
+        }
         if (logLevel === 'debug') {
           process.stdout.write(msg.content);
           process.stdout.write('\n');

@@ -18,6 +18,7 @@ import { config } from '../config.js';
 interface SessionEntry {
   session: SessionState;
   createdAt: number;
+  archived: boolean;
 }
 
 export class SessionManager {
@@ -34,10 +35,13 @@ export class SessionManager {
     this.cleanup();
 
     const session = new SessionState(options?.id, options);
-    this.sessions.set(session.id, { session, createdAt: Date.now() });
+    const entry: SessionEntry = { session, createdAt: Date.now(), archived: false };
+    this.sessions.set(session.id, entry);
 
-    // Archive to SQLite when session completes
+    // Archive to SQLite when session completes (guard against double archival)
     session.events.on('session_end', () => {
+      if (entry.archived) return;
+      entry.archived = true;
       try {
         const userId = session.userId ?? session.clientIdentity?.id ?? 'anonymous';
         archiveSession(session, userId);
@@ -90,12 +94,15 @@ export class SessionManager {
    * Evict a single session: archive it, halt agents, then remove.
    */
   private evictSession(id: string, entry: SessionEntry): void {
-    // Archive before removing listeners so work product is preserved
-    try {
-      const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? 'anonymous';
-      archiveSession(entry.session, userId);
-    } catch (err) {
-      console.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+    // Archive before removing listeners so work product is preserved (guard against double archival)
+    if (!entry.archived) {
+      entry.archived = true;
+      try {
+        const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? 'anonymous';
+        archiveSession(entry.session, userId);
+      } catch (err) {
+        console.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+      }
     }
     // Halt any running agents
     if (!entry.session.isHalted()) {

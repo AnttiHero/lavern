@@ -36,16 +36,52 @@ export function GateDialog({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Stable ref to avoid re-registering listener when onDismiss identity changes
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
-  // Close on Escape key
+  // Focus trap: focus first focusable element on mount, trap Tab at boundaries, Escape to dismiss
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    // Focus the first focusable element on mount
+    const firstFocusable = dialog.querySelector<HTMLElement>(FOCUSABLE);
+    if (firstFocusable) firstFocusable.focus();
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !submitting) onDismissRef.current();
+      if (e.key === 'Escape' && !submitting) {
+        onDismissRef.current();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = dialog.querySelectorAll<HTMLElement>(FOCUSABLE);
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          // Shift+Tab at the first element -> wrap to last
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          // Tab at the last element -> wrap to first
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
+
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [submitting]);
@@ -77,7 +113,7 @@ export function GateDialog({
 
   return (
     <div style={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="gate-dialog-title">
-      <div style={styles.dialog}>
+      <div ref={dialogRef} style={styles.dialog}>
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.gateIcon}>

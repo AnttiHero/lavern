@@ -119,8 +119,9 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /api/audit-logs',    // Audit log listing
     'GET /api/audit-logs/*',  // Audit log detail
     'GET /api/replay/*',      // WebSocket replay
-    'GET /api/matters',       // Matter listing
-    'GET /api/matters/*',     // Matter detail
+    // NOTE: GET /api/matters and GET /api/matters/* are NOT public.
+    // They call getRequestUserId() which throws on unauthenticated access,
+    // and they return user-specific data that requires auth.
     'GET /api/agents/*',      // Agent profiles, presets, recommendations
     'GET /api/workflows',     // Workflow templates
     // Agent API — public discovery endpoints (read-only)
@@ -143,7 +144,14 @@ export async function startApiServer(port: number): Promise<void> {
     // Session-scoped POST mutations — scoped by session ID, work without login
     // so the QuickStart → Working → Delivery flow doesn't require auth.
     // Session ID acts as the auth token (only the user who created it has it).
+    // SECURITY NOTE: This makes ALL session POST mutations public (gate decisions,
+    // derivatives, conversations, reassembly). This is by design — session IDs
+    // are unguessable UUIDs that serve as capability tokens. Each route also
+    // enforces checkSessionOwnership() as a secondary guard.
     'POST /api/sessions/*',
+    // Session cancellation — allows QuickStart users to cancel without login.
+    // Same session-ID-as-capability-token model as POST mutations above.
+    'DELETE /api/sessions/*',
     // Document parsing — needed by Challenge and Briefing before login
     'POST /api/documents/parse',
     // The Marble Challenge — zero-friction, no auth required

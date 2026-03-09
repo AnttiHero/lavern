@@ -13,6 +13,9 @@ import type { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
 
 export function createCostHooks(session: SessionState) {
+  // Track which budget warning thresholds have already fired to avoid spamming logs
+  const warnedThresholds = new Set<string>();
+
   /**
    * Halt-check hook — the "red button" mechanism.
    * Fires before every tool use. If the session has been halted externally
@@ -54,12 +57,15 @@ export function createCostHooks(session: SessionState) {
       };
     }
 
-    // Early warning at 50% budget consumed
-    if (remaining < session.budgetUsd * 0.5 && session.accumulatedCost > 0) {
+    // Early warning at 50% budget consumed (fires once per session)
+    if (remaining < session.budgetUsd * 0.5 && session.accumulatedCost > 0 && !warnedThresholds.has('50pct')) {
+      warnedThresholds.add('50pct');
       console.error(`[COST] 50%+ budget consumed: $${session.accumulatedCost.toFixed(2)} / $${session.budgetUsd.toFixed(2)} ($${remaining.toFixed(2)} remaining)`);
     }
 
-    if (remaining < session.budgetUsd * 0.1) {
+    // Warning at 90% budget consumed (fires once per session)
+    if (remaining < session.budgetUsd * 0.1 && !warnedThresholds.has('90pct')) {
+      warnedThresholds.add('90pct');
       console.error(`[COST] Warning: Only $${remaining.toFixed(2)} remaining of $${session.budgetUsd.toFixed(2)} budget.`);
     }
 

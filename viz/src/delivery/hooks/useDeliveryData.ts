@@ -120,6 +120,8 @@ export interface DeliveryData {
 const POLL_INTERVAL_MS = 3_000;
 const SLOW_POLL_INTERVAL_MS = 10_000;
 const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
+/** Once assembly is confirmed ready, do one final poll after 60s for late updates, then stop. */
+const FINAL_POLL_DELAY_MS = 60_000;
 
 export type AssemblyStatus = 'polling' | 'ready' | 'timeout' | 'error';
 
@@ -137,6 +139,8 @@ export function useDeliveryData(): {
   const cancelledRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const startTimeRef = useRef(Date.now());
+  /** Tracks whether we've already scheduled (or completed) the final post-ready poll. */
+  const finalPollDoneRef = useRef(false);
 
   const fetchSession = useCallback(async (sessionId: string, startTime: number) => {
     if (cancelledRef.current) return;
@@ -183,9 +187,15 @@ export function useDeliveryData(): {
       }
 
       // Continue polling as long as the document isn't ready.
-      // After the initial timeout, slow down to avoid hammering the server,
-      // but NEVER stop — assembly may complete at any time.
-      if (mapped.status !== 'Complete' || assemblyPending) {
+      // Once assembly is confirmed ready, schedule one final poll after 60s for
+      // late updates (e.g. report card), then stop polling entirely.
+      if (deliverableValid) {
+        if (!finalPollDoneRef.current) {
+          finalPollDoneRef.current = true;
+          timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), FINAL_POLL_DELAY_MS);
+        }
+        // else: final poll already done — stop polling
+      } else if (mapped.status !== 'Complete' || assemblyPending) {
         const interval = elapsed >= MAX_POLL_DURATION_MS ? SLOW_POLL_INTERVAL_MS : POLL_INTERVAL_MS;
         timerRef.current = setTimeout(() => fetchSession(sessionId, startTime), interval);
       }
