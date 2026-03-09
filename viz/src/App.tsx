@@ -190,10 +190,12 @@ export function App() {
       // API returned non-ok — log the actual error
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[YOLO] API unreachable — cannot create session');
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
     }
   }, []);
@@ -294,9 +296,11 @@ export function App() {
 
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
       console.error('[QuickStart] API unreachable');
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
     }
   }, []);
@@ -420,10 +424,12 @@ export function App() {
       // API returned non-ok — log the actual error
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
       console.error('[Session] Session creation failed:', res.status, errorBody);
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');
+      sessionStorage.removeItem('shem-session-id');
       setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
     }
   }, []);
@@ -529,7 +535,7 @@ export function App() {
           {showMark && <MarbleMark />}
           <StrategyView
             onComplete={handleStrategyComplete}
-            onBack={() => { window.location.hash = '#/briefing'; }}
+            onBack={() => { sessionStorage.removeItem('shem-briefing-config'); window.location.hash = '#/briefing'; }}
             onSkip={() => { window.location.hash = '#/team'; }}
           />
         </Suspense>
@@ -547,7 +553,7 @@ export function App() {
           {showMark && <MarbleMark />}
           <TeamView
             onTeamConfirmed={handleStaffingComplete}
-            onBack={() => { window.location.hash = '#/strategy'; }}
+            onBack={() => { sessionStorage.removeItem('shem-briefing-team'); window.location.hash = '#/strategy'; }}
             onSkip={() => { window.location.hash = '#/delivery'; }}
           />
         </Suspense>
@@ -565,7 +571,7 @@ export function App() {
           {showMark && <MarbleMark />}
           <WorkingView
             onComplete={navToDelivery}
-            onBack={() => { window.location.hash = '#/quickstart'; }}
+            onBack={() => { sessionStorage.removeItem('shem-session-id'); window.location.hash = '#/quickstart'; }}
             onSkip={navToDelivery}
           />
         </Suspense>

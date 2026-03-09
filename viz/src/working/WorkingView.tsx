@@ -173,6 +173,14 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         lastEventTimestamp={state.lastEventTimestamp}
       />
 
+      {/* Connection Lost banner — visible when WS drops during an active session */}
+      {state.connectionStatus === 'disconnected' && state.sessionId && (
+        <div style={styles.connectionLost} role="alert">
+          <span style={styles.connectionLostDot} />
+          Connection lost {'\u2014'} attempting to reconnect{'\u2026'}
+        </div>
+      )}
+
       {/* Mobile sidebar toggle */}
       {isMobile && (
         <button
@@ -312,6 +320,28 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
     width: '100%',
+    flexShrink: 0,
+  },
+  connectionLost: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '6px 20px',
+    backgroundColor: 'rgba(184, 134, 11, 0.08)',
+    borderBottom: `1px solid rgba(184, 134, 11, 0.2)`,
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 500,
+    color: '#B8860B',
+    letterSpacing: 0.3,
+  },
+  connectionLostDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#B8860B',
+    animation: 'activeThinkingPulse 2s ease-in-out infinite',
     flexShrink: 0,
   },
   ghostBtn: {

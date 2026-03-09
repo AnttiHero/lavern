@@ -19,12 +19,14 @@ export interface KbSearchResult {
 export function useKbSearch() {
   const [results, setResults] = useState<KbSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
 
   const search = useCallback((q: string) => {
     setQuery(q);
+    setSearchError(null);
     if (timerRef.current) clearTimeout(timerRef.current);
     // Abort any in-flight fetch so stale results don't overwrite fresh ones
     if (abortRef.current) abortRef.current.abort();
@@ -46,10 +48,16 @@ export function useKbSearch() {
         });
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
-        if (!controller.signal.aborted) setResults(data.results ?? []);
+        if (!controller.signal.aborted) {
+          setResults(data.results ?? []);
+          setSearchError(null);
+        }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setResults([]);
+        if (!controller.signal.aborted) {
+          setSearchError('Search failed \u2014 check your connection and try again.');
+        }
       } finally {
         if (!controller.signal.aborted) setSearching(false);
       }
@@ -60,9 +68,10 @@ export function useKbSearch() {
     setQuery('');
     setResults([]);
     setSearching(false);
+    setSearchError(null);
     if (timerRef.current) clearTimeout(timerRef.current);
     if (abortRef.current) abortRef.current.abort();
   }, []);
 
-  return { results, searching, query, search, clearSearch };
+  return { results, searching, searchError, query, search, clearSearch };
 }

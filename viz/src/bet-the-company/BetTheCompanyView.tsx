@@ -91,6 +91,7 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
   const [org, setOrg] = useState('');
   const [description, setDescription] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,10 +119,10 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
       if (res.ok) {
         setSubmitted(true);
       } else {
-        // Graceful fallback -- endpoint may not exist yet
         const d = await res.json().catch(() => ({}));
         if (res.status === 404) {
-          // No endpoint yet -- still show confirmation (demo mode)
+          // Endpoint not built yet — show demo-mode notice (don't pretend it was sent)
+          setDemoMode(true);
           setSubmitted(true);
         } else {
           throw new Error(d.error || `Submission failed (${res.status})`);
@@ -129,7 +130,8 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
       }
     } catch (err) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
-        // Network error -- show confirmation anyway (offline/demo)
+        // Network error — show demo-mode notice (don't pretend it was sent)
+        setDemoMode(true);
         setSubmitted(true);
       } else {
         setError(err instanceof Error ? err.message : 'Submission failed');
@@ -143,7 +145,7 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
     return (
       <div style={sty.card}>
         <div style={{
-          color: D.gold,
+          color: demoMode ? D.accentDim : D.gold,
           fontWeight: 600,
           marginBottom: 12,
           fontFamily: fonts.sans,
@@ -151,7 +153,7 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
           letterSpacing: 1.5,
           textTransform: 'uppercase' as const,
         }}>
-          Inquiry Received
+          {demoMode ? 'Coming Soon' : 'Inquiry Received'}
         </div>
         <p style={{
           fontSize: 16,
@@ -161,7 +163,7 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
           marginBottom: 8,
           fontWeight: 300,
         }}>
-          Thank you, {name.trim()}.
+          {demoMode ? 'Thank you for your interest.' : `Thank you, ${name.trim()}.`}
         </p>
         <p style={{
           fontSize: 14,
@@ -170,8 +172,9 @@ function InquiryForm({ onBack }: { onBack: () => void }) {
           lineHeight: 1.7,
           marginBottom: 24,
         }}>
-          We{'\u2019'}ve received your inquiry and a member of our team will be in touch
-          within 24 hours to discuss your matter.
+          {demoMode
+            ? 'This feature is not yet available. Your inquiry was not sent \u2014 please contact us directly for Bet the Company engagements.'
+            : `We\u2019ve received your inquiry and a member of our team will be in touch within 24 hours to discuss your matter.`}
         </p>
         <button
           onClick={onBack}

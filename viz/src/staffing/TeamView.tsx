@@ -156,7 +156,7 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
   // ── Data hooks ──────────────────────────────────────────────────────────
 
   const {
-    profiles, allProfiles, loading, error, summary,
+    profiles, allProfiles, loading, error, isOffline, summary,
     category, setCategory,
     sort, setSort,
     search, setSearch,
@@ -328,6 +328,13 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
           <span style={styles.loadingHint}>{'\u2022'} loading recommendations...</span>
         )}
       </div>
+
+      {/* Offline banner */}
+      {isOffline && (
+        <div style={styles.offlineBanner}>
+          {'\u26A0'} Offline {'\u2014'} showing demo agents. Connect to the API for your full roster.
+        </div>
+      )}
 
       {/* Team cost comparison */}
       <TeamCostSummary
@@ -540,6 +547,16 @@ const styles: Record<string, React.CSSProperties> = {
     padding: `${spacing.xxxl}px`,
     maxWidth: 1400,
     margin: '0 auto',
+  },
+  offlineBanner: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: '#B8860B',
+    padding: '8px 14px',
+    backgroundColor: 'rgba(184, 134, 11, 0.06)',
+    borderRadius: radii.sm,
+    borderLeft: `3px solid rgba(184, 134, 11, 0.4)`,
+    marginBottom: spacing.md,
   },
   header: {
     display: 'flex',

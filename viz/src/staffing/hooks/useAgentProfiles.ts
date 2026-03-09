@@ -55,6 +55,7 @@ export function useAgentProfiles() {
   const [allProfiles, setAllProfiles] = useState<AgentProfile[]>(DEMO_PROFILES as unknown as AgentProfile[]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const [category, setCategory] = useState<CategoryFilter>('all');
   const [sort, setSort] = useState<SortOption>('default');
   const [search, setSearch] = useState('');
@@ -74,6 +75,7 @@ export function useAgentProfiles() {
         setAllProfiles(data.profiles ?? []);
       } catch {
         // API unavailable — keep demo profiles (already in state)
+        setIsOffline(true);
       } finally {
         setLoading(false);
       }
@@ -135,6 +137,7 @@ export function useAgentProfiles() {
     allProfiles,
     loading,
     error,
+    isOffline,
     summary,
     category,
     setCategory,

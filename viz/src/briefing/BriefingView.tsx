@@ -445,12 +445,21 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 px-4 py-2.5 rounded-md bg-accent-light border border-danger text-xs font-sans text-danger mt-4">
           <span className="text-sm shrink-0">{'\u26A0'}</span>
           <span>Analysis unavailable: {analysis.analysisError}. Using mechanical brief as fallback.</span>
-          <button
-            onClick={advanceToMemo}
-            className="sm:ml-auto px-3 py-1 rounded-sm border border-danger bg-transparent text-danger font-sans text-[11px] font-semibold cursor-pointer whitespace-nowrap shrink-0 w-full sm:w-auto text-center"
-          >
-            Use Fallback Brief
-          </button>
+          <div className="flex gap-2 sm:ml-auto shrink-0 w-full sm:w-auto">
+            <button
+              onClick={() => { analysis.reanalyze(); }}
+              disabled={analysis.isAnalyzing}
+              className="flex-1 sm:flex-none px-3 py-1 rounded-sm border border-text bg-text text-white font-sans text-[11px] font-semibold cursor-pointer whitespace-nowrap text-center disabled:opacity-40"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={advanceToMemo}
+              className="flex-1 sm:flex-none px-3 py-1 rounded-sm border border-danger bg-transparent text-danger font-sans text-[11px] font-semibold cursor-pointer whitespace-nowrap text-center"
+            >
+              Use Fallback Brief
+            </button>
+          </div>
         </div>
       )}
 

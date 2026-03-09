@@ -98,6 +98,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const [question, setQuestion] = useState('');
   const [tier, setTier] = useState<EngagementTier>('counsel');
   const [submitting, setSubmitting] = useState(false);
+  const submittedRef = useRef(false); // Sync guard against double-click race
   const [instructHovered, setInstructHovered] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [archiveHovered, setArchiveHovered] = useState(false);
@@ -177,8 +178,11 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   }, [canSubmit]);
 
   const handleSubmit = useCallback(async () => {
+    // Synchronous ref guard — prevents double-click race (React state is async)
+    if (submittedRef.current) return;
     if (submitting || parsing) return;
     if (question.trim().length === 0 && documents.length === 0 && !folderHasSelected) return;
+    submittedRef.current = true;
     setSubmitting(true);
     try {
       let docs: FrontendParsedDocument[] = parsedDocuments;
@@ -190,6 +194,9 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       }
 
       await onQuickStart(question.trim(), TIER_MAP[tier], docs);
+    } catch {
+      // Reset ref on failure so user can retry
+      submittedRef.current = false;
     } finally {
       setSubmitting(false);
     }

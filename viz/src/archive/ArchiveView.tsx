@@ -23,7 +23,7 @@ export default function ArchiveView({ onBack }: Props) {
     createCollection, uploadDocument, deleteCollection,
   } = useCollections();
 
-  const { results, searching, query, search, clearSearch } = useKbSearch();
+  const { results, searching, searchError, query, search, clearSearch } = useKbSearch();
   const { memories, loading: memoriesLoading, demoMode: memoryDemoMode } = useSessionMemory();
 
   const demoMode = collectionsDemoMode || memoryDemoMode;
@@ -38,8 +38,15 @@ export default function ArchiveView({ onBack }: Props) {
           demoMode={demoMode}
         />
 
+        {/* Search error */}
+        {searchError && (
+          <div style={styles.searchError}>
+            {searchError}
+          </div>
+        )}
+
         {/* Search results overlay */}
-        {query.trim() && (
+        {query.trim() && !searchError && (
           <SearchResults
             results={results}
             searching={searching}
@@ -88,6 +95,16 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 900,
     margin: '0 auto',
     padding: `0 ${spacing.xl}px`,
+  },
+  searchError: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.danger,
+    padding: `${spacing.sm}px ${spacing.md}px`,
+    backgroundColor: 'rgba(196, 93, 62, 0.06)',
+    borderRadius: 4,
+    borderLeft: `3px solid ${colors.danger}`,
+    marginBottom: spacing.md,
   },
   footer: {
     textAlign: 'center' as const,

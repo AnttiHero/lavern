@@ -166,6 +166,7 @@ export function ConversationalChat({
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            enterKeyHint="send"
             placeholder={isStreaming ? `${interviewerName ?? 'Interviewer'} is typing\u2026` : 'Type your answer\u2026'}
             disabled={isStreaming}
             rows={2}
