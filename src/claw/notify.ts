@@ -53,25 +53,33 @@ function shouldSend(notification: ClawNotification): boolean {
 
 // ── Senders ──────────────────────────────────────────────────────────────
 
-async function sendWebhook(notification: ClawNotification): Promise<void> {
+async function sendWebhook(notification: ClawNotification, retries = 2): Promise<void> {
   const url = config.claw.webhookUrl;
   if (!url) return;
 
-  try {
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source: 'marble-claw',
-        ...notification,
-        timestamp: new Date().toISOString(),
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
-  } catch {
-    // Fire-and-forget — log but don't block
-    console.warn(`[CLAW] Webhook delivery failed for ${notification.type}`);
+  const payload = JSON.stringify({
+    source: 'marble-claw',
+    ...notification,
+    timestamp: new Date().toISOString(),
+  });
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok || res.status < 500) return; // success or client error — don't retry
+    } catch {
+      // Network error or timeout — fall through to retry
+    }
+    if (attempt < retries) {
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
   }
+  console.warn(`[CLAW] Webhook delivery failed for ${notification.type} after ${retries + 1} attempts`);
 }
 
 function sendMacOsNotification(notification: ClawNotification): void {
@@ -88,8 +96,8 @@ function sendMacOsNotification(notification: ClawNotification): void {
       `osascript -e 'display notification "${message}" with title "Marble" subtitle "${title}"'`,
       { timeout: 3000, stdio: 'ignore' },
     );
-  } catch {
-    // Non-fatal — osascript may not be available
+  } catch (err) {
+    console.warn(`[CLAW] macOS notification failed for ${notification.type}:`, (err as Error).message ?? err);
   }
 }
 

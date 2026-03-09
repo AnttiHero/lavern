@@ -40,7 +40,7 @@ interface McpToolInfo {
   inputSchema?: Record<string, unknown>;
 }
 
-interface McpServer {
+export interface McpServer {
   listTools: () => Promise<{ tools: McpToolInfo[] }> | { tools: McpToolInfo[] };
   callTool: (request: { name: string; arguments: Record<string, unknown> }) => Promise<{
     content: Array<{ type: string; text?: string }>;

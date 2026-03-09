@@ -23,7 +23,7 @@ import { eventTimestamp } from '../events/event-bus.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { config } from '../config.js';
 import { mistralChat } from './mistral.js';
-import { buildToolRegistry } from './tool-converter.js';
+import { buildToolRegistry, type McpServer } from './tool-converter.js';
 import { assembleMistralDocument } from './mistral-assembler.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -126,7 +126,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
   // ── Build tool registry from MCP server ───────────────────────────
   const mcpServer = createShemMcpServer(session, template);
-  const toolRegistry = await buildToolRegistry(mcpServer as any);
+  const toolRegistry = await buildToolRegistry(mcpServer as unknown as McpServer);
 
   // ── Initialize conversation ───────────────────────────────────────
   const messages: ChatMessage[] = [

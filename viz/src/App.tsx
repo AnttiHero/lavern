@@ -188,7 +188,7 @@ export function App() {
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
@@ -294,7 +294,7 @@ export function App() {
         }
       }
 
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
@@ -364,7 +364,7 @@ export function App() {
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
     let config: { workflowId: string; intensity: string; budgetUsd: number; yoloMode: boolean; verification: boolean; provider?: string } = { workflowId: 'counsel', intensity: 'standard', budgetUsd: 10, yoloMode: false, verification: true };
-    try { if (configStr) config = JSON.parse(configStr); } catch { /* use defaults */ }
+    try { if (configStr) config = JSON.parse(configStr); } catch { console.warn('[App] Corrupted briefing config in sessionStorage — using defaults'); }
 
     // Store team for downstream
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(roles));
@@ -384,7 +384,7 @@ export function App() {
     try {
       const pdStr = sessionStorage.getItem('shem-parsed-docs');
       if (pdStr) parsedDocs = JSON.parse(pdStr);
-    } catch { /* no parsed docs available */ }
+    } catch { console.warn('[App] Corrupted parsed docs in sessionStorage — skipping'); }
 
     try {
       const res = await fetch('/api/sessions', {
@@ -422,7 +422,7 @@ export function App() {
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: 'Unknown error' }; } });
+      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[Session] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
       setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
@@ -753,7 +753,10 @@ export function App() {
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
           {showMark && <MarbleMark />}
-          <AgentBuilderView onBack={() => { window.location.hash = '#/team'; }} />
+          <AgentBuilderView
+            onBack={() => { window.location.hash = '#/team'; }}
+            editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
+          />
         </Suspense>
       </ErrorBoundary>
     );

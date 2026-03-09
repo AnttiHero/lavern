@@ -156,6 +156,13 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       onReplayComplete: () => {},
       onError: (msg) => {
         console.error('WebSocket error:', msg);
+        // Surface WS errors in the event stream so users see them in the feed
+        handleEventRef.current({
+          type: 'error',
+          message: msg,
+          source: 'websocket',
+          timestamp: new Date().toISOString(),
+        } as ShemEvent);
       },
     });
 

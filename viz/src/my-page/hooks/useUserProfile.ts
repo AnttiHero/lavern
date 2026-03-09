@@ -68,7 +68,12 @@ function readProfile(): UserProfile {
       const parsed = JSON.parse(raw);
       return { ...DEFAULT_PROFILE, ...parsed };
     }
-  } catch { /* corrupted — return defaults */ }
+  } catch (err) {
+    // Corrupted profile — warn the user via console and return defaults
+    console.warn('[Profile] Saved profile was corrupted and has been reset to defaults.', err);
+    // Clear the corrupted data so it doesn't persist
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  }
   return { ...DEFAULT_PROFILE };
 }
 

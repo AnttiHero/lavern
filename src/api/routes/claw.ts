@@ -14,6 +14,7 @@
  */
 
 import * as fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
@@ -143,7 +144,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
         const manifestPath = path.join(deliveryDir, sessionId, 'manifest.json');
         if (fs.existsSync(manifestPath)) {
           try {
-            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+            const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
             deliveries.push({
               sessionId,
               filename: manifest.input?.filename,

@@ -8,7 +8,7 @@
  * On "Forge", a full-screen card reveal animation plays.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useAgentBuilder } from './hooks/useAgentBuilder.js';
 import { useCustomAgents } from './hooks/useCustomAgents.js';
@@ -24,15 +24,26 @@ import type { AgentProfile } from '../../../src/types/agent-profile.js';
 
 interface Props {
   onBack: () => void;
+  editAgentId?: string;
 }
 
-export default function AgentBuilderView({ onBack }: Props) {
+export default function AgentBuilderView({ onBack, editAgentId }: Props) {
   const builder = useAgentBuilder();
-  const { addAgent, isAtCap, maxAgents } = useCustomAgents();
+  const { agents, addAgent, updateAgent, isAtCap, maxAgents } = useCustomAgents();
   const { play } = useSoundEffects();
 
   const [showReveal, setShowReveal] = useState(false);
   const [revealProfile, setRevealProfile] = useState<AgentProfile | null>(null);
+  const isEditing = !!editAgentId;
+
+  // Pre-fill builder from saved agent when editing
+  useEffect(() => {
+    if (!editAgentId) return;
+    const agent = agents.find(a => a.id === editAgentId);
+    if (agent) {
+      builder.loadFromProfile(agent.profile);
+    }
+  }, [editAgentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build a preview profile for the live card
   const previewProfile = useMemo(() => builder.buildProfile(), [builder]);
@@ -61,12 +72,16 @@ export default function AgentBuilderView({ onBack }: Props) {
 
   const handleSave = useCallback(() => {
     if (!revealProfile) return;
-    addAgent(revealProfile);
+    if (isEditing && editAgentId) {
+      updateAgent(editAgentId, revealProfile);
+    } else {
+      addAgent(revealProfile);
+    }
     play('confirm');
     setShowReveal(false);
     // Navigate to team to see the agent
     window.location.hash = '#/team';
-  }, [revealProfile, addAgent, play]);
+  }, [revealProfile, addAgent, updateAgent, play, isEditing, editAgentId]);
 
   const handleBuildAnother = useCallback(() => {
     builder.reset();
@@ -122,7 +137,7 @@ export default function AgentBuilderView({ onBack }: Props) {
 
   // ── Button labels ──────────────────────────────────────────────────────
 
-  const nextLabel = builder.step === 3 ? 'Forge Agent' : 'Next';
+  const nextLabel = builder.step === 3 ? (isEditing ? 'Update Agent' : 'Forge Agent') : 'Next';
   const nextDisabled = builder.step === 3 ? !builder.isValid : (builder.step === 1 && !builder.isValid);
 
   return (
@@ -166,7 +181,7 @@ export default function AgentBuilderView({ onBack }: Props) {
             color: colors.text,
             letterSpacing: 1,
           }}>
-            Agent Builder
+            {isEditing ? 'Edit Agent' : 'Agent Builder'}
           </div>
 
           <div style={{ width: 60 }} /> {/* Spacer */}

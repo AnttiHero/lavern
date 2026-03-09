@@ -14,6 +14,7 @@
  */
 
 import * as fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { dispatch } from '../dispatch.js';
 import type { DispatchOptions } from '../dispatch.js';
@@ -82,7 +83,7 @@ export async function processDocument(
 
     // ── 1. PARSE ──────────────────────────────────────────────────────
     log(`Parsing: ${path.basename(documentPath)}`);
-    const buffer = fs.readFileSync(documentPath);
+    const buffer = await readFile(documentPath);
     const ext = path.extname(documentPath).toLowerCase();
     const mime = mimeFromExt(ext);
     const parsed = await parseDocument(buffer, path.basename(documentPath), mime);

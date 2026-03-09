@@ -239,6 +239,34 @@ export function useAgentBuilder() {
     };
   }, [state, costTier, billingRate, avatarExtra]);
 
+  // ── Load from existing profile (for edit mode) ──────────────────────
+
+  const loadFromProfile = useCallback((profile: AgentProfile) => {
+    setState({
+      displayName: profile.displayName,
+      tagline: profile.tagline,
+      category: profile.category,
+      seniority: profile.seniority,
+      archetype: profile.personality?.archetype ?? '',
+      presetId: null,
+      avatarSeed: profile.avatarSeed ?? profile.displayName,
+      avatarFeatures: {},
+      skills: { ...profile.skills },
+      personality: (profile.personality?.traits as Record<PersonalityAxis, number>) ?? {
+        'conservative-vs-creative': 5,
+        'thorough-vs-fast': 5,
+        'risk-averse-vs-tolerant': 5,
+        'formal-vs-approachable': 5,
+        'adversarial-vs-collaborative': 5,
+      },
+      workStyle: profile.personality?.workStyle ?? '',
+      practiceAreas: [...(profile.practiceAreas ?? [])],
+      strengths: [...(profile.strengths ?? [])],
+      limitations: [...(profile.limitations ?? [])],
+    });
+    setStep(1);
+  }, []);
+
   // ── Reset ───────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -267,6 +295,7 @@ export function useAgentBuilder() {
     prevStep,
     goToStep,
     buildProfile,
+    loadFromProfile,
     reset,
   };
 }

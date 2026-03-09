@@ -320,6 +320,43 @@ function applyFormat(response: EngageResponse, format: string): unknown {
   return response;
 }
 
+// ── Webhook retry helper ────────────────────────────────────────────────
+
+/**
+ * POST to a webhook URL with exponential backoff retry.
+ * Retries up to `maxRetries` times (default 3) on failure.
+ * Delays: 1s, 2s, 4s (doubles each retry).
+ */
+async function postWebhookWithRetry(
+  url: string,
+  payload: unknown,
+  { maxRetries = 3, baseDelayMs = 1000, timeoutMs = 30_000 } = {},
+): Promise<void> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (res.ok || res.status < 500) return; // 2xx–4xx: don't retry client errors
+      // 5xx: fall through to retry
+    } catch {
+      clearTimeout(timeout);
+      // Network error or timeout: fall through to retry
+    }
+    if (attempt < maxRetries) {
+      const delay = baseDelayMs * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  console.error(`[ENGAGE] Webhook POST to ${url} failed after ${maxRetries + 1} attempts`);
+}
+
 // ── Route Registration ──────────────────────────────────────────────────
 
 export function registerEngageRoutes(
@@ -397,23 +434,17 @@ export function registerEngageRoutes(
         maxBudgetUsd: budgetUsd,
         yoloMode: true,
         provider: body.constraints?.provider,
-      }).then(() => {
-        // Session completed — POST results to callback
+      }).then(async () => {
+        // Session completed — POST results to callback (with retry)
         const response = buildEngageResponse(session, 'completed', startTime);
-        return fetch(callbackUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(response),
-        });
-      }).catch((err) => {
+        await postWebhookWithRetry(callbackUrl, response);
+      }).catch(async (err) => {
         console.error(`[ENGAGE] Session ${session.id} failed:`, err);
-        // Attempt to notify the callback of failure
+        // Attempt to notify the callback of failure (with retry)
         const errorResponse = buildEngageResponse(session, 'failed', startTime);
-        fetch(callbackUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(errorResponse),
-        }).catch(() => { /* Best effort */ });
+        await postWebhookWithRetry(callbackUrl, errorResponse).catch(() => {
+          console.error(`[ENGAGE] Could not deliver failure notification for ${session.id}`);
+        });
       });
 
       const accepted: EngageAcceptedResponse = {

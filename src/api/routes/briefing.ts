@@ -31,7 +31,16 @@ function ensureApiKey(): string {
         return key;
       }
     }
-  } catch { /* .env not found */ }
+    console.warn('[BRIEFING] .env file found but ANTHROPIC_API_KEY not present — interview calls will fail');
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      // .env not found — expected in some environments
+    } else {
+      // .env exists but is unreadable (permissions, encoding, etc.)
+      console.error(`[BRIEFING] Failed to read .env file: ${code ?? err}`);
+    }
+  }
 
   throw new Error('ANTHROPIC_API_KEY not found in environment or .env file');
 }

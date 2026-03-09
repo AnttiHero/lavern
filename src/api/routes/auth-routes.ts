@@ -65,13 +65,22 @@ function clearAuthCookie(reply: FastifyReply): void {
 
 function sanitizeUser(user: { id: string; email: string; display_name: string; firm_name: string; profile_json: string }) {
   let profile = {};
-  try { profile = JSON.parse(user.profile_json); } catch { /* use empty */ }
+  let profileCorrupted = false;
+  try {
+    profile = JSON.parse(user.profile_json);
+  } catch (err) {
+    if (user.profile_json && user.profile_json !== '{}') {
+      console.error(`[AUTH] Corrupted profile JSON for user ${user.id}:`, err instanceof Error ? err.message : err);
+      profileCorrupted = true;
+    }
+  }
   return {
     id: user.id,
     email: user.email,
     displayName: user.display_name,
     firmName: user.firm_name,
     profile,
+    ...(profileCorrupted ? { profileCorrupted: true } : {}),
   };
 }
 
