@@ -15,6 +15,7 @@ import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useReassuranceInjector } from './hooks/useReassuranceInjector.js';
 import { useDebateThreads } from './hooks/useDebateThreads.js';
 import { useResponsive } from '../hooks/useMediaQuery.js';
+import { useTabLock } from '../hooks/useTabLock.js';
 import { WorkingHeader } from './components/WorkingHeader.js';
 import { HeartbeatBand } from './components/HeartbeatBand.js';
 import { ProgressSidebar } from './components/ProgressSidebar.js';
@@ -63,6 +64,8 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     resume,
     setSpeed,
   } = useWorkingState(onComplete, initialRoles);
+
+  const { isLocked } = useTabLock(state.sessionId);
 
   // Extract all roles from SSE events to dynamically expand the team
   const eventRoles = useMemo(() => {
@@ -144,6 +147,20 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
 
   return (
     <div style={styles.root}>
+      {isLocked && (
+        <div style={styles.tabLockedOverlay}>
+          <div style={styles.tabLockedCard}>
+            <span style={{ fontFamily: fonts.serif, fontSize: 28, fontWeight: 300 }}>M</span>
+            <p style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.textSecondary, marginTop: 12 }}>
+              This session is open in another tab.
+            </p>
+            <p style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.textDim, marginTop: 4 }}>
+              Close the other tab to continue here.
+            </p>
+          </div>
+        </div>
+      )}
+
       <WorkingHeader
         connectionStatus={state.connectionStatus}
         sessionId={state.sessionId}
@@ -178,6 +195,45 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         <div style={styles.connectionLost} role="alert">
           <span style={styles.connectionLostDot} />
           Connection lost {'\u2014'} attempting to reconnect{'\u2026'}
+        </div>
+      )}
+
+      {/* Session expired overlay */}
+      {state.sessionExpired && (
+        <div style={styles.expiredOverlay}>
+          <div style={styles.expiredCard}>
+            <span style={{ fontFamily: fonts.serif, fontSize: 36, fontWeight: 300, color: colors.text, opacity: 0.5 }}>M</span>
+            <h2 style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, marginTop: 16 }}>
+              Session Expired
+            </h2>
+            <p style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.textSecondary, marginTop: 8, lineHeight: 1.5 }}>
+              This session is no longer available on the server.
+              Sessions are kept for 4 hours after creation.
+            </p>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button
+                onClick={onBack}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: radii.sm,
+                  border: `2px solid ${colors.text}`,
+                  backgroundColor: colors.text,
+                  color: '#fff',
+                  fontFamily: fonts.sans,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.25s ease, color 0.25s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+              >
+                Start New Session
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -407,5 +463,40 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.35,
     transition: 'opacity 0.3s ease, border-color 0.3s ease',
     zIndex: 100,
+  },
+  expiredOverlay: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 9998,
+    backgroundColor: 'rgba(250, 249, 246, 0.95)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expiredCard: {
+    textAlign: 'center' as const,
+    padding: '48px 56px',
+    borderRadius: radii.md,
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: colors.bgCard,
+    maxWidth: 400,
+  },
+  tabLockedOverlay: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 9999,
+    backgroundColor: 'rgba(250, 249, 246, 0.92)',
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLockedCard: {
+    textAlign: 'center',
+    padding: '40px 48px',
+    borderRadius: radii.md,
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: colors.bgCard,
   },
 };

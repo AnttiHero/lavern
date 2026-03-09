@@ -95,6 +95,11 @@ function ViewFallback({ text }: { text: string }) {
   return <LoadingM text={text} />;
 }
 
+/** Fade-up entrance for all views */
+function ViewTransition({ children }: { children: React.ReactNode }) {
+  return <div className="view-entrance">{children}</div>;
+}
+
 export function App() {
   const [view, setView] = useState<AppView>(getViewFromHash);
   const [errorToast, setErrorToast] = useState<string | null>(null);
@@ -191,12 +196,12 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
+      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[YOLO] API unreachable — cannot create session');
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
+      setErrorToast('Unable to reach the server. Please check your connection and try again.');
     }
   }, []);
 
@@ -297,11 +302,11 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
+      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
     } catch {
       console.error('[QuickStart] API unreachable');
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
+      setErrorToast('Unable to reach the server. Please check your connection and try again.');
     }
   }, []);
 
@@ -425,12 +430,12 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[Session] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Check the server logs.'}`);
+      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Cannot connect to the server. Please ensure the backend is running.');
+      setErrorToast('Unable to reach the server. Please check your connection and try again.');
     }
   }, []);
 
@@ -495,14 +500,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading intake..." />}>
-          {showMark && <MarbleMark />}
-          <IntakeView
-            onComplete={handleIntakeComplete}
-            onSkip={handleIntakeSkip}
-            onBack={() => { window.location.hash = '#/quickstart'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading intake..." />}>
+            {showMark && <MarbleMark />}
+            <IntakeView
+              onComplete={handleIntakeComplete}
+              onSkip={handleIntakeSkip}
+              onBack={() => { window.location.hash = '#/quickstart'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -513,14 +520,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
-          {showMark && <MarbleMark />}
-          <BriefingView
-            onComplete={handleBriefingComplete}
-            onBack={() => { window.location.hash = '#/intake'; }}
-            onSkip={() => { window.location.hash = '#/strategy'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
+            {showMark && <MarbleMark />}
+            <BriefingView
+              onComplete={handleBriefingComplete}
+              onBack={() => { window.location.hash = '#/intake'; }}
+              onSkip={() => { window.location.hash = '#/strategy'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -531,14 +540,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
-          {showMark && <MarbleMark />}
-          <StrategyView
-            onComplete={handleStrategyComplete}
-            onBack={() => { sessionStorage.removeItem('shem-briefing-config'); window.location.hash = '#/briefing'; }}
-            onSkip={() => { window.location.hash = '#/team'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
+            {showMark && <MarbleMark />}
+            <StrategyView
+              onComplete={handleStrategyComplete}
+              onBack={() => { sessionStorage.removeItem('shem-briefing-config'); window.location.hash = '#/briefing'; }}
+              onSkip={() => { window.location.hash = '#/team'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -549,14 +560,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading team..." />}>
-          {showMark && <MarbleMark />}
-          <TeamView
-            onTeamConfirmed={handleStaffingComplete}
-            onBack={() => { sessionStorage.removeItem('shem-briefing-team'); window.location.hash = '#/strategy'; }}
-            onSkip={() => { window.location.hash = '#/delivery'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading team..." />}>
+            {showMark && <MarbleMark />}
+            <TeamView
+              onTeamConfirmed={handleStaffingComplete}
+              onBack={() => { sessionStorage.removeItem('shem-briefing-team'); window.location.hash = '#/strategy'; }}
+              onSkip={() => { window.location.hash = '#/delivery'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -585,14 +598,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
-          {showMark && <MarbleMark />}
-          <DeliveryView
-            onContinue={handleDeliveryDone}
-            onBack={() => { window.location.hash = '#/quickstart'; }}
-            onSkip={() => { window.location.hash = '#/billing'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
+            {showMark && <MarbleMark />}
+            <DeliveryView
+              onContinue={handleDeliveryDone}
+              onBack={() => { window.location.hash = '#/quickstart'; }}
+              onSkip={() => { window.location.hash = '#/billing'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -603,12 +618,14 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading billing..." />}>
-          {showMark && <MarbleMark />}
-          <BillingView
-            onClose={handleBillingClose}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading billing..." />}>
+            {showMark && <MarbleMark />}
+            <BillingView
+              onClose={handleBillingClose}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -619,10 +636,12 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading profile..." />}>
-          {showMark && <MarbleMark />}
-          <MyPageView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading profile..." />}>
+            {showMark && <MarbleMark />}
+            <MyPageView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -633,21 +652,23 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading cases..." />}>
-          {showMark && <MarbleMark />}
-          <MyCasesView
-            onConnectSession={(id) => {
-              sessionStorage.setItem('shem-session-id', id);
-              window.location.hash = '#/working';
-            }}
-            onConnectReplay={(id) => {
-              sessionStorage.setItem('shem-session-id', id);
-              sessionStorage.setItem('shem-from-archive', 'true');
-              window.location.hash = '#/delivery';
-            }}
-            onBack={() => { window.location.hash = '#/quickstart'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading cases..." />}>
+            {showMark && <MarbleMark />}
+            <MyCasesView
+              onConnectSession={(id) => {
+                sessionStorage.setItem('shem-session-id', id);
+                window.location.hash = '#/working';
+              }}
+              onConnectReplay={(id) => {
+                sessionStorage.setItem('shem-session-id', id);
+                sessionStorage.setItem('shem-from-archive', 'true');
+                window.location.hash = '#/delivery';
+              }}
+              onBack={() => { window.location.hash = '#/quickstart'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -659,10 +680,12 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
-          {showMark && <MarbleMark />}
-          <ArchiveView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
+            {showMark && <MarbleMark />}
+            <ArchiveView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -694,10 +717,12 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
-          {showMark && <MarbleMark />}
-          <AgentDocsView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
+            {showMark && <MarbleMark />}
+            <AgentDocsView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -709,9 +734,11 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading..." />}>
-          <BetTheCompanyView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <BetTheCompanyView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -723,9 +750,11 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading..." />}>
-          <PricingView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <PricingView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -737,9 +766,11 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading..." />}>
-          <ChallengeView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <ChallengeView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -751,13 +782,15 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
-          {showMark && <MarbleMark />}
-          <AgentBuilderView
-            onBack={() => { window.location.hash = '#/team'; }}
-            editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
+            {showMark && <MarbleMark />}
+            <AgentBuilderView
+              onBack={() => { window.location.hash = '#/team'; }}
+              editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -769,10 +802,12 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
-          {showMark && <MarbleMark />}
-          <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
+            {showMark && <MarbleMark />}
+            <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -784,14 +819,16 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <Suspense fallback={<ViewFallback text="Loading..." />}>
-          <LobbyView
-            onEnter={() => { window.location.hash = '#/quickstart'; }}
-            onMyPage={() => { window.location.hash = '#/my-page'; }}
-            onLogin={() => { window.location.hash = '#/login'; }}
-            onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-          />
-        </Suspense>
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <LobbyView
+              onEnter={() => { window.location.hash = '#/quickstart'; }}
+              onMyPage={() => { window.location.hash = '#/my-page'; }}
+              onLogin={() => { window.location.hash = '#/login'; }}
+              onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
+            />
+          </Suspense>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }
@@ -803,24 +840,26 @@ export function App() {
         {skipLink}
         {toast}
         {cursor}
-        <div style={styles.app}>
-          {showMark && <MarbleMark />}
-          <div style={styles.sessionOverlay}>
-            <SessionList
-              onConnectSession={(id) => {
-                sessionStorage.setItem('shem-session-id', id);
-                window.location.hash = '#/working';
-              }}
-              onConnectReplay={(id) => {
-                sessionStorage.setItem('shem-session-id', id);
-                window.location.hash = '#/working';
-              }}
-              onBeginEngagement={handleBeginEngagement}
-              onYoloLaunch={handleYoloLaunch}
-              onBetTheCompany={navToBetTheCompany}
-            />
+        <ViewTransition>
+          <div style={styles.app}>
+            {showMark && <MarbleMark />}
+            <div style={styles.sessionOverlay}>
+              <SessionList
+                onConnectSession={(id) => {
+                  sessionStorage.setItem('shem-session-id', id);
+                  window.location.hash = '#/working';
+                }}
+                onConnectReplay={(id) => {
+                  sessionStorage.setItem('shem-session-id', id);
+                  window.location.hash = '#/working';
+                }}
+                onBeginEngagement={handleBeginEngagement}
+                onYoloLaunch={handleYoloLaunch}
+                onBetTheCompany={navToBetTheCompany}
+              />
+            </div>
           </div>
-        </div>
+        </ViewTransition>
       </ErrorBoundary>
     );
   }

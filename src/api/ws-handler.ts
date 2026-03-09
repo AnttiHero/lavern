@@ -17,6 +17,7 @@ interface WsClientState {
   sessionId: string;
   lastEventIndex: number;
   alive: boolean;
+  lastPongAt: number;
 }
 
 /**
@@ -35,6 +36,7 @@ export function attachEventStream(
     sessionId: session.id,
     lastEventIndex: fromIndex,
     alive: true,
+    lastPongAt: Date.now(),
   };
 
   // Send metadata on connect
@@ -65,6 +67,39 @@ export function attachEventStream(
 
   session.events.on('event', onEvent);
 
+  // ── Server-initiated heartbeat ──────────────────────────────────────
+  // Ping every 30s using the WebSocket protocol-level ping frame.
+  // If the client doesn't respond with a pong within 60s, assume the
+  // connection is dead and terminate it so the event listener is freed.
+  const HEARTBEAT_INTERVAL_MS = 30_000;
+  const HEARTBEAT_TIMEOUT_MS = 60_000;
+
+  socket.on('pong', () => {
+    state.lastPongAt = Date.now();
+  });
+
+  const heartbeatTimer = setInterval(() => {
+    if (socket.readyState !== 1) {
+      // Socket no longer open — clean up
+      clearInterval(heartbeatTimer);
+      state.alive = false;
+      session.events.off('event', onEvent);
+      return;
+    }
+
+    if (Date.now() - state.lastPongAt > HEARTBEAT_TIMEOUT_MS) {
+      // No pong received within timeout — terminate dead connection
+      clearInterval(heartbeatTimer);
+      state.alive = false;
+      session.events.off('event', onEvent);
+      socket.terminate();
+      return;
+    }
+
+    // Send protocol-level ping (client auto-responds with pong)
+    socket.ping();
+  }, HEARTBEAT_INTERVAL_MS);
+
   // Handle incoming messages from client (e.g., ping, request replay)
   socket.on('message', (data) => {
     try {
@@ -87,11 +122,13 @@ export function attachEventStream(
 
   // Cleanup on close
   socket.on('close', () => {
+    clearInterval(heartbeatTimer);
     state.alive = false;
     session.events.off('event', onEvent);
   });
 
   socket.on('error', () => {
+    clearInterval(heartbeatTimer);
     state.alive = false;
     session.events.off('event', onEvent);
   });

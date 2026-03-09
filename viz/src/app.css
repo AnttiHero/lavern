@@ -130,6 +130,16 @@ input:focus-visible {
   left: 0;
 }
 
+/* View entrance animation */
+.view-entrance {
+  animation: viewFadeUp 0.35s ease-out both;
+}
+
+@keyframes viewFadeUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* Reduced motion — kill all animations and transitions when user prefers */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -467,6 +477,12 @@ input:focus-visible {
 @keyframes svgDrawOn {
   0% { stroke-dashoffset: var(--path-length); }
   100% { stroke-dashoffset: 0; }
+}
+
+/* DeliverySkeleton — bone pulse */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
 }
 
 /* ── Agent Builder — Slider Thumbs ─────────────────────────────────── */

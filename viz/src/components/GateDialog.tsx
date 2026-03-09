@@ -101,11 +101,11 @@ export function GateDialog({
         onDecision(decision, notes);
       } else {
         const errBody = await response.text().catch(() => '');
-        setErrorMsg(`Failed to submit (${response.status}). ${errBody}`);
+        setErrorMsg('Submission failed. Please try again.');
       }
     } catch (err) {
       console.error('Failed to submit gate decision:', err);
-      setErrorMsg('Cannot reach the server. Please check your connection.');
+      setErrorMsg('Unable to reach the server. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }

@@ -26,6 +26,7 @@ import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
 import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
 import { ConfettiBurst } from './components/ConfettiBurst.js';
+import { DeliverySkeleton } from './components/DeliverySkeleton.js';
 
 interface Props {
   onContinue: () => void;
@@ -82,27 +83,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
         onSkip={isArchiveView ? undefined : onSkip}
       />
 
-      {loading && (
-        <div style={styles.loadingState}>
-          <div style={{
-            fontFamily: fonts.serif,
-            fontSize: 36,
-            fontWeight: 300,
-            color: colors.text,
-            lineHeight: 1,
-            animation: 'marbleLoadBreath 2.4s ease-in-out infinite',
-          }}>M</div>
-          <div style={{
-            fontFamily: fonts.sans,
-            fontSize: 11,
-            fontWeight: 500,
-            color: colors.textDim,
-            letterSpacing: 0.5,
-            textTransform: 'uppercase' as const,
-            marginTop: 12,
-          }}>Loading session results</div>
-        </div>
-      )}
+      {loading && <DeliverySkeleton />}
       {error && <div style={styles.errorState}>{error}</div>}
 
       {data && (
@@ -176,13 +157,6 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 900,
     margin: '0 auto',
     position: 'relative',
-  },
-  loadingState: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '80px 0',
   },
   errorState: {
     textAlign: 'center' as const,

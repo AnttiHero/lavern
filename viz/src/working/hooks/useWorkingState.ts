@@ -66,6 +66,8 @@ export interface WorkingState {
   findingCounts: Map<string, number>;
   /** Timestamp of the most recent event (for staleness detection). */
   lastEventTimestamp: string | null;
+  /** True when the session was not found on the server (expired or evicted). */
+  sessionExpired: boolean;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -83,6 +85,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   // Connection
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [isReplay, setIsReplay] = useState(false);
   const [replayPaused, setReplayPaused] = useState(false);
@@ -160,6 +163,10 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       onReplayComplete: () => {},
       onError: (msg) => {
         console.error('WebSocket error:', msg);
+        if (msg === 'Session not found') {
+          setSessionExpired(true);
+          return; // Don't add to event stream — show dedicated UI instead
+        }
         // Surface WS errors in the event stream so users see them in the feed
         handleEventRef.current({
           type: 'error',
@@ -201,6 +208,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     setSessionId(id);
     sessionIdRef.current = id;
     deliveredAtRef.current = null;
+    setSessionExpired(false);
     setIsReplay(false);
     setEvents([]);
     setCurrentStep('intake');
@@ -653,6 +661,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     activeThinkingAgents,
     findingCounts,
     lastEventTimestamp: events.length > 0 ? events[events.length - 1].timestamp : null,
+    sessionExpired,
   };
 
   return {
