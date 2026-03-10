@@ -9,7 +9,7 @@
  *   POST   /api/matters/:id/team  — Submit team selection
  */
 
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { createMatterRecord } from '../../types/matter.js';
 import type { MatterRecord, ConflictCheckResult, KycResult, EngagementLetter } from '../../types/matter.js';
@@ -25,10 +25,18 @@ const matterStore = new Map<string, MatterRecord>();
 const matterOwners = new Map<string, string>(); // matterId → userId
 const loadedUsers = new Set<string>();
 
-/** Get userId from request (set by auth middleware). Throws if missing. */
-function getRequestUserId(request: FastifyRequest): string {
-  const userId = (request as typeof request & { userId?: string }).userId;
-  if (!userId) throw new Error('Authentication required — userId not set on request');
+/** Get userId from request (set by auth middleware). Returns null if missing. */
+function getRequestUserId(request: FastifyRequest): string | null {
+  return (request as typeof request & { userId?: string }).userId ?? null;
+}
+
+/** Auth guard: returns userId or sends 401 and returns null. */
+function requireAuth(request: FastifyRequest, reply: FastifyReply): string | null {
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    reply.status(401).send({ error: 'Authentication required' });
+    return null;
+  }
   return userId;
 }
 
@@ -101,7 +109,8 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     const body = validateBody<CreateMatterBody>(CreateMatterSchema, request, reply);
     if (!body) return;
 
-    const userId = getRequestUserId(request);
+    const userId = requireAuth(request, reply);
+    if (!userId) return;
     ensureLoaded(userId);
 
     // Create matter record
@@ -193,7 +202,8 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
 
   // ── GET /api/matters — List matters for user ────────────────────────
   fastify.get('/api/matters', async (request, reply) => {
-    const userId = getRequestUserId(request);
+    const userId = requireAuth(request, reply);
+    if (!userId) return;
     ensureLoaded(userId);
 
     // Return only this user's matters
@@ -216,7 +226,8 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── GET /api/matters/:id — Get matter detail ─────────────────────────
   fastify.get('/api/matters/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const userId = getRequestUserId(request);
+    const userId = requireAuth(request, reply);
+    if (!userId) return;
     ensureLoaded(userId);
     const matter = matterStore.get(id);
 
@@ -256,7 +267,8 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── POST /api/matters/:id/accept — Accept engagement letter ──────────
   fastify.post('/api/matters/:id/accept', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const userId = getRequestUserId(request);
+    const userId = requireAuth(request, reply);
+    if (!userId) return;
     ensureLoaded(userId);
     const matter = matterStore.get(id);
 
@@ -291,7 +303,7 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
 
     matter.engagementLetter.accepted = true;
     matter.engagementLetter.acceptedAt = new Date().toISOString();
-    persistMatter(getRequestUserId(request), matter);
+    persistMatter(userId, matter);
 
     return reply.send({
       matterId: matter.matterId,
@@ -305,7 +317,8 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
   // ── POST /api/matters/:id/team — Submit team selection ───────────────
   fastify.post('/api/matters/:id/team', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const userId = getRequestUserId(request);
+    const userId = requireAuth(request, reply);
+    if (!userId) return;
     ensureLoaded(userId);
     const matter = matterStore.get(id);
 
@@ -373,7 +386,7 @@ export function registerMatterRoutes(fastify: FastifyInstance): void {
     if (matter.engagementLetter) {
       matter.engagementLetter.teamComposition = selectedRoles;
     }
-    persistMatter(getRequestUserId(request), matter);
+    persistMatter(userId, matter);
 
     return reply.send({
       matterId: matter.matterId,

@@ -42,10 +42,21 @@ function ensureApiKey(): string {
     }
   }
 
-  throw new Error('ANTHROPIC_API_KEY not found in environment or .env file');
+  console.warn('[BRIEFING] ANTHROPIC_API_KEY not found in environment or .env file — interview calls will fail');
+  return '';
 }
 
-const API_KEY = ensureApiKey();
+let _apiKey: string | undefined;
+function getApiKey(): string {
+  if (!_apiKey) {
+    _apiKey = ensureApiKey();
+    if (!_apiKey) throw new Error('ANTHROPIC_API_KEY is required for interview calls');
+  }
+  return _apiKey;
+}
+
+// Backwards compat — lazy-loaded
+const API_KEY_LAZY = { get value() { return getApiKey(); } };
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const INTERVIEW_MODEL = config.routerModel; // Sonnet — old Haiku was too dumb for interviews
 
@@ -61,7 +72,7 @@ async function callAnthropic(params: {
   const res = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
-      'x-api-key': API_KEY,
+      'x-api-key': API_KEY_LAZY.value,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
@@ -215,7 +226,7 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
       const apiRes = await fetch(ANTHROPIC_API_URL, {
         method: 'POST',
         headers: {
-          'x-api-key': API_KEY,
+          'x-api-key': API_KEY_LAZY.value,
           'anthropic-version': '2023-06-01',
           'content-type': 'application/json',
         },

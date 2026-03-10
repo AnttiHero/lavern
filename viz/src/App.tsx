@@ -196,7 +196,7 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
+      setErrorToast('Something went wrong. Please try again.');
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[YOLO] API unreachable — cannot create session');
@@ -302,7 +302,7 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
+      setErrorToast('Something went wrong. Please try again.');
     } catch {
       console.error('[QuickStart] API unreachable');
       sessionStorage.removeItem('shem-session-id');
@@ -430,7 +430,7 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[Session] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(`Session creation failed (${res.status}): ${errorBody.error || errorBody.message || 'Please try again.'}`);
+      setErrorToast('Something went wrong. Please try again.');
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');
