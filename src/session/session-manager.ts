@@ -43,7 +43,7 @@ export class SessionManager {
       if (entry.archived) return;
       entry.archived = true;
       try {
-        const userId = session.userId ?? session.clientIdentity?.id ?? 'anonymous';
+        const userId = session.userId ?? session.clientIdentity?.id ?? null;
         archiveSession(session, userId);
       } catch (err) {
         console.error(`[SESSION] Failed to archive session ${session.id}:`, err);
@@ -98,7 +98,7 @@ export class SessionManager {
     if (!entry.archived) {
       entry.archived = true;
       try {
-        const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? 'anonymous';
+        const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? null;
         archiveSession(entry.session, userId);
       } catch (err) {
         console.error(`[SESSION] Failed to archive evicted session ${id}:`, err);

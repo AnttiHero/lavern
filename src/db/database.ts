@@ -67,7 +67,7 @@ function runMigrations(db: Database.Database): void {
 
     CREATE TABLE IF NOT EXISTS session_archive (
       id                  TEXT PRIMARY KEY,
-      user_id             TEXT NOT NULL REFERENCES users(id),
+      user_id             TEXT REFERENCES users(id),
       title               TEXT DEFAULT 'Untitled',
       status              TEXT DEFAULT 'completed',
       workflow_id         TEXT,
@@ -196,6 +196,41 @@ function runMigrations(db: Database.Database): void {
     db.exec(`ALTER TABLE kb_collections ADD COLUMN is_global INTEGER DEFAULT 0`);
   } catch { /* column already exists */ }
   db.exec(`CREATE INDEX IF NOT EXISTS idx_kb_collections_global ON kb_collections(is_global)`);
+
+  // v20 migration: Make session_archive.user_id nullable (was NOT NULL REFERENCES users(id)).
+  // Anonymous / unauthenticated sessions (QuickStart, smoke tests) have no users row,
+  // so the foreign key constraint caused every archival to fail with SQLITE_CONSTRAINT_FOREIGNKEY.
+  // SQLite cannot ALTER column constraints, so we recreate the table if it has the old schema.
+  try {
+    const info = db.prepare(`PRAGMA table_info(session_archive)`).all() as Array<{ name: string; notnull: number }>;
+    const userIdCol = info.find((c) => c.name === 'user_id');
+    if (userIdCol && userIdCol.notnull === 1) {
+      db.exec(`
+        ALTER TABLE session_archive RENAME TO session_archive_old;
+        CREATE TABLE session_archive (
+          id                  TEXT PRIMARY KEY,
+          user_id             TEXT REFERENCES users(id),
+          title               TEXT DEFAULT 'Untitled',
+          status              TEXT DEFAULT 'completed',
+          workflow_id         TEXT,
+          team_roles          TEXT DEFAULT '[]',
+          findings_count      INTEGER DEFAULT 0,
+          resolutions_count   INTEGER DEFAULT 0,
+          cost_usd            REAL DEFAULT 0,
+          budget_usd          REAL DEFAULT 0,
+          final_output        TEXT,
+          assembled_document  TEXT,
+          summary_json        TEXT DEFAULT '{}',
+          created_at          TEXT NOT NULL,
+          completed_at        TEXT,
+          duration_ms         INTEGER DEFAULT 0
+        );
+        INSERT INTO session_archive SELECT * FROM session_archive_old;
+        DROP TABLE session_archive_old;
+        CREATE INDEX IF NOT EXISTS idx_session_archive_user ON session_archive(user_id);
+      `);
+    }
+  } catch { /* migration already applied or table doesn't exist yet */ }
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────
@@ -330,7 +365,7 @@ export interface ArchivedSession {
   duration_ms: number;
 }
 
-export function archiveSession(session: SessionState, userId: string): void {
+export function archiveSession(session: SessionState, userId: string | null): void {
   const now = new Date().toISOString();
   const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
   const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
