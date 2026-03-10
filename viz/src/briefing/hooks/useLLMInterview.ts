@@ -42,6 +42,7 @@ export interface UseLLMInterviewReturn {
 }
 
 const MAX_TURNS = 5;
+const MAX_RETRIES = 2;
 
 /**
  * Read an SSE stream and append text chunks to the last assistant message.
@@ -86,6 +87,12 @@ async function consumeSSEStream(
               }
               return updated;
             });
+          }
+
+          // Acknowledge stream completion — break out of the read loop
+          if (event.type === 'done') {
+            reader.releaseLock();
+            return fullText;
           }
 
           if (event.type === 'error' && event.content) {
@@ -134,6 +141,7 @@ export function useLLMInterview(
   const callInterview = useCallback(async (
     userMessage?: string,
     finalize = false,
+    retryAttempt = 0,
   ) => {
     // Use ref guard — state value may be stale due to closure capture
     if (isStreamingRef.current) return;
@@ -141,8 +149,8 @@ export function useLLMInterview(
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Timeout: 30s for finalization (non-streaming), 15s for initial SSE connection
-    const timeoutMs = finalize ? 30_000 : 15_000;
+    // Timeout: 30s for finalization (non-streaming), 20s for initial SSE connection
+    const timeoutMs = finalize ? 30_000 : 20_000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     // Build history from ref (avoids stale closure over messages state)
@@ -187,12 +195,15 @@ export function useLLMInterview(
       }
 
       // Conversational turn: SSE streaming
-      if (userMessage) {
+      // Only add user message on first attempt (not on retries)
+      if (userMessage && retryAttempt === 0) {
         setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       }
 
-      // Add empty assistant message to stream into
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      // Add empty assistant message to stream into (only on first attempt)
+      if (retryAttempt === 0) {
+        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      }
 
       const res = await fetch('/api/briefing/interview', {
         method: 'POST',
@@ -226,15 +237,46 @@ export function useLLMInterview(
         ? 'Interview request timed out — server may be unreachable.'
         : err instanceof Error ? err.message : String(err);
 
-      console.error('[useLLMInterview]', errorMessage);
-      setError(errorMessage);
+      console.error(`[useLLMInterview] attempt ${retryAttempt + 1}:`, errorMessage);
 
-      // If the very first call fails, fall back to static questions
-      if (messagesRef.current.length === 0) {
+      // If the very first call fails (no messages yet), fall back to static questions
+      if (messagesRef.current.length === 0 ||
+          (messagesRef.current.length === 1 && messagesRef.current[0].content === '')) {
+        // Clean up the empty assistant message before falling back
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant' && last.content === '') {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
         setFallbackToStatic(true);
+        setError(errorMessage);
+      } else if (retryAttempt < MAX_RETRIES) {
+        // Mid-conversation failure: retry before giving up
+        // Remove the empty assistant message (we'll re-add it on retry)
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant' && last.content === '') {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+
+        console.log(`[useLLMInterview] Retrying in ${(retryAttempt + 1) * 2}s (attempt ${retryAttempt + 2}/${MAX_RETRIES + 1})...`);
+
+        // Release streaming lock so retry can proceed
+        isStreamingRef.current = false;
+        setIsStreaming(false);
+        abortRef.current = null;
+        clearTimeout(timeout);
+
+        // Exponential backoff: 2s, 4s
+        await new Promise(r => setTimeout(r, (retryAttempt + 1) * 2000));
+        return callInterview(userMessage, finalize, retryAttempt + 1);
       } else {
-        // Mid-conversation failure: remove the empty assistant message AND the user message we just added
-        // (so turnCount doesn't inflate from failed turns)
+        // All retries exhausted — clean up and show error
+        setError(errorMessage);
         setMessages(prev => {
           let cleaned = prev;
           // Remove empty assistant message
@@ -242,7 +284,7 @@ export function useLLMInterview(
           if (last && last.role === 'assistant' && last.content === '') {
             cleaned = cleaned.slice(0, -1);
           }
-          // Remove the user message we just optimistically added
+          // Remove the user message we optimistically added
           if (userMessage) {
             const lastUser = cleaned[cleaned.length - 1];
             if (lastUser && lastUser.role === 'user' && lastUser.content.trim() === userMessage.trim()) {
@@ -261,9 +303,11 @@ export function useLLMInterview(
   }, [documents, workflowId, interviewerId]);
 
   const startInterview = useCallback(async () => {
-    if (messages.length > 0 || isStreamingRef.current) return;
+    // Use ref to avoid stale closure — messages.length in deps would recreate
+    // the callback on every message, potentially causing double-starts
+    if (messagesRef.current.length > 0 || isStreamingRef.current) return;
     await callInterview(undefined, false);
-  }, [callInterview, messages.length]);
+  }, [callInterview]);
 
   const sendAnswer = useCallback(async (text: string) => {
     await callInterview(text.trim(), false);

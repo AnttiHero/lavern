@@ -313,6 +313,59 @@ export async function startApiServer(port: number): Promise<void> {
     });
   }
 
+  // ── Process-level crash protection ────────────────────────────────
+  // Prevent the server from crashing on unhandled errors in background
+  // tasks (dispatch, assembly, WebSocket handlers, etc.)
+
+  process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught exception (server will continue):', err);
+    // Log but don't exit — Fastify routes have their own error handling.
+    // Only exit on truly unrecoverable errors.
+    if (err.message?.includes('EADDRINUSE') || err.message?.includes('ENOMEM')) {
+      console.error('[FATAL] Unrecoverable error — shutting down');
+      process.exit(1);
+    }
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[WARN] Unhandled promise rejection:', reason);
+    // Don't crash — log and continue. Most unhandled rejections come from
+    // fire-and-forget dispatch() or assembly calls that already have their
+    // own error handling. This is a safety net.
+  });
+
+  // ── Graceful shutdown ────────────────────────────────────────────────
+
+  let shuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`\n[SERVER] ${signal} received — shutting down gracefully...`);
+
+    // Stop accepting new connections
+    try {
+      await fastify.close();
+      console.log('[SERVER] Server closed');
+    } catch (err) {
+      console.error('[SERVER] Error during shutdown:', err);
+    }
+
+    // Clean up timers
+    clearInterval(tokenCleanupInterval);
+
+    // Destroy all active sessions (archives them)
+    for (const session of sessionManager.getAllSessions()) {
+      try {
+        sessionManager.destroySession(session.id, `Server shutdown (${signal})`);
+      } catch { /* best-effort cleanup */ }
+    }
+
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
   // ── Start ────────────────────────────────────────────────────────────
 
   try {

@@ -92,7 +92,9 @@ export async function streamMessages(
       case 'assistant': {
         if (message.message?.content) {
           for (const block of message.message.content) {
-            if ('text' in block) {
+            // Only capture text blocks — filter out thinking blocks (type: 'thinking')
+            // which also have a .text property but contain internal reasoning
+            if (block.type === 'text' && 'text' in block) {
               process.stdout.write(block.text);
               // Capture final output for agent API responses
               session.finalOutput += block.text;

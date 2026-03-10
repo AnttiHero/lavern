@@ -46,7 +46,26 @@ export async function runGenericWorkflow(
   // v18: Per-session provider override (options > session > global config)
   const provider = options.provider ?? session.provider ?? config.provider;
   if (provider === 'mistral') {
-    return runMistralWorkflow(request, template, classification, session, options);
+    try {
+      return await runMistralWorkflow(request, template, classification, session, options);
+    } catch (mistralError) {
+      console.error(`[EXECUTOR] Mistral workflow failed:`, mistralError);
+      // Emit session_end so frontend isn't stuck waiting
+      session.events.emitEvent({
+        type: 'error',
+        message: `Workflow failed: ${mistralError instanceof Error ? mistralError.message : String(mistralError)}`,
+        source: 'orchestrator',
+        timestamp: eventTimestamp(),
+      });
+      session.events.emitEvent({
+        type: 'session_end',
+        sessionId: session.id,
+        totalCost: session.accumulatedCost,
+        duration: 0,
+        timestamp: eventTimestamp(),
+      });
+      throw mistralError;
+    }
   }
 
   // ── Anthropic / Claude Agent SDK path (default) ────────────────────
@@ -150,41 +169,60 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     ? `\n## Your Orchestrator Personality\nYou are "${orchestratorProfile.displayName}" — ${orchestratorProfile.tagline}\nWork style: ${orchestratorProfile.personality.workStyle}\n\n`
     : '';
 
-  const result = query({
-    prompt,
-    options: {
-      systemPrompt: {
-        type: 'preset',
-        preset: 'claude_code',
-        append: soulPrefix + personalityPrefix + template.orchestratorPrompt,
+  let result: ReturnType<typeof query>;
+  try {
+    result = query({
+      prompt,
+      options: {
+        systemPrompt: {
+          type: 'preset',
+          preset: 'claude_code',
+          append: soulPrefix + personalityPrefix + template.orchestratorPrompt,
+        },
+        allowedTools: template.availableTools,
+        agents: filteredAgents,
+        canUseTool: createDynamicPermissions(session, template),
+        mcpServers: {
+          shem: shemMcpServer,
+        },
+        hooks: {
+          PostToolUse: [
+            { hooks: [auditLoggerHook] },
+          ],
+          PreToolUse: [
+            { hooks: [haltCheckHook, humanGateEnforcerHook, costTrackerHook] },
+          ],
+          SubagentStart: [
+            { hooks: [subagentStartHook] },
+          ],
+          SubagentStop: [
+            { hooks: [subagentStopHook] },
+          ],
+        },
+        maxBudgetUsd,
+        maxTurns,
+        model,
+        effort,
+        cwd: options.cwd,
       },
-      allowedTools: template.availableTools,
-      agents: filteredAgents,
-      canUseTool: createDynamicPermissions(session, template),
-      mcpServers: {
-        shem: shemMcpServer,
-      },
-      hooks: {
-        PostToolUse: [
-          { hooks: [auditLoggerHook] },
-        ],
-        PreToolUse: [
-          { hooks: [haltCheckHook, humanGateEnforcerHook, costTrackerHook] },
-        ],
-        SubagentStart: [
-          { hooks: [subagentStartHook] },
-        ],
-        SubagentStop: [
-          { hooks: [subagentStopHook] },
-        ],
-      },
-      maxBudgetUsd,
-      maxTurns,
-      model,
-      effort,
-      cwd: options.cwd,
-    },
-  });
+    });
+  } catch (initError) {
+    console.error(`[EXECUTOR] Failed to initialize query:`, initError);
+    session.events.emitEvent({
+      type: 'error',
+      message: `Session initialization failed: ${initError instanceof Error ? initError.message : String(initError)}`,
+      source: 'orchestrator',
+      timestamp: eventTimestamp(),
+    });
+    session.events.emitEvent({
+      type: 'session_end',
+      sessionId: session.id,
+      totalCost: 0,
+      duration: 0,
+      timestamp: eventTimestamp(),
+    });
+    throw initError;
+  }
 
   // Stream messages to console (suppress session_end — we emit it after assembly)
   let pipelineCost = 0;
@@ -222,9 +260,27 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   // the assembly has ALL the multi-agent intelligence as context.
   try {
     session.assembledDocument = await assembleDocument(session, request);
+
+    // If assembly returned empty string, it failed internally (all attempts exhausted).
+    // Emit a user-visible error so the frontend can show a meaningful message.
+    if (!session.assembledDocument) {
+      session.events.emitEvent({
+        type: 'error',
+        message: 'Document assembly could not produce a deliverable. You can retry from the delivery view.',
+        source: 'document-assembler',
+        timestamp: eventTimestamp(),
+      });
+    }
   } catch (assemblyError) {
     console.error('Document assembly failed (non-fatal):', assemblyError);
-    // Non-fatal: the process output is still available via finalOutput
+    // Non-fatal: the process output is still available via finalOutput.
+    // Emit error event so frontend knows assembly failed.
+    session.events.emitEvent({
+      type: 'error',
+      message: `Document assembly error: ${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`,
+      source: 'document-assembler',
+      timestamp: eventTimestamp(),
+    });
   }
 
   // NOW emit session_end — assembly is complete, deliverable is ready

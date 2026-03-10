@@ -173,21 +173,25 @@ export function registerSessionRoutes(
         verification: body.options?.verification,
         provider: body.options?.provider,
       }).catch((err) => {
-        console.error(`[API] Session ${session.id} failed:`, err);
-        session.events.emitEvent({
-          type: 'error',
-          message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
-          source: 'orchestrator',
-          timestamp: new Date().toISOString(),
-        });
-        // Emit session_end so frontend transitions and session gets archived
-        session.events.emitEvent({
-          type: 'session_end',
-          sessionId: session.id,
-          totalCost: session.accumulatedCost,
-          duration: Date.now() - new Date(session.workflow.startedAt).getTime(),
-          timestamp: new Date().toISOString(),
-        });
+        try {
+          console.error(`[API] Session ${session.id} failed:`, err);
+          session.events.emitEvent({
+            type: 'error',
+            message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
+            source: 'orchestrator',
+            timestamp: new Date().toISOString(),
+          });
+          // Emit session_end so frontend transitions and session gets archived
+          session.events.emitEvent({
+            type: 'session_end',
+            sessionId: session.id,
+            totalCost: session.accumulatedCost,
+            duration: Date.now() - new Date(session.workflow.startedAt).getTime(),
+            timestamp: new Date().toISOString(),
+          });
+        } catch (innerErr) {
+          console.error(`[API] Session ${session.id} — error handler failed:`, innerErr);
+        }
       });
     } else if (body.documentPath) {
       // Legacy mode — runTheShem directly
@@ -211,6 +215,14 @@ export function registerSessionRoutes(
           type: 'error',
           message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
           source: 'orchestrator',
+          timestamp: new Date().toISOString(),
+        });
+        // Emit session_end so frontend transitions and session gets archived
+        session.events.emitEvent({
+          type: 'session_end',
+          sessionId: session.id,
+          totalCost: session.accumulatedCost,
+          duration: Date.now() - new Date(session.workflow.startedAt).getTime(),
           timestamp: new Date().toISOString(),
         });
       });

@@ -201,9 +201,10 @@ FAIL: [one sentence explaining why this document is not good enough]`;
     console.warn(`[QUALITY GATE] FAILED: ${critique} (~$${gateCost.toFixed(4)})`);
     return { pass: false, critique, cost: gateCost };
   } catch (error) {
-    // Quality gate failure should NOT block delivery — it's a second opinion, not a veto
-    // If the gate itself errors, let the document through (it passed structural validation)
-    console.error('[QUALITY GATE] Error (allowing document through):', error);
+    // Quality gate API error — log and let the document through since
+    // it already passed structural validation. Better to deliver a
+    // structurally-valid document than block on an API flake.
+    console.error('[QUALITY GATE] API error (allowing structurally-valid document through):', error);
     return { pass: true, critique: undefined, cost: 0 };
   }
 }

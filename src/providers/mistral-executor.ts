@@ -275,8 +275,23 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   // ── Document assembly (via Mistral) ─────────────────────────────────
   try {
     session.assembledDocument = await assembleMistralDocument(session, request);
+
+    if (!session.assembledDocument) {
+      session.events.emitEvent({
+        type: 'error',
+        message: 'Document assembly could not produce a deliverable. You can retry from the delivery view.',
+        source: 'document-assembler',
+        timestamp: eventTimestamp(),
+      });
+    }
   } catch (assemblyError) {
     console.error('[MISTRAL] Document assembly failed (non-fatal):', assemblyError);
+    session.events.emitEvent({
+      type: 'error',
+      message: `Document assembly error: ${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`,
+      source: 'document-assembler',
+      timestamp: eventTimestamp(),
+    });
   }
 
   // Emit session_end — assembly is complete

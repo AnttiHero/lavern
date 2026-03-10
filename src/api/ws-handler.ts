@@ -97,7 +97,14 @@ export function attachEventStream(
     }
 
     // Send protocol-level ping (client auto-responds with pong)
-    socket.ping();
+    try {
+      socket.ping();
+    } catch {
+      // ping() can throw if socket transitions between readyState check and call
+      clearInterval(heartbeatTimer);
+      state.alive = false;
+      session.events.off('event', onEvent);
+    }
   }, HEARTBEAT_INTERVAL_MS);
 
   // Handle incoming messages from client (e.g., ping, request replay)
