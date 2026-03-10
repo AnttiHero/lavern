@@ -716,7 +716,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       {onBetTheCompany && (
         <div
           className={cn(
-            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-3 box-border',
+            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-4 box-border',
             'flex flex-col sm:flex-row items-start sm:items-center gap-6',
             'p-5 sm:p-6 lg:px-8 lg:py-7',
             'rounded-xl cursor-pointer',
@@ -765,7 +765,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
       {onChallenge && (
         <div
           className={cn(
-            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-3 box-border',
+            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-4 box-border',
             'flex flex-col sm:flex-row items-start sm:items-center gap-6',
             'p-5 sm:p-6 lg:px-8 lg:py-7',
             'rounded-xl cursor-pointer',
@@ -864,7 +864,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
 
       {/* ── Footer ───────────────────────────────────────── */}
       <div
-        className="relative z-2 mt-auto pt-12 pb-8 text-center flex flex-col items-center gap-4"
+        className="relative z-2 mt-auto pt-16 pb-8 text-center flex flex-col items-center gap-4"
         style={{ animation: 'qsFadeIn 0.4s ease 1s both' }}
       >
         <MarbleIlluminated

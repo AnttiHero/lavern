@@ -64,7 +64,15 @@ export function ReviewTab({ data }: Props) {
               const pct = hasScore ? Math.round(check.score! * 100) : null;
 
               return (
-                <div key={i} style={styles.checkItem}>
+                <div
+                  key={i}
+                  style={{
+                    ...styles.checkItem,
+                    animation: `cardStaggerUp 0.4s ease ${i * 0.04}s both`,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
                   <span style={{ ...styles.checkIcon, color }}>
                     {check.passed ? '\u2713' : '\u2717'}
                   </span>
@@ -103,7 +111,15 @@ export function ReviewTab({ data }: Props) {
         {data.debateResolutions.length > 0 ? (
           <div style={styles.resolutionsList}>
             {data.debateResolutions.map((res, i) => (
-              <div key={i} style={styles.resolutionCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.resolutionCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.resHeader}>
                   <span style={styles.resIcon}>{'\u2713'}</span>
                   <span style={styles.resLabel}>Resolved</span>
@@ -154,7 +170,15 @@ export function ReviewTab({ data }: Props) {
           <div style={styles.sectionTitle}>What Was Escalated</div>
           <div style={styles.gateList}>
             {data.gateDecisions.map((gate, i) => (
-              <div key={i} style={styles.gateCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.gateCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.gateHeader}>
                   <span style={styles.gateIcon}>{'\u26A0'}</span>
                   <span style={styles.gateType}>{gate.gateType}</span>
@@ -272,6 +296,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: `${spacing.md}px ${spacing.lg}px`,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   checkIcon: {
     fontSize: 14,
@@ -311,6 +336,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid rgba(74, 124, 80, 0.2)`,
     borderRadius: radii.lg,
     padding: spacing.xl,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   resHeader: {
     display: 'flex',
@@ -401,6 +427,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   gateHeader: {
     display: 'flex',

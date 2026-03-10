@@ -479,6 +479,23 @@ input:focus-visible {
   100% { stroke-dashoffset: 0; }
 }
 
+/* Dimension bar — grows from 0 to final width */
+@keyframes barGrow {
+  0% { width: 0; }
+}
+
+/* Card stagger — fades up into position */
+@keyframes cardStaggerUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Tab content — fades in on tab switch */
+@keyframes tabFadeIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* DeliverySkeleton — bone pulse */
 @keyframes skeletonPulse {
   0%, 100% { opacity: 0.4; }

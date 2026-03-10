@@ -14,6 +14,7 @@ export const colors = {
   bgCardHover: '#FFFFFF',
   bgPanel: '#F5F4F0',
   bgInput: '#F0EFEB',
+  bgAlt: '#F5F3EE',
 
   // Borders — soft warm greys
   border: '#E5E3DD',
@@ -68,6 +69,7 @@ export const spacing = {
   xl: 24,
   xxl: 32,
   xxxl: 48,
+  xxxxl: 64,
 };
 
 export const radii = {

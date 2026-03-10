@@ -16,6 +16,7 @@
 import { useState } from 'react';
 import { useResponsive } from '../hooks/useMediaQuery.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
+import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
 import { useDeliveryData } from './hooks/useDeliveryData.js';
 import { DeliveryHeader } from './components/DeliveryHeader.js';
 import { TabBar, type DeliveryTab } from './components/TabBar.js';
@@ -91,22 +92,24 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           <ConfettiBurst />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {activeTab === 'work' && <TheWorkTab data={data} assemblyStatus={assemblyStatus} onRetryAssembly={retryAssembly} />}
-          {activeTab === 'review' && <ReviewTab data={data} />}
-          {activeTab === 'story' && <TheStoryTab data={data} />}
-          {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
-          {activeTab === 'next-steps' && <NextStepsTab data={data} />}
-          {activeTab === 'conversation' && (
-            <ConversationTab
-              sessionId={data.sessionId}
-              messages={convMessages}
-              setMessages={setConvMessages}
-              input={convInput}
-              setInput={setConvInput}
-              streaming={convStreaming}
-              setStreaming={setConvStreaming}
-            />
-          )}
+          <div key={activeTab} style={{ animation: 'tabFadeIn 0.3s ease both' }}>
+            {activeTab === 'work' && <TheWorkTab data={data} assemblyStatus={assemblyStatus} onRetryAssembly={retryAssembly} />}
+            {activeTab === 'review' && <ReviewTab data={data} />}
+            {activeTab === 'story' && <TheStoryTab data={data} />}
+            {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
+            {activeTab === 'next-steps' && <NextStepsTab data={data} />}
+            {activeTab === 'conversation' && (
+              <ConversationTab
+                sessionId={data.sessionId}
+                messages={convMessages}
+                setMessages={setConvMessages}
+                input={convInput}
+                setInput={setConvInput}
+                streaming={convStreaming}
+                setStreaming={setConvStreaming}
+              />
+            )}
+          </div>
         </>
       )}
 
@@ -142,6 +145,15 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           </button>
         )}
       </div>
+
+      {/* Branding footer */}
+      <div style={styles.brandingFooter}>
+        <MarbleIlluminated
+          color={colors.textDim}
+          glow="rgba(150, 135, 95, 0.4)"
+          style={{ fontSize: 9, letterSpacing: 4 }}
+        />
+      </div>
     </main>
   );
 }
@@ -153,8 +165,8 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bg,
     color: colors.text,
     fontFamily: fonts.sans,
-    padding: `${spacing.xxxl}px`,
-    maxWidth: 900,
+    padding: `${spacing.xxxxl}px`,
+    maxWidth: 940,
     margin: '0 auto',
     position: 'relative',
   },
@@ -168,8 +180,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: spacing.md,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxxxl,
+  },
+  brandingFooter: {
+    textAlign: 'center' as const,
     paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
   secondaryBtn: {
     padding: '12px 36px',

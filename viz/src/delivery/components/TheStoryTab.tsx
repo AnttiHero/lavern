@@ -12,12 +12,25 @@
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { useInView } from '../../hooks/useInView.js';
 
 interface Props {
   data: DeliveryData;
 }
 
+/** Full-bleed contrast band for alternating sections. */
+const bandStyle: React.CSSProperties = {
+  backgroundColor: colors.bgAlt,
+  marginLeft: -spacing.xxxxl,
+  marginRight: -spacing.xxxxl,
+  paddingLeft: spacing.xxxxl,
+  paddingRight: spacing.xxxxl,
+  paddingTop: spacing.xxl,
+  paddingBottom: spacing.xxl,
+};
+
 export function TheStoryTab({ data }: Props) {
+  const { ref: barsRef, inView: barsInView } = useInView();
   const hasChanges = data.keyChanges.length > 0;
   const hasResolutions = data.debateResolutions.length > 0;
   const hasDimensions = data.dimensions.length > 0;
@@ -41,7 +54,7 @@ export function TheStoryTab({ data }: Props) {
 
       {/* Score improvements — visual bar chart */}
       {hasDimensions && (
-        <div style={styles.section}>
+        <div style={styles.section} ref={barsRef}>
           <div style={styles.dimensionGrid}>
             {data.dimensions.map((d, i) => {
               const beforePct = (d.before / 5) * 100;
@@ -51,10 +64,18 @@ export function TheStoryTab({ data }: Props) {
                   <div style={styles.dimensionLabel}>{d.dimension}</div>
                   <div style={styles.barContainer}>
                     <div style={styles.barTrack}>
-                      <div style={{ ...styles.barBefore, width: `${beforePct}%` }} />
+                      <div style={{
+                        ...styles.barBefore,
+                        width: `${beforePct}%`,
+                        animation: barsInView ? `barGrow 0.5s ease ${i * 0.1}s both` : undefined,
+                      }} />
                     </div>
                     <div style={styles.barTrack}>
-                      <div style={{ ...styles.barAfter, width: `${afterPct}%` }} />
+                      <div style={{
+                        ...styles.barAfter,
+                        width: `${afterPct}%`,
+                        animation: barsInView ? `barGrow 0.8s ease ${i * 0.1 + 0.15}s both` : undefined,
+                      }} />
                     </div>
                   </div>
                   <div style={{
@@ -80,16 +101,24 @@ export function TheStoryTab({ data }: Props) {
         </div>
       )}
 
-      {/* Section 1: What We Found */}
+      {/* Section 1: What We Found — contrast band */}
       {hasChanges && (
-        <div style={styles.section}>
+        <div style={{ ...styles.section, ...bandStyle }}>
           <h3 style={styles.sectionTitle}>What We Found</h3>
           <p style={styles.sectionIntro}>
             {data.keyChanges.length} issue{data.keyChanges.length !== 1 ? 's' : ''} identified during analysis.
           </p>
           <div style={styles.findingsGrid}>
             {data.keyChanges.map((change, i) => (
-              <div key={i} style={styles.findingCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.findingCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.findingTitle}>{change.title}</div>
                 <div style={styles.findingBody}>{change.before}</div>
               </div>
@@ -104,7 +133,15 @@ export function TheStoryTab({ data }: Props) {
           <h3 style={styles.sectionTitle}>What Changed</h3>
           <div style={styles.changesList}>
             {data.keyChanges.map((change, i) => (
-              <div key={i} style={styles.changeCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.changeCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = `0 0 0 0 transparent`; }}
+              >
                 <div style={styles.changeLabel}>{change.title}</div>
                 <div style={styles.beforeAfterRow}>
                   <div style={styles.beforeCol}>
@@ -123,13 +160,19 @@ export function TheStoryTab({ data }: Props) {
         </div>
       )}
 
-      {/* Section 3: What It Means — resolutions as impact */}
+      {/* Section 3: What It Means — contrast band */}
       {hasResolutions && (
-        <div style={styles.section}>
+        <div style={{ ...styles.section, ...bandStyle }}>
           <h3 style={styles.sectionTitle}>What It Means</h3>
           <div style={styles.resolutionList}>
             {data.debateResolutions.map((res, i) => (
-              <div key={i} style={styles.resolutionCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.resolutionCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+              >
                 <div style={styles.resolutionTopic}>{res.topic}</div>
                 <div style={styles.resolutionBody}>{res.resolution}</div>
                 {res.escalationNeeded && (
@@ -149,7 +192,10 @@ export function TheStoryTab({ data }: Props) {
           <h3 style={styles.sectionTitle}>What Remains</h3>
           <div style={styles.nextStepsList}>
             {data.nextSteps.map((step, i) => (
-              <div key={i} style={styles.nextStepRow}>
+              <div key={i} style={{
+                ...styles.nextStepRow,
+                animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+              }}>
                 <div style={styles.nextStepIcon}>
                   {step.kind === 'action' ? '\u2022' : step.kind === 'watchout' ? '\u26A0' : '\u23F0'}
                 </div>
@@ -288,6 +334,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   findingTitle: {
     fontSize: 13,
@@ -313,6 +360,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.xl,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   changeLabel: {
     fontSize: 14,

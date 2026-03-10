@@ -5,12 +5,14 @@
 
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { useInView } from '../../hooks/useInView.js';
 
 interface Props {
   data: DeliveryData;
 }
 
 export function TheScorecardTab({ data }: Props) {
+  const { ref: barsRef, inView: barsInView } = useInView();
   const hasDebate = data.debate.challengesCount > 0;
   const resolutionRate = hasDebate
     ? Math.round((data.debate.resolutionsCount / data.debate.challengesCount) * 100)
@@ -24,7 +26,7 @@ export function TheScorecardTab({ data }: Props) {
     <div>
       {/* Dimension improvements */}
       {data.dimensions.length > 0 && (
-        <div style={styles.section}>
+        <div style={styles.section} ref={barsRef}>
           <div style={styles.sectionTitle}>Quality Improvement</div>
           <div style={styles.card}>
             {data.dimensions.map((dim, i) => (
@@ -36,12 +38,14 @@ export function TheScorecardTab({ data }: Props) {
                       <div style={{
                         ...styles.dimBarBefore,
                         width: `${(dim.before / 5) * 100}%`,
+                        animation: barsInView ? `barGrow 0.5s ease ${i * 0.1}s both` : undefined,
                       }} />
                     </div>
                     <div style={styles.dimBarTrack}>
                       <div style={{
                         ...styles.dimBarAfter,
                         width: `${(dim.after / 5) * 100}%`,
+                        animation: barsInView ? `barGrow 0.8s ease ${i * 0.1 + 0.15}s both` : undefined,
                       }} />
                     </div>
                   </div>
@@ -192,7 +196,11 @@ function StatCard({ label, value, detail, color }: {
   color?: string;
 }) {
   return (
-    <div style={styles.statCard}>
+    <div
+      style={styles.statCard}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+    >
       <div style={styles.statLabel}>{label}</div>
       <div style={{ ...styles.statValue, ...(color ? { color } : {}) }}>{value}</div>
       {detail && <div style={styles.statDetail}>{detail}</div>}
@@ -241,6 +249,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: radii.md,
     padding: spacing.lg,
     textAlign: 'center' as const,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   statLabel: {
     fontSize: 10,

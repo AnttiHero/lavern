@@ -53,10 +53,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         </div>
       )}
 
-      {/* ── Downloads first — this is what the client wants ───── */}
-      <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
-
-      {/* ── Document preview — show a snippet of the actual doc ── */}
+      {/* ── Document preview — the deliverable is what the client came for ── */}
       {hasDocument && (
         <div style={styles.previewSection}>
           <div style={styles.sectionHeader}>
@@ -66,7 +63,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
           <div style={styles.previewCard}>
             <SimpleMarkdown content={
               data.finalOutput.substring(0, 5000) +
-              (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document above*' : '')
+              (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
             } />
           </div>
         </div>
@@ -78,6 +75,9 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         <p style={styles.summaryText}>{data.executiveSummary}</p>
         <div style={styles.summaryLabel}>Analysis Summary</div>
       </div>
+
+      {/* ── Downloads — below the content ───────────────────────── */}
+      <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
 
       {/* ── Key changes — transformation cards ────────────────── */}
       {data.keyChanges.length > 0 && (

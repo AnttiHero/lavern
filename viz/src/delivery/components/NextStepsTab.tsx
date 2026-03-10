@@ -38,7 +38,15 @@ export function NextStepsTab({ data }: Props) {
           <div style={styles.sectionTitle}>Action Items</div>
           <div style={styles.list}>
             {actions.map((item, i) => (
-              <div key={i} style={styles.item}>
+              <div
+                key={i}
+                style={{
+                  ...styles.item,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.checkboxRow}>
                   <div style={styles.checkbox}>
                     <span style={styles.checkNumber}>{i + 1}</span>
@@ -60,7 +68,15 @@ export function NextStepsTab({ data }: Props) {
           <div style={styles.sectionTitle}>Watch-Outs</div>
           <div style={styles.watchoutList}>
             {watchouts.map((item, i) => (
-              <div key={i} style={styles.watchoutCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.watchoutCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.watchoutIcon}>{'\u26A0'}</div>
                 <div style={styles.itemContent}>
                   <div style={styles.itemLabel}>{item.label}</div>
@@ -78,7 +94,15 @@ export function NextStepsTab({ data }: Props) {
           <div style={styles.sectionTitle}>Review Schedule</div>
           <div style={styles.list}>
             {schedules.map((item, i) => (
-              <div key={i} style={styles.scheduleCard}>
+              <div
+                key={i}
+                style={{
+                  ...styles.scheduleCard,
+                  animation: `cardStaggerUp 0.4s ease ${i * 0.06}s both`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={styles.scheduleIcon}>{'\u25CB'}</div>
                 <div style={styles.itemContent}>
                   <div style={styles.itemLabel}>{item.label}</div>
@@ -131,6 +155,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   checkboxRow: {
     display: 'flex',
@@ -181,6 +206,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid rgba(184, 134, 11, 0.15)`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   watchoutIcon: {
     fontSize: 16,
@@ -197,6 +223,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
   scheduleIcon: {
     fontSize: 16,
