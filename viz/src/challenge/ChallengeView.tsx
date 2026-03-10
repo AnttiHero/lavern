@@ -504,6 +504,9 @@ export default function ChallengeView({ onBack }: Props) {
     eitherParsing,
     marbleUpload,
     humanUpload,
+    marbleSessionText,
+    marbleSessionTitle,
+    loadMarbleFromSession,
     acceptChallenge,
     doReveal,
   } = useChallengeState();
@@ -636,11 +639,43 @@ export default function ChallengeView({ onBack }: Props) {
         {phase === 'idle' && (
           <Section label="The Documents" delay={0.3}>
             <div style={sty.uploadRow}>
-              <UploadZone
-                label="MARBLE"
-                prompt="Drop the Marble document"
-                upload={marbleUpload}
-              />
+              {marbleSessionText ? (
+                <div style={{
+                  flex: 1,
+                  border: `1px solid ${D.gold}`,
+                  borderRadius: radii.md,
+                  padding: '24px 20px',
+                  textAlign: 'center' as const,
+                  background: 'rgba(184, 150, 11, 0.08)',
+                }}>
+                  <div style={{ color: D.gold, fontSize: 11, fontWeight: 700, letterSpacing: 2, fontFamily: fonts.sans, marginBottom: 8 }}>MARBLE</div>
+                  <div style={{ color: D.white, fontSize: 14, fontFamily: fonts.sans }}>{marbleSessionTitle}</div>
+                  <div style={{ color: D.textDim, fontSize: 12, fontFamily: fonts.sans, marginTop: 4 }}>{marbleSessionText.length.toLocaleString()} chars loaded from session</div>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  <UploadZone
+                    label="MARBLE"
+                    prompt="Drop the Marble document"
+                    upload={marbleUpload}
+                  />
+                  <button
+                    onClick={loadMarbleFromSession}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: D.gold,
+                      fontSize: 12,
+                      fontFamily: fonts.sans,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: 4,
+                    }}
+                  >
+                    or load from active session
+                  </button>
+                </div>
+              )}
               <div style={sty.uploadVs}>vs</div>
               <UploadZone
                 label="THE CHALLENGER"

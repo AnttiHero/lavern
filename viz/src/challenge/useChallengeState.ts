@@ -41,28 +41,59 @@ export function useChallengeState() {
   const marbleUpload = useDocumentUpload();
   const humanUpload = useDocumentUpload();
 
-  const bothReady = marbleUpload.documents.length > 0 && humanUpload.documents.length > 0;
+  // ── Pre-loaded Marble text (from active session) ──
+  const [marbleSessionText, setMarbleSessionText] = useState<string | null>(null);
+  const [marbleSessionTitle, setMarbleSessionTitle] = useState<string | null>(null);
+
+  const bothReady = (marbleUpload.documents.length > 0 || !!marbleSessionText) && humanUpload.documents.length > 0;
   const eitherParsing = marbleUpload.parsing || humanUpload.parsing;
+
+  // ── Load Marble document directly from an active session ──
+  const loadMarbleFromSession = useCallback(async () => {
+    try {
+      setError(null);
+      // Find the active session
+      const listRes = await fetch('/api/sessions', { credentials: 'include' });
+      if (!listRes.ok) throw new Error('Could not fetch sessions');
+      const { sessions } = await listRes.json() as { sessions: Array<{ id: string }> };
+      if (!sessions.length) { setError('No active sessions found.'); return; }
+
+      // Get the first (most recent) session's assembled document
+      const detailRes = await fetch(`/api/sessions/${sessions[0].id}`, { credentials: 'include' });
+      if (!detailRes.ok) throw new Error('Could not fetch session');
+      const session = await detailRes.json() as { assembledDocument?: string; matterTitle?: string };
+      if (!session.assembledDocument) { setError('Session has no assembled document. Run reassembly first.'); return; }
+
+      setMarbleSessionText(session.assembledDocument);
+      setMarbleSessionTitle(session.matterTitle ?? 'Marble Work Product');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load from session');
+    }
+  }, []);
 
   // ── Accept the challenge — single API call ──
 
   const acceptChallenge = useCallback(async () => {
-    const marbleDoc = marbleUpload.documents[0];
     const humanDoc = humanUpload.documents[0];
-    if (!marbleDoc || !humanDoc) return;
+    if (!humanDoc) return;
 
-    // Get text from parsed documents — only fall back to raw content for text files.
-    // For binary files (PDF, DOCX), .content is a base64 data URL which is useless for comparison.
-    const marbleParsed = marbleUpload.parsedDocuments[0]?.fullText;
+    // Marble text: from session pre-load OR from uploaded file
+    let marbleText: string | null = marbleSessionText;
+    if (!marbleText) {
+      const marbleDoc = marbleUpload.documents[0];
+      if (!marbleDoc) return;
+      const marbleParsed = marbleUpload.parsedDocuments[0]?.fullText;
+      const isMarbleText = marbleDoc.type.startsWith('text/') || marbleDoc.name.endsWith('.md') || marbleDoc.name.endsWith('.txt');
+      marbleText = marbleParsed ?? (isMarbleText ? marbleDoc.content : null);
+    }
+
+    // Human text: from uploaded file
     const humanParsed = humanUpload.parsedDocuments[0]?.fullText;
-    const isMarbleText = marbleDoc.type.startsWith('text/') || marbleDoc.name.endsWith('.md') || marbleDoc.name.endsWith('.txt');
     const isHumanText = humanDoc.type.startsWith('text/') || humanDoc.name.endsWith('.md') || humanDoc.name.endsWith('.txt');
-
-    const marbleText = marbleParsed ?? (isMarbleText ? marbleDoc.content : null);
     const humanText = humanParsed ?? (isHumanText ? humanDoc.content : null);
 
     if (!marbleText) {
-      setError('Could not extract text from the Marble document. Try a different format (TXT, MD, PDF, DOCX).');
+      setError('Could not extract text from the Marble document. Try "Load from session" or a different format.');
       return;
     }
     if (!humanText) {
@@ -118,6 +149,9 @@ export function useChallengeState() {
     eitherParsing,
     marbleUpload,
     humanUpload,
+    marbleSessionText,
+    marbleSessionTitle,
+    loadMarbleFromSession,
     acceptChallenge,
     doReveal,
   };

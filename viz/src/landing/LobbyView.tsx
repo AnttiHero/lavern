@@ -133,7 +133,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8]"
+      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8] w-screen h-screen"
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >

@@ -104,10 +104,22 @@ export function registerChallengeRoutes(
         throw new Error('No response from judge');
       }
 
-      // Strip markdown code fences if present
+      // Robust JSON extraction — handle fences, trailing text, thinking tags
       let cleanJson = responseText.trim();
-      if (cleanJson.startsWith('```')) {
-        cleanJson = cleanJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      // Strip markdown code fences anywhere
+      cleanJson = cleanJson.replace(/```(?:json)?\s*/g, '').replace(/```/g, '');
+      // Strip thinking tags if present
+      cleanJson = cleanJson.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
+      // Find the outermost { ... } JSON object
+      const firstBrace = cleanJson.indexOf('{');
+      if (firstBrace >= 0) {
+        let depth = 0;
+        let lastBrace = firstBrace;
+        for (let i = firstBrace; i < cleanJson.length; i++) {
+          if (cleanJson[i] === '{') depth++;
+          else if (cleanJson[i] === '}') { depth--; if (depth === 0) { lastBrace = i; break; } }
+        }
+        cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
       }
 
       const parsed = JSON.parse(cleanJson) as {
