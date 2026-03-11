@@ -220,6 +220,7 @@ function runMigrations(db: Database.Database): void {
     const userIdCol = info.find((c) => c.name === 'user_id');
     if (userIdCol && userIdCol.notnull === 1) {
       db.exec(`
+        BEGIN;
         ALTER TABLE session_archive RENAME TO session_archive_old;
         CREATE TABLE session_archive (
           id                  TEXT PRIMARY KEY,
@@ -242,6 +243,7 @@ function runMigrations(db: Database.Database): void {
         INSERT INTO session_archive SELECT * FROM session_archive_old;
         DROP TABLE session_archive_old;
         CREATE INDEX IF NOT EXISTS idx_session_archive_user ON session_archive(user_id);
+        COMMIT;
       `);
     }
   } catch { /* migration already applied or table doesn't exist yet */ }

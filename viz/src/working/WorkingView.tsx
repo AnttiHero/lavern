@@ -331,6 +331,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         onClick={() => setShowPacMan(true)}
         style={styles.ghostBtn}
         title="Play Pac-Man while you wait"
+        aria-label="Play Pac-Man while you wait"
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path d="M10 2C6 2 3 5 3 9v7c0 0 1.5-2 2.5-2s1.5 2 2.5 2 1.5-2 2.5-2 1.5 2 2.5 2 1.5-2 2.5-2V9c0-4-3-7-7-7z" fill={colors.textMuted} opacity={0.5}/>

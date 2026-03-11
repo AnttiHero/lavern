@@ -242,7 +242,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
     >
       {/* ── Marble texture — subtle but visible ──────────── */}
       <img
-        src={`${import.meta.env.BASE_PATH ?? import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+        src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         style={{ filter: 'contrast(0.65) brightness(1.2) saturate(0.2)', opacity: 0.18 }}

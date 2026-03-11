@@ -147,6 +147,20 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     filteredAgents['evaluator'] = agentDefinitions['evaluator'];
   }
 
+  // Sanity check: at least one agent must be available
+  if (Object.keys(filteredAgents).length === 0) {
+    const fallbackTeam = template.requiredAgents;
+    console.error(`[TEAM] No valid agents from selected team — falling back to template defaults: ${fallbackTeam.join(', ')}`);
+    for (const role of fallbackTeam) {
+      if (role in agentDefinitions) {
+        filteredAgents[role] = agentDefinitions[role as keyof typeof agentDefinitions];
+      }
+    }
+    if (Object.keys(filteredAgents).length === 0) {
+      throw new Error(`No valid agent definitions found for workflow "${template.id}". Selected team: [${teamRoles.join(', ')}], required: [${fallbackTeam.join(', ')}]`);
+    }
+  }
+
   // v17: Soul injection — user-defined firm personality
   // Priority: session soul (from user profile) > SOUL.md file > empty
   const soulText = session.soul

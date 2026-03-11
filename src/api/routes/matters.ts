@@ -51,18 +51,18 @@ function ensureLoaded(userId: string): void {
           const matter = JSON.parse(row.data_json) as MatterRecord;
           matterStore.set(row.id, matter);
           matterOwners.set(row.id, userId);
-        } catch { /* skip corrupt rows */ }
+        } catch (err) { console.warn(`[MATTERS] Skipping corrupt matter row ${row.id}:`, err instanceof Error ? err.message : err); }
       }
     }
     loadedUsers.add(userId);
-  } catch { /* DB not initialized yet — running without persistence */ }
+  } catch (err) { console.warn('[MATTERS] Failed to load matters from DB:', err instanceof Error ? err.message : err); }
 }
 
 /** Persist a matter to SQLite (write-through). */
 function persistMatter(userId: string, matter: MatterRecord): void {
   try {
     dbSaveMatter(userId, matter.matterId, JSON.stringify(matter), matter.status);
-  } catch { /* DB not initialized yet */ }
+  } catch (err) { console.warn('[MATTERS] Failed to persist matter:', err instanceof Error ? err.message : err); }
 }
 
 // ── Validation Schemas ──────────────────────────────────────────────────

@@ -43,10 +43,16 @@ export default function LoginView({ onAuth, onBack }: Props) {
         credentials: 'include',
       });
 
-      const data = await res.json();
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        setError('Server returned an unexpected response. Please try again.');
+        return;
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Authentication failed.');
+        setError((data.error as string) || 'Authentication failed.');
         return;
       }
 

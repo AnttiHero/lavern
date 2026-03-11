@@ -110,6 +110,9 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const body = validateBody(SignupSchema, request, reply);
     if (!body) return;
 
+    // Normalize email before any lookups to prevent case/whitespace duplicates
+    body.email = body.email.toLowerCase().trim();
+
     // Check for existing user
     const existing = getUserByEmail(body.email);
     if (existing) {

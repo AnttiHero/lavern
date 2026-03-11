@@ -64,12 +64,15 @@ export function createAuditHooks(session: SessionState) {
     // The SDK's tool_response for Task calls is an OBJECT (not a string).
     // It contains the specialist's full work product which the assembly step
     // needs to produce the clean deliverable document.
+    // Cap at ~2MB to prevent unbounded growth in full-bench workflows (25+ agents).
+    const MAX_FINAL_OUTPUT = 2_000_000;
     if (toolName === 'Task' && toolResponse) {
       const responseStr = typeof toolResponse === 'string'
         ? toolResponse
         : JSON.stringify(toolResponse);
-      if (responseStr.length > 100) {
-        session.finalOutput += '\n\n' + responseStr;
+      if (responseStr.length > 100 && session.finalOutput.length < MAX_FINAL_OUTPUT) {
+        const available = MAX_FINAL_OUTPUT - session.finalOutput.length;
+        session.finalOutput += '\n\n' + responseStr.slice(0, available);
       }
     }
 
