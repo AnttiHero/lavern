@@ -1,13 +1,14 @@
 /**
- * Billing Routes — Stripe integration for subscriptions and usage tracking.
+ * Billing Routes — Stripe integration for subscriptions, packs, and usage tracking.
  *
- * POST   /api/billing/checkout          — Create Stripe Checkout session
+ * POST   /api/billing/checkout          — Create Stripe Checkout session (subscription)
+ * POST   /api/billing/checkout-pack     — Create Stripe Checkout session (one-time pack)
  * POST   /api/billing/webhook           — Stripe webhook handler
  * GET    /api/billing/status            — Get current user's billing status
  * GET    /api/billing/usage             — Get current user's monthly usage
  *
  * Plans: starter ($50/mo cap), professional ($200/mo cap), enterprise ($1000/mo cap)
- * Free tier: 3 engagements/month, $5 budget per session
+ * Packs: quick (25h/€5), standard (100h/€19), bulk (500h/€89)
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -21,6 +22,8 @@ import {
   setUserStripeCustomer,
   recordBillingEvent,
   getUserMonthlyUsage,
+  getUserBillableHours,
+  creditBillableHours,
 } from '../../db/database.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -47,32 +50,39 @@ export function getPlanLimits(plan: string): { monthlyCapUsd: number; maxSession
   return { monthlyCapUsd: 15, maxSessionBudget: 5, label: 'Free' };
 }
 
-/** Check if user can start a new session (under monthly cap). */
-export function canStartSession(userId: string): { allowed: boolean; reason?: string; remainingBudget: number } {
+/** Check if user can start a new session (under monthly cap or has billable hours). */
+export function canStartSession(userId: string): { allowed: boolean; reason?: string; remainingBudget: number; remainingHours: number } {
+  const balance = getUserBillableHours(userId);
+
+  // If user has billable hours entries, use hours-based enforcement
+  if (balance > 0) {
+    const rate = config.billableHours.rate;
+    return { allowed: true, remainingBudget: balance * rate, remainingHours: balance };
+  }
+
+  // Fallback: legacy USD-based enforcement for pre-existing users without hours
   const planInfo = getUserPlan(userId);
   const plan = planInfo?.plan ?? 'free';
   const limits = getPlanLimits(plan);
   const usage = getUserMonthlyUsage(userId);
 
-  // Check plan expiry
   if (plan !== 'free' && planInfo?.plan_expires_at) {
     if (new Date(planInfo.plan_expires_at) < new Date()) {
-      // Plan expired — treat as free
       const freeLimits = getPlanLimits('free');
       const remaining = freeLimits.monthlyCapUsd - usage.total_cost_usd;
       if (remaining <= 0) {
-        return { allowed: false, reason: 'Plan expired and free tier budget exceeded', remainingBudget: 0 };
+        return { allowed: false, reason: 'Plan expired and free tier budget exceeded', remainingBudget: 0, remainingHours: 0 };
       }
-      return { allowed: true, remainingBudget: remaining };
+      return { allowed: true, remainingBudget: remaining, remainingHours: remaining / config.billableHours.rate };
     }
   }
 
   const remaining = limits.monthlyCapUsd - usage.total_cost_usd;
   if (remaining <= 0) {
-    return { allowed: false, reason: `Monthly budget of $${limits.monthlyCapUsd} exceeded`, remainingBudget: 0 };
+    return { allowed: false, reason: 'No billable hours remaining. Purchase more or upgrade your plan.', remainingBudget: 0, remainingHours: 0 };
   }
 
-  return { allowed: true, remainingBudget: remaining };
+  return { allowed: true, remainingBudget: remaining, remainingHours: remaining / config.billableHours.rate };
 }
 
 // ── Routes ──────────────────────────────────────────────────────────────
@@ -126,6 +136,52 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
     }
   });
 
+  // ── POST /api/billing/checkout-pack ──────────────────────────────────
+  // Creates a Stripe Checkout Session for a one-time hour pack purchase.
+  fastify.post('/api/billing/checkout-pack', async (request, reply) => {
+    const user = getAuthenticatedUser(request, reply);
+    if (!user) return;
+
+    const { pack } = request.body as { pack?: string } || {};
+    const packDef = pack ? config.billableHours.packs[pack] : undefined;
+    if (!pack || !packDef) {
+      return reply.status(400).send({ error: 'Invalid pack. Choose: quick, standard, bulk' });
+    }
+
+    if (!config.stripe.secretKey) {
+      return reply.status(503).send({ error: 'Billing not configured. Set STRIPE_SECRET_KEY.' });
+    }
+
+    try {
+      const { default: Stripe } = await import('stripe');
+      const stripe = new Stripe(config.stripe.secretKey);
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer_email: user.email,
+        line_items: [{
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: `Marble ${packDef.label} — ${packDef.hours} Billable Hours`,
+              description: `${packDef.hours} billable hours. Never expires.`,
+            },
+            unit_amount: packDef.priceEurCents,
+          },
+          quantity: 1,
+        }],
+        metadata: { userId: user.id, type: 'pack', pack, hours: String(packDef.hours) },
+        success_url: config.stripe.successUrl,
+        cancel_url: config.stripe.cancelUrl,
+      });
+
+      return reply.send({ checkoutUrl: session.url, sessionId: session.id });
+    } catch (err) {
+      console.error('[BILLING] Stripe pack checkout error:', err);
+      return reply.status(500).send({ error: 'Failed to create checkout session' });
+    }
+  });
+
   // ── POST /api/billing/webhook ───────────────────────────────────────
   // Stripe webhook — processes checkout.session.completed events.
   // This must be public (Stripe calls it), but verified via webhook signature.
@@ -151,10 +207,36 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
       switch (event.type) {
         case 'checkout.session.completed': {
-          const session = event.data.object as { metadata?: { userId?: string; plan?: string }; customer?: string; subscription?: string };
+          const session = event.data.object as { metadata?: { userId?: string; plan?: string; type?: string; pack?: string; hours?: string }; customer?: string; subscription?: string };
           const userId = session.metadata?.userId;
-          const plan = session.metadata?.plan;
 
+          // ── Pack purchase (one-time payment) ───────────────────────
+          if (session.metadata?.type === 'pack' && userId) {
+            const hours = parseInt(session.metadata.hours ?? '0', 10);
+            const packName = session.metadata.pack ?? 'unknown';
+            if (hours > 0) {
+              creditBillableHours(
+                userId,
+                hours,
+                'purchase',
+                `Purchased ${packName} pack — ${hours} billable hours`,
+                undefined,
+                event.id,
+              );
+              recordBillingEvent({
+                id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+                userId,
+                type: 'pack_purchased',
+                stripeSessionId: event.id,
+                metadata: { pack: packName, hours },
+              });
+              console.log(`[BILLING] User ${userId} purchased ${hours}h (${packName} pack)`);
+            }
+            break;
+          }
+
+          // ── Subscription checkout ──────────────────────────────────
+          const plan = session.metadata?.plan;
           if (userId && plan) {
             // Set plan (expires in 35 days — gives buffer for failed renewals)
             const expiresAt = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString();
@@ -215,6 +297,8 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
       ? new Date(planInfo.plan_expires_at) < new Date()
       : false;
 
+    const billableBalance = getUserBillableHours(user.id);
+
     return reply.send({
       plan: isExpired ? 'free' : plan,
       planLabel: isExpired ? 'Free' : limits.label,
@@ -224,6 +308,11 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
         totalCostUsd: Math.round(usage.total_cost_usd * 100) / 100,
         engagementCount: usage.engagement_count,
         remainingBudget: Math.max(0, Math.round((limits.monthlyCapUsd - usage.total_cost_usd) * 100) / 100),
+      },
+      billableHours: {
+        balance: Math.round(billableBalance * 10) / 10,
+        rate: config.billableHours.rate,
+        balanceUsd: Math.round(billableBalance * config.billableHours.rate * 100) / 100,
       },
       expiresAt: planInfo?.plan_expires_at ?? null,
       isExpired,

@@ -110,9 +110,9 @@ export function registerSessionRoutes(
       const budgetCheck = canStartSession(userId);
       if (!budgetCheck.allowed) {
         return reply.status(402).send({
-          error: 'Monthly budget exceeded',
+          error: 'No billable hours remaining',
           detail: budgetCheck.reason,
-          remainingBudget: 0,
+          remainingHours: 0,
         });
       }
       // Cap session budget to remaining monthly budget and plan limit

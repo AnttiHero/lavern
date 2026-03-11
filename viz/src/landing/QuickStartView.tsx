@@ -94,6 +94,21 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
   const isLoggedIn = !!userCtx?.user;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Billable hours balance
+  const [billableBalance, setBillableBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    fetch('/api/billing/status', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.billableHours?.balance != null) {
+          setBillableBalance(data.billableHours.balance);
+        }
+      })
+      .catch(() => { /* silently ignore */ });
+  }, [isLoggedIn]);
+
   // Core state
   const [question, setQuestion] = useState('');
   const [tier, setTier] = useState<EngagementTier>('counsel');
@@ -264,24 +279,59 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           </button>
           {/* Billable Hours — pricing */}
           {onPricing && (
-            <button
-              onClick={onPricing}
-              className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
-              style={{
-                padding: '4px 0',
-                color: pricingHovered ? colors.text : colors.textMuted,
-                fontFamily: fonts.serif,
-                fontStyle: 'italic',
-                fontSize: 15,
-                fontWeight: 400,
-                letterSpacing: 0.5,
-                borderBottom: pricingHovered ? `1px solid ${colors.text}` : '1px solid transparent',
-              }}
-              onMouseEnter={() => setPricingHovered(true)}
-              onMouseLeave={() => setPricingHovered(false)}
-            >
-              The Billable Hours
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onPricing}
+                className="cursor-pointer bg-transparent border-none transition-all duration-300 ease-in-out"
+                style={{
+                  padding: '4px 0',
+                  color: pricingHovered ? colors.text : colors.textMuted,
+                  fontFamily: fonts.serif,
+                  fontStyle: 'italic',
+                  fontSize: 15,
+                  fontWeight: 400,
+                  letterSpacing: 0.5,
+                  borderBottom: pricingHovered ? `1px solid ${colors.text}` : '1px solid transparent',
+                }}
+                onMouseEnter={() => setPricingHovered(true)}
+                onMouseLeave={() => setPricingHovered(false)}
+              >
+                The Billable Hours
+              </button>
+              {billableBalance != null && billableBalance > 0 && (
+                <span
+                  style={{
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: billableBalance < 5 ? '#e57373' : '#B8960B',
+                    letterSpacing: 0.3,
+                    opacity: 0.85,
+                  }}
+                >
+                  {billableBalance.toFixed(1)}h
+                </span>
+              )}
+              {billableBalance != null && billableBalance <= 0 && (
+                <button
+                  onClick={onPricing}
+                  className="cursor-pointer bg-transparent"
+                  style={{
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: '#e57373',
+                    letterSpacing: 0.3,
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(229, 115, 115, 0.1)',
+                    border: '1px solid rgba(229, 115, 115, 0.2)',
+                  }}
+                >
+                  0h — top off
+                </button>
+              )}
+            </div>
           )}
           {onChallenge && (
             <button

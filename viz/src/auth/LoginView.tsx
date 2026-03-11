@@ -19,6 +19,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [firmName, setFirmName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
       const body = mode === 'login'
         ? { email, password }
-        : { email, password, displayName: displayName || undefined, firmName: firmName || undefined };
+        : { email, password, inviteCode, displayName: displayName || undefined, firmName: firmName || undefined };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -57,7 +58,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [mode, email, password, displayName, firmName, onAuth]);
+  }, [mode, email, password, inviteCode, displayName, firmName, onAuth]);
 
   const isSignup = mode === 'signup';
 
@@ -127,6 +128,24 @@ export default function LoginView({ onAuth, onBack }: Props) {
 
           {isSignup && (
             <>
+              <input
+                type="text"
+                placeholder="Invite Code"
+                value={inviteCode}
+                onChange={e => setInviteCode(e.target.value)}
+                style={styles.input}
+                required
+              />
+              <p style={styles.waitlistHint}>
+                Don't have a code?{' '}
+                <a
+                  href="#/waitlist"
+                  onClick={(e) => { e.preventDefault(); window.location.hash = '#/'; }}
+                  style={styles.waitlistLink}
+                >
+                  Join the waitlist.
+                </a>
+              </p>
               <input
                 type="text"
                 placeholder="Display Name (optional)"
@@ -346,5 +365,23 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     textDecoration: 'underline',
     padding: 0,
+  },
+
+  waitlistHint: {
+    fontSize: 12,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    color: colors.textMuted,
+    margin: `-${spacing.sm}px 0 0`,
+    textAlign: 'center' as const,
+    lineHeight: 1.4,
+  },
+
+  waitlistLink: {
+    color: colors.text,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    textDecoration: 'underline',
+    cursor: 'pointer',
   },
 };

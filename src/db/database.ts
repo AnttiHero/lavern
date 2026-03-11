@@ -293,6 +293,35 @@ function runMigrations(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
     CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
+
+    -- v22: Waitlist + Billable Hours
+    CREATE TABLE IF NOT EXISTS waitlist (
+      id          TEXT PRIMARY KEY,
+      email       TEXT UNIQUE NOT NULL,
+      status      TEXT DEFAULT 'waiting',
+      invite_code TEXT UNIQUE,
+      source      TEXT DEFAULT 'website',
+      created_at  TEXT NOT NULL,
+      invited_at  TEXT,
+      joined_at   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
+    CREATE INDEX IF NOT EXISTS idx_waitlist_status ON waitlist(status);
+    CREATE INDEX IF NOT EXISTS idx_waitlist_invite_code ON waitlist(invite_code);
+
+    CREATE TABLE IF NOT EXISTS billable_hours (
+      id            TEXT PRIMARY KEY,
+      user_id       TEXT NOT NULL REFERENCES users(id),
+      type          TEXT NOT NULL,
+      amount        REAL NOT NULL,
+      balance_after REAL NOT NULL,
+      description   TEXT,
+      reference_id  TEXT,
+      expires_at    TEXT,
+      created_at    TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_bh_user ON billable_hours(user_id);
+    CREATE INDEX IF NOT EXISTS idx_bh_created ON billable_hours(created_at);
   `);
 }
 
@@ -439,6 +468,13 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       incrementUserUsage(userId, session.accumulatedCost);
     } catch (err) {
       console.error(`[DB] Failed to increment usage for ${userId}:`, err);
+    }
+    // v22: Debit billable hours
+    try {
+      const hoursUsed = session.accumulatedCost / config.billableHours.rate;
+      debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
+    } catch (err) {
+      console.error(`[DB] Failed to debit billable hours for ${userId}:`, err);
     }
   }
 
@@ -762,6 +798,156 @@ export function incrementUserUsage(userId: string, costUsd: number): void {
   `).run(userId, m, costUsd);
 }
 
+// ── Waitlist ────────────────────────────────────────────────────────────
+
+export interface WaitlistEntry {
+  id: string;
+  email: string;
+  status: string;
+  invite_code: string | null;
+  source: string;
+  created_at: string;
+  invited_at: string | null;
+  joined_at: string | null;
+}
+
+/** Add an email to the waitlist. Returns the entry (or existing if duplicate). */
+export function addWaitlistEntry(email: string, source = 'website'): WaitlistEntry {
+  const normalized = email.toLowerCase().trim();
+  const existing = getDb().prepare(`SELECT * FROM waitlist WHERE email = ?`).get(normalized) as WaitlistEntry | undefined;
+  if (existing) return existing;
+
+  const id = `wl-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+  const now = new Date().toISOString();
+  getDb().prepare(`
+    INSERT INTO waitlist (id, email, status, source, created_at) VALUES (?, ?, 'waiting', ?, ?)
+  `).run(id, normalized, source, now);
+  return { id, email: normalized, status: 'waiting', invite_code: null, source, created_at: now, invited_at: null, joined_at: null };
+}
+
+/** Get a waitlist entry by email. */
+export function getWaitlistEntry(email: string): WaitlistEntry | undefined {
+  return getDb().prepare(`SELECT * FROM waitlist WHERE email = ?`).get(email.toLowerCase().trim()) as WaitlistEntry | undefined;
+}
+
+/** Get a waitlist entry by invite code. */
+export function getWaitlistEntryByCode(code: string): WaitlistEntry | undefined {
+  return getDb().prepare(`SELECT * FROM waitlist WHERE invite_code = ?`).get(code) as WaitlistEntry | undefined;
+}
+
+/** Invite a waitlisted email — generates an invite code, sets status to 'invited'. */
+export function inviteWaitlistEntry(email: string): string {
+  const normalized = email.toLowerCase().trim();
+  const code = `inv-${crypto.randomBytes(8).toString('hex')}`;
+  const now = new Date().toISOString();
+  const result = getDb().prepare(`
+    UPDATE waitlist SET status = 'invited', invite_code = ?, invited_at = ? WHERE email = ? AND status = 'waiting'
+  `).run(code, now, normalized);
+  if (result.changes === 0) throw new Error(`No waiting entry for ${normalized}`);
+  return code;
+}
+
+/** Mark an invite code as used after signup. */
+export function markInviteUsed(code: string, userId: string): boolean {
+  const now = new Date().toISOString();
+  const result = getDb().prepare(`
+    UPDATE waitlist SET status = 'joined', joined_at = ? WHERE invite_code = ? AND status = 'invited'
+  `).run(now, code);
+  return result.changes > 0;
+}
+
+/** List waitlist entries (admin). */
+export function getWaitlistEntries(opts?: { status?: string; limit?: number }): WaitlistEntry[] {
+  const limit = opts?.limit ?? 200;
+  if (opts?.status) {
+    return getDb().prepare(`SELECT * FROM waitlist WHERE status = ? ORDER BY created_at ASC LIMIT ?`).all(opts.status, limit) as WaitlistEntry[];
+  }
+  return getDb().prepare(`SELECT * FROM waitlist ORDER BY created_at ASC LIMIT ?`).all(limit) as WaitlistEntry[];
+}
+
+/** Count waitlist entries by status. */
+export function countWaitlist(): { waiting: number; invited: number; joined: number; total: number } {
+  const rows = getDb().prepare(`SELECT status, COUNT(*) as cnt FROM waitlist GROUP BY status`).all() as Array<{ status: string; cnt: number }>;
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.status] = r.cnt;
+  const total = rows.reduce((s, r) => s + r.cnt, 0);
+  return { waiting: counts.waiting ?? 0, invited: counts.invited ?? 0, joined: counts.joined ?? 0, total };
+}
+
+// ── Billable Hours (Credit Ledger) ──────────────────────────────────────
+
+export interface BillableHoursEntry {
+  id: string;
+  user_id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  description: string | null;
+  reference_id: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+/** Get user's current billable hours balance. */
+export function getUserBillableHours(userId: string): number {
+  const row = getDb().prepare(`
+    SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?
+  `).get(userId) as { balance: number };
+  return row.balance;
+}
+
+/** Credit billable hours to a user (positive ledger entry). */
+export function creditBillableHours(
+  userId: string,
+  amount: number,
+  type: string,
+  description: string,
+  expiresAt?: string | null,
+  referenceId?: string | null,
+): void {
+  const db = getDb();
+  db.transaction(() => {
+    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?`).get(userId) as { balance: number }).balance;
+    const id = `bh-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    db.prepare(`
+      INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, userId, type, amount, current + amount, description, referenceId ?? null, expiresAt ?? null, new Date().toISOString());
+  })();
+}
+
+/** Debit billable hours from a user (negative ledger entry). Returns false if insufficient balance. */
+export function debitBillableHours(
+  userId: string,
+  amount: number,
+  description: string,
+  referenceId?: string | null,
+): boolean {
+  const db = getDb();
+  let success = false;
+  db.transaction(() => {
+    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?`).get(userId) as { balance: number }).balance;
+    if (current < amount) {
+      success = false;
+      return;
+    }
+    const id = `bh-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    db.prepare(`
+      INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, created_at)
+      VALUES (?, ?, 'debit', ?, ?, ?, ?, ?)
+    `).run(id, userId, -amount, current - amount, description, referenceId ?? null, new Date().toISOString());
+    success = true;
+  })();
+  return success;
+}
+
+/** Get billable hours ledger history for a user. */
+export function getBillableHoursHistory(userId: string, limit = 50): BillableHoursEntry[] {
+  return getDb().prepare(`
+    SELECT * FROM billable_hours WHERE user_id = ? ORDER BY created_at DESC LIMIT ?
+  `).all(userId, limit) as BillableHoursEntry[];
+}
+
 // ── Audit Log ───────────────────────────────────────────────────────────
 
 /** Record an action in the audit log. */
@@ -824,6 +1010,7 @@ export function exportUserData(userId: string): {
   sessions: ArchivedSession[];
   usage: Array<{ month: string; total_cost_usd: number; engagement_count: number }>;
   billingEvents: Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
+  billableHours: BillableHoursEntry[];
   auditLog: Array<{ timestamp: string; action: string; resource: string | null }>;
 } {
   const d = getDb();
@@ -831,9 +1018,10 @@ export function exportUserData(userId: string): {
   const sessions = d.prepare(`SELECT * FROM session_archive WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as ArchivedSession[];
   const usage = d.prepare(`SELECT month, total_cost_usd, engagement_count FROM user_usage WHERE user_id = ? ORDER BY month DESC`).all(userId) as Array<{ month: string; total_cost_usd: number; engagement_count: number }>;
   const billingEvents = d.prepare(`SELECT type, amount_cents, plan, created_at FROM billing_events WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
+  const billableHours = d.prepare(`SELECT * FROM billable_hours WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as BillableHoursEntry[];
   const auditLog = d.prepare(`SELECT timestamp, action, resource FROM audit_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1000`).all(userId) as Array<{ timestamp: string; action: string; resource: string | null }>;
 
-  return { profile, sessions, usage, billingEvents, auditLog };
+  return { profile, sessions, usage, billingEvents, billableHours, auditLog };
 }
 
 /**

@@ -47,6 +47,7 @@ import { registerVerifyRoutes } from './routes/verify.js';
 import { registerClawRoutes } from './routes/claw.js';
 import { registerChallengeRoutes } from './routes/challenge.js';
 import { registerBillingRoutes } from './routes/billing.js';
+import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
@@ -171,6 +172,11 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/challenge',
     // Stripe webhook — must be public (Stripe calls it), verified via signature
     'POST /api/billing/webhook',
+    // v22: Waitlist — public join + status, admin endpoints verify X-Admin-Key internally
+    'POST /api/waitlist',
+    'GET /api/waitlist/status',
+    'POST /api/waitlist/invite',
+    'GET /api/waitlist/list',
     // Frontend static files (prefix match — trailing /)
     '/dashboard/',
   ];
@@ -408,6 +414,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerChallengeRoutes(fastify);
   // v21: Billing — Stripe subscriptions and usage tracking
   registerBillingRoutes(fastify);
+  // v22: Waitlist — join, status, admin invite & listing
+  registerWaitlistRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

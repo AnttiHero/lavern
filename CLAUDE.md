@@ -67,7 +67,7 @@ with qualified legal professionals.
 ### API Server
 - `src/api/` — Fastify API server with WebSocket event streaming
   - `src/api/middleware/` — Auth (Bearer + cookie), Zod validation, x402 payment
-  - `src/api/routes/` — 18 route modules:
+  - `src/api/routes/` — 19 route modules:
     - `sessions.ts` — Session CRUD + gate decisions + soul injection from user profile
     - `engage.ts` — Agent-native engagement (sync + webhook modes)
     - `verify.ts` — Standalone document verification
@@ -77,6 +77,7 @@ with qualified legal professionals.
     - `claw.ts` — Claw Mode remote monitoring & control
     - `challenge.ts` — Marble Challenge blind document comparison
     - `challenge-prompt.ts` — Challenge prompt builder
+    - `waitlist.ts` — Waitlist email capture + invite code management
     - `well-known.ts` — A2A agent card, OpenAI plugin manifest, OpenAPI spec
     - `agents.ts`, `capabilities.ts`, `documents.ts`, `knowledge-base.ts`, `pricing.ts`, `replay.ts`, `reputation.ts`, `workflows.ts`
 
@@ -95,6 +96,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/cowork/` — Cowork folder mode (File System Access API for non-destructive local saves)
 - `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, MarbleMark)
 - `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
+- `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
 - `viz/src/challenge/` — Marble Challenge blind document comparison
 - `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode

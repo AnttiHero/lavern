@@ -75,6 +75,31 @@ export const config = {
     },
   },
 
+  // ── Email (Resend) ─────────────────────────────────────────────────────
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
+    from: process.env.MARBLE_EMAIL_FROM ?? 'Marble <hello@marble.legal>',
+    appUrl: process.env.MARBLE_APP_URL ?? 'http://localhost:5173',
+  },
+
+  // ── Billable Hours (v22: Credit System) ────────────────────────────────
+  billableHours: {
+    /** USD cost per 1 billable hour (default $0.10). 50 hours ≈ $5 of compute. */
+    rate: parseFloat(process.env.MARBLE_BILLABLE_HOUR_RATE ?? '0.10'),
+    /** Welcome hours granted on signup with invite code */
+    welcomeHours: parseInt(process.env.MARBLE_WELCOME_HOURS ?? '50', 10),
+    /** When true, signup requires an invite code from the waitlist */
+    waitlistEnabled: process.env.MARBLE_WAITLIST_ENABLED !== 'false',
+    /** Admin key for waitlist management endpoints (X-Admin-Key header) */
+    adminKey: process.env.MARBLE_ADMIN_KEY ?? '',
+    /** Hour packs — one-time purchases, never expire */
+    packs: {
+      quick: { hours: 25,  priceEurCents: 500,  label: 'Quick Top-Off' },
+      standard: { hours: 100, priceEurCents: 1900, label: 'Hour Pack' },
+      bulk: { hours: 500, priceEurCents: 8900, label: 'Bulk' },
+    } as Record<string, { hours: number; priceEurCents: number; label: string }>,
+  },
+
   // ── Budgets ────────────────────────────────────────────────────────────
   defaultBudgetUsd: parseFloat(process.env.SHEM_DEFAULT_BUDGET ?? '5.0'),
   routerBudgetUsd: 0.01,

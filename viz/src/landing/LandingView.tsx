@@ -73,6 +73,12 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const welcomeRef = useRef<HTMLParagraphElement>(null);
 
+  // Waitlist state
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
+  const [waitlistDone, setWaitlistDone] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 80);
     return () => clearTimeout(t);
@@ -129,6 +135,31 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
       }
     }, 700);
   }, [onEnter, onAgentDocs]);
+
+  const handleWaitlistSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waitlistEmail.trim() || waitlistSubmitting) return;
+    setWaitlistError(null);
+    setWaitlistSubmitting(true);
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: waitlistEmail.trim(), source: 'landing' }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setWaitlistError((data as { error?: string }).error || 'Something went wrong.');
+        return;
+      }
+      setWaitlistDone(true);
+    } catch {
+      setWaitlistError('Unable to connect.');
+    } finally {
+      setWaitlistSubmitting(false);
+    }
+  }, [waitlistEmail, waitlistSubmitting]);
 
   if (!ready) {
     return <div className="fixed inset-0 bg-[#080808]" />;
@@ -281,6 +312,110 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             Agent
           </button>
         </div>
+      </div>
+
+      {/* ── Waitlist — subtle email capture below the door ──────────── */}
+      <div
+        className="absolute left-0 right-0 flex flex-col items-center z-[5]"
+        style={{
+          bottom: '15vh',
+          animation: 'doorFade 1s ease 3.2s both',
+        }}
+      >
+        {/* Thin rule */}
+        <div
+          className="w-12 h-px mb-6"
+          style={{ backgroundColor: 'rgba(250, 249, 246, 0.08)' }}
+        />
+
+        {waitlistDone ? (
+          <p
+            className="text-sm font-serif italic m-0 tracking-wide"
+            style={{ color: '#B8960B' }}
+          >
+            You're on the list.
+          </p>
+        ) : (
+          <>
+            <p
+              className="text-xs font-serif italic m-0 mb-4 tracking-wide"
+              style={{ color: 'rgba(250, 249, 246, 0.35)' }}
+            >
+              Join the waitlist
+            </p>
+
+            <form
+              onSubmit={handleWaitlistSubmit}
+              className="flex items-center gap-2"
+            >
+              <input
+                type="email"
+                required
+                placeholder="your@email.com"
+                value={waitlistEmail}
+                onChange={e => setWaitlistEmail(e.target.value)}
+                className="font-sans text-xs outline-none"
+                style={{
+                  padding: '8px 14px',
+                  backgroundColor: 'rgba(250, 249, 246, 0.04)',
+                  border: '1px solid rgba(250, 249, 246, 0.1)',
+                  borderRadius: 4,
+                  color: 'rgba(250, 249, 246, 0.7)',
+                  width: 200,
+                  letterSpacing: 0.3,
+                }}
+              />
+              <button
+                type="submit"
+                disabled={waitlistSubmitting}
+                className="font-sans text-[10px] font-medium tracking-[3px] uppercase"
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid rgba(250, 249, 246, 0.12)',
+                  borderRadius: 4,
+                  color: 'rgba(250, 249, 246, 0.35)',
+                  cursor: waitlistSubmitting ? 'default' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  opacity: waitlistSubmitting ? 0.5 : 1,
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(250, 249, 246, 0.35)';
+                  e.currentTarget.style.color = 'rgba(250, 249, 246, 0.7)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(250, 249, 246, 0.12)';
+                  e.currentTarget.style.color = 'rgba(250, 249, 246, 0.35)';
+                }}
+              >
+                {waitlistSubmitting ? '\u2026' : 'Join'}
+              </button>
+            </form>
+
+            {waitlistError && (
+              <p
+                className="text-[11px] font-sans m-0 mt-2"
+                style={{ color: 'rgba(196, 93, 62, 0.7)' }}
+              >
+                {waitlistError}
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Already have an invite? */}
+        <button
+          onClick={() => { window.location.hash = '#/login'; }}
+          className="bg-transparent border-none cursor-pointer font-serif italic text-[11px] tracking-wide mt-4 p-0"
+          style={{
+            color: 'rgba(250, 249, 246, 0.18)',
+            transition: 'color 0.3s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(250, 249, 246, 0.4)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(250, 249, 246, 0.18)'; }}
+        >
+          Already have an invite?
+        </button>
       </div>
 
       {/* ── Fog of War — atmospheric mist at bottom ──────────────────── */}

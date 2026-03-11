@@ -196,6 +196,14 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[YOLO] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
+
+      // Out of hours — show top-off prompt
+      if (res.status === 402) {
+        setErrorToast(null);
+        window.location.hash = '#/pricing?topoff=true';
+        return;
+      }
+
       setErrorToast('Something went wrong. Please try again.');
     } catch {
       // API unreachable — show error, don't silently fall through to demo
@@ -302,6 +310,14 @@ export function App() {
       const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
       console.error('[QuickStart] Session creation failed:', res.status, errorBody);
       sessionStorage.removeItem('shem-session-id');
+
+      // Out of hours — show top-off prompt
+      if (res.status === 402) {
+        setErrorToast(null);
+        window.location.hash = '#/pricing?topoff=true';
+        return;
+      }
+
       setErrorToast('Something went wrong. Please try again.');
     } catch {
       console.error('[QuickStart] API unreachable');
