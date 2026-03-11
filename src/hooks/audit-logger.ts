@@ -181,7 +181,7 @@ export function createAuditHooks(session: SessionState) {
       challengesIssued: 0,
       estimatedCost: 0,
     };
-    session.subagentActivities.push(activity);
+    boundedPush(session.subagentActivities, activity);
     session.activeSubagents.delete(agentId);
 
     const entry: AuditEntry = {

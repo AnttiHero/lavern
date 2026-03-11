@@ -130,8 +130,11 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   const userPrompt = buildPromptFromRequest(request, template, classification, session);
 
   // ── Build tool registry from MCP server ───────────────────────────
-  const mcpServer = createShemMcpServer(session, template);
-  const toolRegistry = await buildToolRegistry(mcpServer as unknown as McpServer);
+  // The SDK MCP server type is structurally compatible with our McpServer
+  // interface (listTools + callTool), but TypeScript can't verify this
+  // across SDK boundaries — hence the explicit cast via unknown.
+  const mcpServer: McpServer = createShemMcpServer(session, template) as unknown as McpServer;
+  const toolRegistry = await buildToolRegistry(mcpServer);
 
   // ── Initialize conversation ───────────────────────────────────────
   const messages: ChatMessage[] = [
@@ -212,7 +215,8 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
         try {
           toolArgs = JSON.parse(toolCall.function.arguments);
-        } catch {
+        } catch (parseErr) {
+          console.warn(`[MISTRAL] Failed to parse tool arguments for ${toolName}:`, parseErr instanceof Error ? parseErr.message : parseErr);
           toolArgs = {};
         }
 

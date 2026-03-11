@@ -9,7 +9,7 @@
  * For demo sessions, generates a basic markdown template client-side.
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
@@ -122,6 +122,16 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
   const generationBlocked = !isDemo && assemblyStatus !== 'ready';
 
+  // Track active timeouts for cleanup on unmount
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      for (const t of timersRef.current) clearTimeout(t);
+      timersRef.current.clear();
+    };
+  }, []);
+
   const handleGenerate = async (typeId: string) => {
     setStatuses(prev => ({ ...prev, [typeId]: 'generating' }));
 
@@ -131,7 +141,11 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
         const markdown = generateDemoDerivative(typeId, data);
         triggerBlobDownload(markdown, `${data.sessionId}-${typeId}.md`, 'text/markdown');
         setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
-        setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
+        const t = setTimeout(() => {
+          timersRef.current.delete(t);
+          setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
+        }, 5000);
+        timersRef.current.add(t);
         return;
       }
 
@@ -178,16 +192,22 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
       }
 
       setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
-      setTimeout(() => setStatuses(prev => ({ ...prev, [typeId]: 'idle' })), 5000);
+      const t2 = setTimeout(() => {
+        timersRef.current.delete(t2);
+        setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
+      }, 5000);
+      timersRef.current.add(t2);
     } catch (err) {
       console.error(`[DerivativesPanel] Generation failed for ${typeId}:`, err);
       const msg = err instanceof Error ? err.message : 'Generation failed';
       setStatuses(prev => ({ ...prev, [typeId]: 'error' }));
       setErrorMessages(prev => ({ ...prev, [typeId]: msg }));
-      setTimeout(() => {
+      const t3 = setTimeout(() => {
+        timersRef.current.delete(t3);
         setStatuses(prev => ({ ...prev, [typeId]: 'idle' }));
         setErrorMessages(prev => { const next = { ...prev }; delete next[typeId]; return next; });
       }, 8000);
+      timersRef.current.add(t3);
     }
   };
 

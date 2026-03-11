@@ -5,7 +5,7 @@
  * Randomize picks random features internally; seed controls the base face.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 import { AVATAR_FEATURES, avatarUrl } from '../data/dicebear-variants.js';
 import type { BuilderState } from '../hooks/useAgentBuilder.js';
@@ -20,6 +20,14 @@ interface Props {
 export function FaceBuilderStep({ state, avatarExtra, onUpdateField, onUpdateAvatarFeature }: Props) {
   const [imgError, setImgError] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup spin timer on unmount
+  useEffect(() => {
+    return () => {
+      if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    };
+  }, []);
 
   const fullUrl = avatarUrl(state.avatarSeed, avatarExtra || undefined);
 
@@ -45,7 +53,11 @@ export function FaceBuilderStep({ state, avatarExtra, onUpdateField, onUpdateAva
     }
 
     setImgError(false);
-    setTimeout(() => setIsSpinning(false), 600);
+    if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    spinTimerRef.current = setTimeout(() => {
+      spinTimerRef.current = null;
+      setIsSpinning(false);
+    }, 600);
   }, [onUpdateField, onUpdateAvatarFeature]);
 
   return (

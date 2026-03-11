@@ -262,6 +262,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
       const stripe = new Stripe(config.stripe.secretKey);
 
       // Verify webhook signature — uses raw body captured by preParsing hook in server.ts
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- rawBody added via decorateRequest in server.ts
       const rawBody = (request as any).rawBody as string | undefined;
       if (!rawBody) {
         return reply.status(400).send({ error: 'Raw body not available for signature verification' });

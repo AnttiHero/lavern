@@ -101,7 +101,13 @@ export async function startApiServer(port: number): Promise<void> {
   // ── Raw body capture for Stripe webhook ──────────────────────────────
   // Stripe webhook signature verification requires the raw request body.
   // We capture it via preParsing hook (only for the webhook route) and
-  // store it on the request object for later use.
+  // store it on the request object via Fastify request decorator.
+
+  // Declare the rawBody property on FastifyRequest for Stripe webhook signature verification.
+  // We use decorateRequest so the property exists on the prototype, then assign via `as any`
+  // because Fastify's generic types don't expose custom decorators without module augmentation.
+  fastify.decorateRequest('rawBody', undefined);
+
   fastify.addHook('preParsing', async (request, _reply, payload) => {
     if (request.url === '/api/billing/webhook') {
       const chunks: Buffer[] = [];
@@ -109,6 +115,7 @@ export async function startApiServer(port: number): Promise<void> {
         chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
       }
       const rawBody = Buffer.concat(chunks);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- decorated via fastify.decorateRequest above
       (request as any).rawBody = rawBody.toString('utf8');
       return Readable.from(rawBody);
     }
