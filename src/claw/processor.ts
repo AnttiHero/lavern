@@ -235,7 +235,9 @@ export async function processDocument(
     // Save partial results to failed/
     try {
       delivery.saveFailed(sessionId, documentPath, error, clawConfig.dir);
-    } catch { /* ignore delivery errors */ }
+    } catch (deliveryErr) {
+      console.error(`[CLAW] Failed to save failure record for ${path.basename(documentPath)}:`, deliveryErr);
+    }
 
     return {
       sessionId,

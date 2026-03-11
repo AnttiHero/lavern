@@ -214,7 +214,7 @@ export function ConversationTab({
 
         {messages.map((msg, i) => (
           <div
-            key={i}
+            key={`${msg.role}-${i}-${msg.content.length}`}
             style={msg.role === 'user' ? styles.userRow : styles.assistantRow}
           >
             <div style={msg.role === 'user' ? styles.userBubble : styles.assistantBubble}>

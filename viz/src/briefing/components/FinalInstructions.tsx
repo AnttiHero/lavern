@@ -5,6 +5,7 @@
  * Large multiline textarea + "Generate Engagement Brief" button.
  */
 
+import { useRef } from 'react';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function FinalInstructions({ value, onChange, onGenerate, isAnalyzing }: Props) {
+  const submittedRef = useRef(false);
   return (
     <div style={styles.container}>
       <div style={styles.headingRow}>
@@ -31,11 +33,12 @@ export function FinalInstructions({ value, onChange, onGenerate, isAnalyzing }: 
         placeholder="e.g., Focus on the indemnification clause. The counterparty is very aggressive on IP ownership. We need this by Friday..."
         style={styles.textarea}
         rows={6}
+        maxLength={10000}
       />
 
       <div style={styles.actions}>
         <button
-          onClick={onGenerate}
+          onClick={() => { if (!submittedRef.current) { submittedRef.current = true; onGenerate(); } }}
           disabled={isAnalyzing}
           style={{
             ...styles.generateBtn,

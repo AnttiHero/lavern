@@ -93,18 +93,24 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   );
 
   const [halting, setHalting] = useState(false);
+  const [haltError, setHaltError] = useState<string | null>(null);
   const handleHalt = useCallback(async () => {
     if (!state.sessionId || halting) return;
     setHalting(true);
+    setHaltError(null);
     try {
-      await fetch(`/api/sessions/${state.sessionId}`, {
+      const res = await fetch(`/api/sessions/${state.sessionId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ reason: 'Emergency stop by user' }),
       });
+      if (!res.ok) {
+        setHaltError(`Stop failed (${res.status}). Try refreshing the page.`);
+      }
     } catch (e) {
       console.error('[HALT] Failed to halt session:', e);
+      setHaltError('Could not reach server. Check your connection.');
     } finally {
       setHalting(false);
     }
@@ -195,6 +201,13 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         <div style={styles.connectionLost} role="alert">
           <span style={styles.connectionLostDot} />
           Connection lost {'\u2014'} attempting to reconnect{'\u2026'}
+        </div>
+      )}
+
+      {/* Halt error banner */}
+      {haltError && (
+        <div style={{ ...styles.connectionLost, backgroundColor: 'rgba(180, 60, 40, 0.12)', borderColor: 'rgba(180, 60, 40, 0.3)' }} role="alert">
+          {haltError}
         </div>
       )}
 

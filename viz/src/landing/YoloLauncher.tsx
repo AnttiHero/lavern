@@ -5,7 +5,7 @@
  * pick your tier, and go directly to a working session.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { YOLO_CONFIGS, type YoloTier } from './yolo-config.js';
 
@@ -19,10 +19,15 @@ const ws = YOLO_CONFIGS['white-shoe'];
 export function YoloLauncher({ onLaunch }: Props) {
   const [question, setQuestion] = useState('');
   const [hoveredTier, setHoveredTier] = useState<string | null>(null);
+  const launchedRef = useRef(false);
 
   const handleLaunch = useCallback((tier: YoloTier) => {
+    if (launchedRef.current) return; // prevent double-submit
     const trimmed = question.trim();
-    if (trimmed) onLaunch(trimmed, tier);
+    if (trimmed) {
+      launchedRef.current = true;
+      onLaunch(trimmed, tier);
+    }
   }, [question, onLaunch]);
 
   const isEmpty = !question.trim();

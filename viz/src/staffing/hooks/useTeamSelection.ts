@@ -108,12 +108,15 @@ export function useTeamSelection(
             body: JSON.stringify({ roles: Array.from(selectedRoles) }),
           });
           if (res.ok) return true;
-        } catch { /* fall through to demo success */ }
+        } catch (err) {
+          console.warn('[TEAM] API save failed, using local team:', err);
+        }
       }
       // No matterId or API failed — return success (team saved locally for session creation)
       return true;
-    } catch {
-      return true;
+    } catch (err) {
+      console.error('[TEAM] Failed to confirm team:', err);
+      return false;
     } finally {
       setConfirming(false);
     }

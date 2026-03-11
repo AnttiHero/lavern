@@ -152,7 +152,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     }
 
     // Welcome email — fire-and-forget
-    sendWelcomeEmail(body.email, body.displayName).catch(() => {});
+    sendWelcomeEmail(body.email, body.displayName).catch(err => console.error('[EMAIL] Welcome email failed:', err));
 
     return reply.status(201).send({ user: sanitizeUser(user) });
   });

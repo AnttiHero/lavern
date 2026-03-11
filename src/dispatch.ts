@@ -112,7 +112,10 @@ export async function dispatch(
     throw new Error(`Unknown workflow template: ${workflowId}. Available: ${workflowRegistry.list().map(t => t.id).join(', ')}`);
   }
 
-  const classification = request.routerClassification!;
+  const classification = request.routerClassification;
+  if (!classification) {
+    throw new Error('Router classification missing after routing — cannot dispatch workflow');
+  }
   session.workflowTemplateId = template.id;
 
   return runGenericWorkflow(request, template, classification, session, opts);

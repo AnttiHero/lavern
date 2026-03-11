@@ -359,24 +359,24 @@ export default function AgentDocsView({ onBack }: Props) {
 
   const baseUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.host}`
-    : 'http://localhost:3000';
+    : '';
 
   // Fetch capabilities, pricing, reputation in parallel
   useEffect(() => {
     fetch('/api/capabilities', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCapabilities(d); })
-      .catch(() => {});
+      .catch(err => console.warn('[AgentDocs] Failed to load capabilities:', err));
 
     fetch('/api/pricing', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setPricing(d); })
-      .catch(() => {});
+      .catch(err => console.warn('[AgentDocs] Failed to load pricing:', err));
 
     fetch('/api/reputation', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setReputation(d); })
-      .catch(() => {});
+      .catch(err => console.warn('[AgentDocs] Failed to load reputation:', err));
   }, []);
 
   const examples = getExamples(baseUrl);

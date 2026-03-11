@@ -351,6 +351,7 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
   const [clicked, setClicked] = useState(false);
 
   const handleClick = () => {
+    if (clicked) return; // debounce — prevent double download
     onClick();
     setClicked(true);
     setTimeout(() => setClicked(false), 2000);

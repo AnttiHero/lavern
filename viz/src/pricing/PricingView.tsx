@@ -421,8 +421,10 @@ export default function PricingView({ onBack }: Props) {
         setBuyingPack(null);
         handleBuyPack(pack);
       }
-    } catch {
+    } catch (err) {
+      console.error('[PAYMENT] Apple Pay failed:', err);
       setBuyingPack(null);
+      setWaitlistError('Payment failed. Please try again.');
     }
   }, []);
 
@@ -473,8 +475,10 @@ export default function PricingView({ onBack }: Props) {
         return;
       }
       setBuyingPack(null);
-    } catch {
+    } catch (err) {
+      console.error('[PAYMENT] Checkout failed:', err);
       setBuyingPack(null);
+      setWaitlistError('Payment failed. Please try again.');
     }
   };
 

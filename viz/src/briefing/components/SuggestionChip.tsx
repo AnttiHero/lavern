@@ -5,7 +5,7 @@
  * Micro-delight: click scales down + fades out briefly before activating.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Suggestion } from '../hooks/useSmartSuggestions.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
@@ -17,14 +17,23 @@ interface Props {
 export function SuggestionChip({ suggestion, onActivate }: Props) {
   const [hovered, setHovered] = useState(false);
   const [activating, setActivating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleClick = useCallback(() => {
+    if (activating) return; // prevent double-click
     setActivating(true);
     // Brief scale-down + fade before triggering
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       onActivate(suggestion);
     }, 180);
-  }, [onActivate, suggestion]);
+  }, [onActivate, suggestion, activating]);
 
   return (
     <button

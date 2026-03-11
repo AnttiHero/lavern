@@ -78,7 +78,7 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
     });
 
     // Fire-and-forget — don't block the response on email delivery
-    sendWaitlistConfirmation(entry.email).catch(() => {});
+    sendWaitlistConfirmation(entry.email).catch(err => console.error('[EMAIL] Waitlist confirmation failed:', err));
 
     return reply.status(201).send({
       id: entry.id,
@@ -138,7 +138,7 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
       });
 
       // Send invite email with the code — fire-and-forget
-      sendInviteEmail(email, inviteCode).catch(() => {});
+      sendInviteEmail(email, inviteCode).catch(err => console.error('[EMAIL] Invite email failed:', err));
 
       return reply.send({ inviteCode, email });
     } catch (err) {

@@ -328,7 +328,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     summaryParts.push(`${debate?.findingsCount} findings, ${debate?.challengesCount ?? 0} challenges.`);
   }
   if ((cost?.accumulated ?? 0) > 0) {
-    summaryParts.push(`Cost: $${cost!.accumulated!.toFixed(2)} of $${cost!.budget!.toFixed(2)} budget.`);
+    summaryParts.push(`Cost: $${(cost?.accumulated ?? 0).toFixed(2)} of $${(cost?.budget ?? 0).toFixed(2)} budget.`);
   }
   if (durationMs && durationMs > 0) {
     const mins = Math.round(durationMs / 60000);
