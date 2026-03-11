@@ -344,5 +344,5 @@ export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulato
       for (const t of timersRef.current) clearTimeout(t);
       timersRef.current = [];
     };
-  }, [sessionId, teamRoles.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionId, JSON.stringify(teamRoles)]); // eslint-disable-line react-hooks/exhaustive-deps
 }

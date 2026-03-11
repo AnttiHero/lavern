@@ -372,7 +372,7 @@ export async function assembleDocument(
       // If this was the last attempt, fall through to the return below
       if (attempt >= MAX_ASSEMBLY_ATTEMPTS) break;
 
-      console.log('[ASSEMBLY] Retrying after API error...');
+      console.warn('[ASSEMBLY] Retrying after API error...');
     }
   }
 

@@ -492,12 +492,11 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           break;
 
         case 'gate_decided': {
-          // Find the matching gate card and mark it decided
+          // Find the matching gate card and mark it decided (immutable update)
           for (let i = cards.length - 1; i >= 0; i--) {
             const c = cards[i];
             if (c.kind === 'gate' && c.gateType === event.gateType && !c.decided) {
-              c.decided = true;
-              c.decision = event.decision;
+              cards[i] = { ...c, decided: true, decision: event.decision };
               break;
             }
           }

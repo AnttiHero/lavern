@@ -282,16 +282,21 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
   const handleSaveTeam = useCallback(() => {
     const name = saveTeamName.trim();
     if (!name || teamSize === 0) return;
-    saveTeam({
-      name,
-      description: `${teamSize} agents \u00B7 ${engagementConfig.workflowId}`,
-      roles: Array.from(selectedRoles),
-      teamSize,
-    });
-    setSaveTeamName('');
-    setShowSaveTeamInput(false);
-    setTeamSaved(true);
-    setTimeout(() => setTeamSaved(false), 2000);
+    try {
+      saveTeam({
+        name,
+        description: `${teamSize} agents \u00B7 ${engagementConfig.workflowId}`,
+        roles: Array.from(selectedRoles),
+        teamSize,
+      });
+      setSaveTeamName('');
+      setShowSaveTeamInput(false);
+      setTeamSaved(true);
+      setTimeout(() => setTeamSaved(false), 2000);
+    } catch (err) {
+      console.error('[TeamView] Failed to save team:', err);
+      // Leave the input open so user can retry
+    }
   }, [saveTeamName, teamSize, selectedRoles, engagementConfig.workflowId, saveTeam]);
 
   return (
