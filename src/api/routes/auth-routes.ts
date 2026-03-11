@@ -53,7 +53,10 @@ const LoginSchema = z.object({
 const ProfileUpdateSchema = z.object({
   displayName: z.string().max(200).optional(),
   firmName: z.string().max(200).optional(),
-  profileJson: z.string().max(50000).optional(),
+  profileJson: z.string().max(50000).optional().refine(
+    val => { if (!val) return true; try { JSON.parse(val); return true; } catch { return false; } },
+    { message: 'profileJson must be valid JSON' },
+  ),
 }).strict();
 
 // ── Cookie helpers ───────────────────────────────────────────────────────
@@ -170,7 +173,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const body = validateBody(LoginSchema, request, reply);
     if (!body) return;
 
-    const user = getUserByEmail(body.email);
+    const user = getUserByEmail(body.email.toLowerCase().trim());
     if (!user) {
       return reply.status(401).send({ error: 'Invalid email or password.' });
     }

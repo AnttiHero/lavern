@@ -474,6 +474,9 @@ export default function PricingView({ onBack }: Props) {
         window.location.hash = '#/login';
         return;
       }
+      // Non-OK, non-401 response — show error to user
+      const errBody = await res.json().catch(() => ({ error: 'Checkout failed' }));
+      setWaitlistError((errBody as { error?: string }).error || 'Checkout failed. Please try again.');
       setBuyingPack(null);
     } catch (err) {
       console.error('[PAYMENT] Checkout failed:', err);
@@ -484,6 +487,11 @@ export default function PricingView({ onBack }: Props) {
 
   const handleWaitlist = async () => {
     if (!email || waitlistStatus === 'sending') return;
+    // Basic client-side email validation (server also validates)
+    if (!email.includes('@') || !email.includes('.')) {
+      setWaitlistError('Please enter a valid email address.');
+      return;
+    }
     setWaitlistStatus('sending');
     setWaitlistError(null);
     try {

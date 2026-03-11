@@ -148,7 +148,7 @@ export default function MyPageView({ onBack }: Props) {
               min={1}
               max={200}
               value={profile.defaultBudgetUsd}
-              onChange={e => field('defaultBudgetUsd')(Number(e.target.value) || 10)}
+              onChange={e => field('defaultBudgetUsd')(Math.max(1, Math.min(200, Number(e.target.value) || 10)))}
               style={{ ...styles.input, ...styles.budgetInput }}
             />
           </div>

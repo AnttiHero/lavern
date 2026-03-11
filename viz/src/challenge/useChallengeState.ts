@@ -5,7 +5,7 @@
  * No sessions, no WebSocket, no polling.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDocumentUpload } from '../briefing/hooks/useDocumentUpload.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -44,6 +44,12 @@ export function useChallengeState() {
   // ── Pre-loaded Marble text (from active session) ──
   const [marbleSessionText, setMarbleSessionText] = useState<string | null>(null);
   const [marbleSessionTitle, setMarbleSessionTitle] = useState<string | null>(null);
+
+  // Timer cleanup for reveal animation
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
+  }, []);
 
   const bothReady = (marbleUpload.documents.length > 0 || !!marbleSessionText) && humanUpload.documents.length > 0;
   const eitherParsing = marbleUpload.parsing || humanUpload.parsing;
@@ -120,7 +126,7 @@ export function useChallengeState() {
       });
 
       if (!res.ok) {
-        const err = await res.json() as { error: string };
+        const err = await res.json().catch(() => ({ error: 'Challenge failed' })) as { error: string };
         throw new Error(err.error || 'Challenge failed');
       }
 
@@ -131,13 +137,17 @@ export function useChallengeState() {
       setError(err instanceof Error ? err.message : 'Challenge failed');
       setPhase('idle');
     }
-  }, [marbleUpload.documents, marbleUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
+  }, [marbleSessionText, marbleUpload.documents, marbleUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
 
   // ── Reveal identities ──
 
   const doReveal = useCallback(() => {
     setRevealed(true);
-    setTimeout(() => setPhase('result'), 2000);
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = setTimeout(() => {
+      revealTimerRef.current = null;
+      setPhase('result');
+    }, 2000);
   }, []);
 
   return {
