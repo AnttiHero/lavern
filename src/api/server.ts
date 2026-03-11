@@ -20,6 +20,7 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import * as crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
@@ -29,6 +30,7 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
 import { SessionManager } from '../session/session-manager.js';
 import { registerSessionRoutes } from './routes/sessions.js';
+import { getWsConnectionCount } from './ws-handler.js';
 import { registerReplayRoutes } from './routes/replay.js';
 import { registerMatterRoutes } from './routes/matters.js';
 import { registerAgentRoutes } from './routes/agents.js';
@@ -44,9 +46,11 @@ import { registerKnowledgeBaseRoutes } from './routes/knowledge-base.js';
 import { registerVerifyRoutes } from './routes/verify.js';
 import { registerClawRoutes } from './routes/claw.js';
 import { registerChallengeRoutes } from './routes/challenge.js';
+import { registerBillingRoutes } from './routes/billing.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
+import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
-import { initDatabase, cleanExpiredTokens } from '../db/database.js';
+import { initDatabase, cleanExpiredTokens, rotateAuditLog, logAuditEvent } from '../db/database.js';
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
@@ -68,8 +72,13 @@ export async function startApiServer(port: number): Promise<void> {
 
   await fastify.register(fastifyWebsocket);
 
+  // CORS — locked to specific origins by default.
+  // Set SHEM_CORS_ORIGINS='*' to allow all (NOT recommended for production).
+  if (config.corsOrigins === '*') {
+    console.warn('[SECURITY] CORS is set to wildcard (*) — all origins can access the API. Set SHEM_CORS_ORIGINS to restrict.');
+  }
   await fastify.register(fastifyCors, {
-    origin: config.corsOrigins === '*' ? true : config.corsOrigins.split(','),
+    origin: config.corsOrigins === '*' ? true : config.corsOrigins.split(',').map(o => o.trim()),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
@@ -91,9 +100,17 @@ export async function startApiServer(port: number): Promise<void> {
   // Clean expired auth tokens at startup and every hour
   const expired = cleanExpiredTokens();
   if (expired > 0) console.log(`[AUTH] Cleaned ${expired} expired auth token${expired === 1 ? '' : 's'}`);
+
+  // Rotate audit log at startup (retain 90 days)
+  const rotated = rotateAuditLog(90);
+  if (rotated > 0) console.log(`[AUDIT] Rotated ${rotated} audit log entr${rotated === 1 ? 'y' : 'ies'} older than 90 days`);
+
   const tokenCleanupInterval = setInterval(() => {
     const cleaned = cleanExpiredTokens();
     if (cleaned > 0) console.log(`[AUTH] Cleaned ${cleaned} expired auth token${cleaned === 1 ? '' : 's'}`);
+    // Also rotate audit log hourly
+    const auditRotated = rotateAuditLog(90);
+    if (auditRotated > 0) console.log(`[AUDIT] Rotated ${auditRotated} audit log entries`);
   }, 60 * 60 * 1000); // 1 hour
   tokenCleanupInterval.unref(); // Don't keep the process alive for cleanup
 
@@ -101,6 +118,7 @@ export async function startApiServer(port: number): Promise<void> {
 
   const sessionManager = new SessionManager();
   const clientRegistry = new ClientRegistry();
+  clientRegistry.loadFromDb(); // Restore API clients from SQLite
 
   // ── Authentication ──────────────────────────────────────────────────
 
@@ -112,16 +130,11 @@ export async function startApiServer(port: number): Promise<void> {
   const publicPaths: string[] = [
     '/health',
     '/',
-    '/api/clients',           // Client registration is public (creates the API key)
-    // Dashboard read-only views (mutations require cookie auth)
-    'GET /api/sessions',      // Session listing
+    // Session access by ID — scoped by unguessable session ID (capability token).
+    // Listing (GET /api/sessions) requires auth — removed from public paths.
     'GET /api/sessions/*',    // Session detail + WebSocket events
-    'GET /api/audit-logs',    // Audit log listing
-    'GET /api/audit-logs/*',  // Audit log detail
-    'GET /api/replay/*',      // WebSocket replay
-    // NOTE: GET /api/matters and GET /api/matters/* are NOT public.
-    // They call getRequestUserId() which throws on unauthenticated access,
-    // and they return user-specific data that requires auth.
+    // NOTE: /api/clients, /api/audit-logs, /api/replay are NOT public.
+    // They contain sensitive data and require authentication.
     'GET /api/agents/*',      // Agent profiles, presets, recommendations
     'GET /api/workflows',     // Workflow templates
     // Agent API — public discovery endpoints (read-only)
@@ -156,6 +169,8 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/documents/parse',
     // The Marble Challenge — zero-friction, no auth required
     'POST /api/challenge',
+    // Stripe webhook — must be public (Stripe calls it), verified via signature
+    'POST /api/billing/webhook',
     // Frontend static files (prefix match — trailing /)
     '/dashboard/',
   ];
@@ -170,16 +185,113 @@ export async function startApiServer(port: number): Promise<void> {
   const authMiddleware = createAuthMiddleware(clientRegistry, publicPaths);
   fastify.addHook('onRequest', authMiddleware);
 
+  // ── Per-User Rate Limiting ────────────────────────────────────────────
+  // Runs AFTER auth so we have userId. 30 req/min per user, 5 concurrent sessions.
+  const perUserRateLimit = createPerUserRateLimitHook(sessionManager);
+  fastify.addHook('onRequest', perUserRateLimit);
+
+  // ── CSRF Protection ──────────────────────────────────────────────────
+  // For cookie-authenticated state-changing requests, verify Origin header
+  // matches allowed CORS origins. Bearer token requests are exempt (immune
+  // to CSRF since the attacker can't inject the Authorization header).
+  const allowedOrigins = new Set(
+    config.corsOrigins === '*'
+      ? [] // Can't validate if all origins allowed
+      : config.corsOrigins.split(',').map(o => o.trim())
+  );
+
+  fastify.addHook('onRequest', async (request, reply) => {
+    // Only check state-changing methods
+    if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return;
+
+    // Bearer token auth is immune to CSRF — skip
+    if (request.headers.authorization?.startsWith('Bearer ')) return;
+
+    // If CORS is wildcard, we can't validate (logged warning above)
+    if (config.corsOrigins === '*') return;
+
+    // Cookie-authenticated request: verify Origin
+    const origin = request.headers.origin;
+    if (origin && !allowedOrigins.has(origin)) {
+      return reply.status(403).send({ error: 'Origin not allowed' });
+    }
+
+    // If no Origin header, check Referer (some browsers omit Origin on same-origin)
+    if (!origin) {
+      const referer = request.headers.referer;
+      if (referer) {
+        try {
+          const refOrigin = new URL(referer).origin;
+          if (!allowedOrigins.has(refOrigin)) {
+            return reply.status(403).send({ error: 'Origin not allowed' });
+          }
+        } catch { /* malformed referer — allow through, auth will catch unauthenticated */ }
+      }
+      // No Origin or Referer: could be curl, Postman, or API client.
+      // SameSite=Lax cookie already prevents cross-site form submissions.
+    }
+  });
+
   // ── Routes ───────────────────────────────────────────────────────────
 
-  // Health check
-  fastify.get('/health', async () => ({
-    status: 'ok',
-    service: 'the-shem',
-    version: config.version,
-    sessions: sessionManager.size,
-    timestamp: new Date().toISOString(),
-  }));
+  // Health check — shallow (fast, for load balancers) + deep (checks dependencies)
+  fastify.get('/health', async (request) => {
+    const deep = (request.query as { deep?: string }).deep === 'true';
+
+    const base = {
+      status: 'ok' as string,
+      service: 'the-shem',
+      version: config.version,
+      sessions: sessionManager.size,
+      wsConnections: getWsConnectionCount(),
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!deep) return base;
+
+    // Deep health check — verify dependencies
+    const checks: Record<string, { ok: boolean; detail?: string }> = {};
+
+    // SQLite writable
+    try {
+      const db = (await import('../db/database.js')).getDb();
+      db.prepare('SELECT 1').get();
+      checks.database = { ok: true };
+    } catch (err) {
+      checks.database = { ok: false, detail: err instanceof Error ? err.message : 'unavailable' };
+    }
+
+    // API key present
+    checks.apiKey = {
+      ok: !!process.env.ANTHROPIC_API_KEY,
+      detail: process.env.ANTHROPIC_API_KEY ? 'configured' : 'ANTHROPIC_API_KEY not set',
+    };
+
+    // Disk space (data directory)
+    try {
+      const dataDir = path.dirname(config.dbPath);
+      if (fs.existsSync(dataDir)) {
+        const stats = fs.statfsSync(dataDir);
+        const freeGb = (stats.bavail * stats.bsize) / (1024 ** 3);
+        checks.disk = {
+          ok: freeGb > 1,
+          detail: `${freeGb.toFixed(1)} GB free`,
+        };
+      } else {
+        checks.disk = { ok: false, detail: 'data directory does not exist' };
+      }
+    } catch {
+      checks.disk = { ok: true, detail: 'statfs not available (skipped)' };
+    }
+
+    const allOk = Object.values(checks).every(c => c.ok);
+
+    return {
+      ...base,
+      status: allOk ? 'ok' : 'degraded',
+      checks,
+    };
+  });
 
   // API info
   fastify.get('/', async () => ({
@@ -294,6 +406,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerClawRoutes(fastify);
   // v19: The Marble Challenge — blind document comparison
   registerChallengeRoutes(fastify);
+  // v21: Billing — Stripe subscriptions and usage tracking
+  registerBillingRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 
@@ -313,12 +427,58 @@ export async function startApiServer(port: number): Promise<void> {
     });
   }
 
+  // ── Error Monitoring (Sentry-compatible) ────────────────────────────
+  // If SENTRY_DSN is set, captures unhandled errors via Sentry HTTP API.
+  // No SDK dependency — uses fetch() directly.
+  const sentryDsn = process.env.SENTRY_DSN;
+  let captureError: ((err: Error, context?: Record<string, unknown>) => void) | null = null;
+
+  if (sentryDsn) {
+    const dsnMatch = sentryDsn.match(/^https:\/\/([^@]+)@([^/]+)\/(\d+)$/);
+    if (dsnMatch) {
+      const [, publicKey, host, projectId] = dsnMatch;
+      const sentryUrl = `https://${host}/api/${projectId}/store/?sentry_key=${publicKey}&sentry_version=7`;
+      captureError = (err: Error, extra?: Record<string, unknown>) => {
+        try {
+          const payload = JSON.stringify({
+            event_id: crypto.randomUUID().replace(/-/g, ''),
+            timestamp: new Date().toISOString(),
+            platform: 'node',
+            level: 'error',
+            server_name: 'marble-api',
+            release: `marble@${config.version}`,
+            exception: { values: [{ type: err.name, value: err.message, stacktrace: {
+              frames: (err.stack ?? '').split('\n').slice(1, 10).map(l => ({ filename: l.trim() })),
+            }}] },
+            extra,
+          });
+          fetch(sentryUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+        } catch { /* best effort */ }
+      };
+      console.log('[SENTRY] Error monitoring enabled');
+    }
+  }
+
+  // Fastify error handler — captures 5xx errors to Sentry
+  fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
+    const statusCode = error.statusCode ?? 500;
+    if (captureError && statusCode >= 500) {
+      captureError(error, { url: request.url, method: request.method });
+    }
+    reply.status(statusCode).send({
+      statusCode,
+      error: error.name,
+      message: statusCode < 500 ? error.message : 'Internal server error',
+    });
+  });
+
   // ── Process-level crash protection ────────────────────────────────
   // Prevent the server from crashing on unhandled errors in background
   // tasks (dispatch, assembly, WebSocket handlers, etc.)
 
   process.on('uncaughtException', (err) => {
     console.error('[FATAL] Uncaught exception (server will continue):', err);
+    if (captureError) captureError(err, { type: 'uncaughtException' });
     // Log but don't exit — Fastify routes have their own error handling.
     // Only exit on truly unrecoverable errors.
     if (err.message?.includes('EADDRINUSE') || err.message?.includes('ENOMEM')) {
@@ -327,8 +487,9 @@ export async function startApiServer(port: number): Promise<void> {
     }
   });
 
-  process.on('unhandledRejection', (reason, promise) => {
+  process.on('unhandledRejection', (reason, _promise) => {
     console.error('[WARN] Unhandled promise rejection:', reason);
+    if (captureError && reason instanceof Error) captureError(reason, { type: 'unhandledRejection' });
     // Don't crash — log and continue. Most unhandled rejections come from
     // fire-and-forget dispatch() or assembly calls that already have their
     // own error handling. This is a safety net.
@@ -352,6 +513,7 @@ export async function startApiServer(port: number): Promise<void> {
 
     // Clean up timers
     clearInterval(tokenCleanupInterval);
+    sessionManager.stopCleanup();
 
     // Destroy all active sessions (archives them)
     for (const session of sessionManager.getAllSessions()) {

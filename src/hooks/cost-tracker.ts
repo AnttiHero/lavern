@@ -3,6 +3,7 @@
  *
  * v3: Refactored to factory pattern — state lives in SessionState.
  * v10: Added haltCheckHook — the "red button" mechanism.
+ * v21: Added pre-flight cost estimation — rejects calls that would exceed budget.
  *
  * Both hooks fire as PreToolUse, checked before every tool invocation.
  * The haltCheckHook MUST be first in the array so it fires before cost checks.
@@ -11,6 +12,40 @@
 import type { HookInput, HookJSONOutput } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
+
+// ── Cost Estimation ─────────────────────────────────────────────────────
+// Per-tool cost estimates in USD. These are rough approximations based on
+// typical token counts for each tool invocation. Used for pre-flight checks.
+
+const TOOL_COST_ESTIMATES: Record<string, number> = {
+  // Heavy tools (agent invocations, LLM calls)
+  'post_finding':     0.02,
+  'post_challenge':   0.02,
+  'post_response':    0.02,
+  'resolve_debate':   0.03,
+  'score_document':   0.05,
+  'run_verification': 0.05,
+  'compile_report':   0.04,
+  // Medium tools (read/write operations)
+  'read_document':    0.01,
+  'search_knowledge': 0.01,
+  'save_memory':      0.005,
+  'read_memory':      0.005,
+  // Light tools (metadata, status)
+  'get_workflow':     0.001,
+  'list_findings':    0.001,
+  'get_scores':       0.001,
+};
+
+/** Default cost estimate for unknown tools. */
+const DEFAULT_TOOL_COST = 0.01;
+
+/**
+ * Estimate cost for a tool invocation.
+ */
+export function estimateToolCost(toolName: string): number {
+  return TOOL_COST_ESTIMATES[toolName] ?? DEFAULT_TOOL_COST;
+}
 
 export function createCostHooks(session: SessionState) {
   // Track which budget warning thresholds have already fired to avoid spamming logs
@@ -37,7 +72,7 @@ export function createCostHooks(session: SessionState) {
   };
 
   const costTrackerHook = async (
-    _input: HookInput,
+    input: HookInput,
     _toolUseId: string | undefined,
     _options: { signal: AbortSignal }
   ): Promise<HookJSONOutput> => {
@@ -55,6 +90,25 @@ export function createCostHooks(session: SessionState) {
         continue: false,
         stopReason: `Budget limit of $${session.budgetUsd.toFixed(2)} exceeded. Accumulated cost: $${session.accumulatedCost.toFixed(2)}.`,
       };
+    }
+
+    // Pre-flight check: estimate cost of this tool call and reject if it would exceed budget
+    const toolName = 'tool_name' in input ? (input as { tool_name?: string }).tool_name : undefined;
+    if (toolName) {
+      const estimatedCost = estimateToolCost(toolName);
+      if (session.accumulatedCost + estimatedCost > session.budgetUsd) {
+        console.error(`[COST] Pre-flight rejection: ${toolName} estimated at $${estimatedCost.toFixed(3)}, only $${remaining.toFixed(2)} remaining`);
+        session.events.emitEvent({
+          type: 'cost_update',
+          totalUsd: session.accumulatedCost,
+          budgetUsd: session.budgetUsd,
+          timestamp: eventTimestamp(),
+        });
+        return {
+          continue: false,
+          stopReason: `Insufficient budget: ${toolName} estimated at $${estimatedCost.toFixed(3)}, only $${remaining.toFixed(2)} remaining of $${session.budgetUsd.toFixed(2)}.`,
+        };
+      }
     }
 
     // Early warning at 50% budget consumed (fires once per session)

@@ -23,9 +23,13 @@ import {
   deleteAuthToken,
   hashPassword,
   verifyPassword,
+  logAuditEvent,
+  exportUserData,
+  softDeleteUser,
 } from '../../db/database.js';
 import { validateBody } from '../middleware/validation.js';
 import { parseCookieToken } from '../middleware/auth.js';
+import { config } from '../../config.js';
 
 // ── Schemas ──────────────────────────────────────────────────────────────
 
@@ -90,7 +94,14 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
   // ── POST /api/auth/signup ──────────────────────────────────────────────
 
-  fastify.post('/api/auth/signup', async (request, reply) => {
+  fastify.post('/api/auth/signup', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitAuthSignupMax,
+        timeWindow: config.rateLimitAuthWindowMs,
+      },
+    },
+  }, async (request, reply) => {
     const body = validateBody(SignupSchema, request, reply);
     if (!body) return;
 
@@ -104,13 +115,21 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const user = createUser(body.email, passwordHash, body.displayName, body.firmName);
     const token = createAuthToken(user.id);
 
+    logAuditEvent({ userId: user.id, action: 'signup', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
     setAuthCookie(reply, token);
     return reply.status(201).send({ user: sanitizeUser(user) });
   });
 
   // ── POST /api/auth/login ───────────────────────────────────────────────
 
-  fastify.post('/api/auth/login', async (request, reply) => {
+  fastify.post('/api/auth/login', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitAuthLoginMax,
+        timeWindow: config.rateLimitAuthWindowMs,
+      },
+    },
+  }, async (request, reply) => {
     const body = validateBody(LoginSchema, request, reply);
     if (!body) return;
 
@@ -121,10 +140,12 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
     const valid = await verifyPassword(body.password, user.password_hash);
     if (!valid) {
+      logAuditEvent({ userId: user.id, action: 'login_failed', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
       return reply.status(401).send({ error: 'Invalid email or password.' });
     }
 
     const token = createAuthToken(user.id);
+    logAuditEvent({ userId: user.id, action: 'login', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
     setAuthCookie(reply, token);
     return reply.send({ user: sanitizeUser(user) });
   });
@@ -134,6 +155,10 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
   fastify.post('/api/auth/logout', async (request, reply) => {
     const token = parseCookieToken(request.headers.cookie);
     if (token) {
+      const user = getUserByToken(token);
+      if (user) {
+        logAuditEvent({ userId: user.id, action: 'logout', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
+      }
       deleteAuthToken(token);
     }
     clearAuthCookie(reply);
@@ -183,6 +208,86 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       return reply.status(404).send({ error: 'User not found.' });
     }
 
+    logAuditEvent({ userId: user.id, action: 'profile_update', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
     return reply.send({ user: sanitizeUser(updated) });
+  });
+
+  // ── GET /api/auth/export — GDPR data portability (Article 20) ─────────
+
+  fastify.get('/api/auth/export', async (request, reply) => {
+    const token = parseCookieToken(request.headers.cookie);
+    if (!token) {
+      return reply.status(401).send({ error: 'Not authenticated.' });
+    }
+
+    const user = getUserByToken(token);
+    if (!user) {
+      clearAuthCookie(reply);
+      return reply.status(401).send({ error: 'Session expired.' });
+    }
+
+    logAuditEvent({ userId: user.id, action: 'data_export', resource: 'gdpr', ip: request.ip, userAgent: request.headers['user-agent'] });
+
+    const data = exportUserData(user.id);
+
+    // Return as JSON (frontend can convert to downloadable ZIP if desired)
+    reply.header('Content-Disposition', 'attachment; filename="marble-data-export.json"');
+    return reply.send({
+      exportedAt: new Date().toISOString(),
+      user: data.profile ? {
+        id: data.profile.id,
+        email: data.profile.email,
+        displayName: data.profile.display_name,
+        firmName: data.profile.firm_name,
+        createdAt: data.profile.created_at,
+      } : null,
+      sessions: data.sessions.map(s => ({
+        id: s.id,
+        title: s.title,
+        status: s.status,
+        workflowId: s.workflow_id,
+        costUsd: s.cost_usd,
+        createdAt: s.created_at,
+        completedAt: s.completed_at,
+      })),
+      usage: data.usage,
+      billingEvents: data.billingEvents,
+      auditLog: data.auditLog,
+    });
+  });
+
+  // ── DELETE /api/auth/account — GDPR right to erasure (Article 17) ─────
+
+  fastify.delete('/api/auth/account', async (request, reply) => {
+    const token = parseCookieToken(request.headers.cookie);
+    if (!token) {
+      return reply.status(401).send({ error: 'Not authenticated.' });
+    }
+
+    const user = getUserByToken(token);
+    if (!user) {
+      clearAuthCookie(reply);
+      return reply.status(401).send({ error: 'Session expired.' });
+    }
+
+    // Require confirmation header to prevent accidental deletion
+    const confirm = request.headers['x-confirm-delete'];
+    if (confirm !== 'permanently-delete-my-account') {
+      return reply.status(400).send({
+        error: 'Account deletion requires confirmation.',
+        message: 'Set header X-Confirm-Delete: permanently-delete-my-account',
+      });
+    }
+
+    const deleted = softDeleteUser(user.id);
+    if (!deleted) {
+      return reply.status(404).send({ error: 'User not found.' });
+    }
+
+    clearAuthCookie(reply);
+    return reply.send({
+      success: true,
+      message: 'Account data has been anonymized. Your sessions and usage data are retained in anonymized form for analytics.',
+    });
   });
 }

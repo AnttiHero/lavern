@@ -7,7 +7,9 @@
  * Production hardening:
  * - TTL-based eviction (4 hours default)
  * - Max session cap (100 default)
- * - Lazy cleanup on createSession()
+ * - Lazy cleanup on createSession() + periodic sweep (every 5 min)
+ * - 5-minute WebSocket warning before timeout
+ * - Stale sessions marked as 'failed' with timeout reason
  */
 
 import { SessionState } from './session-state.js';
@@ -15,14 +17,29 @@ import type { GateResolver } from '../gates/gate-resolver.js';
 import { archiveSession } from '../db/database.js';
 import { config } from '../config.js';
 
+/** How often to run the background cleanup sweep (ms). */
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+/** How long before TTL to send a warning via WebSocket (ms). */
+const TTL_WARNING_MS = 5 * 60 * 1000; // 5-minute warning
+
 interface SessionEntry {
   session: SessionState;
   createdAt: number;
+  lastActivityAt: number;
   archived: boolean;
+  ttlWarned: boolean;
 }
 
 export class SessionManager {
   private sessions = new Map<string, SessionEntry>();
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    // Start periodic cleanup sweep
+    this.cleanupTimer = setInterval(() => this.cleanup(), CLEANUP_INTERVAL_MS);
+    this.cleanupTimer.unref(); // Don't keep the process alive
+  }
 
   createSession(options?: {
     id?: string;
@@ -35,8 +52,14 @@ export class SessionManager {
     this.cleanup();
 
     const session = new SessionState(options?.id, options);
-    const entry: SessionEntry = { session, createdAt: Date.now(), archived: false };
+    const now = Date.now();
+    const entry: SessionEntry = { session, createdAt: now, lastActivityAt: now, archived: false, ttlWarned: false };
     this.sessions.set(session.id, entry);
+
+    // Track activity: any event means the session is alive
+    session.events.on('event', () => {
+      entry.lastActivityAt = Date.now();
+    });
 
     // Archive to SQLite when session completes (guard against double archival)
     session.events.on('session_end', () => {
@@ -91,9 +114,37 @@ export class SessionManager {
   }
 
   /**
+   * Get time since last activity for a session (ms).
+   */
+  getSessionIdleTime(id: string): number | undefined {
+    const entry = this.sessions.get(id);
+    return entry ? Date.now() - entry.lastActivityAt : undefined;
+  }
+
+  /**
+   * Stop the periodic cleanup timer (for graceful shutdown).
+   */
+  stopCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+
+  /**
    * Evict a single session: archive it, halt agents, then remove.
    */
-  private evictSession(id: string, entry: SessionEntry): void {
+  private evictSession(id: string, entry: SessionEntry, reason: string): void {
+    // Emit timeout event so WebSocket clients get notified
+    if (!entry.session.isHalted()) {
+      entry.session.events.emitEvent({
+        type: 'error',
+        message: `Session timed out: ${reason}`,
+        source: 'session-manager',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     // Archive before removing listeners so work product is preserved (guard against double archival)
     if (!entry.archived) {
       entry.archived = true;
@@ -106,7 +157,7 @@ export class SessionManager {
     }
     // Halt any running agents
     if (!entry.session.isHalted()) {
-      entry.session.halt('Session evicted (TTL/cap)');
+      entry.session.halt(reason);
     }
     entry.session.events.stopRecording();
     entry.session.events.removeAllListeners();
@@ -115,11 +166,28 @@ export class SessionManager {
 
   /**
    * Evict expired sessions (TTL) and enforce max session cap.
-   * Called lazily at the start of createSession().
+   * Called lazily at the start of createSession() and periodically by timer.
    */
   cleanup(): number {
     const now = Date.now();
     let evicted = 0;
+
+    // Phase 0: Send TTL warnings to sessions approaching timeout
+    for (const [, entry] of this.sessions) {
+      if (entry.ttlWarned) continue;
+      const age = now - entry.createdAt;
+      const ttlRemaining = config.sessionTtlMs - age;
+      if (ttlRemaining > 0 && ttlRemaining <= TTL_WARNING_MS) {
+        entry.ttlWarned = true;
+        const minutesLeft = Math.ceil(ttlRemaining / 60000);
+        entry.session.events.emitEvent({
+          type: 'error',
+          message: `Session will timeout in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}. Save your work.`,
+          source: 'session-manager',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
 
     // Phase 1: TTL eviction (collect first to avoid modifying map during iteration)
     const expired: [string, SessionEntry][] = [];
@@ -129,7 +197,8 @@ export class SessionManager {
       }
     }
     for (const [id, entry] of expired) {
-      this.evictSession(id, entry);
+      const age = Math.round((now - entry.createdAt) / 60000);
+      this.evictSession(id, entry, `Session expired after ${age} minutes (TTL: ${config.sessionTtlMs / 60000}min)`);
       evicted++;
     }
 
@@ -141,7 +210,7 @@ export class SessionManager {
       const excess = Math.max(1, this.sessions.size - config.maxSessions);
       const toRemove = sorted.slice(0, excess);
       for (const [id, entry] of toRemove) {
-        this.evictSession(id, entry);
+        this.evictSession(id, entry, `Session evicted (cap: ${config.maxSessions})`);
         evicted++;
       }
     }

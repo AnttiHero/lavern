@@ -31,6 +31,112 @@ import { dispatch } from './dispatch.js';
 import type { DocumentContext, Moment, Audience, Jurisdiction, LegalRequest } from './types/index.js';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import * as net from 'node:net';
+
+// ── Pre-flight Checks ──────────────────────────────────────────────────
+
+interface PreflightResult {
+  check: string;
+  ok: boolean;
+  detail?: string;
+}
+
+async function runPreflightChecks(options: { port?: number; requireApiKey?: boolean } = {}): Promise<PreflightResult[]> {
+  const results: PreflightResult[] = [];
+
+  // 1. API key present
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (options.requireApiKey !== false) {
+    results.push({
+      check: 'ANTHROPIC_API_KEY',
+      ok: !!apiKey && apiKey.length > 10,
+      detail: apiKey ? 'configured' : 'MISSING — set ANTHROPIC_API_KEY in .env or environment',
+    });
+  }
+
+  // 2. Data directory writable
+  const dbPath = process.env.SHEM_DB_PATH ?? './data/marble.db';
+  const dataDir = path.dirname(dbPath);
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    // Test write
+    const testFile = path.join(dataDir, '.write-test');
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    results.push({ check: 'Data directory', ok: true, detail: dataDir });
+  } catch (err) {
+    results.push({ check: 'Data directory', ok: false, detail: `Cannot write to ${dataDir}: ${err instanceof Error ? err.message : err}` });
+  }
+
+  // 3. Port available (API server mode only)
+  if (options.port) {
+    const portAvailable = await checkPort(options.port);
+    results.push({
+      check: `Port ${options.port}`,
+      ok: portAvailable,
+      detail: portAvailable ? 'available' : `EADDRINUSE — port ${options.port} is already in use`,
+    });
+  }
+
+  // 4. Required directories exist (audit, memory)
+  const auditDir = process.env.SHEM_AUDIT_DIR ?? './audit-logs';
+  try {
+    if (!fs.existsSync(auditDir)) {
+      fs.mkdirSync(auditDir, { recursive: true });
+    }
+    results.push({ check: 'Audit directory', ok: true, detail: auditDir });
+  } catch {
+    results.push({ check: 'Audit directory', ok: false, detail: `Cannot create ${auditDir}` });
+  }
+
+  // 5. Disk space (warn if < 1 GB)
+  try {
+    const stats = fs.statfsSync(dataDir);
+    const freeGb = (stats.bavail * stats.bsize) / (1024 ** 3);
+    results.push({
+      check: 'Disk space',
+      ok: freeGb > 1,
+      detail: `${freeGb.toFixed(1)} GB free${freeGb <= 1 ? ' — WARNING: low disk space' : ''}`,
+    });
+  } catch {
+    results.push({ check: 'Disk space', ok: true, detail: 'statfs not available (skipped)' });
+  }
+
+  return results;
+}
+
+function checkPort(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, '0.0.0.0');
+  });
+}
+
+function printPreflightResults(results: PreflightResult[]): boolean {
+  const allOk = results.every(r => r.ok);
+  const icon = (ok: boolean) => ok ? '✓' : '✗';
+
+  console.log('\n  Pre-flight checks:');
+  for (const r of results) {
+    const status = r.ok ? '\x1b[32m' : '\x1b[31m'; // green/red
+    console.log(`    ${status}${icon(r.ok)}\x1b[0m ${r.check}: ${r.detail ?? ''}`);
+  }
+  console.log('');
+
+  if (!allOk) {
+    const critical = results.filter(r => !r.ok);
+    console.error(`  ✗ ${critical.length} pre-flight check(s) failed. Fix the issues above before starting.`);
+    console.error('');
+  }
+
+  return allOk;
+}
 
 function parseOptions(args: string[]): {
   positionalArgs: string[];
@@ -100,6 +206,16 @@ async function main(): Promise<void> {
 
     // Combined mode: --serve --claw — API server + Claw Mode together
     if (args.includes('--claw')) {
+      const preflightResults = await runPreflightChecks({ port, requireApiKey: true });
+      const preflightOk = printPreflightResults(preflightResults);
+      if (!preflightOk) {
+        const critical = preflightResults.filter(r => !r.ok && r.check !== 'Disk space');
+        if (critical.length > 0) {
+          console.error('  Aborting due to critical pre-flight failures.\n');
+          process.exit(1);
+        }
+      }
+
       console.log(`Combined mode — API server + Claw Mode on port ${port}...`);
       const { startApiServer } = await import('./api/server.js');
       await startApiServer(port);
@@ -107,6 +223,18 @@ async function main(): Promise<void> {
       const { runClaw } = await import('./claw/index.js');
       await runClaw(['start']);
       return;
+    }
+
+    // Pre-flight checks before starting server
+    const preflightResults = await runPreflightChecks({ port, requireApiKey: true });
+    const preflightOk = printPreflightResults(preflightResults);
+    if (!preflightOk) {
+      const critical = preflightResults.filter(r => !r.ok && r.check !== 'Disk space');
+      if (critical.length > 0) {
+        console.error('  Aborting due to critical pre-flight failures.\n');
+        process.exit(1);
+      }
+      // Non-critical warnings (disk space) — continue with warning
     }
 
     console.log(`API server mode — starting on port ${port}...`);

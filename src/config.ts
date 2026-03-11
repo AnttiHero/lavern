@@ -35,7 +35,7 @@ export const config = {
   // ── API ────────────────────────────────────────────────────────────────
   port: parseInt(process.env.SHEM_PORT ?? '3000', 10),
   host: process.env.SHEM_HOST ?? '0.0.0.0',
-  corsOrigins: process.env.SHEM_CORS_ORIGINS ?? '*',
+  corsOrigins: process.env.SHEM_CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000',
   baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
   trustProxy: process.env.SHEM_TRUST_PROXY === 'true',
   /** Max upload file size in bytes (default: 10 MB) */
@@ -48,10 +48,32 @@ export const config = {
   rateLimitWindowMs: parseInt(process.env.SHEM_RATE_LIMIT_WINDOW_MS ?? '60000', 10),
   /** Max session-creation requests per window per IP (default: 10/min) */
   rateLimitSessionMax: parseInt(process.env.SHEM_RATE_LIMIT_SESSION_MAX ?? '10', 10),
+  /** Max login attempts per window per IP (default: 5/min) */
+  rateLimitAuthLoginMax: parseInt(process.env.SHEM_RATE_LIMIT_AUTH_LOGIN_MAX ?? '5', 10),
+  /** Max signup attempts per window per IP (default: 3/min) */
+  rateLimitAuthSignupMax: parseInt(process.env.SHEM_RATE_LIMIT_AUTH_SIGNUP_MAX ?? '3', 10),
+  /** Auth rate limit window in ms (default: 60 000 = 1 minute) */
+  rateLimitAuthWindowMs: parseInt(process.env.SHEM_RATE_LIMIT_AUTH_WINDOW_MS ?? '60000', 10),
 
   // ── Payment (x402 — USDC on Base) ───────────────────────────────────
   x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
   x402RecipientAddress: process.env.SHEM_X402_RECIPIENT ?? '',
+
+  // ── Stripe Billing ────────────────────────────────────────────────────
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+    /** URL to redirect to after successful checkout */
+    successUrl: process.env.STRIPE_SUCCESS_URL ?? 'http://localhost:5173/?billing=success',
+    /** URL to redirect to if checkout is cancelled */
+    cancelUrl: process.env.STRIPE_CANCEL_URL ?? 'http://localhost:5173/?billing=cancelled',
+    /** Plans: price ID → plan name mapping. Set via env or use defaults. */
+    plans: {
+      starter:      { monthlyCapUsd: 50,  maxSessionBudget: 10, label: 'Starter' },
+      professional: { monthlyCapUsd: 200, maxSessionBudget: 25, label: 'Professional' },
+      enterprise:   { monthlyCapUsd: 1000, maxSessionBudget: 50, label: 'Enterprise' },
+    },
+  },
 
   // ── Budgets ────────────────────────────────────────────────────────────
   defaultBudgetUsd: parseFloat(process.env.SHEM_DEFAULT_BUDGET ?? '5.0'),
@@ -110,5 +132,5 @@ export const config = {
   },
 
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.9.1',
+  version: '0.10.0',
 } as const;

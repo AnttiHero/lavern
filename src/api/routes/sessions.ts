@@ -36,10 +36,11 @@ import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById } from '../../db/database.js';
+import { getSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
+import { canStartSession, getPlanLimits } from './billing.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
@@ -101,6 +102,24 @@ export function registerSessionRoutes(
     const client = (request as typeof request & { client?: ClientIdentity }).client;
     const isAgent = client?.type === 'agent';
 
+    // v21: Per-user monthly budget cap enforcement
+    const userId = (request as typeof request & { userId?: string }).userId;
+    let sessionBudget = body.options?.budget ?? config.defaultBudgetUsd;
+
+    if (userId) {
+      const budgetCheck = canStartSession(userId);
+      if (!budgetCheck.allowed) {
+        return reply.status(402).send({
+          error: 'Monthly budget exceeded',
+          detail: budgetCheck.reason,
+          remainingBudget: 0,
+        });
+      }
+      // Cap session budget to remaining monthly budget and plan limit
+      const planLimits = getPlanLimits((await import('../../db/database.js')).getUserPlan(userId)?.plan ?? 'free');
+      sessionBudget = Math.min(sessionBudget, budgetCheck.remainingBudget, planLimits.maxSessionBudget);
+    }
+
     const gateResolver = yoloMode
       ? new AutoApproveGateResolver()
       : isAgent && client?.callbackUrl
@@ -110,11 +129,13 @@ export function registerSessionRoutes(
           : new AsyncGateResolver();
     const session = sessionManager.createSession({
       gateResolver,
-      budgetUsd: body.options?.budget ?? 5.0,
+      budgetUsd: sessionBudget,
     });
 
+    // Audit: session creation
+    logAuditEvent({ userId: userId || undefined, action: 'session_create', resource: `session:${session.id}`, ip: request.ip, userAgent: request.headers['user-agent'] });
+
     // v14: Attach user identity for session archiving
-    const userId = (request as typeof request & { userId?: string }).userId;
     if (userId) {
       session.userId = userId;
 
@@ -1130,6 +1151,10 @@ ${buildFullContext(session)}`;
     });
 
     sessionManager.destroySession(id, reason);
+
+    // Audit: session cancellation
+    const reqUserId = (request as unknown as { userId?: string }).userId;
+    logAuditEvent({ userId: reqUserId || undefined, action: 'session_cancel', resource: `session:${id}`, ip: request.ip, userAgent: request.headers['user-agent'], detail: { reason } });
 
     return reply.send({
       success: true,

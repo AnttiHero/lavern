@@ -13,18 +13,53 @@ import * as crypto from 'node:crypto';
 import type { ClientIdentity } from '../../types/client.js';
 import { createClientIdentity, generateApiKey } from '../../types/client.js';
 import { CreateClientSchema, validateBody, type CreateClientBody } from './validation.js';
-import { getUserByToken as dbGetUserByToken } from '../../db/database.js';
+import { getUserByToken as dbGetUserByToken, saveApiClient, getApiClientByKeyHash, getAllApiClients, removeApiClient as dbRemoveApiClient, updateApiClientLastActive } from '../../db/database.js';
 
 /**
- * In-memory client registry.
- * Maps API key hash → ClientIdentity.
+ * SQLite-backed client registry with in-memory cache for fast lookups.
+ * Survives server restarts — clients are loaded from DB on construction.
  */
 export class ClientRegistry {
   private clients = new Map<string, ClientIdentity>();
   private keyHashToClientId = new Map<string, string>();
+  private _loaded = false;
+
+  /**
+   * Load all clients from SQLite into memory cache.
+   * Call this after initDatabase() during server startup.
+   */
+  loadFromDb(): void {
+    if (this._loaded) return;
+    try {
+      const dbClients = getAllApiClients();
+      for (const row of dbClients) {
+        const client: ClientIdentity = {
+          type: row.type as 'human' | 'agent',
+          id: row.id,
+          name: row.name || undefined,
+          apiKeyHash: row.api_key_hash,
+          callbackUrl: row.callback_url || undefined,
+          autoApproveThreshold: row.auto_approve_threshold ?? undefined,
+          capabilities: JSON.parse(row.capabilities || '[]'),
+          registeredAt: row.created_at,
+          lastActiveAt: row.last_active_at || undefined,
+        };
+        this.clients.set(client.id, client);
+        this.keyHashToClientId.set(row.api_key_hash, client.id);
+      }
+      if (dbClients.length > 0) {
+        console.log(`[AUTH] Loaded ${dbClients.length} API client${dbClients.length === 1 ? '' : 's'} from database`);
+      }
+    } catch {
+      // DB not initialized yet — that's OK, we'll work in-memory only
+      console.log('[AUTH] Database not available — client registry running in-memory only');
+    }
+    this._loaded = true;
+  }
 
   /**
    * Register a new client and return their API key.
+   * Persists to SQLite so it survives restarts.
    */
   registerClient(
     type: ClientIdentity['type'],
@@ -47,6 +82,24 @@ export class ClientRegistry {
       apiKeyHash: keyHash,
     });
 
+    // Persist to SQLite
+    try {
+      saveApiClient({
+        id: client.id,
+        type: client.type,
+        name: client.name || '',
+        apiKeyHash: keyHash,
+        callbackUrl: client.callbackUrl,
+        autoApproveThreshold: client.autoApproveThreshold,
+        capabilities: client.capabilities,
+        registeredAt: client.registeredAt,
+      });
+    } catch (err) {
+      console.error('[AUTH] Failed to persist client to database:', err);
+      // Continue — in-memory still works
+    }
+
+    // Update memory cache
     this.clients.set(id, client);
     this.keyHashToClientId.set(keyHash, id);
 
@@ -55,18 +108,47 @@ export class ClientRegistry {
 
   /**
    * Authenticate a client by API key.
+   * Checks memory cache first, falls back to SQLite for keys created before this boot.
    */
   authenticate(apiKey: string): ClientIdentity | null {
     const keyHash = hashApiKey(apiKey);
-    const clientId = this.keyHashToClientId.get(keyHash);
-    if (!clientId) return null;
 
-    const client = this.clients.get(clientId);
-    if (!client) return null;
+    // Fast path: memory cache
+    let clientId = this.keyHashToClientId.get(keyHash);
+    if (clientId) {
+      const client = this.clients.get(clientId);
+      if (client) {
+        client.lastActiveAt = new Date().toISOString();
+        // Async update — fire and forget (don't slow down auth)
+        try { updateApiClientLastActive(client.id); } catch { /* best effort */ }
+        return client;
+      }
+    }
 
-    // Update last active
-    client.lastActiveAt = new Date().toISOString();
-    return client;
+    // Slow path: check SQLite (for clients registered before cache was loaded)
+    try {
+      const row = getApiClientByKeyHash(keyHash);
+      if (row) {
+        const client: ClientIdentity = {
+          type: row.type as 'human' | 'agent',
+          id: row.id,
+          name: row.name || undefined,
+          apiKeyHash: row.api_key_hash,
+          callbackUrl: row.callback_url || undefined,
+          autoApproveThreshold: row.auto_approve_threshold ?? undefined,
+          capabilities: JSON.parse(row.capabilities || '[]'),
+          registeredAt: row.created_at,
+          lastActiveAt: new Date().toISOString(),
+        };
+        // Populate cache
+        this.clients.set(client.id, client);
+        this.keyHashToClientId.set(keyHash, client.id);
+        try { updateApiClientLastActive(client.id); } catch { /* best effort */ }
+        return client;
+      }
+    } catch { /* DB not ready */ }
+
+    return null;
   }
 
   getClient(id: string): ClientIdentity | null {
@@ -80,6 +162,9 @@ export class ClientRegistry {
   removeClient(id: string): boolean {
     const client = this.clients.get(id);
     if (!client) return false;
+
+    // Remove from SQLite
+    try { dbRemoveApiClient(id); } catch { /* best effort */ }
 
     if (client.apiKeyHash) {
       this.keyHashToClientId.delete(client.apiKeyHash);
@@ -132,9 +217,10 @@ export function createAuthMiddleware(
         const path = p.slice(spaceIdx + 1);
         if (request.method !== method) return false;
         // Wildcard prefix: "GET /api/sessions/*" matches /api/sessions/abc/events
+        // but NOT the base path itself (e.g., /api/sessions).
         if (path.endsWith('/*')) {
           const prefix = path.slice(0, -1); // "/api/sessions/"
-          return urlPath.startsWith(prefix) || urlPath === path.slice(0, -2);
+          return urlPath.startsWith(prefix);
         }
         return urlPath === path;
       }

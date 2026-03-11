@@ -98,6 +98,20 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires ON auth_tokens(expires_at);
 
+    -- API client registry (persists across server restarts)
+    CREATE TABLE IF NOT EXISTS api_clients (
+      id                     TEXT PRIMARY KEY,
+      type                   TEXT NOT NULL DEFAULT 'human',
+      name                   TEXT DEFAULT '',
+      api_key_hash           TEXT NOT NULL UNIQUE,
+      callback_url           TEXT,
+      auto_approve_threshold REAL,
+      capabilities           TEXT DEFAULT '[]',
+      created_at             TEXT NOT NULL,
+      last_active_at         TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_api_clients_key_hash ON api_clients(api_key_hash);
+
     -- ── Knowledge Base (v15) ──────────────────────────────────────────
     -- Collections group related documents (e.g., "NDA Precedents", "Firm Playbook")
     CREATE TABLE IF NOT EXISTS kb_collections (
@@ -231,6 +245,55 @@ function runMigrations(db: Database.Database): void {
       `);
     }
   } catch { /* migration already applied or table doesn't exist yet */ }
+
+  // v21 migration: Billing — Stripe columns on users + user_usage table + audit_log
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN stripe_customer_id TEXT`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN plan_expires_at TEXT`);
+  } catch { /* column already exists */ }
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_usage (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id          TEXT NOT NULL REFERENCES users(id),
+      month            TEXT NOT NULL,
+      total_cost_usd   REAL DEFAULT 0,
+      engagement_count INTEGER DEFAULT 0,
+      UNIQUE(user_id, month)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_usage_user_month ON user_usage(user_id, month);
+
+    CREATE TABLE IF NOT EXISTS billing_events (
+      id                TEXT PRIMARY KEY,
+      user_id           TEXT NOT NULL REFERENCES users(id),
+      type              TEXT NOT NULL,
+      stripe_session_id TEXT,
+      amount_cents      INTEGER DEFAULT 0,
+      currency          TEXT DEFAULT 'usd',
+      plan              TEXT,
+      metadata          TEXT DEFAULT '{}',
+      created_at        TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_billing_events_user ON billing_events(user_id);
+
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp  TEXT NOT NULL,
+      user_id    TEXT,
+      action     TEXT NOT NULL,
+      resource   TEXT,
+      ip         TEXT,
+      user_agent TEXT,
+      detail     TEXT DEFAULT '{}'
+    );
+    CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
+  `);
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────
@@ -369,6 +432,15 @@ export function archiveSession(session: SessionState, userId: string | null): vo
   const now = new Date().toISOString();
   const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
   const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
+
+  // v21: Track per-user monthly usage
+  if (userId && session.accumulatedCost > 0) {
+    try {
+      incrementUserUsage(userId, session.accumulatedCost);
+    } catch (err) {
+      console.error(`[DB] Failed to increment usage for ${userId}:`, err);
+    }
+  }
 
   const summaryJson = JSON.stringify({
     debate: {
@@ -554,4 +626,251 @@ export function getMatterById(matterId: string, userId: string): { id: string; d
   return getDb().prepare(`
     SELECT id, data_json, status FROM matters WHERE id = ? AND user_id = ?
   `).get(matterId, userId) as { id: string; data_json: string; status: string } | undefined;
+}
+
+// ── API Client Persistence ──────────────────────────────────────────────
+
+export interface DbApiClient {
+  id: string;
+  type: string;
+  name: string;
+  api_key_hash: string;
+  callback_url: string | null;
+  auto_approve_threshold: number | null;
+  capabilities: string;
+  created_at: string;
+  last_active_at: string | null;
+}
+
+export function saveApiClient(client: {
+  id: string;
+  type: string;
+  name: string;
+  apiKeyHash: string;
+  callbackUrl?: string;
+  autoApproveThreshold?: number;
+  capabilities?: string[];
+  registeredAt: string;
+}): void {
+  getDb().prepare(`
+    INSERT OR REPLACE INTO api_clients
+    (id, type, name, api_key_hash, callback_url, auto_approve_threshold, capabilities, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    client.id,
+    client.type,
+    client.name || '',
+    client.apiKeyHash,
+    client.callbackUrl || null,
+    client.autoApproveThreshold ?? null,
+    JSON.stringify(client.capabilities || []),
+    client.registeredAt,
+  );
+}
+
+export function getApiClientByKeyHash(keyHash: string): DbApiClient | undefined {
+  return getDb().prepare(`
+    SELECT * FROM api_clients WHERE api_key_hash = ?
+  `).get(keyHash) as DbApiClient | undefined;
+}
+
+export function getAllApiClients(): DbApiClient[] {
+  return getDb().prepare(`SELECT * FROM api_clients ORDER BY created_at DESC`).all() as DbApiClient[];
+}
+
+export function removeApiClient(id: string): boolean {
+  const result = getDb().prepare(`DELETE FROM api_clients WHERE id = ?`).run(id);
+  return result.changes > 0;
+}
+
+export function updateApiClientLastActive(id: string): void {
+  getDb().prepare(`UPDATE api_clients SET last_active_at = ? WHERE id = ?`)
+    .run(new Date().toISOString(), id);
+}
+
+// ── Billing & Usage ─────────────────────────────────────────────────────
+
+/** Get current month string (YYYY-MM). */
+function currentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Set Stripe customer ID on user. */
+export function setUserStripeCustomer(userId: string, stripeCustomerId: string): void {
+  getDb().prepare(`UPDATE users SET stripe_customer_id = ?, updated_at = ? WHERE id = ?`)
+    .run(stripeCustomerId, new Date().toISOString(), userId);
+}
+
+/** Set user plan (free, starter, professional, enterprise). */
+export function setUserPlan(userId: string, plan: string, expiresAt?: string): void {
+  getDb().prepare(`UPDATE users SET plan = ?, plan_expires_at = ?, updated_at = ? WHERE id = ?`)
+    .run(plan, expiresAt || null, new Date().toISOString(), userId);
+}
+
+/** Get user's plan info. */
+export function getUserPlan(userId: string): { plan: string; plan_expires_at: string | null; stripe_customer_id: string | null } | undefined {
+  return getDb().prepare(`SELECT plan, plan_expires_at, stripe_customer_id FROM users WHERE id = ?`)
+    .get(userId) as { plan: string; plan_expires_at: string | null; stripe_customer_id: string | null } | undefined;
+}
+
+/** Record a billing event. */
+export function recordBillingEvent(event: {
+  id: string;
+  userId: string;
+  type: string;
+  stripeSessionId?: string;
+  amountCents?: number;
+  currency?: string;
+  plan?: string;
+  metadata?: Record<string, unknown>;
+}): void {
+  getDb().prepare(`
+    INSERT INTO billing_events (id, user_id, type, stripe_session_id, amount_cents, currency, plan, metadata, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    event.id,
+    event.userId,
+    event.type,
+    event.stripeSessionId || null,
+    event.amountCents ?? 0,
+    event.currency ?? 'usd',
+    event.plan || null,
+    JSON.stringify(event.metadata || {}),
+    new Date().toISOString(),
+  );
+}
+
+/** Get user's usage for the current month. */
+export function getUserMonthlyUsage(userId: string, month?: string): { total_cost_usd: number; engagement_count: number } {
+  const m = month ?? currentMonth();
+  const row = getDb().prepare(`
+    SELECT total_cost_usd, engagement_count FROM user_usage WHERE user_id = ? AND month = ?
+  `).get(userId, m) as { total_cost_usd: number; engagement_count: number } | undefined;
+  return row ?? { total_cost_usd: 0, engagement_count: 0 };
+}
+
+/** Increment user's monthly usage after session completion. */
+export function incrementUserUsage(userId: string, costUsd: number): void {
+  const m = currentMonth();
+  getDb().prepare(`
+    INSERT INTO user_usage (user_id, month, total_cost_usd, engagement_count)
+    VALUES (?, ?, ?, 1)
+    ON CONFLICT(user_id, month) DO UPDATE SET
+      total_cost_usd = total_cost_usd + excluded.total_cost_usd,
+      engagement_count = engagement_count + 1
+  `).run(userId, m, costUsd);
+}
+
+// ── Audit Log ───────────────────────────────────────────────────────────
+
+/** Record an action in the audit log. */
+export function logAuditEvent(event: {
+  userId?: string;
+  action: string;
+  resource?: string;
+  ip?: string;
+  userAgent?: string;
+  detail?: Record<string, unknown>;
+}): void {
+  getDb().prepare(`
+    INSERT INTO audit_log (timestamp, user_id, action, resource, ip, user_agent, detail)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    new Date().toISOString(),
+    event.userId || null,
+    event.action,
+    event.resource || null,
+    event.ip || null,
+    event.userAgent || null,
+    JSON.stringify(event.detail || {}),
+  );
+}
+
+/** Get recent audit log entries. */
+export function getAuditLog(opts?: { userId?: string; limit?: number; after?: string }): Array<{
+  id: number; timestamp: string; user_id: string | null; action: string; resource: string | null;
+}> {
+  const limit = opts?.limit ?? 100;
+  if (opts?.userId) {
+    return getDb().prepare(`
+      SELECT id, timestamp, user_id, action, resource FROM audit_log
+      WHERE user_id = ? ${opts.after ? 'AND timestamp > ?' : ''}
+      ORDER BY id DESC LIMIT ?
+    `).all(...(opts.after ? [opts.userId, opts.after, limit] : [opts.userId, limit])) as any[];
+  }
+  return getDb().prepare(`
+    SELECT id, timestamp, user_id, action, resource FROM audit_log
+    ${opts?.after ? 'WHERE timestamp > ?' : ''}
+    ORDER BY id DESC LIMIT ?
+  `).all(...(opts?.after ? [opts.after, limit] : [limit])) as any[];
+}
+
+/** Delete audit entries older than N days. */
+export function rotateAuditLog(retainDays = 90): number {
+  const cutoff = new Date(Date.now() - retainDays * 24 * 60 * 60 * 1000).toISOString();
+  const result = getDb().prepare(`DELETE FROM audit_log WHERE timestamp < ?`).run(cutoff);
+  return result.changes;
+}
+
+// ── GDPR Data Export & Deletion ─────────────────────────────────────────
+
+/**
+ * Export all user data for GDPR data portability (Article 20).
+ * Returns profile, sessions, billing, usage — everything tied to this user.
+ */
+export function exportUserData(userId: string): {
+  profile: DbUser | undefined;
+  sessions: ArchivedSession[];
+  usage: Array<{ month: string; total_cost_usd: number; engagement_count: number }>;
+  billingEvents: Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
+  auditLog: Array<{ timestamp: string; action: string; resource: string | null }>;
+} {
+  const d = getDb();
+  const profile = getUserById(userId);
+  const sessions = d.prepare(`SELECT * FROM session_archive WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as ArchivedSession[];
+  const usage = d.prepare(`SELECT month, total_cost_usd, engagement_count FROM user_usage WHERE user_id = ? ORDER BY month DESC`).all(userId) as Array<{ month: string; total_cost_usd: number; engagement_count: number }>;
+  const billingEvents = d.prepare(`SELECT type, amount_cents, plan, created_at FROM billing_events WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
+  const auditLog = d.prepare(`SELECT timestamp, action, resource FROM audit_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1000`).all(userId) as Array<{ timestamp: string; action: string; resource: string | null }>;
+
+  return { profile, sessions, usage, billingEvents, auditLog };
+}
+
+/**
+ * Soft-delete user account for GDPR right to erasure (Article 17).
+ * Anonymizes PII but retains anonymized records for analytics integrity.
+ */
+export function softDeleteUser(userId: string): boolean {
+  const d = getDb();
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  const now = new Date().toISOString();
+  const anonymizedEmail = `deleted-${crypto.randomBytes(8).toString('hex')}@redacted.local`;
+
+  // Anonymize user profile
+  d.prepare(`
+    UPDATE users SET
+      email = ?,
+      password_hash = 'DELETED',
+      display_name = 'Deleted User',
+      firm_name = '',
+      profile_json = '{}',
+      stripe_customer_id = NULL,
+      plan = 'deleted',
+      plan_expires_at = NULL,
+      updated_at = ?
+    WHERE id = ?
+  `).run(anonymizedEmail, now, userId);
+
+  // Revoke all auth tokens
+  d.prepare(`DELETE FROM auth_tokens WHERE user_id = ?`).run(userId);
+
+  // Anonymize session archive titles (keep cost/timing data for analytics)
+  d.prepare(`UPDATE session_archive SET title = 'Deleted', final_output = NULL, assembled_document = NULL WHERE user_id = ?`).run(userId);
+
+  // Audit this action
+  logAuditEvent({ userId, action: 'account_deleted', resource: 'auth', detail: { anonymizedAt: now } });
+
+  return true;
 }

@@ -266,10 +266,11 @@ describe('createAuthMiddleware', () => {
       await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
     });
 
-    it('should allow GET to the wildcard base path (without sub-path)', async () => {
-      // "GET /api/sessions/*" — the wildcard also matches /api/sessions (the base)
+    it('should reject GET to the wildcard base path (without sub-path)', async () => {
+      // "GET /api/sessions/*" does NOT match /api/sessions (the base listing path)
+      // This is intentional — session listing requires auth, only per-session access is public
       const req = createMockRequest('GET', '/api/sessions');
-      await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
+      await expect(middleware(req, createMockReply())).rejects.toThrow('Authentication required');
     });
 
     it('should reject POST to wildcard paths', async () => {

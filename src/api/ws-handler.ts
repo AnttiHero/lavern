@@ -7,18 +7,50 @@
  * - Late-joining clients (event replay from index)
  * - Connection keepalive (ping/pong)
  * - Graceful cleanup on disconnect
+ * - Global connection tracking with max cap (200 concurrent)
+ * - Periodic zombie connection sweep (90s no-pong timeout)
  */
 
 import type { WebSocket } from '@fastify/websocket';
 import type { SessionState } from '../session/session-state.js';
 import type { ShemEvent } from '../events/event-bus.js';
 
+// ── Global Connection Tracking ──────────────────────────────────────────
+
+const MAX_WS_CONNECTIONS = parseInt(process.env.SHEM_MAX_WS_CONNECTIONS ?? '200', 10);
+
 interface WsClientState {
   sessionId: string;
   lastEventIndex: number;
   alive: boolean;
   lastPongAt: number;
+  socket: WebSocket;
+  connectedAt: number;
 }
+
+const activeConnections = new Set<WsClientState>();
+
+/** Get current connection count. */
+export function getWsConnectionCount(): number {
+  return activeConnections.size;
+}
+
+/** Periodic zombie sweep — clean up connections that haven't responded to pings. */
+const ZOMBIE_SWEEP_INTERVAL_MS = 30_000; // 30 seconds
+const ZOMBIE_TIMEOUT_MS = 90_000; // 90 seconds without pong
+
+const zombieSweepTimer = setInterval(() => {
+  const now = Date.now();
+  for (const state of activeConnections) {
+    if (now - state.lastPongAt > ZOMBIE_TIMEOUT_MS) {
+      // Zombie connection — terminate
+      state.alive = false;
+      activeConnections.delete(state);
+      try { state.socket.terminate(); } catch { /* best effort */ }
+    }
+  }
+}, ZOMBIE_SWEEP_INTERVAL_MS);
+zombieSweepTimer.unref(); // Don't keep the process alive
 
 /**
  * Set up a WebSocket connection for streaming session events.
@@ -32,12 +64,24 @@ export function attachEventStream(
   session: SessionState,
   fromIndex = 0
 ): void {
+  // Enforce connection cap
+  if (activeConnections.size >= MAX_WS_CONNECTIONS) {
+    safeSend(socket, { type: 'error', message: `Server at WebSocket capacity (${MAX_WS_CONNECTIONS} connections). Try again later.` });
+    socket.close(1013, 'Try again later'); // 1013 = Try Again Later
+    return;
+  }
+
   const state: WsClientState = {
     sessionId: session.id,
     lastEventIndex: fromIndex,
     alive: true,
     lastPongAt: Date.now(),
+    socket,
+    connectedAt: Date.now(),
   };
+
+  // Track globally
+  activeConnections.add(state);
 
   // Send metadata on connect
   const meta = {
@@ -83,6 +127,7 @@ export function attachEventStream(
       // Socket no longer open — clean up
       clearInterval(heartbeatTimer);
       state.alive = false;
+      activeConnections.delete(state);
       session.events.off('event', onEvent);
       return;
     }
@@ -91,6 +136,7 @@ export function attachEventStream(
       // No pong received within timeout — terminate dead connection
       clearInterval(heartbeatTimer);
       state.alive = false;
+      activeConnections.delete(state);
       session.events.off('event', onEvent);
       socket.terminate();
       return;
@@ -103,6 +149,7 @@ export function attachEventStream(
       // ping() can throw if socket transitions between readyState check and call
       clearInterval(heartbeatTimer);
       state.alive = false;
+      activeConnections.delete(state);
       session.events.off('event', onEvent);
     }
   }, HEARTBEAT_INTERVAL_MS);
@@ -131,12 +178,14 @@ export function attachEventStream(
   socket.on('close', () => {
     clearInterval(heartbeatTimer);
     state.alive = false;
+    activeConnections.delete(state);
     session.events.off('event', onEvent);
   });
 
   socket.on('error', () => {
     clearInterval(heartbeatTimer);
     state.alive = false;
+    activeConnections.delete(state);
     session.events.off('event', onEvent);
   });
 }

@@ -1,0 +1,47 @@
+# Marble — The World's First Driverless Law Firm
+# Single-command deploy: docker compose up -d
+#
+# Required env vars (set in .env or pass directly):
+#   ANTHROPIC_API_KEY=sk-ant-...
+#
+# Optional:
+#   STRIPE_SECRET_KEY=sk_test_...
+#   STRIPE_WEBHOOK_SECRET=whsec_...
+#   SENTRY_DSN=https://...@sentry.io/...
+#   SHEM_CORS_ORIGINS=https://your-domain.com
+
+services:
+  marble:
+    build: .
+    ports:
+      - "${SHEM_PORT:-3000}:3000"
+    volumes:
+      # Persist SQLite database across container restarts
+      - marble-data:/app/data
+      # Persist audit logs
+      - marble-logs:/app/audit-logs
+    environment:
+      - NODE_ENV=production
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SHEM_CORS_ORIGINS=${SHEM_CORS_ORIGINS:-*}
+      - SHEM_TRUST_PROXY=true
+      # Stripe (optional — billing disabled without these)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_SUCCESS_URL=${STRIPE_SUCCESS_URL:-}
+      - STRIPE_CANCEL_URL=${STRIPE_CANCEL_URL:-}
+      # Sentry (optional — error monitoring disabled without this)
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      # Mistral EU provider (optional)
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  marble-data:
+  marble-logs:

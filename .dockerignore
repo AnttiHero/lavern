@@ -1,0 +1,16 @@
+node_modules
+viz/node_modules
+viz/dist
+.git
+.github
+.env
+.env.*
+data/
+audit-logs/
+backups/
+.shem/
+coverage/
+*.log
+.DS_Store
+.claude/
+tests/
