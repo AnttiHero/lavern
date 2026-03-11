@@ -170,8 +170,9 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/documents/parse',
     // The Marble Challenge — zero-friction, no auth required
     'POST /api/challenge',
-    // Stripe webhook — must be public (Stripe calls it), verified via signature
+    // Stripe — webhook must be public, config returns publishable key only
     'POST /api/billing/webhook',
+    'GET /api/billing/stripe-config',
     // v22: Waitlist — public join + status, admin endpoints verify X-Admin-Key internally
     'POST /api/waitlist',
     'GET /api/waitlist/status',

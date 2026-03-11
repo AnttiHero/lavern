@@ -89,6 +89,48 @@ export function canStartSession(userId: string): { allowed: boolean; reason?: st
 
 export function registerBillingRoutes(fastify: FastifyInstance): void {
 
+  // ── GET /api/billing/stripe-config ─────────────────────────────────
+  // Public — returns Stripe publishable key for frontend initialization.
+  fastify.get('/api/billing/stripe-config', async (_request, reply) => {
+    return reply.send({
+      publishableKey: config.stripe.publishableKey || null,
+    });
+  });
+
+  // ── POST /api/billing/pack-intent ──────────────────────────────────
+  // Creates a Stripe PaymentIntent for Apple Pay / Google Pay inline payments.
+  fastify.post('/api/billing/pack-intent', async (request, reply) => {
+    const user = getAuthenticatedUser(request, reply);
+    if (!user) return;
+
+    const { pack } = request.body as { pack?: string } || {};
+    const packDef = pack ? config.billableHours.packs[pack] : undefined;
+    if (!pack || !packDef) {
+      return reply.status(400).send({ error: 'Invalid pack. Choose: quick, standard, bulk' });
+    }
+
+    if (!config.stripe.secretKey) {
+      return reply.status(503).send({ error: 'Billing not configured. Set STRIPE_SECRET_KEY.' });
+    }
+
+    try {
+      const { default: Stripe } = await import('stripe');
+      const stripe = new Stripe(config.stripe.secretKey);
+
+      const intent = await stripe.paymentIntents.create({
+        amount: packDef.priceEurCents,
+        currency: 'eur',
+        metadata: { userId: user.id, type: 'pack', pack, hours: String(packDef.hours) },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      return reply.send({ clientSecret: intent.client_secret });
+    } catch (err) {
+      console.error('[BILLING] PaymentIntent error:', err);
+      return reply.status(500).send({ error: 'Failed to create payment intent' });
+    }
+  });
+
   // ── POST /api/billing/checkout ──────────────────────────────────────
   // Creates a Stripe Checkout Session for a plan subscription.
   fastify.post('/api/billing/checkout', async (request, reply) => {
@@ -271,6 +313,34 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
               type: 'subscription_cancelled',
             });
             console.log(`[BILLING] User ${userId} subscription cancelled — downgraded to free`);
+          }
+          break;
+        }
+        case 'payment_intent.succeeded': {
+          // Apple Pay / Google Pay inline pack purchase
+          const pi = event.data.object as { metadata?: { userId?: string; type?: string; pack?: string; hours?: string } };
+          const piUserId = pi.metadata?.userId;
+          if (pi.metadata?.type === 'pack' && piUserId) {
+            const hours = parseInt(pi.metadata.hours ?? '0', 10);
+            const packName = pi.metadata.pack ?? 'unknown';
+            if (hours > 0) {
+              creditBillableHours(
+                piUserId,
+                hours,
+                'purchase',
+                `Purchased ${packName} pack — ${hours} billable hours (Apple Pay)`,
+                undefined,
+                event.id,
+              );
+              recordBillingEvent({
+                id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+                userId: piUserId,
+                type: 'pack_purchased',
+                stripeSessionId: event.id,
+                metadata: { pack: packName, hours, method: 'payment_intent' },
+              });
+              console.log(`[BILLING] User ${piUserId} purchased ${hours}h via Apple Pay (${packName} pack)`);
+            }
           }
           break;
         }

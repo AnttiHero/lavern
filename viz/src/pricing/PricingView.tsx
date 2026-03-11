@@ -8,9 +8,10 @@
  * Credit-based pricing: join waitlist, get 50h free, buy packs or subscribe.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import type { Stripe, PaymentRequest } from '@stripe/stripe-js';
 
 interface Props {
   onBack: () => void;
@@ -224,6 +225,8 @@ function PlanCard({
   featured,
   badge,
   onBuy,
+  onApplePay,
+  applePayAvailable,
   buying,
 }: {
   name: string;
@@ -234,10 +237,13 @@ function PlanCard({
   featured?: boolean;
   badge?: string;
   onBuy?: () => void;
+  onApplePay?: () => void;
+  applePayAvailable?: boolean;
   buying?: boolean;
 }) {
   const [hover, setHover] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
+  const [apBtnHover, setApBtnHover] = useState(false);
   return (
     <div
       style={{
@@ -273,6 +279,20 @@ function PlanCard({
           </div>
         ))}
       </div>
+      {applePayAvailable && onApplePay && (
+        <button
+          onClick={onApplePay}
+          disabled={buying}
+          style={{
+            ...sty.applePayBtn,
+            opacity: buying ? 0.5 : apBtnHover ? 0.85 : 1,
+          }}
+          onMouseEnter={() => setApBtnHover(true)}
+          onMouseLeave={() => setApBtnHover(false)}
+        >
+          {buying ? 'Processing...' : '\uF8FF Pay'}
+        </button>
+      )}
       {onBuy && (
         <button
           onClick={onBuy}
@@ -306,6 +326,105 @@ export default function PricingView({ onBack }: Props) {
 
   // Pack buying state
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
+
+  // Apple Pay / Google Pay state
+  const stripeRef = useRef<Stripe | null>(null);
+  const [applePayAvailable, setApplePayAvailable] = useState(false);
+
+  // Initialize Stripe + check Apple Pay availability
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Fetch publishable key from server
+        const cfgRes = await fetch('/api/billing/stripe-config');
+        if (!cfgRes.ok) return;
+        const { publishableKey } = await cfgRes.json();
+        if (!publishableKey || cancelled) return;
+
+        // Dynamic import — only load Stripe.js when we have a key
+        const { loadStripe } = await import('@stripe/stripe-js');
+        const stripe = await loadStripe(publishableKey);
+        if (!stripe || cancelled) return;
+        stripeRef.current = stripe;
+
+        // Check if Apple Pay or Google Pay is available
+        const pr = stripe.paymentRequest({
+          country: 'FI',
+          currency: 'eur',
+          total: { label: 'Test', amount: 100 },
+          requestPayerEmail: true,
+        });
+        const result = await pr.canMakePayment();
+        if (!cancelled && result) {
+          setApplePayAvailable(true);
+        }
+      } catch {
+        // Silently ignore — Apple Pay just won't be available
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Apple Pay handler
+  const handleApplePay = useCallback(async (pack: string, label: string, amountCents: number) => {
+    const stripe = stripeRef.current;
+    if (!stripe) return;
+    setBuyingPack(pack);
+
+    try {
+      // Create PaymentIntent on server
+      const intentRes = await fetch('/api/billing/pack-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ pack }),
+      });
+      if (intentRes.status === 401) {
+        window.location.hash = '#/login';
+        return;
+      }
+      if (!intentRes.ok) { setBuyingPack(null); return; }
+      const { clientSecret } = await intentRes.json();
+
+      // Create payment request
+      const pr = stripe.paymentRequest({
+        country: 'FI',
+        currency: 'eur',
+        total: { label, amount: amountCents },
+        requestPayerEmail: true,
+      });
+
+      // Handle payment method from Apple Pay sheet
+      pr.on('paymentmethod', async (ev) => {
+        const { error } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false },
+        );
+        if (error) {
+          ev.complete('fail');
+          setBuyingPack(null);
+        } else {
+          ev.complete('success');
+          // Redirect to success — webhook will credit hours
+          window.location.href = `${window.location.origin}/?billing=success`;
+        }
+      });
+
+      // Show the Apple Pay sheet
+      const canPay = await pr.canMakePayment();
+      if (canPay) {
+        pr.show();
+      } else {
+        // Fallback to Stripe Checkout redirect
+        setBuyingPack(null);
+        handleBuyPack(pack);
+      }
+    } catch {
+      setBuyingPack(null);
+    }
+  }, []);
 
   // Fog of war — dark mist at bottom, dissolves on scroll
   useEffect(() => {
@@ -575,6 +694,8 @@ export default function PricingView({ onBack }: Props) {
               featured
               badge="IMPULSE"
               onBuy={() => handleBuyPack('quick')}
+              onApplePay={() => handleApplePay('quick', 'Marble \u2014 25 Billable Hours', 500)}
+              applePayAvailable={applePayAvailable}
               buying={buyingPack === 'quick'}
             />
             <PlanCard
@@ -589,6 +710,8 @@ export default function PricingView({ onBack }: Props) {
               ]}
               badge="BEST VALUE"
               onBuy={() => handleBuyPack('standard')}
+              onApplePay={() => handleApplePay('standard', 'Marble \u2014 100 Billable Hours', 1900)}
+              applePayAvailable={applePayAvailable}
               buying={buyingPack === 'standard'}
             />
             <PlanCard
@@ -602,6 +725,8 @@ export default function PricingView({ onBack }: Props) {
                 'Never expires',
               ]}
               onBuy={() => handleBuyPack('bulk')}
+              onApplePay={() => handleApplePay('bulk', 'Marble \u2014 500 Billable Hours', 8900)}
+              applePayAvailable={applePayAvailable}
               buying={buyingPack === 'bulk'}
             />
           </div>
@@ -1364,8 +1489,23 @@ const sty: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
     marginTop: 4,
   },
-  buyBtn: {
+  applePayBtn: {
     marginTop: 12,
+    padding: '10px 24px',
+    fontSize: 14,
+    fontWeight: 500,
+    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    color: '#fff',
+    backgroundColor: '#000',
+    border: 'none',
+    borderRadius: 6,
+    cursor: 'pointer',
+    transition: 'opacity 0.2s ease',
+    width: '100%',
+    letterSpacing: 0.5,
+  },
+  buyBtn: {
+    marginTop: 8,
     padding: '10px 24px',
     fontSize: 11,
     fontWeight: 600,
