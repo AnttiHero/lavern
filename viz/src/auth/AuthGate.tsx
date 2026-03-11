@@ -26,15 +26,21 @@ export function AuthGate({ children }: Props) {
   useEffect(() => {
     if (IS_STANDALONE) return;
 
-    fetch('/api/auth/me', { credentials: 'include' })
+    // 5-second timeout prevents indefinite loading on slow/unresponsive server
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    fetch('/api/auth/me', { credentials: 'include', signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         setUser(data?.user ?? null);
         setChecking(false);
       })
       .catch(() => {
+        // Network error or timeout — proceed as unauthenticated
         setChecking(false);
-      });
+      })
+      .finally(() => clearTimeout(timeout));
   }, []);
 
   const login = useCallback((u: AuthUser) => {

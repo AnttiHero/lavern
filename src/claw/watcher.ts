@@ -136,10 +136,11 @@ export class ClawWatcher {
 
   private handleFileEvent(filePath: string): void {
     try {
-      if (!fs.existsSync(filePath)) return; // File was deleted
+      // Single lstatSync call replaces existsSync + lstatSync (removes TOCTOU window).
+      // lstatSync throws ENOENT if the file was deleted, caught by outer try/catch.
+      const lstat = fs.lstatSync(filePath);
 
       // SECURITY: Skip symlinks — prevent traversal outside watch paths
-      const lstat = fs.lstatSync(filePath);
       if (lstat.isSymbolicLink()) return;
       if (!lstat.isFile()) return;
 

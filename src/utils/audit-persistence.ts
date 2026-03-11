@@ -27,7 +27,16 @@ function appendLine(session: SessionState, data: unknown): void {
   const line = JSON.stringify(data);
   session.auditLastHash = computeHash(line + session.auditLastHash);
 
-  fs.appendFileSync(session.auditCurrentFile, line + '\n', 'utf-8');
+  try {
+    fs.appendFileSync(session.auditCurrentFile, line + '\n', 'utf-8');
+  } catch (err) {
+    // On write failure (disk full, permissions, etc.), write a corruption marker
+    // so verifyAuditChain can identify the exact break point.
+    console.error(`[AUDIT] Failed to append to ${session.auditCurrentFile}:`, err instanceof Error ? err.message : err);
+    try {
+      fs.appendFileSync(session.auditCurrentFile, `\n{"type":"corruption_marker","reason":"write_failed","timestamp":"${new Date().toISOString()}"}\n`, 'utf-8');
+    } catch { /* best-effort — if even the marker fails, we can't do anything */ }
+  }
 }
 
 export function initPersistentAudit(session: SessionState): void {

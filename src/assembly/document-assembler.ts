@@ -169,7 +169,7 @@ FAIL: [one sentence explaining why this document is not good enough]`;
       model: QUALITY_GATE_MODEL,
       max_tokens: 200,
       messages: [{ role: 'user', content: prompt }],
-    });
+    }, { timeout: 30_000 }); // 30s timeout for quality gate (short, fast call)
 
     // Extract response text
     let responseText = '';
@@ -273,7 +273,7 @@ export async function assembleDocument(
         max_tokens: 16384,
         system: systemPrompt,
         messages: [{ role: 'user', content: assemblyContext }],
-      });
+      }, { timeout: 120_000 }); // 2-minute timeout for assembly (long-form generation)
 
       // Extract text from response
       let assembledText = '';
