@@ -12,6 +12,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import type { HandoffSummary, HandoffType } from '../../types/workflow.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
@@ -52,7 +53,7 @@ export function createHandoffTools(session: SessionState) {
       };
 
       // Store in session-level handoff array
-      session.handoffs.push(handoff);
+      boundedPush(session.handoffs, handoff);
 
       // Also store in generic workflow state if present
       if (session.genericWorkflow) {

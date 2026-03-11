@@ -161,8 +161,9 @@ exec "$@"
     console.log(`Service loaded: ${LABEL}`);
     console.log(`\nThe firm is now running.`);
     console.log(`  Logs: ${logs}/`);
-    console.log(`  Dashboard: http://localhost:${config.port}/dashboard/`);
-    console.log(`  API: http://localhost:${config.port}/api/claw/status`);
+    const host = config.baseUrl || `http://localhost:${config.port}`;
+    console.log(`  Dashboard: ${host}/dashboard/`);
+    console.log(`  API: ${host}/api/claw/status`);
     console.log(`\n  Stop: marble claw daemon uninstall\n`);
   } catch (err) {
     console.error('Failed to load service:', err);

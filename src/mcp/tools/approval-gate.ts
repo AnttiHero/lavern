@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { HumanGateDecision } from '../../types/index.js';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
 export function createApprovalTools(session: SessionState) {
@@ -62,7 +63,7 @@ export function createApprovalTools(session: SessionState) {
         decision: result.decision,
         notes: result.notes,
       };
-      session.gateDecisions.push(gateDecision);
+      boundedPush(session.gateDecisions, gateDecision);
 
       // Emit gate decided event (visualization: green check / red X)
       session.events.emitEvent({

@@ -14,6 +14,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
 export function createVerificationTools(session: SessionState) {
@@ -55,7 +56,7 @@ export function createVerificationTools(session: SessionState) {
         findings: failedCriteria,
         timestamp: new Date().toISOString(),
       };
-      results.push(result);
+      boundedPush(results, result);
 
       session.events.emitEvent({
         type: 'verification_run',
@@ -123,7 +124,7 @@ ${!passed ? '\u26a0\ufe0f Verification failed. Agent should address failed crite
         findings: unaddressed.map(u => `Unaddressed [${u.severity}]: ${u.content}`),
         timestamp: new Date().toISOString(),
       };
-      results.push(result);
+      boundedPush(results, result);
 
       session.events.emitEvent({
         type: 'verification_run',
@@ -197,7 +198,7 @@ ${!passed ? '\u26a0\ufe0f Cross-verification failed. Critical findings remain un
         findings: regressions.map(r => `REGRESSION: ${r.dimension} dropped from ${r.before} to ${r.after}`),
         timestamp: new Date().toISOString(),
       };
-      results.push(result);
+      boundedPush(results, result);
 
       session.events.emitEvent({
         type: 'verification_run',

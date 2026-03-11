@@ -14,6 +14,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
 export interface RiskAssessment {
@@ -100,7 +101,7 @@ After the risk-pricer completes, call \`record_risk_assessment\` with the result
       };
 
       // Store on session
-      session.riskAssessments.push(assessment);
+      boundedPush(session.riskAssessments, assessment);
 
       // Emit event
       session.events.emitEvent({

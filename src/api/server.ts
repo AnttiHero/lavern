@@ -254,7 +254,10 @@ export async function startApiServer(port: number): Promise<void> {
           if (!allowedOrigins.has(refOrigin)) {
             return reply.status(403).send({ error: 'Origin not allowed' });
           }
-        } catch { /* malformed referer — allow through, auth will catch unauthenticated */ }
+        } catch {
+          // Malformed referer — reject for safety (legitimate clients send well-formed referers)
+          return reply.status(403).send({ error: 'Malformed referer' });
+        }
       }
       // No Origin or Referer: could be curl, Postman, or API client.
       // SameSite=Lax cookie already prevents cross-site form submissions.
@@ -483,8 +486,9 @@ export async function startApiServer(port: number): Promise<void> {
             }}] },
             extra,
           });
-          fetch(sentryUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } }).catch(() => {});
-        } catch { /* best effort */ }
+          fetch(sentryUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } })
+            .catch(sentryErr => console.error('[SENTRY] Failed to send error to Sentry:', sentryErr));
+        } catch (sentryErr) { console.error('[SENTRY] Error building Sentry payload:', sentryErr); }
       };
       console.log('[SENTRY] Error monitoring enabled');
     }

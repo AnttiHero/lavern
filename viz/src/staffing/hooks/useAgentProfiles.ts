@@ -5,7 +5,7 @@
  * No API fetch, no loading state, no flicker.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { DEMO_PROFILES } from '../data/demoProfiles.js';
 import { IS_STANDALONE } from '../../standalone.js';
 
@@ -85,7 +85,7 @@ export function useAgentProfiles() {
     })();
   }, []);
 
-  const filtered = useCallback(() => {
+  const profiles = useMemo(() => {
     let result = allProfiles;
 
     // Category filter
@@ -125,15 +125,13 @@ export function useAgentProfiles() {
     return result;
   }, [allProfiles, category, sort, search]);
 
-  const profiles = filtered();
-
-  const summary = {
+  const summary = useMemo(() => ({
     total: allProfiles.length,
     lawyers: allProfiles.filter(p => p.category === 'lawyer').length,
     specialists: allProfiles.filter(p => p.category === 'specialist').length,
     infrastructure: allProfiles.filter(p => p.category === 'infrastructure').length,
     orchestrators: allProfiles.filter(p => p.category === 'orchestrator').length,
-  };
+  }), [allProfiles]);
 
   return {
     profiles,

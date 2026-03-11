@@ -12,6 +12,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 import type { Finding, Challenge, Response, DebateResolution } from '../../types/debate.js';
 
@@ -58,7 +59,7 @@ export function createDebateBoardTools(session: SessionState) {
         timestamp: eventTimestamp(),
         resolved: false,
       };
-      state.findings.push(finding);
+      boundedPush(state.findings, finding);
 
       session.events.emitEvent({
         type: 'finding_posted',
@@ -104,7 +105,7 @@ export function createDebateBoardTools(session: SessionState) {
         timestamp: eventTimestamp(),
         resolved: false,
       };
-      state.challenges.push(challenge);
+      boundedPush(state.challenges, challenge);
 
       session.events.emitEvent({
         type: 'challenge_posted',
@@ -149,7 +150,7 @@ export function createDebateBoardTools(session: SessionState) {
         accepted: args.accepted,
         timestamp: eventTimestamp(),
       };
-      state.responses.push(response);
+      boundedPush(state.responses, response);
       targetChallenge.resolved = true;
 
       if (args.accepted && args.revised_position) {
@@ -203,7 +204,7 @@ export function createDebateBoardTools(session: SessionState) {
         resolvedBy: args.resolved_by as DebateResolution['resolvedBy'],
         timestamp: eventTimestamp(),
       };
-      state.resolutions.push(resolution);
+      boundedPush(state.resolutions, resolution);
 
       for (const fid of args.finding_ids) {
         const finding = state.findings.find(f => f.id === fid);

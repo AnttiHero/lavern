@@ -116,10 +116,11 @@ export function ClientInfoForm({ onSubmit, loading, guidedStep, onStepChange }: 
 
   // Auto-focus inputs on step change
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (step === 1 || step === 4) inputRef.current?.focus();
       if (step === 2) inputRef.current?.focus();
     }, 100);
+    return () => clearTimeout(timer);
   }, [step]);
 
   const goNext = useCallback(() => {
@@ -384,7 +385,10 @@ export function ClientInfoForm({ onSubmit, loading, guidedStep, onStepChange }: 
                 value={form.estimatedBudgetUsd}
                 min={1}
                 max={100}
-                onChange={e => set('estimatedBudgetUsd', parseFloat(e.target.value) || 10)}
+                onChange={e => {
+                  const v = parseFloat(e.target.value);
+                  set('estimatedBudgetUsd', Number.isFinite(v) ? Math.max(1, Math.min(100, v)) : 10);
+                }}
                 style={styles.customBudgetInput}
                 autoFocus
               />

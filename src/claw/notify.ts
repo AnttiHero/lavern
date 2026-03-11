@@ -112,6 +112,6 @@ export function notify(notification: ClawNotification): void {
   if (!shouldSend(notification)) return;
 
   // Fire both in parallel, don't await
-  sendWebhook(notification).catch(() => {});
+  sendWebhook(notification).catch(err => console.error('[NOTIFY] Webhook send failed:', err));
   sendMacOsNotification(notification);
 }

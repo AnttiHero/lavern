@@ -133,9 +133,11 @@ IMPORTANT:
 Produce the complete dual-artifact output with full audit trail.
   `.trim();
 
-  const result = query({
-    prompt,
-    options: {
+  let result;
+  try {
+    result = query({
+      prompt,
+      options: {
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
@@ -227,7 +229,12 @@ Produce the complete dual-artifact output with full audit trail.
       effort,
       cwd: options.cwd,
     },
-  });
+    });
+  } catch (queryError) {
+    const sessionError = handleSessionError(session, queryError);
+    console.error(`The Shem failed to initialize query at step "${sessionError.step}":`, sessionError.cause);
+    throw queryError;
+  }
 
   // Stream messages to the console
   try {
