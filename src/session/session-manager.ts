@@ -62,6 +62,8 @@ export class SessionManager {
     // Track activity: any event means the session is alive
     session.events.on('event', () => {
       entry.lastActivityAt = Date.now();
+      // Reset TTL warning so it can fire again if session goes idle later
+      entry.ttlWarned = false;
     });
 
     // Archive to SQLite when session completes (guard against double archival)
@@ -187,39 +189,41 @@ export class SessionManager {
     let evicted = 0;
 
     // Phase 0: Send TTL warnings to sessions approaching timeout
+    // Uses lastActivityAt so active sessions don't get premature warnings
     for (const [, entry] of this.sessions) {
       if (entry.ttlWarned) continue;
-      const age = now - entry.createdAt;
-      const ttlRemaining = config.sessionTtlMs - age;
+      const idleTime = now - entry.lastActivityAt;
+      const ttlRemaining = config.sessionTtlMs - idleTime;
       if (ttlRemaining > 0 && ttlRemaining <= TTL_WARNING_MS) {
         entry.ttlWarned = true;
         const minutesLeft = Math.ceil(ttlRemaining / 60000);
         entry.session.events.emitEvent({
           type: 'error',
-          message: `Session will timeout in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}. Save your work.`,
+          message: `Session will timeout in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'} of inactivity. Save your work.`,
           source: 'session-manager',
           timestamp: new Date().toISOString(),
         });
       }
     }
 
-    // Phase 1: TTL eviction (collect first to avoid modifying map during iteration)
+    // Phase 1: TTL eviction — evict sessions idle longer than TTL
+    // Uses lastActivityAt so active sessions stay alive regardless of creation time
     const expired: [string, SessionEntry][] = [];
     for (const [id, entry] of this.sessions) {
-      if (now - entry.createdAt > config.sessionTtlMs) {
+      if (now - entry.lastActivityAt > config.sessionTtlMs) {
         expired.push([id, entry]);
       }
     }
     for (const [id, entry] of expired) {
-      const age = Math.round((now - entry.createdAt) / 60000);
-      this.evictSession(id, entry, `Session expired after ${age} minutes (TTL: ${config.sessionTtlMs / 60000}min)`);
+      const idle = Math.round((now - entry.lastActivityAt) / 60000);
+      this.evictSession(id, entry, `Session idle for ${idle} minutes (TTL: ${config.sessionTtlMs / 60000}min)`);
       evicted++;
     }
 
-    // Phase 2: Cap enforcement — remove oldest sessions if still over limit
+    // Phase 2: Cap enforcement — remove least recently active sessions if still over limit
     if (this.sessions.size >= config.maxSessions) {
       const sorted = [...this.sessions.entries()].sort(
-        (a, b) => a[1].createdAt - b[1].createdAt
+        (a, b) => a[1].lastActivityAt - b[1].lastActivityAt
       );
       const excess = Math.max(1, this.sessions.size - config.maxSessions);
       const toRemove = sorted.slice(0, excess);

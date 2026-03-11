@@ -83,6 +83,20 @@ export function QuickDropZone({ onSubmit, loading }: Props) {
         fileName: file.name,
       });
     };
+    reader.onerror = () => {
+      // FileReader failed — fall through to filename-only inference
+      setInferred({
+        clientName: 'Client',
+        matterTitle: title,
+        matterDescription: `Uploaded document: ${file.name}`,
+        matterType: typeInfo.type,
+        matterTypeLabel: typeInfo.label,
+        jurisdiction: 'US',
+        estimatedBudgetUsd: 10,
+        feeStructure: 'hourly',
+        fileName: file.name,
+      });
+    };
 
     if (
       file.type.startsWith('text/') ||

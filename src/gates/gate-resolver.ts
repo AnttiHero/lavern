@@ -269,11 +269,16 @@ export class WebhookGateResolver implements GateResolver {
   }
 
   /**
-   * Fall back to async resolution if webhook fails.
+   * Fall back to rejecting the gate if webhook fails.
+   * An async fallback would hang indefinitely since no external client
+   * knows about the internal AsyncGateResolver instance.
    */
-  private async fallbackResolve(request: GateRequest): Promise<GateDecision> {
-    console.error('[WEBHOOK] Falling back to async gate resolution. Submit via POST /gate endpoint.');
-    return this.fallback.resolve(request);
+  private async fallbackResolve(_request: GateRequest): Promise<GateDecision> {
+    console.error('[WEBHOOK] Webhook gate failed — rejecting for safety. Agent client should retry or use /gate endpoint.');
+    return {
+      decision: 'reject',
+      notes: 'Webhook callback failed — gate rejected for safety. Please retry or submit via POST /gate endpoint.',
+    };
   }
 
   /**

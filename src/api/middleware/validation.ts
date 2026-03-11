@@ -97,7 +97,30 @@ export const CreateSessionSchema = z.object({
   request: LegalRequestSchema.optional(),
   workflow: z.string().min(1).max(100).optional(),
   // v12: Parsed documents from frontend document ingestion
-  documents: z.array(z.any()).max(20).optional(),
+  documents: z.array(z.object({
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(500),
+    mimeType: z.string().min(1).max(200),
+    size: z.number().int().min(0).max(50_000_000),
+    pageCount: z.number().int().min(0).max(50_000),
+    wordCount: z.number().int().min(0).max(10_000_000),
+    fullText: z.string().max(10_000_000),
+    sections: z.array(z.object({
+      heading: z.string().max(1000),
+      level: z.number().int().min(1).max(10),
+      content: z.string().max(5_000_000),
+      startIndex: z.number().int().min(0),
+      children: z.array(z.lazy(() => z.any())).max(200),
+    }).passthrough()).max(500),
+    tables: z.array(z.object({
+      caption: z.string().max(1000).optional(),
+      headers: z.array(z.string().max(1000)).max(100),
+      rows: z.array(z.array(z.string().max(10_000)).max(100)).max(10_000),
+    }).passthrough()).max(200),
+    definedTerms: z.array(z.string().max(500)).max(5000),
+    parseMethod: z.string().min(1).max(50),
+    parsedAt: z.string().max(50),
+  }).passthrough()).max(20).optional(),
   // v13: Team roles from frontend staffing
   team: z.array(z.string().min(1).max(100)).max(30).optional(),
   // Shared

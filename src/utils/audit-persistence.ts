@@ -108,3 +108,28 @@ export function readAuditFile(filePath: string): unknown[] {
     return [];
   }
 }
+
+/**
+ * Read lightweight metadata from an audit file without parsing every entry.
+ * Only parses the first and last lines for timestamps/type.
+ */
+export function readAuditFileMeta(filePath: string): {
+  entries: number;
+  first: Record<string, unknown> | undefined;
+  last: Record<string, unknown> | undefined;
+} {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.trim().split('\n').filter(l => l.length > 0);
+    if (lines.length === 0) return { entries: 0, first: undefined, last: undefined };
+
+    const first = JSON.parse(lines[0]) as Record<string, unknown>;
+    const last = lines.length > 1
+      ? JSON.parse(lines[lines.length - 1]) as Record<string, unknown>
+      : first;
+
+    return { entries: lines.length, first, last };
+  } catch {
+    return { entries: 0, first: undefined, last: undefined };
+  }
+}

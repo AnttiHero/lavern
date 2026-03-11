@@ -78,10 +78,11 @@ export function useReassuranceInjector(
         messageIndexRef.current++;
         lastInjectionTimeRef.current = Date.now();
 
-        setReassurances(prev => [
-          ...prev,
-          { kind: 'reassurance', message, timestamp: new Date().toISOString() },
-        ]);
+        setReassurances(prev => {
+          const next = [...prev, { kind: 'reassurance' as const, message, timestamp: new Date().toISOString() }];
+          // Cap at 50 reassurance messages to prevent unbounded memory growth
+          return next.length > 50 ? next.slice(next.length - 30) : next;
+        });
       }
     }, 5_000); // Check every 5 seconds
 

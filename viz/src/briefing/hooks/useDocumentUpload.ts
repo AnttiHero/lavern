@@ -118,6 +118,19 @@ export function useDocumentUpload() {
         };
         setDocuments(prev => [...prev, doc]);
       };
+      reader.onerror = () => {
+        // FileReader failed — store with empty content so the upload still appears
+        console.warn(`[doc-upload] FileReader failed for ${file.name}`);
+        const doc: UploadedDocument = {
+          id: docId,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          content: '',
+          uploadedAt: new Date().toISOString(),
+        };
+        setDocuments(prev => [...prev, doc]);
+      };
 
       if (
         file.type.startsWith('text/') ||

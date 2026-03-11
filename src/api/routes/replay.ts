@@ -9,7 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { readAuditFile, verifyAuditChain } from '../../utils/audit-persistence.js';
+import { readAuditFile, readAuditFileMeta, verifyAuditChain } from '../../utils/audit-persistence.js';
 import { attachReplayStream } from '../ws-handler.js';
 import type { ShemEvent } from '../../events/event-bus.js';
 
@@ -36,10 +36,8 @@ export function registerReplayRoutes(
         const stat = fs.statSync(filePath);
         const sessionId = f.replace('.jsonl', '');
 
-        // Read first and last lines for session metadata
-        const entries = readAuditFile(filePath);
-        const first = entries[0] as Record<string, unknown> | undefined;
-        const last = entries[entries.length - 1] as Record<string, unknown> | undefined;
+        // Read only first and last lines for metadata (avoid parsing entire file)
+        const meta = readAuditFileMeta(filePath);
 
         return {
           sessionId,
@@ -47,10 +45,10 @@ export function registerReplayRoutes(
           size: stat.size,
           createdAt: stat.birthtime.toISOString(),
           modifiedAt: stat.mtime.toISOString(),
-          entries: entries.length,
-          startedAt: first?.timestamp as string | undefined,
-          endedAt: last?.type === 'session_end' ? last.timestamp as string : undefined,
-          complete: last?.type === 'session_end',
+          entries: meta.entries,
+          startedAt: meta.first?.timestamp as string | undefined,
+          endedAt: meta.last?.type === 'session_end' ? meta.last.timestamp as string : undefined,
+          complete: meta.last?.type === 'session_end',
         };
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
