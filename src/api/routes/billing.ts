@@ -59,6 +59,9 @@ export function getPlanLimits(plan: string): { monthlyCapUsd: number; maxSession
   return { monthlyCapUsd: 15, maxSessionBudget: 5, label: 'Free' };
 }
 
+/** Minimum viable session budget in USD — below this the session won't produce useful output. */
+const MIN_SESSION_BUDGET_USD = 0.50;
+
 /** Check if user can start a new session (under monthly cap or has billable hours). */
 export function canStartSession(userId: string): { allowed: boolean; reason?: string; remainingBudget: number; remainingHours: number } {
   const balance = getUserBillableHours(userId);
@@ -66,7 +69,11 @@ export function canStartSession(userId: string): { allowed: boolean; reason?: st
   // If user has billable hours entries, use hours-based enforcement
   if (balance > 0) {
     const rate = config.billableHours.rate;
-    return { allowed: true, remainingBudget: balance * rate, remainingHours: balance };
+    const remainingBudget = balance * rate;
+    if (remainingBudget < MIN_SESSION_BUDGET_USD) {
+      return { allowed: false, reason: `Remaining balance (${balance.toFixed(1)}h / $${remainingBudget.toFixed(2)}) is too low for a session. Top up your billable hours to continue.`, remainingBudget, remainingHours: balance };
+    }
+    return { allowed: true, remainingBudget, remainingHours: balance };
   }
 
   // Fallback: legacy USD-based enforcement for pre-existing users without hours
@@ -87,8 +94,8 @@ export function canStartSession(userId: string): { allowed: boolean; reason?: st
   }
 
   const remaining = limits.monthlyCapUsd - usage.total_cost_usd;
-  if (remaining <= 0) {
-    return { allowed: false, reason: 'No billable hours remaining. Purchase more or upgrade your plan.', remainingBudget: 0, remainingHours: 0 };
+  if (remaining <= 0 || remaining < MIN_SESSION_BUDGET_USD) {
+    return { allowed: false, reason: 'No billable hours remaining. Purchase more or upgrade your plan.', remainingBudget: Math.max(0, remaining), remainingHours: Math.max(0, remaining) / config.billableHours.rate };
   }
 
   return { allowed: true, remainingBudget: remaining, remainingHours: remaining / config.billableHours.rate };

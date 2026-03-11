@@ -31,6 +31,7 @@ import type { ClientIdentity } from '../../types/client.js';
 import { validateBody } from '../middleware/validation.js';
 import { checkX402Payment } from '../middleware/payment.js';
 import { config } from '../../config.js';
+import { canStartSession } from './billing.js';
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -474,7 +475,21 @@ export function registerEngageRoutes(
 
     // Resolve intensity + budget
     const intensity: IntensityLevel = body.constraints?.intensity ?? 'standard';
-    const budgetUsd = body.constraints?.maxBudgetUsd ?? defaultBudgetForIntensity(intensity);
+    let budgetUsd = body.constraints?.maxBudgetUsd ?? defaultBudgetForIntensity(intensity);
+
+    // v23: Budget enforcement — same check as sessions.ts POST /api/sessions
+    const userId = (request as FastifyRequest & { userId?: string }).userId;
+    if (userId) {
+      const budgetCheck = canStartSession(userId);
+      if (!budgetCheck.allowed) {
+        return reply.status(402).send({
+          error: 'No billable hours remaining',
+          detail: budgetCheck.reason,
+          remainingHours: 0,
+        });
+      }
+      budgetUsd = Math.min(budgetUsd, budgetCheck.remainingBudget);
+    }
 
     // Select gate resolver based on mode and client config
     const gateResolver = body.mode === 'webhook' && body.callbackUrl

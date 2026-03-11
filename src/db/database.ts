@@ -497,6 +497,12 @@ export function archiveSession(session: SessionState, userId: string | null): vo
 
   // Wrap everything in a transaction so usage/debit/archive stay consistent
   db.transaction(() => {
+    // Guard against double-archival: check if this session was already archived before debiting.
+    // Without this check, INSERT OR IGNORE silently skips the row insert while the debit/usage
+    // increments still execute, causing double charges.
+    const alreadyArchived = db.prepare(`SELECT 1 FROM session_archive WHERE id = ?`).get(session.id);
+    if (alreadyArchived) return;
+
     // v21: Track per-user monthly usage
     if (userId && session.accumulatedCost > 0) {
       incrementUserUsage(userId, session.accumulatedCost);
@@ -508,8 +514,6 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       }
     }
 
-    // Use INSERT OR IGNORE to prevent overwriting an existing archive row
-    // (e.g. if archiveSession is called twice via both event listener and explicit call)
     db.prepare(`
       INSERT OR IGNORE INTO session_archive
       (id, user_id, title, status, workflow_id, team_roles, findings_count,
