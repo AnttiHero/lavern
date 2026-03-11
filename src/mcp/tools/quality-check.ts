@@ -19,6 +19,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import type { QualityCheckResult } from '../../types/workflow.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
@@ -129,7 +130,7 @@ ${args.check_type === 'self'
         revisionGuidance: args.revision_guidance ?? [],
         timestamp: eventTimestamp(),
       };
-      gw.qualityChecks.push(result);
+      boundedPush(gw.qualityChecks, result);
 
       session.events.emitEvent({
         type: 'quality_check_result',

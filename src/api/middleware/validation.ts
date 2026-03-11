@@ -139,6 +139,7 @@ export type CreateSessionBody = z.infer<typeof CreateSessionSchema>;
 export const GateDecisionSchema = z.object({
   decision: z.enum(['approve', 'reject', 'modify']),
   notes: z.string().max(5000).optional(),
+  gateType: z.string().max(100).optional(), // Optional: verify this matches the pending gate
 }).strict();
 
 export type GateDecisionBody = z.infer<typeof GateDecisionSchema>;

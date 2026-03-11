@@ -57,7 +57,7 @@ export function createHandoffTools(session: SessionState) {
 
       // Also store in generic workflow state if present
       if (session.genericWorkflow) {
-        session.genericWorkflow.handoffs.push(handoff);
+        boundedPush(session.genericWorkflow.handoffs, handoff);
       }
 
       // Emit event for WebSocket streaming

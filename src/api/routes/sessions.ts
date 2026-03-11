@@ -148,7 +148,9 @@ export function registerSessionRoutes(
             session.soul = profile.soul.trim();
           }
         }
-      } catch { /* non-fatal — soul is optional */ }
+      } catch (err) {
+        console.warn(`[SESSION] Failed to parse soul from user profile ${userId}:`, err);
+      }
     }
 
     // v8: If matterId is provided, load the matter's team into the session
@@ -1103,7 +1105,8 @@ ${buildFullContext(session)}`;
       });
     }
 
-    if (!gateResolver.hasPendingGate()) {
+    const pendingGate = gateResolver.getPendingGate();
+    if (!pendingGate) {
       return reply.status(409).send({
         error: 'No pending gate decision',
       });
@@ -1113,18 +1116,27 @@ ${buildFullContext(session)}`;
     const body = validateBody<GateDecisionBody>(GateDecisionSchema, request, reply);
     if (!body) return; // 400 already sent
 
+    // Optional gate type verification — if the client specifies which gate they're
+    // deciding, ensure it matches the pending gate (prevents stale approvals)
+    if (body.gateType && body.gateType !== pendingGate.gateType) {
+      return reply.status(409).send({
+        error: `Gate type mismatch: expected '${pendingGate.gateType}', got '${body.gateType}'`,
+      });
+    }
+
     const submitted = gateResolver.submitDecision({
       decision: body.decision,
       notes: body.notes,
     });
 
     if (!submitted) {
-      return reply.status(409).send({ error: 'Gate decision could not be submitted' });
+      return reply.status(409).send({ error: 'Gate decision could not be submitted (gate may have timed out)' });
     }
 
     return reply.send({
       success: true,
       decision: body.decision,
+      gateType: pendingGate.gateType,
       sessionId: id,
     });
   });

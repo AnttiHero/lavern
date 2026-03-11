@@ -15,6 +15,7 @@
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
+import { boundedPush } from '../../session/session-state.js';
 import type { EvaluatorResult } from '../../types/workflow.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
@@ -87,7 +88,7 @@ After the evaluator completes, call \`record_evaluation_result\` with the result
 
       // Record in session state
       if (gw) {
-        gw.evaluatorResults.push(result);
+        boundedPush(gw.evaluatorResults, result);
         if (!args.passed) {
           gw.revisionCount++;
         }
