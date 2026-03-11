@@ -129,9 +129,13 @@ export function GateDialog({
           </div>
           <button
             onClick={onDismiss}
+            disabled={submitting}
+            aria-label="Close gate dialog"
             style={{
               ...styles.closeButton,
               backgroundColor: hoveredBtn === 'close' ? colors.bgPanel : 'transparent',
+              opacity: submitting ? 0.4 : 1,
+              cursor: submitting ? 'not-allowed' : 'pointer',
             }}
             onMouseEnter={() => setHoveredBtn('close')}
             onMouseLeave={() => setHoveredBtn(null)}
@@ -162,7 +166,7 @@ export function GateDialog({
 
         {/* Error */}
         {errorMsg && (
-          <div style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
+          <div role="alert" style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
             {errorMsg}
           </div>
         )}

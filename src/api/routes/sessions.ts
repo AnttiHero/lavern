@@ -1083,7 +1083,8 @@ ${buildFullContext(session)}`;
 
     // Support ?from=N query parameter for replay from index
     const query = request.query as { from?: string };
-    const fromIndex = query.from ? parseInt(query.from, 10) : 0;
+    const parsed = query.from ? parseInt(query.from, 10) : 0;
+    const fromIndex = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
 
     attachEventStream(socket, session, fromIndex);
   });

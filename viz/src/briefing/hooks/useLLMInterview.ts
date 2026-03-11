@@ -125,10 +125,11 @@ export function useLLMInterview(
 
   const abortRef = useRef<AbortController | null>(null);
   const isStreamingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // Abort in-flight requests on unmount to prevent setState on unmounted component
   useEffect(() => {
-    return () => { abortRef.current?.abort(); };
+    return () => { mountedRef.current = false; abortRef.current?.abort(); };
   }, []);
 
   // Count user turns from messages
@@ -273,6 +274,8 @@ export function useLLMInterview(
 
         // Exponential backoff: 2s, 4s
         await new Promise(r => setTimeout(r, (retryAttempt + 1) * 2000));
+        // Guard against retry after unmount — component may have been unmounted during backoff
+        if (!mountedRef.current) return;
         return callInterview(userMessage, finalize, retryAttempt + 1);
       } else {
         // All retries exhausted — clean up and show error

@@ -162,7 +162,8 @@ export function attachEventStream(
       if (msg.type === 'ping') {
         safeSend(socket, { type: 'pong', timestamp: new Date().toISOString() });
       } else if (msg.type === 'replay_request') {
-        const from = typeof msg.fromIndex === 'number' ? msg.fromIndex : 0;
+        const rawFrom = typeof msg.fromIndex === 'number' ? msg.fromIndex : 0;
+        const from = Number.isFinite(rawFrom) && rawFrom >= 0 ? Math.floor(rawFrom) : 0;
         const events = session.events.getEventsSince(from);
         for (const event of events) {
           safeSend(socket, { type: 'replay', event });

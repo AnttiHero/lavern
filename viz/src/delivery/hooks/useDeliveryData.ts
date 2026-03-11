@@ -210,6 +210,9 @@ export function useDeliveryData(): {
     const sessionId = sessionStorage.getItem('shem-session-id');
     if (!sessionId) return;
 
+    // Cancel any in-flight polling timer to prevent duplicate polling chains
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = undefined; }
+    finalPollDoneRef.current = false;
     setAssemblyStatus('polling');
 
     try {

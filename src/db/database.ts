@@ -502,7 +502,10 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       incrementUserUsage(userId, session.accumulatedCost);
       // v22: Debit billable hours
       const hoursUsed = session.accumulatedCost / config.billableHours.rate;
-      debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
+      const debited = debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
+      if (!debited) {
+        console.warn(`[BILLING] Insufficient billable hours for user ${userId} — session ${session.id} cost ${hoursUsed.toFixed(2)}h but debit failed (balance too low). Session archived without debit.`);
+      }
     }
 
     // Use INSERT OR IGNORE to prevent overwriting an existing archive row
@@ -937,7 +940,8 @@ export function creditBillableHours(
   return credited;
 }
 
-/** Debit billable hours from a user (negative ledger entry). Returns false if insufficient balance. */
+/** Debit billable hours from a user (negative ledger entry). Returns false if insufficient balance.
+ *  Idempotent when referenceId is provided — duplicate debits for the same reference are skipped. */
 export function debitBillableHours(
   userId: string,
   amount: number,
@@ -948,6 +952,11 @@ export function debitBillableHours(
   const now = new Date().toISOString();
   let success = false;
   db.transaction(() => {
+    // Idempotency guard: skip if a debit with this referenceId already exists (prevents double-debit on re-archival)
+    if (referenceId) {
+      const existing = db.prepare(`SELECT 1 FROM billable_hours WHERE reference_id = ? AND type = 'debit'`).get(referenceId);
+      if (existing) { success = true; return; }
+    }
     const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)`).get(userId, now) as { balance: number }).balance;
     if (current < amount) {
       success = false;

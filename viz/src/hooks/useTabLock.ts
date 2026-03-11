@@ -12,11 +12,20 @@ export function useTabLock(sessionId: string | undefined): { isLocked: boolean }
   useEffect(() => {
     if (!sessionId) { setIsLocked(false); return; }
 
-    const channel = new BroadcastChannel(`marble-session-${sessionId}`);
+    // BroadcastChannel not available in Safari < 15.4 and some WebViews — fail gracefully
+    if (typeof BroadcastChannel === 'undefined') return;
+
+    let channel: BroadcastChannel;
+    try {
+      channel = new BroadcastChannel(`marble-session-${sessionId}`);
+    } catch {
+      // BroadcastChannel constructor can throw in restricted contexts — skip tab locking
+      return;
+    }
     channelRef.current = channel;
 
-    // Announce our presence
-    channel.postMessage({ type: 'tab-open', tabId: tabId.current });
+    // Announce our presence — may fail if channel was closed between creation and here
+    try { channel.postMessage({ type: 'tab-open', tabId: tabId.current }); } catch { /* ignore */ }
 
     channel.onmessage = (e) => {
       if (e.data.type === 'tab-open' && e.data.tabId !== tabId.current) {
@@ -31,8 +40,8 @@ export function useTabLock(sessionId: string | undefined): { isLocked: boolean }
     };
 
     return () => {
-      channel.postMessage({ type: 'tab-close', tabId: tabId.current });
-      channel.close();
+      try { channel.postMessage({ type: 'tab-close', tabId: tabId.current }); } catch { /* ignore */ }
+      try { channel.close(); } catch { /* ignore */ }
       channelRef.current = null;
     };
   }, [sessionId]);
