@@ -119,8 +119,8 @@ export function createFeedbackLoopTools(session: SessionState) {
       const memories = rawMemories.map(migrateMemory);
 
       for (const memory of memories) {
-        // If memory was used in this session, update effectiveness
-        if (memory.usageCount > 0 && !memory.usedInSessions.includes(reportCard.sessionId)) {
+        // Only update memories that were actually queried in THIS session
+        if (session.queriedMemoryIds.has(memory.id) && !memory.usedInSessions.includes(reportCard.sessionId)) {
           memory.usedInSessions.push(reportCard.sessionId);
           memory.lastUsedAt = new Date().toISOString();
 

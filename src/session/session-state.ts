@@ -164,6 +164,10 @@ export class SessionState {
   // ── Human Gate Enforcer State ──
   public readonly triggeredGates = new Set<string>();
 
+  // ── Memory Query Tracking ──
+  /** Memory IDs queried during this session (for feedback loop targeting). */
+  public readonly queriedMemoryIds = new Set<string>();
+
   // ── Audit Persistence State ──
   public auditDir = config.auditDir;
   public auditCurrentFile: string | null = null;

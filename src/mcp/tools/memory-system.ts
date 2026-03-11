@@ -259,6 +259,10 @@ export function createMemoryTools(session: SessionState) {
 
       // Update usage counts — best-effort, don't fail the query on write race
       if (memories.length > 0) {
+        // Track which memories were queried in this session (for feedback loop)
+        for (const m of memories) {
+          session.queriedMemoryIds.add(m.id);
+        }
         try {
           const all = readJsonFile<InstitutionalMemoryEntry[]>(filePath, []);
           for (const m of memories) {

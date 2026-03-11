@@ -33,19 +33,23 @@ export class ClientRegistry {
     try {
       const dbClients = getAllApiClients();
       for (const row of dbClients) {
-        const client: ClientIdentity = {
-          type: row.type as 'human' | 'agent',
-          id: row.id,
-          name: row.name || undefined,
-          apiKeyHash: row.api_key_hash,
-          callbackUrl: row.callback_url || undefined,
-          autoApproveThreshold: row.auto_approve_threshold ?? undefined,
-          capabilities: JSON.parse(row.capabilities || '[]'),
-          registeredAt: row.created_at,
-          lastActiveAt: row.last_active_at || undefined,
-        };
-        this.clients.set(client.id, client);
-        this.keyHashToClientId.set(row.api_key_hash, client.id);
+        try {
+          const client: ClientIdentity = {
+            type: row.type as 'human' | 'agent',
+            id: row.id,
+            name: row.name || undefined,
+            apiKeyHash: row.api_key_hash,
+            callbackUrl: row.callback_url || undefined,
+            autoApproveThreshold: row.auto_approve_threshold ?? undefined,
+            capabilities: JSON.parse(row.capabilities || '[]'),
+            registeredAt: row.created_at,
+            lastActiveAt: row.last_active_at || undefined,
+          };
+          this.clients.set(client.id, client);
+          this.keyHashToClientId.set(row.api_key_hash, client.id);
+        } catch {
+          console.warn(`[AUTH] Skipping corrupt client row ${row.id}`);
+        }
       }
       if (dbClients.length > 0) {
         console.log(`[AUTH] Loaded ${dbClients.length} API client${dbClients.length === 1 ? '' : 's'} from database`);
