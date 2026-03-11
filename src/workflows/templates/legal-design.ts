@@ -93,13 +93,6 @@ export const legalDesignTemplate: WorkflowTemplate = {
     'mcp__shem__run_regression_test',
     'mcp__shem__run_batch_regression',
     'mcp__shem__compare_sessions',
-    // v16: Verification Pipeline
-    'mcp__shem__start_verification_pipeline',
-    'mcp__shem__record_pass_result',
-    'mcp__shem__get_verification_status',
-    'mcp__shem__compile_verification_report',
-    'mcp__shem__check_document_structure',
-    'mcp__shem__check_document_formatting',
   ],
   requiredAgents: [
     'design-reviewer',

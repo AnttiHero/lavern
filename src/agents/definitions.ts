@@ -80,6 +80,14 @@ import { projectManagerPrompt } from './prompts/project-manager.js';
 // v19: Missing agents for Full Bench workflow
 import { innovationPartnerPrompt } from './prompts/innovation-partner.js';
 import { internationalCounselPrompt } from './prompts/international-counsel.js';
+// v20: Previously profile-only agents (7 agents with profiles but no definitions)
+import { clientRelationsPartnerPrompt } from './prompts/client-relations-partner.js';
+import { riskPartnerPrompt } from './prompts/risk-partner.js';
+import { transactionPartnerPrompt } from './prompts/transaction-partner.js';
+import { publicLawCounselPrompt } from './prompts/public-law-counsel.js';
+import { restructuringSpecialistPrompt } from './prompts/restructuring-specialist.js';
+import { startupCounselPrompt } from './prompts/startup-counsel.js';
+import { techTransactionsPrompt } from './prompts/tech-transactions.js';
 import { outputFormats } from '../types/output-schemas.js';
 import { agentProfiles } from './profiles.js';
 
@@ -651,6 +659,71 @@ export const agentDefinitions = {
     model: 'opus' as const,
     maxTurns: 10,
     outputFormat: outputFormats['specialist-lawyer'],
+  },
+
+  // ── v20: Previously Profile-Only Agents (7) ──────────────────────────────
+
+  'client-relations-partner': {
+    description: 'Client relationship management and business translation. Reviews deliverables for client-appropriateness, ensures communication is accessible, coordinates cross-practice teams.',
+    prompt: enrichPrompt('client-relations-partner', clientRelationsPartnerPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['managing-partner'],
+  },
+
+  'risk-partner': {
+    description: 'Enterprise risk assessment across all findings. Identifies hidden risks, systemic patterns, quantifies financial exposure, and creates risk matrices.',
+    prompt: enrichPrompt('risk-partner', riskPartnerPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...verificationTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['managing-partner'],
+  },
+
+  'transaction-partner': {
+    description: 'Multi-party transaction orchestrator. Analyzes deal mechanics, closing conditions, consent requirements, and regulatory approvals across complex cross-border transactions.',
+    prompt: enrichPrompt('transaction-partner', transactionPartnerPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...scoringTools],
+    model: 'opus' as const,
+    maxTurns: 12,
+    outputFormat: outputFormats['corporate-lawyer'],
+  },
+
+  'public-law-counsel': {
+    description: 'Government advisory and public law specialist. Legislative tracing, procurement compliance, administrative law review, and regulatory submission analysis.',
+    prompt: enrichPrompt('public-law-counsel', publicLawCounselPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'sonnet' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['regulatory-lawyer'],
+  },
+
+  'restructuring-specialist': {
+    description: 'Corporate restructuring and insolvency specialist. Creditor waterfall analysis, restructuring plan review, workout agreement negotiation, distressed M&A.',
+    prompt: enrichPrompt('restructuring-specialist', restructuringSpecialistPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['corporate-lawyer'],
+  },
+
+  'startup-counsel': {
+    description: 'Startup and venture capital specialist. SAFE/convertible note analysis, cap table verification, founder agreement review, formation documents.',
+    prompt: enrichPrompt('startup-counsel', startupCounselPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
+    model: 'sonnet' as const,
+    maxTurns: 8,
+    outputFormat: outputFormats['corporate-lawyer'],
+  },
+
+  'tech-transactions': {
+    description: 'Technology agreement specialist. SaaS/API/DPA review, open source compliance, vendor lock-in assessment, technology licensing analysis.',
+    prompt: enrichPrompt('tech-transactions', techTransactionsPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
+    model: 'sonnet' as const,
+    maxTurns: 8,
+    outputFormat: outputFormats['corporate-lawyer'],
   },
 
 };

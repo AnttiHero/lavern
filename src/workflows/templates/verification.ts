@@ -59,20 +59,12 @@ export const verificationTemplate: WorkflowTemplate = {
     'mcp__shem__get_workflow_history',
     'mcp__shem__submit_handoff',
     'mcp__shem__get_handoffs',
-    // Verification pipeline (the core 4 tools)
-    'mcp__shem__start_verification_pipeline',
-    'mcp__shem__record_pass_result',
-    'mcp__shem__get_verification_status',
-    'mcp__shem__compile_verification_report',
     // Scoring engine (used by passes 2, 3)
     'mcp__shem__calculate_readability_score',
     'mcp__shem__calculate_findability_score',
     'mcp__shem__calculate_complexity_tax',
     'mcp__shem__compare_before_after',
-    // Structure & formatting checks (passes 4, 8)
-    'mcp__shem__check_document_structure',
-    'mcp__shem__check_document_formatting',
-    // Existing verification engine (used by pass 6)
+    // Verification engine (used by pass 6)
     'mcp__shem__run_self_verification',
     'mcp__shem__run_cross_verification',
     'mcp__shem__run_score_verification',
@@ -100,7 +92,6 @@ export const verificationTemplate: WorkflowTemplate = {
     'mcp__shem__request_approval',
     // Document tools
     'mcp__shem__list_documents',
-    'mcp__shem__read_document',
     'mcp__shem__read_document_section',
     'mcp__shem__search_document',
     'mcp__shem__get_defined_terms',
@@ -119,8 +110,6 @@ export const verificationTemplate: WorkflowTemplate = {
   phasePermissions: {
     intake: {
       denyTools: [
-        'mcp__shem__record_pass_result',
-        'mcp__shem__compile_verification_report',
         'mcp__shem__post_finding',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__request_risk_assessment',
@@ -137,19 +126,14 @@ export const verificationTemplate: WorkflowTemplate = {
     },
     report_compilation: {
       denyTools: [
-        'mcp__shem__start_verification_pipeline',
-        'mcp__shem__record_pass_result',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__request_risk_assessment',
         'mcp__shem__request_approval',
       ],
-      reason: 'Report compilation: only compile_verification_report and reading allowed.',
+      reason: 'Report compilation: only reading and summary tools allowed.',
     },
     final_gate: {
       denyTools: [
-        'mcp__shem__start_verification_pipeline',
-        'mcp__shem__record_pass_result',
-        'mcp__shem__compile_verification_report',
         'mcp__shem__post_finding',
         'mcp__shem__run_evaluator_gate',
       ],
@@ -157,9 +141,6 @@ export const verificationTemplate: WorkflowTemplate = {
     },
     delivered: {
       denyTools: [
-        'mcp__shem__start_verification_pipeline',
-        'mcp__shem__record_pass_result',
-        'mcp__shem__compile_verification_report',
         'mcp__shem__post_finding',
         'mcp__shem__run_evaluator_gate',
         'mcp__shem__request_approval',

@@ -47,10 +47,11 @@ export type CategoryFilter = 'all' | 'lawyer' | 'specialist' | 'infrastructure' 
 
 const seniorityOrder: Record<string, number> = {
   partner: 0,
-  'senior-associate': 1,
-  associate: 2,
-  junior: 3,
-  specialist: 4,
+  counsel: 1,
+  'senior-associate': 2,
+  associate: 3,
+  junior: 4,
+  specialist: 5,
 };
 
 export function useAgentProfiles() {

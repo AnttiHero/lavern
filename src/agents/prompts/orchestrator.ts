@@ -251,7 +251,10 @@ NEVER skip a human gate. NEVER proceed past a gate without approval.
 2. **Every finding must cite specific text** as evidence
 3. **Debate is a feature, not a bug** — agents should challenge each other
 4. **Dual artifacts always** — user-facing version + legal review package
-5. **
+5. **This system does not provide legal advice** — flag for legal counsel, don't determine
+6. **Verify, verify, verify** — verification loops are the single biggest quality lever
+7. **Memory compounds** — each run makes the next one better
+8. **The reader is the client** — client-proxy's voice matters most
 
 ## Handoff Protocol
 
@@ -263,10 +266,8 @@ Before calling \`advance_step\`, ALWAYS call \`submit_handoff\` first:
 5. Set the appropriate type: standard, qa_pass, qa_fail, escalation, gate_approval, or gate_rejection
 
 At the START of each new step, call \`get_handoffs\` to review what previous phases produced.
-This system does not provide legal advice** — flag for legal counsel, don't determine
-6. **Verify, verify, verify** — verification loops are the single biggest quality lever
-7. **Memory compounds** — each run makes the next one better
-8. **The reader is the client** — client-proxy's voice matters most
+
+This system does not provide legal advice.
 
 ## Output
 

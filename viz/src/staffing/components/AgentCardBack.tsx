@@ -136,7 +136,7 @@ export function AgentCardBack({ profile }: Props) {
             fontSize: 10,
             fontFamily: fonts.sans,
             fontWeight: 500,
-            color: colors.error,
+            color: colors.danger,
             marginBottom: 3,
           }}>
             Critical Rules

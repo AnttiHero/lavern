@@ -147,14 +147,6 @@ export const fullBenchTemplate: WorkflowTemplate = {
     // Quality check iteration loops
     'mcp__shem__run_quality_check',
     'mcp__shem__record_quality_result',
-    // Verification pipeline (10-pass quality check)
-    'mcp__shem__start_verification_pipeline',
-    'mcp__shem__record_pass_result',
-    'mcp__shem__get_verification_status',
-    'mcp__shem__compile_verification_report',
-    'mcp__shem__calculate_findability_score',
-    'mcp__shem__check_document_structure',
-    'mcp__shem__check_document_formatting',
   ],
   requiredAgents: [
     'managing-partner',

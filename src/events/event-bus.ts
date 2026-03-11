@@ -9,7 +9,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import type { AgentRole, Severity } from '../types/index.js';
+import type { Severity } from '../types/index.js';
 import type { WorkflowStep, HandoffType } from '../types/workflow.js';
 
 // ── Event Types ──────────────────────────────────────────────────────────

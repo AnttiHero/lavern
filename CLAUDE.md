@@ -36,9 +36,9 @@ with qualified legal professionals.
 ## Project Structure
 
 ### Core Engine
-- `src/agents/` — 58 agent prompts (51 specialists + 7 orchestrators), 51 agent definitions
-- `src/agents/profiles.ts` — 70-agent profile registry (skill ratings, personality, DiceBear avatars)
-- `src/mcp/tools/` — 18 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks)
+- `src/agents/` — 65 agent prompts (58 specialists + 7 orchestrators), 58 agent definitions
+- `src/agents/profiles.ts` — 62-agent profile registry (skill ratings, personality, DiceBear avatars)
+- `src/mcp/tools/` — 19 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
 - `src/orchestrator.ts` — Core orchestration loop (dispatch agents, manage turns)

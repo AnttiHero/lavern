@@ -1,12 +1,12 @@
 /**
- * Agent Profile Registry — all 70 agent profiles for The Shem law firm.
+ * Agent Profile Registry — all 62 agent profiles for The Shem law firm.
  *
  * Each profile contains NBA2K-style skill ratings (8 dimensions),
  * personality traits (5 axes), practice areas, strengths, and limitations.
  * DiceBear Notionists avatarExtra fields control visual presentation diversity.
  *
  * Exported:
- *   agentProfiles  — Record<string, AgentProfile> with all 70 agents
+ *   agentProfiles  — Record<string, AgentProfile> with all 62 agents
  *   teamPresets    — 7 pre-built team configurations
  */
 

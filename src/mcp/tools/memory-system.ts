@@ -486,9 +486,14 @@ export function createMemoryTools(session: SessionState) {
       return {
         content: [{
           type: 'text' as const,
-          text: `## Relevant Precedents (${precedents.length} found)\n\n${precedents.slice(0, 5).map(p =>
-            `### ${p.id}: ${p.patternName} (${p.qualityScore}/4)\n**Type**: ${p.documentType} | **Jurisdiction**: ${p.jurisdiction}\n${p.description}\n\n**Before**: "${p.beforeSnippet.slice(0, 150)}..."\n**After**: "${p.afterSnippet.slice(0, 150)}..."`
-          ).join('\n\n---\n\n')}`,
+          text: `## Relevant Precedents (${precedents.length} found)\n\n${precedents.slice(0, 5).map(p => {
+            const tagParts: string[] = [];
+            if (p.tags?.agentRole) tagParts.push(`agent:${p.tags.agentRole}`);
+            if (p.tags?.engagementType) tagParts.push(`engagement:${p.tags.engagementType}`);
+            if (p.tags?.custom?.length) tagParts.push(...p.tags.custom.map((t: string) => `#${t}`));
+            const tagStr = tagParts.length > 0 ? ` {${tagParts.join(' ')}}` : '';
+            return `### ${p.id}: ${p.patternName} (${p.qualityScore}/4)${tagStr}\n**Type**: ${p.documentType} | **Jurisdiction**: ${p.jurisdiction}\n${p.description}\n\n**Before**: "${p.beforeSnippet.slice(0, 150)}..."\n**After**: "${p.afterSnippet.slice(0, 150)}..."`;
+          }).join('\n\n---\n\n')}`,
         }],
       };
     },
