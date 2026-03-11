@@ -139,8 +139,8 @@ export default function LoginView({ onAuth, onBack }: Props) {
               <p style={styles.waitlistHint}>
                 Don't have a code?{' '}
                 <a
-                  href="#/waitlist"
-                  onClick={(e) => { e.preventDefault(); window.location.hash = '#/'; }}
+                  href="#/pricing"
+                  onClick={(e) => { e.preventDefault(); window.location.hash = '#/pricing'; }}
                   style={styles.waitlistLink}
                 >
                   Join the waitlist.

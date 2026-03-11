@@ -14,7 +14,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as crypto from 'node:crypto';
 import { config } from '../../config.js';
+import { createLogger } from '../../utils/logger.js';
 import { parseCookieToken } from '../middleware/auth.js';
+
+const log = createLogger('BILLING');
 import {
   getUserByToken,
   getUserPlan,
@@ -99,7 +102,9 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
   // ── POST /api/billing/pack-intent ──────────────────────────────────
   // Creates a Stripe PaymentIntent for Apple Pay / Google Pay inline payments.
-  fastify.post('/api/billing/pack-intent', async (request, reply) => {
+  fastify.post('/api/billing/pack-intent', {
+    config: { rateLimit: { max: 10, timeWindow: 60_000 } },
+  }, async (request, reply) => {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
@@ -126,14 +131,16 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
       return reply.send({ clientSecret: intent.client_secret });
     } catch (err) {
-      console.error('[BILLING] PaymentIntent error:', err);
+      log.error('PaymentIntent creation failed', err);
       return reply.status(500).send({ error: 'Failed to create payment intent' });
     }
   });
 
   // ── POST /api/billing/checkout ──────────────────────────────────────
   // Creates a Stripe Checkout Session for a plan subscription.
-  fastify.post('/api/billing/checkout', async (request, reply) => {
+  fastify.post('/api/billing/checkout', {
+    config: { rateLimit: { max: 10, timeWindow: 60_000 } },
+  }, async (request, reply) => {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
@@ -173,14 +180,16 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
       return reply.send({ checkoutUrl: session.url, sessionId: session.id });
     } catch (err) {
-      console.error('[BILLING] Stripe checkout error:', err);
+      log.error('Stripe checkout session creation failed', err);
       return reply.status(500).send({ error: 'Failed to create checkout session' });
     }
   });
 
   // ── POST /api/billing/checkout-pack ──────────────────────────────────
   // Creates a Stripe Checkout Session for a one-time hour pack purchase.
-  fastify.post('/api/billing/checkout-pack', async (request, reply) => {
+  fastify.post('/api/billing/checkout-pack', {
+    config: { rateLimit: { max: 10, timeWindow: 60_000 } },
+  }, async (request, reply) => {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
@@ -219,7 +228,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
       return reply.send({ checkoutUrl: session.url, sessionId: session.id });
     } catch (err) {
-      console.error('[BILLING] Stripe pack checkout error:', err);
+      log.error('Stripe pack checkout creation failed', err);
       return reply.status(500).send({ error: 'Failed to create checkout session' });
     }
   });
@@ -243,8 +252,11 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(config.stripe.secretKey);
 
-      // Verify webhook signature
-      const rawBody = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      // Verify webhook signature — uses raw body captured by preParsing hook in server.ts
+      const rawBody = (request as any).rawBody as string | undefined;
+      if (!rawBody) {
+        return reply.status(400).send({ error: 'Raw body not available for signature verification' });
+      }
       const event = stripe.webhooks.constructEvent(rawBody, sig, config.stripe.webhookSecret);
 
       switch (event.type) {
@@ -272,7 +284,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 stripeSessionId: event.id,
                 metadata: { pack: packName, hours },
               });
-              console.log(`[BILLING] User ${userId} purchased ${hours}h (${packName} pack)`);
+              log.info(`User ${userId} purchased ${hours}h (${packName} pack)`);
             }
             break;
           }
@@ -297,7 +309,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
               metadata: { subscription: session.subscription },
             });
 
-            console.log(`[BILLING] User ${userId} upgraded to ${plan}`);
+            log.info(`User ${userId} upgraded to ${plan}`);
           }
           break;
         }
@@ -312,7 +324,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
               userId,
               type: 'subscription_cancelled',
             });
-            console.log(`[BILLING] User ${userId} subscription cancelled — downgraded to free`);
+            log.info(`User ${userId} subscription cancelled — downgraded to free`);
           }
           break;
         }
@@ -339,7 +351,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 stripeSessionId: event.id,
                 metadata: { pack: packName, hours, method: 'payment_intent' },
               });
-              console.log(`[BILLING] User ${piUserId} purchased ${hours}h via Apple Pay (${packName} pack)`);
+              log.info(`User ${piUserId} purchased ${hours}h via Apple Pay (${packName} pack)`);
             }
           }
           break;
@@ -348,7 +360,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
 
       return reply.send({ received: true });
     } catch (err) {
-      console.error('[BILLING] Webhook error:', err);
+      log.error('Webhook verification failed', err);
       return reply.status(400).send({ error: 'Webhook verification failed' });
     }
   });

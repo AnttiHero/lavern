@@ -61,7 +61,7 @@ const ProfileUpdateSchema = z.object({
 const COOKIE_NAME = 'marble_token';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
-const SECURE_FLAG = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+const SECURE_FLAG = process.env.NODE_ENV === 'development' ? '' : '; Secure';
 
 function setAuthCookie(reply: FastifyReply, token: string): void {
   const cookie = `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${SECURE_FLAG}`;

@@ -322,6 +322,8 @@ function runMigrations(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_bh_user ON billable_hours(user_id);
     CREATE INDEX IF NOT EXISTS idx_bh_created ON billable_hours(created_at);
+    CREATE INDEX IF NOT EXISTS idx_bh_reference ON billable_hours(reference_id);
+    CREATE INDEX IF NOT EXISTS idx_billing_events_stripe ON billing_events(stripe_session_id);
   `);
 }
 
@@ -896,7 +898,7 @@ export function getUserBillableHours(userId: string): number {
   return row.balance;
 }
 
-/** Credit billable hours to a user (positive ledger entry). */
+/** Credit billable hours to a user (positive ledger entry). Idempotent when referenceId is provided. */
 export function creditBillableHours(
   userId: string,
   amount: number,
@@ -904,16 +906,27 @@ export function creditBillableHours(
   description: string,
   expiresAt?: string | null,
   referenceId?: string | null,
-): void {
+): boolean {
   const db = getDb();
+  let credited = false;
   db.transaction(() => {
+    // Idempotency guard — prevent double-crediting from webhook retries
+    if (referenceId) {
+      const existing = db.prepare(`SELECT id FROM billable_hours WHERE reference_id = ?`).get(referenceId);
+      if (existing) {
+        console.log(`[BILLING] Duplicate credit attempt for reference ${referenceId} — skipping`);
+        return; // credited stays false
+      }
+    }
     const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?`).get(userId) as { balance: number }).balance;
     const id = `bh-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     db.prepare(`
       INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, expires_at, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, type, amount, current + amount, description, referenceId ?? null, expiresAt ?? null, new Date().toISOString());
+    credited = true;
   })();
+  return credited;
 }
 
 /** Debit billable hours from a user (negative ledger entry). Returns false if insufficient balance. */

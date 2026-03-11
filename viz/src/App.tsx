@@ -60,8 +60,9 @@ const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 const PricingView = lazy(() => import('./pricing/PricingView.js'));
 const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
 const AgentBuilderView = lazy(() => import('./agent-builder/AgentBuilderView.js'));
+const LegalView = lazy(() => import('./legal/LegalView.js'));
 
-type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder';
+type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -87,6 +88,8 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/pricing')) return 'pricing';
   if (hash.startsWith('#/challenge')) return 'challenge';
   if (hash.startsWith('#/agent-builder')) return 'agent-builder';
+  if (hash.startsWith('#/terms')) return 'terms';
+  if (hash.startsWith('#/privacy')) return 'privacy';
   return 'landing';
 }
 
@@ -109,6 +112,21 @@ export function App() {
     const onHashChange = () => setView(getViewFromHash());
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // ── Stripe redirect handler ─────────────────────────────────────────
+  // Stripe redirects to ?billing=success or ?billing=cancelled (query params).
+  // Our SPA uses hash routing, so we detect and redirect on mount.
+  const [billingResult, setBillingResult] = useState<'success' | 'cancelled' | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get('billing');
+    if (billing === 'success' || billing === 'cancelled') {
+      setBillingResult(billing);
+      // Clean the URL (remove query params, keep hash)
+      const cleanUrl = window.location.pathname + (window.location.hash || '');
+      window.history.replaceState(null, '', cleanUrl);
+    }
   }, []);
 
   // ── Stable navigation callbacks (prevent WS effect re-runs) ────────
@@ -473,6 +491,43 @@ export function App() {
     window.location.hash = '#/quickstart';
   }, []);
 
+  // ── Post-purchase overlay ───────────────────────────────────────────
+  // Shown after Stripe redirects back with ?billing=success or ?billing=cancelled.
+  if (billingResult) {
+    const isSuccess = billingResult === 'success';
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: '#0A0A0F', color: '#FAF9F6', fontFamily: "'Inter', -apple-system, sans-serif",
+        zIndex: 99999,
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>{isSuccess ? '✓' : '×'}</div>
+        <h1 style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32,
+          fontWeight: 300, letterSpacing: -0.5, margin: '0 0 12px',
+        }}>
+          {isSuccess ? 'Hours credited.' : 'Purchase cancelled.'}
+        </h1>
+        <p style={{ fontSize: 14, opacity: 0.55, margin: '0 0 32px', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
+          {isSuccess
+            ? 'Your billable hours have been added to your account. They never expire.'
+            : 'No charge was made. You can try again anytime.'}
+        </p>
+        <button
+          onClick={() => { setBillingResult(null); window.location.hash = '#/quickstart'; }}
+          style={{
+            padding: '14px 36px', fontSize: 12, fontWeight: 600, letterSpacing: 2,
+            textTransform: 'uppercase', color: '#0A0A0F', backgroundColor: '#C9A227',
+            border: 'none', borderRadius: 6, cursor: 'pointer',
+          }}
+        >
+          {isSuccess ? 'Start Working' : 'Back to Marble'}
+        </button>
+      </div>
+    );
+  }
+
   // ── View rendering ────────────────────────────────────────────────────
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
@@ -805,6 +860,22 @@ export function App() {
               onBack={() => { window.location.hash = '#/team'; }}
               editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
             />
+          </Suspense>
+        </ViewTransition>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Legal — Terms of Service & Privacy Policy ────────────────────────
+  if (view === 'terms' || view === 'privacy') {
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        {cursor}
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <LegalView page={view} onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
       </ErrorBoundary>

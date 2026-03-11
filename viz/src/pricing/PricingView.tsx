@@ -926,6 +926,11 @@ export default function PricingView({ onBack }: Props) {
           />
           <span style={sty.footerDot}>{'\u00B7'}</span>
           Billable Hours
+          <div style={{ marginTop: 16, display: 'flex', gap: 16, fontSize: 10, letterSpacing: 1, opacity: 0.4 }}>
+            <a href="#/terms" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</a>
+            <span>{'\u00B7'}</span>
+            <a href="#/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
+          </div>
         </div>
       </div>
 

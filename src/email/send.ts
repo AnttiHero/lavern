@@ -17,6 +17,18 @@ interface EmailPayload {
   text?: string;
 }
 
+// ── HTML Escaping ────────────────────────────────────────────────────────
+
+/** Escape HTML special characters to prevent XSS in email templates. */
+function esc(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── Shared styling ───────────────────────────────────────────────────────
 
 const BRAND = {
@@ -124,12 +136,12 @@ export async function sendInviteEmail(email: string, inviteCode: string): Promis
         <div style="text-align:center;margin:24px 0;padding:20px;background:rgba(201,162,39,0.06);border:1px solid rgba(201,162,39,0.2);border-radius:8px;">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.textDim};margin-bottom:8px;">Your Invite Code</div>
           <div style="font-size:24px;font-family:'Courier New',monospace;font-weight:600;color:${BRAND.gold};letter-spacing:2px;">
-            ${inviteCode}
+            ${esc(inviteCode)}
           </div>
         </div>
         <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
-          Sign up at <a href="${config.email.appUrl}" style="color:${BRAND.gold};text-decoration:none;">${config.email.appUrl}</a>
-          using <strong style="color:${BRAND.text};">${email}</strong> and this code.
+          Sign up at <a href="${esc(config.email.appUrl)}" style="color:${BRAND.gold};text-decoration:none;">${esc(config.email.appUrl)}</a>
+          using <strong style="color:${BRAND.text};">${esc(email)}</strong> and this code.
         </p>
         <p style="margin:0;font-size:14px;color:${BRAND.text};">
           You'll get <strong style="color:${BRAND.gold};">50 free billable hours</strong> — enough for
@@ -142,7 +154,7 @@ export async function sendInviteEmail(email: string, inviteCode: string): Promis
 
 /** Sent after successful signup. */
 export async function sendWelcomeEmail(email: string, displayName?: string): Promise<boolean> {
-  const greeting = displayName ? displayName : 'there';
+  const greeting = esc(displayName ? displayName : 'there');
   return send({
     to: email,
     subject: "Welcome to Marble — 50 hours on us",

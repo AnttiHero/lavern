@@ -22,6 +22,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { Readable } from 'node:stream';
 import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
@@ -55,17 +56,20 @@ import { initDatabase, cleanExpiredTokens, rotateAuditLog, logAuditEvent } from 
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
+  const isProd = process.env.NODE_ENV === 'production';
   const fastify = Fastify({
     trustProxy: config.trustProxy,
     logger: {
       level: config.logLevel === 'debug' ? 'debug' : 'info',
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
+      ...(isProd ? {} : {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            translateTime: 'HH:MM:ss Z',
+            ignore: 'pid,hostname',
+          },
         },
-      },
+      }),
     },
   });
 
@@ -92,6 +96,23 @@ export async function startApiServer(port: number): Promise<void> {
   await fastify.register(fastifyRateLimit, {
     max: config.rateLimitMax,
     timeWindow: config.rateLimitWindowMs,
+  });
+
+  // ── Raw body capture for Stripe webhook ──────────────────────────────
+  // Stripe webhook signature verification requires the raw request body.
+  // We capture it via preParsing hook (only for the webhook route) and
+  // store it on the request object for later use.
+  fastify.addHook('preParsing', async (request, _reply, payload) => {
+    if (request.url === '/api/billing/webhook') {
+      const chunks: Buffer[] = [];
+      for await (const chunk of payload as AsyncIterable<Buffer>) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+      }
+      const rawBody = Buffer.concat(chunks);
+      (request as any).rawBody = rawBody.toString('utf8');
+      return Readable.from(rawBody);
+    }
+    return payload;
   });
 
   // ── Database ────────────────────────────────────────────────────────
@@ -145,8 +166,9 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /llms.txt',          // AI crawler guidance
     'GET /api/pricing',       // Deterministic cost estimates
     'GET /api/reputation',    // Machine-readable trust signal
-    // Session creation — QuickStart express lane (no login required)
-    'POST /api/sessions',
+    // Session creation — requires auth (users must sign up first).
+    // Removed from publicPaths to prevent unauthenticated API credit burn.
+    // 'POST /api/sessions',
     // Briefing — intake flow before login
     'POST /api/briefing/interview',
     'POST /api/briefing/analyze',

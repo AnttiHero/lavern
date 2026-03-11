@@ -160,3 +160,49 @@ export const config = {
   // ── Version ────────────────────────────────────────────────────────────
   version: '0.10.0',
 } as const;
+
+// ── Production Startup Validation ──────────────────────────────────────
+// Warn loudly if critical env vars are missing or still set to localhost defaults.
+// Runs at import time (module load) so problems surface immediately.
+
+if (process.env.NODE_ENV === 'production') {
+  const warnings: string[] = [];
+
+  if (!process.env.ANTHROPIC_API_KEY && config.provider === 'anthropic') {
+    warnings.push('ANTHROPIC_API_KEY is not set — LLM calls will fail');
+  }
+  if (!process.env.STRIPE_SECRET_KEY) {
+    warnings.push('STRIPE_SECRET_KEY is not set — billing disabled');
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    warnings.push('STRIPE_WEBHOOK_SECRET is not set — webhooks will fail signature verification');
+  }
+  if (!process.env.RESEND_API_KEY) {
+    warnings.push('RESEND_API_KEY is not set — emails will be logged to console only');
+  }
+  if (!process.env.MARBLE_ADMIN_KEY) {
+    warnings.push('MARBLE_ADMIN_KEY is not set — admin endpoints disabled');
+  }
+
+  // Detect localhost defaults that should be overridden in production
+  if (config.corsOrigins.includes('localhost')) {
+    warnings.push('SHEM_CORS_ORIGINS still contains localhost — set to production domain');
+  }
+  if (config.stripe.successUrl.includes('localhost')) {
+    warnings.push('STRIPE_SUCCESS_URL still points to localhost — set to production URL');
+  }
+  if (config.email.appUrl.includes('localhost')) {
+    warnings.push('MARBLE_APP_URL still points to localhost — set to production URL');
+  }
+  if (config.baseUrl.includes('localhost')) {
+    warnings.push('SHEM_BASE_URL still points to localhost — set to production URL');
+  }
+
+  if (warnings.length > 0) {
+    console.warn('\n╔══════════════════════════════════════════════════════════════╗');
+    console.warn('║  ⚠  PRODUCTION CONFIGURATION WARNINGS                       ║');
+    console.warn('╚══════════════════════════════════════════════════════════════╝');
+    warnings.forEach(w => console.warn(`  ▸ ${w}`));
+    console.warn('');
+  }
+}
