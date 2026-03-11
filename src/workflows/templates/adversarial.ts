@@ -62,6 +62,8 @@ export const adversarialTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
+    'mcp__shem__submit_handoff',
+    'mcp__shem__get_handoffs',
     // Debate board (full — essential for adversarial process)
     'mcp__shem__post_finding',
     'mcp__shem__post_challenge',

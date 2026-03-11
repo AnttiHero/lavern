@@ -78,6 +78,8 @@ export const preEngagementTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
+    'mcp__shem__submit_handoff',
+    'mcp__shem__get_handoffs',
     // Pre-engagement tools
     'mcp__shem__run_conflict_check',
     'mcp__shem__run_kyc_screening',

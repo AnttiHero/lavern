@@ -100,6 +100,12 @@ export interface AgentProfile {
   /** What this agent does NOT do well — shown in team selection */
   limitations: string[];
 
+  /** Behavioral boundaries — things this agent must NEVER do. Injected into system prompt. */
+  criticalRules?: string[];
+
+  /** Measurable success criteria. Used by evaluator gate and displayed in agent cards. */
+  successMetrics?: string[];
+
   /** Whether this agent can be removed from a team (e.g., evaluator may be mandatory) */
   optional: boolean;
 

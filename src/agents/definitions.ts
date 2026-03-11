@@ -81,6 +81,25 @@ import { projectManagerPrompt } from './prompts/project-manager.js';
 import { innovationPartnerPrompt } from './prompts/innovation-partner.js';
 import { internationalCounselPrompt } from './prompts/international-counsel.js';
 import { outputFormats } from '../types/output-schemas.js';
+import { agentProfiles } from './profiles.js';
+
+/**
+ * Enrich an agent's system prompt with Critical Rules and Success Metrics
+ * from its profile. These structured constraints are appended so the agent
+ * is aware of its behavioral boundaries and measurable outcomes.
+ */
+function enrichPrompt(role: string, basePrompt: string): string {
+  const profile = agentProfiles[role];
+  if (!profile) return basePrompt;
+  const sections: string[] = [];
+  if (profile.criticalRules?.length) {
+    sections.push(`\n## Critical Rules (NEVER violate these)\n${profile.criticalRules.map(r => `- ${r}`).join('\n')}`);
+  }
+  if (profile.successMetrics?.length) {
+    sections.push(`\n## Success Metrics (your output is measured by these)\n${profile.successMetrics.map(m => `- ${m}`).join('\n')}`);
+  }
+  return sections.length > 0 ? basePrompt + '\n' + sections.join('\n') : basePrompt;
+}
 
 // Shared read-only tools available to all agents
 const readOnlyTools = ['Read', 'Grep', 'Glob'];
@@ -144,7 +163,7 @@ export const agentDefinitions = {
 
   'design-reviewer': {
     description: 'Expert legal design reviewer. Use when you need to score a document across readability, findability, clarity, visual design, and ethics dimensions using a 0-4 scale with RED/YELLOW/GREEN severity classifications. Also calculates Complexity Tax.',
-    prompt: designReviewerPrompt,
+    prompt: enrichPrompt('design-reviewer', designReviewerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...scoringTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -153,7 +172,7 @@ export const agentDefinitions = {
 
   'ethics-auditor': {
     description: 'Dark pattern and manipulation detection specialist. Use when you need to scan a document for seven categories of dark patterns and map compliance touchpoints to GDPR, FTC, CCPA, CPA regulations.',
-    prompt: ethicsAuditorPrompt,
+    prompt: enrichPrompt('ethics-auditor', ethicsAuditorPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -162,7 +181,7 @@ export const agentDefinitions = {
 
   'transformation-specialist': {
     description: 'Plain language transformation expert. Use when you need to convert legalese to plain language while preserving legal meaning. Produces user-facing version and change log with risk levels (Low/REVIEW/CRITICAL). Can query precedents for successful transformations.',
-    prompt: transformationPrompt,
+    prompt: enrichPrompt('transformation-specialist', transformationPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 15,  // More turns — transformation is the most complex task
@@ -171,7 +190,7 @@ export const agentDefinitions = {
 
   'meaning-guardian': {
     description: 'Legal meaning preservation verifier. Use when you need to verify that a transformation has preserved all legal meaning, check non-negotiables, run five legal checkpoints, and flag ambiguity.',
-    prompt: meaningGuardianPrompt,
+    prompt: enrichPrompt('meaning-guardian', meaningGuardianPrompt),
     tools: [...readOnlyTools, ...debateTools, ...verificationTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -180,7 +199,7 @@ export const agentDefinitions = {
 
   'synthesis-editor': {
     description: 'Final document assembly and quality editor. Use when you need to assemble the final dual-artifact output (user-facing version + legal review package) by applying design patterns and maintaining voice/tone consistency. Can save successful precedents. Has access to report cards and institutional knowledge.',
-    prompt: synthesisEditorPrompt,
+    prompt: enrichPrompt('synthesis-editor', synthesisEditorPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...learningReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -191,7 +210,7 @@ export const agentDefinitions = {
 
   'service-designer': {
     description: 'Service design specialist who analyzes the full user journey — touchpoints, tasks, emotional state, pain points, and opportunities. Use for journey mapping, information architecture assessment, and cognitive load analysis. Thinks like a designer, not a lawyer.',
-    prompt: serviceDesignerPrompt,
+    prompt: enrichPrompt('service-designer', serviceDesignerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -200,7 +219,7 @@ export const agentDefinitions = {
 
   'plain-language-specialist': {
     description: 'Language scientist focused on cognitive load, sentence structure, word choice, and readability metrics. Use for sentence-level, word-level, and structure-level analysis. Produces specific rewrite suggestions with before/after improvements.',
-    prompt: plainLanguageSpecialistPrompt,
+    prompt: enrichPrompt('plain-language-specialist', plainLanguageSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...scoringTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -209,7 +228,7 @@ export const agentDefinitions = {
 
   'client-proxy': {
     description: 'Role-plays as a REAL PERSON from the target audience reading the document. Runs comprehension tests, task completion tests, emotional response mapping. Reports what confused, scared, or frustrated the reader. Their voice matters MORE than legal experts.',
-    prompt: clientProxyPrompt,
+    prompt: enrichPrompt('client-proxy', clientProxyPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -220,7 +239,7 @@ export const agentDefinitions = {
 
   'evaluator': {
     description: 'Automated quality gate. Evaluates specialist deliverables against an 8-dimension rubric (factual correctness, citation validity, policy compliance, tool consistency, jurisdictional accuracy, internal consistency, completeness). MUST use a different model than the specialist to prevent correlated errors.',
-    prompt: evaluatorPrompt,
+    prompt: enrichPrompt('evaluator', evaluatorPrompt),
     tools: [...readOnlyTools, ...memoryReadTools, 'mcp__shem__record_evaluation_result'],
     model: 'opus' as const,  // Different from Sonnet specialists — prevents correlated errors
     maxTurns: 6,
@@ -229,7 +248,7 @@ export const agentDefinitions = {
 
   'contract-reviewer': {
     description: 'Contract review specialist. Performs clause-by-clause risk-scored analysis with deviation flagging, standard position comparison, recommended redlines, and negotiation priorities. Posts findings to debate board with contract-specific types.',
-    prompt: contractReviewerPrompt,
+    prompt: enrichPrompt('contract-reviewer', contractReviewerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
     model: 'opus' as const,
     maxTurns: 12,
@@ -240,7 +259,7 @@ export const agentDefinitions = {
 
   'legal-researcher': {
     description: 'Legal research specialist. Produces structured research memos with citations, confidence levels, and conflicting authorities. Saves findings as precedents. Escalates when precedent is unclear or conflicting.',
-    prompt: legalResearcherPrompt,
+    prompt: enrichPrompt('legal-researcher', legalResearcherPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -249,7 +268,7 @@ export const agentDefinitions = {
 
   'risk-pricer': {
     description: 'Risk pricing specialist. Calculates error probability, potential loss magnitude, and insurability for any specialist deliverable. Continuous — runs on every piece of work. Uses workflow history and anti-patterns as signals.',
-    prompt: riskPricerPrompt,
+    prompt: enrichPrompt('risk-pricer', riskPricerPrompt),
     tools: [...readOnlyTools, ...memoryReadTools,
       'mcp__shem__get_workflow_history',
       'mcp__shem__query_anti_patterns',
@@ -261,7 +280,7 @@ export const agentDefinitions = {
 
   'red-team': {
     description: 'Adversarial testing agent. Attacks deliverables from a hostile counterparty perspective. Finds vulnerabilities, edge cases, ambiguities, and failure modes. Gets 1-2 shots at breaking the work. Posts findings to debate board.',
-    prompt: redTeamPrompt,
+    prompt: enrichPrompt('red-team', redTeamPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,  // Needs strong reasoning to find subtle flaws
     maxTurns: 8,
@@ -272,7 +291,7 @@ export const agentDefinitions = {
 
   'managing-partner': {
     description: 'Strategic oversight and final sign-off. Reviews all deliverables before client delivery. Conservative, meticulous, nothing ships without approval.',
-    prompt: managingPartnerPrompt,
+    prompt: enrichPrompt('managing-partner', managingPartnerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...verificationTools, ...learningReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -281,7 +300,7 @@ export const agentDefinitions = {
 
   'supervising-partner': {
     description: 'Mentors junior team members and ensures consistent work quality. Guides through structured feedback and coaching.',
-    prompt: supervisingPartnerPrompt,
+    prompt: enrichPrompt('supervising-partner', supervisingPartnerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...verificationTools],
     model: 'opus' as const,
     maxTurns: 8,
@@ -290,7 +309,7 @@ export const agentDefinitions = {
 
   'of-counsel': {
     description: 'Deep expertise and creative problem-solving for novel legal questions. Called in for the hardest, most unusual matters.',
-    prompt: ofCounselPrompt,
+    prompt: enrichPrompt('of-counsel', ofCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
     model: 'opus' as const,
     maxTurns: 12,
@@ -301,7 +320,7 @@ export const agentDefinitions = {
 
   'corporate-generalist': {
     description: 'Handles corporate matters — governance, structuring, general commercial. Reliable workhorse for anything corporate.',
-    prompt: corporateGeneralistPrompt,
+    prompt: enrichPrompt('corporate-generalist', corporateGeneralistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -310,7 +329,7 @@ export const agentDefinitions = {
 
   'ma-specialist': {
     description: 'Mergers & acquisitions specialist. Due diligence, deal structuring, transaction documentation. Fast, risk-tolerant, thrives under deadline pressure.',
-    prompt: maSpecialistPrompt,
+    prompt: enrichPrompt('ma-specialist', maSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
     model: 'opus' as const,
     maxTurns: 12,
@@ -319,7 +338,7 @@ export const agentDefinitions = {
 
   'contract-specialist': {
     description: 'Contract drafting, redlining, and clause-by-clause analysis. Every word deliberate, zero tolerance for ambiguity.',
-    prompt: contractSpecialistPrompt,
+    prompt: enrichPrompt('contract-specialist', contractSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...scoringTools],
     model: 'sonnet' as const,
     maxTurns: 12,
@@ -328,7 +347,7 @@ export const agentDefinitions = {
 
   'banking-finance': {
     description: 'Banking and finance specialist. Loan agreements, security documents, financial regulation. Thinks in term sheets and credit facilities.',
-    prompt: bankingFinancePrompt,
+    prompt: enrichPrompt('banking-finance', bankingFinancePrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -337,7 +356,7 @@ export const agentDefinitions = {
 
   'capital-markets': {
     description: 'Capital markets and securities specialist. IPOs, bond issuances, regulatory filings. Deadline-driven, comfortable with complexity.',
-    prompt: capitalMarketsPrompt,
+    prompt: enrichPrompt('capital-markets', capitalMarketsPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -348,7 +367,7 @@ export const agentDefinitions = {
 
   'litigation-partner': {
     description: 'Senior litigation strategist. Adversarial, relentless, finds every weakness. Thinks like opposing counsel to stress-test positions.',
-    prompt: litigationPartnerPrompt,
+    prompt: enrichPrompt('litigation-partner', litigationPartnerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -357,7 +376,7 @@ export const agentDefinitions = {
 
   'litigation-associate': {
     description: 'Litigation associate building cases brick by brick. Research, discovery analysis, motion drafting, evidence review.',
-    prompt: litigationAssociatePrompt,
+    prompt: enrichPrompt('litigation-associate', litigationAssociatePrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -366,7 +385,7 @@ export const agentDefinitions = {
 
   'arbitration-specialist': {
     description: 'International arbitration and alternative dispute resolution. Diplomatic, seeks efficient resolution. ICC/LCIA/UNCITRAL expertise.',
-    prompt: arbitrationSpecialistPrompt,
+    prompt: enrichPrompt('arbitration-specialist', arbitrationSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -375,7 +394,7 @@ export const agentDefinitions = {
 
   'dispute-resolution': {
     description: 'Mediation and creative dispute resolution. Avoids scorched earth, finds settlement pathways. Communication-focused.',
-    prompt: disputeResolutionPrompt,
+    prompt: enrichPrompt('dispute-resolution', disputeResolutionPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -386,7 +405,7 @@ export const agentDefinitions = {
 
   'regulatory-counsel': {
     description: 'Regulatory specialist covering financial services, healthcare, tech regulation. Knows every rule, maps compliance obligations.',
-    prompt: regulatoryCounselPrompt,
+    prompt: enrichPrompt('regulatory-counsel', regulatoryCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -395,7 +414,7 @@ export const agentDefinitions = {
 
   'compliance-officer': {
     description: 'Compliance program design and audit. Checklist-driven, flags everything. Internal controls, training programs, monitoring.',
-    prompt: complianceOfficerPrompt,
+    prompt: enrichPrompt('compliance-officer', complianceOfficerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...verificationTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -404,7 +423,7 @@ export const agentDefinitions = {
 
   'antitrust-specialist': {
     description: 'Competition law and antitrust specialist. Market analysis, merger control, cartel investigations. Strategic competitive dynamics.',
-    prompt: antitrustSpecialistPrompt,
+    prompt: enrichPrompt('antitrust-specialist', antitrustSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -413,7 +432,7 @@ export const agentDefinitions = {
 
   'sanctions-specialist': {
     description: 'Sanctions, export controls, and trade compliance. Zero tolerance for risk. OFAC, EU sanctions, UN sanctions screening.',
-    prompt: sanctionsSpecialistPrompt,
+    prompt: enrichPrompt('sanctions-specialist', sanctionsSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -424,7 +443,7 @@ export const agentDefinitions = {
 
   'tax-counsel': {
     description: 'Tax structuring and planning specialist. Structures transactions for efficiency, navigates multi-jurisdiction tax regimes.',
-    prompt: taxCounselPrompt,
+    prompt: enrichPrompt('tax-counsel', taxCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -433,7 +452,7 @@ export const agentDefinitions = {
 
   'ip-specialist': {
     description: 'Intellectual property specialist — patents, trademarks, copyrights, trade secrets. Creative, tech-savvy, portfolio strategy.',
-    prompt: ipSpecialistPrompt,
+    prompt: enrichPrompt('ip-specialist', ipSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 10,
@@ -442,7 +461,7 @@ export const agentDefinitions = {
 
   'privacy-counsel': {
     description: 'Data protection and privacy specialist. GDPR, CCPA, PIPL, cross-border data transfers. Chapter-and-verse regulatory knowledge.',
-    prompt: privacyCounselPrompt,
+    prompt: enrichPrompt('privacy-counsel', privacyCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -451,7 +470,7 @@ export const agentDefinitions = {
 
   'employment-counsel': {
     description: 'Employment and labor law specialist. Hiring, termination, discrimination, benefits, workplace safety. Sensitive to power dynamics.',
-    prompt: employmentCounselPrompt,
+    prompt: enrichPrompt('employment-counsel', employmentCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -460,7 +479,7 @@ export const agentDefinitions = {
 
   'real-estate-counsel': {
     description: 'Real property and real estate transactions. Acquisitions, leasing, development, zoning. Rights and boundaries.',
-    prompt: realEstateCounselPrompt,
+    prompt: enrichPrompt('real-estate-counsel', realEstateCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -469,7 +488,7 @@ export const agentDefinitions = {
 
   'environmental-counsel': {
     description: 'Environmental law and ESG specialist. Permitting, contamination, compliance, sustainability reporting. Precautionary approach.',
-    prompt: environmentalCounselPrompt,
+    prompt: enrichPrompt('environmental-counsel', environmentalCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -480,7 +499,7 @@ export const agentDefinitions = {
 
   'junior-associate': {
     description: 'Junior lawyer for research, first drafts, and support work. Fast, enthusiastic, thorough researcher with fresh perspective.',
-    prompt: juniorAssociatePrompt,
+    prompt: enrichPrompt('junior-associate', juniorAssociatePrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -489,7 +508,7 @@ export const agentDefinitions = {
 
   'paralegal': {
     description: 'Paralegal handling volume work — document review, due diligence, formatting, cite-checking. Fast and precise.',
-    prompt: paralegalPrompt,
+    prompt: enrichPrompt('paralegal', paralegalPrompt),
     tools: [...readOnlyTools, ...memoryReadTools, ...scoringTools],
     model: 'haiku' as const,
     maxTurns: 6,
@@ -498,7 +517,7 @@ export const agentDefinitions = {
 
   'legal-intern': {
     description: 'Legal intern for research tasks and fresh perspective. Asks good questions, identifies assumptions others miss.',
-    prompt: legalInternPrompt,
+    prompt: enrichPrompt('legal-intern', legalInternPrompt),
     tools: [...readOnlyTools, ...memoryReadTools],
     model: 'haiku' as const,
     maxTurns: 6,
@@ -510,7 +529,7 @@ export const agentDefinitions = {
 
   'accessibility-specialist': {
     description: 'Accessibility specialist. WCAG compliance, screen reader testing, cognitive load, inclusive design.',
-    prompt: accessibilitySpecialistPrompt,
+    prompt: enrichPrompt('accessibility-specialist', accessibilitySpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -519,7 +538,7 @@ export const agentDefinitions = {
 
   'user-researcher': {
     description: 'User research specialist. Interview insights, usability findings, comprehension testing, behavioral analysis.',
-    prompt: userResearcherPrompt,
+    prompt: enrichPrompt('user-researcher', userResearcherPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -528,7 +547,7 @@ export const agentDefinitions = {
 
   'behavioral-scientist': {
     description: 'Behavioral science specialist. Choice architecture, cognitive biases, nudge design, decision-making analysis.',
-    prompt: behavioralScientistPrompt,
+    prompt: enrichPrompt('behavioral-scientist', behavioralScientistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 8,
@@ -540,7 +559,7 @@ export const agentDefinitions = {
 
   'legal-engineer': {
     description: 'Legal technology specialist. Automation, document assembly, legal tech integration, computational law.',
-    prompt: legalEngineerPrompt,
+    prompt: enrichPrompt('legal-engineer', legalEngineerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -549,7 +568,7 @@ export const agentDefinitions = {
 
   'cybersecurity-advisor': {
     description: 'Cybersecurity specialist. Threat modeling, breach scenarios, security assessment, data protection technical controls.',
-    prompt: cybersecurityAdvisorPrompt,
+    prompt: enrichPrompt('cybersecurity-advisor', cybersecurityAdvisorPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -558,7 +577,7 @@ export const agentDefinitions = {
 
   'ai-ethics-specialist': {
     description: 'AI governance and algorithmic fairness specialist. AI regulation, algorithmic bias, model governance, responsible AI.',
-    prompt: aiEthicsSpecialistPrompt,
+    prompt: enrichPrompt('ai-ethics-specialist', aiEthicsSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 8,
@@ -569,7 +588,7 @@ export const agentDefinitions = {
 
   'fintech-specialist': {
     description: 'Fintech and financial innovation specialist. Payments, crypto, DeFi, regulatory sandbox, PSD2/MiCA.',
-    prompt: fintechSpecialistPrompt,
+    prompt: enrichPrompt('fintech-specialist', fintechSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -578,7 +597,7 @@ export const agentDefinitions = {
 
   'healthcare-specialist': {
     description: 'Healthcare and life sciences specialist. HIPAA, clinical trials, health data, pharmaceutical regulation.',
-    prompt: healthcareSpecialistPrompt,
+    prompt: enrichPrompt('healthcare-specialist', healthcareSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -587,7 +606,7 @@ export const agentDefinitions = {
 
   'media-specialist': {
     description: 'Media and entertainment specialist. Content rights, platform rules, defamation, licensing, publishing.',
-    prompt: mediaSpecialistPrompt,
+    prompt: enrichPrompt('media-specialist', mediaSpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -596,7 +615,7 @@ export const agentDefinitions = {
 
   'energy-specialist': {
     description: 'Energy and natural resources specialist. Energy regulation, carbon markets, renewable energy, grid infrastructure.',
-    prompt: energySpecialistPrompt,
+    prompt: enrichPrompt('energy-specialist', energySpecialistPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -607,7 +626,7 @@ export const agentDefinitions = {
 
   'project-manager': {
     description: 'Project management specialist. Timelines, dependencies, status tracking, resource allocation, workflow coordination.',
-    prompt: projectManagerPrompt,
+    prompt: enrichPrompt('project-manager', projectManagerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools, ...learningReadTools],
     model: 'sonnet' as const,
     maxTurns: 8,
@@ -618,7 +637,7 @@ export const agentDefinitions = {
 
   'innovation-partner': {
     description: 'Legal innovation and emerging technology specialist. AI contracts, smart contracts, RegTech, novel business models, emerging regulatory frameworks.',
-    prompt: innovationPartnerPrompt,
+    prompt: enrichPrompt('innovation-partner', innovationPartnerPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,
@@ -627,7 +646,7 @@ export const agentDefinitions = {
 
   'international-counsel': {
     description: 'Cross-border regulation and multi-jurisdictional compliance. Conflict of laws, treaty frameworks, international regulatory coordination.',
-    prompt: internationalCounselPrompt,
+    prompt: enrichPrompt('international-counsel', internationalCounselPrompt),
     tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
     model: 'opus' as const,
     maxTurns: 10,

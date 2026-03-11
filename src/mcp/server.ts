@@ -42,6 +42,8 @@ import { createEvaluatorGateTools } from './tools/evaluator-gate.js';
 import { createRiskPricingTools } from './tools/risk-pricing.js';
 // v11: Quality Check Iteration Loops
 import { createQualityCheckTools } from './tools/quality-check.js';
+// Handoff Templates — structured phase-transition summaries
+import { createHandoffTools } from './tools/handoff.js';
 // v12: Document Reader
 import { createDocumentReaderTools } from './tools/document-reader.js';
 // v8: Pre-Engagement
@@ -93,6 +95,8 @@ export function createShemMcpServer(session: SessionState, template?: WorkflowTe
       ...createDocumentReaderTools(session),
       // v15: Knowledge Base — searchable reference document collections
       ...createKnowledgeBaseTools(session),
+      // Handoff Templates — structured phase-transition summaries
+      ...createHandoffTools(session),
     ],
   });
 }

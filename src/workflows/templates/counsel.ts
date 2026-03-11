@@ -42,6 +42,8 @@ export const counselTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
+    'mcp__shem__submit_handoff',
+    'mcp__shem__get_handoffs',
     // Memory system (read-only — fast lookups)
     'mcp__shem__query_institutional_memory',
     'mcp__shem__load_matter_memory',

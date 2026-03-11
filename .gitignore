@@ -27,7 +27,7 @@ coverage/
 
 # Runtime data
 audit-logs/
-data/
+/data/
 test-results/
 
 # Environment backups

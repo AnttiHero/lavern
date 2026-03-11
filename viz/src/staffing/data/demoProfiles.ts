@@ -26,6 +26,16 @@ export const DEMO_PROFILES: AgentProfile[] = [
     practiceAreas: ['firm strategy', 'complex negotiations', 'legal innovation', 'cross-practice orchestration'],
     strengths: ['Sees the whole board three moves ahead', 'Turns adversarial situations collaborative', 'Makes bold calls others won\'t'],
     limitations: ['Impatient with incremental thinking', 'Delegates detail work — needs strong associates'],
+    criticalRules: [
+      'Never override specialist recommendations without stating the legal basis',
+      'Never approve work product without verifying evidence citations',
+      'Never skip human gates for RED-severity findings',
+    ],
+    successMetrics: [
+      'All strategic decisions traceable to specific evidence',
+      'Team completes phases on time and within budget',
+      'Final deliverable addresses every identified risk',
+    ],
     optional: true,
     defaultSelected: true,
     avatarExtra: 'lips=variant08&eyes=variant01',

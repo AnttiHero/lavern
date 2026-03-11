@@ -10,7 +10,7 @@
 
 import { EventEmitter } from 'node:events';
 import type { AgentRole, Severity } from '../types/index.js';
-import type { WorkflowStep } from '../types/workflow.js';
+import type { WorkflowStep, HandoffType } from '../types/workflow.js';
 
 // ── Event Types ──────────────────────────────────────────────────────────
 
@@ -59,7 +59,9 @@ export type ShemEvent =
   | { type: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
   | { type: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }
   | { type: 'verification_finding'; findingId: string; pass: string; severity: string; location: string; description: string; autoFixable: boolean; timestamp: string }
-  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string };
+  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string }
+  // Handoff events — structured phase-transition summaries
+  | { type: 'phase_handoff'; handoffId: string; fromStep: string; toStep: string; handoffType: HandoffType; summary: string; confidenceScore: number; timestamp: string };
 
 // ── Event Bus ────────────────────────────────────────────────────────────
 

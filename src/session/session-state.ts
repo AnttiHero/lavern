@@ -17,7 +17,7 @@ import { config } from '../config.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
 import { ReadlineGateResolver } from '../gates/gate-resolver.js';
 import type { DebateState, Finding, Challenge, Response, DebateResolution, DebateRound } from '../types/debate.js';
-import type { WorkflowState, WorkflowStep, GenericWorkflowState } from '../types/workflow.js';
+import type { WorkflowState, WorkflowStep, GenericWorkflowState, HandoffSummary } from '../types/workflow.js';
 import type { AuditEntry, SubagentActivity } from '../types/audit.js';
 import type { HumanGateDecision } from '../types/index.js';
 import type { ClientIdentity } from '../types/client.js';
@@ -178,6 +178,10 @@ export class SessionState {
   // ── v5: Generic Workflow State ──
   public genericWorkflow?: GenericWorkflowState;
   public workflowTemplateId?: string;
+
+  // ── Handoff Summaries ──
+  /** Structured handoff summaries recorded at each workflow phase transition. */
+  public handoffs: HandoffSummary[] = [];
 
   // ── v6: Risk Assessment State ──
   public riskAssessments: Array<{

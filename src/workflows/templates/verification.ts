@@ -57,6 +57,8 @@ export const verificationTemplate: WorkflowTemplate = {
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
     'mcp__shem__get_workflow_history',
+    'mcp__shem__submit_handoff',
+    'mcp__shem__get_handoffs',
     // Verification pipeline (the core 4 tools)
     'mcp__shem__start_verification_pipeline',
     'mcp__shem__record_pass_result',

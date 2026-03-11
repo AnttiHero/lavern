@@ -155,6 +155,35 @@ export interface WorkflowTemplate {
  * Generic workflow state — used by non-legal-design templates.
  * Mirrors WorkflowState but with string steps instead of WorkflowStep literals.
  */
+// ══════════════════════════════════════════════════════════════════════════
+// Handoff Templates — structured phase-transition summaries
+// ══════════════════════════════════════════════════════════════════════════
+
+export type HandoffType = 'standard' | 'qa_pass' | 'qa_fail' | 'escalation' | 'gate_approval' | 'gate_rejection';
+
+export interface HandoffSummary {
+  /** Sequenced ID: H-001, H-002, etc. */
+  id: string;
+  /** Step being completed */
+  fromStep: string;
+  /** Step being transitioned to */
+  toStep: string;
+  /** Role of the primary agent in the completing step */
+  fromAgent: string;
+  /** Type of handoff */
+  type: HandoffType;
+  /** Human-readable summary of what was accomplished */
+  summary: string;
+  /** What was produced in this step */
+  deliverables: string[];
+  /** Unresolved issues for the next phase */
+  openItems: string[];
+  /** Confidence in the work product (0–1) */
+  confidenceScore: number;
+  /** ISO timestamp */
+  timestamp: string;
+}
+
 export interface GenericWorkflowState {
   templateId: string;
   currentStep: string;
@@ -166,6 +195,8 @@ export interface GenericWorkflowState {
   qualityChecks: QualityCheckResult[];
   /** v11: Per-step iteration counts (keyed by step name) */
   stepIterationCounts: Record<string, number>;
+  /** Structured handoff summaries recorded at each phase transition */
+  handoffs: HandoffSummary[];
   startedAt: string;
   lastTransitionAt: string;
 }

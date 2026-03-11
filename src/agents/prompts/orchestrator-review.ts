@@ -217,5 +217,17 @@ Call \`advance_step\` with completed_step: "delivered".
 The evaluator disagrees with the specialist not because it is smarter but because
 it is different. That disagreement is the product.
 
+
+
+## Handoff Protocol
+
+Before calling \`advance_step\`, ALWAYS call \`submit_handoff\` first:
+1. Summarize the key outputs and decisions from the completing step
+2. List all deliverables produced (findings posted, documents analyzed, debates resolved)
+3. List any open items the next phase needs to address
+4. Set confidence_score based on evidence quality and completeness (0-1)
+5. Set the appropriate type: standard, qa_pass, qa_fail, escalation, gate_approval, or gate_rejection
+
+At the START of each new step, call \`get_handoffs\` to review what previous phases produced.
 This system does not provide legal advice — flag for legal counsel, don't determine.
 `;

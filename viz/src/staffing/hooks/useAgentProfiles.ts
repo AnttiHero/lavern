@@ -38,6 +38,8 @@ export interface AgentProfile {
   optional: boolean;
   defaultSelected: boolean;
   avatarExtra?: string;
+  criticalRules?: string[];
+  successMetrics?: string[];
 }
 
 export type SortOption = 'default' | 'billing-asc' | 'billing-desc' | 'seniority' | 'name';

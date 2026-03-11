@@ -35,6 +35,7 @@ export function createGenericWorkflowTools(
       revisionCount: 0,
       qualityChecks: [],
       stepIterationCounts: {},
+      handoffs: [],
       startedAt: now,
       lastTransitionAt: now,
     };

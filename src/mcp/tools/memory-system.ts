@@ -20,6 +20,15 @@ import { readJsonFile, writeJsonFileAtomic, ensureDir } from '../../utils/fs-hel
 
 // ── Types ────────────────────────────────────────────────────────────────
 
+/** Structured tags for memory filtering. All fields optional for backward compat. */
+export interface MemoryTags {
+  agentRole?: string;        // e.g., 'contract-reviewer'
+  engagementType?: string;   // e.g., 'review', 'adversarial'
+  documentType?: string;     // e.g., 'NDA', 'ToS'
+  jurisdiction?: string;     // e.g., 'US', 'EU'
+  custom?: string[];         // free-form tags
+}
+
 export interface InstitutionalMemoryEntry {
   id: string;
   category: 'lesson' | 'preference' | 'rule' | 'pattern' | 'warning';
@@ -32,6 +41,8 @@ export interface InstitutionalMemoryEntry {
   lastUsedAt?: string;
   usedInSessions: string[];
   outcomes: { sessionId: string; timestamp: string; applied: boolean; outcomeScore: number; notes?: string }[];
+  /** Structured tags for filtered retrieval. */
+  tags?: MemoryTags;
 }
 
 interface MatterMemoryEntry {
@@ -60,6 +71,8 @@ export interface PrecedentEntry {
   outcomes: { sessionId: string; timestamp: string; applied: boolean; scoreDelta: number; verificationPassed: boolean; notes?: string }[];
   deprecated: boolean;
   deprecationReason?: string;
+  /** Structured tags for filtered retrieval. */
+  tags?: MemoryTags;
 }
 
 // ── Migration helpers (backward-compatible with v3 JSON files) ────────
@@ -76,10 +89,21 @@ export function migrateMemory(entry: Partial<InstitutionalMemoryEntry>): Institu
     lastUsedAt: entry.lastUsedAt,
     usedInSessions: entry.usedInSessions ?? [],
     outcomes: entry.outcomes ?? [],
+    tags: entry.tags,  // undefined if absent — backward compatible
   };
 }
 
 export function migratePrecedent(entry: Partial<PrecedentEntry>): PrecedentEntry {
+  // Auto-populate tags from existing fields for untagged precedents
+  const autoTags: MemoryTags | undefined = entry.tags ?? (
+    (entry.documentType && entry.documentType !== 'unknown') || (entry.jurisdiction && entry.jurisdiction !== 'unknown')
+      ? {
+          documentType: entry.documentType !== 'unknown' ? entry.documentType : undefined,
+          jurisdiction: entry.jurisdiction !== 'unknown' ? entry.jurisdiction : undefined,
+        }
+      : undefined
+  );
+
   return {
     id: entry.id || 'P-000',
     documentType: entry.documentType || 'unknown',
@@ -96,6 +120,7 @@ export function migratePrecedent(entry: Partial<PrecedentEntry>): PrecedentEntry
     outcomes: entry.outcomes ?? [],
     deprecated: entry.deprecated ?? false,
     deprecationReason: entry.deprecationReason,
+    tags: autoTags,
   };
 }
 
@@ -114,9 +139,30 @@ export function createMemoryTools(session: SessionState) {
         .describe('The memory content — what was learned'),
       source: z.string()
         .describe('Where this came from: agent name, session ID, or human feedback'),
+      agent_role: z.string().optional()
+        .describe('Role of the agent creating this memory (for tagged retrieval)'),
+      engagement_type: z.string().optional()
+        .describe('Type of engagement: review, adversarial, counsel, etc.'),
+      document_type: z.string().optional()
+        .describe('Type of document this relates to: NDA, ToS, etc.'),
+      jurisdiction: z.string().optional()
+        .describe('Jurisdiction this relates to: US, EU, UK, etc.'),
+      custom_tags: z.array(z.string()).optional()
+        .describe('Additional free-form tags'),
     },
     async (args) => {
       const filePath = path.join(memoryDir, 'institutional.json');
+
+      // Build tags from optional arguments
+      const tags: MemoryTags | undefined = (args.agent_role || args.engagement_type || args.document_type || args.jurisdiction || args.custom_tags?.length)
+        ? {
+            agentRole: args.agent_role,
+            engagementType: args.engagement_type,
+            documentType: args.document_type,
+            jurisdiction: args.jurisdiction,
+            custom: args.custom_tags,
+          }
+        : undefined;
 
       // Retry loop to handle concurrent read-modify-write races.
       // writeJsonFileAtomic uses tmp-then-rename which is atomic at the FS level,
@@ -135,6 +181,7 @@ export function createMemoryTools(session: SessionState) {
           effectiveness: 0.5,
           usedInSessions: [],
           outcomes: [],
+          tags,
         };
         memories.push(entry);
         try {
@@ -171,6 +218,16 @@ export function createMemoryTools(session: SessionState) {
         .describe('Filter by category, or "all" for everything'),
       keyword: z.string().optional()
         .describe('Search keyword to filter memories'),
+      agent_role: z.string().optional()
+        .describe('Filter by agent role tag'),
+      engagement_type: z.string().optional()
+        .describe('Filter by engagement type tag'),
+      document_type: z.string().optional()
+        .describe('Filter by document type tag'),
+      jurisdiction: z.string().optional()
+        .describe('Filter by jurisdiction tag'),
+      tag: z.string().optional()
+        .describe('Filter by any custom tag'),
     },
     async (args) => {
       const filePath = path.join(memoryDir, 'institutional.json');
@@ -182,6 +239,22 @@ export function createMemoryTools(session: SessionState) {
       if (args.keyword) {
         const kw = args.keyword.toLowerCase();
         memories = memories.filter(m => m.content.toLowerCase().includes(kw));
+      }
+      // Tag-based filtering
+      if (args.agent_role) {
+        memories = memories.filter(m => m.tags?.agentRole === args.agent_role);
+      }
+      if (args.engagement_type) {
+        memories = memories.filter(m => m.tags?.engagementType === args.engagement_type);
+      }
+      if (args.document_type) {
+        memories = memories.filter(m => m.tags?.documentType === args.document_type);
+      }
+      if (args.jurisdiction) {
+        memories = memories.filter(m => m.tags?.jurisdiction === args.jurisdiction);
+      }
+      if (args.tag) {
+        memories = memories.filter(m => m.tags?.custom?.includes(args.tag!));
       }
 
       // Update usage counts — best-effort, don't fail the query on write race
@@ -208,9 +281,10 @@ export function createMemoryTools(session: SessionState) {
       return {
         content: [{
           type: 'text' as const,
-          text: `## Institutional Memory (${memories.length} entries)\n\n${memories.map(m =>
-            `### ${m.id} [${m.category.toUpperCase()}]\n${m.content}\n_Source: ${m.source} | Added: ${m.addedAt} | Used: ${m.usageCount}x_`
-          ).join('\n\n')}`,
+          text: `## Institutional Memory (${memories.length} entries)\n\n${memories.map(m => {
+            const tagStr = m.tags ? ` {${Object.entries(m.tags).filter(([, v]) => v != null && (!Array.isArray(v) || v.length > 0)).map(([k, v]) => `${k}:${Array.isArray(v) ? v.join(',') : v}`).join(' ')}}` : '';
+            return `### ${m.id} [${m.category.toUpperCase()}]${tagStr}\n${m.content}\n_Source: ${m.source} | Added: ${m.addedAt} | Used: ${m.usageCount}x_`;
+          }).join('\n\n')}`,
         }],
       };
     },
@@ -297,6 +371,12 @@ export function createMemoryTools(session: SessionState) {
       before_snippet: z.string().describe('Sample of original text'),
       after_snippet: z.string().describe('Sample of transformed text'),
       quality_score: z.number().describe('Quality score 0-4'),
+      agent_role: z.string().optional()
+        .describe('Role of the agent saving this precedent (for tagged retrieval)'),
+      engagement_type: z.string().optional()
+        .describe('Type of engagement: review, adversarial, counsel, etc.'),
+      custom_tags: z.array(z.string()).optional()
+        .describe('Additional free-form tags'),
     },
     async (args) => {
       const filePath = path.join(memoryDir, 'precedents.json');
@@ -317,6 +397,13 @@ export function createMemoryTools(session: SessionState) {
         effectivenessScore: args.quality_score / 4,
         outcomes: [],
         deprecated: false,
+        tags: {
+          documentType: args.document_type !== 'unknown' ? args.document_type : undefined,
+          jurisdiction: args.jurisdiction !== 'unknown' ? args.jurisdiction : undefined,
+          agentRole: args.agent_role,
+          engagementType: args.engagement_type,
+          custom: args.custom_tags,
+        },
       };
       precedents.push(entry);
       writeJsonFileAtomic(filePath, precedents);
@@ -348,6 +435,9 @@ export function createMemoryTools(session: SessionState) {
       jurisdiction: z.string().optional().describe('Filter by jurisdiction'),
       min_quality: z.number().optional().describe('Minimum quality score (default: 3.0)'),
       include_deprecated: z.boolean().optional().describe('Include deprecated precedents (default: false)'),
+      agent_role: z.string().optional().describe('Filter by creating agent role tag'),
+      engagement_type: z.string().optional().describe('Filter by engagement type tag'),
+      tag: z.string().optional().describe('Filter by any custom tag'),
     },
     async (args) => {
       const filePath = path.join(memoryDir, 'precedents.json');
@@ -362,6 +452,16 @@ export function createMemoryTools(session: SessionState) {
       }
       if (args.jurisdiction) {
         precedents = precedents.filter(p => p.jurisdiction === args.jurisdiction);
+      }
+      // Tag-based filtering
+      if (args.agent_role) {
+        precedents = precedents.filter(p => p.tags?.agentRole === args.agent_role);
+      }
+      if (args.engagement_type) {
+        precedents = precedents.filter(p => p.tags?.engagementType === args.engagement_type);
+      }
+      if (args.tag) {
+        precedents = precedents.filter(p => p.tags?.custom?.includes(args.tag!));
       }
       const minQ = args.min_quality ?? 3.0;
       precedents = precedents.filter(p => p.qualityScore >= minQ);

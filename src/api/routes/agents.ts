@@ -64,6 +64,8 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
         optional: p.optional,
         defaultSelected: p.defaultSelected,
         ...(p.avatarExtra ? { avatarExtra: p.avatarExtra } : {}),
+        ...(p.criticalRules?.length ? { criticalRules: p.criticalRules } : {}),
+        ...(p.successMetrics?.length ? { successMetrics: p.successMetrics } : {}),
       })),
       summary: {
         total: profiles.length,
@@ -103,6 +105,8 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
         limitations: profile.limitations,
         optional: profile.optional,
         defaultSelected: profile.defaultSelected,
+        ...(profile.criticalRules?.length ? { criticalRules: profile.criticalRules } : {}),
+        ...(profile.successMetrics?.length ? { successMetrics: profile.successMetrics } : {}),
       },
     });
   });

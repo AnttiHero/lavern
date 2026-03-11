@@ -129,6 +129,62 @@ export function AgentCardBack({ profile }: Props) {
         ))}
       </div>
 
+      {/* Critical Rules */}
+      {profile.criticalRules && profile.criticalRules.length > 0 && (
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{
+            fontSize: 10,
+            fontFamily: fonts.sans,
+            fontWeight: 500,
+            color: colors.error,
+            marginBottom: 3,
+          }}>
+            Critical Rules
+          </div>
+          {profile.criticalRules.slice(0, 2).map(r => (
+            <div key={r} style={{
+              fontSize: 9,
+              fontFamily: fonts.sans,
+              color: colors.textMuted,
+              lineHeight: '13px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {'\u26D4'} {r}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Success Metrics */}
+      {profile.successMetrics && profile.successMetrics.length > 0 && (
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{
+            fontSize: 10,
+            fontFamily: fonts.sans,
+            fontWeight: 500,
+            color: colors.success,
+            marginBottom: 3,
+          }}>
+            Success Metrics
+          </div>
+          {profile.successMetrics.slice(0, 2).map(m => (
+            <div key={m} style={{
+              fontSize: 9,
+              fontFamily: fonts.sans,
+              color: colors.textMuted,
+              lineHeight: '13px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {'\u2713'} {m}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Work style (truncated) */}
       <div style={{
         fontSize: 10,

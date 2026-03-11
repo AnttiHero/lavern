@@ -370,5 +370,39 @@ function buildPromptFromRequest(
     parts.push(`${i + 1}. ${step} — ${def?.description ?? ''} ${flags.join(' ')}`);
   });
 
+  // ── Team Critical Rules & Success Metrics ─────────────────────────────
+  // Gives the orchestrator awareness of each team member's constraints
+  const teamRulesSection: string[] = [];
+  const teamRoles = session.selectedTeam.length > 0
+    ? session.selectedTeam
+    : classification.selectedSpecialists;
+  for (const role of teamRoles) {
+    const profile = agentProfiles[role];
+    if (profile?.criticalRules?.length || profile?.successMetrics?.length) {
+      teamRulesSection.push(`\n### ${profile.displayName} (${role})`);
+      if (profile.criticalRules?.length) {
+        teamRulesSection.push(`**Critical Rules:**`);
+        profile.criticalRules.forEach(r => teamRulesSection.push(`- ${r}`));
+      }
+      if (profile.successMetrics?.length) {
+        teamRulesSection.push(`**Success Metrics:**`);
+        profile.successMetrics.forEach(m => teamRulesSection.push(`- ${m}`));
+      }
+    }
+  }
+  if (teamRulesSection.length > 0) {
+    parts.push(`\n## Team Critical Rules & Success Metrics`);
+    parts.push(...teamRulesSection);
+  }
+
+  // ── Handoff Protocol ──────────────────────────────────────────────────
+  parts.push(`\n## Handoff Protocol`);
+  parts.push(`Before calling \`advance_step\`, ALWAYS call \`submit_handoff\` to record a structured summary of what happened in the completing step — key outputs, deliverables produced, open items for the next phase, and a confidence score.`);
+  parts.push(`At the START of each new step, call \`get_handoffs\` to review what previous phases produced and what needs attention.`);
+
+  // ── Memory Tagging ────────────────────────────────────────────────────
+  parts.push(`\n## Memory Tagging`);
+  parts.push(`When saving to institutional memory or precedents, include tags: agent_role (the saving agent's role), engagement_type ("${template.id}"), document_type, and jurisdiction from context. This enables filtered retrieval in future engagements.`);
+
   return parts.join('\n').trim();
 }
