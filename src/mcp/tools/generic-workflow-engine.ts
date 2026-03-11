@@ -123,9 +123,11 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
         }
       }
 
-      // Record completion
+      // Record completion (guard against duplicate entries from retry after gate rejection)
       const previousStep = state.currentStep;
-      state.completedSteps.push(completedStep);
+      if (!state.completedSteps.includes(completedStep)) {
+        state.completedSteps.push(completedStep);
+      }
 
       const currentIndex = steps.indexOf(completedStep);
 

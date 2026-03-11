@@ -503,6 +503,10 @@ export function registerEngageRoutes(
 
     // ── Webhook mode: fire-and-forget, return immediately ──────────
     if (body.mode === 'webhook' && body.callbackUrl) {
+      // SSRF prevention: validate callback URL the same way we validate document URLs
+      if (!isUrlSafe(body.callbackUrl)) {
+        return reply.status(422).send({ error: 'callbackUrl must be a public HTTPS URL (private/internal addresses are not allowed).' });
+      }
       const callbackUrl = body.callbackUrl;
 
       // Launch dispatch in background

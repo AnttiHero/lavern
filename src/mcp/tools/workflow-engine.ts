@@ -96,7 +96,9 @@ ${stepDef.requiresGateApproval ? `**Gate Required**: ${stepDef.gateType} (must i
       }
 
       const previousStep = state.currentStep;
-      state.completedSteps.push(completedStep);
+      if (!state.completedSteps.includes(completedStep)) {
+        state.completedSteps.push(completedStep);
+      }
 
       const currentIndex = WORKFLOW_STEPS.indexOf(completedStep);
       if (currentIndex >= WORKFLOW_STEPS.length - 1) {

@@ -157,7 +157,7 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
 
         const fetches = formats.map(async ({ ext }) => {
           try {
-            const resp = await fetch(`/api/sessions/${data.sessionId}/download?format=${ext}${styleParam}`);
+            const resp = await fetch(`/api/sessions/${data.sessionId}/download?format=${ext}${styleParam}`, { credentials: 'include' });
             if (resp.ok) {
               const blob = await resp.blob();
               await writeBlob(`${data.sessionId}-deliverable.${ext}`, blob);

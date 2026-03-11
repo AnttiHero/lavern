@@ -507,13 +507,25 @@ export async function startApiServer(port: number): Promise<void> {
   // Prevent the server from crashing on unhandled errors in background
   // tasks (dispatch, assembly, WebSocket handlers, etc.)
 
+  let uncaughtCount = 0;
+  const UNCAUGHT_RESET_MS = 60_000; // 1 minute window
+  const MAX_UNCAUGHT = 5; // exit after 5 uncaught exceptions within the window
+
   process.on('uncaughtException', (err) => {
-    console.error('[FATAL] Uncaught exception (server will continue):', err);
+    console.error('[FATAL] Uncaught exception:', err);
     if (captureError) captureError(err, { type: 'uncaughtException' });
-    // Log but don't exit — Fastify routes have their own error handling.
-    // Only exit on truly unrecoverable errors.
+
+    // Exit on truly unrecoverable errors
     if (err.message?.includes('EADDRINUSE') || err.message?.includes('ENOMEM')) {
       console.error('[FATAL] Unrecoverable error — shutting down');
+      process.exit(1);
+    }
+
+    // Track frequency — exit if too many uncaught exceptions in rapid succession
+    uncaughtCount++;
+    setTimeout(() => { uncaughtCount = Math.max(0, uncaughtCount - 1); }, UNCAUGHT_RESET_MS);
+    if (uncaughtCount >= MAX_UNCAUGHT) {
+      console.error(`[FATAL] ${MAX_UNCAUGHT} uncaught exceptions within ${UNCAUGHT_RESET_MS / 1000}s — shutting down`);
       process.exit(1);
     }
   });

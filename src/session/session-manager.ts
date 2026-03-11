@@ -16,6 +16,9 @@ import { SessionState } from './session-state.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
 import { archiveSession } from '../db/database.js';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('SESSION');
 
 /** How often to run the background cleanup sweep (ms). */
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -69,7 +72,7 @@ export class SessionManager {
         const userId = session.userId ?? session.clientIdentity?.id ?? null;
         archiveSession(session, userId);
       } catch (err) {
-        console.error(`[SESSION] Failed to archive session ${session.id}:`, err);
+        log.error(`[SESSION] Failed to archive session ${session.id}:`, err);
       }
     });
 
@@ -88,11 +91,22 @@ export class SessionManager {
   destroySession(id: string, reason?: string): boolean {
     const entry = this.sessions.get(id);
     if (entry) {
-      // Halt running agents — fires session_end which triggers archival via event listener
+      // Archive before removing listeners so work product is preserved
+      // (halt() emits 'error' not 'session_end', so the event listener
+      // in createSession() may never fire — archive explicitly like evictSession())
+      if (!entry.archived) {
+        entry.archived = true;
+        try {
+          const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? null;
+          archiveSession(entry.session, userId);
+        } catch (err) {
+          log.error(`[SESSION] Failed to archive destroyed session ${id}:`, err);
+        }
+      }
+      // Halt running agents
       if (!entry.session.isHalted()) {
         entry.session.halt(reason ?? 'Session destroyed');
       }
-      // Archival handled by session_end listener in createSession(). No duplicate call here.
       entry.session.events.stopRecording();
       entry.session.events.removeAllListeners();
       this.sessions.delete(id);
@@ -152,7 +166,7 @@ export class SessionManager {
         const userId = entry.session.userId ?? entry.session.clientIdentity?.id ?? null;
         archiveSession(entry.session, userId);
       } catch (err) {
-        console.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+        log.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
       }
     }
     // Halt any running agents
@@ -216,7 +230,7 @@ export class SessionManager {
     }
 
     if (evicted > 0) {
-      console.error(`[SESSION] Cleanup: evicted ${evicted} session(s), ${this.sessions.size} remaining`);
+      log.error(`[SESSION] Cleanup: evicted ${evicted} session(s), ${this.sessions.size} remaining`);
     }
 
     return evicted;

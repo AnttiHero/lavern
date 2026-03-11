@@ -337,7 +337,7 @@ export default function PricingView({ onBack }: Props) {
     (async () => {
       try {
         // Fetch publishable key from server
-        const cfgRes = await fetch('/api/billing/stripe-config');
+        const cfgRes = await fetch('/api/billing/stripe-config', { credentials: 'include' });
         if (!cfgRes.ok) return;
         const { publishableKey } = await cfgRes.json();
         if (!publishableKey || cancelled) return;

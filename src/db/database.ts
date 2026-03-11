@@ -460,25 +460,15 @@ export interface ArchivedSession {
 }
 
 export function archiveSession(session: SessionState, userId: string | null): void {
+  const db = getDb();
   const now = new Date().toISOString();
   const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
   const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : 0;
 
-  // v21: Track per-user monthly usage
-  if (userId && session.accumulatedCost > 0) {
-    try {
-      incrementUserUsage(userId, session.accumulatedCost);
-    } catch (err) {
-      console.error(`[DB] Failed to increment usage for ${userId}:`, err);
-    }
-    // v22: Debit billable hours
-    try {
-      const hoursUsed = session.accumulatedCost / config.billableHours.rate;
-      debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
-    } catch (err) {
-      console.error(`[DB] Failed to debit billable hours for ${userId}:`, err);
-    }
-  }
+  // Determine session status from halt state
+  const status = session.isHalted()
+    ? (session.haltReason?.includes('timeout') ? 'failed' : 'halted')
+    : 'completed';
 
   const summaryJson = JSON.stringify({
     debate: {
@@ -503,30 +493,43 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     },
   });
 
-  getDb().prepare(`
-    INSERT OR REPLACE INTO session_archive
-    (id, user_id, title, status, workflow_id, team_roles, findings_count,
-     resolutions_count, cost_usd, budget_usd, final_output, assembled_document,
-     summary_json, created_at, completed_at, duration_ms)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    session.id,
-    userId,
-    session.matterRecord?.title ?? 'Untitled Analysis',
-    'completed',
-    session.workflowTemplateId ?? null,
-    JSON.stringify(session.selectedTeam),
-    session.debate.findings.length,
-    session.debate.resolutions.length,
-    session.accumulatedCost,
-    session.budgetUsd,
-    session.finalOutput || null,
-    session.assembledDocument || null,
-    summaryJson,
-    startedAt ?? now,
-    now,
-    durationMs,
-  );
+  // Wrap everything in a transaction so usage/debit/archive stay consistent
+  db.transaction(() => {
+    // v21: Track per-user monthly usage
+    if (userId && session.accumulatedCost > 0) {
+      incrementUserUsage(userId, session.accumulatedCost);
+      // v22: Debit billable hours
+      const hoursUsed = session.accumulatedCost / config.billableHours.rate;
+      debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
+    }
+
+    // Use INSERT OR IGNORE to prevent overwriting an existing archive row
+    // (e.g. if archiveSession is called twice via both event listener and explicit call)
+    db.prepare(`
+      INSERT OR IGNORE INTO session_archive
+      (id, user_id, title, status, workflow_id, team_roles, findings_count,
+       resolutions_count, cost_usd, budget_usd, final_output, assembled_document,
+       summary_json, created_at, completed_at, duration_ms)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      session.id,
+      userId,
+      session.matterRecord?.title ?? 'Untitled Analysis',
+      status,
+      session.workflowTemplateId ?? null,
+      JSON.stringify(session.selectedTeam),
+      session.debate.findings.length,
+      session.debate.resolutions.length,
+      session.accumulatedCost,
+      session.budgetUsd,
+      session.finalOutput || null,
+      session.assembledDocument || null,
+      summaryJson,
+      startedAt ?? now,
+      now,
+      durationMs,
+    );
+  })();
 }
 
 export function getSessionArchive(userId: string, limit = 50): ArchivedSession[] {
@@ -890,11 +893,13 @@ export interface BillableHoursEntry {
   created_at: string;
 }
 
-/** Get user's current billable hours balance. */
+/** Get user's current billable hours balance (excludes expired credits). */
 export function getUserBillableHours(userId: string): number {
+  const now = new Date().toISOString();
   const row = getDb().prepare(`
-    SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?
-  `).get(userId) as { balance: number };
+    SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours
+    WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)
+  `).get(userId, now) as { balance: number };
   return row.balance;
 }
 
@@ -909,6 +914,7 @@ export function creditBillableHours(
 ): boolean {
   const db = getDb();
   let credited = false;
+  const now = new Date().toISOString();
   db.transaction(() => {
     // Idempotency guard — prevent double-crediting from webhook retries
     if (referenceId) {
@@ -918,12 +924,12 @@ export function creditBillableHours(
         return; // credited stays false
       }
     }
-    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?`).get(userId) as { balance: number }).balance;
+    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)`).get(userId, now) as { balance: number }).balance;
     const id = `bh-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     db.prepare(`
       INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, expires_at, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, userId, type, amount, current + amount, description, referenceId ?? null, expiresAt ?? null, new Date().toISOString());
+    `).run(id, userId, type, amount, current + amount, description, referenceId ?? null, expiresAt ?? null, now);
     credited = true;
   })();
   return credited;
@@ -937,9 +943,10 @@ export function debitBillableHours(
   referenceId?: string | null,
 ): boolean {
   const db = getDb();
+  const now = new Date().toISOString();
   let success = false;
   db.transaction(() => {
-    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ?`).get(userId) as { balance: number }).balance;
+    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)`).get(userId, now) as { balance: number }).balance;
     if (current < amount) {
       success = false;
       return;
@@ -948,7 +955,7 @@ export function debitBillableHours(
     db.prepare(`
       INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, created_at)
       VALUES (?, ?, 'debit', ?, ?, ?, ?, ?)
-    `).run(id, userId, -amount, current - amount, description, referenceId ?? null, new Date().toISOString());
+    `).run(id, userId, -amount, current - amount, description, referenceId ?? null, now);
     success = true;
   })();
   return success;
@@ -1049,29 +1056,46 @@ export function softDeleteUser(userId: string): boolean {
   const now = new Date().toISOString();
   const anonymizedEmail = `deleted-${crypto.randomBytes(8).toString('hex')}@redacted.local`;
 
-  // Anonymize user profile
-  d.prepare(`
-    UPDATE users SET
-      email = ?,
-      password_hash = 'DELETED',
-      display_name = 'Deleted User',
-      firm_name = '',
-      profile_json = '{}',
-      stripe_customer_id = NULL,
-      plan = 'deleted',
-      plan_expires_at = NULL,
-      updated_at = ?
-    WHERE id = ?
-  `).run(anonymizedEmail, now, userId);
+  d.transaction(() => {
+    // Anonymize user profile
+    d.prepare(`
+      UPDATE users SET
+        email = ?,
+        password_hash = 'DELETED',
+        display_name = 'Deleted User',
+        firm_name = '',
+        profile_json = '{}',
+        stripe_customer_id = NULL,
+        plan = 'deleted',
+        plan_expires_at = NULL,
+        updated_at = ?
+      WHERE id = ?
+    `).run(anonymizedEmail, now, userId);
 
-  // Revoke all auth tokens
-  d.prepare(`DELETE FROM auth_tokens WHERE user_id = ?`).run(userId);
+    // Revoke all auth tokens
+    d.prepare(`DELETE FROM auth_tokens WHERE user_id = ?`).run(userId);
 
-  // Anonymize session archive titles (keep cost/timing data for analytics)
-  d.prepare(`UPDATE session_archive SET title = 'Deleted', final_output = NULL, assembled_document = NULL WHERE user_id = ?`).run(userId);
+    // Anonymize session archive titles (keep cost/timing data for analytics)
+    d.prepare(`UPDATE session_archive SET title = 'Deleted', final_output = NULL, assembled_document = NULL WHERE user_id = ?`).run(userId);
 
-  // Audit this action
-  logAuditEvent({ userId, action: 'account_deleted', resource: 'auth', detail: { anonymizedAt: now } });
+    // Clean up billing/usage records (retain anonymized analytics)
+    d.prepare(`DELETE FROM billable_hours WHERE user_id = ?`).run(userId);
+    d.prepare(`DELETE FROM billing_events WHERE user_id = ?`).run(userId);
+
+    // Clean up matters
+    d.prepare(`DELETE FROM matters WHERE user_id = ?`).run(userId);
+
+    // Clean up knowledge base collections/documents/chunks
+    d.prepare(`DELETE FROM kb_chunks WHERE user_id = ?`).run(userId);
+    d.prepare(`DELETE FROM kb_documents WHERE user_id = ?`).run(userId);
+    d.prepare(`DELETE FROM kb_collections WHERE user_id = ? AND is_global = 0`).run(userId);
+
+    // Anonymize audit log entries (keep timestamps/actions for analytics)
+    d.prepare(`UPDATE audit_log SET ip = NULL, user_agent = NULL WHERE user_id = ?`).run(userId);
+
+    // Audit this action (inside transaction so it's visible even if we fail)
+    logAuditEvent({ userId, action: 'account_deleted', resource: 'auth', detail: { anonymizedAt: now } });
+  })();
 
   return true;
 }

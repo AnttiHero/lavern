@@ -70,7 +70,7 @@ export class ClientRegistry {
       capabilities?: string[];
     }
   ): { client: ClientIdentity; apiKey: string } {
-    const id = `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = `client-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
     const apiKey = generateApiKey(type);
     const keyHash = hashApiKey(apiKey);
 

@@ -256,7 +256,7 @@ export class SessionState {
       baselinesDir?: string;
     }
   ) {
-    this.id = id || `shem-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    this.id = id || `shem-${Date.now()}-${crypto.randomBytes(16).toString('hex')}`;
     this.events = new ShemEventBus();
     this.gateResolver = options?.gateResolver || new ReadlineGateResolver();
     if (options?.budgetUsd !== undefined) this.budgetUsd = options.budgetUsd;

@@ -13,9 +13,15 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as crypto from 'node:crypto';
+import { z } from 'zod';
 import { config } from '../../config.js';
 import { createLogger } from '../../utils/logger.js';
 import { parseCookieToken } from '../middleware/auth.js';
+
+// ── Schemas ───────────────────────────────────────────────────────────
+const PackIntentSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
+const CheckoutSchema = z.object({ plan: z.enum(['starter', 'professional', 'enterprise']) }).strict();
+const CheckoutPackSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
 
 const log = createLogger('BILLING');
 import {
@@ -108,11 +114,12 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
-    const { pack } = request.body as { pack?: string } || {};
-    const packDef = pack ? config.billableHours.packs[pack] : undefined;
-    if (!pack || !packDef) {
+    const parsed = PackIntentSchema.safeParse(request.body);
+    if (!parsed.success) {
       return reply.status(400).send({ error: 'Invalid pack. Choose: quick, standard, bulk' });
     }
+    const { pack } = parsed.data;
+    const packDef = config.billableHours.packs[pack];
 
     if (!config.stripe.secretKey) {
       return reply.status(503).send({ error: 'Billing not configured. Set STRIPE_SECRET_KEY.' });
@@ -144,10 +151,11 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
-    const { plan } = request.body as { plan?: string } || {};
-    if (!plan || !['starter', 'professional', 'enterprise'].includes(plan)) {
+    const parsed = CheckoutSchema.safeParse(request.body);
+    if (!parsed.success) {
       return reply.status(400).send({ error: 'Invalid plan. Choose: starter, professional, enterprise' });
     }
+    const { plan } = parsed.data;
 
     if (!config.stripe.secretKey) {
       return reply.status(503).send({ error: 'Billing not configured. Set STRIPE_SECRET_KEY.' });
@@ -193,11 +201,12 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
     const user = getAuthenticatedUser(request, reply);
     if (!user) return;
 
-    const { pack } = request.body as { pack?: string } || {};
-    const packDef = pack ? config.billableHours.packs[pack] : undefined;
-    if (!pack || !packDef) {
+    const parsed = CheckoutPackSchema.safeParse(request.body);
+    if (!parsed.success) {
       return reply.status(400).send({ error: 'Invalid pack. Choose: quick, standard, bulk' });
     }
+    const { pack } = parsed.data;
+    const packDef = config.billableHours.packs[pack];
 
     if (!config.stripe.secretKey) {
       return reply.status(503).send({ error: 'Billing not configured. Set STRIPE_SECRET_KEY.' });
@@ -278,7 +287,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 event.id,
               );
               recordBillingEvent({
-                id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+                id: `bill-${crypto.randomUUID()}`,
                 userId,
                 type: 'pack_purchased',
                 stripeSessionId: event.id,
@@ -301,7 +310,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
             }
 
             recordBillingEvent({
-              id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+              id: `bill-${crypto.randomUUID()}`,
               userId,
               type: 'checkout_completed',
               stripeSessionId: event.id,
@@ -320,7 +329,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
           if (userId) {
             setUserPlan(userId, 'free');
             recordBillingEvent({
-              id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+              id: `bill-${crypto.randomUUID()}`,
               userId,
               type: 'subscription_cancelled',
             });
@@ -345,7 +354,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 event.id,
               );
               recordBillingEvent({
-                id: `bill-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+                id: `bill-${crypto.randomUUID()}`,
                 userId: piUserId,
                 type: 'pack_purchased',
                 stripeSessionId: event.id,

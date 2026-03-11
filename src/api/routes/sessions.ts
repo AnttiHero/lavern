@@ -185,7 +185,7 @@ export function registerSessionRoutes(
         gateResolver,
         forceWorkflow: body.workflow,
         matterId,
-        maxBudgetUsd: body.options?.budget ?? 5.0,
+        maxBudgetUsd: sessionBudget,
         model: body.options?.model,
         maxTurns: body.options?.maxTurns,
         intensity: body.options?.intensity,
@@ -227,7 +227,7 @@ export function registerSessionRoutes(
       runTheShem(body.documentPath, context, {
         session,
         gateResolver,
-        maxBudgetUsd: body.options?.budget ?? 5.0,
+        maxBudgetUsd: sessionBudget,
         model: body.options?.model,
         maxTurns: body.options?.maxTurns,
       }).catch((err) => {
@@ -264,8 +264,11 @@ export function registerSessionRoutes(
 
   // ── GET /api/sessions — List active sessions ───────────────────────
 
-  fastify.get('/api/sessions', async (_request, reply) => {
-    const activeSessions = sessionManager.getAllSessions();
+  fastify.get('/api/sessions', async (request, reply) => {
+    const userId = (request as typeof request & { userId?: string }).userId;
+    const allSessions = sessionManager.getAllSessions();
+    // Filter to only this user's sessions (or show all if no auth — backward compat for CLI)
+    const activeSessions = userId ? allSessions.filter(s => s.userId === userId) : allSessions;
     const active = activeSessions.map((s) => ({
       id: s.id,
       currentStep: s.genericWorkflow?.currentStep ?? s.workflow.currentStep,
@@ -992,6 +995,8 @@ ${buildFullContext(session)}`;
     request.raw.on('close', () => { clientDisconnected = true; });
 
     try {
+      // Hijack the reply so Fastify doesn't try to send its own response
+      reply.hijack();
       // Set up SSE response
       reply.raw.writeHead(200, {
         'Content-Type': 'text/event-stream; charset=utf-8',
@@ -1138,18 +1143,8 @@ ${buildFullContext(session)}`;
     const body = request.body as { reason?: string } | undefined;
     const reason = body?.reason ?? 'Cancelled by user';
 
-    // Halt running agents FIRST — the haltCheckHook will return
-    // { continue: false } on the next tool call, stopping the SDK query.
-    session.halt(reason);
-
-    session.events.emitEvent({
-      type: 'session_end',
-      sessionId: session.id,
-      totalCost: session.accumulatedCost,
-      duration: 0,
-      timestamp: new Date().toISOString(),
-    });
-
+    // destroySession handles archival + halt + cleanup
+    // (no need to manually emit session_end — destroySession archives explicitly)
     sessionManager.destroySession(id, reason);
 
     // Audit: session cancellation

@@ -7,6 +7,7 @@
  * GET   /api/waitlist/list    — Admin: list entries
  */
 
+import * as crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { config } from '../../config.js';
@@ -37,7 +38,13 @@ function verifyAdminKey(request: { headers: Record<string, string | string[] | u
   const key = request.headers['x-admin-key'];
   if (typeof key !== 'string') return 'Missing X-Admin-Key header';
   if (!config.billableHours.adminKey) return 'Admin endpoints not configured';
-  if (key !== config.billableHours.adminKey) return 'Invalid admin key';
+  // Constant-time comparison to prevent timing attacks
+  const expected = config.billableHours.adminKey;
+  const keyBuf = Buffer.from(key);
+  const expectedBuf = Buffer.from(expected);
+  if (keyBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(keyBuf, expectedBuf)) {
+    return 'Invalid admin key';
+  }
   return null;
 }
 

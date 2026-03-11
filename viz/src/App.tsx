@@ -201,18 +201,16 @@ export function App() {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.sessionId) {
-          sessionStorage.setItem('shem-session-id', data.sessionId);
-          window.location.hash = '#/working';
-          return;
-        }
+      const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
+
+      if (res.ok && data.sessionId) {
+        sessionStorage.setItem('shem-session-id', data.sessionId);
+        window.location.hash = '#/working';
+        return;
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
-      console.error('[YOLO] Session creation failed:', res.status, errorBody);
+      console.error('[YOLO] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
 
       // Out of hours — show top-off prompt
@@ -316,17 +314,15 @@ export function App() {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.sessionId) {
-          sessionStorage.setItem('shem-session-id', data.sessionId);
-          window.location.hash = '#/working';
-          return;
-        }
+      const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
+
+      if (res.ok && data.sessionId) {
+        sessionStorage.setItem('shem-session-id', data.sessionId);
+        window.location.hash = '#/working';
+        return;
       }
 
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
-      console.error('[QuickStart] Session creation failed:', res.status, errorBody);
+      console.error('[QuickStart] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
 
       // Out of hours — show top-off prompt
@@ -448,21 +444,19 @@ export function App() {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.sessionId) {
-          sessionStorage.setItem('shem-session-id', data.sessionId);
-          if (matterId) {
-            sessionStorage.setItem('shem-matter-id', matterId);
-          }
-          window.location.hash = '#/working';
-          return;
+      const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
+
+      if (res.ok && data.sessionId) {
+        sessionStorage.setItem('shem-session-id', data.sessionId);
+        if (matterId) {
+          sessionStorage.setItem('shem-matter-id', matterId);
         }
+        window.location.hash = '#/working';
+        return;
       }
 
       // API returned non-ok — log the actual error
-      const errorBody = await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
-      console.error('[Session] Session creation failed:', res.status, errorBody);
+      console.error('[Session] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
       setErrorToast('Something went wrong. Please try again.');
     } catch {
@@ -490,6 +484,12 @@ export function App() {
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
     window.location.hash = '#/quickstart';
   }, []);
+
+  // ── View rendering ────────────────────────────────────────────────────
+
+  // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
+  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
+  const userCtx = useContext(UserContext);
 
   // ── Post-purchase overlay ───────────────────────────────────────────
   // Shown after Stripe redirects back with ?billing=success or ?billing=cancelled.
@@ -527,12 +527,6 @@ export function App() {
       </div>
     );
   }
-
-  // ── View rendering ────────────────────────────────────────────────────
-
-  // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
-  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
-  const userCtx = useContext(UserContext);
 
   // ── ErrorToast rendered globally above all views ─────────────────────
   const toast = errorToast ? (

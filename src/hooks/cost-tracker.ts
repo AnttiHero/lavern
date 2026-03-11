@@ -42,9 +42,12 @@ const DEFAULT_TOOL_COST = 0.01;
 
 /**
  * Estimate cost for a tool invocation.
+ * Strips MCP namespace prefix (e.g., 'mcp__shem__post_finding' → 'post_finding').
  */
 export function estimateToolCost(toolName: string): number {
-  return TOOL_COST_ESTIMATES[toolName] ?? DEFAULT_TOOL_COST;
+  // MCP tools arrive as 'mcp__shem__toolname' — strip the prefix for lookup
+  const shortName = toolName.replace(/^mcp__[^_]+__/, '');
+  return TOOL_COST_ESTIMATES[shortName] ?? DEFAULT_TOOL_COST;
 }
 
 export function createCostHooks(session: SessionState) {

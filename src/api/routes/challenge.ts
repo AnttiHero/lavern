@@ -177,8 +177,7 @@ export function registerChallengeRoutes(
     } catch (err) {
       console.error('[CHALLENGE] Blind comparison failed:', err);
       return reply.status(500).send({
-        error: 'Blind comparison failed',
-        details: err instanceof Error ? err.message : String(err),
+        error: 'Blind comparison failed. Please try again.',
       });
     }
   });
