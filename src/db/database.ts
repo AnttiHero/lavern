@@ -432,6 +432,20 @@ export function getArchivedSession(sessionId: string, userId: string): ArchivedS
   `).get(sessionId, userId) as ArchivedSession | undefined;
 }
 
+/** Find archived session by ID without user filter (for session restore on restart). */
+export function getArchivedSessionById(sessionId: string): ArchivedSession | undefined {
+  return getDb().prepare(`
+    SELECT * FROM session_archive WHERE id = ?
+  `).get(sessionId) as ArchivedSession | undefined;
+}
+
+/** Get most recent archived sessions (no user filter — for session listing fallback). */
+export function getRecentArchivedSessions(limit = 10): ArchivedSession[] {
+  return getDb().prepare(`
+    SELECT * FROM session_archive ORDER BY completed_at DESC LIMIT ?
+  `).all(limit) as ArchivedSession[];
+}
+
 // ── Reputation Metrics ──────────────────────────────────────────────────
 
 export interface ReputationMetrics {

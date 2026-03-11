@@ -36,7 +36,7 @@ import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getArchivedSession, getUserById } from '../../db/database.js';
+import { getSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -244,17 +244,34 @@ export function registerSessionRoutes(
   // ── GET /api/sessions — List active sessions ───────────────────────
 
   fastify.get('/api/sessions', async (_request, reply) => {
-    const sessions = sessionManager.getAllSessions();
+    const activeSessions = sessionManager.getAllSessions();
+    const active = activeSessions.map((s) => ({
+      id: s.id,
+      currentStep: s.genericWorkflow?.currentStep ?? s.workflow.currentStep,
+      completedSteps: (s.genericWorkflow?.completedSteps ?? s.workflow.completedSteps).length,
+      eventCount: s.events.getEventCount(),
+      cost: s.accumulatedCost,
+      budget: s.budgetUsd,
+    }));
+
+    // Include recent archived sessions so work survives server restarts
+    const archived = getRecentArchivedSessions(5);
+    const activeIds = new Set(active.map(s => s.id));
+    const archivedEntries = archived
+      .filter(a => !activeIds.has(a.id))
+      .map(a => ({
+        id: a.id,
+        currentStep: 'delivered' as const,
+        completedSteps: 0,
+        eventCount: 0,
+        cost: a.cost_usd,
+        budget: a.budget_usd,
+        _restored: true,
+      }));
+
     return reply.send({
-      sessions: sessions.map((s) => ({
-        id: s.id,
-        currentStep: s.genericWorkflow?.currentStep ?? s.workflow.currentStep,
-        completedSteps: (s.genericWorkflow?.completedSteps ?? s.workflow.completedSteps).length,
-        eventCount: s.events.getEventCount(),
-        cost: s.accumulatedCost,
-        budget: s.budgetUsd,
-      })),
-      total: sessions.length,
+      sessions: [...active, ...archivedEntries],
+      total: active.length + archivedEntries.length,
     });
   });
 
@@ -329,6 +346,46 @@ export function registerSessionRoutes(
     const session = sessionManager.getSession(id);
 
     if (!session) {
+      // Fallback: check archive (survives server restarts)
+      const archived = getArchivedSessionById(id);
+      if (archived) {
+        const summary = safeJsonParse<Record<string, unknown>>(archived.summary_json, {});
+        return reply.send({
+          id: archived.id,
+          workflow: { currentStep: 'delivered', completedSteps: [], gateDecisions: [] },
+          debate: {
+            findingsCount: archived.findings_count,
+            challengesCount: 0,
+            resolutionsCount: archived.resolutions_count,
+            unresolvedCount: 0,
+          },
+          verification: { resultsCount: 0, passed: 0, failed: 0 },
+          cost: { accumulated: archived.cost_usd, budget: archived.budget_usd, remaining: archived.budget_usd - archived.cost_usd },
+          eventCount: 0,
+          pendingGate: null,
+          evaluator: { results: [], bestScore: (summary as Record<string, unknown>).bestEvalScore ?? 0 },
+          agentPerformance: [],
+          assembledDocument: archived.assembled_document || null,
+          finalOutput: archived.final_output || null,
+          debateResolutions: ((summary as Record<string, unknown>).resolutions as Array<Record<string, unknown>>) ?? [],
+          gateDecisionRecords: [],
+          findings: (((summary as Record<string, unknown>).topFindings as Array<Record<string, unknown>>) ?? []).map(f => ({
+            id: '', agent: f.agent ?? '', category: '', severity: f.severity ?? 'medium', content: f.content ?? '', evidence: '', confidence: 0,
+          })),
+          documents: [],
+          beforeScores: (summary as Record<string, unknown>).beforeScores ?? null,
+          afterScores: (summary as Record<string, unknown>).afterScores ?? null,
+          reportCard: (summary as Record<string, unknown>).reportCard ?? null,
+          matterTitle: archived.title,
+          workflowTemplateId: archived.workflow_id,
+          provider: 'anthropic',
+          selectedTeam: safeJsonParse(archived.team_roles, []),
+          halted: false,
+          haltReason: null,
+          durationMs: archived.duration_ms,
+          _restored: true,  // flag so frontend knows this came from archive
+        });
+      }
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
