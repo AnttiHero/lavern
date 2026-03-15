@@ -553,6 +553,11 @@ input:focus-visible {
   100% { opacity: 0; }
 }
 
+@keyframes sparkleFloat {
+  0% { opacity: 0.9; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+}
+
 /* ── Agent Builder — Slider Thumbs ─────────────────────────────────── */
 
 /* Skill sliders (0-99) — dark editorial thumbs */

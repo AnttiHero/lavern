@@ -11,17 +11,59 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { usePartnerConsult, type PartnerRecommendation } from './hooks/usePartnerConsult.js';
+import { usePartnerDemo, type DemoCaseId } from './hooks/usePartnerDemo.js';
 import { useVoiceInput } from './hooks/useVoiceInput.js';
 import { useVoiceOutput } from './hooks/useVoiceOutput.js';
 import { VoiceOrb } from './components/VoiceOrb.js';
+import { SparkleEffect } from './components/SparkleEffect.js';
+import { DemoNarration } from '../components/DemoNarration.js';
 
 interface Props {
   onSessionCreated: (sessionId: string) => void;
   onManualFlow: () => void;
   onBack: () => void;
+  isDemo?: boolean;
 }
 
 const GOLD = '#96875f';
+
+// ── Demo case picker data ───────────────────────────────────────────
+
+interface DemoCase {
+  id: DemoCaseId;
+  title: string;
+  subtitle: string;
+  description: string;
+  team: number;
+  cost: string;
+}
+
+const DEMO_CASES: DemoCase[] = [
+  {
+    id: 'heartconnect',
+    title: 'Terms of Service',
+    subtitle: 'HeartConnect',
+    description: 'A dating platform needs consumer-safe terms before scaling to the EU. GDPR consent, age verification, user safety.',
+    team: 7,
+    cost: '$12',
+  },
+  {
+    id: 'healthprivacy',
+    title: 'Privacy Policy',
+    subtitle: 'MediVault',
+    description: 'Health tech company storing patient records needs a HIPAA and GDPR-compliant privacy policy for Series B due diligence.',
+    team: 6,
+    cost: '$15',
+  },
+  {
+    id: 'devcontract',
+    title: 'Developer Agreement',
+    subtitle: 'CodeCraft',
+    description: 'A startup hiring freelance developers needs airtight IP assignment and contractor terms after a prior ownership dispute.',
+    team: 6,
+    cost: '$10',
+  },
+];
 
 const WORKFLOW_LABELS: Record<string, string> = {
   counsel: 'Expert Counsel',
@@ -53,19 +95,12 @@ function SpeakerIcon({ size = 14, muted = false }: { size?: number; muted?: bool
 
 // ── The View ────────────────────────────────────────────────────────────
 
-export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: Props) {
-  const {
-    messages,
-    isStreaming,
-    streamingText,
-    recommendation,
-    isFinalizing,
-    error,
-    sendMessage,
-    startConversation,
-    finalize,
-    readyToFinalize,
-  } = usePartnerConsult();
+export default function PartnerView({ onSessionCreated, onManualFlow, onBack, isDemo = false }: Props) {
+  const [selectedCase, setSelectedCase] = useState<DemoCaseId | null>(null);
+
+  // Both hooks called unconditionally (React rules)
+  const consult = usePartnerConsult();
+  const demo = usePartnerDemo(isDemo && !!selectedCase);
 
   const voiceInput = useVoiceInput();
   const voiceOutput = useVoiceOutput();
@@ -75,30 +110,43 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const hasStarted = useRef(false);
-  const autoSubmitTimer = useRef<ReturnType<typeof setTimeout>>();
-  const userFadeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const autoSubmitTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const userFadeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastMessageCount = useRef(0);
   const inputFocusedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Start conversation on mount
+  // Select data source based on mode
+  const messages = isDemo ? demo.messages : consult.messages;
+  const isStreaming = isDemo ? demo.isStreaming : consult.isStreaming;
+  const streamingText = isDemo ? demo.streamingText : consult.streamingText;
+  const recommendation = isDemo ? demo.recommendation : consult.recommendation;
+  const isFinalizing = isDemo ? demo.isFinalizing : consult.isFinalizing;
+  const showSparkle = isDemo ? demo.showSparkle : false;
+  const error = isDemo ? null : consult.error;
+  const demoLastUserMessage = isDemo ? demo.lastUserMessage : null;
+
+  // Start conversation on mount (real mode only)
   useEffect(() => {
+    if (isDemo) return;
     if (!hasStarted.current) {
       hasStarted.current = true;
-      startConversation();
+      consult.startConversation();
     }
-  }, [startConversation]);
+  }, [isDemo, consult.startConversation]);
 
-  // Auto-finalize
+  // Auto-finalize (real mode only)
   useEffect(() => {
-    if (readyToFinalize && !recommendation && !isFinalizing) {
-      const t = setTimeout(() => finalize(), 1500);
+    if (isDemo) return;
+    if (consult.readyToFinalize && !consult.recommendation && !consult.isFinalizing) {
+      const t = setTimeout(() => consult.finalize(), 1500);
       return () => clearTimeout(t);
     }
-  }, [readyToFinalize, recommendation, isFinalizing, finalize]);
+  }, [isDemo, consult.readyToFinalize, consult.recommendation, consult.isFinalizing, consult.finalize]);
 
-  // Speak new assistant messages
+  // Speak new assistant messages (real mode only)
   useEffect(() => {
+    if (isDemo) return;
     if (!isStreaming && messages.length > lastMessageCount.current) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'assistant' && voiceOutput.isEnabled) {
@@ -106,36 +154,38 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
       }
       lastMessageCount.current = messages.length;
     }
-  }, [isStreaming, messages, voiceOutput]);
+  }, [isDemo, isStreaming, messages, voiceOutput]);
 
-  // Populate input with voice transcript
+  // Populate input with voice transcript (real mode only)
   useEffect(() => {
+    if (isDemo) return;
     if (voiceInput.finalTranscript) {
       setInput(voiceInput.finalTranscript);
     }
-  }, [voiceInput.finalTranscript]);
+  }, [isDemo, voiceInput.finalTranscript]);
 
-  // Auto-submit after voice stops
+  // Auto-submit after voice stops (real mode only)
   useEffect(() => {
+    if (isDemo) return;
     if (!voiceInput.isListening && voiceInput.finalTranscript && !isStreaming) {
       autoSubmitTimer.current = setTimeout(() => {
         const text = voiceInput.finalTranscript.trim();
         if (text) {
           setLastUserMessage(text);
-          sendMessage(text);
+          consult.sendMessage(text);
           setInput('');
           voiceInput.clearTranscript();
-          // Fade user message after 4s
           clearTimeout(userFadeTimer.current);
           userFadeTimer.current = setTimeout(() => setLastUserMessage(null), 4000);
         }
       }, 1000);
       return () => clearTimeout(autoSubmitTimer.current);
     }
-  }, [voiceInput.isListening, voiceInput.finalTranscript, isStreaming, sendMessage, voiceInput]);
+  }, [isDemo, voiceInput.isListening, voiceInput.finalTranscript, isStreaming, consult.sendMessage, voiceInput]);
 
-  // Spacebar push-to-talk
+  // Spacebar push-to-talk (real mode only)
   useEffect(() => {
+    if (isDemo) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat) return;
       if (inputFocusedRef.current) return;
@@ -159,34 +209,50 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
     };
-  }, [voiceInput, voiceOutput, recommendation, isStreaming, isFinalizing]);
+  }, [isDemo, voiceInput, voiceOutput, recommendation, isStreaming, isFinalizing]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
+    if (isDemo) return;
     if (!input.trim() || isStreaming) return;
     clearTimeout(autoSubmitTimer.current);
     setLastUserMessage(input.trim());
-    sendMessage(input);
+    consult.sendMessage(input);
     setInput('');
     voiceInput.clearTranscript();
     clearTimeout(userFadeTimer.current);
     userFadeTimer.current = setTimeout(() => setLastUserMessage(null), 4000);
-  }, [input, isStreaming, sendMessage, voiceInput]);
+  }, [isDemo, input, isStreaming, consult.sendMessage, voiceInput]);
 
   const handleMicPress = useCallback(() => {
+    if (isDemo) return;
     if (!voiceInput.isSupported || isStreaming) return;
     voiceOutput.stop();
     clearTimeout(autoSubmitTimer.current);
     voiceInput.startListening();
-  }, [voiceInput, voiceOutput, isStreaming]);
+  }, [isDemo, voiceInput, voiceOutput, isStreaming]);
 
   const handleMicRelease = useCallback(() => {
+    if (isDemo) return;
     if (voiceInput.isListening) {
       voiceInput.stopListening();
     }
-  }, [voiceInput]);
+  }, [isDemo, voiceInput]);
+
+  const handleCaseSelect = useCallback((caseId: DemoCaseId) => {
+    sessionStorage.setItem('shem-demo-case', caseId);
+    setSelectedCase(caseId);
+  }, []);
 
   const handleProceed = useCallback(async (rec: PartnerRecommendation) => {
+    // Demo mode: set demo session ID and navigate to working view
+    if (isDemo) {
+      const caseId = sessionStorage.getItem('shem-demo-case') || 'heartconnect';
+      sessionStorage.setItem('shem-session-id', `demo-session-${caseId}-${Date.now()}`);
+      window.location.hash = '#/working';
+      return;
+    }
+
     setIsCreatingSession(true);
     setSessionError(null);
     voiceOutput.stop();
@@ -253,22 +319,114 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     } finally {
       setIsCreatingSession(false);
     }
-  }, [onSessionCreated, voiceOutput]);
+  }, [isDemo, onSessionCreated, voiceOutput]);
+
+  const handleDownloadMemo = useCallback((rec: PartnerRecommendation) => {
+    const workflowLabel = WORKFLOW_LABELS[rec.workflowId] ?? rec.workflowId;
+    const md = [
+      '# Initial Consultation Memo',
+      '',
+      `**Prepared by:** Catherine M. Blackwell, Managing Partner Agent`,
+      '',
+      '---',
+      '',
+      rec.briefingMemo,
+      '',
+      '---',
+      '',
+      `**Recommended:** ${workflowLabel} | ${rec.teamRoles.length} specialists | $${rec.budgetUsd}`,
+      '',
+    ].join('\n');
+
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'consultation-memo.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   // Latest assistant message
   const latestAssistant = [...messages].reverse().find(m => m.role === 'assistant');
 
+  // Orb audio/listening: in demo mode, use fake values
+  const orbAudioLevel = isDemo ? demo.fakeAudioLevel : voiceInput.audioLevel;
+  const orbIsListening = isDemo ? demo.fakeIsListening : voiceInput.isListening;
+  const orbIsSpeaking = isDemo ? demo.fakeSpeaking : voiceOutput.isSpeaking;
+
+  // The user message to show (demo has its own)
+  const displayedUserMessage = isDemo ? demoLastUserMessage : lastUserMessage;
+
   // Status hint text
   let statusText = '';
-  if (voiceInput.isListening) {
-    const transcript = (voiceInput.finalTranscript + (voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : '')).trim();
-    statusText = transcript || 'Listening...';
-  } else if (isStreaming && !streamingText) {
-    statusText = 'Catherine is thinking...';
-  } else if (isFinalizing) {
-    statusText = 'Preparing your recommendation...';
-  } else if (!recommendation && !isStreaming && messages.length > 0) {
-    statusText = voiceInput.isSupported ? 'Hold spacebar or tap to speak' : '';
+  if (isDemo) {
+    if (demo.fakeIsListening) statusText = 'Listening...';
+    else if (isStreaming && !streamingText) statusText = 'Catherine is thinking...';
+    else if (isFinalizing) statusText = 'Preparing your memo...';
+  } else {
+    if (voiceInput.isListening) {
+      const transcript = (voiceInput.finalTranscript + (voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : '')).trim();
+      statusText = transcript || 'Listening...';
+    } else if (isStreaming && !streamingText) {
+      statusText = 'Catherine is thinking...';
+    } else if (isFinalizing) {
+      statusText = 'Preparing your recommendation...';
+    } else if (!recommendation && !isStreaming && messages.length > 0) {
+      statusText = voiceInput.isSupported ? 'Hold spacebar or tap to speak' : '';
+    }
+  }
+
+  // Demo mode: show case picker before conversation starts
+  if (isDemo && !selectedCase) {
+    return (
+      <div style={S.container}>
+        <img
+          src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+          alt=""
+          style={S.bgImage}
+        />
+        <div style={S.bgOverlay} />
+
+        <div style={S.header}>
+          <button onClick={onBack} style={S.backBtn}>
+            {'\u2190'} Back
+          </button>
+        </div>
+
+        <div style={S.pickerMain}>
+          <div style={S.pickerTitle}>Choose a Scenario</div>
+          <div style={S.pickerSubtitle}>
+            Watch Catherine consult with a client, assemble the right team, and deliver results.
+          </div>
+          <div style={S.pickerGrid}>
+            {DEMO_CASES.map(c => (
+              <button
+                key={c.id}
+                onClick={() => handleCaseSelect(c.id)}
+                style={S.caseCard}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(150, 135, 95, 0.4)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(150, 135, 95, 0.15)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                }}
+              >
+                <div style={S.caseSubtitle}>{c.subtitle}</div>
+                <div style={S.caseTitle}>{c.title}</div>
+                <div style={S.caseDivider} />
+                <div style={S.caseDescription}>{c.description}</div>
+                <div style={S.caseMeta}>
+                  {c.team} specialists &middot; {c.cost}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -280,14 +438,19 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
       />
       <div style={S.bgOverlay} />
 
+      {/* Demo narration banner */}
+      {isDemo && <DemoNarration step={1} />}
+
       {/* Header */}
       <div style={S.header}>
         <button onClick={onBack} style={S.backBtn}>
           {'\u2190'} Back
         </button>
-        <button onClick={onManualFlow} style={S.manualBtn}>
-          Configure manually
-        </button>
+        {!isDemo && (
+          <button onClick={onManualFlow} style={S.manualBtn}>
+            Configure manually
+          </button>
+        )}
       </div>
 
       {/* Main content */}
@@ -295,22 +458,24 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         {/* Catherine's identity */}
         <div style={S.identity}>
           <div style={S.name}>Catherine M. Blackwell</div>
-          <div style={S.title}>Managing Partner</div>
-          <button
-            onClick={() => voiceOutput.setEnabled(!voiceOutput.isEnabled)}
-            style={{ ...S.voiceToggle, opacity: voiceOutput.isEnabled ? 0.7 : 0.25 }}
-            title={voiceOutput.isEnabled ? 'Voice on' : 'Voice off'}
-            aria-label={voiceOutput.isEnabled ? 'Disable voice output' : 'Enable voice output'}
-          >
-            <SpeakerIcon muted={!voiceOutput.isEnabled} />
-          </button>
+          <div style={S.title}>Managing Partner Agent</div>
+          {!isDemo && (
+            <button
+              onClick={() => voiceOutput.setEnabled(!voiceOutput.isEnabled)}
+              style={{ ...S.voiceToggle, opacity: voiceOutput.isEnabled ? 0.7 : 0.25 }}
+              title={voiceOutput.isEnabled ? 'Voice on' : 'Voice off'}
+              aria-label={voiceOutput.isEnabled ? 'Disable voice output' : 'Enable voice output'}
+            >
+              <SpeakerIcon muted={!voiceOutput.isEnabled} />
+            </button>
+          )}
         </div>
 
         {/* The Orb */}
         <VoiceOrb
-          audioLevel={voiceInput.audioLevel}
-          isListening={voiceInput.isListening}
-          isSpeaking={voiceOutput.isSpeaking}
+          audioLevel={orbAudioLevel}
+          isListening={orbIsListening}
+          isSpeaking={orbIsSpeaking}
           isStreaming={isStreaming}
           disabled={!!recommendation}
           onMouseDown={handleMicPress}
@@ -322,7 +487,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         {/* Status hint */}
         <div style={{
           ...S.statusHint,
-          ...(voiceInput.isListening ? { fontStyle: 'italic', color: GOLD } : {}),
+          ...(orbIsListening ? { fontStyle: 'italic', color: GOLD } : {}),
         }}>
           {statusText}
         </div>
@@ -340,29 +505,34 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         ) : null}
 
         {/* User echo */}
-        {lastUserMessage && (
-          <div style={S.userEcho} key={`user-${lastUserMessage.slice(0, 20)}`}>
-            {lastUserMessage}
+        {displayedUserMessage && (
+          <div style={S.userEcho} key={`user-${displayedUserMessage.slice(0, 20)}`}>
+            {displayedUserMessage}
           </div>
         )}
 
-        {/* Recommendation */}
+        {/* Memo Card */}
         {recommendation && (
-          <RecommendationCard
-            rec={recommendation}
-            onProceed={() => handleProceed(recommendation)}
-            onManual={onManualFlow}
-            isCreating={isCreatingSession}
-            error={sessionError}
-          />
+          <div style={{ position: 'relative', width: '100%', maxWidth: 480 }}>
+            <SparkleEffect active={showSparkle} />
+            <MemoCard
+              rec={recommendation}
+              onProceed={() => handleProceed(recommendation)}
+              onDownload={() => handleDownloadMemo(recommendation)}
+              onManual={isDemo ? undefined : onManualFlow}
+              isCreating={isCreatingSession}
+              error={sessionError}
+              isDemo={isDemo}
+            />
+          </div>
         )}
 
         {/* Errors */}
         {error && !isFinalizing && <div style={S.errorMsg}>{error}</div>}
-        {voiceInput.error && <div style={S.errorMsg}>{voiceInput.error}</div>}
+        {!isDemo && voiceInput.error && <div style={S.errorMsg}>{voiceInput.error}</div>}
 
-        {/* Text fallback */}
-        {!recommendation && (
+        {/* Text fallback (hidden in demo mode) */}
+        {!recommendation && !isDemo && (
           <form onSubmit={handleSubmit} style={S.textFallback}>
             <input
               ref={inputRef}
@@ -385,54 +555,66 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
   );
 }
 
-// ── Recommendation Card ─────────────────────────────────────────────────
+// ── Memo Card ─────────────────────────────────────────────────────────────
 
-function RecommendationCard({
+function MemoCard({
   rec,
   onProceed,
+  onDownload,
   onManual,
   isCreating,
   error,
+  isDemo,
 }: {
   rec: PartnerRecommendation;
   onProceed: () => void;
-  onManual: () => void;
+  onDownload: () => void;
+  onManual?: () => void;
   isCreating: boolean;
   error: string | null;
+  isDemo: boolean;
 }) {
+  const workflowLabel = WORKFLOW_LABELS[rec.workflowId] ?? rec.workflowId;
+  const paragraphs = rec.briefingMemo.split('\n\n').filter(Boolean);
+
   return (
-    <div style={S.recCard}>
-      <div style={S.recHeader}>Engagement Recommendation</div>
-      <div style={S.recGrid}>
-        <div style={S.recItem}>
-          <div style={S.recLabel}>Workflow</div>
-          <div style={S.recValue}>{WORKFLOW_LABELS[rec.workflowId] ?? rec.workflowId}</div>
-        </div>
-        <div style={S.recItem}>
-          <div style={S.recLabel}>Team Size</div>
-          <div style={S.recValue}>{rec.teamRoles.length} specialists</div>
-        </div>
-        <div style={S.recItem}>
-          <div style={S.recLabel}>Estimated Cost</div>
-          <div style={S.recValue}>${rec.budgetUsd.toFixed(0)}</div>
-        </div>
-        <div style={S.recItem}>
-          <div style={S.recLabel}>Intensity</div>
-          <div style={S.recValue} className="capitalize">{rec.intensity}</div>
-        </div>
+    <div style={S.memoCard}>
+      {/* Header */}
+      <div style={S.memoTitle}>Initial Consultation Memo</div>
+      <div style={S.memoPrepared}>Prepared by Catherine M. Blackwell</div>
+
+      {/* Gold divider */}
+      <div style={S.memoDivider} />
+
+      {/* Briefing paragraphs */}
+      <div style={S.memoBody}>
+        {paragraphs.map((p, i) => (
+          <p key={i} style={S.memoParagraph}>{p}</p>
+        ))}
       </div>
-      <div style={S.recReasoning}>{rec.reasoning}</div>
-      <div style={S.recActions}>
+
+      {/* Summary line */}
+      <div style={S.memoSummary}>
+        Recommended: {workflowLabel} | {rec.teamRoles.length} specialists | ${rec.budgetUsd}
+      </div>
+
+      {/* Actions */}
+      <div style={S.memoActions}>
         <button
           onClick={onProceed}
           disabled={isCreating}
           style={{ ...S.proceedBtn, opacity: isCreating ? 0.6 : 1 }}
         >
-          {isCreating ? 'Creating session...' : 'Proceed \u2192'}
+          {isCreating ? 'Creating session...' : isDemo ? 'Watch the Team Work \u2192' : 'Proceed to Engagement \u2192'}
         </button>
-        <button onClick={onManual} style={S.configureBtn}>
-          Configure manually
+        <button onClick={onDownload} style={S.downloadBtn}>
+          Download Memo
         </button>
+        {onManual && (
+          <button onClick={onManual} style={S.configureBtn}>
+            Configure Manually
+          </button>
+        )}
       </div>
       {error && <div style={S.errorMsg}>{error}</div>}
     </div>
@@ -598,62 +780,71 @@ const S: Record<string, React.CSSProperties> = {
     outline: 'none',
     letterSpacing: 0.3,
   },
-  recCard: {
-    padding: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  // ── Memo Card styles ─────────────────────────────────────────────────
+  memoCard: {
+    padding: '32px 28px',
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
     backdropFilter: 'blur(12px)',
     borderRadius: 12,
     border: `1px solid rgba(150, 135, 95, 0.2)`,
     animation: 'lobbyFadeUp 0.5s ease both',
     width: '100%',
-    maxWidth: 480,
   },
-  recHeader: {
+  memoTitle: {
     fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 600,
-    color: colors.text,
-    marginBottom: 16,
+    color: '#1a1a1a',
+    textAlign: 'center',
     letterSpacing: 0.3,
+    marginBottom: 6,
   },
-  recGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-    marginBottom: 16,
-  },
-  recItem: { padding: '8px 0' },
-  recLabel: {
+  memoPrepared: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 10,
     fontWeight: 600,
     letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
-    color: colors.text,
-    opacity: 0.4,
-    marginBottom: 4,
-  },
-  recValue: {
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 15,
-    fontWeight: 500,
-    color: colors.text,
-  },
-  recReasoning: {
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 15,
-    fontStyle: 'italic',
-    lineHeight: 1.6,
-    color: colors.text,
-    opacity: 0.7,
+    color: '#4a4a4a',
+    opacity: 0.5,
+    textAlign: 'center',
     marginBottom: 20,
-    paddingTop: 12,
-    borderTop: '1px solid rgba(26, 26, 26, 0.06)',
   },
-  recActions: {
+  memoDivider: {
+    width: 60,
+    height: 1,
+    margin: '0 auto 24px',
+    background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
+  },
+  memoBody: {
+    marginBottom: 20,
+  },
+  memoParagraph: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 16,
+    fontWeight: 400,
+    lineHeight: 1.75,
+    color: '#1a1a1a',
+    margin: '0 0 14px',
+  },
+  memoSummary: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: 0.5,
+    color: '#4a4a4a',
+    opacity: 0.5,
+    textAlign: 'center',
+    paddingTop: 16,
+    borderTop: '1px solid rgba(26, 26, 26, 0.06)',
+    marginBottom: 20,
+  },
+  memoActions: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 16,
+    flexWrap: 'wrap',
   },
   proceedBtn: {
     fontFamily: "'Inter', sans-serif",
@@ -668,6 +859,20 @@ const S: Record<string, React.CSSProperties> = {
     padding: '12px 28px',
     cursor: 'pointer',
     transition: 'all 0.2s',
+  },
+  downloadBtn: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: 1,
+    color: '#4a4a4a',
+    opacity: 0.55,
+    background: 'none',
+    border: '1px solid rgba(26, 26, 26, 0.15)',
+    borderRadius: 4,
+    cursor: 'pointer',
+    padding: '8px 16px',
+    transition: 'opacity 0.2s',
   },
   configureBtn: {
     fontFamily: "'Inter', sans-serif",
@@ -690,5 +895,102 @@ const S: Record<string, React.CSSProperties> = {
     opacity: 0.8,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // ── Case picker styles ────────────────────────────────────────────
+  pickerMain: {
+    position: 'relative',
+    zIndex: 10,
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: 800,
+    width: '100%',
+    margin: '0 auto',
+    padding: '0 24px 32px',
+    gap: 24,
+    overflowY: 'auto',
+  },
+  pickerTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 32,
+    fontWeight: 600,
+    color: '#1a1a1a',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+    animation: 'partnerTextFadeIn 0.6s ease both',
+  },
+  pickerSubtitle: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 13,
+    fontWeight: 400,
+    color: '#4a4a4a',
+    opacity: 0.7,
+    textAlign: 'center',
+    maxWidth: 440,
+    lineHeight: 1.6,
+    animation: 'partnerTextFadeIn 0.8s ease both',
+  },
+  pickerGrid: {
+    display: 'flex',
+    gap: 20,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    animation: 'lobbyFadeUp 0.6s ease 0.2s both',
+  },
+  caseCard: {
+    width: 220,
+    padding: '28px 22px',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: 12,
+    border: '1px solid rgba(150, 135, 95, 0.15)',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.25s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 0,
+  },
+  caseSubtitle: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    color: GOLD,
+    marginBottom: 6,
+  },
+  caseTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 20,
+    fontWeight: 600,
+    color: '#1a1a1a',
+    marginBottom: 12,
+    lineHeight: 1.2,
+  },
+  caseDivider: {
+    width: 32,
+    height: 1,
+    background: `linear-gradient(90deg, ${GOLD}, transparent)`,
+    marginBottom: 12,
+  },
+  caseDescription: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 11,
+    fontWeight: 400,
+    color: '#4a4a4a',
+    lineHeight: 1.65,
+    marginBottom: 16,
+    flex: 1,
+  },
+  caseMeta: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 10,
+    fontWeight: 600,
+    letterSpacing: 1,
+    color: '#4a4a4a',
+    opacity: 0.45,
   },
 };

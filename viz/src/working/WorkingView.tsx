@@ -25,6 +25,7 @@ import { GateDialog } from '../components/GateDialog.js';
 import { VerificationFeed } from '../verification/VerificationFeed.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { injectWorkingKeyframes } from './styles/animations.js';
+import { DemoNarration } from '../components/DemoNarration.js';
 
 const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
 
@@ -151,8 +152,11 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     [state.streamCards]
   );
 
+  const isDemo = state.sessionId?.startsWith('demo-session-') ?? false;
+
   return (
     <div style={styles.root}>
+      {isDemo && <DemoNarration step={2} />}
       {isLocked && (
         <div style={styles.tabLockedOverlay}>
           <div style={styles.tabLockedCard}>

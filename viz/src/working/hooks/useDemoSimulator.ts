@@ -677,6 +677,514 @@ function buildHeartConnectDemoScript(): Array<{ delayMs: number; event: ShemEven
   return script;
 }
 
+// ── MediVault Privacy Policy Demo ─────────────────────────────────────
+// Health tech company with HIPAA + GDPR cross-border data concerns.
+
+function buildHealthPrivacyDemoScript(): Array<{ delayMs: number; event: ShemEvent }> {
+  let findingCounter = 0;
+  let challengeCounter = 0;
+  let responseCounter = 0;
+  let resolutionCounter = 0;
+  let verificationCounter = 0;
+
+  const script: Array<{ delayMs: number; event: ShemEvent }> = [];
+  let delay = 300;
+
+  function add(ms: number, event: ShemEvent) {
+    delay += ms;
+    script.push({ delayMs: delay, event });
+  }
+
+  function fid() { return `finding-${++findingCounter}`; }
+  function cid() { return `challenge-${++challengeCounter}`; }
+  function rid() { return `response-${++responseCounter}`; }
+  function resid() { return `resolution-${++resolutionCounter}`; }
+  function vid() { return `verification-${++verificationCounter}`; }
+
+  // ── Session start ──
+  add(0, { type: 'session_start', sessionId: 'demo-healthprivacy', document: 'MediVault — Privacy Policy (Draft)', timestamp: ts() });
+  add(100, { type: 'cost_update', totalUsd: 0.00, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Phase: Analysis ──
+  add(500, { type: 'workflow_step', step: 'parallel_analysis', previousStep: 'intake', timestamp: ts() });
+
+  // Privacy Counsel — HIPAA/GDPR analysis
+  add(400, { type: 'agent_start', agentId: 'privacy-counsel-1', role: 'privacy-counsel', task: 'Analyzing HIPAA and GDPR compliance for health data processing', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'privacy-counsel', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'search_knowledge_base', agent: 'privacy-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'map_phi_data_flows', agent: 'privacy-counsel', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'check_hipaa_safeguards', agent: 'privacy-counsel', timestamp: ts() });
+
+  // Regulatory Counsel — cross-border transfers
+  add(300, { type: 'agent_start', agentId: 'regulatory-counsel-1', role: 'regulatory-counsel', task: 'Reviewing cross-border data transfer mechanisms and adequacy decisions', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'regulatory-counsel', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'check_transfer_mechanisms', agent: 'regulatory-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'verify_sccs', agent: 'regulatory-counsel', timestamp: ts() });
+
+  // Compliance Officer — breach notification
+  add(200, { type: 'agent_start', agentId: 'compliance-officer-1', role: 'compliance-officer', task: 'Auditing breach notification procedures and incident response timelines', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'compliance-officer', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'map_notification_timelines', agent: 'compliance-officer', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'check_incident_response', agent: 'compliance-officer', timestamp: ts() });
+
+  add(300, { type: 'cost_update', totalUsd: 0.82, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Findings ──
+  const f1 = fid();
+  add(800, {
+    type: 'finding_posted', findingId: f1, agent: 'privacy-counsel',
+    category: 'HIPAA Compliance',
+    severity: 'RED' as Severity, confidence: 0.96,
+    content: 'Privacy policy fails to disclose PHI processing activities as required by HIPAA Privacy Rule. No mention of Business Associate Agreements, minimum necessary standard, or patient rights under HIPAA (access, amendment, accounting of disclosures). The policy treats health data identically to general personal data.',
+    evidence: [
+      'Section 3 "Data We Collect" lists "health information" but does not identify it as PHI or describe HIPAA-specific protections',
+      'No reference to BAA requirements for third-party processors handling PHI',
+    ],
+    timestamp: ts(),
+  });
+
+  const f2 = fid();
+  add(1000, {
+    type: 'finding_posted', findingId: f2, agent: 'regulatory-counsel',
+    category: 'Cross-Border Transfers',
+    severity: 'RED' as Severity, confidence: 0.93,
+    content: 'US-EU data transfer mechanism is legally deficient. Policy states data "may be transferred internationally" without specifying the legal basis. Post-Schrems II, health data transfers to/from the EU require Standard Contractual Clauses with supplementary measures, or reliance on the EU-US Data Privacy Framework with health-sector supplementary safeguards.',
+    evidence: [
+      'Section 8 "International Transfers" contains only a general statement about data moving between countries',
+      'No reference to SCCs, Data Privacy Framework, or supplementary technical measures (encryption, pseudonymization)',
+    ],
+    timestamp: ts(),
+  });
+
+  add(600, { type: 'agent_stop', agentId: 'privacy-counsel-1', role: 'privacy-counsel', durationMs: 5400, timestamp: ts() });
+
+  const f3 = fid();
+  add(900, {
+    type: 'finding_posted', findingId: f3, agent: 'compliance-officer',
+    category: 'Breach Notification',
+    severity: 'YELLOW' as Severity, confidence: 0.91,
+    content: 'Breach notification timelines are internally contradictory. Section 10 promises notification "within 30 days" but HIPAA requires notification within 60 days of discovery, while GDPR requires notification to the supervisory authority within 72 hours. The policy must specify separate timelines for each jurisdiction and distinguish between notification to authorities vs. affected individuals.',
+    evidence: [
+      'Section 10.1 "30-day notification" conflicts with GDPR 72-hour requirement for authority notification',
+      'No distinction between HIPAA breach notification (60 days to individuals) and GDPR breach notification (72 hours to DPA)',
+    ],
+    timestamp: ts(),
+  });
+
+  const f4 = fid();
+  add(800, {
+    type: 'finding_posted', findingId: f4, agent: 'compliance-officer',
+    category: 'Data Retention',
+    severity: 'YELLOW' as Severity, confidence: 0.88,
+    content: 'Data retention policy conflicts with medical records retention requirements. Draft states "we delete your data upon account closure" but medical records are subject to state-specific retention periods (typically 7-10 years) and HIPAA requires retention of certain records for 6 years. Premature deletion could expose MediVault to malpractice liability.',
+    evidence: [
+      'Section 6 "Data Retention" promises deletion on account closure — incompatible with medical records retention laws',
+      'No reference to state medical records retention statutes or HIPAA 6-year retention requirement',
+    ],
+    timestamp: ts(),
+  });
+
+  add(400, { type: 'agent_stop', agentId: 'regulatory-counsel-1', role: 'regulatory-counsel', durationMs: 6200, timestamp: ts() });
+  add(300, { type: 'agent_stop', agentId: 'compliance-officer-1', role: 'compliance-officer', durationMs: 6800, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 2.14, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Phase: Debate ──
+  add(600, { type: 'workflow_step', step: 'debate_1', previousStep: 'parallel_analysis', timestamp: ts() });
+
+  // Challenge: Compliance vs Privacy on anonymization standard
+  const c1 = cid();
+  add(1000, {
+    type: 'challenge_posted', challengeId: c1, challenger: 'compliance-officer', targetFindingId: f1,
+    challengeText: 'The HIPAA finding should also address de-identification. MediVault processes data for analytics — if they use Expert Determination or Safe Harbor methods to de-identify PHI, the de-identified data falls outside HIPAA scope entirely. The privacy policy should describe the de-identification methodology to reassure patients and investors during due diligence.',
+    evidence: [
+      'HIPAA Privacy Rule 45 CFR 164.514(a)-(b) permits two de-identification methods: Expert Determination and Safe Harbor',
+      'De-identified health data can be shared without BAA requirements — significant operational advantage for analytics',
+    ],
+    timestamp: ts(),
+  });
+
+  const r1 = rid();
+  add(1200, {
+    type: 'response_posted', responseId: r1, responder: 'privacy-counsel', challengeId: c1, accepted: true,
+    responseText: 'Strong point for the due diligence context. Revised recommendation: privacy policy should include a "How We Protect Your Data" section that explains de-identification methodology, specifies which analytics use de-identified vs. identified data, and references the applicable HIPAA de-identification standard.',
+    revisedPosition: 'Add "Data De-identification" section explaining MediVault\'s de-identification methodology, clearly distinguishing identified PHI processing from de-identified analytics. This strengthens both compliance posture and investor confidence.',
+    timestamp: ts(),
+  });
+
+  add(800, {
+    type: 'debate_resolved', resolutionId: resid(), topic: 'De-identification disclosure',
+    resolution: 'Privacy policy will include explicit de-identification methodology disclosure. Investors need to see that MediVault understands the HIPAA de-identification framework and applies it correctly to their analytics pipeline.',
+    confidence: 0.92,
+    winningPosition: 'Compliance officer\'s due diligence perspective refined the privacy approach — de-identification disclosure serves both regulatory and business purposes.',
+    evidenceWeight: 'HIPAA de-identification standards (45 CFR 164.514) and Series B due diligence expectations both support detailed methodology disclosure.',
+    escalationNeeded: false,
+    timestamp: ts(),
+  });
+
+  // Challenge: Regulatory vs Compliance on breach timeline
+  const c2 = cid();
+  add(900, {
+    type: 'challenge_posted', challengeId: c2, challenger: 'regulatory-counsel', targetFindingId: f3,
+    challengeText: 'The breach notification finding should address the Berlin engineering team specifically. If the Berlin team discovers a breach, GDPR 72-hour clock starts at discovery by the EU establishment — but HIPAA\'s clock may not start until the US entity is notified. The policy needs a clear internal escalation timeline to prevent gaps between EU discovery and US notification obligations.',
+    evidence: [
+      'GDPR Art. 33 — 72 hours from "awareness" by the controller or processor',
+      'HIPAA Breach Notification Rule — 60 days from discovery by the covered entity or business associate',
+    ],
+    timestamp: ts(),
+  });
+
+  const r2 = rid();
+  add(1100, {
+    type: 'response_posted', responseId: r2, responder: 'compliance-officer', challengeId: c2, accepted: true,
+    responseText: 'Critical operational point. Revised recommendation: policy must describe a dual-track notification process. EU discovery triggers immediate GDPR notification to DPA within 72 hours AND immediate internal escalation to US entity for HIPAA assessment. No breach should wait for cross-Atlantic corporate hierarchy to decide.',
+    revisedPosition: 'Implement dual-track breach notification: EU-discovered breaches trigger parallel GDPR notification and US HIPAA assessment. Maximum 24-hour internal escalation window from any team to both compliance tracks.',
+    timestamp: ts(),
+  });
+
+  add(700, {
+    type: 'debate_resolved', resolutionId: resid(), topic: 'Cross-border breach notification',
+    resolution: 'Dual-track breach notification process adopted. Any breach discovery triggers parallel GDPR and HIPAA notification tracks with 24-hour maximum internal escalation. Berlin team empowered to initiate GDPR notification independently.',
+    confidence: 0.95,
+    winningPosition: 'Regulatory counsel\'s cross-border perspective was critical — the Berlin team discovery scenario could create a compliance gap if not explicitly addressed.',
+    evidenceWeight: 'GDPR 72-hour and HIPAA 60-day timelines both run from "awareness" — dual-track process prevents either clock from being missed.',
+    escalationNeeded: false,
+    timestamp: ts(),
+  });
+
+  add(400, { type: 'cost_update', totalUsd: 3.48, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Phase: Ethics Gate ──
+  add(500, { type: 'workflow_step', step: 'ethics_gate', previousStep: 'debate_1', timestamp: ts() });
+  add(800, { type: 'gate_requested', gateType: 'ethics_critical', summary: 'Patient data protection findings require human review', details: 'Two RED findings: (1) HIPAA PHI processing not properly disclosed, (2) cross-border transfer mechanism legally deficient. Two YELLOW findings: (3) breach notification timelines contradictory, (4) data retention conflicts with medical records laws.', timestamp: ts() });
+  add(2500, { type: 'gate_decided', gateType: 'ethics_critical', decision: 'approve', notes: 'Proceed with all recommended improvements', timestamp: ts() });
+
+  // ── Phase: Transformation ──
+  add(400, { type: 'workflow_step', step: 'transformation', previousStep: 'ethics_gate', timestamp: ts() });
+
+  add(400, { type: 'agent_start', agentId: 'privacy-counsel-2', role: 'privacy-counsel', task: 'Drafting HIPAA-compliant PHI disclosures and de-identification methodology section', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'draft_phi_processing_notice', agent: 'privacy-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'write_deidentification_disclosure', agent: 'privacy-counsel', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'draft_patient_rights_section', agent: 'privacy-counsel', timestamp: ts() });
+
+  add(300, { type: 'agent_start', agentId: 'regulatory-counsel-2', role: 'regulatory-counsel', task: 'Drafting cross-border transfer mechanisms with supplementary measures', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'draft_scc_reference', agent: 'regulatory-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'specify_supplementary_measures', agent: 'regulatory-counsel', timestamp: ts() });
+
+  add(200, { type: 'agent_start', agentId: 'plain-language-specialist-1', role: 'plain-language-specialist', task: 'Rewriting privacy policy for patient comprehension', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'simplify_sentence_structure', agent: 'plain-language-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'create_plain_language_summary', agent: 'plain-language-specialist', timestamp: ts() });
+
+  add(400, { type: 'cost_update', totalUsd: 4.92, budgetUsd: 15.00, timestamp: ts() });
+
+  // Quality check — fail first
+  add(1000, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: false,
+    score: 0.68,
+    iteration: 1,
+    failureReasons: [
+      'De-identification section does not specify which HIPAA method (Expert Determination or Safe Harbor) MediVault uses',
+      'Cross-border transfer section references SCCs but does not describe supplementary technical measures (encryption at rest)',
+    ],
+    revisionGuidance: [
+      'Specify de-identification method and add commitment to periodic re-identification risk assessment',
+      'Add explicit supplementary measures: AES-256 encryption at rest, TLS 1.3 in transit, pseudonymization of patient identifiers',
+    ],
+    timestamp: ts(),
+  });
+
+  add(700, { type: 'tool_used', tool: 'apply_revision_guidance', agent: 'privacy-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'verify_technical_measures', agent: 'regulatory-counsel', timestamp: ts() });
+
+  // Quality check — pass
+  add(700, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: true,
+    score: 0.93,
+    iteration: 2,
+    failureReasons: [],
+    revisionGuidance: [],
+    timestamp: ts(),
+  });
+
+  add(800, { type: 'agent_stop', agentId: 'privacy-counsel-2', role: 'privacy-counsel', durationMs: 6400, timestamp: ts() });
+  add(400, { type: 'agent_stop', agentId: 'regulatory-counsel-2', role: 'regulatory-counsel', durationMs: 5800, timestamp: ts() });
+  add(300, { type: 'agent_stop', agentId: 'plain-language-specialist-1', role: 'plain-language-specialist', durationMs: 5200, timestamp: ts() });
+
+  // ── Phase: Verification ──
+  add(400, { type: 'workflow_step', step: 'parallel_verification', previousStep: 'transformation', timestamp: ts() });
+
+  add(600, { type: 'verification_run', verificationId: vid(), verificationType: 'hipaa-compliance', passed: true, confidence: 0.94, timestamp: ts() });
+  add(500, { type: 'verification_run', verificationId: vid(), verificationType: 'gdpr-compliance', passed: true, confidence: 0.92, timestamp: ts() });
+  add(400, { type: 'verification_run', verificationId: vid(), verificationType: 'readability', passed: true, confidence: 0.90, timestamp: ts() });
+  add(500, { type: 'verification_run', verificationId: vid(), verificationType: 'cross-border-transfer', passed: true, confidence: 0.91, timestamp: ts() });
+  add(400, { type: 'verification_run', verificationId: vid(), verificationType: 'legal-accuracy', passed: true, confidence: 0.95, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 5.87, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Phase: Synthesis ──
+  add(400, { type: 'workflow_step', step: 'synthesis', previousStep: 'parallel_verification', timestamp: ts() });
+
+  add(400, { type: 'agent_start', agentId: 'synthesis-editor-1', role: 'synthesis-editor', task: 'Compiling final MediVault privacy policy with all revisions', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'merge_revision_layers', agent: 'synthesis-editor', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'generate_change_log', agent: 'synthesis-editor', timestamp: ts() });
+  add(600, { type: 'agent_stop', agentId: 'synthesis-editor-1', role: 'synthesis-editor', durationMs: 2200, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 6.41, budgetUsd: 15.00, timestamp: ts() });
+
+  // ── Phase: Final Approval ──
+  add(400, { type: 'workflow_step', step: 'final_gate', previousStep: 'synthesis', timestamp: ts() });
+  add(600, { type: 'gate_requested', gateType: 'final_delivery', summary: 'MediVault privacy policy ready for delivery', details: 'HIPAA and GDPR-compliant privacy policy for health tech platform. Includes: PHI processing disclosures, de-identification methodology, dual-track breach notification, cross-border transfer mechanisms with SCCs and supplementary measures, medical records retention schedule. All 5 verification checks passed.', timestamp: ts() });
+  add(3000, { type: 'gate_decided', gateType: 'final_delivery', decision: 'approve', timestamp: ts() });
+
+  // ── Delivered ──
+  add(400, { type: 'workflow_step', step: 'delivered', previousStep: 'final_gate', timestamp: ts() });
+  add(200, { type: 'cost_update', totalUsd: 6.41, budgetUsd: 15.00, timestamp: ts() });
+  add(500, { type: 'session_end', sessionId: 'demo-healthprivacy', totalCost: 6.41, duration: delay, timestamp: ts() });
+
+  return script;
+}
+
+// ── CodeCraft Developer Agreement Demo ────────────────────────────────
+// Freelance developer contract with IP assignment, misclassification risk.
+
+function buildDevContractDemoScript(): Array<{ delayMs: number; event: ShemEvent }> {
+  let findingCounter = 0;
+  let challengeCounter = 0;
+  let responseCounter = 0;
+  let resolutionCounter = 0;
+  let verificationCounter = 0;
+
+  const script: Array<{ delayMs: number; event: ShemEvent }> = [];
+  let delay = 300;
+
+  function add(ms: number, event: ShemEvent) {
+    delay += ms;
+    script.push({ delayMs: delay, event });
+  }
+
+  function fid() { return `finding-${++findingCounter}`; }
+  function cid() { return `challenge-${++challengeCounter}`; }
+  function rid() { return `response-${++responseCounter}`; }
+  function resid() { return `resolution-${++resolutionCounter}`; }
+  function vid() { return `verification-${++verificationCounter}`; }
+
+  // ── Session start ──
+  add(0, { type: 'session_start', sessionId: 'demo-devcontract', document: 'CodeCraft — Developer Services Agreement (Draft)', timestamp: ts() });
+  add(100, { type: 'cost_update', totalUsd: 0.00, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Phase: Analysis ──
+  add(500, { type: 'workflow_step', step: 'parallel_analysis', previousStep: 'intake', timestamp: ts() });
+
+  // IP Specialist — ownership and assignment
+  add(400, { type: 'agent_start', agentId: 'ip-specialist-1', role: 'ip-specialist', task: 'Analyzing IP ownership provisions, work-for-hire doctrine, and assignment clauses', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'ip-specialist', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'search_knowledge_base', agent: 'ip-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'analyze_ip_assignment', agent: 'ip-specialist', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'check_work_for_hire_eligibility', agent: 'ip-specialist', timestamp: ts() });
+
+  // Employment Counsel — misclassification risk
+  add(300, { type: 'agent_start', agentId: 'employment-counsel-1', role: 'employment-counsel', task: 'Assessing worker misclassification risk factors and safe harbor provisions', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'employment-counsel', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'apply_abc_test', agent: 'employment-counsel', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'check_economic_reality', agent: 'employment-counsel', timestamp: ts() });
+
+  // Contract Specialist — termination and liability
+  add(200, { type: 'agent_start', agentId: 'contract-specialist-1', role: 'contract-specialist', task: 'Reviewing termination provisions, liability caps, and indemnification clauses', timestamp: ts() });
+  add(600, { type: 'tool_used', tool: 'read_document', agent: 'contract-specialist', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'analyze_termination_provisions', agent: 'contract-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'evaluate_liability_cap', agent: 'contract-specialist', timestamp: ts() });
+
+  add(300, { type: 'cost_update', totalUsd: 0.56, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Findings ──
+  const f1 = fid();
+  add(800, {
+    type: 'finding_posted', findingId: f1, agent: 'ip-specialist',
+    category: 'IP Ownership',
+    severity: 'RED' as Severity, confidence: 0.97,
+    content: 'Critical IP ownership gap: agreement relies solely on "work made for hire" doctrine but software created by independent contractors does not qualify as work-for-hire under 17 USC 101 unless it falls into specific categories (none of which cover general software). Without a separate assignment clause, the contractor retains copyright in all code they write. This is likely the same gap that caused CodeCraft\'s prior IP dispute.',
+    evidence: [
+      'Section 5.1 "All Work Product shall be considered work made for hire" — legally ineffective for contractor-authored software',
+      'No backup assignment clause: "If any Work Product is not work for hire, Contractor hereby assigns..." language is absent',
+    ],
+    timestamp: ts(),
+  });
+
+  const f2 = fid();
+  add(1000, {
+    type: 'finding_posted', findingId: f2, agent: 'employment-counsel',
+    category: 'Worker Classification',
+    severity: 'YELLOW' as Severity, confidence: 0.89,
+    content: 'Multiple contract provisions create misclassification risk under California\'s ABC test. The agreement requires contractors to work "exclusively" for CodeCraft during the engagement, mandates specific working hours (9-5 PT), and requires use of company equipment. Under Dynamex/AB5, all three factors suggest employee status.',
+    evidence: [
+      'Section 3.2 "Contractor shall devote full working hours (9:00 AM - 5:00 PM PT)" — control over schedule indicates employment',
+      'Section 3.4 "Contractor shall use Company-provided development environment" — company equipment indicates employment',
+    ],
+    timestamp: ts(),
+  });
+
+  add(600, { type: 'agent_stop', agentId: 'ip-specialist-1', role: 'ip-specialist', durationMs: 5100, timestamp: ts() });
+
+  const f3 = fid();
+  add(900, {
+    type: 'finding_posted', findingId: f3, agent: 'contract-specialist',
+    category: 'Termination',
+    severity: 'YELLOW' as Severity, confidence: 0.86,
+    content: 'Termination clause is one-sided. CodeCraft can terminate for any reason with 7 days notice, but contractor must give 30 days notice. More critically, there is no provision for code handover, documentation transfer, or transition period. Upon termination, no mechanism ensures CodeCraft receives all work-in-progress code, credentials, or deployment access.',
+    evidence: [
+      'Section 8.1 asymmetric notice periods: Company 7 days, Contractor 30 days',
+      'No transition obligations defined — no mention of code repository access, credential handover, or knowledge transfer',
+    ],
+    timestamp: ts(),
+  });
+
+  const f4 = fid();
+  add(800, {
+    type: 'finding_posted', findingId: f4, agent: 'contract-specialist',
+    category: 'Liability',
+    severity: 'YELLOW' as Severity, confidence: 0.84,
+    content: 'Liability cap set at "total fees paid in the prior 12 months" but the agreement is project-based with milestone payments. If a contractor delivers defective code in their first month that causes production outages, the liability cap could be as low as one milestone payment. Additionally, no carve-outs exist for IP indemnification or confidentiality breaches.',
+    evidence: [
+      'Section 9.2 "aggregate liability shall not exceed fees paid in the twelve months preceding the claim"',
+      'No super cap or carve-outs for IP infringement, intentional misconduct, or confidentiality breach',
+    ],
+    timestamp: ts(),
+  });
+
+  add(400, { type: 'agent_stop', agentId: 'employment-counsel-1', role: 'employment-counsel', durationMs: 6300, timestamp: ts() });
+  add(300, { type: 'agent_stop', agentId: 'contract-specialist-1', role: 'contract-specialist', durationMs: 6600, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 1.72, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Phase: Debate ──
+  add(600, { type: 'workflow_step', step: 'debate_1', previousStep: 'parallel_analysis', timestamp: ts() });
+
+  // Challenge: Employment Counsel vs IP Specialist on work-for-hire
+  const c1 = cid();
+  add(1000, {
+    type: 'challenge_posted', challengeId: c1, challenger: 'employment-counsel', targetFindingId: f1,
+    challengeText: 'The IP ownership fix creates a tension with misclassification risk. If we add a robust assignment clause that says "contractor assigns all right, title, and interest," we need to simultaneously ensure the contract language maintains contractor independence. Over-asserting IP control (e.g., "all ideas conceived during the engagement") can look like an employment relationship to labor boards.',
+    evidence: [
+      'NLRB and DOL use IP assignment breadth as an indicator of employment — overly broad assignment suggests employer control',
+      'Best practice: assign only deliverable work product, explicitly preserve contractor\'s pre-existing IP and independent tooling',
+    ],
+    timestamp: ts(),
+  });
+
+  const r1 = rid();
+  add(1200, {
+    type: 'response_posted', responseId: r1, responder: 'ip-specialist', challengeId: c1, accepted: true,
+    responseText: 'Good catch. Revised approach: narrow the assignment clause to "Deliverable Work Product" specifically defined as code committed to CodeCraft repositories for CodeCraft projects. Add explicit carve-out for contractor\'s pre-existing IP, personal projects, and open-source contributions. Include a "Pre-Existing IP Schedule" where contractors list what they\'re bringing in.',
+    revisedPosition: 'Assignment clause scoped to Deliverable Work Product only. Pre-existing IP schedule required. Contractor retains rights to independent tools, frameworks, and open-source contributions made during engagement.',
+    timestamp: ts(),
+  });
+
+  add(800, {
+    type: 'debate_resolved', resolutionId: resid(), topic: 'IP assignment scope vs misclassification risk',
+    resolution: 'Assignment clause narrowed to Deliverable Work Product (code committed to company repos for company projects). Pre-existing IP schedule preserves contractor independence. Open-source contributions explicitly carved out.',
+    confidence: 0.94,
+    winningPosition: 'Employment counsel\'s misclassification concern refined the IP approach — narrow, specific assignment is both legally safer and practically clearer.',
+    evidenceWeight: 'DOL and NLRB guidance on IP assignment breadth as classification indicator, combined with copyright assignment best practices.',
+    escalationNeeded: false,
+    timestamp: ts(),
+  });
+
+  add(400, { type: 'cost_update', totalUsd: 2.58, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Phase: Ethics Gate ──
+  add(500, { type: 'workflow_step', step: 'ethics_gate', previousStep: 'debate_1', timestamp: ts() });
+  add(800, { type: 'gate_requested', gateType: 'ethics_critical', summary: 'IP ownership and worker classification findings require human review', details: 'One RED finding: IP ownership gap (work-for-hire ineffective for contractor code). Three YELLOW findings: misclassification risk factors, one-sided termination, insufficient liability caps.', timestamp: ts() });
+  add(2500, { type: 'gate_decided', gateType: 'ethics_critical', decision: 'approve', notes: 'Proceed with recommended revisions', timestamp: ts() });
+
+  // ── Phase: Transformation ──
+  add(400, { type: 'workflow_step', step: 'transformation', previousStep: 'ethics_gate', timestamp: ts() });
+
+  add(400, { type: 'agent_start', agentId: 'ip-specialist-2', role: 'ip-specialist', task: 'Drafting narrowly-scoped IP assignment with pre-existing IP carve-outs', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'draft_ip_assignment_clause', agent: 'ip-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'create_preexisting_ip_schedule', agent: 'ip-specialist', timestamp: ts() });
+
+  add(300, { type: 'agent_start', agentId: 'contract-specialist-2', role: 'contract-specialist', task: 'Rewriting termination and liability provisions with balanced protections', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'draft_transition_obligations', agent: 'contract-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'recalculate_liability_cap', agent: 'contract-specialist', timestamp: ts() });
+
+  add(200, { type: 'agent_start', agentId: 'plain-language-specialist-1', role: 'plain-language-specialist', task: 'Simplifying agreement for developer audience', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'simplify_sentence_structure', agent: 'plain-language-specialist', timestamp: ts() });
+
+  add(400, { type: 'cost_update', totalUsd: 3.34, budgetUsd: 10.00, timestamp: ts() });
+
+  // Quality check — fail first
+  add(1000, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: false,
+    score: 0.72,
+    iteration: 1,
+    failureReasons: [
+      'Pre-existing IP schedule template is missing the open-source contribution carve-out',
+      'Termination transition period does not specify code review and handover process',
+    ],
+    revisionGuidance: [
+      'Add open-source section to Pre-existing IP Schedule with fields for project name, license, and contribution scope',
+      'Add 5-business-day code review window and mandatory PR completion before final termination',
+    ],
+    timestamp: ts(),
+  });
+
+  add(700, { type: 'tool_used', tool: 'apply_revision_guidance', agent: 'ip-specialist', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'finalize_transition_process', agent: 'contract-specialist', timestamp: ts() });
+
+  // Quality check — pass
+  add(700, {
+    type: 'quality_check_result',
+    step: 'transformation',
+    passed: true,
+    score: 0.92,
+    iteration: 2,
+    failureReasons: [],
+    revisionGuidance: [],
+    timestamp: ts(),
+  });
+
+  add(800, { type: 'agent_stop', agentId: 'ip-specialist-2', role: 'ip-specialist', durationMs: 5800, timestamp: ts() });
+  add(400, { type: 'agent_stop', agentId: 'contract-specialist-2', role: 'contract-specialist', durationMs: 5400, timestamp: ts() });
+  add(300, { type: 'agent_stop', agentId: 'plain-language-specialist-1', role: 'plain-language-specialist', durationMs: 4800, timestamp: ts() });
+
+  // ── Phase: Verification ──
+  add(400, { type: 'workflow_step', step: 'parallel_verification', previousStep: 'transformation', timestamp: ts() });
+
+  add(600, { type: 'verification_run', verificationId: vid(), verificationType: 'ip-assignment', passed: true, confidence: 0.95, timestamp: ts() });
+  add(500, { type: 'verification_run', verificationId: vid(), verificationType: 'classification-risk', passed: true, confidence: 0.88, timestamp: ts() });
+  add(400, { type: 'verification_run', verificationId: vid(), verificationType: 'legal-accuracy', passed: true, confidence: 0.93, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 3.94, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Phase: Synthesis ──
+  add(400, { type: 'workflow_step', step: 'synthesis', previousStep: 'parallel_verification', timestamp: ts() });
+
+  add(400, { type: 'agent_start', agentId: 'synthesis-editor-1', role: 'synthesis-editor', task: 'Compiling final CodeCraft Developer Services Agreement', timestamp: ts() });
+  add(700, { type: 'tool_used', tool: 'merge_revision_layers', agent: 'synthesis-editor', timestamp: ts() });
+  add(800, { type: 'tool_used', tool: 'generate_change_log', agent: 'synthesis-editor', timestamp: ts() });
+  add(600, { type: 'agent_stop', agentId: 'synthesis-editor-1', role: 'synthesis-editor', durationMs: 1900, timestamp: ts() });
+
+  add(200, { type: 'cost_update', totalUsd: 4.22, budgetUsd: 10.00, timestamp: ts() });
+
+  // ── Phase: Final Approval ──
+  add(400, { type: 'workflow_step', step: 'final_gate', previousStep: 'synthesis', timestamp: ts() });
+  add(600, { type: 'gate_requested', gateType: 'final_delivery', summary: 'CodeCraft Developer Services Agreement ready for delivery', details: 'Revised freelance developer agreement with: narrowly-scoped IP assignment (Deliverable Work Product only), pre-existing IP schedule with open-source carve-outs, balanced termination with 5-day code handover, tiered liability caps with IP/confidentiality carve-outs, misclassification safe harbor provisions. All 3 verification checks passed.', timestamp: ts() });
+  add(3000, { type: 'gate_decided', gateType: 'final_delivery', decision: 'approve', timestamp: ts() });
+
+  // ── Delivered ──
+  add(400, { type: 'workflow_step', step: 'delivered', previousStep: 'final_gate', timestamp: ts() });
+  add(200, { type: 'cost_update', totalUsd: 4.22, budgetUsd: 10.00, timestamp: ts() });
+  add(500, { type: 'session_end', sessionId: 'demo-devcontract', totalCost: 4.22, duration: delay, timestamp: ts() });
+
+  return script;
+}
+
 export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulatorOptions) {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Stable ref for onEvent to avoid restarting demo when callback identity changes
@@ -690,9 +1198,16 @@ export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulato
 
     if (!sessionId?.startsWith('demo-session-')) return;
 
-    const script = sessionId.includes('heartconnect')
-      ? buildHeartConnectDemoScript()
-      : buildDemoScript(teamRoles);
+    let script: Array<{ delayMs: number; event: ShemEvent }>;
+    if (sessionId.includes('heartconnect')) {
+      script = buildHeartConnectDemoScript();
+    } else if (sessionId.includes('healthprivacy')) {
+      script = buildHealthPrivacyDemoScript();
+    } else if (sessionId.includes('devcontract')) {
+      script = buildDevContractDemoScript();
+    } else {
+      script = buildDemoScript(teamRoles);
+    }
 
     for (const { delayMs, event } of script) {
       const timer = setTimeout(() => {

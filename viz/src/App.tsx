@@ -974,6 +974,7 @@ export function App() {
 
   // ── Partner Mode — conversational intake with managing partner ──────
   if (view === 'partner') {
+    const isPartnerDemo = window.location.hash.includes('demo=true');
     return (
       <ErrorBoundary>
         {skipLink}
@@ -982,6 +983,7 @@ export function App() {
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>
             <PartnerView
+              isDemo={isPartnerDemo}
               onSessionCreated={(sessionId: string) => {
                 sessionStorage.setItem('shem-session-id', sessionId);
                 window.location.hash = '#/working';
@@ -1008,10 +1010,7 @@ export function App() {
           onMyPage={() => { window.location.hash = '#/my-page'; }}
           onLogin={() => { window.location.hash = '#/login'; }}
           onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-          onDemo={() => {
-            sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
-            window.location.hash = '#/working';
-          }}
+          onDemo={() => { window.location.hash = '#/partner?demo=true'; }}
         />
       </Suspense>
     </ErrorBoundary>

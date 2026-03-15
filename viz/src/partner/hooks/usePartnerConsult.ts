@@ -114,7 +114,7 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
             const event = JSON.parse(jsonStr);
             if (event.type === 'text') {
               fullText += event.content;
-              setStreamingText(fullText);
+              setStreamingText(fullText.replace(/\s*[\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE31\uFE32]\s*/g, ', '));
             } else if (event.type === 'error') {
               throw new Error(event.content);
             }
@@ -125,6 +125,8 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
       }
 
       // Commit the assistant message
+      // Strip em dashes that slip through despite prompt constraints
+      fullText = fullText.replace(/\s*[\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE31\uFE32]\s*/g, ', ');
       const assistantMsg: Message = { role: 'assistant', content: fullText };
       const updatedHistory = userMessage
         ? [...history, { role: 'user' as const, content: userMessage }, assistantMsg]

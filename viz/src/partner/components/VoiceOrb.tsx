@@ -32,7 +32,7 @@ export function VoiceOrb({
   onTouchStart,
   onTouchEnd,
 }: Props) {
-  const size = disabled ? 80 : 140;
+  const size = disabled ? 0 : 140;
 
   // Listening: audio-reactive scale and glow
   const listeningScale = 1 + audioLevel * 0.15;
@@ -48,8 +48,8 @@ export function VoiceOrb({
 
   if (disabled) {
     animation = 'none';
-    opacity = 0.3;
-    borderColor = `rgba(${GOLD_RGB}, 0.08)`;
+    opacity = 0;
+    borderColor = 'transparent';
     boxShadow = 'none';
   } else if (isListening) {
     animation = 'none';

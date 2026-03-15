@@ -28,6 +28,7 @@ import { NextStepsTab } from './components/NextStepsTab.js';
 import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
 import { ConfettiBurst } from './components/ConfettiBurst.js';
 import { DeliverySkeleton } from './components/DeliverySkeleton.js';
+import { DemoNarration } from '../components/DemoNarration.js';
 
 interface Props {
   onContinue: () => void;
@@ -74,11 +75,17 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
     } catch { return {}; }
   });
 
+  // Build narration detail with cost info
+  const narrationDetail = data
+    ? `Transformed document with full process transparency. Cost: $${data.cost.accumulated.toFixed(2)}`
+    : undefined;
+
   return (
     <main style={{
       ...styles.container,
       ...(isMobile ? { padding: spacing.lg } : {}),
     }} id="main-content">
+      {isDemo && <DemoNarration step={3} detail={narrationDetail} />}
       <DeliveryHeader
         matterNumber={matterInfo.matterNumber}
         matterType={matterInfo.matterType}
@@ -149,14 +156,32 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             </button>
           </>
         ) : isDemo ? (
-          <button
-            onClick={() => { window.location.hash = '#/lobby'; }}
-            style={styles.continueBtn}
-            onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-            onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-          >
-            {'\u2190'} Back to Lobby
-          </button>
+          <>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('shem-session-id');
+                sessionStorage.removeItem('shem-demo-case');
+                window.location.hash = '#/partner?demo=true';
+              }}
+              style={styles.secondaryBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+            >
+              Try Another Case
+            </button>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('shem-session-id');
+                sessionStorage.removeItem('shem-demo-case');
+                window.location.hash = '#/';
+              }}
+              style={styles.continueBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+            >
+              Back to Whiteshoe
+            </button>
+          </>
         ) : (
           <button
             onClick={onContinue}
