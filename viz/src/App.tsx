@@ -484,6 +484,7 @@ export function App() {
       'shem-briefing-team', 'shem-briefing-config',
       'shem-session-id', 'shem-parsed-docs', 'shem-strategy-preset',
       'shem-cowork-active', 'shem-from-archive',
+      'shem-demo-case',
     ];
     keysToRemove.forEach(k => sessionStorage.removeItem(k));
     window.location.hash = '#/quickstart';
@@ -653,7 +654,7 @@ export function App() {
           {showMark && <WhiteshoeMark />}
           <WorkingView
             onComplete={navToDelivery}
-            onBack={() => { sessionStorage.removeItem('shem-session-id'); window.location.hash = '#/quickstart'; }}
+            onBack={() => { sessionStorage.removeItem('shem-session-id'); sessionStorage.removeItem('shem-demo-case'); window.location.hash = '#/quickstart'; }}
             onSkip={navToDelivery}
           />
         </Suspense>
@@ -989,7 +990,7 @@ export function App() {
                 window.location.hash = '#/working';
               }}
               onManualFlow={() => { window.location.hash = '#/quickstart'; }}
-              onBack={() => { window.location.hash = '#/'; }}
+              onBack={() => { sessionStorage.removeItem('shem-demo-case'); window.location.hash = '#/'; }}
             />
           </Suspense>
         </ViewTransition>
