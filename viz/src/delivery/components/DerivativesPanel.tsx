@@ -139,7 +139,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
       // Demo sessions: generate client-side markdown
       if (isDemo) {
         const markdown = generateDemoDerivative(typeId, data);
-        const slug = data.documentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const slug = data.documentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'document';
         triggerBlobDownload(markdown, `${slug}-${typeId}.md`, 'text/markdown');
         setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
         const t = setTimeout(() => {

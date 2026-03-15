@@ -353,6 +353,8 @@ export function usePartnerDemo(enabled: boolean) {
       clearAll();
       started.current = false;
       playing.current = false;
+      stepIndex.current = 0;
+      scriptRef.current = [];
       setMessages([]);
       setIsStreaming(false);
       setStreamingText('');

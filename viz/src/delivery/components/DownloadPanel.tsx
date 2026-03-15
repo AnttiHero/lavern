@@ -27,26 +27,62 @@ const STYLE_OPTIONS: { id: DocStyle; label: string; desc: string }[] = [
 
 /** Minimal markdown → HTML for demo downloads (no external deps). */
 function markdownToHtml(md: string): string {
-  return md
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    // headings
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // bold and italic
+  const lines = md.split('\n');
+  const out: string[] = [];
+  let inParagraph = false;
+  let inList = false;
+
+  for (const raw of lines) {
+    const line = raw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;');
+
+    // Blank line — close open blocks
+    if (line.trim() === '') {
+      if (inList) { out.push('</ul>'); inList = false; }
+      if (inParagraph) { out.push('</p>'); inParagraph = false; }
+      continue;
+    }
+
+    // Headings
+    const h3 = line.match(/^### (.+)$/);
+    if (h3) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h3>${h3[1]}</h3>`); continue; }
+    const h2 = line.match(/^## (.+)$/);
+    if (h2) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h2>${h2[1]}</h2>`); continue; }
+    const h1 = line.match(/^# (.+)$/);
+    if (h1) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h1>${h1[1]}</h1>`); continue; }
+
+    // Horizontal rule
+    if (line.trim() === '---') { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push('<hr>'); continue; }
+
+    // List items
+    const li = line.match(/^- (.+)$/);
+    if (li) {
+      if (inParagraph) { out.push('</p>'); inParagraph = false; }
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push(`<li>${applyInline(li[1])}</li>`);
+      continue;
+    }
+
+    // Regular text → paragraph
+    if (inList) { out.push('</ul>'); inList = false; }
+    if (!inParagraph) { out.push('<p>'); inParagraph = true; }
+    out.push(applyInline(line));
+  }
+
+  if (inList) out.push('</ul>');
+  if (inParagraph) out.push('</p>');
+  return out.join('\n');
+}
+
+function applyInline(text: string): string {
+  return text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // unordered lists
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // horizontal rules
-    .replace(/^---$/gm, '<hr>')
-    // paragraphs (double newline)
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^/, '<p>')
-    .replace(/$/, '</p>')
-    // clean up list items into ul
-    .replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function triggerBlobDownload(content: string, filename: string, mimeType: string) {
@@ -206,7 +242,7 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
   const docSlug = data.documentTitle
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .replace(/(^-|-$)/g, '') || 'document';
 
   const handleDownload = (format: 'docx' | 'pdf' | 'md' | 'json' | 'summary') => {
     if (isDemo) {
@@ -216,7 +252,7 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
       } else if (format === 'docx' || format === 'pdf') {
         // Wrap markdown in basic HTML so Word/browsers can open it nicely
         const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${data.documentTitle}</title>
+<html><head><meta charset="utf-8"><title>${escapeHtml(data.documentTitle)}</title>
 <style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#1a1a1a}h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif}h1{border-bottom:1px solid #ddd;padding-bottom:8px}h2{margin-top:32px}ul,ol{padding-left:24px}</style>
 </head><body>${markdownToHtml(output)}</body></html>`;
         const ext = format === 'docx' ? 'doc' : 'html';
