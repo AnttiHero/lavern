@@ -535,6 +535,8 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     position: 'fixed',
     inset: 0,
+    width: '100%',
+    height: '100dvh',
     backgroundColor: '#f0ede8',
     display: 'flex',
     flexDirection: 'column',
