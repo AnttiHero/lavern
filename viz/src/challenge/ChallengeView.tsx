@@ -531,13 +531,7 @@ export default function ChallengeView({ onBack }: Props) {
   return (
     <div style={sty.page}>
       {/* Background layers */}
-      <div style={sty.darkBg}>
-        <img
-          src="/dark-texture.jpg"
-          alt=""
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      </div>
+      <div style={sty.darkBg} />
       <div style={sty.veil} />
       <div style={sty.goldGlow} />
 
@@ -1001,8 +995,8 @@ const sty: Record<string, React.CSSProperties> = {
   darkBg: {
     position: 'fixed',
     inset: 0,
-    filter: 'brightness(0.1) contrast(1.1) saturate(0.15)',
-    opacity: 0.5,
+    background: 'linear-gradient(145deg, #0A0A12 0%, #0F0E18 40%, #0A0A0F 100%)',
+    opacity: 0.8,
     pointerEvents: 'none' as const,
   },
   veil: {
