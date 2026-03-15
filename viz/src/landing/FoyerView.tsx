@@ -340,49 +340,25 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
           The Agentic Law Firm
         </p>
 
-        {/* Statement — floating glass card */}
-        <div
+        {/* Statement */}
+        <p
+          className="text-lg sm:text-xl lg:text-[28px] font-serif font-normal text-text mt-8 sm:mt-10 lg:mt-12 mb-2 tracking-[0.5px] leading-relaxed text-center"
+          style={{ animation: 'lobbyFadeUp 0.8s ease 2s both', opacity: 0.45 }}
+        >
+          Excellence doesn{'\u2019'}t scale.{' '}
+          <span className="italic">Until now.</span>
+        </p>
+
+        {/* Capability line */}
+        <p
+          className="text-[10px] sm:text-xs font-sans font-normal text-text m-0 mb-8 sm:mb-10 tracking-[1px] sm:tracking-[2px]"
           style={{
-            marginTop: 24,
-            marginBottom: 28,
-            padding: '22px 40px',
-            backgroundColor: 'rgba(255,255,255,0.45)',
-            backdropFilter: 'blur(24px)',
-            borderRadius: 16,
-            border: '1px solid rgba(255,255,255,0.6)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8)',
-            textAlign: 'center',
-            animation: 'lobbyFadeUp 0.8s ease 2s both',
+            animation: 'lobbyFadeIn 0.8s ease 2.2s both',
+            opacity: 0,
           }}
         >
-          <p
-            style={{
-              margin: 0,
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 28,
-              fontWeight: 400,
-              color: colors.text,
-              letterSpacing: 0.5,
-              lineHeight: 1.5,
-            }}
-          >
-            Excellence doesn{'\u2019'}t scale.{' '}
-            <span style={{ fontStyle: 'italic' }}>Until now.</span>
-          </p>
-          <p
-            style={{
-              margin: '12px 0 0',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 12,
-              fontWeight: 400,
-              color: colors.text,
-              opacity: 0.4,
-              letterSpacing: 2,
-            }}
-          >
-            62 specialists. Every discipline. Standing by.
-          </p>
-        </div>
+          62 specialists. Every discipline. Standing by.
+        </p>
 
         {/* CTAs with depth shadows */}
         <div
