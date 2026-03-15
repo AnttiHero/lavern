@@ -299,15 +299,10 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
           overflowY: 'auto',
         }}
       >
-        {/* Wordmark with text shadow for depth */}
+        {/* Wordmark — large, original sizing */}
         <h1
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-[130px] font-light font-serif text-text m-0 tracking-[6px] sm:tracking-[12px] md:tracking-[16px] lg:tracking-[22px] uppercase"
           style={{
-            margin: 0,
-            fontFamily: "'Cormorant Garamond', serif",
-            fontWeight: 300,
-            fontSize: 'clamp(2rem, 5.5vw, 72px)',
-            letterSpacing: 12,
-            textTransform: 'uppercase',
             animation: 'lobbyNameReveal 1.8s ease 0.6s both',
             textShadow: '0 4px 60px rgba(26,26,26,0.06)',
           }}
