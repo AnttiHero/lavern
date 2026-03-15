@@ -1,9 +1,8 @@
 /**
  * FoyerView — The Whiteshoe Foyer.
  *
- * Single landing screen replacing both the dark door (LandingView)
- * and the lobby (LobbyView). Light aesthetic with
- * immediate communication of what Whiteshoe does.
+ * Premium landing with depth, shadow, and floating glass effects.
+ * Dark/gold palette — no red.
  *
  * Two primary paths:
  * 1. "Speak to a Partner" → Partner Mode (conversational intake)
@@ -16,7 +15,6 @@ import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
 import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
-import { cn } from '../utils/cn.js';
 
 interface Props {
   onPartner: () => void;
@@ -27,46 +25,75 @@ interface Props {
   onDemo?: () => void;
 }
 
-// ── Shimmer button (reused from LobbyView) ──────────────────────────────
+// ── Gold accent ──────────────────────────────────────────────────────────
+const GOLD = '#B8960B';
+const GOLD_LIGHT = 'rgba(184, 150, 11, 0.12)';
 
-function ShimmerButton({
+// ── Floating button with depth shadow ────────────────────────────────────
+
+function DepthButton({
   onClick,
-  className,
-  animStyle,
+  variant = 'secondary',
   children,
+  animStyle,
 }: {
   onClick: () => void;
-  className?: string;
-  animStyle?: React.CSSProperties;
+  variant?: 'primary' | 'secondary';
   children: React.ReactNode;
+  animStyle?: React.CSSProperties;
 }) {
   const [hovered, setHovered] = useState(false);
+  const isPrimary = variant === 'primary';
+
   return (
     <button
       onClick={onClick}
-      className={cn(
-        'relative overflow-hidden border-[1.5px] border-text rounded-sm',
-        'font-sans text-[11px] font-semibold tracking-[1.5px] uppercase',
-        'px-3 py-1.5 sm:px-5 sm:py-2',
-        'cursor-pointer',
-        'transition-[background-color,color,border-color] duration-250 ease-in-out',
-        className,
-      )}
-      style={{
-        ...animStyle,
-        backgroundColor: hovered ? colors.text : 'transparent',
-        color: hovered ? '#fff' : colors.text,
-        borderColor: hovered ? colors.text : colors.text,
-      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      style={{
+        ...animStyle,
+        position: 'relative',
+        fontFamily: "'Inter', sans-serif",
+        fontSize: isPrimary ? 13 : 11,
+        fontWeight: 600,
+        letterSpacing: isPrimary ? 3 : 1.5,
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        border: 'none',
+        borderRadius: isPrimary ? 8 : 6,
+        padding: isPrimary ? '16px 44px' : '13px 28px',
+        transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+        transform: hovered
+          ? 'translateY(-2px)'
+          : 'translateY(0)',
+        backgroundColor: isPrimary
+          ? (hovered ? '#1a1a1a' : '#2a2a2a')
+          : (hovered ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.6)'),
+        color: isPrimary ? '#fff' : colors.text,
+        backdropFilter: isPrimary ? 'none' : 'blur(20px)',
+        boxShadow: isPrimary
+          ? (hovered
+            ? '0 20px 60px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.06)'
+            : '0 8px 32px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.04)')
+          : (hovered
+            ? '0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)'
+            : '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)'),
+      }}
     >
       {children}
+      {/* Shimmer on hover */}
       {hovered && (
         <span
-          className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '60%',
+            height: '100%',
+            pointerEvents: 'none',
+            background: isPrimary
+              ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)'
+              : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
             animation: 'whiteshoeShimmer 0.6s ease forwards',
           }}
         />
@@ -75,89 +102,41 @@ function ShimmerButton({
   );
 }
 
-// ── Accent button (warm terracotta for primary CTA) ─────────────────────
+// ── Nav button (frosted glass pill) ──────────────────────────────────────
 
-function AccentButton({
-  onClick,
-  className,
-  animStyle,
-  children,
-}: {
-  onClick: () => void;
-  className?: string;
-  animStyle?: React.CSSProperties;
-  children: React.ReactNode;
-}) {
+function NavButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
-      className={cn(
-        'relative overflow-hidden rounded-sm',
-        'font-sans text-[11px] sm:text-xs font-semibold tracking-[2px] sm:tracking-[3px] uppercase',
-        'px-6 py-3 sm:px-10 sm:py-3.5',
-        'cursor-pointer border-[1.5px] border-solid',
-        'transition-all duration-300 ease-in-out',
-        className,
-      )}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        ...animStyle,
-        backgroundColor: hovered ? colors.accent : 'transparent',
-        color: hovered ? '#fff' : colors.accent,
-        borderColor: colors.accent,
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        border: '1px solid rgba(26,26,26,0.12)',
+        borderRadius: 6,
+        padding: '8px 18px',
+        backgroundColor: hovered ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.45)',
+        backdropFilter: 'blur(16px)',
+        color: colors.text,
+        transition: 'all 0.3s ease',
         boxShadow: hovered
-          ? '0 4px 20px rgba(196, 93, 62, 0.25)'
-          : 'none',
+          ? '0 4px 16px rgba(0,0,0,0.08)'
+          : '0 2px 8px rgba(0,0,0,0.04)',
+        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {children}
-      {hovered && (
-        <span
-          className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-            animation: 'whiteshoeShimmer 0.6s ease forwards',
-          }}
-        />
-      )}
     </button>
   );
 }
 
-// ── Hover glow ──────────────────────────────────────────────────────────
-
-function HoverText({
-  className,
-  style,
-  children,
-  as: Tag = 'span',
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-  children: React.ReactNode;
-  as?: 'h1' | 'p' | 'span';
-}) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <Tag
-      className={className}
-      style={{
-        ...style,
-        transition: 'text-shadow 0.4s ease, opacity 0.4s ease',
-        textShadow: hovered ? '0 0 50px rgba(26, 26, 26, 0.3), 0 0 100px rgba(26, 26, 26, 0.12)' : 'none',
-        opacity: hovered ? 1 : 0.45,
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {children}
-    </Tag>
-  );
-}
-
-// ── The Foyer ───────────────────────────────────────────────────────────
+// ── The Foyer ────────────────────────────────────────────────────────────
 
 export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, onAgentDocs, onDemo }: Props) {
   const userCtx = useContext(UserContext);
@@ -181,12 +160,12 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
     if (imgRef.current) {
       const cx = (e.clientX / window.innerWidth - 0.5) * 8;
       const cy = (e.clientY / window.innerHeight - 0.5) * 8;
-      imgRef.current.style.transform = `scale(1.03) translate(${cx}px, ${cy}px)`;
+      imgRef.current.style.transform = `scale(1.04) translate(${cx}px, ${cy}px)`;
     }
   }, []);
 
   const onMouseLeave = useCallback(() => {
-    if (imgRef.current) imgRef.current.style.transform = 'scale(1.03)';
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1.04)';
   }, []);
 
   const handleWaitlistSubmit = useCallback(async (e: React.FormEvent) => {
@@ -214,214 +193,292 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
   }, [waitlistEmail, waitlistSubmitting]);
 
   if (!ready) {
-    return <div className="fixed inset-0 bg-[#f0ede8]" />;
+    return <div style={{ position: 'fixed', inset: 0, backgroundColor: '#f0ede8' }} />;
   }
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden z-[9999] bg-[#f0ede8] w-screen h-screen"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100dvh',
+        overflow: 'hidden',
+        zIndex: 9999,
+        backgroundColor: '#f0ede8',
+      }}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Full-bleed texture ──────────────────────────── */}
+      {/* ── Full-bleed texture with depth ──────────────────── */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-300 ease-out"
         style={{
-          filter: 'contrast(0.75) brightness(1.12) saturate(0.3)',
-          opacity: 0.6,
-          transform: 'scale(1.03)',
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          willChange: 'transform',
+          transition: 'transform 0.3s ease-out',
+          filter: 'contrast(0.8) brightness(1.08) saturate(0.25)',
+          opacity: 0.55,
+          transform: 'scale(1.04)',
           animation: 'lobbyPhotoReveal 2s ease 0s both',
         }}
       />
 
-      {/* ── Frost veil ─────────────────────────────────────────── */}
-      <div className="absolute inset-0 bg-[rgba(245,243,239,0.35)] pointer-events-none" />
-
-      {/* ── Top nav ────────────────────────────────────────────── */}
+      {/* ── Depth vignette — dark edges for depth ───────────── */}
       <div
-        className="absolute top-0 left-0 right-0 flex justify-between p-4 sm:p-5 lg:px-9 lg:py-7 z-10"
-        style={{ animation: 'lobbyFadeIn 0.8s ease 2.4s both' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(26,26,26,0.06) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* ── Frost veil ───────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(245,243,239,0.3)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* ── Top nav ──────────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '24px 36px',
+          zIndex: 10,
+          animation: 'lobbyFadeIn 0.8s ease 2.4s both',
+        }}
       >
         {isLoggedIn ? (
           <>
             {onAgentDocs && (
-              <ShimmerButton onClick={onAgentDocs}>
+              <NavButton onClick={onAgentDocs}>
                 Agent API {'\u2192'}
-              </ShimmerButton>
+              </NavButton>
             )}
-            <div className="flex gap-2 sm:gap-2.5 items-center">
-              <ShimmerButton onClick={onMyPage}>
-                My Page
-              </ShimmerButton>
-              <ShimmerButton onClick={() => { userCtx!.logout(); }}>
-                Logout
-              </ShimmerButton>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <NavButton onClick={onMyPage}>My Page</NavButton>
+              <NavButton onClick={() => { userCtx!.logout(); }}>Logout</NavButton>
             </div>
           </>
         ) : (
           <>
             <div />
-            <ShimmerButton onClick={onLogin ?? (() => {})}>
-              Sign In
-            </ShimmerButton>
+            <NavButton onClick={onLogin ?? (() => {})}>Sign In</NavButton>
           </>
         )}
       </div>
 
-      {/* ── Center — everything in one flex column ────────────── */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-5 px-4 overflow-y-auto" style={{ padding: '60px 20px 40px' }}>
-        <HoverText
-          as="h1"
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-[130px] font-light font-serif text-text m-0 tracking-[6px] sm:tracking-[12px] md:tracking-[16px] lg:tracking-[22px] uppercase"
-          style={{ animation: 'lobbyNameReveal 1.8s ease 0.6s both' }}
-        >
-          <WhiteshoeIlluminated />
-        </HoverText>
-
-        <div
-          className="w-16 sm:w-20 lg:w-[100px] h-0.5 bg-text mt-6 sm:mt-8 lg:mt-10 mb-5 sm:mb-6 lg:mb-8 origin-center"
-          style={{ animation: 'lobbyLineGrow 0.8s ease 1.6s both' }}
-        />
-
-        <HoverText
-          as="p"
-          className="text-[10px] sm:text-xs lg:text-xl font-sans font-semibold text-text tracking-[3px] sm:tracking-[5px] lg:tracking-[8px] uppercase m-0"
-          style={{ animation: 'lobbyFadeIn 0.8s ease 1.8s both' }}
-        >
-          The Agentic Law Firm
-        </HoverText>
-
-        {/* Statement */}
-        <HoverText
-          as="p"
-          className="text-lg sm:text-xl lg:text-[28px] font-serif font-normal text-text mt-8 sm:mt-10 lg:mt-12 mb-2 tracking-[0.5px] leading-relaxed text-center"
-          style={{ animation: 'lobbyFadeUp 0.8s ease 2s both' }}
-        >
-          Excellence doesn{'\u2019'}t scale.{' '}
-          <span className="italic">Until now.</span>
-        </HoverText>
-
-        {/* Capability line */}
-        <p
-          className="text-[10px] sm:text-xs font-sans font-normal text-text m-0 mb-8 sm:mb-10 tracking-[1px] sm:tracking-[2px]"
+      {/* ── Center content ───────────────────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'safe center',
+          zIndex: 5,
+          padding: '60px 24px 24px',
+          overflowY: 'auto',
+        }}
+      >
+        {/* Wordmark with text shadow for depth */}
+        <h1
           style={{
-            animation: 'lobbyFadeIn 0.8s ease 2.2s both',
-            opacity: 0,
+            margin: 0,
+            fontFamily: "'Cormorant Garamond', serif",
+            fontWeight: 300,
+            fontSize: 'clamp(2rem, 5.5vw, 72px)',
+            letterSpacing: 12,
+            textTransform: 'uppercase',
+            animation: 'lobbyNameReveal 1.8s ease 0.6s both',
+            textShadow: '0 4px 60px rgba(26,26,26,0.06)',
           }}
         >
-          62 specialists. Every discipline. Standing by.
+          <WhiteshoeIlluminated />
+        </h1>
+
+        {/* Gold accent line */}
+        <div
+          style={{
+            width: 60,
+            height: 1.5,
+            background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
+            marginTop: 24,
+            marginBottom: 20,
+            opacity: 0.5,
+            animation: 'lobbyLineGrow 0.8s ease 1.6s both',
+          }}
+        />
+
+        {/* Subtitle */}
+        <p
+          style={{
+            margin: 0,
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 13,
+            fontWeight: 600,
+            color: colors.text,
+            letterSpacing: 8,
+            textTransform: 'uppercase',
+            opacity: 0.5,
+            animation: 'lobbyFadeIn 0.8s ease 1.8s both',
+          }}
+        >
+          The Agentic Law Firm
         </p>
 
-        {/* Primary + secondary CTAs */}
+        {/* Statement — floating glass card */}
         <div
-          className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5"
-          style={{ animation: 'lobbyFadeUp 0.5s ease 2.4s both' }}
+          style={{
+            marginTop: 24,
+            marginBottom: 28,
+            padding: '22px 40px',
+            backgroundColor: 'rgba(255,255,255,0.45)',
+            backdropFilter: 'blur(24px)',
+            borderRadius: 16,
+            border: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8)',
+            textAlign: 'center',
+            animation: 'lobbyFadeUp 0.8s ease 2s both',
+          }}
         >
-          <AccentButton
-            onClick={onPartner}
-            className="px-8 py-3 sm:px-12 sm:py-3.5"
+          <p
+            style={{
+              margin: 0,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 28,
+              fontWeight: 400,
+              color: colors.text,
+              letterSpacing: 0.5,
+              lineHeight: 1.5,
+            }}
           >
-            Speak to a Partner
-          </AccentButton>
-
-          <ShimmerButton
-            onClick={onQuickStart}
-            className="px-6 py-2.5 sm:px-8 sm:py-3"
+            Excellence doesn{'\u2019'}t scale.{' '}
+            <span style={{ fontStyle: 'italic' }}>Until now.</span>
+          </p>
+          <p
+            style={{
+              margin: '12px 0 0',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 12,
+              fontWeight: 400,
+              color: colors.text,
+              opacity: 0.4,
+              letterSpacing: 2,
+            }}
           >
-            Configure Engagement
-          </ShimmerButton>
+            62 specialists. Every discipline. Standing by.
+          </p>
         </div>
 
-        {/* Watch Demo + Waitlist row */}
+        {/* CTAs with depth shadows */}
         <div
-          className="flex flex-col items-center mt-5 sm:mt-6 gap-4"
-          style={{ animation: 'lobbyFadeIn 0.6s ease 2.8s both' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 20,
+            animation: 'lobbyFadeUp 0.5s ease 2.4s both',
+          }}
+        >
+          <DepthButton onClick={onPartner} variant="primary">
+            Speak to a Partner
+          </DepthButton>
+
+          <DepthButton onClick={onQuickStart} variant="secondary">
+            Configure Engagement
+          </DepthButton>
+        </div>
+
+        {/* Watch Demo + Waitlist */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginTop: 24,
+            gap: 12,
+            animation: 'lobbyFadeIn 0.6s ease 2.8s both',
+          }}
         >
           {onDemo && (
-            <button
-              onClick={onDemo}
-              className="font-sans text-[10px] sm:text-[11px] font-medium tracking-[2px] uppercase cursor-pointer border-0 bg-transparent"
-              style={{
-                color: colors.text,
-                opacity: 0.35,
-                transition: 'opacity 0.3s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '0.35'; }}
-            >
-              Watch Demo
-            </button>
+            <WatchDemoLink onClick={onDemo} />
           )}
 
-          {/* Waitlist for unauthenticated users */}
+          {/* Waitlist */}
           {!isLoggedIn && (
-            <div className="flex flex-col items-center">
-              <div className="w-8 h-px bg-text mb-3" style={{ opacity: 0.1 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 380 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 1,
+                  background: `linear-gradient(90deg, transparent, rgba(26,26,26,0.1), transparent)`,
+                  marginBottom: 16,
+                }}
+              />
 
               {waitlistDone ? (
                 <p
-                  className="text-xs font-serif italic m-0 tracking-wide"
-                  style={{ color: '#B8960B' }}
+                  style={{
+                    margin: 0,
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 15,
+                    fontStyle: 'italic',
+                    color: GOLD,
+                    letterSpacing: 0.5,
+                  }}
                 >
                   You{'\u2019'}re on the list.
                 </p>
               ) : (
                 <>
                   <p
-                    className="text-[10px] font-serif italic m-0 mb-2 tracking-wide"
-                    style={{ color: colors.text, opacity: 0.35 }}
+                    style={{
+                      margin: '0 0 10px',
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontSize: 13,
+                      fontStyle: 'italic',
+                      color: colors.text,
+                      opacity: 0.35,
+                      letterSpacing: 0.5,
+                    }}
                   >
                     Join the waitlist
                   </p>
 
-                  <form
+                  <WaitlistForm
+                    email={waitlistEmail}
+                    onEmailChange={setWaitlistEmail}
                     onSubmit={handleWaitlistSubmit}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="email"
-                      required
-                      placeholder="your@email.com"
-                      value={waitlistEmail}
-                      onChange={e => setWaitlistEmail(e.target.value)}
-                      className="font-sans text-[11px] outline-none"
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: 'rgba(26, 26, 26, 0.03)',
-                        border: '1px solid rgba(26, 26, 26, 0.12)',
-                        borderRadius: 3,
-                        color: colors.text,
-                        width: 170,
-                        letterSpacing: 0.3,
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={waitlistSubmitting}
-                      className="font-sans text-[9px] font-medium tracking-[2px] uppercase cursor-pointer"
-                      style={{
-                        padding: '6px 14px',
-                        backgroundColor: 'transparent',
-                        border: '1px solid rgba(26, 26, 26, 0.15)',
-                        borderRadius: 3,
-                        color: colors.text,
-                        opacity: waitlistSubmitting ? 0.4 : 0.5,
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; }}
-                    >
-                      {waitlistSubmitting ? '\u2026' : 'Join'}
-                    </button>
-                  </form>
+                    submitting={waitlistSubmitting}
+                  />
 
                   {waitlistError && (
                     <p
-                      className="text-[10px] font-sans m-0 mt-1.5"
-                      style={{ color: colors.accent, opacity: 0.7 }}
+                      style={{
+                        margin: '8px 0 0',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 11,
+                        color: '#9a6b00',
+                        opacity: 0.7,
+                      }}
                     >
                       {waitlistError}
                     </p>
@@ -429,24 +486,154 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
                 </>
               )}
 
-              {/* Already have an invite? */}
-              <button
-                onClick={() => { window.location.hash = '#/login'; }}
-                className="bg-transparent border-none cursor-pointer font-serif italic text-[10px] tracking-wide mt-2 p-0"
-                style={{
-                  color: colors.text,
-                  opacity: 0.2,
-                  transition: 'opacity 0.3s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.5'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '0.2'; }}
-              >
-                Already have an invite?
-              </button>
+              <InviteLink />
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Sub-components ───────────────────────────────────────────────────────
+
+function WatchDemoLink({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 10,
+        fontWeight: 500,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        border: 'none',
+        backgroundColor: 'transparent',
+        color: colors.text,
+        opacity: hovered ? 0.7 : 0.3,
+        transition: 'all 0.3s ease',
+        padding: '4px 8px',
+        textDecoration: hovered ? 'underline' : 'none',
+        textUnderlineOffset: 4,
+      }}
+    >
+      Watch Demo
+    </button>
+  );
+}
+
+function WaitlistForm({
+  email,
+  onEmailChange,
+  onSubmit,
+  submitting,
+}: {
+  email: string;
+  onEmailChange: (v: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  submitting: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [joinHovered, setJoinHovered] = useState(false);
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        width: '100%',
+        maxWidth: 300,
+        backgroundColor: focused ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)',
+        backdropFilter: 'blur(20px)',
+        border: focused
+          ? `1px solid ${GOLD_LIGHT}`
+          : '1px solid rgba(26,26,26,0.08)',
+        borderRadius: 10,
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        boxShadow: focused
+          ? `0 8px 32px rgba(0,0,0,0.08), 0 0 0 3px ${GOLD_LIGHT}`
+          : '0 2px 12px rgba(0,0,0,0.04)',
+        transform: focused ? 'translateY(-1px)' : 'translateY(0)',
+      }}
+    >
+      <input
+        type="email"
+        required
+        placeholder="your@email.com"
+        value={email}
+        onChange={e => onEmailChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          padding: '12px 16px',
+          backgroundColor: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 13,
+          color: colors.text,
+          letterSpacing: 0.3,
+        }}
+      />
+      <button
+        type="submit"
+        disabled={submitting}
+        onMouseEnter={() => setJoinHovered(true)}
+        onMouseLeave={() => setJoinHovered(false)}
+        style={{
+          flexShrink: 0,
+          padding: '12px 20px',
+          backgroundColor: joinHovered ? 'rgba(26,26,26,0.08)' : 'rgba(26,26,26,0.03)',
+          border: 'none',
+          borderLeft: '1px solid rgba(26,26,26,0.06)',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          color: colors.text,
+          opacity: submitting ? 0.3 : (joinHovered ? 0.8 : 0.45),
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        {submitting ? '\u2026' : 'Join'}
+      </button>
+    </form>
+  );
+}
+
+function InviteLink() {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={() => { window.location.hash = '#/login'; }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        marginTop: 12,
+        padding: 0,
+        backgroundColor: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: "'Cormorant Garamond', serif",
+        fontStyle: 'italic',
+        fontSize: 12,
+        letterSpacing: 0.5,
+        color: colors.text,
+        opacity: hovered ? 0.45 : 0.18,
+        transition: 'opacity 0.3s ease',
+      }}
+    >
+      Already have an invite?
+    </button>
   );
 }

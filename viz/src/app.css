@@ -219,8 +219,8 @@ input:focus-visible {
   100% { opacity: 1; transform: scale(1); }
 }
 @keyframes lobbyNameReveal {
-  0% { opacity: 0; letter-spacing: 40px; }
-  100% { opacity: 1; letter-spacing: 22px; }
+  0% { opacity: 0; letter-spacing: 0.6em; }
+  100% { opacity: 1; }
 }
 
 /* LandingView — dark door */
