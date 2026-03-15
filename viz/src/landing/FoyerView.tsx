@@ -81,23 +81,6 @@ function DepthButton({
       }}
     >
       {children}
-      {/* Shimmer on hover */}
-      {hovered && (
-        <span
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '60%',
-            height: '100%',
-            pointerEvents: 'none',
-            background: isPrimary
-              ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
-            animation: 'whiteshoeShimmer 0.6s ease forwards',
-          }}
-        />
-      )}
     </button>
   );
 }
@@ -422,16 +405,21 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
                 <>
                   <p
                     style={{
-                      margin: '0 0 10px',
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: 13,
-                      fontStyle: 'italic',
-                      color: colors.text,
-                      opacity: 0.35,
-                      letterSpacing: 0.5,
+                      margin: '0 0 12px',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      letterSpacing: 2.5,
+                      textTransform: 'uppercase',
+                      background: `linear-gradient(90deg, ${colors.text} 0%, ${colors.text} 44%, ${GOLD} 50%, ${colors.text} 56%, ${colors.text} 100%)`,
+                      backgroundSize: '400% 100%',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      animation: 'whiteshoeIlluminate 8s ease-in-out infinite',
+                      opacity: 0.5,
                     }}
                   >
-                    Join the waitlist
+                    Invite only. Join the waitlist.
                   </p>
 
                   <WaitlistForm
@@ -509,28 +497,32 @@ function WaitlistForm({
   submitting: boolean;
 }) {
   const [focused, setFocused] = useState(false);
+  const [formHovered, setFormHovered] = useState(false);
   const [joinHovered, setJoinHovered] = useState(false);
+  const active = focused || formHovered;
 
   return (
     <form
       onSubmit={onSubmit}
+      onMouseEnter={() => setFormHovered(true)}
+      onMouseLeave={() => setFormHovered(false)}
       style={{
         display: 'flex',
         alignItems: 'stretch',
         width: '100%',
         maxWidth: 300,
-        backgroundColor: focused ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)',
+        backgroundColor: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)',
         backdropFilter: 'blur(20px)',
-        border: focused
+        border: active
           ? `1px solid ${GOLD_LIGHT}`
           : '1px solid rgba(26,26,26,0.08)',
         borderRadius: 10,
         overflow: 'hidden',
         transition: 'all 0.3s ease',
-        boxShadow: focused
+        boxShadow: active
           ? `0 8px 32px rgba(0,0,0,0.08), 0 0 0 3px ${GOLD_LIGHT}`
           : '0 2px 12px rgba(0,0,0,0.04)',
-        transform: focused ? 'translateY(-1px)' : 'translateY(0)',
+        transform: active ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
       <input
@@ -574,6 +566,7 @@ function WaitlistForm({
           opacity: submitting ? 0.3 : (joinHovered ? 0.8 : 0.45),
           cursor: 'pointer',
           transition: 'all 0.3s ease',
+          transform: joinHovered ? 'translateY(-1px)' : 'translateY(0)',
         }}
       >
         {submitting ? '\u2026' : 'Join'}
@@ -601,7 +594,9 @@ function InviteLink() {
         letterSpacing: 0.5,
         color: colors.text,
         opacity: hovered ? 0.45 : 0.18,
-        transition: 'opacity 0.3s ease',
+        textDecoration: hovered ? 'underline' : 'none',
+        textUnderlineOffset: 3,
+        transition: 'opacity 0.3s ease, text-decoration 0.3s ease',
       }}
     >
       Already have an invite?

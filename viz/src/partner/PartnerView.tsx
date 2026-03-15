@@ -1,21 +1,19 @@
 /**
- * PartnerView — Conversational intake with the managing partner.
+ * PartnerView -- Voice-first consultation with the managing partner.
  *
- * A minimal chat interface on warm background. The managing
- * partner (Catherine M. Blackwell) conducts a 2-3 turn conversation, then
- * produces a recommendation card. User confirms → session starts.
+ * A large central orb represents Catherine M. Blackwell's presence.
+ * Push-to-talk (spacebar or tap the orb) is the primary interaction.
+ * A tiny text input at the bottom serves as a fallback.
  *
  * Voice Mode: Deepgram STT + ElevenLabs TTS with browser-native fallback.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
-import { cn } from '../utils/cn.js';
 import { usePartnerConsult, type PartnerRecommendation } from './hooks/usePartnerConsult.js';
 import { useVoiceInput } from './hooks/useVoiceInput.js';
 import { useVoiceOutput } from './hooks/useVoiceOutput.js';
 import { VoiceOrb } from './components/VoiceOrb.js';
-import { YOLO_CONFIGS } from '../landing/yolo-config.js';
 
 interface Props {
   onSessionCreated: (sessionId: string) => void;
@@ -23,7 +21,7 @@ interface Props {
   onBack: () => void;
 }
 
-// ── Workflow display names ──────────────────────────────────────────────
+const GOLD = '#96875f';
 
 const WORKFLOW_LABELS: Record<string, string> = {
   counsel: 'Expert Counsel',
@@ -33,19 +31,6 @@ const WORKFLOW_LABELS: Record<string, string> = {
   'legal-design': 'Legal Design',
   'full-bench': 'Full Bench',
 };
-
-// ── SVG Icons ───────────────────────────────────────────────────────────
-
-function MicIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="1" width="6" height="11" rx="3" />
-      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
-      <line x1="12" y1="19" x2="12" y2="23" />
-      <line x1="8" y1="23" x2="16" y2="23" />
-    </svg>
-  );
-}
 
 function SpeakerIcon({ size = 14, muted = false }: { size?: number; muted?: boolean }) {
   return (
@@ -88,14 +73,15 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
   const [input, setInput] = useState('');
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
   const hasStarted = useRef(false);
   const autoSubmitTimer = useRef<ReturnType<typeof setTimeout>>();
+  const userFadeTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastMessageCount = useRef(0);
   const inputFocusedRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Start the conversation on mount
+  // Start conversation on mount
   useEffect(() => {
     if (!hasStarted.current) {
       hasStarted.current = true;
@@ -103,12 +89,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     }
   }, [startConversation]);
 
-  // Auto-scroll to bottom
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingText, recommendation]);
-
-  // Auto-finalize when partner signals readiness
+  // Auto-finalize
   useEffect(() => {
     if (readyToFinalize && !recommendation && !isFinalizing) {
       const t = setTimeout(() => finalize(), 1500);
@@ -116,7 +97,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     }
   }, [readyToFinalize, recommendation, isFinalizing, finalize]);
 
-  // ── Voice output: speak new assistant messages ─────────────────────
+  // Speak new assistant messages
   useEffect(() => {
     if (!isStreaming && messages.length > lastMessageCount.current) {
       const lastMsg = messages[messages.length - 1];
@@ -127,43 +108,43 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     }
   }, [isStreaming, messages, voiceOutput]);
 
-  // ── Voice input: populate input with transcript ────────────────────
+  // Populate input with voice transcript
   useEffect(() => {
     if (voiceInput.finalTranscript) {
       setInput(voiceInput.finalTranscript);
     }
   }, [voiceInput.finalTranscript]);
 
-  // ── Auto-submit after voice input stops ────────────────────────────
+  // Auto-submit after voice stops
   useEffect(() => {
     if (!voiceInput.isListening && voiceInput.finalTranscript && !isStreaming) {
-      // Auto-submit after 1 second
       autoSubmitTimer.current = setTimeout(() => {
         const text = voiceInput.finalTranscript.trim();
         if (text) {
+          setLastUserMessage(text);
           sendMessage(text);
           setInput('');
           voiceInput.clearTranscript();
+          // Fade user message after 4s
+          clearTimeout(userFadeTimer.current);
+          userFadeTimer.current = setTimeout(() => setLastUserMessage(null), 4000);
         }
       }, 1000);
       return () => clearTimeout(autoSubmitTimer.current);
     }
   }, [voiceInput.isListening, voiceInput.finalTranscript, isStreaming, sendMessage, voiceInput]);
 
-  // ── Spacebar push-to-talk ──────────────────────────────────────────
+  // Spacebar push-to-talk
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat) return;
-      if (inputFocusedRef.current) return; // Don't hijack typing
+      if (inputFocusedRef.current) return;
       if (recommendation || isStreaming || isFinalizing) return;
       if (!voiceInput.isSupported) return;
-
       e.preventDefault();
-      // Stop TTS if playing to prevent echo
       voiceOutput.stop();
       voiceInput.startListening();
     };
-
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return;
       if (inputFocusedRef.current) return;
@@ -172,7 +153,6 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         voiceInput.stopListening();
       }
     };
-
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     return () => {
@@ -185,16 +165,17 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     e.preventDefault();
     if (!input.trim() || isStreaming) return;
     clearTimeout(autoSubmitTimer.current);
+    setLastUserMessage(input.trim());
     sendMessage(input);
     setInput('');
     voiceInput.clearTranscript();
+    clearTimeout(userFadeTimer.current);
+    userFadeTimer.current = setTimeout(() => setLastUserMessage(null), 4000);
   }, [input, isStreaming, sendMessage, voiceInput]);
 
   const handleMicPress = useCallback(() => {
     if (!voiceInput.isSupported || isStreaming) return;
-    // Stop TTS to prevent echo
     voiceOutput.stop();
-    // Cancel any pending auto-submit
     clearTimeout(autoSubmitTimer.current);
     voiceInput.startListening();
   }, [voiceInput, voiceOutput, isStreaming]);
@@ -208,10 +189,9 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
   const handleProceed = useCallback(async (rec: PartnerRecommendation) => {
     setIsCreatingSession(true);
     setSessionError(null);
-    voiceOutput.stop(); // Stop any TTS
+    voiceOutput.stop();
 
     const matterId = `partner-${Date.now()}`;
-
     sessionStorage.setItem('shem-matter-id', matterId);
     sessionStorage.setItem('shem-matter-data', JSON.stringify({
       matterId,
@@ -246,10 +226,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          request: {
-            type: rec.requestType,
-            requestText: rec.briefingMemo,
-          },
+          request: { type: rec.requestType, requestText: rec.briefingMemo },
           team: rec.teamRoles,
           workflow: rec.workflowId,
           options: {
@@ -260,7 +237,6 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
           },
         }),
       });
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Session creation failed' }));
         if (res.status === 402) {
@@ -269,7 +245,6 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
         }
         throw new Error((errData as { error?: string }).error || `HTTP ${res.status}`);
       }
-
       const data = await res.json() as { sessionId: string };
       onSessionCreated(data.sessionId);
     } catch (err) {
@@ -280,189 +255,131 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack }: 
     }
   }, [onSessionCreated, voiceOutput]);
 
-  // Display text in input: show transcript when listening
-  const displayValue = voiceInput.isListening
-    ? (voiceInput.finalTranscript + (voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : '')).trim()
-    : input;
+  // Latest assistant message
+  const latestAssistant = [...messages].reverse().find(m => m.role === 'assistant');
 
-  const displayPlaceholder = voiceInput.isListening
-    ? 'Listening...'
-    : isStreaming
-      ? 'Partner is speaking...'
-      : 'Type your message or hold the mic...';
+  // Status hint text
+  let statusText = '';
+  if (voiceInput.isListening) {
+    const transcript = (voiceInput.finalTranscript + (voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : '')).trim();
+    statusText = transcript || 'Listening...';
+  } else if (isStreaming && !streamingText) {
+    statusText = 'Catherine is thinking...';
+  } else if (isFinalizing) {
+    statusText = 'Preparing your recommendation...';
+  } else if (!recommendation && !isStreaming && messages.length > 0) {
+    statusText = voiceInput.isSupported ? 'Hold spacebar or tap to speak' : '';
+  }
 
   return (
-    <div style={styles.container}>
-      {/* ── Background ──────────────────────────────────── */}
+    <div style={S.container}>
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={styles.bgImage}
+        style={S.bgImage}
       />
-      <div style={styles.bgOverlay} />
+      <div style={S.bgOverlay} />
 
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={styles.header}>
-        <button onClick={onBack} style={styles.backBtn}>
+      {/* Header */}
+      <div style={S.header}>
+        <button onClick={onBack} style={S.backBtn}>
           {'\u2190'} Back
         </button>
-        <button onClick={onManualFlow} style={styles.manualBtn}>
+        <button onClick={onManualFlow} style={S.manualBtn}>
           Configure manually
         </button>
       </div>
 
-      {/* ── Chat area ──────────────────────────────────────────── */}
-      <div style={styles.chatWrapper}>
-        <div style={styles.chatCard}>
-        <div style={styles.chatArea}>
-          {/* Partner identity */}
-          <div style={styles.partnerHeader}>
-            <div style={{
-              ...styles.avatar,
-              ...(voiceOutput.isSpeaking ? { animation: 'voiceSpeakingPulse 2s ease-in-out infinite' } : {}),
-            }}>
-              CB
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={styles.partnerName}>Catherine M. Blackwell</div>
-              <div style={styles.partnerTitle}>Managing Partner</div>
-            </div>
-            {/* Voice output toggle */}
-            <button
-              onClick={() => voiceOutput.setEnabled(!voiceOutput.isEnabled)}
-              style={{
-                ...styles.voiceToggle,
-                opacity: voiceOutput.isEnabled ? 0.7 : 0.25,
-              }}
-              title={voiceOutput.isEnabled ? 'Voice on — click to mute' : 'Voice off — click to enable'}
-              aria-label={voiceOutput.isEnabled ? 'Disable voice output' : 'Enable voice output'}
-            >
-              <SpeakerIcon muted={!voiceOutput.isEnabled} />
-            </button>
-          </div>
-
-          {/* Messages */}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              style={msg.role === 'assistant' ? styles.assistantBubble : styles.userBubble}
-            >
-              {msg.content}
-            </div>
-          ))}
-
-          {/* Streaming text */}
-          {isStreaming && streamingText && (
-            <div style={styles.assistantBubble}>
-              {streamingText}
-              <span style={styles.cursor}>|</span>
-            </div>
-          )}
-
-          {/* Loading indicator */}
-          {isStreaming && !streamingText && (
-            <div style={styles.assistantBubble}>
-              <span style={styles.typing}>
-                <span style={styles.dot} />
-                <span style={{ ...styles.dot, animationDelay: '0.2s' }} />
-                <span style={{ ...styles.dot, animationDelay: '0.4s' }} />
-              </span>
-            </div>
-          )}
-
-          {/* Finalizing indicator */}
-          {isFinalizing && (
-            <div style={styles.finalizingCard}>
-              <div style={styles.finalizingText}>
-                Preparing your engagement recommendation...
-              </div>
-            </div>
-          )}
-
-          {/* Recommendation card */}
-          {recommendation && (
-            <RecommendationCard
-              rec={recommendation}
-              onProceed={() => handleProceed(recommendation)}
-              onManual={onManualFlow}
-              isCreating={isCreatingSession}
-              error={sessionError}
-            />
-          )}
-
-          {/* Error */}
-          {error && !isFinalizing && (
-            <div style={styles.errorMsg}>{error}</div>
-          )}
-          {voiceInput.error && (
-            <div style={styles.errorMsg}>{voiceInput.error}</div>
-          )}
-
-          <div ref={chatEndRef} />
+      {/* Main content */}
+      <div style={S.main}>
+        {/* Catherine's identity */}
+        <div style={S.identity}>
+          <div style={S.name}>Catherine M. Blackwell</div>
+          <div style={S.title}>Managing Partner</div>
+          <button
+            onClick={() => voiceOutput.setEnabled(!voiceOutput.isEnabled)}
+            style={{ ...S.voiceToggle, opacity: voiceOutput.isEnabled ? 0.7 : 0.25 }}
+            title={voiceOutput.isEnabled ? 'Voice on' : 'Voice off'}
+            aria-label={voiceOutput.isEnabled ? 'Disable voice output' : 'Enable voice output'}
+          >
+            <SpeakerIcon muted={!voiceOutput.isEnabled} />
+          </button>
         </div>
 
-        {/* ── Input bar with mic ──────────────────────────────────── */}
-        {!recommendation && (
-          <div style={styles.inputBar}>
-            {/* Mic button */}
-            {voiceInput.isSupported && (
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <VoiceOrb audioLevel={voiceInput.audioLevel} isListening={voiceInput.isListening} />
-                <button
-                  onMouseDown={handleMicPress}
-                  onMouseUp={handleMicRelease}
-                  onMouseLeave={handleMicRelease}
-                  onTouchStart={handleMicPress}
-                  onTouchEnd={handleMicRelease}
-                  disabled={isStreaming}
-                  style={{
-                    ...styles.micBtn,
-                    ...(voiceInput.isListening ? styles.micBtnListening : {}),
-                    ...(isStreaming ? { opacity: 0.3 } : {}),
-                  }}
-                  aria-label={voiceInput.isListening ? 'Release to stop' : 'Hold to speak'}
-                  title="Hold to speak (or hold spacebar)"
-                >
-                  <MicIcon size={18} />
-                </button>
-              </div>
-            )}
+        {/* The Orb */}
+        <VoiceOrb
+          audioLevel={voiceInput.audioLevel}
+          isListening={voiceInput.isListening}
+          isSpeaking={voiceOutput.isSpeaking}
+          isStreaming={isStreaming}
+          disabled={!!recommendation}
+          onMouseDown={handleMicPress}
+          onMouseUp={handleMicRelease}
+          onTouchStart={handleMicPress}
+          onTouchEnd={handleMicRelease}
+        />
 
-            {/* Text input */}
-            <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', gap: 8 }}>
-              <input
-                ref={inputRef}
-                type="text"
-                value={displayValue}
-                onChange={e => {
-                  setInput(e.target.value);
-                  // Cancel auto-submit if user edits
-                  clearTimeout(autoSubmitTimer.current);
-                }}
-                onFocus={() => { inputFocusedRef.current = true; }}
-                onBlur={() => { inputFocusedRef.current = false; }}
-                placeholder={displayPlaceholder}
-                disabled={isStreaming || voiceInput.isListening}
-                style={{
-                  ...styles.input,
-                  ...(voiceInput.isListening ? { fontStyle: 'italic', color: '#6b6b67' } : {}),
-                }}
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={isStreaming || !displayValue.trim() || voiceInput.isListening}
-                style={{
-                  ...styles.sendBtn,
-                  opacity: isStreaming || !displayValue.trim() || voiceInput.isListening ? 0.3 : 1,
-                }}
-              >
-                Send
-              </button>
-            </form>
+        {/* Status hint */}
+        <div style={{
+          ...S.statusHint,
+          ...(voiceInput.isListening ? { fontStyle: 'italic', color: GOLD } : {}),
+        }}>
+          {statusText}
+        </div>
+
+        {/* Catherine's text */}
+        {(isStreaming && streamingText) ? (
+          <div style={S.catherineText} key="streaming">
+            {streamingText}
+            <span style={{ animation: 'blink 1s step-end infinite', opacity: 0.4 }}>|</span>
+          </div>
+        ) : latestAssistant && !recommendation ? (
+          <div style={S.catherineText} key={`msg-${messages.length}`}>
+            {latestAssistant.content}
+          </div>
+        ) : null}
+
+        {/* User echo */}
+        {lastUserMessage && (
+          <div style={S.userEcho} key={`user-${lastUserMessage.slice(0, 20)}`}>
+            {lastUserMessage}
           </div>
         )}
-        </div>{/* chatCard */}
+
+        {/* Recommendation */}
+        {recommendation && (
+          <RecommendationCard
+            rec={recommendation}
+            onProceed={() => handleProceed(recommendation)}
+            onManual={onManualFlow}
+            isCreating={isCreatingSession}
+            error={sessionError}
+          />
+        )}
+
+        {/* Errors */}
+        {error && !isFinalizing && <div style={S.errorMsg}>{error}</div>}
+        {voiceInput.error && <div style={S.errorMsg}>{voiceInput.error}</div>}
+
+        {/* Text fallback */}
+        {!recommendation && (
+          <form onSubmit={handleSubmit} style={S.textFallback}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={voiceInput.isListening ? '' : input}
+              onChange={e => {
+                setInput(e.target.value);
+                clearTimeout(autoSubmitTimer.current);
+              }}
+              onFocus={() => { inputFocusedRef.current = true; }}
+              onBlur={() => { inputFocusedRef.current = false; }}
+              placeholder="or type instead..."
+              disabled={isStreaming || voiceInput.isListening}
+              style={S.textInput}
+            />
+          </form>
+        )}
       </div>
     </div>
   );
@@ -484,54 +401,47 @@ function RecommendationCard({
   error: string | null;
 }) {
   return (
-    <div style={styles.recCard}>
-      <div style={styles.recHeader}>Engagement Recommendation</div>
-      <div style={styles.recGrid}>
-        <div style={styles.recItem}>
-          <div style={styles.recLabel}>Workflow</div>
-          <div style={styles.recValue}>{WORKFLOW_LABELS[rec.workflowId] ?? rec.workflowId}</div>
+    <div style={S.recCard}>
+      <div style={S.recHeader}>Engagement Recommendation</div>
+      <div style={S.recGrid}>
+        <div style={S.recItem}>
+          <div style={S.recLabel}>Workflow</div>
+          <div style={S.recValue}>{WORKFLOW_LABELS[rec.workflowId] ?? rec.workflowId}</div>
         </div>
-        <div style={styles.recItem}>
-          <div style={styles.recLabel}>Team Size</div>
-          <div style={styles.recValue}>{rec.teamRoles.length} specialists</div>
+        <div style={S.recItem}>
+          <div style={S.recLabel}>Team Size</div>
+          <div style={S.recValue}>{rec.teamRoles.length} specialists</div>
         </div>
-        <div style={styles.recItem}>
-          <div style={styles.recLabel}>Estimated Cost</div>
-          <div style={styles.recValue}>${rec.budgetUsd.toFixed(0)}</div>
+        <div style={S.recItem}>
+          <div style={S.recLabel}>Estimated Cost</div>
+          <div style={S.recValue}>${rec.budgetUsd.toFixed(0)}</div>
         </div>
-        <div style={styles.recItem}>
-          <div style={styles.recLabel}>Intensity</div>
-          <div style={styles.recValue} className="capitalize">{rec.intensity}</div>
+        <div style={S.recItem}>
+          <div style={S.recLabel}>Intensity</div>
+          <div style={S.recValue} className="capitalize">{rec.intensity}</div>
         </div>
       </div>
-      <div style={styles.recReasoning}>{rec.reasoning}</div>
-
-      <div style={styles.recActions}>
+      <div style={S.recReasoning}>{rec.reasoning}</div>
+      <div style={S.recActions}>
         <button
           onClick={onProceed}
           disabled={isCreating}
-          style={{
-            ...styles.proceedBtn,
-            opacity: isCreating ? 0.6 : 1,
-          }}
+          style={{ ...S.proceedBtn, opacity: isCreating ? 0.6 : 1 }}
         >
           {isCreating ? 'Creating session...' : 'Proceed \u2192'}
         </button>
-        <button onClick={onManual} style={styles.configureBtn}>
+        <button onClick={onManual} style={S.configureBtn}>
           Configure manually
         </button>
       </div>
-
-      {error && (
-        <div style={styles.errorMsg}>{error}</div>
-      )}
+      {error && <div style={S.errorMsg}>{error}</div>}
     </div>
   );
 }
 
 // ── Styles ──────────────────────────────────────────────────────────────
 
-const styles: Record<string, React.CSSProperties> = {
+const S: Record<string, React.CSSProperties> = {
   container: {
     position: 'fixed',
     inset: 0,
@@ -579,7 +489,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   manualBtn: {
     background: 'rgba(255,255,255,0.5)',
-    border: `1px solid rgba(26, 26, 26, 0.2)`,
+    border: '1px solid rgba(26, 26, 26, 0.2)',
     borderRadius: 3,
     cursor: 'pointer',
     fontFamily: "'Inter', sans-serif",
@@ -591,76 +501,42 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 14px',
     transition: 'opacity 0.2s',
   },
-  chatWrapper: {
+  main: {
     position: 'relative',
     zIndex: 10,
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    maxWidth: 680,
-    width: '100%',
-    margin: '0 auto',
-    padding: '0 20px',
-    overflow: 'hidden',
-  },
-  chatCard: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    backdropFilter: 'blur(20px)',
-    borderRadius: 16,
-    border: '1px solid rgba(26, 26, 26, 0.08)',
-    padding: '24px 28px 0',
-    overflow: 'hidden',
-    boxShadow: '0 4px 40px rgba(26, 26, 26, 0.06)',
-  },
-  chatArea: {
-    flex: 1,
-    overflowY: 'auto',
-    paddingBottom: 20,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
-  partnerHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 8,
-    paddingBottom: 16,
-    borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: '50%',
-    backgroundColor: colors.accent,
-    color: '#fff',
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 18,
-    fontWeight: 600,
-    flexShrink: 0,
-    transition: 'box-shadow 0.3s ease',
+    maxWidth: 600,
+    width: '100%',
+    margin: '0 auto',
+    padding: '0 24px 32px',
+    gap: 20,
+    overflowY: 'auto',
   },
-  partnerName: {
+  identity: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+  },
+  name: {
     fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 700,
     color: '#1a1a1a',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
-  partnerTitle: {
+  title: {
     fontFamily: "'Inter', sans-serif",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 600,
     color: '#4a4a4a',
     letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
-    marginTop: 2,
   },
   voiceToggle: {
     background: 'none',
@@ -673,66 +549,64 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     color: colors.text,
     transition: 'opacity 0.2s',
-    flexShrink: 0,
+    marginTop: 4,
   },
-  assistantBubble: {
+  statusHint: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 12,
+    color: '#6b6b67',
+    textAlign: 'center',
+    minHeight: 18,
+    letterSpacing: 0.3,
+    transition: 'color 0.2s',
+  },
+  catherineText: {
     fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 500,
+    fontStyle: 'italic',
     lineHeight: 1.65,
     color: '#1a1a1a',
-    fontStyle: 'italic',
-    maxWidth: '85%',
-    padding: '12px 0',
+    textAlign: 'center',
+    maxWidth: 520,
+    animation: 'partnerTextFadeIn 0.6s ease both',
   },
-  userBubble: {
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 14,
-    lineHeight: 1.6,
-    color: '#1a1a1a',
-    maxWidth: '85%',
-    alignSelf: 'flex-end',
-    backgroundColor: 'rgba(26, 26, 26, 0.06)',
-    borderRadius: 12,
-    padding: '10px 16px',
-  },
-  cursor: {
-    animation: 'blink 1s step-end infinite',
-    opacity: 0.4,
-  },
-  typing: {
-    display: 'flex',
-    gap: 4,
-    padding: '4px 0',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    backgroundColor: colors.text,
-    opacity: 0.2,
-    animation: 'partnerDot 1.4s ease-in-out infinite',
-  },
-  finalizingCard: {
-    padding: '16px 20px',
-    backgroundColor: 'rgba(26, 26, 26, 0.03)',
-    borderRadius: 12,
-    border: '1px solid rgba(26, 26, 26, 0.06)',
-  },
-  finalizingText: {
+  userEcho: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 13,
+    color: '#1a1a1a',
+    textAlign: 'center',
+    animation: 'partnerUserFade 4s ease-out forwards',
+  },
+  textFallback: {
+    marginTop: 12,
+    display: 'flex',
+    justifyContent: 'center',
+    opacity: 0.25,
+    transition: 'opacity 0.3s',
+  },
+  textInput: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 12,
     color: colors.text,
-    opacity: 0.6,
-    fontStyle: 'italic',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid rgba(26,26,26,0.12)',
+    padding: '8px 12px',
+    width: 240,
+    textAlign: 'center',
+    outline: 'none',
+    letterSpacing: 0.3,
   },
   recCard: {
-    padding: '24px',
+    padding: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     backdropFilter: 'blur(12px)',
     borderRadius: 12,
-    border: `1px solid rgba(196, 93, 62, 0.15)`,
+    border: `1px solid rgba(150, 135, 95, 0.2)`,
     animation: 'lobbyFadeUp 0.5s ease both',
+    width: '100%',
+    maxWidth: 480,
   },
   recHeader: {
     fontFamily: "'Cormorant Garamond', serif",
@@ -748,9 +622,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
     marginBottom: 16,
   },
-  recItem: {
-    padding: '8px 0',
-  },
+  recItem: { padding: '8px 0' },
   recLabel: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 10,
@@ -790,7 +662,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 2,
     textTransform: 'uppercase' as const,
     color: '#fff',
-    backgroundColor: colors.accent,
+    backgroundColor: '#2a2a2a',
     border: 'none',
     borderRadius: 4,
     padding: '12px 28px',
@@ -811,71 +683,12 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: 'underline',
     textUnderlineOffset: 3,
   },
-  inputBar: {
-    position: 'relative',
-    zIndex: 10,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '12px 0 20px',
-    borderTop: '1px solid rgba(26, 26, 26, 0.08)',
-  },
-  micBtn: {
-    position: 'relative',
-    zIndex: 1,
-    width: 44,
-    height: 44,
-    borderRadius: '50%',
-    border: `1px solid rgba(26, 26, 26, 0.1)`,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    backdropFilter: 'blur(8px)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    transition: 'all 0.2s ease',
-    animation: 'voiceMicBreath 3s ease-in-out infinite',
-    color: '#4a4a4a',
-  },
-  micBtnListening: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-    color: '#fff',
-    animation: 'voiceListening 1.5s ease-in-out infinite',
-  },
-  input: {
-    flex: 1,
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 14,
-    color: colors.text,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    border: '1px solid rgba(26, 26, 26, 0.1)',
-    borderRadius: 8,
-    padding: '12px 16px',
-    outline: 'none',
-    backdropFilter: 'blur(8px)',
-  },
-  sendBtn: {
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 12,
-    fontWeight: 600,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase' as const,
-    color: '#fff',
-    backgroundColor: colors.accent,
-    border: 'none',
-    borderRadius: 8,
-    padding: '12px 20px',
-    cursor: 'pointer',
-    transition: 'opacity 0.2s',
-    flexShrink: 0,
-  },
   errorMsg: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 12,
-    color: colors.accent,
+    color: '#9a6b00',
     opacity: 0.8,
     marginTop: 8,
+    textAlign: 'center',
   },
 };

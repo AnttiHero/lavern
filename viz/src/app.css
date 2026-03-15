@@ -531,6 +531,28 @@ input:focus-visible {
   50% { box-shadow: 0 0 0 4px rgba(196, 93, 62, 0.15); }
 }
 
+/* ── Partner Voice-First Redesign ──────────────────────────────────── */
+
+@keyframes partnerOrbBreath {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(150, 135, 95, 0.08); }
+  50% { transform: scale(1.02); box-shadow: 0 0 28px rgba(150, 135, 95, 0.14); }
+}
+
+@keyframes partnerOrbSpeaking {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 24px rgba(150, 135, 95, 0.12); }
+  50% { transform: scale(1.06); box-shadow: 0 0 44px rgba(150, 135, 95, 0.28); }
+}
+
+@keyframes partnerTextFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes partnerUserFade {
+  0%, 25% { opacity: 0.35; }
+  100% { opacity: 0; }
+}
+
 /* ── Agent Builder — Slider Thumbs ─────────────────────────────────── */
 
 /* Skill sliders (0-99) — dark editorial thumbs */
