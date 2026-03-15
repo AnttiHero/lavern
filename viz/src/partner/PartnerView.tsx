@@ -183,21 +183,28 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
     }
   }, [isDemo, voiceInput.isListening, voiceInput.finalTranscript, isStreaming, consult.sendMessage, voiceInput]);
 
-  // Spacebar push-to-talk (real mode only)
+  // Spacebar: advance demo or push-to-talk (real mode)
   useEffect(() => {
-    if (isDemo) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat) return;
       if (inputFocusedRef.current) return;
+      e.preventDefault();
+
+      if (isDemo) {
+        // In demo, spacebar advances the script
+        if (demo.waitingForUser) demo.advance();
+        return;
+      }
+
       if (recommendation || isStreaming || isFinalizing) return;
       if (!voiceInput.isSupported) return;
-      e.preventDefault();
       voiceOutput.stop();
       voiceInput.startListening();
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return;
       if (inputFocusedRef.current) return;
+      if (isDemo) return;
       if (voiceInput.isListening) {
         e.preventDefault();
         voiceInput.stopListening();
@@ -209,7 +216,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
     };
-  }, [isDemo, voiceInput, voiceOutput, recommendation, isStreaming, isFinalizing]);
+  }, [isDemo, demo.waitingForUser, demo.advance, voiceInput, voiceOutput, recommendation, isStreaming, isFinalizing]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -225,12 +232,16 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
   }, [isDemo, input, isStreaming, consult.sendMessage, voiceInput]);
 
   const handleMicPress = useCallback(() => {
-    if (isDemo) return;
+    if (isDemo) {
+      // Orb tap also advances the demo
+      if (demo.waitingForUser) demo.advance();
+      return;
+    }
     if (!voiceInput.isSupported || isStreaming) return;
     voiceOutput.stop();
     clearTimeout(autoSubmitTimer.current);
     voiceInput.startListening();
-  }, [isDemo, voiceInput, voiceOutput, isStreaming]);
+  }, [isDemo, demo.waitingForUser, demo.advance, voiceInput, voiceOutput, isStreaming]);
 
   const handleMicRelease = useCallback(() => {
     if (isDemo) return;
@@ -364,6 +375,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
     if (demo.fakeIsListening) statusText = 'Listening...';
     else if (isStreaming && !streamingText) statusText = 'Catherine is thinking...';
     else if (isFinalizing) statusText = 'Preparing your memo...';
+    else if (demo.waitingForUser) statusText = '';
   } else {
     if (voiceInput.isListening) {
       const transcript = (voiceInput.finalTranscript + (voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : '')).trim();
@@ -395,9 +407,9 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
         </div>
 
         <div style={S.pickerMain}>
-          <div style={S.pickerTitle}>Choose a Scenario</div>
+          <div style={S.pickerTitle}>Select a Case</div>
           <div style={S.pickerSubtitle}>
-            Watch Catherine consult with a client, assemble the right team, and deliver results.
+            Step into the client's shoes. Catherine will walk you through the engagement.
           </div>
           <div style={S.pickerGrid}>
             {DEMO_CASES.map(c => (
@@ -491,6 +503,30 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
         }}>
           {statusText}
         </div>
+
+        {/* Press to Speak button (demo mode) */}
+        {isDemo && demo.waitingForUser && !recommendation && (
+          <button
+            onClick={demo.advance}
+            style={S.speakBtn}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(150, 135, 95, 0.15)';
+              (e.currentTarget as HTMLElement).style.borderColor = GOLD;
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(150, 135, 95, 0.06)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(150, 135, 95, 0.3)';
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+            <span>Press to Speak</span>
+          </button>
+        )}
 
         {/* Catherine's text */}
         {(isStreaming && streamingText) ? (
@@ -742,6 +778,25 @@ const S: Record<string, React.CSSProperties> = {
     letterSpacing: 0.3,
     transition: 'color 0.2s',
   },
+  speakBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: '14px 36px',
+    borderRadius: 40,
+    border: '2px solid rgba(150, 135, 95, 0.3)',
+    backgroundColor: 'rgba(150, 135, 95, 0.06)',
+    color: '#1a1a1a',
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 14,
+    fontWeight: 600,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    transition: 'all 0.25s ease',
+    animation: 'partnerTextFadeIn 0.6s ease both, partnerSpeakPulse 2.5s ease-in-out 1s infinite',
+    marginTop: 8,
+  },
   catherineText: {
     fontFamily: "'Cormorant Garamond', serif",
     fontSize: 20,
@@ -904,11 +959,11 @@ const S: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'safe center',
     maxWidth: 800,
     width: '100%',
     margin: '0 auto',
-    padding: '0 24px 32px',
+    padding: '24px 24px 32px',
     gap: 24,
     overflowY: 'auto',
   },
@@ -937,10 +992,12 @@ const S: Record<string, React.CSSProperties> = {
     gap: 20,
     flexWrap: 'wrap',
     justifyContent: 'center',
+    width: '100%',
     animation: 'lobbyFadeUp 0.6s ease 0.2s both',
   },
   caseCard: {
     width: 220,
+    minWidth: 200,
     padding: '28px 22px',
     backgroundColor: 'rgba(255, 255, 255, 0.65)',
     backdropFilter: 'blur(12px)',

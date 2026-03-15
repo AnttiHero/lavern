@@ -15,7 +15,7 @@ interface Props {
 const LABELS: Record<number, { title: string; description: string }> = {
   1: {
     title: 'PARTNER CONSULTATION',
-    description: 'Catherine understands the client\u2019s needs and assembles the right team',
+    description: 'You brief Catherine on the case. She assembles the right team.',
   },
   2: {
     title: 'TEAM AT WORK',
@@ -50,6 +50,7 @@ const S: Record<string, React.CSSProperties> = {
     padding: '8px 20px',
     backgroundColor: 'rgba(150, 135, 95, 0.08)',
     borderBottom: `1px solid rgba(150, 135, 95, 0.15)`,
+    marginBottom: 16,
     animation: 'partnerTextFadeIn 0.6s ease both',
   },
   stepBadge: {

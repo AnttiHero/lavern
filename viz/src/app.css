@@ -543,6 +543,11 @@ input:focus-visible {
   50% { transform: scale(1.06); box-shadow: 0 0 44px rgba(150, 135, 95, 0.28); }
 }
 
+@keyframes partnerSpeakPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(150, 135, 95, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(150, 135, 95, 0.1); }
+}
+
 @keyframes partnerTextFadeIn {
   0% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }

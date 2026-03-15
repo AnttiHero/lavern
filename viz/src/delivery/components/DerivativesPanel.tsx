@@ -139,7 +139,8 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
       // Demo sessions: generate client-side markdown
       if (isDemo) {
         const markdown = generateDemoDerivative(typeId, data);
-        triggerBlobDownload(markdown, `${data.sessionId}-${typeId}.md`, 'text/markdown');
+        const slug = data.documentTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        triggerBlobDownload(markdown, `${slug}-${typeId}.md`, 'text/markdown');
         setStatuses(prev => ({ ...prev, [typeId]: 'done' }));
         const t = setTimeout(() => {
           timersRef.current.delete(t);
@@ -319,7 +320,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
 
       {isDemo && (
         <div style={styles.demoNote}>
-          Demo mode: downloads a basic markdown template. Style and format options require a live session.
+          Demo mode: downloads a basic markdown template. Style and format options require a live session. Start an engagement for full DOCX output.
         </div>
       )}
     </div>

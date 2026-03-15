@@ -25,6 +25,30 @@ const STYLE_OPTIONS: { id: DocStyle; label: string; desc: string }[] = [
   { id: 'accessible', label: 'Accessible', desc: 'WCAG AA' },
 ];
 
+/** Minimal markdown → HTML for demo downloads (no external deps). */
+function markdownToHtml(md: string): string {
+  return md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    // headings
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // bold and italic
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // unordered lists
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // horizontal rules
+    .replace(/^---$/gm, '<hr>')
+    // paragraphs (double newline)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>')
+    // clean up list items into ul
+    .replace(/(<li>.*?<\/li>\n?)+/g, '<ul>$&</ul>');
+}
+
 function triggerBlobDownload(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -178,10 +202,25 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
     }
   };
 
+  // Slugify the document title for filenames
+  const docSlug = data.documentTitle
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
   const handleDownload = (format: 'docx' | 'pdf' | 'md' | 'json' | 'summary') => {
     if (isDemo) {
-      if (format === 'md' || format === 'docx' || format === 'pdf') {
-        triggerBlobDownload(data.finalOutput || '# No output yet', `${data.sessionId}-workproduct.md`, 'text/markdown');
+      const output = data.finalOutput || '# No output yet';
+      if (format === 'md') {
+        triggerBlobDownload(output, `${docSlug}.md`, 'text/markdown');
+      } else if (format === 'docx' || format === 'pdf') {
+        // Wrap markdown in basic HTML so Word/browsers can open it nicely
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${data.documentTitle}</title>
+<style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#1a1a1a}h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif}h1{border-bottom:1px solid #ddd;padding-bottom:8px}h2{margin-top:32px}ul,ol{padding-left:24px}</style>
+</head><body>${markdownToHtml(output)}</body></html>`;
+        const ext = format === 'docx' ? 'doc' : 'html';
+        triggerBlobDownload(html, `${docSlug}.${ext}`, 'text/html');
       } else if (format === 'json') {
         const jsonData = {
           sessionId: data.sessionId,
@@ -190,10 +229,10 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
           verification: data.verificationChecks,
           cost: data.cost,
         };
-        triggerBlobDownload(JSON.stringify(jsonData, null, 2), `${data.sessionId}-data.json`, 'application/json');
+        triggerBlobDownload(JSON.stringify(jsonData, null, 2), `${docSlug}-data.json`, 'application/json');
       } else if (format === 'summary') {
         const summary = generateClientSummary(data);
-        triggerBlobDownload(summary, `${data.sessionId}-summary.md`, 'text/markdown');
+        triggerBlobDownload(summary, `${docSlug}-summary.md`, 'text/markdown');
       }
     } else {
       // Append style for formatted outputs (docx/pdf)
@@ -292,20 +331,20 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
         <DownloadCard
           icon={'\uD83D\uDCC4'}
           title="Word Document"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Professional .docx format'}
-          format=".docx"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : isDemo ? 'Opens in Word' : 'Professional .docx format'}
+          format={isDemo ? '.doc' : '.docx'}
           primary
           onClick={() => handleDownload('docx')}
-          disabled={isDemo || !deliverableValid}
+          disabled={!isDemo && !deliverableValid}
         />
         <DownloadCard
           icon={'\uD83D\uDCC3'}
           title="PDF"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Print-ready document'}
-          format=".pdf"
+          description={!deliverableValid && !isDemo ? 'Not yet available' : isDemo ? 'Print from browser' : 'Print-ready document'}
+          format={isDemo ? '.html' : '.pdf'}
           primary
           onClick={() => handleDownload('pdf')}
-          disabled={isDemo || !deliverableValid}
+          disabled={!isDemo && !deliverableValid}
         />
       </div>
 

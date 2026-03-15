@@ -4,6 +4,10 @@
  * Plays a pre-written conversation between Catherine and a hypothetical
  * client, with typewriter text effects and simulated voice orb animation.
  * Supports multiple demo cases selected via sessionStorage.
+ *
+ * Interactive: the first assistant message auto-plays, then the hook
+ * pauses and waits for the user to press "speak". Each press advances
+ * the script by one user+assistant pair.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -185,6 +189,7 @@ const SCRIPTS: Record<DemoCaseId, () => DemoStep[]> = {
 
 const CHAR_DELAY = 25; // ms per character for typewriter effect
 const FAKE_AUDIO_INTERVAL = 80; // ms between fake audio level updates
+const SPEAK_DURATION = 1200; // ms for fake user "speaking" animation
 
 // ── Hook ─────────────────────────────────────────────────────────────
 
@@ -199,10 +204,14 @@ export function usePartnerDemo(enabled: boolean) {
   const [fakeIsListening, setFakeIsListening] = useState(false);
   const [fakeSpeaking, setFakeSpeaking] = useState(false);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const [waitingForUser, setWaitingForUser] = useState(false);
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const intervals = useRef<ReturnType<typeof setInterval>[]>([]);
+  const scriptRef = useRef<DemoStep[]>([]);
+  const stepIndex = useRef(0);
   const started = useRef(false);
+  const playing = useRef(false); // prevent double-advance
 
   const clearAll = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -211,104 +220,139 @@ export function usePartnerDemo(enabled: boolean) {
     intervals.current = [];
   }, []);
 
+  // Play an assistant message with typewriter effect, then call onDone
+  const playAssistant = useCallback((text: string, onDone: () => void) => {
+    setIsStreaming(true);
+    setFakeSpeaking(true);
+    setStreamingText('');
+
+    let charIdx = 0;
+    const typeInterval = setInterval(() => {
+      charIdx++;
+      setStreamingText(text.slice(0, charIdx));
+      if (charIdx >= text.length) {
+        clearInterval(typeInterval);
+        setIsStreaming(false);
+        setFakeSpeaking(false);
+        setStreamingText('');
+        setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+        onDone();
+      }
+    }, CHAR_DELAY);
+    intervals.current.push(typeInterval);
+  }, []);
+
+  // Play a user message with fake audio animation, then call onDone
+  const playUser = useCallback((text: string, onDone: () => void) => {
+    setFakeIsListening(true);
+    const audioInterval = setInterval(() => {
+      setFakeAudioLevel(0.3 + Math.random() * 0.5);
+    }, FAKE_AUDIO_INTERVAL);
+    intervals.current.push(audioInterval);
+
+    timers.current.push(setTimeout(() => {
+      clearInterval(audioInterval);
+      setFakeIsListening(false);
+      setFakeAudioLevel(0);
+      setLastUserMessage(text);
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+
+      // Fade user message after 3s
+      timers.current.push(setTimeout(() => setLastUserMessage(null), 3000));
+
+      onDone();
+    }, SPEAK_DURATION));
+  }, []);
+
+  // Play a finalize step
+  const playFinalize = useCallback((rec: PartnerRecommendation) => {
+    setIsFinalizing(true);
+    setWaitingForUser(false);
+    playing.current = false;
+
+    timers.current.push(setTimeout(() => {
+      setIsFinalizing(false);
+      setRecommendation(rec);
+      setShowSparkle(true);
+
+      timers.current.push(setTimeout(() => setShowSparkle(false), 2500));
+    }, 1500));
+  }, []);
+
+  // Play the next step(s) from the script
+  const playNextSteps = useCallback(() => {
+    const script = scriptRef.current;
+    const idx = stepIndex.current;
+    if (idx >= script.length) return;
+
+    const step = script[idx];
+    stepIndex.current = idx + 1;
+
+    if (step.type === 'assistant') {
+      // Play assistant, then check if next step is user (pause) or finalize
+      playAssistant(step.text, () => {
+        const nextIdx = stepIndex.current;
+        if (nextIdx >= script.length) {
+          playing.current = false;
+          return;
+        }
+        const next = script[nextIdx];
+        if (next.type === 'user') {
+          // Pause and wait for user to press
+          setWaitingForUser(true);
+          playing.current = false;
+        } else if (next.type === 'finalize') {
+          // Auto-play finalize
+          stepIndex.current = nextIdx + 1;
+          timers.current.push(setTimeout(() => {
+            playFinalize(next.recommendation);
+          }, 800));
+        } else {
+          // Another assistant message — auto-play it
+          timers.current.push(setTimeout(() => playNextSteps(), 500));
+        }
+      });
+    } else if (step.type === 'user') {
+      // Play user message, then auto-play the next assistant response
+      playUser(step.text, () => {
+        timers.current.push(setTimeout(() => playNextSteps(), 800));
+      });
+    } else if (step.type === 'finalize') {
+      timers.current.push(setTimeout(() => {
+        playFinalize(step.recommendation);
+      }, 500));
+    }
+  }, [playAssistant, playUser, playFinalize]);
+
+  // Advance: user pressed "speak" — play the next user+assistant pair
+  const advance = useCallback(() => {
+    if (!waitingForUser || playing.current) return;
+    playing.current = true;
+    setWaitingForUser(false);
+    playNextSteps();
+  }, [waitingForUser, playNextSteps]);
+
+  // On mount: load script and auto-play the first assistant greeting
   useEffect(() => {
     if (!enabled) return;
-    // Prevent double-start outside StrictMode; StrictMode resets via cleanup below
     if (started.current) return;
     started.current = true;
 
-    // Select script based on case
     const caseId = (sessionStorage.getItem('shem-demo-case') || 'heartconnect') as DemoCaseId;
     const buildScript = SCRIPTS[caseId] || SCRIPTS.heartconnect;
-    const script = buildScript();
+    scriptRef.current = buildScript();
+    stepIndex.current = 0;
+    playing.current = true;
 
-    let cumDelay = 0;
-
-    for (const step of script) {
-      cumDelay += step.delay;
-
-      if (step.type === 'assistant') {
-        const text = step.text;
-        const startAt = cumDelay;
-
-        // Start streaming
-        timers.current.push(setTimeout(() => {
-          setIsStreaming(true);
-          setFakeSpeaking(true);
-          setStreamingText('');
-
-          // Typewriter
-          let charIdx = 0;
-          const typeInterval = setInterval(() => {
-            charIdx++;
-            setStreamingText(text.slice(0, charIdx));
-            if (charIdx >= text.length) {
-              clearInterval(typeInterval);
-              // Commit message
-              setIsStreaming(false);
-              setFakeSpeaking(false);
-              setStreamingText('');
-              setMessages(prev => [...prev, { role: 'assistant', content: text }]);
-            }
-          }, CHAR_DELAY);
-          intervals.current.push(typeInterval);
-        }, startAt));
-
-        // Add typewriter duration to cumulative delay
-        cumDelay += text.length * CHAR_DELAY + 200;
-
-      } else if (step.type === 'user') {
-        const text = step.text;
-        const startAt = cumDelay;
-        const speakDuration = 1200;
-
-        // Simulate user speaking (fake audio levels)
-        timers.current.push(setTimeout(() => {
-          setFakeIsListening(true);
-          const audioInterval = setInterval(() => {
-            setFakeAudioLevel(0.3 + Math.random() * 0.5);
-          }, FAKE_AUDIO_INTERVAL);
-          intervals.current.push(audioInterval);
-
-          // Stop listening after speakDuration
-          timers.current.push(setTimeout(() => {
-            clearInterval(audioInterval);
-            setFakeIsListening(false);
-            setFakeAudioLevel(0);
-            setLastUserMessage(text);
-            setMessages(prev => [...prev, { role: 'user', content: text }]);
-
-            // Fade user message after 3s
-            timers.current.push(setTimeout(() => setLastUserMessage(null), 3000));
-          }, speakDuration));
-        }, startAt));
-
-        cumDelay += speakDuration + 300;
-
-      } else if (step.type === 'finalize') {
-        const rec = step.recommendation;
-        const startAt = cumDelay;
-
-        timers.current.push(setTimeout(() => {
-          setIsFinalizing(true);
-
-          timers.current.push(setTimeout(() => {
-            setIsFinalizing(false);
-            setRecommendation(rec);
-            setShowSparkle(true);
-
-            timers.current.push(setTimeout(() => setShowSparkle(false), 2500));
-          }, 1500));
-        }, startAt));
-
-        cumDelay += 2000;
-      }
-    }
+    // Small delay before Catherine starts speaking
+    timers.current.push(setTimeout(() => {
+      playNextSteps();
+    }, 500));
 
     return () => {
       clearAll();
       started.current = false;
-      // Reset state so StrictMode re-mount starts fresh
+      playing.current = false;
       setMessages([]);
       setIsStreaming(false);
       setStreamingText('');
@@ -319,8 +363,9 @@ export function usePartnerDemo(enabled: boolean) {
       setFakeIsListening(false);
       setFakeSpeaking(false);
       setLastUserMessage(null);
+      setWaitingForUser(false);
     };
-  }, [enabled, clearAll]);
+  }, [enabled, clearAll, playNextSteps]);
 
   // Cleanup on unmount
   useEffect(() => clearAll, [clearAll]);
@@ -336,5 +381,7 @@ export function usePartnerDemo(enabled: boolean) {
     fakeIsListening,
     fakeSpeaking,
     lastUserMessage,
+    waitingForUser,
+    advance,
   };
 }
