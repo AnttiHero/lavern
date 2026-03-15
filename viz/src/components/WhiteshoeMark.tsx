@@ -1,7 +1,7 @@
 /**
- * MarbleMark — The Marble "M" logo.
+ * WhiteshoeMark — The Whiteshoe "W" logo.
  *
- * A single serif "M" rendered in Cormorant Garamond.
+ * A single serif "W" rendered in Cormorant Garamond.
  * Appears in the upper-left corner of every page.
  * Clicking navigates home (landing page).
  */
@@ -9,8 +9,8 @@
 import { useState, useEffect } from 'react';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
-interface MarbleMarkProps {
-  /** Font size of the M in pixels. Default 28. */
+interface WhiteshoeMarkProps {
+  /** Font size of the W in pixels. Default 28. */
   size?: number;
   /** Navigate on click. Default: go to landing. */
   onClick?: () => void;
@@ -18,7 +18,7 @@ interface MarbleMarkProps {
   hideCursor?: boolean;
 }
 
-export function MarbleMark({ size = 28, onClick, hideCursor }: MarbleMarkProps) {
+export function WhiteshoeMark({ size = 28, onClick, hideCursor }: WhiteshoeMarkProps) {
   const [hovered, setHovered] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -60,9 +60,9 @@ export function MarbleMark({ size = 28, onClick, hideCursor }: MarbleMarkProps) 
         transition: 'opacity 0.3s ease',
         userSelect: 'none' as const,
       }}
-      aria-label="Marble — Home"
+      aria-label="Whiteshoe — Home"
     >
-      M
+      W
     </button>
   );
 }

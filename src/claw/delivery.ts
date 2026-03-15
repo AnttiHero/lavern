@@ -9,7 +9,7 @@
  * - findings.json — Extracted findings for programmatic use
  * - summary.txt — Plain-text one-paragraph summary
  *
- * Output goes to: ~/.marble/delivery/{session-id}/
+ * Output goes to: ~/.whiteshoe/delivery/{session-id}/
  */
 
 import * as fs from 'node:fs';

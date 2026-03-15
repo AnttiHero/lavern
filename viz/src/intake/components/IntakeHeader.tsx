@@ -4,7 +4,7 @@
 
 import { IntakeProgress, type IntakePhase, type IntakeMode } from './IntakeProgress.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
-import { MarbleIlluminated } from '../../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../../components/WhiteshoeIlluminated.js';
 
 interface Props {
   phase: IntakePhase;
@@ -28,9 +28,9 @@ export function IntakeHeader({ phase, mode, onBack, onSkip }: Props) {
         onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.borderColor = colors.text; }}
         onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; b.style.borderColor = colors.border; }}
       >Skip {'\u2192'}</button>
-      <div style={styles.logoType}><MarbleIlluminated color={colors.textMuted} /></div>
+      <div style={styles.logoType}><WhiteshoeIlluminated color={colors.textMuted} /></div>
       <h1 style={styles.title}>
-        {phase === 'mode-select' ? <>Marble <span style={{ fontStyle: 'italic' }}>Intake</span></> : <>Marble <span style={{ fontStyle: 'italic' }}>Intake</span></>}
+        {phase === 'mode-select' ? <>Whiteshoe <span style={{ fontStyle: 'italic' }}>Intake</span></> : <>Whiteshoe <span style={{ fontStyle: 'italic' }}>Intake</span></>}
       </h1>
       {phase === 'mode-select' && (
         <p style={styles.subtitle}>How would you like to get started?</p>

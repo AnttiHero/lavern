@@ -47,7 +47,7 @@ RUN mkdir -p /app/data /app/audit-logs
 ENV NODE_ENV=production
 ENV SHEM_HOST=0.0.0.0
 ENV SHEM_PORT=3000
-ENV SHEM_DB_PATH=/app/data/marble.db
+ENV SHEM_DB_PATH=/app/data/whiteshoe.db
 ENV SHEM_AUDIT_DIR=/app/audit-logs
 ENV SHEM_CORS_ORIGINS=*
 

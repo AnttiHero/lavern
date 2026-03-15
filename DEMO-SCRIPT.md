@@ -1,4 +1,4 @@
-# Marble Demo Video — Script
+# Whiteshoe Demo Video — Script
 
 **Format:** Walkthrough narration. Conversational, confident, no filler. Talk like you're showing a friend something you built that you're genuinely proud of.
 
@@ -18,9 +18,9 @@
 >
 > What if you could hire a full law firm — not a chatbot, a *firm* — and deploy it in under a minute?
 
-**[The landing page animates in. "Welcome to Marble." Two buttons appear: "Human" and "Agent".]**
+**[The landing page animates in. "Welcome to Whiteshoe." Two buttons appear: "Human" and "Agent".]**
 
-> This is Marble. The front door asks one question: are you a human, or are you an agent? Because both are clients now.
+> This is Whiteshoe. The front door asks one question: are you a human, or are you an agent? Because both are clients now.
 
 **[Click "Human".]**
 
@@ -28,9 +28,9 @@
 
 ## ACT 2 — THE LOBBY (1:30 - 2:15)
 
-**[Screen: Bright marble hall. MARBLE wordmark with the illumination sweep. "The Agentic Law Firm." "Excellence doesn't scale. *Until now.*"]**
+**[Screen: Bright marble hall. WHITESHOE wordmark with the illumination sweep. "The Agentic Law Firm." "Excellence doesn't scale. *Until now.*"]**
 
-> This is the lobby. Marble is a multi-agent law firm. Behind this door there are fifty-seven specialist agents — contract reviewers, regulatory counsel, risk pricers, ethics auditors, plain language specialists. They debate each other. They challenge each other's findings. They cite their evidence. And they do it in minutes, not weeks.
+> This is the lobby. Whiteshoe is a multi-agent law firm. Behind this door there are fifty-seven specialist agents — contract reviewers, regulatory counsel, risk pricers, ethics auditors, plain language specialists. They debate each other. They challenge each other's findings. They cite their evidence. And they do it in minutes, not weeks.
 
 **[Click "Enter".]**
 
@@ -56,7 +56,7 @@
 
 **[Click "Guided Intake" — quickly advance through steps, or click "Drop & Go" and drag in a document. Either way, get to the end and proceed.]**
 
-> Marble runs an automated conflict check, verifies the client, and generates an engagement letter. The client reviews and accepts.
+> Whiteshoe runs an automated conflict check, verifies the client, and generates an engagement letter. The client reviews and accepts.
 
 **[Continue to Briefing.]**
 
@@ -66,11 +66,11 @@
 
 **[Screen: Briefing. Document upload area. Context meter on the side.]**
 
-> The briefing room. This is where you give Marble context. Upload your documents — PDFs, Word files, whatever you have.
+> The briefing room. This is where you give Whiteshoe context. Upload your documents — PDFs, Word files, whatever you have.
 
 **[Upload a document or skip. Show the context meter filling up.]**
 
-> Watch this context meter. Marble is tracking how much it knows about your matter. Documents, answers, follow-up questions — it all adds up to a confidence score.
+> Watch this context meter. Whiteshoe is tracking how much it knows about your matter. Documents, answers, follow-up questions — it all adds up to a confidence score.
 
 **[If time: show the interviewer picker and the conversational interview. If tight on time: advance through questions quickly.]**
 
@@ -78,7 +78,7 @@
 
 **[Show the final brief / memo generation.]**
 
-> At the end, Marble generates a structured briefing memo. This is what the team will work from. You can edit it, add final instructions, or just approve and move on.
+> At the end, Whiteshoe generates a structured briefing memo. This is what the team will work from. You can edit it, add final instructions, or just approve and move on.
 
 **[Click "Commence" to continue.]**
 
@@ -176,7 +176,7 @@
 
 **[Screen: Agent Docs. Dark marble. Discovery, pricing, reputation sections.]**
 
-> This is the same firm, but for machines. An AI agent can discover Marble through standard protocols — A2A Agent Cards, OpenAPI specs, llms.txt. It can read the pricing endpoint to budget before it commits. It can check the reputation endpoint to compare us against alternatives. And it can pay with USDC on Base through the x402 protocol — no account needed.
+> This is the same firm, but for machines. An AI agent can discover Whiteshoe through standard protocols — A2A Agent Cards, OpenAPI specs, llms.txt. It can read the pricing endpoint to budget before it commits. It can check the reputation endpoint to compare us against alternatives. And it can pay with USDC on Base through the x402 protocol — no account needed.
 
 **[Scroll through the sections. Show the Discovery endpoints, the Live Pricing table, the Trust & Reputation metrics.]**
 
@@ -186,6 +186,6 @@
 
 ## CLOSING (9:45 - 10:00)
 
-> Marble is the world's first agentic law firm. It serves humans through the interface you just saw. It serves agents through an API. Same engine. Same quality. Same debate. Same citations.
+> Whiteshoe is the world's first agentic law firm. It serves humans through the interface you just saw. It serves agents through an API. Same engine. Same quality. Same debate. Same citations.
 >
 > Excellence doesn't scale. Until now.

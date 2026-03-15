@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "bin": {
     "shem": "dist/index.js",
-    "marble": "dist/index.js"
+    "whiteshoe": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

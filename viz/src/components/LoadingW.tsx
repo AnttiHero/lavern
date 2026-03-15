@@ -1,21 +1,21 @@
 /**
- * LoadingM — Animated Marble "M" loading indicator.
+ * LoadingW — Animated Whiteshoe "W" loading indicator.
  *
- * A pulsating serif "M" with a breathing glow. Used as the loading
- * state across all views. The M scales gently and its opacity
+ * A pulsating serif "W" with a breathing glow. Used as the loading
+ * state across all views. The W scales gently and its opacity
  * breathes — alive, not spinning.
  */
 
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
-interface LoadingMProps {
-  /** Optional text below the M (e.g., "Loading session..."). If omitted, no text shown. */
+interface LoadingWProps {
+  /** Optional text below the W (e.g., "Loading session..."). If omitted, no text shown. */
   text?: string;
-  /** Size of the M in px. Default 64. */
+  /** Size of the W in px. Default 64. */
   size?: number;
 }
 
-export function LoadingM({ text, size = 64 }: LoadingMProps) {
+export function LoadingW({ text, size = 64 }: LoadingWProps) {
   return (
     <div style={{
       width: '100%',
@@ -27,7 +27,7 @@ export function LoadingM({ text, size = 64 }: LoadingMProps) {
       backgroundColor: '#FAF9F6',
       gap: 16,
     }}>
-      {/* The M */}
+      {/* The W */}
       <div style={{
         fontFamily: fonts.serif,
         fontSize: size,
@@ -35,9 +35,9 @@ export function LoadingM({ text, size = 64 }: LoadingMProps) {
         color: colors.text,
         lineHeight: 1,
         userSelect: 'none',
-        animation: 'marbleLoadBreath 2.4s ease-in-out infinite',
+        animation: 'whiteshoeLoadBreath 2.4s ease-in-out infinite',
       }}>
-        M
+        W
       </div>
 
       {/* Optional label */}

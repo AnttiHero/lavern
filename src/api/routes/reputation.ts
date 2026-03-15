@@ -6,7 +6,7 @@
  *   - Average verification pass rate, delivery time, cost
  *   - Workflow breakdown
  *
- * Agents use this to compare Marble against alternatives.
+ * Agents use this to compare Whiteshoe against alternatives.
  * Cold-start safe: returns totalEngagements: 0 with null metrics.
  *
  * Public endpoint — no authentication required.
@@ -24,7 +24,7 @@ export function registerReputationRoutes(fastify: FastifyInstance): void {
     return reply
       .header('Cache-Control', 'public, max-age=60')
       .send({
-        service: 'Marble',
+        service: 'Whiteshoe',
         version: config.version,
         generatedAt: new Date().toISOString(),
         metrics: {

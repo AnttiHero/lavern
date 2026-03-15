@@ -76,7 +76,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 300,
     color: colors.text,
     lineHeight: 1,
-    animation: 'marbleLoadBreath 2.4s ease-in-out infinite',
+    animation: 'whiteshoeLoadBreath 2.4s ease-in-out infinite',
   },
   statusText: {
     fontFamily: fonts.sans,

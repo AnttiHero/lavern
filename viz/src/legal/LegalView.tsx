@@ -23,7 +23,7 @@ export default function LegalView({ page, onBack }: Props) {
 
       <div style={styles.container}>
         <div style={styles.header}>
-          <span style={styles.wordmark}>MARBLE</span>
+          <span style={styles.wordmark}>WHITESHOE</span>
           <div style={styles.rule} />
           <h1 style={styles.title}>
             {isTerms ? 'Terms of Service' : 'Privacy Policy'}
@@ -38,7 +38,7 @@ export default function LegalView({ page, onBack }: Props) {
         <div style={styles.footer}>
           <p style={styles.footerText}>
             Questions? Contact us at{' '}
-            <a href="mailto:legal@marble.legal" style={styles.link}>legal@marble.legal</a>
+            <a href="mailto:legal@whiteshoe.legal" style={styles.link}>legal@whiteshoe.legal</a>
           </p>
         </div>
       </div>
@@ -50,7 +50,7 @@ function TermsContent() {
   return (
     <>
       <Section title="1. Service Description">
-        Marble is an AI-powered legal document analysis platform. Marble does not provide legal advice.
+        Whiteshoe is an AI-powered legal document analysis platform. Whiteshoe does not provide legal advice.
         All outputs should be reviewed by qualified legal professionals before reliance.
       </Section>
 
@@ -65,7 +65,7 @@ function TermsContent() {
       </Section>
 
       <Section title="4. Billable Hours & Payments">
-        Marble uses a credit system measured in "billable hours." Purchased hours never expire.
+        Whiteshoe uses a credit system measured in "billable hours." Purchased hours never expire.
         All payments are processed securely through Stripe. Refunds are handled on a case-by-case basis.
       </Section>
 
@@ -75,18 +75,18 @@ function TermsContent() {
       </Section>
 
       <Section title="6. Acceptable Use">
-        You agree not to use Marble for any unlawful purpose, to attempt to circumvent security measures,
+        You agree not to use Whiteshoe for any unlawful purpose, to attempt to circumvent security measures,
         or to reverse-engineer the service.
       </Section>
 
       <Section title="7. Limitation of Liability">
-        Marble is provided "as is." We make no warranties regarding the accuracy or completeness
+        Whiteshoe is provided "as is." We make no warranties regarding the accuracy or completeness
         of any analysis. Our total liability is limited to the amount you have paid us in the
         preceding 12 months.
       </Section>
 
       <Section title="8. Disclaimer">
-        Marble is a legal technology tool, not a law firm. No attorney-client relationship is created
+        Whiteshoe is a legal technology tool, not a law firm. No attorney-client relationship is created
         by using our service. Always consult a qualified legal professional for legal advice.
       </Section>
 
@@ -114,7 +114,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="2. How We Use Your Data">
-        Your data is used exclusively to provide the Marble service.
+        Your data is used exclusively to provide the Whiteshoe service.
         We do not sell your personal data. We do not use your documents to train AI models.
       </Section>
 
@@ -143,7 +143,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="7. Cookies">
-        We use a single HttpOnly authentication cookie (marble_token) for session management.
+        We use a single HttpOnly authentication cookie (whiteshoe_token) for session management.
         We do not use tracking cookies or third-party analytics.
       </Section>
 
@@ -153,7 +153,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="9. Contact">
-        For privacy-related inquiries, contact us at legal@marble.legal.
+        For privacy-related inquiries, contact us at legal@whiteshoe.legal.
       </Section>
 
       <div style={styles.placeholder}>

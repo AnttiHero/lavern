@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, spacing } from '../staffing/styles/tokens.js';
-import { LoadingM } from '../components/LoadingM.js';
+import { LoadingW } from '../components/LoadingW.js';
 import { useClawData } from './hooks/useClawData.js';
 import { useClawDemoSimulator, type ClawLogEntry } from './hooks/useClawDemoSimulator.js';
 import { ClawHeader } from './components/ClawHeader.js';
@@ -41,7 +41,7 @@ export default function ClawView({ onBack }: Props) {
     return (
       <div style={styles.page}>
         <div style={styles.loadingWrap}>
-          <LoadingM />
+          <LoadingW />
         </div>
       </div>
     );
@@ -53,7 +53,7 @@ export default function ClawView({ onBack }: Props) {
         <div style={styles.container}>
           <button onClick={onBack} style={styles.plainBackBtn}>{'\u2190'} Back</button>
           <div style={styles.errorBox}>
-            No Claw Mode profile found. Run <code style={styles.code}>marble claw init</code> to get started.
+            No Claw Mode profile found. Run <code style={styles.code}>whiteshoe claw init</code> to get started.
           </div>
         </div>
       </div>

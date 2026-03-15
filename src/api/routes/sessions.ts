@@ -36,7 +36,7 @@ import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent } from '../../db/database.js';
+import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -307,11 +307,9 @@ export function registerSessionRoutes(
 
   fastify.get('/api/sessions/archive', async (request, reply) => {
     const userId = (request as typeof request & { userId?: string }).userId;
-    if (!userId) {
-      return reply.status(401).send({ error: 'Authentication required for session archive.' });
-    }
 
-    const archived = getSessionArchive(userId);
+    // If logged in, show user's sessions. Otherwise show all (for demo/no-auth mode).
+    const archived = userId ? getSessionArchive(userId) : getAllSessionArchive();
     return reply.send({
       sessions: archived.map(s => ({
         id: s.id,
@@ -335,12 +333,10 @@ export function registerSessionRoutes(
 
   fastify.get('/api/sessions/archive/:id', async (request, reply) => {
     const userId = (request as typeof request & { userId?: string }).userId;
-    if (!userId) {
-      return reply.status(401).send({ error: 'Authentication required for session archive.' });
-    }
-
     const { id } = request.params as { id: string };
-    const session = getArchivedSession(id, userId);
+
+    // If logged in, scope to user. Otherwise allow any (for demo/no-auth mode).
+    const session = userId ? getArchivedSession(id, userId) : getArchivedSessionById(id);
 
     if (!session) {
       return reply.status(404).send({ error: `Archived session not found: ${id}` });

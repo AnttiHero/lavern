@@ -28,7 +28,7 @@ const WHITE = '\x1b[37m';
 export function printBanner(profile: ClawProfile): void {
   const line = '═'.repeat(58);
   console.log(`\n${DIM}╔${line}╗${RESET}`);
-  console.log(`${DIM}║${RESET}  ${BOLD}MARBLE — CLAW MODE${RESET}${' '.repeat(38)}${DIM}║${RESET}`);
+  console.log(`${DIM}║${RESET}  ${BOLD}WHITESHOE — CLAW MODE${RESET}${' '.repeat(35)}${DIM}║${RESET}`);
   console.log(`${DIM}║${RESET}  ${profile.company} · ${profile.jurisdiction} · On retainer${' '.repeat(Math.max(0, 36 - profile.company.length - profile.jurisdiction.length))}${DIM}║${RESET}`);
   console.log(`${DIM}╚${line}╝${RESET}\n`);
 }
@@ -157,7 +157,7 @@ export function printBudgetExhausted(registry: DocumentRegistry): void {
   console.log(`\n${RED}${BOLD}RETAINER EXHAUSTED${RESET}`);
   console.log(`${DIM}Total budget of $${state.budget.totalUsd.toFixed(2)} has been spent.${RESET}`);
   console.log(`${DIM}Sessions completed: ${state.sessionsCompleted}. Still watching for changes.${RESET}`);
-  console.log(`${DIM}Increase budget with: marble claw start --budget <usd>${RESET}\n`);
+  console.log(`${DIM}Increase budget with: whiteshoe claw start --budget <usd>${RESET}\n`);
 }
 
 // ── Dry Run ──────────────────────────────────────────────────────────────

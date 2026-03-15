@@ -14,7 +14,7 @@ export const config = {
   memoryDir: process.env.SHEM_MEMORY_DIR ?? '.shem/memory',
   reportsDir: process.env.SHEM_REPORTS_DIR ?? '.shem/reports',
   baselinesDir: process.env.SHEM_BASELINES_DIR ?? '.shem/baselines',
-  dbPath: process.env.SHEM_DB_PATH ?? './data/marble.db',
+  dbPath: process.env.SHEM_DB_PATH ?? './data/whiteshoe.db',
 
   // ── Provider ──────────────────────────────────────────────────────────
   provider: (process.env.MARBLE_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral',
@@ -79,8 +79,16 @@ export const config = {
   // ── Email (Resend) ─────────────────────────────────────────────────────
   email: {
     resendApiKey: process.env.RESEND_API_KEY ?? '',
-    from: process.env.MARBLE_EMAIL_FROM ?? 'Marble <hello@marble.legal>',
+    from: process.env.MARBLE_EMAIL_FROM ?? 'Whiteshoe <hello@whiteshoe.law>',
     appUrl: process.env.MARBLE_APP_URL ?? 'http://localhost:5173',
+  },
+
+  // ── Voice (Deepgram STT + ElevenLabs TTS) ─────────────────────────────
+  voice: {
+    deepgramApiKey: process.env.MARBLE_DEEPGRAM_API_KEY ?? '',
+    elevenlabsApiKey: process.env.MARBLE_ELEVENLABS_API_KEY ?? '',
+    elevenlabsVoiceId: process.env.MARBLE_ELEVENLABS_VOICE_ID ?? 'EXAVITQu4vr4xnSDxMaL', // "Sarah" — warm female
+    elevenlabsModelId: process.env.MARBLE_ELEVENLABS_MODEL_ID ?? 'eleven_turbo_v2_5',
   },
 
   // ── Billable Hours (v22: Credit System) ────────────────────────────────
@@ -131,7 +139,7 @@ export const config = {
 
   // ── Claw Mode (Law Firm on Retainer) ──────────────────────────────────
   claw: {
-    dir: process.env.MARBLE_CLAW_DIR ?? path.join(os.homedir(), '.marble'),
+    dir: process.env.MARBLE_CLAW_DIR ?? path.join(os.homedir(), '.whiteshoe'),
     defaultBudget: parseFloat(process.env.MARBLE_CLAW_BUDGET ?? '50.0'),
     defaultPerDocBudget: parseFloat(process.env.MARBLE_CLAW_PER_DOC_BUDGET ?? '10.0'),
     defaultIntensity: 'standard' as const,

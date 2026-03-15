@@ -1,7 +1,7 @@
 /**
  * Auth Routes — User signup, login, logout, and profile management.
  *
- * Uses cookie-based auth (marble_token HttpOnly cookie).
+ * Uses cookie-based auth (whiteshoe_token HttpOnly cookie).
  * Passwords hashed with Node's built-in crypto.scrypt.
  *
  * POST  /api/auth/signup   — Create account
@@ -61,7 +61,7 @@ const ProfileUpdateSchema = z.object({
 
 // ── Cookie helpers ───────────────────────────────────────────────────────
 
-const COOKIE_NAME = 'marble_token';
+const COOKIE_NAME = 'whiteshoe_token';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
 const SECURE_FLAG = process.env.NODE_ENV === 'development' ? '' : '; Secure';
@@ -125,7 +125,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     // v22: Waitlist gate — require invite code when enabled
     if (config.billableHours.waitlistEnabled) {
       if (!body.inviteCode) {
-        return reply.status(403).send({ error: 'An invite code is required to sign up. Join the waitlist at marble.legal.' });
+        return reply.status(403).send({ error: 'An invite code is required to sign up. Join the waitlist at whiteshoe.law.' });
       }
       const waitlistEntry = getWaitlistEntryByCode(body.inviteCode);
       if (!waitlistEntry || waitlistEntry.status !== 'invited') {
@@ -150,7 +150,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
         user.id,
         config.billableHours.welcomeHours,
         'welcome',
-        `Welcome to Marble — ${config.billableHours.welcomeHours} billable hours on us.`,
+        `Welcome to Whiteshoe — ${config.billableHours.welcomeHours} billable hours on us.`,
       );
     }
 
@@ -271,7 +271,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const data = exportUserData(user.id);
 
     // Return as JSON (frontend can convert to downloadable ZIP if desired)
-    reply.header('Content-Disposition', 'attachment; filename="marble-data-export.json"');
+    reply.header('Content-Disposition', 'attachment; filename="whiteshoe-data-export.json"');
     return reply.send({
       exportedAt: new Date().toISOString(),
       user: data.profile ? {

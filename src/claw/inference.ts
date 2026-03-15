@@ -5,7 +5,7 @@
  * task (review, redesign, research memo, etc.), workflow, and context.
  *
  * Three strategies:
- * 1. Sidecar — `.marble.md` file next to the document with explicit instructions
+ * 1. Sidecar — `.whiteshoe.md` file next to the document with explicit instructions
  * 2. LLM — Sonnet classification (~$0.01) using document content + client profile
  * 3. Heuristic — Extension + filename pattern matching (zero cost fallback)
  */
@@ -33,17 +33,17 @@ export interface InferenceResult {
 
 /**
  * Look for a sidecar instruction file next to the document.
- * Convention: `filename.marble.md` or `filename.marble.json`
+ * Convention: `filename.whiteshoe.md` or `filename.whiteshoe.json`
  */
 function findSidecar(documentPath: string): SidecarConfig | null {
   const dir = path.dirname(documentPath);
   const base = path.basename(documentPath, path.extname(documentPath));
 
-  // Try: filename.marble.md, filename.marble.json, .marble.md (directory-level)
+  // Try: filename.whiteshoe.md, filename.whiteshoe.json, .whiteshoe.md (directory-level)
   const candidates = [
-    path.join(dir, `${base}.marble.md`),
-    path.join(dir, `${base}.marble.json`),
-    path.join(dir, '.marble.md'),
+    path.join(dir, `${base}.whiteshoe.md`),
+    path.join(dir, `${base}.whiteshoe.json`),
+    path.join(dir, '.whiteshoe.md'),
   ];
 
   for (const candidate of candidates) {

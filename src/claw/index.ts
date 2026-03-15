@@ -2,13 +2,13 @@
  * Claw Mode — Your Firm on Retainer.
  *
  * CLI entry points:
- *   marble claw init              — Onboard: create client profile
- *   marble claw start             — Start the firm (watch + process)
- *   marble claw status            — Show current state
- *   marble claw daemon install    — Install as macOS LaunchAgent
- *   marble claw daemon uninstall  — Remove LaunchAgent
- *   marble claw daemon status     — Show daemon service status
- *   marble claw daemon logs       — Tail daemon log files
+ *   whiteshoe claw init              — Onboard: create client profile
+ *   whiteshoe claw start             — Start the firm (watch + process)
+ *   whiteshoe claw status            — Show current state
+ *   whiteshoe claw daemon install    — Install as macOS LaunchAgent
+ *   whiteshoe claw daemon uninstall  — Remove LaunchAgent
+ *   whiteshoe claw daemon status     — Show daemon service status
+ *   whiteshoe claw daemon logs       — Tail daemon log files
  */
 
 import * as path from 'node:path';
@@ -125,21 +125,21 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
 // ── Commands ─────────────────────────────────────────────────────────────
 
 /**
- * `marble claw init` — Interactive onboarding.
+ * `whiteshoe claw init` — Interactive onboarding.
  */
 async function runInit(args: ClawCliArgs): Promise<void> {
   await initClaw(args.dir);
 }
 
 /**
- * `marble claw status` — Show current state.
+ * `whiteshoe claw status` — Show current state.
  */
 function runStatus(args: ClawCliArgs): void {
   const dir = args.dir ?? config.claw.dir;
   const profile = loadProfile(dir);
 
   if (!profile) {
-    console.error('\nNo profile found. Run `marble claw init` first.\n');
+    console.error('\nNo profile found. Run `whiteshoe claw init` first.\n');
     process.exit(1);
   }
 
@@ -148,14 +148,14 @@ function runStatus(args: ClawCliArgs): void {
 }
 
 /**
- * `marble claw start` — The main event. Start the firm.
+ * `whiteshoe claw start` — The main event. Start the firm.
  */
 async function runStart(args: ClawCliArgs): Promise<void> {
   const dir = args.dir ?? config.claw.dir;
   const profile = loadProfile(dir);
 
   if (!profile) {
-    console.error('\nNo profile found. Run `marble claw init` first.\n');
+    console.error('\nNo profile found. Run `whiteshoe claw init` first.\n');
     process.exit(1);
   }
 
@@ -321,7 +321,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
         notify({
           type: 'heartbeat',
-          title: 'Marble Heartbeat',
+          title: 'Whiteshoe Heartbeat',
           message: alerts.join(' \u00B7 '),
         });
       }, config.claw.heartbeatIntervalMs);

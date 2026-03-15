@@ -1,4 +1,4 @@
-# Marble (The Shem)
+# Whiteshoe (The Shem)
 
 The world's first driverless law firm. Multi-agent legal design system that transforms legal documents through collaborative AI analysis and human-centered design.
 
@@ -22,7 +22,7 @@ npm run dev:viz
 
 ## Architecture
 
-Marble uses a multi-agent pipeline where 64 agents (57 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
+Whiteshoe uses a multi-agent pipeline where 64 agents (57 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
 
 ### Core Concepts
 
@@ -46,12 +46,12 @@ React SPA with editorial design language (Inter + Cormorant Garamond, warm cream
 - **Team** — Agent selection with DiceBear avatars, personality bars, skill radars
 - **Working** — Live progress sidebar, agent presence orbs, insight feed, debate threads
 - **Delivery** — Tabbed view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), Cowork folder save, derivative document generation
-- **My Page** — User profile, custom instructions, Marble's Soul editor, saved teams
+- **My Page** — User profile, custom instructions, Whiteshoe's Soul editor, saved teams
 - **My Cases** — Session history (active + past engagements)
 
 ### Claw Mode (Law Firm on Retainer)
 
-Autonomous document processing. Drop files in a watched folder; Marble reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins and dual-model confidentiality (sensitive documents analyzed on-device via Ollama).
+Autonomous document processing. Drop files in a watched folder; Whiteshoe reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins and dual-model confidentiality (sensitive documents analyzed on-device via Ollama).
 
 ```bash
 # Initialize Claw Mode
@@ -118,7 +118,7 @@ Default: `http://localhost:3000`
 Two auth methods:
 
 1. **Bearer token** (API clients/agents): `Authorization: Bearer shem_agent_...`
-2. **Cookie** (browser users): `marble_token` HttpOnly cookie via `/api/auth/login`
+2. **Cookie** (browser users): `whiteshoe_token` HttpOnly cookie via `/api/auth/login`
 
 Register a client:
 ```bash
@@ -174,7 +174,7 @@ viz/                 # React dashboard (23 feature directories)
 ├── my-page/         # Profile + soul editor
 ├── my-cases/        # Session history
 ├── cowork/          # Cowork folder mode (File System Access API)
-└── components/      # Shared (GateDialog, ErrorToast, MarbleMark)
+└── components/      # Shared (GateDialog, ErrorToast, WhiteshoeMark)
 
 tests/               # 565 tests across 31 files
 SOUL.md              # Default firm personality (CLI/Claw fallback)

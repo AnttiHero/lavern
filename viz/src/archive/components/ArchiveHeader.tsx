@@ -24,7 +24,7 @@ export function ArchiveHeader({ onBack, searchQuery, onSearchChange, demoMode }:
           {'\u2190'} Back
         </button>
         <h1 style={styles.title}>
-          Marble <span style={{ fontStyle: 'italic' }}>Archive</span>
+          Whiteshoe <span style={{ fontStyle: 'italic' }}>Archive</span>
         </h1>
         <div style={{ width: 80 }} />
       </div>

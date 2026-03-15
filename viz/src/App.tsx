@@ -17,7 +17,7 @@
  *   #/my-page    → User profile & settings
  *   #/claw       → Claw Mode remote monitoring dashboard
  *   #/pricing    → Billable Hours — pricing page
- *   #/challenge  → The Marble Challenge — blind document comparison
+ *   #/challenge  → The Whiteshoe Challenge — blind document comparison
  *   #/agent-builder → NBA2K-style custom agent builder wizard
  *
  * All views are lazy-loaded React components in their own directories.
@@ -32,8 +32,8 @@ import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
 import type { FrontendParsedDocument } from './briefing/hooks/useDocumentUpload.js';
 import { SessionList } from './components/SessionList.js';
-import { MarbleMark } from './components/MarbleMark.js';
-import { LoadingM } from './components/LoadingM.js';
+import { WhiteshoeMark } from './components/WhiteshoeMark.js';
+import { LoadingW } from './components/LoadingW.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 import { CustomCursor } from './components/CustomCursor.js';
@@ -61,12 +61,15 @@ const PricingView = lazy(() => import('./pricing/PricingView.js'));
 const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
 const AgentBuilderView = lazy(() => import('./agent-builder/AgentBuilderView.js'));
 const LegalView = lazy(() => import('./legal/LegalView.js'));
+const FoyerView = lazy(() => import('./landing/FoyerView.js'));
+const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 
-type AppView = 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
   if (hash.startsWith('#/quickstart')) return 'quickstart';
+  if (hash.startsWith('#/partner')) return 'partner';
   if (hash.startsWith('#/lobby')) return 'lobby';
   if (hash.startsWith('#/login')) return 'login';
   if (hash.startsWith('#/dashboard')) return 'dashboard';
@@ -90,12 +93,13 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/agent-builder')) return 'agent-builder';
   if (hash.startsWith('#/terms')) return 'terms';
   if (hash.startsWith('#/privacy')) return 'privacy';
-  return 'landing';
+  if (hash.startsWith('#/landing')) return 'landing';
+  return 'foyer';
 }
 
 /** Shared loading fallback for lazy-loaded views */
 function ViewFallback({ text }: { text: string }) {
-  return <LoadingM text={text} />;
+  return <LoadingW text={text} />;
 }
 
 /** Fade-up entrance for all views */
@@ -488,7 +492,7 @@ export function App() {
   // ── View rendering ────────────────────────────────────────────────────
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
-  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'login' && view !== 'working';
+  const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'foyer' && view !== 'partner' && view !== 'login' && view !== 'working';
   const userCtx = useContext(UserContext);
 
   // ── Post-purchase overlay ───────────────────────────────────────────
@@ -522,7 +526,7 @@ export function App() {
             border: 'none', borderRadius: 6, cursor: 'pointer',
           }}
         >
-          {isSuccess ? 'Start Working' : 'Back to Marble'}
+          {isSuccess ? 'Start Working' : 'Back to Whiteshoe'}
         </button>
       </div>
     );
@@ -567,7 +571,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading intake..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <IntakeView
               onComplete={handleIntakeComplete}
               onSkip={handleIntakeSkip}
@@ -587,7 +591,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <BriefingView
               onComplete={handleBriefingComplete}
               onBack={() => { window.location.hash = '#/intake'; }}
@@ -607,7 +611,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <StrategyView
               onComplete={handleStrategyComplete}
               onBack={() => { sessionStorage.removeItem('shem-briefing-config'); window.location.hash = '#/briefing'; }}
@@ -627,7 +631,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading team..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <TeamView
               onTeamConfirmed={handleStaffingComplete}
               onBack={() => { sessionStorage.removeItem('shem-briefing-team'); window.location.hash = '#/strategy'; }}
@@ -646,7 +650,7 @@ export function App() {
         {toast}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
-          {showMark && <MarbleMark />}
+          {showMark && <WhiteshoeMark />}
           <WorkingView
             onComplete={navToDelivery}
             onBack={() => { sessionStorage.removeItem('shem-session-id'); window.location.hash = '#/quickstart'; }}
@@ -665,7 +669,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <DeliveryView
               onContinue={handleDeliveryDone}
               onBack={() => { window.location.hash = '#/quickstart'; }}
@@ -685,7 +689,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading billing..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <BillingView
               onClose={handleBillingClose}
             />
@@ -703,7 +707,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading profile..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <MyPageView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -719,7 +723,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading cases..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <MyCasesView
               onConnectSession={(id) => {
                 sessionStorage.setItem('shem-session-id', id);
@@ -747,7 +751,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <ArchiveView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -784,7 +788,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <AgentDocsView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -824,7 +828,7 @@ export function App() {
     );
   }
 
-  // ── The Marble Challenge — blind document comparison ────────────────
+  // ── The Whiteshoe Challenge — blind document comparison ────────────────
   if (view === 'challenge') {
     return (
       <ErrorBoundary>
@@ -849,7 +853,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <AgentBuilderView
               onBack={() => { window.location.hash = '#/team'; }}
               editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
@@ -885,7 +889,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -893,7 +897,7 @@ export function App() {
     );
   }
 
-  // ── Lobby — cinematic MARBLE gate ────────────────────────────────────
+  // ── Lobby — cinematic WHITESHOE gate ────────────────────────────────────
   if (view === 'lobby') {
     return (
       <ErrorBoundary>
@@ -907,6 +911,10 @@ export function App() {
               onMyPage={() => { window.location.hash = '#/my-page'; }}
               onLogin={() => { window.location.hash = '#/login'; }}
               onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
+              onDemo={() => {
+                sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
+                window.location.hash = '#/working';
+              }}
             />
           </Suspense>
         </ViewTransition>
@@ -923,7 +931,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <div style={styles.app}>
-            {showMark && <MarbleMark />}
+            {showMark && <WhiteshoeMark />}
             <div style={styles.sessionOverlay}>
               <SessionList
                 onConnectSession={(id) => {
@@ -945,18 +953,65 @@ export function App() {
     );
   }
 
-  // ── Landing — cinematic dark door (default entry) ──────────────────
+  // ── Landing — cinematic dark door (legacy, accessible via #/landing) ──
+  if (view === 'landing') {
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        {cursor}
+        <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
+          <WhiteshoeMark hideCursor />
+          <LandingView
+            onEnter={() => { window.location.hash = '#/lobby'; }}
+            onMyPage={() => { window.location.hash = '#/my-page'; }}
+            onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
+          />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Partner Mode — conversational intake with managing partner ──────
+  if (view === 'partner') {
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        {cursor}
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading..." />}>
+            <PartnerView
+              onSessionCreated={(sessionId: string) => {
+                sessionStorage.setItem('shem-session-id', sessionId);
+                window.location.hash = '#/working';
+              }}
+              onManualFlow={() => { window.location.hash = '#/quickstart'; }}
+              onBack={() => { window.location.hash = '#/'; }}
+            />
+          </Suspense>
+        </ViewTransition>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Foyer — the new default landing ─────────────────────────────────
   return (
     <ErrorBoundary>
       {skipLink}
       {toast}
       {cursor}
-      <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
-        <MarbleMark hideCursor />
-        <LandingView
-          onEnter={() => { window.location.hash = '#/lobby'; }}
+      <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#f0ede8' }} />}>
+        <FoyerView
+          onPartner={() => { window.location.hash = '#/partner'; }}
+          onQuickStart={() => { window.location.hash = '#/quickstart'; }}
           onMyPage={() => { window.location.hash = '#/my-page'; }}
+          onLogin={() => { window.location.hash = '#/login'; }}
           onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
+          onDemo={() => {
+            sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
+            window.location.hash = '#/working';
+          }}
         />
       </Suspense>
     </ErrorBoundary>

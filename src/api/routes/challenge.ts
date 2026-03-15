@@ -1,10 +1,10 @@
 /**
- * Challenge Routes — The Marble Challenge.
+ * Challenge Routes — The Whiteshoe Challenge.
  *
  * POST /api/challenge — Upload two documents, get a blind comparison from Sonnet.
  *
  * Simple: no sessions, no workflows, no waiting.
- * User uploads two documents (Marble-created + challenger),
+ * User uploads two documents (Whiteshoe-created + challenger),
  * Sonnet scores both blind, returns scores. One API call. ~5 seconds.
  */
 
@@ -21,8 +21,8 @@ import {
 // ── Schema ───────────────────────────────────────────────────────────────
 
 const ChallengeSchema = z.object({
-  /** Full text of the Marble-created document. */
-  marbleText: z.string().min(50).max(200_000),
+  /** Full text of the Whiteshoe-created document. */
+  whiteshoeText: z.string().min(50).max(200_000),
   /** Full text of the human-created document. */
   humanText: z.string().min(50).max(200_000),
 });
@@ -43,8 +43,8 @@ interface ComparisonResult {
   dimensions: ComparisonDimension[];
   overallA: number;
   overallB: number;
-  assignment: { A: 'human' | 'marble'; B: 'human' | 'marble' };
-  winner: 'human' | 'marble' | 'tie';
+  assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' };
+  winner: 'human' | 'whiteshoe' | 'tie';
   summary: string;
 }
 
@@ -69,12 +69,12 @@ export function registerChallengeRoutes(
     if (!body) return;
 
     // Randomly assign A/B — coin flip so the judge doesn't know which is which
-    const marbleIsA = Math.random() > 0.5;
-    const docA = marbleIsA ? body.marbleText : body.humanText;
-    const docB = marbleIsA ? body.humanText : body.marbleText;
-    const assignment: { A: 'human' | 'marble'; B: 'human' | 'marble' } = {
-      A: marbleIsA ? 'marble' : 'human',
-      B: marbleIsA ? 'human' : 'marble',
+    const whiteshoeIsA = Math.random() > 0.5;
+    const docA = whiteshoeIsA ? body.whiteshoeText : body.humanText;
+    const docB = whiteshoeIsA ? body.humanText : body.whiteshoeText;
+    const assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' } = {
+      A: whiteshoeIsA ? 'whiteshoe' : 'human',
+      B: whiteshoeIsA ? 'human' : 'whiteshoe',
     };
 
     try {
@@ -151,13 +151,13 @@ export function registerChallengeRoutes(
       const overallB = Math.round(parsed.overallB);
 
       // Determine winner
-      const marbleScore = assignment.A === 'marble' ? overallA : overallB;
+      const whiteshoeScore = assignment.A === 'whiteshoe' ? overallA : overallB;
       const humanScore = assignment.A === 'human' ? overallA : overallB;
 
-      let winner: 'human' | 'marble' | 'tie';
-      if (marbleScore > humanScore) {
-        winner = 'marble';
-      } else if (humanScore > marbleScore) {
+      let winner: 'human' | 'whiteshoe' | 'tie';
+      if (whiteshoeScore > humanScore) {
+        winner = 'whiteshoe';
+      } else if (humanScore > whiteshoeScore) {
         winner = 'human';
       } else {
         winner = 'tie';

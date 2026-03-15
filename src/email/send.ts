@@ -47,7 +47,7 @@ function emailWrapper(content: string): string {
 <body style="margin:0;padding:0;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:48px 28px;">
     <div style="text-align:center;margin-bottom:32px;">
-      <span style="font-size:28px;font-weight:300;letter-spacing:8px;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">MARBLE</span>
+      <span style="font-size:28px;font-weight:300;letter-spacing:8px;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">WHITESHOE</span>
     </div>
     ${content}
     <div style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid ${BRAND.border};">
@@ -99,7 +99,7 @@ async function send(payload: EmailPayload): Promise<boolean> {
 export async function sendWaitlistConfirmation(email: string): Promise<boolean> {
   return send({
     to: email,
-    subject: "You're on the Marble waitlist",
+    subject: "You're on the Whiteshoe waitlist",
     text: "You're on the list. We'll send your invite code when it's your turn.",
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -123,7 +123,7 @@ export async function sendWaitlistConfirmation(email: string): Promise<boolean> 
 export async function sendInviteEmail(email: string, inviteCode: string): Promise<boolean> {
   return send({
     to: email,
-    subject: "Your Marble invite is ready",
+    subject: "Your Whiteshoe invite is ready",
     text: `Your invite code: ${inviteCode} — Sign up at ${config.email.appUrl} with this code and your email. You'll get 50 free billable hours.`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -131,7 +131,7 @@ export async function sendInviteEmail(email: string, inviteCode: string): Promis
           You're in.
         </h2>
         <p style="margin:0 0 24px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
-          Your invite to Marble is ready. Use the code below to create your account.
+          Your invite to Whiteshoe is ready. Use the code below to create your account.
         </p>
         <div style="text-align:center;margin:24px 0;padding:20px;background:rgba(201,162,39,0.06);border:1px solid rgba(201,162,39,0.2);border-radius:8px;">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.textDim};margin-bottom:8px;">Your Invite Code</div>
@@ -157,8 +157,8 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
   const greeting = esc(displayName ? displayName : 'there');
   return send({
     to: email,
-    subject: "Welcome to Marble — 50 hours on us",
-    text: `Welcome to Marble! You have 50 billable hours to start. One hour = $0.10 of compute. Start at ${config.email.appUrl}`,
+    subject: "Welcome to Whiteshoe — 50 hours on us",
+    text: `Welcome to Whiteshoe! You have 50 billable hours to start. One hour = $0.10 of compute. Start at ${config.email.appUrl}`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
         <h2 style="margin:0 0 16px;font-size:22px;font-weight:300;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">
@@ -167,7 +167,7 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
         <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
           Your account is live. We've credited you
           <strong style="color:${BRAND.gold};">50 billable hours</strong> to explore
-          everything Marble can do.
+          everything Whiteshoe can do.
         </p>
         <div style="margin:20px 0;padding:16px 20px;background:rgba(201,162,39,0.06);border-radius:8px;border:1px solid rgba(201,162,39,0.12);">
           <div style="font-size:13px;color:${BRAND.textDim};line-height:1.6;">

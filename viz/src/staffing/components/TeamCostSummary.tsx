@@ -75,7 +75,7 @@ export function TeamCostSummary({ selectedProfiles, totalCost, teamSize }: Props
       </div>
 
       {/* Disclaimer */}
-      <div style={styles.disclaimer}>Marble doesn't actually charge by the hour</div>
+      <div style={styles.disclaimer}>Whiteshoe doesn't actually charge by the hour</div>
     </div>
   );
 }

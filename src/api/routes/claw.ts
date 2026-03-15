@@ -47,7 +47,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     if (!profile) {
       return reply.status(404).send({
         error: 'No Claw Mode profile found',
-        hint: 'Run `marble claw init` to create a client profile.',
+        hint: 'Run `whiteshoe claw init` to create a client profile.',
       });
     }
 
@@ -56,7 +56,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     const summary = registry.summary;
 
     // Daemon status (safe on non-macOS — returns not-installed)
-    let daemon = { installed: false, running: false, label: 'com.marble.claw', plistPath: '', logDir: '' };
+    let daemon = { installed: false, running: false, label: 'com.whiteshoe.claw', plistPath: '', logDir: '' };
     try {
       daemon = getDaemonStatus();
     } catch { /* non-macOS */ }

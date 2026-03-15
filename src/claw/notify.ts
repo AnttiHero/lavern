@@ -58,7 +58,7 @@ async function sendWebhook(notification: ClawNotification, retries = 2): Promise
   if (!url) return;
 
   const payload = JSON.stringify({
-    source: 'marble-claw',
+    source: 'whiteshoe-claw',
     ...notification,
     timestamp: new Date().toISOString(),
   });
@@ -95,7 +95,7 @@ function sendMacOsNotification(notification: ClawNotification): void {
     const message = clean(notification.message);
     execFileSync('osascript', [
       '-e',
-      `display notification "${message}" with title "Marble" subtitle "${title}"`,
+      `display notification "${message}" with title "Whiteshoe" subtitle "${title}"`,
     ], { timeout: 3000, stdio: 'ignore' });
   } catch (err) {
     console.warn(`[CLAW] macOS notification failed for ${notification.type}:`, (err as Error).message ?? err);

@@ -1,5 +1,5 @@
 /**
- * Blind Comparison Prompt — The Marble Challenge.
+ * Blind Comparison Prompt — The Whiteshoe Challenge.
  *
  * Sonnet receives two documents labeled ONLY as "Document A" and "Document B".
  * It does NOT know which is human or AI.

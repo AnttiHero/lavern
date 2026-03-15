@@ -180,7 +180,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: `Marble ${getPlanLimits(plan).label}`,
+              name: `Whiteshoe ${getPlanLimits(plan).label}`,
               description: `Up to $${getPlanLimits(plan).monthlyCapUsd}/mo in AI analysis`,
             },
             unit_amount: plan === 'starter' ? 4900 : plan === 'professional' ? 14900 : 49900,
@@ -230,7 +230,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: `Marble ${packDef.label} — ${packDef.hours} Billable Hours`,
+              name: `Whiteshoe ${packDef.label} — ${packDef.hours} Billable Hours`,
               description: `${packDef.hours} billable hours. Never expires.`,
             },
             unit_amount: packDef.priceEurCents,

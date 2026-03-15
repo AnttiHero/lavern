@@ -35,7 +35,7 @@ export interface UserProfile {
   // Custom instructions (appended to briefing memos)
   customInstructions: string;
 
-  // Soul — defines Marble's personality, voice, and principles for this user
+  // Soul — defines Whiteshoe's personality, voice, and principles for this user
   soul: string;
 
   // Saved teams

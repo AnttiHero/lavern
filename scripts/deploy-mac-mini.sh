@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Deploy Marble to a Mac Mini
+# Deploy Whiteshoe to a Mac Mini
 #
 # Usage:
 #   ./scripts/deploy-mac-mini.sh [user@host]
@@ -19,11 +19,11 @@
 
 set -euo pipefail
 
-HOST=${1:-"marble@mac-mini.local"}
-REMOTE_DIR="/opt/marble"
+HOST=${1:-"whiteshoe@mac-mini.local"}
+REMOTE_DIR="/opt/whiteshoe"
 
 echo ""
-echo "  Deploying Marble to ${HOST}:${REMOTE_DIR}"
+echo "  Deploying Whiteshoe to ${HOST}:${REMOTE_DIR}"
 echo "  ─────────────────────────────────────────"
 echo ""
 

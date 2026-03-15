@@ -1,18 +1,18 @@
 /**
- * LobbyView — The Marble Lobby.
+ * LobbyView — The Whiteshoe Lobby.
  *
- * Full-bleed white marble. The firm name in massive serif type.
+ * Full-bleed white stone. The firm name in massive serif type.
  * A thin rule, a tagline, and an entrance.
  *
  * The effect: stepping through the dark door into a sunlit
- * marble lobby. Monumental. Still. The veins in the stone
+ * lobby. Monumental. Still. The veins in the stone
  * are the only decoration needed.
  */
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 import { cn } from '../utils/cn.js';
 
 interface Props {
@@ -20,6 +20,7 @@ interface Props {
   onMyPage: () => void;
   onLogin?: () => void;
   onAgentDocs?: () => void;
+  onDemo?: () => void;
 }
 
 // ── Shimmer button ─────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ function ShimmerButton({
           className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-            animation: 'marbleShimmer 0.6s ease forwards',
+            animation: 'whiteshoeShimmer 0.6s ease forwards',
           }}
         />
       )}
@@ -103,7 +104,7 @@ function HoverText({
 
 // ── The Lobby ──────────────────────────────────────────────────────────────
 
-export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: Props) {
+export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs, onDemo }: Props) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const [ready, setReady] = useState(false);
@@ -114,7 +115,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
     return () => clearTimeout(t);
   }, []);
 
-  // Subtle marble parallax on mouse move
+  // Subtle parallax on mouse move
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (imgRef.current) {
       const cx = (e.clientX / window.innerWidth - 0.5) * 8;
@@ -137,7 +138,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Full-bleed marble texture ──────────────────────────── */}
+      {/* ── Full-bleed texture ──────────────────────────── */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
@@ -178,7 +179,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
         ) : (
           <>
             <div />
-            <ShimmerButton onClick={onLogin}>
+            <ShimmerButton onClick={onLogin ?? (() => {})}>
               Sign In
             </ShimmerButton>
           </>
@@ -192,7 +193,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
           className="text-4xl sm:text-6xl md:text-7xl lg:text-[130px] font-light font-serif text-text m-0 tracking-[6px] sm:tracking-[12px] md:tracking-[16px] lg:tracking-[22px] uppercase"
           style={{ animation: 'lobbyNameReveal 1.8s ease 0.6s both' }}
         >
-          <MarbleIlluminated />
+          <WhiteshoeIlluminated />
         </HoverText>
 
         <div
@@ -237,6 +238,23 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs }: P
         >
           Enter {'\u2192'}
         </ShimmerButton>
+
+        {onDemo && (
+          <button
+            onClick={onDemo}
+            className="font-sans text-[10px] sm:text-[11px] font-medium tracking-[2px] uppercase cursor-pointer border-0 bg-transparent mt-5 sm:mt-6"
+            style={{
+              animation: 'lobbyFadeIn 0.6s ease 2.8s both',
+              color: colors.text,
+              opacity: 0,
+              transition: 'opacity 0.3s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '0.45'; }}
+          >
+            Watch Demo
+          </button>
+        )}
       </div>
     </div>
   );

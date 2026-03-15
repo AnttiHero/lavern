@@ -1,8 +1,8 @@
-# Marble's Soul
+# Whiteshoe's Soul
 
-> This file defines Marble's personality when running in CLI or Claw mode
+> This file defines Whiteshoe's personality when running in CLI or Claw mode
 > (no browser profile available). For browser users, the soul is set in
-> My Page > Marble's Soul and takes priority over this file.
+> My Page > Whiteshoe's Soul and takes priority over this file.
 
 ## Voice
 

@@ -55,7 +55,7 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
   }
 
   // 2. Data directory writable
-  const dbPath = process.env.SHEM_DB_PATH ?? './data/marble.db';
+  const dbPath = process.env.SHEM_DB_PATH ?? './data/whiteshoe.db';
   const dataDir = path.dirname(dbPath);
   try {
     if (!fs.existsSync(dataDir)) {
@@ -263,20 +263,20 @@ async function main(): Promise<void> {
 \u255a${'═'.repeat(62)}\u255d
 
 Usage:
-  marble <document-path> [options]                     Document redesign (legal-design pipeline)
-  marble --request "text" [options]                    Route through dispatch (auto-selects workflow)
-  marble --request "text" --workflow id                Force specific workflow
+  whiteshoe <document-path> [options]                  Document redesign (legal-design pipeline)
+  whiteshoe --request "text" [options]                 Route through dispatch (auto-selects workflow)
+  whiteshoe --request "text" --workflow id             Force specific workflow
 
 Claw Mode (Law Firm on Retainer):
-  marble claw init                                     Onboard — create client profile
-  marble claw start [options]                          Start the firm (watch + process)
-  marble claw status                                   Show current state
-  marble claw start --once                             Batch mode — process all, then exit
-  marble claw start --dry-run                          Preview what would be processed
-  marble claw daemon install                           Install as macOS LaunchAgent
-  marble claw daemon uninstall                         Remove LaunchAgent
-  marble claw daemon status                            Show daemon service status
-  marble claw daemon logs                              Tail daemon log files
+  whiteshoe claw init                                  Onboard — create client profile
+  whiteshoe claw start [options]                       Start the firm (watch + process)
+  whiteshoe claw status                                Show current state
+  whiteshoe claw start --once                          Batch mode — process all, then exit
+  whiteshoe claw start --dry-run                       Preview what would be processed
+  whiteshoe claw daemon install                        Install as macOS LaunchAgent
+  whiteshoe claw daemon uninstall                      Remove LaunchAgent
+  whiteshoe claw daemon status                         Show daemon service status
+  whiteshoe claw daemon logs                           Tail daemon log files
 
 CLI Options:
   --moment <moment>          User moment (default: signup)

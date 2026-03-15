@@ -1,7 +1,7 @@
 /**
  * PacManGame — A polished Pac-Man mini-game for the working screen.
  *
- * The hero is the Marble "M" — a serif letter that glides through the maze
+ * The hero is the Whiteshoe "W" — a serif letter that glides through the maze
  * eating pellets. Smooth sub-pixel interpolation between grid cells gives
  * buttery 60fps movement. Four colored ghosts with chase/scatter AI.
  *
@@ -70,7 +70,7 @@ const MAZE_TEMPLATE: number[][] = [
 ];
 
 const GHOST_COLORS = ['#FF4444', '#FFB8FF', '#44FFFF', '#FFB852'];
-const M_COLOR = colors.accent; // Marble terracotta
+const M_COLOR = colors.accent; // Whiteshoe terracotta
 const WALL_FILL = '#161638';
 const WALL_EDGE = '#2a2a7a';
 const PELLET_COLOR = 'rgba(255, 190, 170, 0.8)';
@@ -444,7 +444,7 @@ export function PacManGame({ onClose }: Props) {
       ctx.font = `bold ${CELL}px "Cormorant Garamond", "Georgia", serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('M', 0, 1);
+      ctx.fillText('W', 0, 1);
 
       ctx.restore();
     }
@@ -522,7 +522,7 @@ export function PacManGame({ onClose }: Props) {
     ctx.fillStyle = M_COLOR;
     ctx.font = `bold 12px "Cormorant Garamond", serif`;
     for (let i = 0; i < livesRef.current; i++) {
-      ctx.fillText('M', W - 6 - i * 16, H - 3);
+      ctx.fillText('W', W - 6 - i * 16, H - 3);
     }
 
     // ── Overlay text
@@ -559,7 +559,7 @@ export function PacManGame({ onClose }: Props) {
     <div style={panelStyles.overlay} onClick={onClose}>
       <div style={panelStyles.panel} onClick={e => e.stopPropagation()}>
         <div style={panelStyles.header}>
-          <span style={panelStyles.title}>MARBLE MAZE</span>
+          <span style={panelStyles.title}>WHITESHOE MAZE</span>
           <button style={panelStyles.closeBtn} onClick={onClose} title="Close (Esc)">✕</button>
         </div>
         <canvas ref={canvasRef} width={W} height={H} style={panelStyles.canvas} />

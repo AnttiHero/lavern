@@ -21,8 +21,9 @@ interface Props {
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
   const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
-  const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error'
-    || (data.status === 'Complete' && !data.finalOutput);
+  // Only show assembly failure after polling has definitively ended (timeout/error).
+  // While still polling, the assembler may still be working — don't flash the error.
+  const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error';
 
   return (
     <div>

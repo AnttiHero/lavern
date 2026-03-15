@@ -1,5 +1,5 @@
 /**
- * MarbleIlluminated — Wordmark with a slow light-sweep effect.
+ * WhiteshoeIlluminated — Wordmark with a slow light-sweep effect.
  *
  * A warm highlight band drifts across the letters like sunlight
  * catching veins in stone. Works on both light and dark backgrounds
@@ -17,7 +17,7 @@ interface Props {
   style?: React.CSSProperties;
 }
 
-export function MarbleIlluminated({
+export function WhiteshoeIlluminated({
   color = '#1a1a1a',
   glow = '#96875f',
   style,
@@ -30,10 +30,10 @@ export function MarbleIlluminated({
         backgroundSize: '400% 100%',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
-        animation: 'marbleIlluminate 8s ease-in-out infinite',
+        animation: 'whiteshoeIlluminate 8s ease-in-out infinite',
       }}
     >
-      MARBLE
+      WHITESHOE
     </span>
   );
 }

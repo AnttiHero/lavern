@@ -1,13 +1,13 @@
-# Marble — The World's First Driverless Law Firm
+# Whiteshoe — The World's First Driverless Law Firm
 
 ## System Identity
 
-You are part of Marble v0.10, a multi-agent legal design system that transforms
+You are part of Whiteshoe v0.10, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
-Marble is the world's first driverless law firm.
+Whiteshoe is the world's first driverless law firm.
 
 The codebase is called "The Shem" (the name inscribed in the golem's mouth).
-The product is called "Marble". These names are interchangeable in internal docs.
+The product is called "Whiteshoe". These names are interchangeable in internal docs.
 
 ## Shared Principles
 
@@ -75,7 +75,7 @@ with qualified legal professionals.
     - `briefing.ts` — LLM-powered briefing analysis for intake
     - `auth-routes.ts` — User signup, login, logout, profile (incl. soul)
     - `claw.ts` — Claw Mode remote monitoring & control
-    - `challenge.ts` — Marble Challenge blind document comparison
+    - `challenge.ts` — Whiteshoe Challenge blind document comparison
     - `challenge-prompt.ts` — Challenge prompt builder
     - `waitlist.ts` — Waitlist email capture + invite code management
     - `well-known.ts` — A2A agent card, OpenAI plugin manifest, OpenAPI spec
@@ -91,13 +91,13 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars, ProviderToggle (Claude / EU Sovereign), offline indicator
 - `viz/src/working/` — Team chat room with real-time checklist (ProgressSidebar), activity feed (ActivityCard), reassurance messaging (ReassuranceCard), HeartbeatBand, connection lost banner, session expired overlay, duplicate tab protection
 - `viz/src/delivery/` — Tabbed delivery view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), DownloadPanel with Cowork folder save, derivatives generation, loading skeleton
-- `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Marble's Soul (firm personality editor), Saved Teams
+- `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Whiteshoe's Soul (firm personality editor), Saved Teams
 - `viz/src/my-cases/` — Session history (active + past engagements)
 - `viz/src/cowork/` — Cowork folder mode (File System Access API for non-destructive local saves)
-- `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, MarbleMark)
+- `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, WhiteshoeMark)
 - `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
-- `viz/src/challenge/` — Marble Challenge blind document comparison
+- `viz/src/challenge/` — Whiteshoe Challenge blind document comparison
 - `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
 - `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
@@ -204,7 +204,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - EU badge in Working view header when Mistral active
 - **Maximum Ethical Mode** — One-click toggle for Claw Mode
   - EU-only processing (Mistral), all docs confidential, conservative risk
-  - CLI: `marble claw start --ethical`
+  - CLI: `whiteshoe claw start --ethical`
   - Dashboard: Config tab card with ON/OFF toggle, CommandStrip shield badge
   - PATCH `/api/claw/ethical` endpoint
 - **Knowledge Base Expansion** — 4 new datasets (6 total)

@@ -57,7 +57,7 @@ export function BriefingHeader({ matterNumber, matterTitle, workflowId, jurisdic
       )}
 
       <h1 style={styles.title}>
-        Marble <span style={{ fontStyle: 'italic' }}>Briefing</span>
+        Whiteshoe <span style={{ fontStyle: 'italic' }}>Briefing</span>
       </h1>
 
       <p style={styles.subtitle}>

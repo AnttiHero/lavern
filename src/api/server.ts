@@ -37,6 +37,8 @@ import { registerMatterRoutes } from './routes/matters.js';
 import { registerAgentRoutes } from './routes/agents.js';
 import { registerWorkflowRoutes } from './routes/workflows.js';
 import { registerBriefingRoutes } from './routes/briefing.js';
+import { registerPartnerRoutes } from './routes/partner.js';
+import { registerVoiceRoutes } from './routes/voice.js';
 import { registerEngageRoutes } from './routes/engage.js';
 import { registerCapabilitiesRoutes } from './routes/capabilities.js';
 import { registerWellKnownRoutes } from './routes/well-known.js';
@@ -153,14 +155,14 @@ export async function startApiServer(port: number): Promise<void> {
 
   // ── Public paths ──────────────────────────────────────────────────
   // Paths listed here bypass auth (no Bearer token or cookie required).
-  // Most POST mutations require a marble_token cookie (set by
+  // Most POST mutations require a whiteshoe_token cookie (set by
   // /api/auth/login). Exceptions: session creation is public so the
   // QuickStart express lane works without login.
   const publicPaths: string[] = [
     '/health',
     '/',
-    // Session access by ID — scoped by unguessable session ID (capability token).
-    // Listing (GET /api/sessions) requires auth — removed from public paths.
+    // Session access — public for demo (no login required).
+    'GET /api/sessions',      // Session listing
     'GET /api/sessions/*',    // Session detail + WebSocket events
     // NOTE: /api/clients, /api/audit-logs, /api/replay are NOT public.
     // They contain sensitive data and require authentication.
@@ -173,12 +175,16 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /llms.txt',          // AI crawler guidance
     'GET /api/pricing',       // Deterministic cost estimates
     'GET /api/reputation',    // Machine-readable trust signal
-    // Session creation — requires auth (users must sign up first).
-    // Removed from publicPaths to prevent unauthenticated API credit burn.
-    // 'POST /api/sessions',
+    // Session creation — public for QuickStart flow (re-enabled for demo).
+    'POST /api/sessions',
     // Briefing — intake flow before login
     'POST /api/briefing/interview',
     'POST /api/briefing/analyze',
+    // Partner consultation — conversational intake
+    'POST /api/partner/consult',
+    // Voice — STT/TTS proxy (API keys stay server-side)
+    'GET /api/voice/stt',
+    'POST /api/voice/tts',
     // User auth routes (public by definition)
     'POST /api/auth/signup',
     'POST /api/auth/login',
@@ -197,7 +203,7 @@ export async function startApiServer(port: number): Promise<void> {
     'DELETE /api/sessions/*',
     // Document parsing — needed by Challenge and Briefing before login
     'POST /api/documents/parse',
-    // The Marble Challenge — zero-friction, no auth required
+    // The Whiteshoe Challenge — zero-friction, no auth required
     'POST /api/challenge',
     // Stripe — webhook must be public, config returns publishable key only
     'POST /api/billing/webhook',
@@ -428,6 +434,9 @@ export async function startApiServer(port: number): Promise<void> {
   registerWorkflowRoutes(fastify);
   // v10: LLM-powered briefing analysis
   registerBriefingRoutes(fastify);
+  // v11: Partner consultation (conversational intake)
+  registerPartnerRoutes(fastify);
+  registerVoiceRoutes(fastify);
   // v10: Agent API — engage endpoint + capabilities manifest
   registerEngageRoutes(fastify, sessionManager);
   registerCapabilitiesRoutes(fastify);
@@ -443,7 +452,7 @@ export async function startApiServer(port: number): Promise<void> {
   registerVerifyRoutes(fastify, sessionManager);
   // Claw Mode — remote monitoring & control
   registerClawRoutes(fastify);
-  // v19: The Marble Challenge — blind document comparison
+  // v19: The Whiteshoe Challenge — blind document comparison
   registerChallengeRoutes(fastify);
   // v21: Billing — Stripe subscriptions and usage tracking
   registerBillingRoutes(fastify);
@@ -486,8 +495,8 @@ export async function startApiServer(port: number): Promise<void> {
             timestamp: new Date().toISOString(),
             platform: 'node',
             level: 'error',
-            server_name: 'marble-api',
-            release: `marble@${config.version}`,
+            server_name: 'whiteshoe-api',
+            release: `whiteshoe@${config.version}`,
             exception: { values: [{ type: err.name, value: err.message, stacktrace: {
               frames: (err.stack ?? '').split('\n').slice(1, 10).map(l => ({ filename: l.trim() })),
             }}] },

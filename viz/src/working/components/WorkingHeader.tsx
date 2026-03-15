@@ -82,7 +82,7 @@ export function WorkingHeader({
           onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
         >&larr; Back</button>
         <span style={styles.divider} />
-        <span style={styles.title}>Marble</span>
+        <span style={styles.title}>Whiteshoe</span>
         <div style={{ ...styles.statusDot, backgroundColor: STATUS_COLORS[connectionStatus] }} />
         <span style={styles.statusText}>{connectionStatus}</span>
         {sessionId && <span style={styles.sessionId}>{sessionId}</span>}

@@ -48,8 +48,8 @@ export function Controls({
     <div style={styles.container}>
       {/* Left: Title + Status */}
       <div style={styles.leftSection}>
-        <span style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, lineHeight: 1 }}>M</span>
-        <span style={styles.title}>Marble</span>
+        <span style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, lineHeight: 1 }}>W</span>
+        <span style={styles.title}>Whiteshoe</span>
         <div
           style={{
             ...styles.statusDot,

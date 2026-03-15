@@ -9,11 +9,11 @@
 #
 # This avoids storing ANTHROPIC_API_KEY in plaintext .env files.
 # The daemon's plist uses a wrapper script that reads from Keychain
-# before starting Marble.
+# before starting Whiteshoe.
 
 set -euo pipefail
 
-ACCOUNT="marble"
+ACCOUNT="whiteshoe"
 SERVICE="anthropic-api-key"
 
 case "${1:-help}" in
@@ -36,9 +36,9 @@ case "${1:-help}" in
     # Print a wrapper script that loads the key from Keychain before exec
     cat <<'WRAPPER'
 #!/bin/bash
-# Auto-generated Marble startup wrapper.
+# Auto-generated Whiteshoe startup wrapper.
 # Reads ANTHROPIC_API_KEY from macOS Keychain, falls back to .env file.
-export ANTHROPIC_API_KEY="$(security find-generic-password -a marble -s anthropic-api-key -w 2>/dev/null)"
+export ANTHROPIC_API_KEY="$(security find-generic-password -a whiteshoe -s anthropic-api-key -w 2>/dev/null)"
 if [ -z "$ANTHROPIC_API_KEY" ]; then
   # Fallback: source .env file if Keychain has no entry
   ENV_FILE="$(dirname "$0")/../../.env"
@@ -55,7 +55,7 @@ exec "$@"
 WRAPPER
     ;;
   *)
-    echo "Marble — macOS Keychain API Key Manager"
+    echo "Whiteshoe — macOS Keychain API Key Manager"
     echo ""
     echo "Usage: $0 {store|read|wrapper}"
     echo ""

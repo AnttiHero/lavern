@@ -2,7 +2,7 @@
  * BetTheCompanyView -- Premium tier landing page.
  *
  * Dark cinematic design matching AgentDocsView. Explains the
- * highest tier of Marble service: full AI multi-agent power
+ * highest tier of Whiteshoe service: full AI multi-agent power
  * combined with human expert oversight.
  *
  * When everything is on the line.
@@ -10,13 +10,13 @@
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 
 interface Props {
   onBack: () => void;
 }
 
-// -- Dark palette -- Marble at night ----------------------------------------
+// -- Dark palette -- Whiteshoe at night --------------------------------------
 
 const D = {
   bg: '#0A0A0F',
@@ -262,11 +262,11 @@ export default function BetTheCompanyView({ onBack }: Props) {
 
   return (
     <div style={sty.page}>
-      {/* Subtle marble texture */}
+      {/* Subtle texture */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={sty.marbleBg}
+        style={sty.heroBg}
       />
 
       {/* Radial veil -- darkens edges */}
@@ -298,7 +298,7 @@ export default function BetTheCompanyView({ onBack }: Props) {
           animation: 'btcFadeIn 0.8s ease 0.1s both',
         }}>
           <div style={sty.title}>
-            <MarbleIlluminated
+            <WhiteshoeIlluminated
               color="rgba(250, 249, 246, 0.55)"
               glow="rgba(250, 249, 246, 0.95)"
             />
@@ -307,7 +307,7 @@ export default function BetTheCompanyView({ onBack }: Props) {
           <h2 style={sty.heroTitle}>Bet the Company</h2>
           <p style={sty.description}>
             When the stakes are existential and the margin for error is zero.
-            The highest tier of Marble service {'\u2014'} AI precision backed by human judgment.
+            The highest tier of Whiteshoe service {'\u2014'} AI precision backed by human judgment.
           </p>
         </div>
 
@@ -425,7 +425,7 @@ export default function BetTheCompanyView({ onBack }: Props) {
           ...sty.footer,
           animation: 'btcFadeIn 0.6s ease 0.7s both',
         }}>
-          <MarbleIlluminated
+          <WhiteshoeIlluminated
             color="rgba(250, 249, 246, 0.15)"
             glow="rgba(250, 249, 246, 0.4)"
           />
@@ -449,7 +449,7 @@ const sty: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     overflow: 'auto' as const,
   },
-  marbleBg: {
+  heroBg: {
     position: 'fixed' as const,
     inset: 0,
     width: '100%',

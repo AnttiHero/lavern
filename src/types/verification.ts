@@ -2,7 +2,7 @@
  * Verification Pipeline Types — The 10-pass quality verification system.
  *
  * Used by both standalone verification (upload any document) and
- * post-production verification (after Marble transforms a document).
+ * post-production verification (after Whiteshoe transforms a document).
  *
  * Every finding has severity, location, evidence, and optionally
  * a suggestion + auto-fixable flag for remediation.

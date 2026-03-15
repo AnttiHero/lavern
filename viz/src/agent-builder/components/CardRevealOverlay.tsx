@@ -3,7 +3,7 @@
  *
  * Sequence:
  *   1. Screen dims to dark overlay
- *   2. Card appears face-down (dark back with marble "M" embossed)
+ *   2. Card appears face-down (dark back with marble "W" embossed)
  *   3. 1.5s pause — light rays emanate from card edges
  *   4. 3D flip reveals the full card
  *   5. Flash of light at flip apex
@@ -235,9 +235,9 @@ export function CardRevealOverlay({
                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                   userSelect: 'none',
                 }}>
-                  M
+                  W
                 </div>
-                {/* Marble texture lines */}
+                {/* Texture lines */}
                 <div style={{
                   position: 'absolute',
                   inset: 16,

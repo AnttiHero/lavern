@@ -78,7 +78,7 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
           >
             {'\u2190'} Back
           </button>
-          <h1 style={styles.title}>Marble <span style={{ fontStyle: 'italic' }}>Strategy</span></h1>
+          <h1 style={styles.title}>Whiteshoe <span style={{ fontStyle: 'italic' }}>Strategy</span></h1>
           {onSkip && (
             <button
               onClick={onSkip}

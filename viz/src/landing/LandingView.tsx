@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { cn } from '../utils/cn.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 
 interface Props {
   onEnter: () => void;
@@ -19,9 +19,9 @@ interface Props {
   onAgentDocs?: () => void;
 }
 
-// ── Marble Logo — Typography wordmark (kept for LoginView import) ──────────
+// ── Whiteshoe Logo — Typography wordmark (kept for LoginView import) ──────────
 
-export function MarbleLogo({
+export function WhiteshoeLogo({
   height = 64,
   color = colors.text,
   veinColor = 'rgba(26, 26, 26, 0.12)',
@@ -40,7 +40,7 @@ export function MarbleLogo({
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'block' }}
       role="img"
-      aria-label="Marble"
+      aria-label="Whiteshoe"
     >
       <path d="M0 72V8h3.2l28 48.5h0.6L60.2 8H64v64h-5V22.5h-0.4L33.2 64h-3l-25-41.5H4.8V72H0Z" fill={color} />
       <line x1="12" y1="16" x2="52" y2="68" stroke={veinColor} strokeWidth="0.8" strokeLinecap="round" />
@@ -54,14 +54,14 @@ export function MarbleLogo({
   );
 }
 
-export function MarbleLogoSmall({
+export function WhiteshoeLogoSmall({
   height = 18,
   color = colors.text,
 }: {
   height?: number;
   color?: string;
 }) {
-  return <MarbleLogo height={height} color={color} veinColor="transparent" />;
+  return <WhiteshoeLogo height={height} color={color} veinColor="transparent" />;
 }
 
 // ── The Dark Door ──────────────────────────────────────────────────────────
@@ -175,12 +175,12 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Marble texture — barely visible in the dark ────────────── */}
+      {/* ── Texture — barely visible in the dark ─────────────────────── */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[marbleBreath_10s_ease_infinite]"
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[whiteshoeBreath_10s_ease_infinite]"
         style={{
           filter: 'brightness(0.14) contrast(1.2) saturate(0.15)',
           opacity: 0.7,
@@ -205,11 +205,11 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
       />
 
       {/* ── Center — The Question ──────────────────────────────────── */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-[5] pb-8">
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-[5] overflow-y-auto" style={{ padding: '40px 20px' }}>
         <p
           ref={welcomeRef}
           className={cn(
-            'marble-spotlight',
+            'whiteshoe-spotlight',
             'text-[10px] sm:text-[13px] font-medium font-sans',
             'text-[rgba(250,249,246,0.25)] tracking-[3px] sm:tracking-[6px] uppercase',
             'm-0 mb-8 sm:mb-12',
@@ -219,7 +219,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             background: 'rgba(250, 249, 246, 0.25)',
           }}
         >
-          Welcome to Marble
+          Welcome to Whiteshoe
         </p>
 
         <h1
@@ -312,16 +312,14 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             Agent
           </button>
         </div>
-      </div>
 
-      {/* ── Waitlist — subtle email capture below the door ──────────── */}
-      <div
-        className="absolute left-0 right-0 flex flex-col items-center z-[5]"
-        style={{
-          bottom: '15vh',
-          animation: 'doorFade 1s ease 3.2s both',
-        }}
-      >
+        {/* ── Waitlist — subtle email capture below the door ──────────── */}
+        <div
+          className="flex flex-col items-center mt-10 sm:mt-14"
+          style={{
+            animation: 'doorFade 1s ease 3.2s both',
+          }}
+        >
         {/* Thin rule */}
         <div
           className="w-12 h-px mb-6"
@@ -416,6 +414,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         >
           Already have an invite?
         </button>
+        </div>
       </div>
 
       {/* ── Fog of War — atmospheric mist at bottom ──────────────────── */}
@@ -436,7 +435,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         }}
       >
         <span className="text-[9px] font-medium font-sans text-[rgba(250,249,246,0.12)] tracking-[6px] uppercase">
-          <MarbleIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
+          <WhiteshoeIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
         </span>
       </div>
     </div>

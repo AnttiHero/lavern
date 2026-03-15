@@ -1,5 +1,5 @@
 /**
- * WebSocket Client — Connects to Marble API server for real-time events.
+ * WebSocket Client — Connects to Whiteshoe API server for real-time events.
  *
  * Features:
  * - Auto-reconnection with exponential backoff

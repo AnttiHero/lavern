@@ -615,7 +615,7 @@ function buildCoverPage(title: string, profile: StyleProfile, branding?: SoulBra
   }
 
   // "Prepared by" block — uses soul branding when available
-  const brandName = branding?.firmName ?? 'Marble';
+  const brandName = branding?.firmName ?? 'Whiteshoe';
   const hasSoul = !!branding?.firmName;
 
   paragraphs.push(new Paragraph({
@@ -658,11 +658,11 @@ function buildCoverPage(title: string, profile: StyleProfile, branding?: SoulBra
     }));
   }
 
-  // Engine credit — "Powered by Marble" when soul provides firm name, otherwise subtitle
+  // Engine credit — "Powered by Whiteshoe" when soul provides firm name, otherwise subtitle
   paragraphs.push(new Paragraph({
     alignment: align,
     children: [new TextRun({
-      text: hasSoul ? 'Powered by Marble' : 'Multi-Agent Legal Design System',
+      text: hasSoul ? 'Powered by Whiteshoe' : 'Multi-Agent Legal Design System',
       font: profile.bodyFont,
       size: profile.id === 'accessible' ? profile.smallSize : profile.tinySize,
       color: profile.inkDim,
@@ -906,9 +906,9 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
   const doc = new Document({
     title,
     subject: title,
-    creator: branding?.firmName ?? 'Marble',
+    creator: branding?.firmName ?? 'Whiteshoe',
     description: `Generated deliverable: ${title}`,
-    lastModifiedBy: 'Marble Legal Design System',
+    lastModifiedBy: 'Whiteshoe Legal Design System',
     numbering: {
       config: [{
         reference: 'default-numbering',
@@ -1037,9 +1037,9 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
 // ── HTML / PDF Conversion ───────────────────────────────────────────────
 
 function getHtmlCover(title: string, dateStr: string, profile: StyleProfile, branding?: SoulBranding): string {
-  const brandName = branding?.firmName ?? 'Marble';
+  const brandName = branding?.firmName ?? 'Whiteshoe';
   const hasSoul = !!branding?.firmName;
-  const engineCredit = hasSoul ? 'Powered by Marble' : 'Multi-Agent Legal Design System';
+  const engineCredit = hasSoul ? 'Powered by Whiteshoe' : 'Multi-Agent Legal Design System';
   const taglineHtml = hasSoul && branding.tagline
     ? `<p class="tagline">${escapeHtml(branding.tagline)}</p>` : '';
 
@@ -1422,9 +1422,9 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
-  <meta name="author" content="${escapeHtml(branding?.firmName ?? 'Marble')}">
+  <meta name="author" content="${escapeHtml(branding?.firmName ?? 'Whiteshoe')}">
   <meta name="description" content="${escapeHtml(title)}">
-  <meta name="generator" content="Marble Legal Design System">
+  <meta name="generator" content="Whiteshoe Legal Design System">
   ${profile.htmlFontImport}
   <style>${styles}</style>
 </head>
@@ -1436,8 +1436,8 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
   </div>
 
   <div class="doc-footer">
-    <p class="brand-mark">${escapeHtml(branding?.firmName ?? 'Marble')}</p>
-    <p>${escapeHtml(branding?.firmName ? 'Powered by Marble' : 'Multi-Agent Legal Design System')}</p>
+    <p class="brand-mark">${escapeHtml(branding?.firmName ?? 'Whiteshoe')}</p>
+    <p>${escapeHtml(branding?.firmName ? 'Powered by Whiteshoe' : 'Multi-Agent Legal Design System')}</p>
     <p>Generated ${escapeHtml(dateStr)}</p>
   </div>
 </body>

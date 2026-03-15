@@ -45,8 +45,8 @@ describe('WorkingView', () => {
       <WorkingView onComplete={noop} onBack={noop} onSkip={noop} />
     );
 
-    // WorkingHeader renders "Marble" (not "THE SHEM")
-    expect(screen.getByText('Marble')).toBeInTheDocument();
+    // WorkingHeader renders "Whiteshoe" (not "THE SHEM")
+    expect(screen.getByText('Whiteshoe')).toBeInTheDocument();
   });
 
   it('shows back button', () => {
@@ -91,7 +91,7 @@ describe('WorkingView', () => {
       { withSessionData: false }
     );
 
-    // WorkingHeader + SessionOverlay (dashboard) both render "Marble"
-    expect(screen.getAllByText('Marble').length).toBeGreaterThanOrEqual(1);
+    // WorkingHeader + SessionOverlay (dashboard) both render "Whiteshoe"
+    expect(screen.getAllByText('Whiteshoe').length).toBeGreaterThanOrEqual(1);
   });
 });

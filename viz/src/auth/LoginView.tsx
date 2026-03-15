@@ -1,13 +1,13 @@
 /**
- * LoginView — Login / Signup screen for Marble.
+ * LoginView — Login / Signup screen for Whiteshoe.
  *
- * Same marble background as the lobby, but with an overlay card.
+ * Same background as the lobby, but with an overlay card.
  * Typography wordmark instead of SVG. Clean, editorial, warm.
  */
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 import type { AuthUser } from './UserContext.js';
 
 interface Props {
@@ -70,11 +70,11 @@ export default function LoginView({ onAuth, onBack }: Props) {
 
   return (
     <div style={styles.page}>
-      {/* Marble background */}
+      {/* Background */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={styles.marbleBg}
+        style={styles.heroBg}
       />
       <div style={styles.veil} />
 
@@ -93,7 +93,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
       {/* Card */}
       <div style={styles.card}>
         {/* Wordmark */}
-        <h1 style={styles.wordmark}><MarbleIlluminated color="rgba(26,26,26,0.8)" /></h1>
+        <h1 style={styles.wordmark}><WhiteshoeIlluminated color="rgba(26,26,26,0.8)" /></h1>
 
         {/* Thin rule */}
         <div style={styles.rule} />
@@ -105,7 +105,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
         <p style={styles.subtitle}>
           {isSignup
             ? 'Join the agentic law firm.'
-            : 'Sign in to your Marble account.'}
+            : 'Sign in to your Whiteshoe account.'}
         </p>
 
         {/* Error */}
@@ -209,7 +209,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
   },
 
-  marbleBg: {
+  heroBg: {
     position: 'absolute',
     inset: 0,
     width: '100%',

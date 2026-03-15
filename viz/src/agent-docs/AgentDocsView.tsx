@@ -1,16 +1,16 @@
 /**
- * AgentDocsView — Marble for Agents.
+ * AgentDocsView — Whiteshoe for Agents.
  *
  * Same dark marble aesthetic as the front door, but the content
  * is data-dense and machine-readable. Serif headlines, monospace
  * data blocks, warm cream on near-black.
  *
- * Still Marble. Just the back office.
+ * Still Whiteshoe. Just the back office.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 
 interface Props {
   onBack: () => void;
@@ -50,7 +50,7 @@ interface Capabilities {
   quickstart: string[];
 }
 
-// ── Dark palette — Marble at night ───────────────────────────────────
+// ── Dark palette — Whiteshoe at night ────────────────────────────────
 
 const D = {
   bg: '#0A0A0F',
@@ -383,11 +383,11 @@ export default function AgentDocsView({ onBack }: Props) {
 
   return (
     <div style={sty.page}>
-      {/* Subtle marble texture — barely visible */}
+      {/* Subtle texture — barely visible */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={sty.marbleBg}
+        style={sty.heroBg}
       />
       <div style={sty.veil} />
 
@@ -410,7 +410,7 @@ export default function AgentDocsView({ onBack }: Props) {
         {/* ── Header ─────────────────────────────────────── */}
         <div style={{ ...sty.header, animation: 'agentFadeIn 0.8s ease 0.1s both' }}>
           <h1 style={sty.title}>
-            <MarbleIlluminated color="rgba(250,249,246,0.55)" glow="rgba(250,249,246,0.95)" />
+            <WhiteshoeIlluminated color="rgba(250,249,246,0.55)" glow="rgba(250,249,246,0.95)" />
           </h1>
           <p style={sty.subtitle}>for Agents</p>
           <p style={sty.description}>
@@ -420,7 +420,7 @@ export default function AgentDocsView({ onBack }: Props) {
         </div>
 
         {/* ── SIGNAL ──────────────────────────────────── */}
-        <Section label="Why Marble" delay={0.2}>
+        <Section label="Why Whiteshoe" delay={0.2}>
           <div style={sty.pitch}>
             You handle the reasoning.
             <br />
@@ -794,7 +794,7 @@ export default function AgentDocsView({ onBack }: Props) {
 
         {/* ── Footer ──────────────────────────────────── */}
         <div style={sty.footer}>
-          <MarbleIlluminated color="rgba(250,249,246,0.15)" glow="rgba(250,249,246,0.4)" />
+          <WhiteshoeIlluminated color="rgba(250,249,246,0.15)" glow="rgba(250,249,246,0.4)" />
           {capabilities && (
             <>
               <span style={sty.footerDot}>{'\u00b7'}</span>
@@ -818,8 +818,8 @@ const sty: Record<string, React.CSSProperties> = {
     color: D.text,
   },
 
-  // ── Marble background — barely visible ─────────────────────────────
-  marbleBg: {
+  // ── Background — barely visible ────────────────────────────────────
+  heroBg: {
     position: 'fixed',
     inset: 0,
     width: '100%',

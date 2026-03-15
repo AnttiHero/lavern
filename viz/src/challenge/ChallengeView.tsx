@@ -1,5 +1,5 @@
 /**
- * ChallengeView — "The Marble Challenge."
+ * ChallengeView — "The Whiteshoe Challenge."
  *
  * We will beat your lawyer.
  * Upload any legal document. We make our own version.
@@ -137,12 +137,12 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
   ctx.lineWidth = 2;
   ctx.strokeRect(24, 24, W - 48, H - 48);
 
-  // Header: MARBLE | THE CHALLENGE
+  // Header: WHITESHOE | THE CHALLENGE
   ctx.fillStyle = 'rgba(250, 249, 246, 0.92)';
   ctx.font = '400 16px "Cormorant Garamond", Georgia, serif';
   ctx.letterSpacing = '6px';
   ctx.textAlign = 'center';
-  ctx.fillText('MARBLE', W / 2 - 80, 72);
+  ctx.fillText('WHITESHOE', W / 2 - 80, 72);
   ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
   ctx.fillRect(W / 2 - 18, 60, 1, 16);
   ctx.fillStyle = 'rgba(250, 249, 246, 0.6)';
@@ -151,7 +151,7 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
   ctx.fillText('THE CHALLENGE', W / 2 + 70, 72);
 
   // Headline
-  const headline = result.winner === 'marble' ? 'As expected.'
+  const headline = result.winner === 'whiteshoe' ? 'As expected.'
     : result.winner === 'human' ? "Credit where it's due."
     : 'Dead heat.';
   ctx.fillStyle = '#B8960B';
@@ -164,14 +164,14 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
   ctx.fillRect(100, 155, W - 200, 1);
 
   // Score face-off
-  const mScore = result.assignment.A === 'marble' ? result.overallA : result.overallB;
+  const mScore = result.assignment.A === 'whiteshoe' ? result.overallA : result.overallB;
   const cScore = result.assignment.A === 'human' ? result.overallA : result.overallB;
 
-  // MARBLE score
-  ctx.fillStyle = result.winner === 'marble' ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
+  // WHITESHOE score
+  ctx.fillStyle = result.winner === 'whiteshoe' ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
   ctx.font = '700 11px Inter, system-ui, sans-serif';
   ctx.letterSpacing = '3px';
-  ctx.fillText('MARBLE', W / 2 - 160, 200);
+  ctx.fillText('WHITESHOE', W / 2 - 160, 200);
   ctx.font = '300 72px "Cormorant Garamond", Georgia, serif';
   ctx.letterSpacing = '0px';
   ctx.fillText(String(mScore), W / 2 - 160, 275);
@@ -204,7 +204,7 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
   ctx.textAlign = 'right';
   for (let i = 0; i < dims.length; i++) {
     const y = startY + i * rowH;
-    const dm = result.assignment.A === 'marble' ? dims[i].scoreA : dims[i].scoreB;
+    const dm = result.assignment.A === 'whiteshoe' ? dims[i].scoreA : dims[i].scoreB;
     const dc = result.assignment.A === 'human' ? dims[i].scoreA : dims[i].scoreB;
     const mWins = dm > dc;
 
@@ -214,7 +214,7 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
     ctx.letterSpacing = '0px';
     ctx.fillText(dims[i].name, leftX + 240, y);
 
-    // Marble score
+    // Whiteshoe score
     ctx.fillStyle = mWins ? '#B8960B' : 'rgba(250, 249, 246, 0.6)';
     ctx.font = '600 14px "SF Mono", "Fira Code", monospace';
     ctx.textAlign = 'center';
@@ -261,7 +261,7 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
   ctx.fillStyle = 'rgba(250, 249, 246, 0.35)';
   ctx.font = '500 10px Inter, system-ui, sans-serif';
   ctx.letterSpacing = '2px';
-  ctx.fillText('MARBLE.LAW  \u00B7  BLIND AI COMPARISON', W / 2, H - 32);
+  ctx.fillText('WHITESHOE.LAW  \u00B7  BLIND AI COMPARISON', W / 2, H - 32);
 
   return canvas;
 }
@@ -269,24 +269,24 @@ function renderShareCardToCanvas(result: ComparisonResult): HTMLCanvasElement {
 function downloadShareCard(result: ComparisonResult) {
   const canvas = renderShareCardToCanvas(result);
   const link = document.createElement('a');
-  link.download = 'marble-challenge-result.png';
+  link.download = 'whiteshoe-challenge-result.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
 function shareOnLinkedIn(result: ComparisonResult) {
-  const mScore = result.assignment.A === 'marble' ? result.overallA : result.overallB;
+  const mScore = result.assignment.A === 'whiteshoe' ? result.overallA : result.overallB;
   const cScore = result.assignment.A === 'human' ? result.overallA : result.overallB;
   const n = result.dimensions.length;
   let text: string;
-  if (result.winner === 'marble') {
-    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nBlind comparison. ${n} dimensions. Independent AI judge. Neither side knew which document was which.\n\nTry the Marble Challenge \u2192 marble.law/challenge`;
+  if (result.winner === 'whiteshoe') {
+    text = `Whiteshoe ${mScore} \u2013 ${cScore} Challenger.\n\nBlind comparison. ${n} dimensions. Independent AI judge. Neither side knew which document was which.\n\nTry the Whiteshoe Challenge \u2192 whiteshoe.law/challenge`;
   } else if (result.winner === 'human') {
-    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nWe lost. Blind comparison, ${n} dimensions, independent judge. We publish every result \u2014 wins and losses. The engagement was free.\n\nThink you can beat us too? \u2192 marble.law/challenge`;
+    text = `Whiteshoe ${mScore} \u2013 ${cScore} Challenger.\n\nWe lost. Blind comparison, ${n} dimensions, independent judge. We publish every result \u2014 wins and losses. The engagement was free.\n\nThink you can beat us too? \u2192 whiteshoe.law/challenge`;
   } else {
-    text = `Marble ${mScore} \u2013 ${cScore} Challenger.\n\nDead heat. ${n} dimensions, blind comparison, independent judge. Neither blinked.\n\nTry the Marble Challenge \u2192 marble.law/challenge`;
+    text = `Whiteshoe ${mScore} \u2013 ${cScore} Challenger.\n\nDead heat. ${n} dimensions, blind comparison, independent judge. Neither blinked.\n\nTry the Whiteshoe Challenge \u2192 whiteshoe.law/challenge`;
   }
-  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://marble.law/challenge')}&text=${encodeURIComponent(text)}`;
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://whiteshoe.law/challenge')}&text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
@@ -348,7 +348,7 @@ function DimensionBar({
   delay,
 }: {
   dim: DimensionScore;
-  assignment: { A: 'human' | 'marble'; B: 'human' | 'marble' } | null;
+  assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' } | null;
   revealed: boolean;
   delay: number;
 }) {
@@ -357,17 +357,17 @@ function DimensionBar({
   const bWins = dim.scoreB > dim.scoreA;
 
   const labelA = revealed && assignment
-    ? (assignment.A === 'marble' ? 'MARBLE' : 'CHALLENGER')
+    ? (assignment.A === 'whiteshoe' ? 'WHITESHOE' : 'CHALLENGER')
     : 'DOCUMENT A';
   const labelB = revealed && assignment
-    ? (assignment.B === 'marble' ? 'MARBLE' : 'CHALLENGER')
+    ? (assignment.B === 'whiteshoe' ? 'WHITESHOE' : 'CHALLENGER')
     : 'DOCUMENT B';
 
   const colorA = revealed && assignment
-    ? (assignment.A === 'marble' ? D.gold : D.textDim)
+    ? (assignment.A === 'whiteshoe' ? D.gold : D.textDim)
     : D.textDim;
   const colorB = revealed && assignment
-    ? (assignment.B === 'marble' ? D.gold : D.textDim)
+    ? (assignment.B === 'whiteshoe' ? D.gold : D.textDim)
     : D.textDim;
 
   return (
@@ -423,7 +423,7 @@ function UploadZone({
 }: {
   label: string;
   prompt: string;
-  upload: ReturnType<typeof useChallengeState>['marbleUpload'];
+  upload: ReturnType<typeof useChallengeState>['whiteshoeUpload'];
 }) {
   const hasDoc = upload.documents.length > 0;
   const docName = upload.documents[0]?.name ?? '';
@@ -502,18 +502,18 @@ export default function ChallengeView({ onBack }: Props) {
     error: displayError,
     bothReady,
     eitherParsing,
-    marbleUpload,
+    whiteshoeUpload,
     humanUpload,
-    marbleSessionText,
-    marbleSessionTitle,
-    loadMarbleFromSession,
+    whiteshoeSessionText,
+    whiteshoeSessionTitle,
+    loadWhiteshoeFromSession,
     acceptChallenge,
     doReveal,
   } = useChallengeState();
 
   // Fire confetti when result phase starts
   useEffect(() => {
-    if (phase === 'result' && result?.winner === 'marble') {
+    if (phase === 'result' && result?.winner === 'whiteshoe') {
       fireConfetti();
     }
   }, [phase, result?.winner, fireConfetti]);
@@ -523,7 +523,7 @@ export default function ChallengeView({ onBack }: Props) {
     // Brief pause for envelope animation, then reveal identities
     setTimeout(() => {
       doReveal();
-      // Fire confetti on any reveal (will also fire again on result for marble wins)
+      // Fire confetti on any reveal (will also fire again on result for whiteshoe wins)
       fireConfetti();
     }, 600);
   }, [doReveal, fireConfetti]);
@@ -531,9 +531,9 @@ export default function ChallengeView({ onBack }: Props) {
   return (
     <div style={sty.page}>
       {/* Background layers */}
-      <div style={sty.marbleBg}>
+      <div style={sty.darkBg}>
         <img
-          src="/marble-texture.jpg"
+          src="/dark-texture.jpg"
           alt=""
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
@@ -604,9 +604,9 @@ export default function ChallengeView({ onBack }: Props) {
       <div style={sty.container}>
         {/* ── Hero ───────────────────────────────────── */}
         <div style={{ ...sty.header, animation: 'chFadeIn 0.6s ease 0.1s both' }}>
-          <h1 style={sty.logoWrap}>MARBLE</h1>
+          <h1 style={sty.logoWrap}>WHITESHOE</h1>
           <div style={sty.rule} />
-          <h2 style={sty.heroTitle}>The Marble Challenge</h2>
+          <h2 style={sty.heroTitle}>The Whiteshoe Challenge</h2>
           <p style={sty.heroSubtitle}>We will beat your lawyer. And their AI.</p>
         </div>
 
@@ -616,7 +616,7 @@ export default function ChallengeView({ onBack }: Props) {
             <div style={sty.rulesGrid}>
               <div style={sty.ruleCard}>
                 <div style={sty.ruleNum}>1</div>
-                <div style={sty.ruleText}>Upload the Marble version and the challenger. Your lawyer, Harvey, Legora. Anyone.</div>
+                <div style={sty.ruleText}>Upload the Whiteshoe version and the challenger. Your lawyer, Harvey, Legora. Anyone.</div>
               </div>
               <div style={sty.ruleCard}>
                 <div style={sty.ruleNum}>2</div>
@@ -639,7 +639,7 @@ export default function ChallengeView({ onBack }: Props) {
         {phase === 'idle' && (
           <Section label="The Documents" delay={0.3}>
             <div style={sty.uploadRow}>
-              {marbleSessionText ? (
+              {whiteshoeSessionText ? (
                 <div style={{
                   flex: 1,
                   border: `1px solid ${D.gold}`,
@@ -648,19 +648,19 @@ export default function ChallengeView({ onBack }: Props) {
                   textAlign: 'center' as const,
                   background: 'rgba(184, 150, 11, 0.08)',
                 }}>
-                  <div style={{ color: D.gold, fontSize: 11, fontWeight: 700, letterSpacing: 2, fontFamily: fonts.sans, marginBottom: 8 }}>MARBLE</div>
-                  <div style={{ color: D.white, fontSize: 14, fontFamily: fonts.sans }}>{marbleSessionTitle}</div>
-                  <div style={{ color: D.textDim, fontSize: 12, fontFamily: fonts.sans, marginTop: 4 }}>{marbleSessionText.length.toLocaleString()} chars loaded from session</div>
+                  <div style={{ color: D.gold, fontSize: 11, fontWeight: 700, letterSpacing: 2, fontFamily: fonts.sans, marginBottom: 8 }}>WHITESHOE</div>
+                  <div style={{ color: D.white, fontSize: 14, fontFamily: fonts.sans }}>{whiteshoeSessionTitle}</div>
+                  <div style={{ color: D.textDim, fontSize: 12, fontFamily: fonts.sans, marginTop: 4 }}>{whiteshoeSessionText.length.toLocaleString()} chars loaded from session</div>
                 </div>
               ) : (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                   <UploadZone
-                    label="MARBLE"
-                    prompt="Drop the Marble document"
-                    upload={marbleUpload}
+                    label="WHITESHOE"
+                    prompt="Drop the Whiteshoe document"
+                    upload={whiteshoeUpload}
                   />
                   <button
-                    onClick={loadMarbleFromSession}
+                    onClick={loadWhiteshoeFromSession}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -745,14 +745,14 @@ export default function ChallengeView({ onBack }: Props) {
                 <div style={sty.overallCol}>
                   <div style={{
                     ...sty.overallLabel,
-                    ...(revealed && result.assignment.A === 'marble' ? {
+                    ...(revealed && result.assignment.A === 'whiteshoe' ? {
                       color: D.gold,
                       fontWeight: 800,
                     } : {}),
                     transition: 'all 0.5s ease',
                   }}>
                     {revealed
-                      ? (result.assignment.A === 'marble' ? 'MARBLE' : 'CHALLENGER')
+                      ? (result.assignment.A === 'whiteshoe' ? 'WHITESHOE' : 'CHALLENGER')
                       : 'DOCUMENT A'}
                   </div>
                   <div style={{
@@ -767,14 +767,14 @@ export default function ChallengeView({ onBack }: Props) {
                 <div style={sty.overallCol}>
                   <div style={{
                     ...sty.overallLabel,
-                    ...(revealed && result.assignment.B === 'marble' ? {
+                    ...(revealed && result.assignment.B === 'whiteshoe' ? {
                       color: D.gold,
                       fontWeight: 800,
                     } : {}),
                     transition: 'all 0.5s ease',
                   }}>
                     {revealed
-                      ? (result.assignment.B === 'marble' ? 'MARBLE' : 'CHALLENGER')
+                      ? (result.assignment.B === 'whiteshoe' ? 'WHITESHOE' : 'CHALLENGER')
                       : 'DOCUMENT B'}
                   </div>
                   <div style={{
@@ -817,9 +817,9 @@ export default function ChallengeView({ onBack }: Props) {
             {/* Result share card — designed to be screenshot-worthy for LinkedIn */}
             {phase === 'result' && (
               <div style={{ ...sty.shareCard, animation: 'chEnvelope 0.8s ease 0.2s both' }}>
-                {/* Card header — Marble branding */}
+                {/* Card header — Whiteshoe branding */}
                 <div style={sty.shareCardHeader}>
-                  <span style={sty.shareCardLogo}>MARBLE</span>
+                  <span style={sty.shareCardLogo}>WHITESHOE</span>
                   <span style={sty.shareCardDivider} />
                   <span style={sty.shareCardLabel}>THE CHALLENGE</span>
                 </div>
@@ -827,11 +827,11 @@ export default function ChallengeView({ onBack }: Props) {
                 {/* Headline */}
                 <div style={{
                   ...sty.resultTitle,
-                  animation: (result.winner === 'marble' || result.winner === 'human')
+                  animation: (result.winner === 'whiteshoe' || result.winner === 'human')
                     ? 'chWinnerGlow 2s ease-in-out infinite' : undefined,
                   color: result.winner === 'human' ? D.text : D.gold,
                 }}>
-                  {result.winner === 'marble' && 'As expected.'}
+                  {result.winner === 'whiteshoe' && 'As expected.'}
                   {result.winner === 'human' && 'Humans are still better at this.'}
                   {result.winner === 'tie' && 'Dead heat.'}
                 </div>
@@ -841,15 +841,15 @@ export default function ChallengeView({ onBack }: Props) {
                   <div style={sty.shareSide}>
                     <div style={{
                       ...sty.shareSideLabel,
-                      color: result.winner === 'marble'
+                      color: result.winner === 'whiteshoe'
                         ? D.gold
                         : result.winner === 'human' ? D.textDim : D.text,
-                    }}>MARBLE</div>
+                    }}>WHITESHOE</div>
                     <div style={{
                       ...sty.shareSideScore,
-                      color: result.winner === 'marble' ? D.gold : D.textDim,
+                      color: result.winner === 'whiteshoe' ? D.gold : D.textDim,
                     }}>
-                      {result.assignment.A === 'marble' ? result.overallA : result.overallB}
+                      {result.assignment.A === 'whiteshoe' ? result.overallA : result.overallB}
                     </div>
                   </div>
                   <div style={sty.shareSideVs}>vs</div>
@@ -858,7 +858,7 @@ export default function ChallengeView({ onBack }: Props) {
                       ...sty.shareSideLabel,
                       color: result.winner === 'human'
                         ? D.gold
-                        : result.winner === 'marble' ? D.textDim : D.text,
+                        : result.winner === 'whiteshoe' ? D.textDim : D.text,
                     }}>CHALLENGER</div>
                     <div style={{
                       ...sty.shareSideScore,
@@ -871,14 +871,14 @@ export default function ChallengeView({ onBack }: Props) {
 
                 {/* Punchy one-liner — designed for screenshots */}
                 <div style={sty.resultTagline}>
-                  {result.winner === 'marble' && `Blind comparison. ${result.dimensions.length} dimensions. One clear winner.`}
+                  {result.winner === 'whiteshoe' && `Blind comparison. ${result.dimensions.length} dimensions. One clear winner.`}
                   {result.winner === 'human' && 'Blind. Fair. Published. The engagement is on us.'}
                   {result.winner === 'tie' && `${result.dimensions.length} dimensions. Neither blinked.`}
                 </div>
 
                 {/* Card footer */}
                 <div style={sty.shareCardFooter}>
-                  <span style={sty.shareCardFooterText}>marble.law</span>
+                  <span style={sty.shareCardFooterText}>whiteshoe.law</span>
                   <span style={sty.shareCardFooterText}>{'\u00B7'}</span>
                   <span style={sty.shareCardFooterText}>Blind AI comparison</span>
                 </div>
@@ -917,7 +917,7 @@ export default function ChallengeView({ onBack }: Props) {
 
                 {/* CTA below card */}
                 <div style={{ textAlign: 'center', marginTop: 20 }}>
-                  {result.winner === 'marble' && (
+                  {result.winner === 'whiteshoe' && (
                     <button
                       onClick={() => { window.location.hash = '#/quickstart'; }}
                       style={sty.resultCta}
@@ -942,7 +942,7 @@ export default function ChallengeView({ onBack }: Props) {
               <div style={{ maxWidth: 520, margin: '32px auto 0', animation: 'chFadeIn 0.6s ease 1s both' }}>
                 <div style={sty.shareDims}>
                   {result.dimensions.map((dim) => {
-                    const mScore = result.assignment.A === 'marble' ? dim.scoreA : dim.scoreB;
+                    const mScore = result.assignment.A === 'whiteshoe' ? dim.scoreA : dim.scoreB;
                     const cScore = result.assignment.A === 'human' ? dim.scoreA : dim.scoreB;
                     const mWins = mScore > cScore;
                     return (
@@ -963,7 +963,7 @@ export default function ChallengeView({ onBack }: Props) {
 
         {/* ── Footer ─────────────────────────────────── */}
         <div style={{ ...sty.footer, animation: 'chFadeIn 0.4s ease 0.8s both' }}>
-          <span style={sty.footerText}>{'MARBLE \u00B7 THE CHALLENGE'}</span>
+          <span style={sty.footerText}>{'WHITESHOE \u00B7 THE CHALLENGE'}</span>
         </div>
       </div>
 
@@ -998,7 +998,7 @@ const sty: Record<string, React.CSSProperties> = {
     overflowY: 'auto',
     overflowX: 'hidden',
   },
-  marbleBg: {
+  darkBg: {
     position: 'fixed',
     inset: 0,
     filter: 'brightness(0.1) contrast(1.1) saturate(0.15)',

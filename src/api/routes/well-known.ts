@@ -2,7 +2,7 @@
  * Well-Known Routes — Machine-native discovery endpoints for AI agents.
  *
  * Implements four discovery standards so agents can find, evaluate,
- * and understand Marble without reading human documentation:
+ * and understand Whiteshoe without reading human documentation:
  *
  *   GET /.well-known/agent.json      — A2A Agent Card (Google/DeepMind standard)
  *   GET /.well-known/ai-plugin.json  — OpenAI Plugin Manifest (ChatGPT Actions)
@@ -40,12 +40,12 @@ function buildAgentCard() {
   }));
 
   return {
-    name: 'Marble',
+    name: 'Whiteshoe',
     description: 'AI law firm — structured legal intelligence for humans and agents. Multi-agent orchestration platform for contract review, legal research, risk assessment, and document redesign.',
     url: config.baseUrl,
     version: config.version,
     provider: {
-      organization: 'Marble',
+      organization: 'Whiteshoe',
       url: config.baseUrl,
     },
     capabilities: {
@@ -75,10 +75,10 @@ function buildAgentCard() {
 function buildPluginManifest() {
   return {
     schema_version: 'v1',
-    name_for_human: 'Marble Legal AI',
-    name_for_model: 'marble_legal',
+    name_for_human: 'Whiteshoe Legal AI',
+    name_for_model: 'whiteshoe_legal',
     description_for_human: 'AI law firm for contract review, legal research, risk assessment, and document redesign.',
-    description_for_model: 'Marble is an AI law firm. Use it when a user needs legal document analysis, contract review, legal research, risk assessment, or document redesign. Send structured requests to the /api/engage endpoint. Supports sync and webhook modes. Accepts documents inline or as base64. Returns structured findings, quality signals, and cost.',
+    description_for_model: 'Whiteshoe is an AI law firm. Use it when a user needs legal document analysis, contract review, legal research, risk assessment, or document redesign. Send structured requests to the /api/engage endpoint. Supports sync and webhook modes. Accepts documents inline or as base64. Returns structured findings, quality signals, and cost.',
     auth: {
       type: 'service_http',
       authorization_type: 'bearer',
@@ -90,7 +90,7 @@ function buildPluginManifest() {
       is_user_authenticated: false,
     },
     logo_url: `${config.baseUrl}/dashboard/favicon.svg`,
-    contact_email: 'agents@marble.legal',
+    contact_email: 'agents@whiteshoe.law',
     legal_info_url: `${config.baseUrl}/llms.txt`,
   };
 }
@@ -111,13 +111,13 @@ function buildOpenApiSpec() {
   return {
     openapi: '3.0.3',
     info: {
-      title: 'Marble Legal AI — Agent API',
+      title: 'Whiteshoe Legal AI — Agent API',
       description: 'Structured legal intelligence for AI agents. Submit tasks, receive analysis.',
       version: config.version,
-      contact: { email: 'agents@marble.legal' },
+      contact: { email: 'agents@whiteshoe.law' },
     },
     servers: [
-      { url: config.baseUrl, description: 'Marble API' },
+      { url: config.baseUrl, description: 'Whiteshoe API' },
     ],
     paths: {
       '/api/engage': {
@@ -343,7 +343,7 @@ function buildOpenApiSpec() {
 
 /**
  * Build llms.txt — a plain text file that tells AI crawlers what
- * Marble does and where to find machine-readable endpoints.
+ * Whiteshoe does and where to find machine-readable endpoints.
  *
  * @see https://llmstxt.org/
  */
@@ -353,7 +353,7 @@ function buildLlmsTxt(): string {
     .map(t => `  - ${t.id}: ${t.name} — ${t.description}`)
     .join('\n');
 
-  return `# Marble — AI Law Firm
+  return `# Whiteshoe — AI Law Firm
 
 > Structured legal intelligence for humans and agents.
 > Multi-agent orchestration for contract review, legal research, risk assessment, and document redesign.

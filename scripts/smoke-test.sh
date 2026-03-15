@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Marble API Smoke Test — verifies the core session lifecycle.
+# Whiteshoe API Smoke Test — verifies the core session lifecycle.
 # Usage: ./scripts/smoke-test.sh [base_url]
 
 BASE="${1:-http://localhost:3000}"
@@ -12,7 +12,7 @@ fail() { printf "  ✗ %s\n" "$1"; FAIL=$((FAIL + 1)); }
 # Extract a JSON string value (no jq required)
 json_val() { printf '%s' "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed "s/\"$2\":\"//;s/\"$//" ; }
 
-printf "Marble Smoke Test\nTarget: %s\n\n" "$BASE"
+printf "Whiteshoe Smoke Test\nTarget: %s\n\n" "$BASE"
 
 # 1. Health
 printf "1. Health check\n"

@@ -23,6 +23,10 @@ export function SessionOverlay({
     onConnectSession(`demo-session-${Date.now()}`);
   };
 
+  const handleHeartConnectDemo = () => {
+    onConnectSession(`demo-session-heartconnect-${Date.now()}`);
+  };
+
   return (
     <div style={styles.overlay}>
       <SessionList
@@ -31,15 +35,23 @@ export function SessionOverlay({
         onBeginEngagement={onBeginEngagement}
       />
 
-      {/* Demo button — bottom center */}
+      {/* Demo buttons — bottom center */}
       <div style={styles.demoRow}>
+        <button
+          onClick={handleHeartConnectDemo}
+          style={styles.vcDemoButton}
+          onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = '#1a1a1a'; b.style.borderColor = '#1a1a1a'; }}
+          onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.borderColor = colors.text; }}
+        >
+          HeartConnect ToS Demo
+        </button>
         <button
           onClick={handleWatchDemo}
           style={styles.demoButton}
           onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
           onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.textMuted; }}
         >
-          Watch Demo
+          Generic Demo
         </button>
       </div>
     </div>
@@ -59,9 +71,24 @@ const styles: Record<string, React.CSSProperties> = {
   },
   demoRow: {
     display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
     padding: '24px 0 40px',
     flexShrink: 0,
+  },
+  vcDemoButton: {
+    padding: '12px 32px',
+    borderRadius: radii.lg,
+    border: `2px solid ${colors.text}`,
+    backgroundColor: colors.text,
+    color: '#fff',
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    fontWeight: 700,
+    letterSpacing: 0.8,
+    cursor: 'pointer',
+    transition: 'background-color 0.25s ease, border-color 0.25s ease',
   },
   demoButton: {
     padding: '10px 24px',

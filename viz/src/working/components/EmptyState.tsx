@@ -51,7 +51,7 @@ export function EmptyState({ isConnected, team }: EmptyStateProps) {
           ? visibleTeam.length > 0
             ? 'Your team is getting ready...'
             : 'Waiting for the team to begin...'
-          : 'Welcome to Marble'
+          : 'Welcome to Whiteshoe'
         }
       </h3>
 

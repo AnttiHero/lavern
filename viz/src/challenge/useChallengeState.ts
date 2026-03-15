@@ -1,5 +1,5 @@
 /**
- * useChallengeState — Manages the Marble Challenge lifecycle.
+ * useChallengeState — Manages the Whiteshoe Challenge lifecycle.
  *
  * Simple: upload two documents, POST /api/challenge, get scores back.
  * No sessions, no WebSocket, no polling.
@@ -24,8 +24,8 @@ export interface ComparisonResult {
   dimensions: DimensionScore[];
   overallA: number;
   overallB: number;
-  assignment: { A: 'human' | 'marble'; B: 'human' | 'marble' };
-  winner: 'human' | 'marble' | 'tie';
+  assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' };
+  winner: 'human' | 'whiteshoe' | 'tie';
   summary: string;
 }
 
@@ -38,12 +38,12 @@ export function useChallengeState() {
   const [error, setError] = useState<string | null>(null);
 
   // Two independent upload hooks — one for each document
-  const marbleUpload = useDocumentUpload();
+  const whiteshoeUpload = useDocumentUpload();
   const humanUpload = useDocumentUpload();
 
-  // ── Pre-loaded Marble text (from active session) ──
-  const [marbleSessionText, setMarbleSessionText] = useState<string | null>(null);
-  const [marbleSessionTitle, setMarbleSessionTitle] = useState<string | null>(null);
+  // ── Pre-loaded Whiteshoe text (from active session) ──
+  const [whiteshoeSessionText, setWhiteshoeSessionText] = useState<string | null>(null);
+  const [whiteshoeSessionTitle, setWhiteshoeSessionTitle] = useState<string | null>(null);
 
   // Timer cleanup for reveal animation
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,11 +51,11 @@ export function useChallengeState() {
     return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
   }, []);
 
-  const bothReady = (marbleUpload.documents.length > 0 || !!marbleSessionText) && humanUpload.documents.length > 0;
-  const eitherParsing = marbleUpload.parsing || humanUpload.parsing;
+  const bothReady = (whiteshoeUpload.documents.length > 0 || !!whiteshoeSessionText) && humanUpload.documents.length > 0;
+  const eitherParsing = whiteshoeUpload.parsing || humanUpload.parsing;
 
-  // ── Load Marble document directly from an active session ──
-  const loadMarbleFromSession = useCallback(async () => {
+  // ── Load Whiteshoe document directly from an active session ──
+  const loadWhiteshoeFromSession = useCallback(async () => {
     try {
       setError(null);
       // Find the active session
@@ -70,8 +70,8 @@ export function useChallengeState() {
       const session = await detailRes.json() as { assembledDocument?: string; matterTitle?: string };
       if (!session.assembledDocument) { setError('Session has no assembled document. Run reassembly first.'); return; }
 
-      setMarbleSessionText(session.assembledDocument);
-      setMarbleSessionTitle(session.matterTitle ?? 'Marble Work Product');
+      setWhiteshoeSessionText(session.assembledDocument);
+      setWhiteshoeSessionTitle(session.matterTitle ?? 'Whiteshoe Work Product');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load from session');
     }
@@ -83,14 +83,14 @@ export function useChallengeState() {
     const humanDoc = humanUpload.documents[0];
     if (!humanDoc) return;
 
-    // Marble text: from session pre-load OR from uploaded file
-    let marbleText: string | null = marbleSessionText;
-    if (!marbleText) {
-      const marbleDoc = marbleUpload.documents[0];
-      if (!marbleDoc) return;
-      const marbleParsed = marbleUpload.parsedDocuments[0]?.fullText;
-      const isMarbleText = marbleDoc.type.startsWith('text/') || marbleDoc.name.endsWith('.md') || marbleDoc.name.endsWith('.txt');
-      marbleText = marbleParsed ?? (isMarbleText ? marbleDoc.content : null);
+    // Whiteshoe text: from session pre-load OR from uploaded file
+    let whiteshoeText: string | null = whiteshoeSessionText;
+    if (!whiteshoeText) {
+      const whiteshoeDoc = whiteshoeUpload.documents[0];
+      if (!whiteshoeDoc) return;
+      const whiteshoeParsed = whiteshoeUpload.parsedDocuments[0]?.fullText;
+      const isWhiteshoeText = whiteshoeDoc.type.startsWith('text/') || whiteshoeDoc.name.endsWith('.md') || whiteshoeDoc.name.endsWith('.txt');
+      whiteshoeText = whiteshoeParsed ?? (isWhiteshoeText ? whiteshoeDoc.content : null);
     }
 
     // Human text: from uploaded file
@@ -98,16 +98,16 @@ export function useChallengeState() {
     const isHumanText = humanDoc.type.startsWith('text/') || humanDoc.name.endsWith('.md') || humanDoc.name.endsWith('.txt');
     const humanText = humanParsed ?? (isHumanText ? humanDoc.content : null);
 
-    if (!marbleText) {
-      setError('Could not extract text from the Marble document. Try "Load from session" or a different format.');
+    if (!whiteshoeText) {
+      setError('Could not extract text from the Whiteshoe document. Try "Load from session" or a different format.');
       return;
     }
     if (!humanText) {
       setError('Could not extract text from the challenger document. Try a different format (TXT, MD, PDF, DOCX).');
       return;
     }
-    if (marbleText.length < 50) {
-      setError('Marble document is too short (minimum 50 characters).');
+    if (whiteshoeText.length < 50) {
+      setError('Whiteshoe document is too short (minimum 50 characters).');
       return;
     }
     if (humanText.length < 50) {
@@ -122,7 +122,7 @@ export function useChallengeState() {
       const res = await fetch('/api/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marbleText, humanText }),
+        body: JSON.stringify({ whiteshoeText, humanText }),
       });
 
       if (!res.ok) {
@@ -137,7 +137,7 @@ export function useChallengeState() {
       setError(err instanceof Error ? err.message : 'Challenge failed');
       setPhase('idle');
     }
-  }, [marbleSessionText, marbleUpload.documents, marbleUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
+  }, [whiteshoeSessionText, whiteshoeUpload.documents, whiteshoeUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
 
   // ── Reveal identities ──
 
@@ -154,14 +154,14 @@ export function useChallengeState() {
     phase,
     result,
     revealed,
-    error: error ?? marbleUpload.error ?? humanUpload.error,
+    error: error ?? whiteshoeUpload.error ?? humanUpload.error,
     bothReady,
     eitherParsing,
-    marbleUpload,
+    whiteshoeUpload,
     humanUpload,
-    marbleSessionText,
-    marbleSessionTitle,
-    loadMarbleFromSession,
+    whiteshoeSessionText,
+    whiteshoeSessionTitle,
+    loadWhiteshoeFromSession,
     acceptChallenge,
     doReveal,
   };

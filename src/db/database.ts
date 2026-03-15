@@ -2,7 +2,7 @@
  * Database Layer — SQLite persistence for users, sessions, matters, and knowledge base.
  *
  * Uses better-sqlite3 (synchronous, fast, zero-config).
- * The DB file lives at ./data/marble.db by default.
+ * The DB file lives at ./data/whiteshoe.db by default.
  *
  * Live sessions stay in-memory (SessionManager handles EventBus, WebSocket).
  * SQLite stores the archive: completed sessions, user accounts, matters.
@@ -559,6 +559,13 @@ export function getArchivedSessionById(sessionId: string): ArchivedSession | und
   return getDb().prepare(`
     SELECT * FROM session_archive WHERE id = ?
   `).get(sessionId) as ArchivedSession | undefined;
+}
+
+/** Get all archived sessions (no user filter — for unauthenticated / demo mode). */
+export function getAllSessionArchive(limit = 50): ArchivedSession[] {
+  return getDb().prepare(`
+    SELECT * FROM session_archive ORDER BY completed_at DESC LIMIT ?
+  `).all(limit) as ArchivedSession[];
 }
 
 /** Get most recent archived sessions (no user filter — for session listing fallback). */

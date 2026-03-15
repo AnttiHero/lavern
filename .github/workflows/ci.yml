@@ -1,4 +1,4 @@
-# Marble CI/CD — Lint, type-check, test, build on every push to main.
+# Whiteshoe CI/CD — Lint, type-check, test, build on every push to main.
 name: CI
 
 on:
@@ -71,14 +71,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t marble:${{ github.sha }} .
+        run: docker build -t whiteshoe:${{ github.sha }} .
 
       - name: Test Docker health
         run: |
-          docker run -d --name marble-test \
+          docker run -d --name whiteshoe-test \
             -p 3001:3000 \
             -e ANTHROPIC_API_KEY=test \
-            marble:${{ github.sha }}
+            whiteshoe:${{ github.sha }}
           sleep 10
-          curl -sf http://localhost:3001/health || (docker logs marble-test && exit 1)
-          docker stop marble-test
+          curl -sf http://localhost:3001/health || (docker logs whiteshoe-test && exit 1)
+          docker stop whiteshoe-test

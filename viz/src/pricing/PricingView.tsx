@@ -10,14 +10,14 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
-import { MarbleIlluminated } from '../components/MarbleIlluminated.js';
+import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
 import type { Stripe, PaymentRequest } from '@stripe/stripe-js';
 
 interface Props {
   onBack: () => void;
 }
 
-// -- Dark palette -- Marble at night ----------------------------------------
+// -- Dark palette -- Whiteshoe at night ----------------------------------------
 
 const D = {
   bg: '#0A0A0F',
@@ -118,8 +118,8 @@ function RateCard({
 
 // -- Comparison Card ---------------------------------------------------------
 
-function ComparisonCard({ doc, marble, hours, firm, savings }: {
-  doc: string; marble: string; hours: string; firm: string; savings: string;
+function ComparisonCard({ doc, whiteshoe, hours, firm, savings }: {
+  doc: string; whiteshoe: string; hours: string; firm: string; savings: string;
 }) {
   return (
     <div style={sty.compCard}>
@@ -129,8 +129,8 @@ function ComparisonCard({ doc, marble, hours, firm, savings }: {
       </div>
       <div style={sty.compRow}>
         <div style={{ ...sty.compCol, flex: 1.2 }}>
-          <div style={sty.compLabel}>Marble</div>
-          <div style={sty.compMarble}>{marble}</div>
+          <div style={sty.compLabel}>Whiteshoe</div>
+          <div style={sty.compWhiteshoe}>{whiteshoe}</div>
           <div style={sty.compHoursNote}>{hours}</div>
         </div>
         <div style={sty.compCol}>
@@ -516,11 +516,11 @@ export default function PricingView({ onBack }: Props) {
 
   return (
     <div ref={pageRef} style={sty.page}>
-      {/* Subtle marble texture */}
+      {/* Subtle texture */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
-        style={sty.marbleBg}
+        style={sty.heroBg}
       />
 
       {/* Radial veil */}
@@ -552,7 +552,7 @@ export default function PricingView({ onBack }: Props) {
           animation: 'btcFadeIn 0.8s ease 0.1s both',
         }}>
           <div style={sty.logoWrap}>
-            <MarbleIlluminated
+            <WhiteshoeIlluminated
               color="rgba(250, 249, 246, 0.55)"
               glow="rgba(250, 249, 246, 0.95)"
             />
@@ -706,7 +706,7 @@ export default function PricingView({ onBack }: Props) {
               featured
               badge="IMPULSE"
               onBuy={() => handleBuyPack('quick')}
-              onApplePay={() => handleApplePay('quick', 'Marble \u2014 25 Billable Hours', 500)}
+              onApplePay={() => handleApplePay('quick', 'Whiteshoe \u2014 25 Billable Hours', 500)}
               applePayAvailable={applePayAvailable}
               buying={buyingPack === 'quick'}
             />
@@ -722,7 +722,7 @@ export default function PricingView({ onBack }: Props) {
               ]}
               badge="BEST VALUE"
               onBuy={() => handleBuyPack('standard')}
-              onApplePay={() => handleApplePay('standard', 'Marble \u2014 100 Billable Hours', 1900)}
+              onApplePay={() => handleApplePay('standard', 'Whiteshoe \u2014 100 Billable Hours', 1900)}
               applePayAvailable={applePayAvailable}
               buying={buyingPack === 'standard'}
             />
@@ -737,7 +737,7 @@ export default function PricingView({ onBack }: Props) {
                 'Never expires',
               ]}
               onBuy={() => handleBuyPack('bulk')}
-              onApplePay={() => handleApplePay('bulk', 'Marble \u2014 500 Billable Hours', 8900)}
+              onApplePay={() => handleApplePay('bulk', 'Whiteshoe \u2014 500 Billable Hours', 8900)}
               applePayAvailable={applePayAvailable}
               buying={buyingPack === 'bulk'}
             />
@@ -750,7 +750,7 @@ export default function PricingView({ onBack }: Props) {
         {/* ---- Subscribe & Save (monthly plans — the upgrade path) ------ */}
         <Section label="Subscribe & Save" delay={0.48}>
           <div style={sty.pitch}>
-            Use Marble regularly?{' '}
+            Use Whiteshoe regularly?{' '}
             <span style={{ color: D.gold, fontStyle: 'italic' }}>Save with a plan.</span>
           </div>
           <div style={sty.subGrid}>
@@ -786,35 +786,35 @@ export default function PricingView({ onBack }: Props) {
           <div style={sty.compList}>
             <ComparisonCard
               doc="NDA Review"
-              marble={'$2\u20135'}
+              whiteshoe={'$2\u20135'}
               hours={'20\u201350 hours'}
               firm={'$500\u20131,500'}
               savings="99.6%"
             />
             <ComparisonCard
               doc="Terms of Service Review"
-              marble={'$5\u201310'}
+              whiteshoe={'$5\u201310'}
               hours={'50\u2013100 hours'}
               firm={'$3,000\u20135,000'}
               savings="99.7%"
             />
             <ComparisonCard
               doc="Employment Contract"
-              marble={'$15\u201330'}
+              whiteshoe={'$15\u201330'}
               hours={'150\u2013300 hours'}
               firm={'$2,000\u20134,000'}
               savings="99.2%"
             />
             <ComparisonCard
               doc="SaaS Agreement"
-              marble={'$20\u201340'}
+              whiteshoe={'$20\u201340'}
               hours={'200\u2013400 hours'}
               firm={'$5,000\u201310,000'}
               savings="99.6%"
             />
             <ComparisonCard
               doc="Privacy Policy Audit"
-              marble={'$10\u201325'}
+              whiteshoe={'$10\u201325'}
               hours={'100\u2013250 hours'}
               firm={'$4,000\u20138,000'}
               savings="99.7%"
@@ -932,7 +932,7 @@ export default function PricingView({ onBack }: Props) {
           ...sty.footer,
           animation: 'btcFadeIn 0.6s ease 0.7s both',
         }}>
-          <MarbleIlluminated
+          <WhiteshoeIlluminated
             color="rgba(250, 249, 246, 0.15)"
             glow="rgba(250, 249, 246, 0.4)"
           />
@@ -993,7 +993,7 @@ const sty: Record<string, React.CSSProperties> = {
     overflow: 'auto' as const,
     zIndex: 1,
   },
-  marbleBg: {
+  heroBg: {
     position: 'fixed' as const,
     top: 0,
     left: 0,
@@ -1710,7 +1710,7 @@ const sty: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     marginBottom: 4,
   },
-  compMarble: {
+  compWhiteshoe: {
     fontSize: 22,
     fontFamily: fonts.mono,
     fontWeight: 600,

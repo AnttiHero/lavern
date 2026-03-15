@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marble — Driverless Law Firm</title>
+<title>Whiteshoe — Driverless Law Firm</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -671,7 +671,7 @@
 <!-- ======== COVER ======== -->
 <div class="cover">
   <div class="cover-badge">Built on the Claude Agent SDK</div>
-  <h1>Marble</h1>
+  <h1>Whiteshoe</h1>
   <p class="cover-quote">"We know what's written in the Golem's mouth."</p>
   <p class="cover-tagline">The world's first driverless law firm.</p>
   <p class="cover-stats">Multi-agent legal design system <span>·</span> 10 workflows <span>·</span> 70 agents <span>·</span> 610 tests <span>·</span> WCAG AA dashboard</p>
@@ -692,7 +692,7 @@
     <a class="toc-item" href="#s05"><span class="toc-num">05</span><span class="toc-label">Ten Workflows</span></a>
     <a class="toc-item" href="#s15"><span class="toc-num">15</span><span class="toc-label">Design Decisions</span></a>
     <a class="toc-item" href="#s06"><span class="toc-num">06</span><span class="toc-label">The Evaluator Gate</span></a>
-    <a class="toc-item" href="#s16"><span class="toc-num">16</span><span class="toc-label">Using Marble</span></a>
+    <a class="toc-item" href="#s16"><span class="toc-num">16</span><span class="toc-label">Using Whiteshoe</span></a>
     <a class="toc-item" href="#s07"><span class="toc-num">07</span><span class="toc-label">The Agents</span></a>
     <a class="toc-item" href="#s17"><span class="toc-num">17</span><span class="toc-label">The Numbers</span></a>
     <a class="toc-item" href="#s08"><span class="toc-num">08</span><span class="toc-label">The Dashboard</span></a>
@@ -717,7 +717,7 @@
   <span class="section-num">02</span>
   <h2>What if a law firm had no lawyers — only agents?</h2>
   <p class="lead-secondary">Not one agent. A team. Specialists that analyze, debate, challenge each other, transform documents, verify their own work, and learn from every engagement. A system where the agents genuinely collaborate: one proposes, another challenges, a third verifies, a human approves.</p>
-  <p>Marble is that system. Named after the act of turning rough stone into something polished and precise, it animates a team of AI legal specialists inside a workflow state machine with human gates, quality checks, and institutional memory.</p>
+  <p>Whiteshoe is that system. Named after the act of turning rough stone into something polished and precise, it animates a team of AI legal specialists inside a workflow state machine with human gates, quality checks, and institutional memory.</p>
   <p>Built on the Claude Agent SDK. Built by Legit (wearelegit.ai).</p>
 </div>
 
@@ -888,7 +888,7 @@
 <div class="section" id="s06">
   <span class="section-num">06</span>
   <h2>The Evaluator Gate</h2>
-  <p>Every workflow passes through an Evaluator Gate before delivery. This is Marble's core quality mechanism.</p>
+  <p>Every workflow passes through an Evaluator Gate before delivery. This is Whiteshoe's core quality mechanism.</p>
   <p><strong>The problem it solves: correlated errors.</strong> If the same model writes an answer and checks its own answer, it makes the same mistakes both times. The writer can't see its own blind spots. You need a different model — a skeptic — to catch what the first one missed.</p>
 
   <div class="info-grid" style="margin: 40px 0;">
@@ -1031,7 +1031,7 @@
 <div class="section" id="s08">
   <span class="section-num">08</span>
   <h2>The Dashboard</h2>
-  <p>Marble has a full-stack web interface — a React single-page application with WCAG AA accessibility, responsive layouts, and an editorial design language (Inter + Cormorant Garamond, warm cream palette).</p>
+  <p>Whiteshoe has a full-stack web interface — a React single-page application with WCAG AA accessibility, responsive layouts, and an editorial design language (Inter + Cormorant Garamond, warm cream palette).</p>
 
   <div class="flow">
     <div class="flow-step">Landing<br><small>My Cases</small></div>
@@ -1075,7 +1075,7 @@
   </div>
 
   <h3>Additional Views</h3>
-  <p>My Cases (active + archived engagements), My Page (profile, custom instructions, firm personality editor), Agent Builder (NBA2K-style custom agent creator with edit mode), Marble Challenge (blind document comparison), Bet The Company (high-stakes engagement), Claw Mode (remote monitoring dashboard).</p>
+  <p>My Cases (active + archived engagements), My Page (profile, custom instructions, firm personality editor), Agent Builder (NBA2K-style custom agent creator with edit mode), Whiteshoe Challenge (blind document comparison), Bet The Company (high-stakes engagement), Claw Mode (remote monitoring dashboard).</p>
   <p>The dashboard connects to the Fastify API via authenticated fetch calls (cookie-based auth for browsers, Bearer tokens for API clients). View transitions animate navigation between screens.</p>
 </div>
 
@@ -1083,7 +1083,7 @@
 <div class="section" id="s09">
   <span class="section-num">09</span>
   <h2>Document Ingestion</h2>
-  <p>Legal work starts with documents. Marble has a full document ingestion pipeline that extracts text, detects structure, and makes documents available to agents.</p>
+  <p>Legal work starts with documents. Whiteshoe has a full document ingestion pipeline that extracts text, detects structure, and makes documents available to agents.</p>
 
   <h3>Format Support</h3>
   <p>The parser accepts PDF (via pdf-parse), DOCX (via mammoth), and plain text formats. Each goes through format-specific extraction, then a shared structure detection pass.</p>
@@ -1201,7 +1201,7 @@
 
   <div class="perm-flow">
     <div class="question">canUseTool(toolName, input, options)</div>
-    <div class="answer">Not a Marble tool? → <span class="result-allow">ALLOW</span></div>
+    <div class="answer">Not a Whiteshoe tool? → <span class="result-allow">ALLOW</span></div>
     <div class="answer">Orchestrator-only tool from subagent? → <span class="result-deny">DENY</span></div>
     <div class="answer">Tool allowed in this phase? → <span class="result-allow">ALLOW</span> / <span class="result-deny">DENY</span></div>
   </div>
@@ -1295,7 +1295,7 @@ workflowRegistry.register({
 <!-- ======== 16 — USING MARBLE ======== -->
 <div class="section" id="s16">
   <span class="section-num">16</span>
-  <h2>Using Marble</h2>
+  <h2>Using Whiteshoe</h2>
 
   <h3>CLI</h3>
   <pre><code># Counsel — quick legal question
@@ -1327,7 +1327,7 @@ npx tsx src/index.ts ./opinion-letter.pdf \
   <p>The API returns a session ID. Connect to the WebSocket endpoint for real-time event streaming. Submit gate decisions via POST.</p>
 
   <h3>Dashboard</h3>
-  <p>The simplest way to use Marble: open the web dashboard, create a matter, upload your documents, select a team, and watch the agents work in real time. Gate approvals appear as interactive dialogs. Results are delivered in an editorial layout with derivative document generation.</p>
+  <p>The simplest way to use Whiteshoe: open the web dashboard, create a matter, upload your documents, select a team, and watch the agents work in real time. Gate approvals appear as interactive dialogs. Results are delivered in an editorial layout with derivative document generation.</p>
   <pre><code># Start the server (serves both API and dashboard)
 npx tsx src/api/server.ts
 
@@ -1593,13 +1593,13 @@ npx tsx src/api/server.ts
 ├── <span class="dir">claw/</span>                         <span class="desc">Remote monitoring dashboard</span>
 ├── <span class="dir">cowork/</span>                       <span class="desc">File System Access API saves</span>
 ├── <span class="dir">hooks/</span>                        <span class="desc">useMediaQuery, useTabLock</span>
-├── <span class="dir">components/</span>                   <span class="desc">GateDialog (focus trap), ErrorToast, MarbleMark</span>
+├── <span class="dir">components/</span>                   <span class="desc">GateDialog (focus trap), ErrorToast, WhiteshoeMark</span>
 └── <span class="dir">archive/</span>                      <span class="desc">Knowledge base search UI</span></div>
 </div>
 
 <!-- ======== FOOTER ======== -->
 <div class="footer" id="footer">
-  <h2>Marble</h2>
+  <h2>Whiteshoe</h2>
   <p class="footer-stats">610 tests · 70 agents · 10 workflows · WCAG AA · 0 TS errors</p>
   <p class="footer-quote">"We know what's written in the Golem's mouth."</p>
 </div>

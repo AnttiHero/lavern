@@ -6,7 +6,7 @@
  * between folders is still the same document. Detects changes
  * by comparing stored hash vs current file hash.
  *
- * Persistence: `~/.marble/state.json` (atomic writes).
+ * Persistence: `~/.whiteshoe/state.json` (atomic writes).
  */
 
 import * as fs from 'node:fs';

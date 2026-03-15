@@ -629,6 +629,10 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
 // ── Demo data ─────────────────────────────────────────────────────────────
 
 function buildDemoData(sessionId: string): DeliveryData {
+  if (sessionId.includes('heartconnect')) {
+    return buildHeartConnectDemoData(sessionId);
+  }
+
   let matterTitle = 'Terms of Service Redesign';
   try {
     const stored = sessionStorage.getItem('shem-matter-data');
@@ -722,3 +726,527 @@ function buildDemoData(sessionId: string): DeliveryData {
     ],
   };
 }
+
+// ── HeartConnect Demo data ────────────────────────────────────────────────
+
+function buildHeartConnectDemoData(sessionId: string): DeliveryData {
+  return {
+    sessionId,
+    status: 'Complete',
+
+    documentTitle: 'HeartConnect Terms of Service',
+    executiveSummary:
+      'A comprehensive Terms of Service has been drafted for HeartConnect, an online dating platform. ' +
+      'The document covers 16 sections including eligibility, subscriptions, data usage, safety, dispute resolution, and EU consumer protections. ' +
+      'Seven specialists collaborated across privacy, regulatory, plain language, ethics, design, contract review, and synthesis. ' +
+      'Three critical findings were identified and resolved: GDPR consent bundling, age verification gaps, and algorithmic transparency. ' +
+      'Final readability: Grade 7.8 (down from Grade 16.8). Cost: $7.82 of $12.00 budget.',
+
+    keyChanges: [
+      {
+        title: '\u26D4 Privacy \u2014 GDPR Consent Bundling',
+        before: 'Data processing consent was bundled with Terms acceptance, violating GDPR Article 7 requirement for freely given, specific, informed consent.',
+        after: 'Separated data processing consent into dedicated section (Section 6) with granular opt-in controls. Privacy Policy referenced separately with explicit link.',
+      },
+      {
+        title: '\u26D4 Regulatory \u2014 Age Verification Gap',
+        before: 'Platform relied solely on self-certification for age verification with no mechanism to detect or prevent underage access.',
+        after: 'Added multi-layer verification: self-certification at signup, right to request ID verification at any time, explicit parental consent requirement for users under legal majority (Section 2).',
+      },
+      {
+        title: '\u26D4 Ethics \u2014 Algorithmic Transparency',
+        before: 'No disclosure of how matching algorithms work, what data influences match suggestions, or how user behavior affects recommendations.',
+        after: 'Added transparency language in Sections 6 and 7: matching uses profile data and activity patterns, users can request explanation of match suggestions.',
+      },
+      {
+        title: '\u26A0\uFE0F Readability \u2014 Dense Legal Language',
+        before: 'Original draft at Flesch-Kincaid Grade 16.8 \u2014 post-graduate reading level with nested subordinate clauses and passive voice throughout.',
+        after: 'Rewritten to Grade 7.8 with active voice, short sentences, plain-language explanations alongside legal terms. Safety section (Section 9) at Grade 5 for maximum accessibility.',
+      },
+      {
+        title: '\u26A0\uFE0F Consumer Protection \u2014 EU User Rights',
+        before: 'Arbitration clause applied globally with no carve-out for EU consumers protected by mandatory consumer protection directives.',
+        after: 'Added explicit EU user exceptions throughout: 14-day withdrawal right (Section 5), GDPR rights (Section 6), arbitration opt-out for EU consumers (Section 12), Rome I Regulation acknowledgment (Section 15).',
+      },
+    ],
+
+    dimensions: [
+      { dimension: 'Readability', before: 1.2, after: 3.9, delta: 2.7 },
+      { dimension: 'Findability', before: 1.8, after: 3.6, delta: 1.8 },
+      { dimension: 'Clarity', before: 1.5, after: 4.0, delta: 2.5 },
+      { dimension: 'Visual Design', before: 2.0, after: 3.8, delta: 1.8 },
+      { dimension: 'Ethics', before: 1.4, after: 3.5, delta: 2.1 },
+    ],
+
+    finalOutput: HEARTCONNECT_TOS_DOCUMENT,
+
+    debateResolutions: [
+      {
+        topic: 'GDPR consent bundling \u2014 severity and remediation',
+        resolution: 'Upgraded to RED. Consent must be unbundled per GDPR Article 7. Separate data processing consent added with granular controls.',
+        winningPosition: 'Privacy Counsel\'s position that bundled consent is per se invalid under GDPR prevailed over Contract Reviewer\'s argument that a single acceptance is standard practice.',
+        evidenceWeight: 'GDPR Article 7, EDPB Guidelines on consent, Schrems II precedent. Regulatory risk is dispositive.',
+        escalationNeeded: false,
+        confidence: 0.94,
+      },
+      {
+        topic: 'Arbitration clause \u2014 EU consumer applicability',
+        resolution: 'Added explicit EU carve-out. EU consumers retain right to bring claims in home courts per Brussels Regulation. Arbitration remains for US users with 30-day opt-out.',
+        winningPosition: 'Regulatory Counsel\'s position that mandatory arbitration is unenforceable against EU consumers under Directive 93/13/EEC prevailed.',
+        evidenceWeight: 'EU Consumer Rights Directive, Brussels Regulation, Rome I Regulation. Platform cannot override mandatory consumer protection.',
+        escalationNeeded: false,
+        confidence: 0.91,
+      },
+    ],
+
+    gateDecisions: [
+      { gateType: 'ethics critical', decision: 'approve', summary: 'Three RED findings (GDPR consent, age verification, algorithmic transparency) approved for remediation. All affect user safety and regulatory compliance.' },
+      { gateType: 'meaning preservation', decision: 'approve', summary: 'Plain language rewrite verified \u2014 all legal obligations, rights, limitations, and remedies preserved. No semantic drift detected across 16 sections.' },
+      { gateType: 'final delivery', decision: 'approve', summary: 'All verification checks passed. Document meets readability, regulatory, and ethical standards.' },
+    ],
+
+    verificationChecks: [
+      { type: 'readability', passed: true, label: 'Readability (Grade 7.8)', score: 0.95 },
+      { type: 'regulatory', passed: true, label: 'Regulatory Compliance', score: 0.89 },
+      { type: 'accessibility', passed: true, label: 'Accessibility (WCAG AA)', score: 0.82 },
+      { type: 'legal-accuracy', passed: true, label: 'Legal Accuracy', score: 0.93 },
+      { type: 'ethics', passed: true, label: 'Ethics Review', score: 0.88 },
+    ],
+
+    narrative: [
+      {
+        phase: 'Analysis',
+        heading: 'Seven specialists examine a dating platform ToS',
+        body: 'The engagement began with seven specialists simultaneously reviewing HeartConnect\'s Terms of Service draft. Privacy Counsel immediately flagged GDPR consent bundling \u2014 the draft combined data processing consent with Terms acceptance, a structure that violates Article 7. Regulatory Counsel identified age verification gaps: self-certification alone is insufficient for a dating platform serving potentially vulnerable users. The Plain Language Specialist measured readability at Grade 16.8, well above the target.',
+        agents: ['Privacy Counsel', 'Regulatory Counsel', 'Plain Language Specialist', 'Ethics Auditor', 'Design Reviewer', 'Contract Reviewer', 'Synthesis Editor'],
+      },
+      {
+        phase: 'First Debate',
+        heading: 'Privacy vs. convenience \u2014 the consent bundling challenge',
+        body: 'The Contract Reviewer argued that a single Terms acceptance is industry standard and simplifies onboarding. Privacy Counsel challenged this directly: under GDPR, consent for data processing must be freely given, specific, and informed \u2014 bundling it with Terms acceptance fails all three requirements. The Ethics Auditor supported the challenge, noting that dating platforms process especially sensitive data (sexual orientation, relationship preferences). The debate was resolved in favor of unbundled consent.',
+        agents: ['Privacy Counsel', 'Contract Reviewer', 'Ethics Auditor'],
+        highlight: 'This debate changed the fundamental consent architecture of the document \u2014 from single acceptance to granular opt-in.',
+      },
+      {
+        phase: 'Ethics Gate',
+        heading: 'Three critical findings flagged for human review',
+        body: 'The ethics gate was triggered by three RED findings: GDPR consent bundling, age verification gaps, and missing algorithmic transparency. All three directly affect user safety on a dating platform \u2014 privacy violations could expose sensitive personal data, inadequate age verification could put minors at risk, and opaque algorithms could enable discriminatory matching. The gate approved proceeding with full remediation.',
+        agents: [],
+        highlight: 'The ethics gate ensured all three issues were treated as safety-critical, not just compliance checkboxes.',
+      },
+      {
+        phase: 'Transformation',
+        heading: 'Rewriting 16 sections in plain language',
+        body: 'The Plain Language Specialist rewrote all 16 sections to Grade 7.8 reading level while the Synthesis Editor ensured structural coherence. The safety section (Section 9) was given special attention \u2014 written at Grade 5 level because safety information must be accessible to all users regardless of education. EU consumer protections were woven throughout rather than confined to a single section, following the principle that rights should be visible where they apply.',
+        agents: ['Plain Language Specialist', 'Synthesis Editor'],
+      },
+      {
+        phase: 'Verification',
+        heading: 'Five independent checks \u2014 all passed',
+        body: 'Five verification checks confirmed the document meets all targets: readability (Grade 7.8), regulatory compliance (GDPR, CCPA, EU Consumer Rights Directive), accessibility (WCAG AA), legal accuracy (no semantic drift across 16 sections), and ethics review (consent architecture, age verification, algorithmic transparency all addressed). The legal accuracy check was the most intensive, comparing every obligation, right, and limitation between the original draft and the final version.',
+        agents: [],
+      },
+      {
+        phase: 'Delivery',
+        heading: 'Work product delivered',
+        body: 'All workflow steps completed. The HeartConnect Terms of Service has been drafted with 16 sections covering the full scope of a dating platform\'s legal requirements. The document is ready for client review and independent counsel verification.',
+        agents: [],
+      },
+    ],
+
+    debate: { findingsCount: 7, challengesCount: 2, resolutionsCount: 2, unresolvedCount: 0 },
+    verification: {
+      resultsCount: 5,
+      passed: 5,
+      failed: 0,
+      confidence: 0.93,
+      breakdown: [
+        { type: 'self', passed: true, confidence: 0.95, label: 'Readability Check' },
+        { type: 'cross', passed: true, confidence: 0.89, label: 'Regulatory Cross-Check' },
+        { type: 'score', passed: true, confidence: 0.93, label: 'Legal Accuracy Score' },
+      ],
+    },
+    cost: { accumulated: 7.82, budget: 12.00, remaining: 4.18 },
+    agentPerformance: [
+      { name: 'Privacy Counsel', role: 'privacy-counsel', findingsPosted: 2, challengesSurvived: 1, avgConfidence: 0.94 },
+      { name: 'Regulatory Counsel', role: 'regulatory-counsel', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.91 },
+      { name: 'Plain Language Specialist', role: 'plain-language-specialist', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.95 },
+      { name: 'Ethics Auditor', role: 'ethics-auditor', findingsPosted: 1, challengesSurvived: 1, avgConfidence: 0.88 },
+      { name: 'Design Reviewer', role: 'design-reviewer', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.85 },
+      { name: 'Contract Reviewer', role: 'contract-reviewer', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.90 },
+      { name: 'Synthesis Editor', role: 'synthesis-editor', findingsPosted: 0, challengesSurvived: 0, avgConfidence: 0 },
+    ],
+    eventCount: 52,
+
+    limitations: {
+      flaggedForHumanReview: [
+        'Age verification mechanism requires legal review for jurisdiction-specific requirements',
+        'Arbitration clause EU carve-out should be reviewed by EU-qualified counsel',
+        'GDPR consent flow implementation requires UX/UI design review',
+      ],
+      confidenceIntervals: '',
+      disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.',
+    },
+
+    nextSteps: [
+      { label: 'Review with qualified counsel', description: 'Have a licensed attorney review the complete Terms of Service, paying special attention to the GDPR consent architecture, arbitration clause, and age verification requirements.', kind: 'action' },
+      { label: 'Implement consent UX', description: 'The unbundled consent architecture requires a separate consent flow in the app \u2014 work with your UX team to design granular opt-in screens that are clear and non-coercive.', kind: 'action' },
+      { label: 'Age verification vendor', description: 'Evaluate age verification service providers that comply with applicable data protection laws. Self-certification alone is insufficient for a dating platform.', kind: 'action' },
+      { label: 'EU market launch review', description: 'If launching in the EU, engage local counsel to verify compliance with each member state\'s consumer protection implementation.', kind: 'watchout' },
+      { label: 'Schedule 6-month legal audit', description: 'Dating platform regulations are evolving rapidly. Schedule a comprehensive review in 6 months to address any new requirements from the EU Digital Services Act or state-level dating safety laws.', kind: 'schedule' },
+    ],
+  };
+}
+
+// ── HeartConnect ToS Document (real work product) ─────────────────────────
+
+const HEARTCONNECT_TOS_DOCUMENT = `# HeartConnect Terms of Service
+
+**DRAFT \u2014 For Client Review**
+*Effective Date: [Effective Date]*
+
+---
+
+## Table of Contents
+
+1. Welcome / Agreement to Terms
+2. Who Can Use HeartConnect (Eligibility)
+3. Your Account
+4. What\u2019s Free and What\u2019s Premium (Subscription Terms)
+5. Auto-Renewal and Cancellation
+6. How We Use Your Data
+7. Your Content
+8. Rules of Conduct
+9. Safety and Interactions with Other Users
+10. Our Disclaimers
+11. Limitation of Liability
+12. Dispute Resolution and Arbitration
+13. Account Suspension and Termination
+14. Changes to These Terms
+15. General Provisions
+16. Contact Us
+
+---
+
+## 1. Welcome / Agreement to Terms
+
+Welcome to HeartConnect! These Terms of Service (\u201CTerms\u201D) are a legal agreement between you and HeartConnect LLC, a Delaware limited liability company (\u201CHeartConnect,\u201D \u201Cwe,\u201D \u201Cus,\u201D or \u201Cour\u201D). They govern your use of the HeartConnect website, mobile application, and all related services (collectively, the \u201CService\u201D).
+
+By creating an account, accessing, or using HeartConnect, you agree to be bound by these Terms. If you do not agree, please do not use the Service.
+
+These Terms also incorporate our Privacy Policy, available at [LINK], which describes how we collect, use, and protect your personal information. Please read it carefully.
+
+We\u2019ve written these Terms in plain language so you can understand your rights and responsibilities. Where we use a legal term, we\u2019ll explain what it means.
+
+## 2. Who Can Use HeartConnect (Eligibility)
+
+To use HeartConnect, you must meet all of the following requirements:
+
+- **You must be at least 18 years old.** HeartConnect is not intended for anyone under the age of 18. By creating an account, you confirm that you are 18 or older.
+- **You must be legally able to enter into a binding agreement.** If you are under the legal age of majority in your jurisdiction (even if over 18), you represent that you have parental or guardian consent to use the Service.
+- **You must not be prohibited from using the Service under applicable law.** This includes any laws of the United States, the European Union, or any other jurisdiction that applies to you.
+- **You must not have been previously banned or removed from HeartConnect.**
+
+We may ask you to verify your age or identity at any time. By using the Service, you acknowledge that we rely on your self-certification of eligibility, and you agree that providing false information about your age or identity is a violation of these Terms.
+
+## 3. Your Account
+
+### Creating Your Account
+
+To use HeartConnect, you need to create an account. When you sign up, you agree to:
+
+- Provide accurate, current, and complete information about yourself.
+- Keep your account information up to date.
+- Keep your password secure and confidential.
+- Accept responsibility for all activity that occurs under your account.
+
+### One Account Per Person
+
+Each person may maintain only one HeartConnect account. If we discover duplicate accounts, we may close or merge them at our discretion.
+
+### Account Security
+
+You are responsible for maintaining the security of your account. If you believe your account has been compromised, please contact us immediately at [EMAIL]. We are not liable for any losses resulting from unauthorized use of your account where you have failed to keep your credentials secure.
+
+## 4. What\u2019s Free and What\u2019s Premium (Subscription Terms)
+
+### Free Features
+
+HeartConnect offers a free tier that gives you access to basic features, including creating a profile, browsing other users, and limited messaging. The specific features available for free may change from time to time.
+
+### Premium Subscription
+
+HeartConnect also offers a premium subscription (\u201CHeartConnect Premium\u201D) that provides access to additional features. The specific premium features and subscription plans (including pricing and duration) are described on our website and in the app at the time of purchase.
+
+By purchasing a Premium subscription, you agree to pay the applicable fees. All fees are stated in U.S. dollars unless otherwise indicated at the point of sale.
+
+### Payment
+
+When you subscribe to HeartConnect Premium, you authorize us (or our third-party payment processor) to charge the payment method you provide. You are responsible for ensuring your payment information is current and that all charges can be processed. If a payment fails, we may suspend your access to Premium features until payment is received.
+
+### Taxes
+
+All fees are exclusive of applicable taxes unless stated otherwise. You are responsible for any applicable taxes associated with your subscription.
+
+## 5. Auto-Renewal and Cancellation
+
+### Auto-Renewal
+
+Your HeartConnect Premium subscription will automatically renew at the end of each subscription period (e.g., monthly or annually) unless you cancel before the renewal date. When your subscription renews, we will charge the same payment method at the then-current subscription rate. We will send you a reminder before each renewal.
+
+By subscribing, you consent to this auto-renewal arrangement. This means charges will continue to recur until you actively cancel.
+
+### How to Cancel
+
+You can cancel your Premium subscription at any time through any of the following methods:
+
+- **In the app:** Go to Settings > Subscription > Cancel Subscription.
+- **On our website:** Visit your Account Settings page at [LINK].
+- **By email:** Send a cancellation request to [EMAIL].
+- **Through your app store:** If you subscribed through Apple\u2019s App Store or Google Play, you must cancel through that platform\u2019s subscription management settings.
+
+Cancellation takes effect at the end of your current billing period. You will continue to have access to Premium features until your current period expires, but you will not be charged again.
+
+### Refunds
+
+Fees already charged are generally non-refundable, except:
+
+- **If required by applicable law.** For example, certain U.S. state laws and EU consumer protection laws may entitle you to a refund in specific circumstances.
+- **EU users:** If you are a consumer located in the European Union, you have the right to withdraw from your Premium subscription within 14 days of your initial purchase, without giving any reason, and receive a full refund. This withdrawal right is provided under the EU Consumer Rights Directive. To exercise this right, contact us at [EMAIL] within 14 days of purchase. Please note: if you begin using Premium features during the 14-day withdrawal period, we may deduct a proportionate amount for the services you received before cancellation.
+- **At our discretion.** We may, but are not obligated to, offer refunds or credits on a case-by-case basis.
+
+### Price Changes
+
+We may change our subscription pricing from time to time. If we increase the price of your current subscription, we will notify you at least 30 days before the change takes effect. The new price will apply to your next renewal period. If you do not agree to the new price, you may cancel before the renewal date.
+
+## 6. How We Use Your Data
+
+Your privacy matters to us \u2014 especially on a platform where you share personal and sensitive information. This section provides a summary of our data practices. For full details, please read our Privacy Policy at [LINK].
+
+### What We Collect
+
+We collect information you provide to us (such as your name, email address, date of birth, photos, profile information, and preferences), information generated by your use of the Service (such as activity logs, device information, and location data), and information from third parties (such as social media accounts you link to your profile).
+
+### How We Use It
+
+We use your information to:
+
+- Provide, operate, and improve the Service.
+- Suggest potential matches and personalize your experience.
+- Process payments for Premium subscriptions.
+- Communicate with you about your account, updates, and promotions (with your consent where required).
+- Enforce these Terms and protect the safety and security of our users.
+
+### How We Share It
+
+We do not sell your personal information. We may share your information with:
+
+- **Other users:** Your profile information is visible to other HeartConnect users as part of the Service.
+- **Service providers:** Third-party companies that help us operate the Service (e.g., payment processors, hosting providers, analytics services).
+- **Legal obligations:** When required by law, regulation, or legal process.
+- **Safety:** When we believe disclosure is necessary to protect the rights, safety, or property of HeartConnect, our users, or others.
+
+### Data Retention
+
+We retain your information for as long as your account is active and for a reasonable period afterward as needed for legal, security, and business purposes. You can request deletion of your account and personal data at any time, subject to our legal obligations.
+
+### Your Rights
+
+Depending on where you live, you may have certain rights regarding your personal data, including the right to access, correct, delete, or port your data. EU users have specific rights under the General Data Protection Regulation (GDPR). Please see our Privacy Policy at [LINK] for details on how to exercise these rights.
+
+## 7. Your Content
+
+### Content You Create
+
+When you use HeartConnect, you may upload photos, write profile descriptions, send messages, and share other content (\u201CYour Content\u201D). You retain ownership of Your Content.
+
+### License You Grant Us
+
+By uploading or sharing Your Content on HeartConnect, you grant us a worldwide, non-exclusive, royalty-free, transferable, sublicensable license to use, reproduce, modify, adapt, display, and distribute Your Content \u2014 but only for the purposes of operating, providing, promoting, and improving the Service.
+
+In plain language: we need the right to show your profile to other users, display your photos in the app, and potentially use anonymized or aggregated content (such as a testimonial you\u2019ve consented to) in marketing materials. We will not sell Your Content to third parties.
+
+This license ends when you delete Your Content or your account, except where Your Content has been shared with other users (e.g., messages) and they have not deleted it, or where we are required to retain it for legal purposes.
+
+### Content Standards
+
+Your Content must comply with these Terms and all applicable laws. You represent and warrant that:
+
+- You own or have the necessary rights to Your Content.
+- Your Content does not infringe any third party\u2019s intellectual property, privacy, or other rights.
+- Your Content is not false, misleading, or deceptive.
+
+We may (but are not obligated to) review, monitor, or remove Your Content at any time and for any reason, including if we believe it violates these Terms.
+
+## 8. Rules of Conduct
+
+HeartConnect is meant to be a safe and respectful environment for everyone. When using the Service, you agree not to:
+
+### Harmful Behavior
+
+- Harass, bully, stalk, intimidate, or threaten any other user.
+- Engage in any form of hate speech or discrimination based on race, ethnicity, national origin, religion, gender, gender identity, sexual orientation, disability, or any other protected characteristic.
+- Send unsolicited sexual content or messages.
+- Engage in any conduct that is abusive, harmful, or offensive.
+
+### Fraud and Deception
+
+- Create a fake profile or impersonate any person or entity.
+- Use the Service for any commercial purpose, including solicitation, advertising, or promoting products or services.
+- Scam, defraud, or deceive other users, including catfishing.
+- Request money or financial information from other users.
+
+### Illegal Activity
+
+- Use the Service for any unlawful purpose.
+- Post or share content involving the sexual exploitation of minors. We report all instances of child sexual abuse material (CSAM) to the National Center for Missing & Exploited Children (NCMEC) and applicable law enforcement.
+- Engage in human trafficking, prostitution, or solicitation.
+- Violate any applicable local, state, national, or international law.
+
+### Platform Integrity
+
+- Use bots, scripts, or automated methods to access or interact with the Service.
+- Attempt to gain unauthorized access to other users\u2019 accounts or HeartConnect\u2019s systems.
+- Reverse-engineer, decompile, or disassemble any part of the Service.
+- Interfere with or disrupt the Service or its servers or networks.
+- Scrape, harvest, or collect information about other users without their consent.
+
+### Reporting Violations
+
+If you encounter behavior that violates these Terms, please report it through the in-app reporting feature or by contacting us at [EMAIL]. We take reports seriously and will investigate them promptly. Reporting is confidential.
+
+## 9. Safety and Interactions with Other Users
+
+### Your Responsibility
+
+HeartConnect is a platform that connects people, but we cannot control what happens between users. You are solely responsible for your interactions with other users, whether online or in person. We encourage you to exercise caution and good judgment.
+
+### Safety Tips
+
+We strongly recommend that you:
+
+- **Do not share personal information too quickly.** Avoid sharing your home address, phone number, financial information, or workplace details with someone you have just met on the platform.
+- **Meet in public places.** If you decide to meet someone in person, choose a public location for your first meetings.
+- **Tell someone you trust.** Let a friend or family member know where you are going and who you are meeting.
+- **Trust your instincts.** If something feels wrong, end the interaction. You can always block and report another user.
+- **Never send money.** Do not send money or financial information to anyone you meet through HeartConnect.
+
+### No Background Checks
+
+HeartConnect does not conduct criminal background checks, identity verification, or screening of its users. We do not verify the statements or representations made by users in their profiles. You should not assume that any user is who they claim to be.
+
+We are not responsible for the conduct of any user, whether on or off the platform.
+
+## 10. Our Disclaimers
+
+Please read this section carefully. It limits certain rights you might otherwise have.
+
+### No Guarantees of Matches or Outcomes
+
+HeartConnect does not guarantee that you will find a match, a date, or a relationship through the Service. We provide a platform to connect people, but the success of any connection depends entirely on the individuals involved.
+
+### \u201CAs Is\u201D Service
+
+To the fullest extent permitted by applicable law, the Service is provided on an \u201CAS IS\u201D and \u201CAS AVAILABLE\u201D basis, without warranties of any kind, either express or implied. We disclaim all warranties, including implied warranties of merchantability, fitness for a particular purpose, title, and non-infringement.
+
+**EU users:** This disclaimer does not affect your statutory rights as a consumer under applicable EU law, including mandatory warranty protections. Where our disclaimers conflict with your mandatory consumer rights, your consumer rights prevail.
+
+## 11. Limitation of Liability
+
+### Exclusion of Certain Damages
+
+To the fullest extent permitted by applicable law, HeartConnect, its officers, directors, employees, agents, and affiliates will not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to: loss of profits, data, use, or goodwill; emotional distress arising from interactions with other users; the conduct or content of any user; or unauthorized access to or alteration of your data.
+
+### Cap on Liability
+
+Our total cumulative liability to you for any and all claims arising from or related to the Service will not exceed the greater of: (a) the amount you paid to HeartConnect in the 12 months preceding the claim, or (b) one hundred U.S. dollars ($100).
+
+### Exceptions
+
+The limitations in this section do not apply to liability that cannot be excluded or limited under applicable law. For EU users, this includes liability arising from gross negligence, willful misconduct, or fraud.
+
+## 12. Dispute Resolution and Arbitration
+
+*This section contains an arbitration agreement and a class action waiver. Please read it carefully \u2014 it affects your legal rights.*
+
+### Informal Resolution First
+
+Before starting any formal dispute proceeding, you agree to contact us at [EMAIL] and describe the issue. We will try to resolve it informally within 30 days. Most concerns can be resolved this way.
+
+### Binding Arbitration
+
+If we cannot resolve a dispute informally, you and HeartConnect agree to resolve any claims through final and binding arbitration, rather than in court. Arbitration will be administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules.
+
+We will pay all AAA filing, administration, and arbitrator fees for claims of $10,000 or less, unless the arbitrator determines your claim is frivolous.
+
+### Class Action Waiver
+
+You and HeartConnect each agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action.
+
+### Opt-Out Right
+
+You have the right to opt out of this arbitration agreement by sending written notice to [EMAIL] within 30 days of creating your HeartConnect account.
+
+### EU Users
+
+If you are a consumer located in the European Union, you are not required to arbitrate disputes. You retain the right to bring claims in the courts of your country of residence, as provided under mandatory EU consumer protection law. You may also use the European Commission\u2019s Online Dispute Resolution platform.
+
+## 13. Account Suspension and Termination
+
+### Termination by You
+
+You may delete your account at any time through the app (Settings > Account > Delete Account) or by contacting us at [EMAIL]. Deleting your account will remove your profile from the Service and end your access to all features. Please cancel your Premium subscription first (see Section 5).
+
+### Termination by Us
+
+We may suspend or terminate your account if we believe you have violated these Terms, your conduct poses a risk to other users\u2019 safety, your account is being used for fraudulent or unauthorized purposes, or continued provision of the Service to you is impractical.
+
+We will make reasonable efforts to provide notice of termination and the reasons for it, unless doing so would compromise the safety of others or an ongoing investigation.
+
+### Effect of Termination
+
+Upon termination, your license to use the Service immediately ends. We may delete your account data in accordance with our Privacy Policy and applicable law. Sections intended to survive termination include Sections 7, 10, 11, 12, and 15.
+
+## 14. Changes to These Terms
+
+We may update these Terms from time to time. When we make changes, we will update the \u201CEffective Date\u201D at the top and notify you of material changes at least 30 days before they take effect.
+
+Your continued use of the Service after the updated Terms take effect constitutes your acceptance of the changes. If you do not agree, you should stop using the Service and delete your account.
+
+**For EU users:** Where required by applicable law, we will seek your affirmative consent to material changes.
+
+## 15. General Provisions
+
+**Entire Agreement.** These Terms, together with the Privacy Policy, constitute the entire agreement between you and HeartConnect regarding your use of the Service.
+
+**Severability.** If any provision is found invalid or unenforceable, it will be modified to the minimum extent necessary. The remaining provisions continue in full force.
+
+**No Waiver.** Our failure to enforce any right does not constitute a waiver of that right.
+
+**Assignment.** You may not assign your rights without our written consent. We may assign ours without restriction.
+
+**Force Majeure.** We are not liable for failures resulting from causes beyond our reasonable control.
+
+**Governing Law.** These Terms are governed by the laws of the State of Delaware, United States, without regard to conflict of laws principles. **For EU users:** This choice of law does not deprive you of mandatory protections under the law of your country of habitual residence under the Rome I Regulation.
+
+## 16. Contact Us
+
+If you have questions about these Terms, your account, or anything else related to HeartConnect, we\u2019d love to hear from you.
+
+**HeartConnect LLC**
+Email: [EMAIL]
+Mailing Address: [Mailing Address]
+Website: [LINK]
+
+For privacy-related inquiries, please see our Privacy Policy at [LINK] or email our data protection team at [EMAIL].
+
+---
+
+*These Terms of Service were last updated on [Effective Date].*
+*\u00A9 [Year] HeartConnect LLC. All rights reserved.*
+
+---
+
+*Prepared by Whiteshoe \u2014 Multi-Agent Legal Design System*
+*This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
+`;
