@@ -165,12 +165,20 @@ export async function analyzeLocally(
     // Try extracting JSON from markdown code block
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[1]);
+      try {
+        parsed = JSON.parse(jsonMatch[1]);
+      } catch {
+        throw new Error('Local model returned invalid JSON inside code block');
+      }
     } else {
       // Last resort: find JSON object
       const objMatch = content.match(/\{[\s\S]*\}/);
       if (objMatch) {
-        parsed = JSON.parse(objMatch[0]);
+        try {
+          parsed = JSON.parse(objMatch[0]);
+        } catch {
+          throw new Error('Local model returned malformed JSON object');
+        }
       } else {
         throw new Error('Local model did not return valid JSON');
       }
