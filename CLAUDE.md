@@ -146,7 +146,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 610 tests across 33 files (26 unit + 7 integration)
+- `tests/` — 1156 tests across 68 files (60 unit + 8 integration)
 
 ## Version History
 
@@ -169,12 +169,18 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - Sidebar stacking with toggle, grid collapse, header wrapping
 - Desktop layout unchanged (conditional breakpoints only)
 
-**Production Hardening** — 36 security and stability fixes:
+**Production Hardening** — 40+ security and stability fixes:
 - SSRF prevention, command injection fix, TOCTOU race condition fix
-- Session ID collision prevention, FTS5/LIKE injection fix
+- Session ID collision prevention (crypto.randomBytes entropy), FTS5/LIKE injection fix
+- XSS sanitization on all HTML deliverables (script, iframe, event handler stripping)
 - Gate timeout now rejects (was auto-approving), WebSocket reconnect resume
 - Server-side WebSocket heartbeat (30s ping, 60s timeout)
 - Webhook retry with exponential backoff (3 retries)
+- Auth middleware hardened (removed /api/clients from default public paths)
+- Mistral empty response guard, JSON.parse safety across frontend hooks
+- Web Speech API bounds checks, replay audit entry null safety
+- Claw delivery type safety (Finding field name corrections)
+- Timer cleanup on component unmount (PartnerView)
 - Structured logger (`src/utils/logger.ts`)
 
 **Error Surfaces** — Users see what went wrong instead of silent failures:
@@ -192,6 +198,14 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - Custom agent edit mode in Agent Builder
 - Error copy consistency (removed technical jargon from user-facing messages)
 - Delivery view polish: responsive grids, markdown links, empty states, download feedback
+
+**Test Coverage Expansion** — 610 → 1125 tests (84% increase):
+- Auth routes: signup, login, profile, GDPR erasure/export (55 tests)
+- Auth middleware: public paths, token validation, method-specific matching (50 tests)
+- Rate limiting: sliding window, concurrent session caps, per-user isolation (11 tests)
+- Dynamic permissions: phase deny rules, template overrides, orchestrator-only tools (20 tests)
+- Format converter: XSS sanitization (8 tests)
+- Database, session manager, config, router, Claw planner/registry coverage
 
 **Dev Tooling:**
 - `scripts/smoke-test.sh` — API end-to-end lifecycle test (no `jq` dependency)
