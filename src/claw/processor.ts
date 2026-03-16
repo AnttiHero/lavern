@@ -176,7 +176,33 @@ export async function processDocument(
       };
     }
 
-    const session = await dispatch(inference.request, dispatchOptions);
+    let session: Awaited<ReturnType<typeof dispatch>>;
+    let retried = false;
+
+    try {
+      session = await dispatch(inference.request, dispatchOptions);
+    } catch (dispatchErr) {
+      const dispatchError = dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr);
+      const isBudgetError = /budget|funds|exhausted/i.test(dispatchError);
+
+      if (isBudgetError) {
+        throw dispatchErr; // No retry for budget exhaustion — rethrow to outer catch
+      }
+
+      // Retry once for transient failures
+      log(`⟳ Dispatch failed (${dispatchError}), retrying in 5s...`);
+      retried = true;
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      try {
+        log(`⟳ Retry attempt for ${path.basename(documentPath)}...`);
+        session = await dispatch(inference.request, dispatchOptions);
+        log(`⟳ Retry succeeded`);
+      } catch (retryErr) {
+        log(`⟳ Retry also failed`);
+        throw retryErr; // Let outer catch handle final failure
+      }
+    }
 
     // ── 4. DELIVER ────────────────────────────────────────────────────
     log(`Delivering results...`);
@@ -208,6 +234,7 @@ export async function processDocument(
     const durationMs = Date.now() - startTime;
     log(`✓ Delivered → ${path.relative(clawConfig.dir, deliveryDir)}/`);
     log(`  $${cost.toFixed(2)} · ${(durationMs / 1000).toFixed(0)}s · ${findings.critical} critical, ${findings.major} major, ${findings.minor} minor`);
+    if (retried) log(`  (succeeded on retry)`);
 
     return {
       sessionId,

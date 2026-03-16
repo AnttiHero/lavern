@@ -17,9 +17,22 @@ interface Props {
   demoMode: boolean;
   ethicalMode: boolean;
   onToggleEthical: (enabled: boolean) => void;
+  lastHeartbeat?: string;
 }
 
-export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, onToggleEthical }: Props) {
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const seconds = Math.floor(diffMs / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, onToggleEthical, lastHeartbeat }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: spacing.md }}>
       {/* Ethical Mode — prominent, top of config */}
@@ -148,6 +161,16 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, 
           {budget.perDocMax && <Field label="Per-Document Max" value={`$${budget.perDocMax.toFixed(2)}`} />}
         </div>
       </div>
+
+      {/* Heartbeat */}
+      {lastHeartbeat && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Heartbeat</div>
+          <div style={styles.fieldGrid}>
+            <Field label="Last Heartbeat" value={formatRelativeTime(lastHeartbeat)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

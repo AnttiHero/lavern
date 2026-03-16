@@ -10,7 +10,7 @@ import { useDocumentUpload } from '../briefing/hooks/useDocumentUpload.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
-export type ChallengePhase = 'idle' | 'processing' | 'reveal' | 'result';
+export type ChallengePhase = 'idle' | 'processing' | 'reveal' | 'result' | 'error';
 
 export interface DimensionScore {
   name: string;
@@ -135,9 +135,17 @@ export function useChallengeState() {
       setPhase('reveal');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Challenge failed');
-      setPhase('idle');
+      setPhase('error');
     }
   }, [whiteshoeSessionText, whiteshoeUpload.documents, whiteshoeUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
+
+  // ── Retry — reset to idle so user can try again ──
+  const retry = useCallback(() => {
+    setError(null);
+    setPhase('idle');
+    setResult(null);
+    setRevealed(false);
+  }, []);
 
   // ── Reveal identities ──
 
@@ -164,5 +172,6 @@ export function useChallengeState() {
     loadWhiteshoeFromSession,
     acceptChallenge,
     doReveal,
+    retry,
   };
 }

@@ -154,6 +154,8 @@ export interface ClawManifest {
     majorCount: number;
     minorCount: number;
     resolutionCount: number;
+    debateRounds: number;
+    verificationPassed: boolean | null;
   };
 
   outputs: {

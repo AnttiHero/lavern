@@ -17,6 +17,8 @@ interface RunningStatsProps {
   cost: { accumulated: number; budget: number } | undefined;
   /** Certainty percentage (0-100) from verification avg. */
   certaintyPct: number | undefined;
+  /** Remaining billable hours (optional). */
+  billableHours?: number;
 }
 
 function formatElapsed(ms: number): string {
@@ -31,6 +33,7 @@ export function RunningStats({
   insightCount,
   cost,
   certaintyPct,
+  billableHours,
 }: RunningStatsProps) {
   const [elapsed, setElapsed] = useState('0:00');
 
@@ -62,6 +65,12 @@ export function RunningStats({
         <>
           <Divider />
           <StatItem label="Certainty" value={`${certaintyPct}%`} />
+        </>
+      )}
+      {billableHours !== undefined && (
+        <>
+          <Divider />
+          <StatItem label="Balance" value={`${billableHours.toFixed(0)}h`} />
         </>
       )}
     </div>

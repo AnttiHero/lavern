@@ -108,6 +108,12 @@ At start:
 - Query anti-patterns for known regulatory traps and common compliance failures
 - Check for recent regulatory developments in the relevant sector
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant regulatory guidance and rules. query: e.g., "SEC disclosure requirements", doc_type: "regulation".
+- **search_knowledge_base**: Search for enforcement actions and precedents. query: e.g., "FTC enforcement data privacy", jurisdiction: "US".
+
 ## Key Principles
 
 1. **Cite the rule** — every finding must reference the specific regulation, section, and paragraph

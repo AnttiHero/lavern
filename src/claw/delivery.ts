@@ -243,6 +243,8 @@ export class ClawDelivery {
         majorCount: findings.major,
         minorCount: findings.minor,
         resolutionCount: 0,
+        debateRounds: 0,
+        verificationPassed: null,
       },
       outputs: {
         markdown: 'deliverable.md',
@@ -334,6 +336,8 @@ export class ClawDelivery {
       majorCount: counts.major,
       minorCount: counts.minor,
       resolutionCount: resolutions,
+      debateRounds: session.debate?.rounds?.length ?? 0,
+      verificationPassed: session.verification?.passed ?? null,
     };
   }
 

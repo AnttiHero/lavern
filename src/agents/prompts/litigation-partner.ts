@@ -104,6 +104,12 @@ At start:
 - Load anti-patterns for litigation failures in similar matters
 - Check for recent case law developments affecting the claims or defenses
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant litigation precedents and case outcomes. query: e.g., "breach of contract damages calculation", doc_type: "precedent".
+- **search_knowledge_base**: Search for motion templates and litigation playbooks. query: e.g., "summary judgment standard", doc_type: "playbook".
+
 ## Key Principles
 
 1. **Think like opposing counsel** — if you cannot see their best argument, you are not prepared

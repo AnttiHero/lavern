@@ -50,6 +50,21 @@ export function boundedPush<T>(arr: T[], item: T, max = MAX_ARRAY_SIZE): T[] {
   return arr;
 }
 
+// ── Verification Summary ─────────────────────────────────────────────────
+
+export interface VerificationSummary {
+  /** Total number of verification checks executed. */
+  totalChecks: number;
+  /** Number of checks that passed. */
+  passed: number;
+  /** Number of checks that failed. */
+  failed: number;
+  /** Average confidence across all checks (0.0-1.0). */
+  averageConfidence: number;
+  /** Key issues found during verification (from failed checks). */
+  keyIssues: string[];
+}
+
 // ── Verification Result (moved from verification-engine module scope) ────
 
 export interface VerificationResult {
@@ -97,6 +112,8 @@ export class SessionState {
   // ── Verification State ──
   public readonly verificationResults: VerificationResult[] = [];
   public verificationCounter = 0;
+  /** Aggregated verification summary — populated after verification tools run. */
+  public verificationSummary: VerificationSummary | null = null;
 
   // ── Approval Gate State ──
   public readonly gateDecisions: HumanGateDecision[] = [];

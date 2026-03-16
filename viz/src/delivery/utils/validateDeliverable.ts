@@ -136,6 +136,35 @@ export function analyzeContentDensity(text: string): {
   };
 }
 
+// ── Empty Section Detection ──────────────────────────────────────────────
+
+/**
+ * Count sections that have a heading but no content before the next heading
+ * or end of document. This indicates the assembler failed to populate a section.
+ */
+export function countEmptySections(text: string): number {
+  const lines = text.split('\n');
+  let emptyCount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!/^#{1,6}\s/.test(line)) continue;
+
+    let hasContent = false;
+    for (let j = i + 1; j < lines.length; j++) {
+      const nextLine = lines[j].trim();
+      if (!nextLine || nextLine === '---' || nextLine === '***') continue;
+      if (/^#{1,6}\s/.test(nextLine)) break;
+      hasContent = true;
+      break;
+    }
+
+    if (!hasContent) emptyCount++;
+  }
+
+  return emptyCount;
+}
+
 // ── Main Validation ───────────────────────────────────────────────────────
 
 /**
@@ -158,6 +187,9 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: st
   if (density.sectionsWithContent < 2 || density.avgCharsPerSection < 100) {
     return { valid: false, reason: 'thin_content' };
   }
+
+  const emptySections = countEmptySections(trimmed);
+  if (emptySections > 2) return { valid: false, reason: 'empty_sections' };
 
   const contamination = processTextRatio(trimmed);
   if (contamination > 0.2) return { valid: false, reason: 'process_contamination' };

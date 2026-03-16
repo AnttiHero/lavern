@@ -123,6 +123,7 @@ export default function ClawView({ onBack }: Props) {
             demoMode={demoMode}
             ethicalMode={status.ethicalMode}
             onToggleEthical={toggleEthicalMode}
+            lastHeartbeat={status.lastHeartbeat}
           />
         )}
 

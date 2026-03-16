@@ -117,6 +117,12 @@ At start:
 - Query anti-patterns for common privacy failures and enforcement actions
 - Check for recent regulatory guidance, decisions, and enforcement trends
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant privacy regulations and guidance. query: e.g., "GDPR data processing agreement", doc_type: "regulation".
+- **search_knowledge_base**: Search for privacy clause precedents. query: e.g., "CCPA consumer rights provisions", jurisdiction: "US".
+
 ## Key Principles
 
 1. **Data subjects first** — privacy is about protecting people, not just checking boxes

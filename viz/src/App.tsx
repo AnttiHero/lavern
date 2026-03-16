@@ -37,6 +37,7 @@ import { LoadingW } from './components/LoadingW.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 import { CustomCursor } from './components/CustomCursor.js';
+import { TopUpDialog } from './components/TopUpDialog.js';
 
 // Lazy-load all views (separate code-split chunks)
 const LandingView = lazy(() => import('./landing/LandingView.js'));
@@ -112,6 +113,7 @@ function ViewTransition({ children }: { children: React.ReactNode }) {
 export function App() {
   const [view, setView] = useState<AppView>(getViewFromHash);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [showTopUp, setShowTopUp] = useState(false);
 
   // Hash-based routing
   useEffect(() => {
@@ -223,7 +225,7 @@ export function App() {
       // Out of hours — show top-off prompt
       if (res.status === 402) {
         setErrorToast(null);
-        window.location.hash = '#/pricing?topoff=true';
+        setShowTopUp(true);
         return;
       }
 
@@ -336,7 +338,7 @@ export function App() {
       // Out of hours — show top-off prompt
       if (res.status === 402) {
         setErrorToast(null);
-        window.location.hash = '#/pricing?topoff=true';
+        setShowTopUp(true);
         return;
       }
 
@@ -543,6 +545,11 @@ export function App() {
     <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
   ) : null;
 
+  // ── Top-up dialog — shown on 402 instead of redirect ─────────────────
+  const topUpDialog = showTopUp ? (
+    <TopUpDialog onDismiss={() => setShowTopUp(false)} />
+  ) : null;
+
   // ── Custom cursor — auto-inverts via mix-blend-mode ──────────────────
   const cursor = <CustomCursor />;
 
@@ -555,6 +562,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {topUpDialog}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <QuickStartView
@@ -985,6 +993,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {topUpDialog}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>

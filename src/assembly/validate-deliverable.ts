@@ -190,6 +190,43 @@ export function analyzeContentDensity(text: string): {
   };
 }
 
+// ── Empty Section Detection ──────────────────────────────────────────────
+
+/**
+ * Count sections that have a heading but no content before the next heading
+ * or end of document. This indicates the assembler failed to populate a section.
+ *
+ * A section is "empty" if a heading line (## Something) is followed immediately
+ * by another heading line or end of document with no substantive content between.
+ */
+export function countEmptySections(text: string): number {
+  const lines = text.split('\n');
+  let emptyCount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Check if this line is a heading
+    if (!/^#{1,6}\s/.test(line)) continue;
+
+    // Look ahead for content before the next heading or EOF
+    let hasContent = false;
+    for (let j = i + 1; j < lines.length; j++) {
+      const nextLine = lines[j].trim();
+      // Skip blank lines and horizontal rules
+      if (!nextLine || nextLine === '---' || nextLine === '***') continue;
+      // If we hit another heading, this section is empty
+      if (/^#{1,6}\s/.test(nextLine)) break;
+      // Found substantive content
+      hasContent = true;
+      break;
+    }
+
+    if (!hasContent) emptyCount++;
+  }
+
+  return emptyCount;
+}
+
 // ── Main Validation ───────────────────────────────────────────────────────
 
 export type ValidationReason =
@@ -199,6 +236,7 @@ export type ValidationReason =
   | 'process_text'
   | 'no_structure'
   | 'thin_content'
+  | 'empty_sections'
   | 'process_contamination';
 
 /**
@@ -214,6 +252,7 @@ export type ValidationReason =
  *   4. Head is not a process dump (first 500 chars)
  *   5. Has at least 3 markdown headings (structure)
  *   6. Sufficient content density (sections have real content)
+ *   6b. No more than 2 empty sections (heading with no content before next heading)
  *   7. Full-text process contamination < 20%
  *
  * NOTE: Placeholder detection (e.g., [Insert Date], [TBD]) is intentionally
@@ -246,6 +285,10 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: Va
   if (density.sectionsWithContent < 2 || density.avgCharsPerSection < 100) {
     return { valid: false, reason: 'thin_content' };
   }
+
+  // 6. Empty sections — headings with no content indicate assembly failure
+  const emptySections = countEmptySections(trimmed);
+  if (emptySections > 2) return { valid: false, reason: 'empty_sections' };
 
   // 7. Full-text process contamination check
   const contamination = processTextRatio(trimmed);

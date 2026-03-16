@@ -111,6 +111,12 @@ At start:
 - Query anti-patterns for common compliance failures and enforcement cases
 - Check for recent enforcement actions in the relevant sector
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant compliance standards and frameworks. query: e.g., "anti-money laundering controls", doc_type: "regulation".
+- **search_knowledge_base**: Search for compliance program templates and benchmarks. query: e.g., "DOJ compliance program evaluation", doc_type: "playbook".
+
 ## Key Principles
 
 1. **Document everything** — if it is not documented, it did not happen

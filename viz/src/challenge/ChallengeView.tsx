@@ -509,6 +509,7 @@ export default function ChallengeView({ onBack }: Props) {
     loadWhiteshoeFromSession,
     acceptChallenge,
     doReveal,
+    retry,
   } = useChallengeState();
 
   // Fire confetti when result phase starts
@@ -706,7 +707,7 @@ export default function ChallengeView({ onBack }: Props) {
           </div>
         )}
 
-        {/* ── Processing ─────────────────────────────── */}
+        {/* ── Processing skeleton ──────────────────────── */}
         {phase === 'processing' && (
           <Section label="The Judge Is Deliberating" delay={0.1}>
             <div style={sty.processingCard}>
@@ -714,6 +715,76 @@ export default function ChallengeView({ onBack }: Props) {
               <div style={sty.processingStep}>
                 The judge is scoring both documents blind...
               </div>
+              {/* Skeleton bars mimicking dimension scores */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column' as const, gap: 10, marginTop: 12 }}>
+                {[0.7, 0.5, 0.85, 0.6, 0.75].map((w, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 80,
+                      height: 10,
+                      borderRadius: 4,
+                      backgroundColor: 'rgba(250, 249, 246, 0.06)',
+                      animation: `chPulse 2s ease-in-out ${i * 0.2}s infinite`,
+                    }} />
+                    <div style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(250, 249, 246, 0.04)', overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${w * 100}%`,
+                        height: '100%',
+                        borderRadius: 4,
+                        backgroundColor: 'rgba(184, 150, 11, 0.15)',
+                        animation: `chPulse 2s ease-in-out ${i * 0.15}s infinite`,
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* ── Error state ────────────────────────────────── */}
+        {phase === 'error' && (
+          <Section label="Something Went Wrong" delay={0.1}>
+            <div style={{
+              ...sty.processingCard,
+              borderColor: D.red,
+            }}>
+              <div style={{
+                fontSize: 32,
+                marginBottom: 4,
+              }}>
+                {'\u26A0'}
+              </div>
+              <div style={{
+                fontSize: 15,
+                fontFamily: fonts.serif,
+                color: D.text,
+                textAlign: 'center' as const,
+                maxWidth: 400,
+                lineHeight: 1.6,
+              }}>
+                {displayError || 'The challenge could not be completed. Please try again.'}
+              </div>
+              <button
+                onClick={retry}
+                style={{
+                  ...sty.acceptBtn,
+                  marginTop: 16,
+                  backgroundColor: 'transparent',
+                  color: D.gold,
+                  borderColor: D.gold,
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLButtonElement).style.backgroundColor = D.gold;
+                  (e.target as HTMLButtonElement).style.color = '#0A0A0F';
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.backgroundColor = 'transparent';
+                  (e.target as HTMLButtonElement).style.color = D.gold;
+                }}
+              >
+                Try Again
+              </button>
             </div>
           </Section>
         )}

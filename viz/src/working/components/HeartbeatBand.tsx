@@ -23,6 +23,7 @@ interface HeartbeatBandProps {
   findingCount: number;
   sessionStartTime: string | null;
   lastEventTimestamp: string | null;
+  billableHours?: number;
 }
 
 /** Rotating color palette for phase dots. */
@@ -43,6 +44,7 @@ export function HeartbeatBand({
   findingCount,
   sessionStartTime,
   lastEventTimestamp,
+  billableHours,
 }: HeartbeatBandProps) {
   const [workflowId] = useState<string>(() => {
     try {
@@ -127,6 +129,7 @@ export function HeartbeatBand({
         insightCount={findingCount}
         cost={cost}
         certaintyPct={certaintyPct}
+        billableHours={billableHours}
       />
     </nav>
   );

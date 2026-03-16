@@ -111,6 +111,12 @@ At start:
 - Query anti-patterns for known tax audit triggers and positions that have been challenged
 - Check for recent legislative changes, case law, and guidance in relevant jurisdictions
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant tax guidance and rulings. query: e.g., "transfer pricing OECD guidelines", doc_type: "regulation".
+- **search_knowledge_base**: Search for tax structuring precedents. query: e.g., "withholding tax treaty relief", doc_type: "precedent".
+
 ## Key Principles
 
 1. **Substance over form** — a structure without economic substance will not survive audit

@@ -30,6 +30,7 @@ export function buildDemoStatus(): ClawStatus {
     documents: { total: 12, reviewed: 7, flagged: 2, pending: 2, errors: 1, confidential: 3, frontier: 9 },
     sessions: { completed: 8, failed: 1 },
     lastScan: ago(0.25),
+    lastHeartbeat: ago(0.05),
     daemon: { installed: true, running: true, pid: 42847 },
   };
 }

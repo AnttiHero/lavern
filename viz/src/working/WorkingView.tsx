@@ -26,6 +26,7 @@ import { VerificationFeed } from '../verification/VerificationFeed.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { injectWorkingKeyframes } from './styles/animations.js';
 import { DemoNarration } from '../components/DemoNarration.js';
+import { useBillingStatus } from '../my-page/hooks/useBillingStatus.js';
 
 const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
 
@@ -153,6 +154,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   );
 
   const isDemo = state.sessionId?.startsWith('demo-session-') ?? false;
+  const { status: billing } = useBillingStatus(!isDemo);
 
   return (
     <div style={styles.root}>
@@ -198,6 +200,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         findingCount={totalFindings}
         sessionStartTime={state.events[0]?.timestamp ?? null}
         lastEventTimestamp={state.lastEventTimestamp}
+        billableHours={billing?.billableHours.balance}
       />
 
       {/* Connection Lost banner — visible when WS drops during an active session */}

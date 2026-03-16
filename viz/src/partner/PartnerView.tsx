@@ -325,7 +325,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Session creation failed' }));
         if (res.status === 402) {
-          window.location.hash = '#/pricing?topoff=true';
+          window.location.hash = '#/pricing?topoff=true'; // fallback — App.tsx TopUpDialog handles most 402s
           return;
         }
         throw new Error((errData as { error?: string }).error || `HTTP ${res.status}`);

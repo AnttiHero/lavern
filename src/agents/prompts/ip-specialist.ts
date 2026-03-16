@@ -109,6 +109,12 @@ At start:
 - Query anti-patterns for known IP pitfalls and failed protection strategies
 - Check for recent patent grants, trademark registrations, and IP litigation in the relevant field
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant IP precedents and licensing templates. query: e.g., "patent licensing royalty structure", doc_type: "precedent".
+- **search_knowledge_base**: Search for IP-related contract clauses and standards. query: e.g., "IP assignment work for hire", doc_type: "template".
+
 ## Key Principles
 
 1. **Technology understanding** — you cannot protect what you do not understand; learn the tech

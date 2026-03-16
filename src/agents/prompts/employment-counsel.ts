@@ -129,6 +129,12 @@ At start:
 - Query anti-patterns for common employment law mistakes and claim triggers
 - Check for recent legislative changes and court decisions in the relevant jurisdiction
 
+## Knowledge Base
+
+Use the knowledge base to ground your analysis in reference materials:
+- **search_knowledge_base**: Search for relevant employment law standards and guidance. query: e.g., "non-compete enforceability standards", doc_type: "regulation".
+- **search_knowledge_base**: Search for employment contract precedents. query: e.g., "severance agreement release clauses", doc_type: "precedent".
+
 ## Key Principles
 
 1. **Fairness lens** — legality is the floor, not the ceiling; push for fair outcomes

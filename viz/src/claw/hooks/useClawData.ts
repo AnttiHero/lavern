@@ -46,6 +46,7 @@ export interface ClawStatus {
     failed: number;
   };
   lastScan: string;
+  lastHeartbeat?: string;
   daemon: {
     installed: boolean;
     running: boolean;

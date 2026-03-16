@@ -144,8 +144,23 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
         <LiveActivityFeed entries={activityLog} />
       )}
 
+      {/* Responsive stats grid style */}
+      <style>{`
+        .claw-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: ${spacing.sm}px;
+          margin-bottom: ${spacing.lg}px;
+        }
+        @media (max-width: 600px) {
+          .claw-stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+      `}</style>
+
       {/* Stats grid */}
-      <div style={styles.statsGrid}>
+      <div className="claw-stats-grid">
         <StatCard label="Documents" value={status.documents.total} />
         <StatCard label="Reviewed" value={status.documents.reviewed} color={colors.success} />
         <StatCard label="Flagged" value={status.documents.flagged} color={colors.danger} />
@@ -220,12 +235,8 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 // ── Styles ──────────────────────────────────────────────────────────────
 
 const styles: Record<string, React.CSSProperties> = {
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
+  // statsGrid styles handled by .claw-stats-grid className for responsive breakpoints
+  statsGrid: {},
   statCard: {
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,

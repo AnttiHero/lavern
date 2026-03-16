@@ -17,6 +17,37 @@ import type { SessionState } from '../../session/session-state.js';
 import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 
+/**
+ * Recompute and store the verification summary on the session.
+ * Called after every verification run so the summary is always current.
+ */
+function updateVerificationSummary(session: SessionState): void {
+  const results = session.verificationResults;
+  const passed = results.filter(v => v.passed).length;
+  const failed = results.filter(v => !v.passed).length;
+  const avgConfidence = results.length > 0
+    ? results.reduce((sum, v) => sum + v.confidence, 0) / results.length
+    : 0;
+
+  // Collect key issues from failed checks (up to 10)
+  const keyIssues: string[] = [];
+  for (const v of results) {
+    if (!v.passed) {
+      for (const finding of v.findings) {
+        if (keyIssues.length < 10) keyIssues.push(finding);
+      }
+    }
+  }
+
+  session.verificationSummary = {
+    totalChecks: results.length,
+    passed,
+    failed,
+    averageConfidence: Math.round(avgConfidence * 100) / 100,
+    keyIssues,
+  };
+}
+
 export function createVerificationTools(session: SessionState) {
   const results = session.verificationResults;
 
@@ -57,6 +88,7 @@ export function createVerificationTools(session: SessionState) {
         timestamp: new Date().toISOString(),
       };
       boundedPush(results, result);
+      updateVerificationSummary(session);
 
       session.events.emitEvent({
         type: 'verification_run',
@@ -125,6 +157,7 @@ ${!passed ? '\u26a0\ufe0f Verification failed. Agent should address failed crite
         timestamp: new Date().toISOString(),
       };
       boundedPush(results, result);
+      updateVerificationSummary(session);
 
       session.events.emitEvent({
         type: 'verification_run',
@@ -199,6 +232,7 @@ ${!passed ? '\u26a0\ufe0f Cross-verification failed. Critical findings remain un
         timestamp: new Date().toISOString(),
       };
       boundedPush(results, result);
+      updateVerificationSummary(session);
 
       session.events.emitEvent({
         type: 'verification_run',

@@ -14,6 +14,7 @@
 import { useCallback, useState } from 'react';
 import { colors, fonts, spacing, radii } from '../staffing/styles/tokens.js';
 import { useUserProfile } from './hooks/useUserProfile.js';
+import { useBillingStatus } from './hooks/useBillingStatus.js';
 import { useCustomAgents } from '../agent-builder/hooks/useCustomAgents.js';
 import type { UserProfile } from './hooks/useUserProfile.js';
 
@@ -46,6 +47,7 @@ const MAX_SOUL = 5000;
 
 export default function MyPageView({ onBack }: Props) {
   const { profile, updateProfile, deleteTeam, hasSavedTeams } = useUserProfile();
+  const { status: billing, loading: billingLoading } = useBillingStatus();
   const { agents: customAgents, removeAgent } = useCustomAgents();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -73,6 +75,71 @@ export default function MyPageView({ onBack }: Props) {
       <p style={styles.pageSub}>
         Your preferences persist across engagements. Everything saves automatically.
       </p>
+
+      {/* ── Section 0: Balance & Plan ─────────────────────────────── */}
+      {!billingLoading && billing && (
+        <>
+          <SectionDivider label="Balance & Plan" />
+          <div style={styles.billingCard}>
+            {/* Plan badge */}
+            <div style={styles.billingRow}>
+              <div style={styles.billingLabel}>Plan</div>
+              <div style={{
+                ...styles.planBadge,
+                ...(billing.plan !== 'free' ? styles.planBadgePaid : {}),
+              }}>
+                {billing.planLabel}
+              </div>
+            </div>
+
+            {/* Billable hours balance */}
+            <div style={styles.billingHours}>
+              <div style={styles.hoursValue}>
+                {billing.billableHours.balance.toFixed(0)}
+              </div>
+              <div style={styles.hoursLabel}>billable hours remaining</div>
+              <div style={styles.hoursUsd}>
+                ≈ ${billing.billableHours.balanceUsd.toFixed(2)} credit
+              </div>
+            </div>
+
+            {/* Monthly usage bar */}
+            <div style={styles.billingRow}>
+              <div style={styles.billingLabel}>This month</div>
+              <div style={styles.billingValue}>
+                {billing.usage.engagementCount} engagement{billing.usage.engagementCount !== 1 ? 's' : ''}
+                {' · '}${billing.usage.totalCostUsd.toFixed(2)} / ${billing.monthlyCapUsd}
+              </div>
+            </div>
+            <div style={styles.usageBar}>
+              <div style={{
+                ...styles.usageBarFill,
+                width: `${Math.min(100, (billing.usage.totalCostUsd / billing.monthlyCapUsd) * 100)}%`,
+              }} />
+            </div>
+
+            {/* Actions */}
+            <div style={styles.billingActions}>
+              <button
+                onClick={() => { window.location.hash = '#/pricing'; }}
+                style={styles.buyHoursBtn}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+              >
+                Buy Hours
+              </button>
+              {billing.plan === 'free' && (
+                <button
+                  onClick={() => { window.location.hash = '#/pricing'; }}
+                  style={styles.upgradePlanBtn}
+                >
+                  Upgrade Plan
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Section 1: About You ───────────────────────────────────── */}
       <SectionDivider label="About You" />
@@ -887,5 +954,126 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     letterSpacing: 0.5,
     transition: 'background-color 0.2s ease, color 0.2s ease',
+  },
+
+  // ── Billing section ──────────────────────────────────────────────
+  billingCard: {
+    width: '100%',
+    maxWidth: 580,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.lg,
+    padding: `${spacing.xl}px ${spacing.xxl}px`,
+    marginBottom: spacing.xl,
+  },
+  billingRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  billingLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  billingValue: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  planBadge: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    color: colors.textMuted,
+    backgroundColor: colors.bgPanel,
+    padding: '3px 10px',
+    borderRadius: radii.sm,
+  },
+  planBadgePaid: {
+    color: '#fff',
+    backgroundColor: colors.text,
+  },
+  billingHours: {
+    textAlign: 'center' as const,
+    padding: `${spacing.xl}px 0`,
+    borderTop: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${colors.border}`,
+    margin: `${spacing.md}px 0 ${spacing.lg}px`,
+  },
+  hoursValue: {
+    fontFamily: fonts.serif,
+    fontSize: 56,
+    fontWeight: 300,
+    color: colors.text,
+    letterSpacing: -2,
+    lineHeight: 1,
+    marginBottom: spacing.xs,
+  },
+  hoursLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    fontWeight: 500,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  hoursUsd: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.textDim,
+    marginTop: spacing.xs,
+  },
+  usageBar: {
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.bgPanel,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+  },
+  usageBarFill: {
+    height: '100%',
+    backgroundColor: colors.accent,
+    borderRadius: 2,
+    transition: 'width 0.5s ease',
+  },
+  billingActions: {
+    display: 'flex',
+    gap: spacing.md,
+    justifyContent: 'center',
+  },
+  buyHoursBtn: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    border: `1px solid ${colors.text}`,
+    borderRadius: radii.sm,
+    padding: '8px 20px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  upgradePlanBtn: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    color: colors.accent,
+    backgroundColor: 'transparent',
+    border: `1px solid ${colors.accent}`,
+    borderRadius: radii.sm,
+    padding: '8px 20px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
 };
