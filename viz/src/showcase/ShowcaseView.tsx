@@ -5,12 +5,12 @@ const GOLD_RGB = '150, 135, 95';
 
 /**
  * ShowcaseView — a single-screen iPhone-optimized hero for VC demos.
- * "Whiteshoe" + tagline + breathing orb. Tap to enter demo.
+ * "Whiteshoe" + tagline + pulsing TALK orb. Tap orb to enter demo.
  * Route: #/showcase
  */
 export default function ShowcaseView({ onTap }: { onTap?: () => void }) {
   return (
-    <div style={S.container} onClick={onTap}>
+    <div style={S.container}>
       {/* Marble background */}
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
@@ -31,18 +31,15 @@ export default function ShowcaseView({ onTap }: { onTap?: () => void }) {
 
         <div style={{ flex: 0.8 }} />
 
-        {/* Orb */}
-        <div style={S.orbWrap}>
+        {/* Orb — the TALK button */}
+        <button style={S.orbBtn} onClick={onTap} aria-label="Talk to our legal agent">
+          <div style={S.orbPulseRing} />
           <div style={S.orb}>
-            <div style={S.orbInner} />
+            <span style={S.orbLabel}>TALK</span>
           </div>
-        </div>
+        </button>
 
-        <div style={{ flex: 1 }} />
-
-        {/* Bottom hint */}
-        <p style={S.hint}>Tap to begin</p>
-        <div style={{ flex: 0.3 }} />
+        <div style={{ flex: 1.2 }} />
       </div>
     </div>
   );
@@ -52,10 +49,8 @@ const S: Record<string, React.CSSProperties> = {
   container: {
     position: 'relative',
     width: '100%',
-    height: '100vh',
-    height: '100dvh' as string,
+    height: '100dvh',
     overflow: 'hidden',
-    cursor: 'pointer',
     userSelect: 'none',
     WebkitUserSelect: 'none',
   },
@@ -90,7 +85,7 @@ const S: Record<string, React.CSSProperties> = {
     color: '#1a1a1a',
     textAlign: 'center',
     margin: 0,
-    paddingLeft: 12, // optically center the letter-spacing
+    paddingLeft: 12,
     animation: 'showcaseTitle 1.2s cubic-bezier(0.4, 0, 0.2, 1) both',
   },
   subtitle: {
@@ -123,39 +118,44 @@ const S: Record<string, React.CSSProperties> = {
     margin: 0,
     animation: 'showcaseFadeIn 0.8s ease 1s both',
   },
-  orbWrap: {
+  orbBtn: {
+    position: 'relative',
+    width: 140,
+    height: 140,
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     animation: 'showcaseOrbEntrance 1s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s both',
   },
+  orbPulseRing: {
+    position: 'absolute',
+    inset: -12,
+    borderRadius: '50%',
+    border: `2px solid rgba(${GOLD_RGB}, 0.3)`,
+    animation: 'showcaseCtaPulse 2.5s ease-in-out 2.5s infinite',
+  },
   orb: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     borderRadius: '50%',
     backgroundColor: '#2a2a2a',
-    border: `1.5px solid rgba(${GOLD_RGB}, 0.25)`,
+    border: `1.5px solid rgba(${GOLD_RGB}, 0.3)`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: `0 0 40px rgba(${GOLD_RGB}, 0.12), 0 0 80px rgba(${GOLD_RGB}, 0.06)`,
-    animation: 'showcaseOrbBreath 4s ease-in-out 2.2s infinite',
+    animation: 'showcaseOrbBump 2.5s ease-in-out 2.5s infinite',
   },
-  orbInner: {
-    width: '55%',
-    height: '55%',
-    borderRadius: '50%',
-    border: `1px solid rgba(${GOLD_RGB}, 0.2)`,
-  },
-  hint: {
+  orbLabel: {
     fontFamily: "'Inter', sans-serif",
-    fontSize: 10,
-    fontWeight: 500,
-    letterSpacing: 3,
-    textTransform: 'uppercase' as const,
-    color: '#aaa',
-    textAlign: 'center',
-    margin: 0,
-    animation: 'showcaseFadeIn 0.6s ease 2.2s both',
+    fontSize: 13,
+    fontWeight: 600,
+    letterSpacing: 4,
+    color: `rgba(${GOLD_RGB}, 0.7)`,
+    paddingLeft: 4,
   },
 };
