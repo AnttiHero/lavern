@@ -202,7 +202,8 @@ async function main(): Promise<void> {
   // Check for --serve flag first
   if (args.includes('--serve')) {
     const portIndex = args.indexOf('--port');
-    const port = portIndex >= 0 ? parseInt(args[portIndex + 1] || '3000', 10) : 3000;
+    const _parsedPort = portIndex >= 0 ? parseInt(args[portIndex + 1] || '3000', 10) : 3000;
+    const port = Number.isFinite(_parsedPort) && _parsedPort > 0 && _parsedPort <= 65535 ? _parsedPort : 3000;
 
     // Combined mode: --serve --claw — API server + Claw Mode together
     if (args.includes('--claw')) {
@@ -346,7 +347,7 @@ What happens:
 
     await dispatch(request, {
       forceWorkflow,
-      maxBudgetUsd: options.budget ? parseFloat(options.budget as string) : undefined,
+      maxBudgetUsd: (() => { const b = options.budget ? parseFloat(options.budget as string) : undefined; return b !== undefined && Number.isFinite(b) && b > 0 ? b : undefined; })(),
       model: options.model as string | undefined,
       logLevel: options.debug ? 'debug' : 'info',
       cwd: request.documentPath ? path.dirname(request.documentPath) : process.cwd(),
@@ -356,7 +357,7 @@ What happens:
     const { documentPath: resolvedPath, context, options: parsedOptions } = parseDocumentArgs(args);
 
     await runTheShem(resolvedPath, context, {
-      maxBudgetUsd: parsedOptions.budget ? parseFloat(parsedOptions.budget as string) : undefined,
+      maxBudgetUsd: (() => { const b = parsedOptions.budget ? parseFloat(parsedOptions.budget as string) : undefined; return b !== undefined && Number.isFinite(b) && b > 0 ? b : undefined; })(),
       model: parsedOptions.model as string | undefined,
       logLevel: parsedOptions.debug ? 'debug' : 'info',
       cwd: path.dirname(resolvedPath),

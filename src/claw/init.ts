@@ -107,10 +107,12 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
 
     // Budget
     const budgetStr = await ask(`\nTotal budget in USD (default: $${config.claw.defaultBudget.toFixed(0)}): `);
-    const totalUsd = budgetStr ? parseFloat(budgetStr) : config.claw.defaultBudget;
+    const _parsedBudget = budgetStr ? parseFloat(budgetStr) : config.claw.defaultBudget;
+    const totalUsd = Number.isFinite(_parsedBudget) && _parsedBudget > 0 ? _parsedBudget : config.claw.defaultBudget;
 
     const perDocStr = await ask(`Per-document max in USD (default: $${config.claw.defaultPerDocBudget.toFixed(0)}): `);
-    const perDocumentMaxUsd = perDocStr ? parseFloat(perDocStr) : config.claw.defaultPerDocBudget;
+    const _parsedPerDoc = perDocStr ? parseFloat(perDocStr) : config.claw.defaultPerDocBudget;
+    const perDocumentMaxUsd = Number.isFinite(_parsedPerDoc) && _parsedPerDoc > 0 ? _parsedPerDoc : config.claw.defaultPerDocBudget;
 
     // Sensitivity patterns (privilege preservation)
     console.log('\nSensitivity patterns — filenames matching these are processed locally');
