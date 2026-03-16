@@ -6,7 +6,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isProcessDump, validateDeliverable } from '../../src/assembly/validate-deliverable.js';
+import {
+  isProcessDump,
+  processTextRatio,
+  countPlaceholders,
+  analyzeContentDensity,
+  countEmptySections,
+  validateDeliverable,
+} from '../../src/assembly/validate-deliverable.js';
 
 // ── Helper: Build a valid document ─────────────────────────────────────────
 
@@ -147,6 +154,157 @@ describe('isProcessDump', () => {
 
   it('returns false for empty string', () => {
     expect(isProcessDump('')).toBe(false);
+  });
+});
+
+// ── processTextRatio() ──────────────────────────────────────────────────────
+
+describe('processTextRatio', () => {
+  it('returns 0 for clean documents', () => {
+    const doc = makeValidDoc();
+    expect(processTextRatio(doc)).toBe(0);
+  });
+
+  it('returns 0 for empty text', () => {
+    expect(processTextRatio('')).toBe(0);
+  });
+
+  it('returns 1.0 for fully contaminated text', () => {
+    const paras = [
+      "I'll start by reviewing the document structure and organization carefully.",
+      "Now, let me look at the specific clauses that need attention and analysis.",
+      "Next, I need to check the indemnification language for any potential problems.",
+    ];
+    expect(processTextRatio(paras.join('\n\n'))).toBe(1);
+  });
+
+  it('detects partial contamination', () => {
+    const clean = 'The parties agree to the following terms and conditions governing the relationship and obligations thereunder.';
+    const dirty = "I'll now analyze the indemnification clause in detail to identify potential issues.";
+    const ratio = processTextRatio(`${dirty}\n\n${clean}\n\n${clean}`);
+    expect(ratio).toBeGreaterThan(0);
+    expect(ratio).toBeLessThan(1);
+  });
+
+  it('skips short paragraphs and headings', () => {
+    const doc = "I'll do.\n\n# Heading\n\n" + makeValidDoc();
+    const ratio = processTextRatio(doc);
+    // Short "I'll do." is under 30 chars, heading is filtered → contamination should be low
+    expect(ratio).toBeLessThan(0.5);
+  });
+});
+
+// ── countPlaceholders() ────────────────────────────────────────────────────
+
+describe('countPlaceholders', () => {
+  it('returns 0 for clean text', () => {
+    expect(countPlaceholders('The effective date is January 1, 2025.')).toBe(0);
+  });
+
+  it('detects [Insert ...] patterns', () => {
+    expect(countPlaceholders('[Insert Date] and [Insert Company Name]')).toBe(2);
+  });
+
+  it('detects [TBD] and [TODO]', () => {
+    expect(countPlaceholders('[TBD] — needs review. [TODO: add clause]')).toBe(2);
+  });
+
+  it('detects [PLACEHOLDER]', () => {
+    expect(countPlaceholders('Amount: [PLACEHOLDER]')).toBe(1);
+  });
+
+  it('detects [To be ...] patterns', () => {
+    expect(countPlaceholders('[To be determined] and [To be completed later]')).toBe(2);
+  });
+
+  it('detects [PENDING] and [DRAFT]', () => {
+    expect(countPlaceholders('[PENDING REVIEW] [DRAFT VERSION]')).toBe(2);
+  });
+
+  it('counts generic uppercase brackets when 3+', () => {
+    const text = '[ANALYSIS] [FINDINGS] [RECOMMENDATIONS]';
+    expect(countPlaceholders(text)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('ignores fewer than 3 generic uppercase brackets', () => {
+    const text = 'See [ANALYSIS] and [FINDINGS] for details.';
+    expect(countPlaceholders(text)).toBe(0);
+  });
+
+  it('is case-insensitive for known patterns', () => {
+    expect(countPlaceholders('[insert date] [tbd]')).toBe(2);
+  });
+});
+
+// ── analyzeContentDensity() ────────────────────────────────────────────────
+
+describe('analyzeContentDensity', () => {
+  it('reports correct section count', () => {
+    const doc = makeValidDoc();
+    const result = analyzeContentDensity(doc);
+    // makeValidDoc has: # Title (no body before ##), ## Section 1, ## Section 2, ## Section 3
+    // Split by heading produces 4 sections
+    expect(result.totalSections).toBeGreaterThanOrEqual(3);
+  });
+
+  it('counts sections with sufficient content', () => {
+    const doc = makeValidDoc();
+    const result = analyzeContentDensity(doc);
+    // Title and 3 sections all have 150+ chars
+    expect(result.sectionsWithContent).toBeGreaterThanOrEqual(3);
+  });
+
+  it('identifies thin sections', () => {
+    const doc = '# Title\n\nShort.\n\n## Section 1\n\nAlso short.\n\n## Section 2\n\n' + 'x'.repeat(200);
+    const result = analyzeContentDensity(doc);
+    expect(result.sectionsWithContent).toBe(1);
+  });
+
+  it('handles empty text', () => {
+    const result = analyzeContentDensity('');
+    expect(result.totalSections).toBe(0);
+    expect(result.avgCharsPerSection).toBe(0);
+  });
+});
+
+// ── countEmptySections() ───────────────────────────────────────────────────
+
+describe('countEmptySections', () => {
+  it('returns 0 for fully populated sections', () => {
+    // makeValidDoc has # Title with no body before ## Section 1, so it has 1 empty section
+    // Use a doc where every heading has content:
+    const doc = '# Title\n\nIntro text.\n\n## Sec 1\n\nContent 1.\n\n## Sec 2\n\nContent 2.';
+    expect(countEmptySections(doc)).toBe(0);
+  });
+
+  it('counts title heading as empty when it has no body', () => {
+    expect(countEmptySections(makeValidDoc())).toBe(1);
+  });
+
+  it('detects heading followed by heading', () => {
+    const doc = '# Title\n\nSome text.\n\n## Empty\n## Has Content\n\nSome text.';
+    expect(countEmptySections(doc)).toBe(1);
+  });
+
+  it('detects heading at end of document', () => {
+    const doc = '# Title\n\nSome text.\n\n## Trailing';
+    expect(countEmptySections(doc)).toBe(1);
+  });
+
+  it('detects multiple empty sections', () => {
+    // # Title is also empty (no content before ## E1), so 4 empty total
+    const doc = '# Title\n## E1\n## E2\n## E3\n## Has Content\n\nText.';
+    expect(countEmptySections(doc)).toBe(4);
+  });
+
+  it('counts blank-line-then-content as non-empty', () => {
+    const doc = '# Title\n\n\n\nContent after blanks.';
+    expect(countEmptySections(doc)).toBe(0);
+  });
+
+  it('skips horizontal rules as non-content', () => {
+    const doc = '# Title\n---\n## Next\n\nContent.';
+    expect(countEmptySections(doc)).toBe(1);
   });
 });
 
