@@ -431,20 +431,6 @@ input:focus-visible {
   50% { opacity: 0.08; }
 }
 
-/* BetTheCompanyView */
-@keyframes btcFadeIn {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-@keyframes btcPulse {
-  0%, 100% { opacity: 0.04; }
-  50% { opacity: 0.08; }
-}
-@keyframes btcGoldShimmer {
-  0% { background-position: 200% center; }
-  100% { background-position: -200% center; }
-}
-
 /* ClawView — daemon pulse */
 @keyframes clawDaemonPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(184, 134, 11, 0); }

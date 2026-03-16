@@ -4,7 +4,7 @@
  * We are a law firm. We bill by the hour.
  * Except our hours cost ten cents.
  *
- * Dark cinematic design (same template as BetTheCompanyView).
+ * Dark cinematic design.
  * Credit-based pricing: join waitlist, get 50h free, buy packs or subscribe.
  */
 

@@ -53,7 +53,6 @@ const BillingView = lazy(() => import('./billing/BillingView.js'));
 const MyPageView = lazy(() => import('./my-page/MyPageView.js'));
 const MyCasesView = lazy(() => import('./my-cases/MyCasesView.js'));
 const AgentDocsView = lazy(() => import('./agent-docs/AgentDocsView.js'));
-const BetTheCompanyView = lazy(() => import('./bet-the-company/BetTheCompanyView.js'));
 const LoginView = lazy(() => import('./auth/LoginView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
@@ -66,7 +65,7 @@ const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -87,7 +86,6 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/my-cases')) return 'my-cases';
   if (hash.startsWith('#/my-page')) return 'my-page';
   if (hash.startsWith('#/agent-docs')) return 'agent-docs';
-  if (hash.startsWith('#/bet-the-company')) return 'bet-the-company';
   if (hash.startsWith('#/claw')) return 'claw';
   if (hash.startsWith('#/archive')) return 'archive';
   if (hash.startsWith('#/pricing')) return 'pricing';
@@ -140,7 +138,6 @@ export function App() {
   // ── Stable navigation callbacks (prevent WS effect re-runs) ────────
   const navToDelivery = useCallback(() => { window.location.hash = '#/delivery'; }, []);
   const navToTeam = useCallback(() => { window.location.hash = '#/team'; }, []);
-  const navToBetTheCompany = useCallback(() => { window.location.hash = '#/bet-the-company'; }, []);
 
   // ── Flow navigation handlers ─────────────────────────────────────────
 
@@ -568,7 +565,6 @@ export function App() {
           <QuickStartView
             onQuickStart={handleQuickStart}
             onGuidedFlow={() => { window.location.hash = '#/intake'; }}
-            onBetTheCompany={() => { window.location.hash = '#/bet-the-company'; }}
             onPricing={() => { window.location.hash = '#/pricing'; }}
             onChallenge={() => { window.location.hash = '#/challenge'; }}
           />
@@ -810,21 +806,6 @@ export function App() {
     );
   }
 
-  // ── Bet the Company — premium tier landing page ─────────────────────
-  if (view === 'bet-the-company') {
-    return (
-      <ErrorBoundary>
-        {skipLink}
-        {toast}
-        {cursor}
-        <ViewTransition>
-          <Suspense fallback={<ViewFallback text="Loading..." />}>
-            <BetTheCompanyView onBack={() => { window.location.hash = '#/quickstart'; }} />
-          </Suspense>
-        </ViewTransition>
-      </ErrorBoundary>
-    );
-  }
 
   // ── Pricing — Billable Hours ───────────────────────────────────────
   if (view === 'pricing') {
@@ -958,7 +939,6 @@ export function App() {
                 }}
                 onBeginEngagement={handleBeginEngagement}
                 onYoloLaunch={handleYoloLaunch}
-                onBetTheCompany={navToBetTheCompany}
               />
             </div>
           </div>

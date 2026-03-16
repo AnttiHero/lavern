@@ -152,13 +152,6 @@ export const config = {
   // ── Logging ────────────────────────────────────────────────────────────
   logLevel: (process.env.SHEM_LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error',
 
-  // ── Cost Tiers (v8: Law Firm) ─────────────────────────────────────────
-  costTiers: {
-    opus:   { model: 'claude-opus-4-6',            multiplier: 3.0, label: 'Partner / Senior (Opus)' },
-    sonnet: { model: 'claude-sonnet-4-5-20250929',  multiplier: 1.0, label: 'Associate / Specialist (Sonnet)' },
-    haiku:  { model: 'claude-haiku-3-5-20250929',   multiplier: 0.3, label: 'Junior / Paralegal (Haiku)' },
-  },
-
   // ── Claw Mode (Law Firm on Retainer) ──────────────────────────────────
   claw: {
     dir: process.env.MARBLE_CLAW_DIR ?? path.join(os.homedir(), '.whiteshoe'),

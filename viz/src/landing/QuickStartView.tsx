@@ -36,7 +36,6 @@ const TIER_MAP: Record<EngagementTier, YoloTier> = {
 interface QuickStartProps {
   onQuickStart: (question: string, tier: YoloTier, parsedDocs: FrontendParsedDocument[]) => Promise<void>;
   onGuidedFlow: () => void;
-  onBetTheCompany?: () => void;
   onPricing?: () => void;
   onChallenge?: () => void;
 }
@@ -89,7 +88,7 @@ function ShimmerButton({
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCompany, onPricing, onChallenge }: QuickStartProps) {
+export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, onChallenge }: QuickStartProps) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -761,55 +760,6 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onBetTheCom
           <span className="arrow-nudge text-xl text-text-muted" style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>{'\u2192'}</span>
         </div>
       </div>
-
-      {/* ── Bet the Company ─────────────────────────────── */}
-      {onBetTheCompany && (
-        <div
-          className={cn(
-            'relative z-2 w-full max-w-[680px] mx-4 sm:mx-auto mt-4 box-border',
-            'flex flex-col sm:flex-row items-start sm:items-center gap-6',
-            'p-5 sm:p-6 lg:px-8 lg:py-7',
-            'rounded-xl cursor-pointer',
-            'transition-[border-color,background-color,box-shadow,transform] duration-300 ease-in-out',
-          )}
-          style={{
-            animation: 'qsFadeUp 0.6s ease 0.9s both',
-            backgroundColor: 'rgba(255,255,255,0.7)',
-            border: '1.5px solid rgba(0,0,0,0.06)',
-            boxShadow: '0 1px 8px rgba(0,0,0,0.03)',
-          }}
-          onClick={onBetTheCompany}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = colors.borderHover;
-            e.currentTarget.style.backgroundColor = colors.bgCard;
-            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
-            if (arrow) arrow.style.transform = 'translateX(3px)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.7)';
-            e.currentTarget.style.boxShadow = '0 1px 8px rgba(0,0,0,0.03)';
-            e.currentTarget.style.transform = 'none';
-            const arrow = e.currentTarget.querySelector('.arrow-nudge') as HTMLElement;
-            if (arrow) arrow.style.transform = 'none';
-          }}
-        >
-          <div className="flex-1">
-            <h3 className="text-[22px] font-light font-serif text-text m-0 tracking-tight">
-              Bet the Company
-            </h3>
-            <p className="text-[13px] font-sans text-text-muted mt-2 leading-relaxed tracking-[0.15px]">
-              White-glove service. AI analysis reviewed by human legal professionals
-              before anything reaches you. For when the stakes are highest.
-            </p>
-          </div>
-          <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
-            <span className="arrow-nudge text-xl text-text-muted" style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>{'\u2192'}</span>
-          </div>
-        </div>
-      )}
 
       {/* ── The Whiteshoe Challenge ─────────────────────── */}
       {onChallenge && (

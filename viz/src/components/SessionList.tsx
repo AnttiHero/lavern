@@ -18,13 +18,12 @@ interface SessionListProps {
   onConnectReplay: (id: string) => void;
   onBeginEngagement?: () => void;
   onYoloLaunch?: (question: string, tier: YoloTier) => void;
-  onBetTheCompany?: () => void;
 }
 
 // Shared nav button class
 const NAV_BTN = 'flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 sm:pl-3.5 rounded-sm border-[1.5px] border-text bg-transparent text-text font-sans text-[11px] font-semibold cursor-pointer tracking-[1px] uppercase transition-[background-color,color,border-color] duration-250 whitespace-nowrap';
 
-export function SessionList({ onBeginEngagement, onYoloLaunch, onBetTheCompany }: SessionListProps) {
+export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProps) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const [yoloOpen, setYoloOpen] = useState(false);
@@ -139,22 +138,6 @@ export function SessionList({ onBeginEngagement, onYoloLaunch, onBetTheCompany }
           </button>
         )}
 
-        {/* Bet the Company */}
-        {onBetTheCompany && (
-          <button
-            onClick={onBetTheCompany}
-            className="mt-6 px-6 py-2 rounded-sm border-[1.5px] border-transparent font-serif italic text-[15px] font-normal tracking-[0.5px] cursor-pointer transition-[background-color,color,border-color] duration-300"
-            style={{
-              color: hoveredBtn === 'btc' ? '#B8960B' : colors.textMuted,
-              borderColor: hoveredBtn === 'btc' ? 'rgba(184, 150, 11, 0.4)' : 'transparent',
-              backgroundColor: hoveredBtn === 'btc' ? 'rgba(184, 150, 11, 0.06)' : 'transparent',
-            }}
-            onMouseEnter={() => setHoveredBtn('btc')}
-            onMouseLeave={() => setHoveredBtn(null)}
-          >
-            Bet the Company
-          </button>
-        )}
       </div>
 
       {/* ── YOLO Panel — expands when toggled ──────────────────────── */}

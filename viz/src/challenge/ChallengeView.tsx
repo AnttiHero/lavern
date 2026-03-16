@@ -5,7 +5,7 @@
  * Upload any legal document. We make our own version.
  * A neutral AI judge scores both blind. If yours wins, it's free.
  *
- * Dark cinematic design (same template as PricingView/BetTheCompanyView).
+ * Dark cinematic design (same template as PricingView).
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';

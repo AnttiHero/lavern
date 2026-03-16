@@ -98,7 +98,6 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
 - `viz/src/challenge/` — Whiteshoe Challenge blind document comparison
-- `viz/src/bet-the-company/` — Bet The Company high-stakes engagement view
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
 - `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
 - `viz/src/auth/` — Login/signup views
@@ -188,7 +187,6 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - Session Expired overlay on server 4004
 - Search error state in archive, offline indicator on team selection
 - Analysis retry button in briefing, double-submit guard on QuickStart
-- BetTheCompanyView: 404/offline shows "Coming Soon" (not fake success)
 
 **UX Polish:**
 - View transition animations (350ms fade-up on non-landing views)
