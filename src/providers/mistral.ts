@@ -99,6 +99,9 @@ export async function mistralChat(options: MistralChatOptions): Promise<MistralC
     max_tokens: options.maxTokens ?? 8192,
   });
 
+  if (!response.choices || response.choices.length === 0) {
+    throw new Error('Mistral returned no choices — response may have been filtered or empty.');
+  }
   const choice = response.choices[0];
   const usage = response.usage;
 

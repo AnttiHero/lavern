@@ -208,7 +208,7 @@ export function parseCookieToken(cookieHeader?: string): string | null {
  */
 export function createAuthMiddleware(
   registry: ClientRegistry,
-  publicPaths: string[] = ['/health', '/', '/api/clients'],
+  publicPaths: string[] = ['/health', '/'],
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<void | FastifyReply> {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const urlPath = request.url.split('?')[0];
