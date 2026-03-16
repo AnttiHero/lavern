@@ -174,9 +174,19 @@ function isUrlSafe(url: string): boolean {
 }
 
 function isLocalhostHostname(hostname: string): boolean {
-  const lower = hostname.toLowerCase();
-  return lower === 'localhost' || lower === '127.0.0.1' || lower === '::1'
-    || lower === '[::1]' || lower === '0.0.0.0';
+  const lower = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (lower === 'localhost' || lower === '127.0.0.1' || lower === '::1' || lower === '0.0.0.0') {
+    return true;
+  }
+  // IPv4-mapped IPv6 (::ffff:127.0.0.1) — SSRF bypass vector
+  if (lower.startsWith('::ffff:')) {
+    const mapped = lower.slice(7);
+    if (mapped === '127.0.0.1' || mapped === '0.0.0.0' || mapped.startsWith('10.')
+      || mapped.startsWith('192.168.') || mapped.startsWith('172.')) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isPrivateIp(hostname: string): boolean {
@@ -186,6 +196,12 @@ function isPrivateIp(hostname: string): boolean {
   // IPv6 loopback and link-local
   if (clean === '::1' || clean.startsWith('fe80:') || clean.startsWith('fc00:') || clean.startsWith('fd00:')) {
     return true;
+  }
+
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x) — check the embedded IPv4 address
+  if (clean.toLowerCase().startsWith('::ffff:')) {
+    const embedded = clean.slice(7);
+    return isPrivateIp(embedded);
   }
 
   // IPv4 checks
