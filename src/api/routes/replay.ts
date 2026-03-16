@@ -105,7 +105,8 @@ export function registerReplayRoutes(
 
     // Support ?speed=N query parameter
     const query = request.query as { speed?: string };
-    const speed = query.speed ? parseFloat(query.speed) : 1.0;
+    const parsedSpeed = query.speed ? parseFloat(query.speed) : 1.0;
+    const speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1.0;
 
     attachReplayStream(socket, events, speed);
   });

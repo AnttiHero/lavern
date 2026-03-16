@@ -159,7 +159,8 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
 
     const query = request.query as { status?: string; limit?: string };
     const status = query.status;
-    const limit = query.limit ? parseInt(query.limit, 10) : 100;
+    const parsedLimit = query.limit ? parseInt(query.limit, 10) : 100;
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 100;
 
     const entries = getWaitlistEntries({ status, limit });
     const counts = countWaitlist();

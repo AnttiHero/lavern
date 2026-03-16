@@ -152,7 +152,8 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
     };
 
     const intensity = (query.intensity ?? 'standard') as IntensityLevel;
-    const budget = query.budget ? parseFloat(query.budget) : 10;
+    const parsedBudget = query.budget ? parseFloat(query.budget) : 10;
+    const budget = Number.isFinite(parsedBudget) && parsedBudget > 0 ? parsedBudget : 10;
     const workflowId = query.workflow;
 
     const profile = INTENSITY_PROFILES[intensity];
