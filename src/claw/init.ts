@@ -29,8 +29,12 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
     console.log('Use --force to overwrite.\n');
 
     // Return existing profile
-    const existing = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
-    return existing;
+    try {
+      const existing = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+      return existing;
+    } catch {
+      throw new Error(`Existing profile at ${profilePath} is corrupted. Use --force to create a new one.`);
+    }
   }
 
   const rl = readline.createInterface({

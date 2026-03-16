@@ -99,7 +99,11 @@ async function llmInfer(
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
-    return JSON.parse(jsonMatch[0]);
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      // Matched something that looks like JSON but isn't valid — fall through
+    }
   }
 
   // Fallback
@@ -134,7 +138,11 @@ async function mistralInfer(
   const text = result.message.content ?? '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
-    return JSON.parse(jsonMatch[0]);
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      // Matched something that looks like JSON but isn't valid — fall through
+    }
   }
 
   return {

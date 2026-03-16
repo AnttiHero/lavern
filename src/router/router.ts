@@ -195,7 +195,14 @@ async function mistralClassify(
     throw new Error('Mistral router did not return valid JSON');
   }
 
-  const parsed = RouterClassificationSchema.safeParse(JSON.parse(jsonMatch[0]));
+  let jsonObj: unknown;
+  try {
+    jsonObj = JSON.parse(jsonMatch[0]);
+  } catch {
+    throw new Error('Mistral router returned malformed JSON');
+  }
+
+  const parsed = RouterClassificationSchema.safeParse(jsonObj);
   if (!parsed.success) {
     throw new Error(`Mistral router returned invalid classification: ${parsed.error.message}`);
   }
