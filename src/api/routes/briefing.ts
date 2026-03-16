@@ -95,7 +95,9 @@ async function callAnthropic(params: {
   };
 
   // Extract only the text block — skip thinking blocks
-  const textBlock = data.content.find(b => b.type === 'text');
+  const textBlock = Array.isArray(data.content)
+    ? data.content.find(b => b.type === 'text')
+    : undefined;
   return textBlock?.text ?? '';
 }
 

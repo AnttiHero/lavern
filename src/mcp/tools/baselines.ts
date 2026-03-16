@@ -125,8 +125,8 @@ export function createBaselineTools(session: SessionState) {
             dimension: dim,
             mean: Math.round(mean(scores) * 100) / 100,
             stdDev: Math.round(stdDev(scores) * 100) / 100,
-            min: Math.min(...scores),
-            max: Math.max(...scores),
+            min: scores.length > 0 ? Math.min(...scores) : 0,
+            max: scores.length > 0 ? Math.max(...scores) : 0,
           };
         });
 
@@ -137,7 +137,7 @@ export function createBaselineTools(session: SessionState) {
           return {
             dimension: dim,
             meanDelta: Math.round(mean(deltas) * 100) / 100,
-            minDelta: Math.min(...deltas),
+            minDelta: deltas.length > 0 ? Math.min(...deltas) : 0,
           };
         });
 

@@ -94,7 +94,8 @@ async function llmInfer(
     }],
   });
 
-  const text = response.content[0].type === 'text' ? response.content[0].text : '';
+  const firstBlock = response.content?.[0];
+  const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);

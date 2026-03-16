@@ -79,7 +79,9 @@ async function callAnthropic(params: {
     content: Array<{ type: string; text?: string }>;
   };
 
-  const textBlock = data.content.find(b => b.type === 'text');
+  const textBlock = Array.isArray(data.content)
+    ? data.content.find(b => b.type === 'text')
+    : undefined;
   return textBlock?.text ?? '';
 }
 

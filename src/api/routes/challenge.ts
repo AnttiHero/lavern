@@ -136,13 +136,15 @@ export function registerChallengeRoutes(
       };
 
       // Build comparison result with dimension metadata
-      const dimensions: ComparisonDimension[] = parsed.dimensions.map((d) => {
+      const dimensions: ComparisonDimension[] = (Array.isArray(parsed.dimensions) ? parsed.dimensions : []).map((d) => {
         const meta = CHALLENGE_DIMENSIONS.find(cd => cd.name === d.name);
+        const sA = Number(d.scoreA);
+        const sB = Number(d.scoreB);
         return {
-          name: d.name,
+          name: d.name ?? 'Unknown',
           description: meta?.description ?? '',
-          scoreA: Math.round(Math.max(0, Math.min(100, d.scoreA))),
-          scoreB: Math.round(Math.max(0, Math.min(100, d.scoreB))),
+          scoreA: Number.isFinite(sA) ? Math.round(Math.max(0, Math.min(100, sA))) : 0,
+          scoreB: Number.isFinite(sB) ? Math.round(Math.max(0, Math.min(100, sB))) : 0,
           weight: meta?.weight ?? (1 / 6),
         };
       });
