@@ -161,7 +161,7 @@ function auditEntriesToEvents(entries: unknown[]): ShemEvent[] {
           type: 'agent_stop',
           agentId: `replay-${events.length}`,
           role,
-          durationMs: parseFloat(durationStr) * 1000,
+          durationMs: (Number.isFinite(parseFloat(durationStr)) ? parseFloat(durationStr) : 0) * 1000,
           timestamp,
         });
       } else if (action.includes('WorkflowStep:')) {
