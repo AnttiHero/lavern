@@ -30,7 +30,14 @@ function markdownToHtml(md: string): string {
   const lines = md.split('\n');
   const out: string[] = [];
   let inParagraph = false;
-  let inList = false;
+  let listType: 'ul' | 'ol' | null = null;
+
+  const closeList = () => {
+    if (listType) { out.push(`</${listType}>`); listType = null; }
+  };
+  const closePara = () => {
+    if (inParagraph) { out.push('</p>'); inParagraph = false; }
+  };
 
   for (const raw of lines) {
     const line = raw
@@ -39,39 +46,48 @@ function markdownToHtml(md: string): string {
 
     // Blank line — close open blocks
     if (line.trim() === '') {
-      if (inList) { out.push('</ul>'); inList = false; }
-      if (inParagraph) { out.push('</p>'); inParagraph = false; }
+      closeList();
+      closePara();
       continue;
     }
 
     // Headings
     const h3 = line.match(/^### (.+)$/);
-    if (h3) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h3>${h3[1]}</h3>`); continue; }
+    if (h3) { closePara(); closeList(); out.push(`<h3>${applyInline(h3[1])}</h3>`); continue; }
     const h2 = line.match(/^## (.+)$/);
-    if (h2) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h2>${h2[1]}</h2>`); continue; }
+    if (h2) { closePara(); closeList(); out.push(`<h2>${applyInline(h2[1])}</h2>`); continue; }
     const h1 = line.match(/^# (.+)$/);
-    if (h1) { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push(`<h1>${h1[1]}</h1>`); continue; }
+    if (h1) { closePara(); closeList(); out.push(`<h1>${applyInline(h1[1])}</h1>`); continue; }
 
     // Horizontal rule
-    if (line.trim() === '---') { if (inParagraph) { out.push('</p>'); inParagraph = false; } if (inList) { out.push('</ul>'); inList = false; } out.push('<hr>'); continue; }
+    if (line.trim() === '---') { closePara(); closeList(); out.push('<hr>'); continue; }
 
-    // List items
-    const li = line.match(/^- (.+)$/);
-    if (li) {
-      if (inParagraph) { out.push('</p>'); inParagraph = false; }
-      if (!inList) { out.push('<ul>'); inList = true; }
-      out.push(`<li>${applyInline(li[1])}</li>`);
+    // Unordered list items
+    const ul = line.match(/^[-*] (.+)$/);
+    if (ul) {
+      closePara();
+      if (listType !== 'ul') { closeList(); out.push('<ul>'); listType = 'ul'; }
+      out.push(`<li>${applyInline(ul[1])}</li>`);
+      continue;
+    }
+
+    // Ordered list items
+    const ol = line.match(/^\d+\. (.+)$/);
+    if (ol) {
+      closePara();
+      if (listType !== 'ol') { closeList(); out.push('<ol>'); listType = 'ol'; }
+      out.push(`<li>${applyInline(ol[1])}</li>`);
       continue;
     }
 
     // Regular text → paragraph
-    if (inList) { out.push('</ul>'); inList = false; }
+    closeList();
     if (!inParagraph) { out.push('<p>'); inParagraph = true; }
     out.push(applyInline(line));
   }
 
-  if (inList) out.push('</ul>');
-  if (inParagraph) out.push('</p>');
+  closeList();
+  closePara();
   return out.join('\n');
 }
 

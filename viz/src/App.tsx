@@ -210,6 +210,7 @@ export function App() {
       const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
 
       if (res.ok && data.sessionId) {
+        sessionStorage.removeItem('shem-demo-case'); // clean demo state before real session
         sessionStorage.setItem('shem-session-id', data.sessionId);
         window.location.hash = '#/working';
         return;
@@ -323,6 +324,7 @@ export function App() {
       const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
 
       if (res.ok && data.sessionId) {
+        sessionStorage.removeItem('shem-demo-case'); // clean demo state before real session
         sessionStorage.setItem('shem-session-id', data.sessionId);
         window.location.hash = '#/working';
         return;
@@ -453,6 +455,7 @@ export function App() {
       const data = res.ok ? await res.json() : await res.text().then(t => { try { return JSON.parse(t); } catch { return { error: t || 'Unknown error' }; } });
 
       if (res.ok && data.sessionId) {
+        sessionStorage.removeItem('shem-demo-case'); // clean demo state before real session
         sessionStorage.setItem('shem-session-id', data.sessionId);
         if (matterId) {
           sessionStorage.setItem('shem-matter-id', matterId);
