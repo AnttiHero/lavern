@@ -79,7 +79,9 @@ export function ConversationTab({
         const err = await res.json().catch(() => ({ error: 'Request failed' }));
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: `Error: ${err.error || 'Something went wrong.'}` };
+          if (updated.length > 0) {
+            updated[updated.length - 1] = { role: 'assistant', content: `Error: ${err.error || 'Something went wrong.'}` };
+          }
           return updated;
         });
         setInput(text); // Restore user input so they can retry
@@ -92,7 +94,9 @@ export function ConversationTab({
       if (!reader) {
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: 'No response received from the server.' };
+          if (updated.length > 0) {
+            updated[updated.length - 1] = { role: 'assistant', content: 'No response received from the server.' };
+          }
           return updated;
         });
         setInput(text);
@@ -123,6 +127,7 @@ export function ConversationTab({
               if (event.type === 'text' && event.content) {
                 setMessages(prev => {
                   const updated = [...prev];
+                  if (updated.length === 0) return updated;
                   const last = updated[updated.length - 1];
                   updated[updated.length - 1] = { ...last, content: last.content + event.content };
                   return updated;
@@ -132,6 +137,7 @@ export function ConversationTab({
               if (event.type === 'error' && event.content) {
                 setMessages(prev => {
                   const updated = [...prev];
+                  if (updated.length === 0) return updated;
                   const last = updated[updated.length - 1];
                   updated[updated.length - 1] = { ...last, content: last.content + `\n\nError: ${event.content}` };
                   return updated;
@@ -150,10 +156,12 @@ export function ConversationTab({
       if (controller.signal.aborted) return;
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: `Connection error: ${err instanceof Error ? err.message : 'Unable to reach the server.'}`,
-        };
+        if (updated.length > 0) {
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: `Connection error: ${err instanceof Error ? err.message : 'Unable to reach the server.'}`,
+          };
+        }
         return updated;
       });
       setInput(text); // Restore user input so they can retry
