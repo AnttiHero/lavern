@@ -89,7 +89,8 @@ export class ClawWatcher {
 
           // Skip non-documents, hidden files, node_modules
           if (!this.isSupported(full)) return;
-          if (filename.startsWith('.') || filename.includes('node_modules')) return;
+          const basename = filename.split('/').pop() ?? filename;
+          if (basename.startsWith('.') || filename.includes('node_modules')) return;
 
           // Debounce: many editors trigger multiple events per save
           const existing = this.debounceTimers.get(full);
@@ -158,8 +159,11 @@ export class ClawWatcher {
       Promise.resolve(this.onChange(filePath, event)).catch(err => {
         console.error(`[CLAW] Error processing ${filePath}:`, err);
       });
-    } catch {
-      // File may have been deleted between check and stat
+    } catch (err) {
+      // ENOENT is expected — file deleted between event and stat
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn(`[CLAW] Unexpected error processing ${filePath}:`, err);
+      }
     }
   }
 

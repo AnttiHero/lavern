@@ -76,7 +76,7 @@ async function sendWebhook(notification: ClawNotification, retries = 2): Promise
       // Network error or timeout — fall through to retry
     }
     if (attempt < retries) {
-      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt), 30_000)));
     }
   }
   console.warn(`[CLAW] Webhook delivery failed for ${notification.type} after ${retries + 1} attempts`);
