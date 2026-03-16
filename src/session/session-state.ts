@@ -112,8 +112,26 @@ export class SessionState {
   // ── Verification State ──
   public readonly verificationResults: VerificationResult[] = [];
   public verificationCounter = 0;
+
+  /** Compiled verification report result (set by compile_verification_report tool). */
+  public verification?: {
+    passed: boolean;
+    overallScore: number;
+    passResults: Array<{ pass: string; score: number; findings: number }>;
+  };
   /** Aggregated verification summary — populated after verification tools run. */
   public verificationSummary: VerificationSummary | null = null;
+
+  /** 10-pass verification pipeline pass results (populated by record_pass_result tool). */
+  public readonly verificationPassResults: Array<{
+    pass: string;
+    score: number;
+    findingsCount: number;
+    criticalCount: number;
+    majorCount: number;
+    minorCount: number;
+    timestamp: string;
+  }> = [];
 
   // ── Approval Gate State ──
   public readonly gateDecisions: HumanGateDecision[] = [];

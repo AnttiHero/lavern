@@ -43,7 +43,7 @@ import { config } from '../../config.js';
 import { canStartSession, getPlanLimits } from './billing.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
-import { convertToDocx, convertToHtml, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
+import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
 
@@ -602,17 +602,24 @@ export function registerSessionRoutes(
     }
 
     if (format === 'pdf') {
-      // Serve as HTML with print-optimized CSS — browsers can print to PDF,
-      // or client-side can use the HTML directly for rendering
       try {
-        const html = convertToHtml(deliverable, title, style, soulBranding);
-        const filename = `${id}-workproduct.html`;
-        return reply
-          .header('Content-Type', 'text/html; charset=utf-8')
-          .header('Content-Disposition', `attachment; filename="${filename}"`)
-          .send(html);
+        const { buffer, isRealPdf } = await convertToPdf(deliverable, title, style, soulBranding);
+        if (isRealPdf) {
+          const filename = `${id}-workproduct.pdf`;
+          return reply
+            .header('Content-Type', 'application/pdf')
+            .header('Content-Disposition', `attachment; filename="${filename}"`)
+            .send(buffer);
+        } else {
+          // Puppeteer unavailable — serve styled HTML as fallback
+          const filename = `${id}-workproduct.html`;
+          return reply
+            .header('Content-Type', 'text/html; charset=utf-8')
+            .header('Content-Disposition', `attachment; filename="${filename}"`)
+            .send(buffer);
+        }
       } catch (err) {
-        console.error('PDF/HTML conversion error:', err);
+        console.error('PDF conversion error:', err);
         return reply.status(500).send({ error: 'Failed to generate PDF. Try downloading as Markdown instead.' });
       }
     }

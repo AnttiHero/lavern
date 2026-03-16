@@ -164,6 +164,14 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_kb_chunks_user ON kb_chunks(user_id);
   `);
 
+  // v17: Composite indexes for filtered KB searches (doc_type, jurisdiction)
+  // Without these, metadata filters scan the entire kb_documents table
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_kb_documents_doc_type ON kb_documents(doc_type);
+    CREATE INDEX IF NOT EXISTS idx_kb_documents_jurisdiction ON kb_documents(jurisdiction);
+    CREATE INDEX IF NOT EXISTS idx_kb_documents_type_jurisdiction ON kb_documents(doc_type, jurisdiction);
+  `);
+
   // FTS5 virtual table + sync triggers (must be separate from the main exec block
   // because CREATE VIRTUAL TABLE cannot be inside multi-statement exec on some versions)
   db.exec(`

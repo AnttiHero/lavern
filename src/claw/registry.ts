@@ -316,6 +316,79 @@ export class DocumentRegistry {
     return results;
   }
 
+  // ── State Compaction ──────────────────────────────────────────────────
+
+  /**
+   * Compact the state by archiving old completed entries.
+   *
+   * Long-running Claw daemons can accumulate thousands of document entries
+   * in state.json. This method moves entries with terminal statuses
+   * (reviewed, flagged, error) older than `maxAgeDays` to a separate archive
+   * file, keeping the active state lean.
+   *
+   * Returns the number of entries archived.
+   */
+  compact(maxAgeDays: number = 30): number {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - maxAgeDays);
+    const cutoffIso = cutoff.toISOString();
+
+    const archiveEntries: Record<string, DocumentEntry> = {};
+    const terminalStatuses: DocumentStatus[] = ['reviewed', 'flagged', 'error'];
+    let archivedCount = 0;
+
+    for (const [hash, doc] of Object.entries(this.state.documents)) {
+      // Only archive terminal-status docs older than cutoff
+      if (!terminalStatuses.includes(doc.status)) continue;
+
+      const lastActivity = doc.lastReviewed ?? doc.lastModified;
+      if (lastActivity < cutoffIso) {
+        archiveEntries[hash] = doc;
+        delete this.state.documents[hash];
+        archivedCount++;
+      }
+    }
+
+    if (archivedCount > 0) {
+      // Write archive first, then save active state.
+      // If archive write fails, entries are restored to active state.
+      const archivePath = this.statePath.replace('state.json', 'state-archive.json');
+      try {
+        let existingArchive: Record<string, DocumentEntry> = {};
+        try {
+          existingArchive = readJsonFile<Record<string, DocumentEntry>>(archivePath, {});
+        } catch { /* no archive yet */ }
+
+        const merged = { ...existingArchive, ...archiveEntries };
+        writeJsonFileAtomic(archivePath, merged);
+        this.save();
+        console.log(`[CLAW] Compacted state: archived ${archivedCount} entries (>${maxAgeDays} days old). Active: ${Object.keys(this.state.documents).length}`);
+      } catch (err) {
+        // Restore archived entries to active state on failure
+        for (const [hash, doc] of Object.entries(archiveEntries)) {
+          this.state.documents[hash] = doc;
+        }
+        console.error(`[CLAW] Compaction failed, restored ${archivedCount} entries:`, err);
+        archivedCount = 0;
+      }
+    }
+
+    return archivedCount;
+  }
+
+  /**
+   * Get total document count including archived entries (for reporting).
+   */
+  get totalDocumentsIncludingArchive(): number {
+    const archivePath = this.statePath.replace('state.json', 'state-archive.json');
+    let archiveCount = 0;
+    try {
+      const archive = readJsonFile<Record<string, DocumentEntry>>(archivePath, {});
+      archiveCount = Object.keys(archive).length;
+    } catch { /* no archive */ }
+    return this.totalDocuments + archiveCount;
+  }
+
   private inferDocumentType(name: string, ext: string): string {
     const lower = name.toLowerCase();
     if (lower.includes('nda') || lower.includes('non-disclosure')) return 'NDA';

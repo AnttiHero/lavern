@@ -1448,7 +1448,72 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export async function convertToPdf(markdown: string, title: string, style?: DocumentStyle, branding?: SoulBranding): Promise<Buffer> {
+/**
+ * Convert markdown to a real PDF using Puppeteer (headless Chrome).
+ *
+ * The HTML rendering is already excellent with print-optimized CSS,
+ * so we render it in a headless browser and produce actual PDF bytes.
+ *
+ * Falls back to serving styled HTML if Puppeteer fails (e.g. no Chrome available).
+ * The caller should set Content-Type based on success/failure.
+ */
+export async function convertToPdf(
+  markdown: string,
+  title: string,
+  style?: DocumentStyle,
+  branding?: SoulBranding,
+): Promise<{ buffer: Buffer; isRealPdf: boolean }> {
   const html = convertToHtml(markdown, title, style, branding);
-  return Buffer.from(html, 'utf-8');
+
+  try {
+    // Dynamic import — puppeteer is optional, don't break if not installed
+    const puppeteer = await import('puppeteer');
+    const browser = await puppeteer.default.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+      ],
+    });
+
+    try {
+      const page = await browser.newPage();
+
+      // Set the HTML content — use 'load' instead of 'networkidle0' because
+      // Google Fonts CSS can keep the network busy with font variants
+      await page.setContent(html, { waitUntil: 'load', timeout: 15_000 });
+
+      // Generate PDF with print-quality settings
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '20mm',
+          bottom: '25mm',
+          left: '20mm',
+        },
+        displayHeaderFooter: true,
+        headerTemplate: '<div></div>',
+        footerTemplate: `
+          <div style="width: 100%; text-align: center; font-size: 9px; color: #999; font-family: system-ui, sans-serif;">
+            <span class="pageNumber"></span> / <span class="totalPages"></span>
+          </div>`,
+        preferCSSPageSize: false,
+      });
+
+      // Puppeteer returns Uint8Array, convert to Buffer
+      const buffer = Buffer.from(pdfBuffer);
+      console.log(`[PDF] Generated real PDF: ${buffer.length} bytes (${title})`);
+      return { buffer, isRealPdf: true };
+    } finally {
+      await browser.close();
+    }
+  } catch (error) {
+    // Puppeteer unavailable or failed — fall back to HTML
+    console.warn('[PDF] Puppeteer unavailable, falling back to styled HTML:', error instanceof Error ? error.message : error);
+    return { buffer: Buffer.from(html, 'utf-8'), isRealPdf: false };
+  }
 }

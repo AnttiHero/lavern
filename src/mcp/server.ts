@@ -44,6 +44,8 @@ import { createRiskPricingTools } from './tools/risk-pricing.js';
 import { createQualityCheckTools } from './tools/quality-check.js';
 // Handoff Templates — structured phase-transition summaries
 import { createHandoffTools } from './tools/handoff.js';
+// v16: Document Structure & Formatting Checks — computational verification
+import { createDocumentCheckTools } from './tools/document-checks.js';
 // v12: Document Reader
 import { createDocumentReaderTools } from './tools/document-reader.js';
 // v8: Pre-Engagement
@@ -97,6 +99,8 @@ export function createShemMcpServer(session: SessionState, template?: WorkflowTe
       ...createKnowledgeBaseTools(session),
       // Handoff Templates — structured phase-transition summaries
       ...createHandoffTools(session),
+      // v16: Document Structure & Formatting Checks
+      ...createDocumentCheckTools(session),
     ],
   });
 }

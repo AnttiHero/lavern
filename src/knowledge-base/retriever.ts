@@ -175,12 +175,121 @@ function fallbackLikeSearch(
   return db.prepare(sql).all(...params) as KbSearchResult[];
 }
 
+// ── Legal Synonym Expansion ──────────────────────────────────────────
+//
+// FTS5 is keyword-only. An agent searching "indemnification" won't find
+// "indemnity" or "hold harmless". This synonym map covers the most common
+// legal term variations so that searches catch related concepts.
+//
+// Each group is bidirectional: searching any term in a group expands to
+// all terms in that group.
+
+const LEGAL_SYNONYM_GROUPS: string[][] = [
+  // Liability & indemnification
+  ['indemnification', 'indemnity', 'hold harmless', 'indemnify'],
+  ['liability', 'damages', 'liable'],
+  ['limitation of liability', 'liability cap', 'cap on damages', 'liability limit'],
+  // Termination & expiration
+  ['termination', 'terminate', 'expiration', 'expire', 'cancellation', 'cancel'],
+  ['cure period', 'remedy period', 'notice to cure'],
+  // IP & ownership
+  ['intellectual property', 'IP rights'],
+  ['assignment', 'transfer', 'conveyance'],
+  ['license', 'licence', 'licensing'],
+  // Privacy & data
+  ['personal data', 'personal information', 'PII', 'personally identifiable'],
+  ['data processing', 'data protection', 'privacy'],
+  ['GDPR', 'General Data Protection Regulation'],
+  ['consent', 'opt in', 'opt out'],
+  // Confidentiality
+  ['confidential', 'confidentiality', 'proprietary', 'trade secret'],
+  ['non disclosure', 'nondisclosure', 'NDA'],
+  // Dispute resolution
+  ['arbitration', 'mediation', 'dispute resolution', 'ADR'],
+  ['governing law', 'choice of law', 'applicable law'],
+  ['jurisdiction', 'venue', 'forum'],
+  // Employment
+  ['non compete', 'noncompete', 'restrictive covenant', 'competition restriction'],
+  ['non solicitation', 'nonsolicitation'],
+  ['severance', 'separation', 'termination payment'],
+  // Financial
+  ['payment', 'compensation', 'remuneration', 'fee'],
+  ['penalty', 'liquidated damages', 'late fee'],
+  ['warranty', 'guarantee', 'representation'],
+  // Insurance
+  ['insurance', 'coverage', 'policy'],
+  ['deductible', 'excess', 'retention'],
+  // Compliance
+  ['compliance', 'regulatory', 'regulation'],
+  ['audit', 'inspection', 'review'],
+  // General contract
+  ['amendment', 'modification', 'change', 'variation'],
+  ['waiver', 'forbearance'],
+  ['force majeure', 'act of God', 'unforeseeable circumstances'],
+  ['severability', 'savings clause'],
+  ['entire agreement', 'whole agreement', 'merger clause', 'integration clause'],
+  ['successor', 'assign', 'assignee'],
+];
+
+// Build lookup: word → all synonyms in its group
+const synonymLookup = new Map<string, string[]>();
+for (const group of LEGAL_SYNONYM_GROUPS) {
+  for (const term of group) {
+    const lower = term.toLowerCase();
+    const others = group.filter(t => t.toLowerCase() !== lower);
+    const existing = synonymLookup.get(lower) ?? [];
+    synonymLookup.set(lower, [...new Set([...existing, ...others])]);
+  }
+}
+
+/**
+ * Expand a query with legal synonyms.
+ * If any word or phrase in the query matches a synonym group,
+ * all synonyms from that group are added as OR alternatives.
+ */
+function expandWithSynonyms(words: string[]): string[] {
+  const expanded = new Set(words);
+  const queryLower = words.join(' ').toLowerCase();
+
+  // Check multi-word phrases first (e.g., "limitation of liability")
+  for (const [phrase, synonyms] of synonymLookup) {
+    if (phrase.includes(' ') && queryLower.includes(phrase)) {
+      for (const syn of synonyms) {
+        // Add multi-word synonyms as single entries
+        expanded.add(syn);
+      }
+    }
+  }
+
+  // Check individual words
+  for (const word of words) {
+    const syns = synonymLookup.get(word.toLowerCase());
+    if (syns) {
+      for (const syn of syns) {
+        // Only add single-word synonyms as individual words
+        if (!syn.includes(' ')) {
+          expanded.add(syn);
+        } else {
+          // Multi-word synonyms: add each word
+          for (const part of syn.split(/\s+/)) {
+            if (part.length >= 2) expanded.add(part);
+          }
+        }
+      }
+    }
+  }
+
+  return [...expanded];
+}
+
 /**
  * Sanitize user query for FTS5 MATCH syntax.
  * Strips special characters (including FTS5 operators: - for NOT, " for phrase),
  * keeps meaningful words, uses OR matching.
+ * v2: Expands queries with legal synonyms for better recall.
  */
-function sanitizeFtsQuery(query: string): string {
+/** @internal Exported for testing. */
+export function sanitizeFtsQuery(query: string): string {
   // Strip everything except word chars and whitespace (removes -, ", *, etc.)
   const cleaned = query.replace(/[^\w\s]/g, ' ');
 
@@ -195,8 +304,11 @@ function sanitizeFtsQuery(query: string): string {
 
   if (validWords.length === 0) return '';
 
+  // Expand with legal synonyms for better recall
+  const expandedWords = expandWithSynonyms(validWords);
+
   // Quote each word and join with OR for broad matching
-  return validWords.map(w => `"${w}"`).join(' OR ');
+  return expandedWords.map(w => `"${w}"`).join(' OR ');
 }
 
 /**

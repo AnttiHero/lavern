@@ -298,8 +298,10 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
     // v17: Heartbeat — periodic status check
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    let heartbeatCount = 0;
     if (config.claw.heartbeatEnabled) {
       heartbeatTimer = setInterval(() => {
+        heartbeatCount++;
         const alerts: string[] = [];
         const state = registry.getState();
 
@@ -316,6 +318,12 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         if (stale > 0) alerts.push(`${stale} doc(s) changed since review`);
         if (errors > 0) alerts.push(`${errors} doc(s) failed processing`);
         if (flagged > 0) alerts.push(`${flagged} doc(s) need human review`);
+
+        // State compaction: run every 12th heartbeat (~6 hours at 30min interval)
+        // Archives reviewed/error entries older than 30 days to keep state.json lean
+        if (heartbeatCount % 12 === 0 && docs.length > 100) {
+          registry.compact(30);
+        }
 
         if (alerts.length === 0) return; // Silent — everything is fine
 

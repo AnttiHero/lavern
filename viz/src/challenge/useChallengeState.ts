@@ -45,10 +45,16 @@ export function useChallengeState() {
   const [whiteshoeSessionText, setWhiteshoeSessionText] = useState<string | null>(null);
   const [whiteshoeSessionTitle, setWhiteshoeSessionTitle] = useState<string | null>(null);
 
-  // Timer cleanup for reveal animation
+  // Timer cleanup for reveal animation and timeout
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
-    return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
+    return () => {
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, []);
 
   const bothReady = (whiteshoeUpload.documents.length > 0 || !!whiteshoeSessionText) && humanUpload.documents.length > 0;
@@ -118,12 +124,30 @@ export function useChallengeState() {
     setPhase('processing');
     setError(null);
 
+    // Abort any previous in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Timeout: 3 minutes for the judge to deliberate
+    const CHALLENGE_TIMEOUT_MS = 180_000;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      controller.abort();
+      setError('The comparison is taking too long. The judge may be overwhelmed by lengthy documents. Try shorter documents or retry.');
+      setPhase('error');
+    }, CHALLENGE_TIMEOUT_MS);
+
     try {
       const res = await fetch('/api/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ whiteshoeText, humanText }),
+        signal: controller.signal,
       });
+
+      // Clear timeout on response
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Challenge failed' })) as { error: string };
@@ -134,6 +158,12 @@ export function useChallengeState() {
       setResult(compResult);
       setPhase('reveal');
     } catch (err) {
+      // Clear timeout on error
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+
+      // Don't overwrite timeout-triggered error (abort signal means timeout already handled)
+      if (controller.signal.aborted) return;
+
       setError(err instanceof Error ? err.message : 'Challenge failed');
       setPhase('error');
     }
