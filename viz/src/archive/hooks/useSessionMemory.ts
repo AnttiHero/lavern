@@ -82,9 +82,12 @@ export function useSessionMemory() {
             const detail = await detRes.json();
             if (cancelled) return;
 
-            const summary = typeof detail.summary === 'string'
-              ? JSON.parse(detail.summary)
-              : (detail.summary ?? detail.summary_json ?? {});
+            let summary: Record<string, any>;
+            if (typeof detail.summary === 'string') {
+              try { summary = JSON.parse(detail.summary); } catch { summary = {}; }
+            } else {
+              summary = detail.summary ?? detail.summary_json ?? {};
+            }
             const title = detail.title ?? s.title ?? 'Untitled';
             const completedAt = detail.completedAt ?? s.completedAt ?? s.created_at ?? '';
 

@@ -127,7 +127,7 @@ function auditEntriesToEvents(entries: unknown[]): ShemEvent[] {
     if (entry.type === 'session_start') {
       events.push({
         type: 'session_start',
-        sessionId: entry.sessionId as string,
+        sessionId: (entry.sessionId as string) || '',
         document: '',
         timestamp,
       });
