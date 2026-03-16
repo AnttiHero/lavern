@@ -553,6 +553,26 @@ input:focus-visible {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* Case picker — staggered card entrance with bounce */
+@keyframes caseCardEntrance {
+  0% { opacity: 0; transform: translateY(48px) scale(0.9); }
+  50% { opacity: 1; transform: translateY(-8px) scale(1.02); }
+  75% { transform: translateY(3px) scale(0.995); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Case picker — title reveal */
+@keyframes casePickerTitle {
+  0% { opacity: 0; transform: translateY(20px); letter-spacing: 2px; }
+  100% { opacity: 1; transform: translateY(0); letter-spacing: 0.5px; }
+}
+
+/* Case picker — gold accent line grow */
+@keyframes caseAccentGrow {
+  0% { transform: scaleX(0); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+
 @keyframes partnerUserFade {
   0%, 25% { opacity: 0.35; }
   100% { opacity: 0; }
@@ -707,4 +727,38 @@ input:focus-visible {
 @keyframes confettiFall {
   0% { opacity: 1; transform: translateY(0) rotate(0deg); }
   100% { opacity: 0; transform: translateY(200px) rotate(720deg); }
+}
+
+/* ── Showcase View (VC demo hero) ──────────────────────────────────── */
+
+@keyframes showcaseTitle {
+  0% { opacity: 0; letter-spacing: 28px; transform: translateY(16px); }
+  100% { opacity: 1; letter-spacing: 12px; transform: translateY(0); }
+}
+
+@keyframes showcaseDivider {
+  0% { transform: scaleX(0); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes showcaseFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes showcaseOrbEntrance {
+  0% { opacity: 0; transform: scale(0); }
+  60% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes showcaseOrbBreath {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(150, 135, 95, 0.1), 0 0 80px rgba(150, 135, 95, 0.05);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 60px rgba(150, 135, 95, 0.18), 0 0 120px rgba(150, 135, 95, 0.08);
+  }
 }

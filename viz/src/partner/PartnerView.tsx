@@ -36,6 +36,8 @@ interface DemoCase {
   description: string;
   team: number;
   cost: string;
+  billableHours: number;
+  lawFirmCost: string;
 }
 
 const DEMO_CASES: DemoCase[] = [
@@ -46,6 +48,8 @@ const DEMO_CASES: DemoCase[] = [
     description: 'A dating platform needs consumer-safe terms before scaling to the EU. GDPR consent, age verification, user safety.',
     team: 7,
     cost: '$12',
+    billableHours: 12,
+    lawFirmCost: '$4,800',
   },
   {
     id: 'healthprivacy',
@@ -54,6 +58,8 @@ const DEMO_CASES: DemoCase[] = [
     description: 'Health tech company storing patient records needs a HIPAA and GDPR-compliant privacy policy for Series B due diligence.',
     team: 6,
     cost: '$15',
+    billableHours: 15,
+    lawFirmCost: '$6,000',
   },
   {
     id: 'devcontract',
@@ -62,6 +68,8 @@ const DEMO_CASES: DemoCase[] = [
     description: 'A startup hiring freelance developers needs airtight IP assignment and contractor terms after a prior ownership dispute.',
     team: 6,
     cost: '$10',
+    billableHours: 10,
+    lawFirmCost: '$4,000',
   },
 ];
 
@@ -407,31 +415,47 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
         </div>
 
         <div style={S.pickerMain}>
-          <div style={S.pickerTitle}>Select a Case</div>
+          <div style={S.pickerTitle}>Select a Demo Case</div>
           <div style={S.pickerSubtitle}>
-            Step into the client's shoes. Catherine will walk you through the engagement.
+            See our agents work. Pick a case, brief your partner, and watch the firm deliver.
           </div>
           <div style={S.pickerGrid}>
-            {DEMO_CASES.map(c => (
+            {DEMO_CASES.map((c, i) => (
               <button
                 key={c.id}
                 onClick={() => handleCaseSelect(c.id)}
-                style={S.caseCard}
+                style={{
+                  ...S.caseCard,
+                  animation: `caseCardEntrance 0.8s cubic-bezier(0.34, 1.4, 0.64, 1) ${0.2 + i * 0.15}s both`,
+                }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(150, 135, 95, 0.4)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = 'translateY(-12px) scale(1.035)';
+                  el.style.boxShadow = '0 28px 80px rgba(0,0,0,0.16), 0 0 0 1px rgba(150,135,95,0.35), 0 0 60px rgba(150,135,95,0.08)';
+                  const accent = el.querySelector('[data-accent]') as HTMLElement;
+                  if (accent) accent.style.transform = 'scaleX(1)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(150, 135, 95, 0.15)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.transform = 'translateY(0) scale(1)';
+                  el.style.boxShadow = '0 8px 40px rgba(0,0,0,0.07), 0 0 0 1px rgba(150,135,95,0.08)';
+                  const accent = el.querySelector('[data-accent]') as HTMLElement;
+                  if (accent) accent.style.transform = 'scaleX(0.3)';
                 }}
               >
+                <div data-accent style={S.caseAccent} />
                 <div style={S.caseSubtitle}>{c.subtitle}</div>
                 <div style={S.caseTitle}>{c.title}</div>
-                <div style={S.caseDivider} />
                 <div style={S.caseDescription}>{c.description}</div>
-                <div style={S.caseMeta}>
-                  {c.team} specialists &middot; {c.cost}
+                <div style={S.casePricing}>
+                  <div style={S.casePricingLawFirm}>
+                    <span style={S.casePricingLabel}>~{c.billableHours} billable hours</span>
+                    <span style={S.casePricingStrike}>{c.lawFirmCost}</span>
+                  </div>
+                  <div style={S.casePricingWhiteshoe}>
+                    <span style={S.casePricingWsLabel}>{c.team} specialist agents</span>
+                    <span style={S.casePricingValue}>{c.cost}</span>
+                  </div>
                 </div>
               </button>
             ))}
@@ -960,94 +984,140 @@ const S: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'safe center',
-    maxWidth: 800,
+    maxWidth: 1000,
     width: '100%',
     margin: '0 auto',
-    padding: '24px 24px 32px',
-    gap: 24,
+    padding: '16px 32px 32px',
+    gap: 12,
     overflowY: 'auto',
   },
   pickerTitle: {
     fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 32,
+    fontSize: 48,
     fontWeight: 600,
     color: '#1a1a1a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
     textAlign: 'center',
-    animation: 'partnerTextFadeIn 0.6s ease both',
+    animation: 'casePickerTitle 0.8s cubic-bezier(0.4, 0, 0.2, 1) both',
   },
   pickerSubtitle: {
     fontFamily: "'Inter', sans-serif",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 400,
     color: '#4a4a4a',
-    opacity: 0.7,
+    opacity: 0.6,
     textAlign: 'center',
-    maxWidth: 440,
-    lineHeight: 1.6,
-    animation: 'partnerTextFadeIn 0.8s ease both',
+    maxWidth: 500,
+    lineHeight: 1.7,
+    fontStyle: 'italic',
+    marginBottom: 8,
+    animation: 'partnerTextFadeIn 1s ease 0.3s both',
   },
   pickerGrid: {
     display: 'flex',
-    gap: 20,
+    gap: 24,
     flexWrap: 'wrap',
     justifyContent: 'center',
     width: '100%',
-    animation: 'lobbyFadeUp 0.6s ease 0.2s both',
   },
   caseCard: {
-    width: 220,
-    minWidth: 200,
-    padding: '28px 22px',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    backdropFilter: 'blur(12px)',
-    borderRadius: 12,
-    border: '1px solid rgba(150, 135, 95, 0.15)',
+    width: 280,
+    minWidth: 260,
+    padding: '0 0 24px',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    backdropFilter: 'blur(24px)',
+    borderRadius: 20,
+    border: 'none',
     cursor: 'pointer',
     textAlign: 'left',
-    transition: 'all 0.25s ease',
+    transition: 'all 0.45s cubic-bezier(0.34, 1.4, 0.64, 1)',
     display: 'flex',
     flexDirection: 'column',
     gap: 0,
+    boxShadow: '0 8px 40px rgba(0,0,0,0.07), 0 0 0 1px rgba(150,135,95,0.08)',
+    overflow: 'hidden',
   },
+  caseAccent: {
+    height: 3,
+    background: `linear-gradient(90deg, ${GOLD}, rgba(184,155,80,0.6), transparent)`,
+    marginBottom: 28,
+    transformOrigin: 'left',
+    transform: 'scaleX(0.3)',
+    transition: 'transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1)',
+  } as React.CSSProperties,
   caseSubtitle: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 9,
     fontWeight: 700,
-    letterSpacing: 2,
+    letterSpacing: 3,
     textTransform: 'uppercase' as const,
     color: GOLD,
-    marginBottom: 6,
+    marginBottom: 8,
+    padding: '0 26px',
   },
   caseTitle: {
     fontFamily: "'Cormorant Garamond', serif",
-    fontSize: 20,
-    fontWeight: 600,
+    fontSize: 28,
+    fontWeight: 700,
     color: '#1a1a1a',
-    marginBottom: 12,
-    lineHeight: 1.2,
-  },
-  caseDivider: {
-    width: 32,
-    height: 1,
-    background: `linear-gradient(90deg, ${GOLD}, transparent)`,
-    marginBottom: 12,
+    marginBottom: 14,
+    lineHeight: 1.1,
+    padding: '0 26px',
   },
   caseDescription: {
     fontFamily: "'Inter', sans-serif",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 400,
-    color: '#4a4a4a',
-    lineHeight: 1.65,
-    marginBottom: 16,
+    color: '#555',
+    lineHeight: 1.7,
+    marginBottom: 20,
     flex: 1,
+    padding: '0 26px',
   },
-  caseMeta: {
+  casePricing: {
+    margin: '0 16px',
+    padding: '14px 12px',
+    background: 'linear-gradient(135deg, rgba(150,135,95,0.06), rgba(150,135,95,0.02))',
+    borderRadius: 12,
+    border: '1px solid rgba(150,135,95,0.08)',
+  } as React.CSSProperties,
+  casePricingLawFirm: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  } as React.CSSProperties,
+  casePricingLabel: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 10,
+    fontWeight: 500,
+    color: '#aaa',
+    letterSpacing: 0.3,
+  } as React.CSSProperties,
+  casePricingStrike: {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 14,
+    fontWeight: 500,
+    color: '#bbb',
+    textDecoration: 'line-through',
+  } as React.CSSProperties,
+  casePricingWhiteshoe: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  } as React.CSSProperties,
+  casePricingWsLabel: {
     fontFamily: "'Inter', sans-serif",
     fontSize: 10,
     fontWeight: 600,
-    letterSpacing: 1,
-    color: '#4a4a4a',
-    opacity: 0.45,
-  },
+    color: GOLD,
+    letterSpacing: 0.3,
+  } as React.CSSProperties,
+  casePricingValue: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 32,
+    fontWeight: 700,
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  } as React.CSSProperties,
 };

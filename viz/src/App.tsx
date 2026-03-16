@@ -63,8 +63,9 @@ const AgentBuilderView = lazy(() => import('./agent-builder/AgentBuilderView.js'
 const LegalView = lazy(() => import('./legal/LegalView.js'));
 const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
+const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' | 'bet-the-company' | 'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -94,6 +95,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/terms')) return 'terms';
   if (hash.startsWith('#/privacy')) return 'privacy';
   if (hash.startsWith('#/landing')) return 'landing';
+  if (hash.startsWith('#/showcase')) return 'showcase';
   return 'foyer';
 }
 
@@ -995,6 +997,15 @@ export function App() {
           </Suspense>
         </ViewTransition>
       </ErrorBoundary>
+    );
+  }
+
+  // ── Showcase — VC demo hero screen ──────────────────────────────────
+  if (view === 'showcase') {
+    return (
+      <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#FAF9F6' }} />}>
+        <ShowcaseView onTap={() => { window.location.hash = '#/partner?demo=true'; }} />
+      </Suspense>
     );
   }
 
