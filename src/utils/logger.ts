@@ -28,7 +28,8 @@ interface LogEntry {
 // ── File Transport ──────────────────────────────────────────────────────
 
 const LOG_DIR = process.env.SHEM_LOG_DIR ?? '';
-const LOG_RETAIN_DAYS = parseInt(process.env.SHEM_LOG_RETAIN_DAYS ?? '14', 10);
+const _parsedRetain = parseInt(process.env.SHEM_LOG_RETAIN_DAYS ?? '14', 10);
+const LOG_RETAIN_DAYS = Number.isFinite(_parsedRetain) && _parsedRetain > 0 ? _parsedRetain : 14;
 
 /** Current date string for log filenames (YYYY-MM-DD). */
 function dateString(): string {

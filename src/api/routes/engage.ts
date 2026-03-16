@@ -256,7 +256,13 @@ async function resolveDocumentContent(doc: { name: string; content?: string; con
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Enforce 100KB size limit
+      // Check Content-Length header first to avoid loading huge responses into memory
+      const contentLength = res.headers.get('content-length');
+      if (contentLength && parseInt(contentLength, 10) > 200_000) {
+        throw new Error(`Content-Length ${contentLength} exceeds limit. Max 100KB.`);
+      }
+
+      // Enforce 100KB size limit on actual content
       const text = await res.text();
       if (text.length > 100_000) {
         throw new Error(`Content exceeds 100KB limit (got ${Math.round(text.length / 1000)}KB).`);

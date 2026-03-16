@@ -17,7 +17,8 @@ import type { ShemEvent } from '../events/event-bus.js';
 
 // ── Global Connection Tracking ──────────────────────────────────────────
 
-const MAX_WS_CONNECTIONS = parseInt(process.env.SHEM_MAX_WS_CONNECTIONS ?? '200', 10);
+const _parsedMaxWs = parseInt(process.env.SHEM_MAX_WS_CONNECTIONS ?? '200', 10);
+const MAX_WS_CONNECTIONS = Number.isFinite(_parsedMaxWs) && _parsedMaxWs > 0 ? _parsedMaxWs : 200;
 
 interface WsClientState {
   sessionId: string;
@@ -254,22 +255,16 @@ export function attachReplayStream(
     pendingTimer = setTimeout(playNext, delay);
   }
 
-  // Clean up timer on disconnect
-  socket.on('close', () => {
+  // Cleanup: stop playback and clear timer on disconnect or error
+  const cleanup = () => {
     playing = false;
-    if (pendingTimer) clearTimeout(pendingTimer);
-  });
+    if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+  };
+  socket.on('close', cleanup);
+  socket.on('error', cleanup);
 
   // Start playback
   playNext();
-
-  // Cleanup
-  socket.on('close', () => {
-    playing = false;
-  });
-  socket.on('error', () => {
-    playing = false;
-  });
 }
 
 function safeSend(socket: WebSocket, data: unknown): void {

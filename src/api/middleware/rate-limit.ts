@@ -18,9 +18,14 @@ import { config } from '../../config.js';
 
 // ── Config ────────────────────────────────────────────────────────────────
 
-const PER_USER_MAX = parseInt(process.env.SHEM_RATE_LIMIT_USER_MAX ?? '30', 10);
-const PER_USER_WINDOW_MS = parseInt(process.env.SHEM_RATE_LIMIT_USER_WINDOW_MS ?? '60000', 10);
-const MAX_CONCURRENT_SESSIONS = parseInt(process.env.SHEM_MAX_USER_SESSIONS ?? '5', 10);
+function safeEnvInt(val: string | undefined, fallback: number): number {
+  if (val === undefined) return fallback;
+  const parsed = parseInt(val, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+const PER_USER_MAX = safeEnvInt(process.env.SHEM_RATE_LIMIT_USER_MAX, 30);
+const PER_USER_WINDOW_MS = safeEnvInt(process.env.SHEM_RATE_LIMIT_USER_WINDOW_MS, 60000);
+const MAX_CONCURRENT_SESSIONS = safeEnvInt(process.env.SHEM_MAX_USER_SESSIONS, 5);
 
 // ── Sliding window counters ──────────────────────────────────────────────
 
