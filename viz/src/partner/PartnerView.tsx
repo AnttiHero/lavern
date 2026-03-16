@@ -134,6 +134,14 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
   const error = isDemo ? null : consult.error;
   const demoLastUserMessage = isDemo ? demo.lastUserMessage : null;
 
+  // Cleanup pending timers on unmount to prevent setState on unmounted component
+  useEffect(() => {
+    return () => {
+      clearTimeout(autoSubmitTimer.current);
+      clearTimeout(userFadeTimer.current);
+    };
+  }, []);
+
   // Start conversation on mount (real mode only)
   useEffect(() => {
     if (isDemo) return;

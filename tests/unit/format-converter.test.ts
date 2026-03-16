@@ -223,6 +223,63 @@ describe('convertToHtml', () => {
     const html = convertToHtml(MINIMAL_MD, 'Test');
     expect(html).toContain('class="cover"');
   });
+
+  // ── XSS Sanitization (body markdown) ─────────────────────────────────
+
+  it('strips script tags from markdown body', () => {
+    const xssMd = '# Title\n\n<script>alert("xss")</script>\n\nSafe content.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('alert("xss")');
+    expect(html).toContain('Safe content.');
+  });
+
+  it('strips iframe tags from markdown body', () => {
+    const xssMd = '# Title\n\n<iframe src="https://evil.com"></iframe>\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('<iframe');
+    expect(html).toContain('Safe.');
+  });
+
+  it('strips event handler attributes', () => {
+    const xssMd = '# Title\n\n<img src=x onerror="alert(1)">\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('onerror');
+    expect(html).not.toContain('alert(1)');
+  });
+
+  it('strips javascript: URLs from links', () => {
+    const xssMd = '# Title\n\n<a href="javascript:alert(1)">click</a>\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('javascript:');
+  });
+
+  it('strips data: URLs from src attributes', () => {
+    const xssMd = '# Title\n\n<img src="data:text/html,<script>alert(1)</script>">\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('data:text/html');
+  });
+
+  it('strips object and embed tags', () => {
+    const xssMd = '# Title\n\n<object data="evil.swf"></object><embed src="evil.swf">\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('<object');
+    expect(html).not.toContain('<embed');
+  });
+
+  it('strips form tags', () => {
+    const xssMd = '# Title\n\n<form action="https://evil.com"><input></form>\n\nSafe.';
+    const html = convertToHtml(xssMd, 'Test');
+    expect(html).not.toContain('<form');
+  });
+
+  it('preserves safe HTML elements (tables, lists, links)', () => {
+    const safeMd = '# Title\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n- item\n\n[link](https://safe.com)';
+    const html = convertToHtml(safeMd, 'Test');
+    expect(html).toContain('<table>');
+    expect(html).toContain('<ul>');
+    expect(html).toContain('href="https://safe.com"');
+  });
 });
 
 // ── convertToDocx ──────────────────────────────────────────────────────

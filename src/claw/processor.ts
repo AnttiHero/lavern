@@ -13,6 +13,7 @@
  * wrapper that connects the watcher/registry to the engine.
  */
 
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
@@ -69,7 +70,7 @@ export async function processDocument(
   confidential?: boolean,
 ): Promise<ProcessResult> {
   const startTime = Date.now();
-  const sessionId = `shem-${Date.now()}`;
+  const sessionId = `shem-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   const delivery = new ClawDelivery(clawConfig.dir);
 
   const log = (msg: string) => {

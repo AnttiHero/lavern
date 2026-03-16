@@ -1401,7 +1401,7 @@ function getHtmlStyles(profile: StyleProfile): string {
 
 export function convertToHtml(markdown: string, title: string, style?: DocumentStyle, branding?: SoulBranding): string {
   const profile = getStyleProfile(style);
-  let htmlBody = marked.parse(markdown, { async: false }) as string;
+  let htmlBody = sanitizeHtmlOutput(marked.parse(markdown, { async: false }) as string);
 
   // Accessible: add scope attributes to table headers
   if (profile.id === 'accessible') {
@@ -1446,6 +1446,40 @@ export function convertToHtml(markdown: string, title: string, style?: DocumentS
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Sanitize HTML output from marked.parse() to prevent XSS.
+ *
+ * Strips dangerous elements (<script>, <iframe>, <object>, <embed>, <form>, <base>)
+ * and dangerous attributes (on*, javascript: URLs, data: URLs in links).
+ * Preserves safe HTML structure for rendering legal documents.
+ */
+function sanitizeHtmlOutput(html: string): string {
+  // Remove dangerous elements and their content
+  let sanitized = html.replace(/<script\b[^]*?<\/script>/gi, '');
+  sanitized = sanitized.replace(/<iframe\b[^]*?<\/iframe>/gi, '');
+  sanitized = sanitized.replace(/<object\b[^]*?<\/object>/gi, '');
+  sanitized = sanitized.replace(/<embed\b[^]*?\/?>/gi, '');
+  sanitized = sanitized.replace(/<form\b[^]*?<\/form>/gi, '');
+  sanitized = sanitized.replace(/<base\b[^]*?\/?>/gi, '');
+
+  // Remove self-closing dangerous tags (no closing tag variant)
+  sanitized = sanitized.replace(/<script\b[^>]*\/?>/gi, '');
+  sanitized = sanitized.replace(/<iframe\b[^>]*\/?>/gi, '');
+
+  // Remove event handler attributes (onclick, onerror, onload, etc.)
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+  // Remove javascript: and data: URLs from href/src/action attributes
+  sanitized = sanitized.replace(/(href|src|action)\s*=\s*["']?\s*javascript\s*:/gi, '$1="');
+  sanitized = sanitized.replace(/(href|src|action)\s*=\s*["']?\s*data\s*:/gi, '$1="');
+
+  // Remove style attributes that could contain expression() or url(javascript:)
+  sanitized = sanitized.replace(/style\s*=\s*"[^"]*expression\s*\([^"]*"/gi, '');
+  sanitized = sanitized.replace(/style\s*=\s*'[^']*expression\s*\([^']*'/gi, '');
+
+  return sanitized;
 }
 
 /**

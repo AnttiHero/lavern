@@ -325,7 +325,7 @@ export class ClawDelivery {
 
   // ── Helpers ────────────────────────────────────────────────────────────
 
-  private extractAnalysis(session: any): ClawManifest['analysis'] {
+  private extractAnalysis(session: SessionState): ClawManifest['analysis'] {
     const findings = session.debate?.findings ?? [];
     const counts = extractSessionFindings(session);
     const resolutions = session.debate?.resolutions?.length ?? 0;
@@ -341,12 +341,12 @@ export class ClawDelivery {
     };
   }
 
-  private extractFindingsJson(session: any): object[] {
+  private extractFindingsJson(session: SessionState): object[] {
     const findings = session.debate?.findings ?? [];
-    return findings.map((f: any) => ({
+    return findings.map((f) => ({
       id: f.id,
-      agent: f.agent,
-      category: f.category,
+      agent: f.agentRole,
+      category: f.findingType,
       severity: f.severity,
       confidence: f.confidence,
       content: f.content,
