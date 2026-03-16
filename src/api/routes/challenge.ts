@@ -147,8 +147,11 @@ export function registerChallengeRoutes(
         };
       });
 
-      const overallA = Math.round(parsed.overallA);
-      const overallB = Math.round(parsed.overallB);
+      // Clamp overall scores to 0-100 and guard against NaN
+      const rawA = Number(parsed.overallA);
+      const rawB = Number(parsed.overallB);
+      const overallA = Number.isFinite(rawA) ? Math.round(Math.max(0, Math.min(100, rawA))) : 0;
+      const overallB = Number.isFinite(rawB) ? Math.round(Math.max(0, Math.min(100, rawB))) : 0;
 
       // Determine winner
       const whiteshoeScore = assignment.A === 'whiteshoe' ? overallA : overallB;
