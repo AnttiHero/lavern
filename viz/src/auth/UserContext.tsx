@@ -13,6 +13,7 @@ export interface AuthUser {
   displayName: string;
   firmName: string;
   profile: Record<string, unknown>;
+  emailVerified?: boolean;
 }
 
 export interface UserContextValue {

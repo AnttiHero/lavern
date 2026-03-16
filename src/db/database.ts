@@ -335,6 +335,28 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_bh_reference ON billable_hours(reference_id);
     CREATE INDEX IF NOT EXISTS idx_billing_events_stripe ON billing_events(stripe_session_id);
   `);
+
+  // v23 migration: User tokens (password reset + email verification) + user columns
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN low_balance_warned_at TEXT`);
+  } catch { /* column already exists */ }
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_tokens (
+      token      TEXT PRIMARY KEY,
+      user_id    TEXT NOT NULL REFERENCES users(id),
+      type       TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      used_at    TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_ut_user ON user_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_ut_expires ON user_tokens(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_ut_type ON user_tokens(type);
+  `);
 }
 
 // ── Password Hashing ─────────────────────────────────────────────────────
@@ -448,6 +470,105 @@ export function cleanExpiredTokens(): number {
   return result.changes;
 }
 
+// ── User Tokens (Password Reset + Email Verification) ──────────────────
+
+/** Create a password reset token (expires per config.auth.resetTokenTtlMs). */
+export function createPasswordResetToken(userId: string): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + config.auth.resetTokenTtlMs);
+  getDb().prepare(`
+    INSERT INTO user_tokens (token, user_id, type, expires_at, created_at)
+    VALUES (?, ?, 'reset', ?, ?)
+  `).run(token, userId, expiresAt.toISOString(), now.toISOString());
+  return token;
+}
+
+/** Create an email verification token (expires per config.auth.verifyTokenTtlMs). */
+export function createVerificationToken(userId: string): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + config.auth.verifyTokenTtlMs);
+  getDb().prepare(`
+    INSERT INTO user_tokens (token, user_id, type, expires_at, created_at)
+    VALUES (?, ?, 'verify', ?, ?)
+  `).run(token, userId, expiresAt.toISOString(), now.toISOString());
+  return token;
+}
+
+interface UserToken { token: string; user_id: string; type: string; expires_at: string; created_at: string; used_at: string | null }
+
+/** Look up a password reset token that hasn't been used and hasn't expired. */
+export function getPasswordResetToken(token: string): UserToken | undefined {
+  return getDb().prepare(`
+    SELECT * FROM user_tokens WHERE token = ? AND type = 'reset' AND used_at IS NULL AND expires_at > ?
+  `).get(token, new Date().toISOString()) as UserToken | undefined;
+}
+
+/** Look up an email verification token that hasn't been used and hasn't expired. */
+export function getVerificationToken(token: string): UserToken | undefined {
+  return getDb().prepare(`
+    SELECT * FROM user_tokens WHERE token = ? AND type = 'verify' AND used_at IS NULL AND expires_at > ?
+  `).get(token, new Date().toISOString()) as UserToken | undefined;
+}
+
+/** Mark a token as used. */
+export function markTokenUsed(token: string): void {
+  getDb().prepare(`UPDATE user_tokens SET used_at = ? WHERE token = ?`).run(new Date().toISOString(), token);
+}
+
+/** Invalidate all unused tokens of a given type for a user (e.g., after password reset, invalidate older reset tokens). */
+export function invalidateUserTokens(userId: string, type: 'reset' | 'verify'): void {
+  getDb().prepare(`UPDATE user_tokens SET used_at = ? WHERE user_id = ? AND type = ? AND used_at IS NULL`)
+    .run(new Date().toISOString(), userId, type);
+}
+
+/** Update a user's password hash. */
+export function updatePasswordHash(userId: string, passwordHash: string): void {
+  getDb().prepare(`UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`)
+    .run(passwordHash, new Date().toISOString(), userId);
+}
+
+/** Delete all auth tokens for a user (force re-login everywhere after password reset). */
+export function deleteAllUserAuthTokens(userId: string): void {
+  getDb().prepare('DELETE FROM auth_tokens WHERE user_id = ?').run(userId);
+}
+
+/** Mark a user's email as verified. */
+export function setEmailVerified(userId: string): void {
+  getDb().prepare(`UPDATE users SET email_verified = 1, updated_at = ? WHERE id = ?`)
+    .run(new Date().toISOString(), userId);
+}
+
+/** Check if a user's email is verified. */
+export function isEmailVerified(userId: string): boolean {
+  const row = getDb().prepare(`SELECT email_verified FROM users WHERE id = ?`).get(userId) as { email_verified: number } | undefined;
+  return row?.email_verified === 1;
+}
+
+/** Set low-balance warning timestamp (dedup: only warn once per credit cycle). */
+export function setLowBalanceWarnedAt(userId: string): void {
+  getDb().prepare(`UPDATE users SET low_balance_warned_at = ? WHERE id = ?`)
+    .run(new Date().toISOString(), userId);
+}
+
+/** Get when low-balance warning was last sent (null if not warned or after top-up). */
+export function getLowBalanceWarnedAt(userId: string): string | null {
+  const row = getDb().prepare(`SELECT low_balance_warned_at FROM users WHERE id = ?`).get(userId) as { low_balance_warned_at: string | null } | undefined;
+  return row?.low_balance_warned_at ?? null;
+}
+
+/** Clear low-balance warning flag (called when user tops up). */
+export function clearLowBalanceWarning(userId: string): void {
+  getDb().prepare(`UPDATE users SET low_balance_warned_at = NULL WHERE id = ?`).run(userId);
+}
+
+/** Clean expired and used user tokens (password reset + email verification). */
+export function cleanExpiredUserTokens(): number {
+  const result = getDb().prepare('DELETE FROM user_tokens WHERE expires_at < ? OR used_at IS NOT NULL').run(new Date().toISOString());
+  return result.changes;
+}
+
 // ── Session Archive Queries ──────────────────────────────────────────────
 
 export interface ArchivedSession {
@@ -519,6 +640,20 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       const debited = debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
       if (!debited) {
         console.warn(`[BILLING] Insufficient billable hours for user ${userId} — session ${session.id} cost ${hoursUsed.toFixed(2)}h but debit failed (balance too low). Session archived without debit.`);
+      } else {
+        // v23: Check if balance is low — schedule warning email (dedup via low_balance_warned_at)
+        const newBalance = getUserBillableHours(userId);
+        if (newBalance < config.auth.lowBalanceThresholdHours && !getLowBalanceWarnedAt(userId)) {
+          setLowBalanceWarnedAt(userId);
+          // Fire email after transaction (imported lazily to avoid circular deps)
+          const user = getUserById(userId);
+          if (user) {
+            import('../email/send.js').then(({ sendLowBalanceEmail }) => {
+              sendLowBalanceEmail(user.email, { balance: newBalance, threshold: config.auth.lowBalanceThresholdHours })
+                .catch(err => console.error('[EMAIL] Low balance email failed:', err));
+            }).catch(() => {});
+          }
+        }
       }
     }
 
@@ -955,6 +1090,8 @@ export function creditBillableHours(
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, type, amount, current + amount, description, referenceId ?? null, expiresAt ?? null, now);
     credited = true;
+    // Re-arm low-balance warning when user tops up
+    clearLowBalanceWarning(userId);
   })();
   return credited;
 }
@@ -1102,8 +1239,9 @@ export function softDeleteUser(userId: string): boolean {
       WHERE id = ?
     `).run(anonymizedEmail, now, userId);
 
-    // Revoke all auth tokens
+    // Revoke all auth tokens and user tokens (reset/verify)
     d.prepare(`DELETE FROM auth_tokens WHERE user_id = ?`).run(userId);
+    d.prepare(`DELETE FROM user_tokens WHERE user_id = ?`).run(userId);
 
     // Anonymize session archive titles (keep cost/timing data for analytics)
     d.prepare(`UPDATE session_archive SET title = 'Deleted', final_output = NULL, assembled_document = NULL WHERE user_id = ?`).run(userId);

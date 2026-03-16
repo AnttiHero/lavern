@@ -26,6 +26,7 @@ const CheckoutPackSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']
 const log = createLogger('BILLING');
 import {
   getUserByToken,
+  getUserById,
   getUserPlan,
   setUserPlan,
   setUserStripeCustomer,
@@ -34,6 +35,7 @@ import {
   getUserBillableHours,
   creditBillableHours,
 } from '../../db/database.js';
+import { sendPaymentReceiptEmail } from '../../email/send.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -302,6 +304,17 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 metadata: { pack: packName, hours },
               });
               log.info(`User ${userId} purchased ${hours}h (${packName} pack)`);
+              // v23: Send payment receipt email
+              const packUser = getUserById(userId);
+              if (packUser) {
+                const packDef = config.billableHours.packs[packName as keyof typeof config.billableHours.packs];
+                const newBalance = getUserBillableHours(userId);
+                sendPaymentReceiptEmail(packUser.email, {
+                  type: 'pack', packName, hours,
+                  amountLabel: packDef ? `€${(packDef.priceEurCents / 100).toFixed(0)}` : `Pack`,
+                  newBalance,
+                }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+              }
             }
             break;
           }
@@ -327,6 +340,15 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
             });
 
             log.info(`User ${userId} upgraded to ${plan}`);
+            // v23: Send receipt email for subscription
+            const subUser = getUserById(userId);
+            if (subUser) {
+              const planDef = config.stripe.plans[plan as keyof typeof config.stripe.plans];
+              sendPaymentReceiptEmail(subUser.email, {
+                type: 'subscription', plan: planDef?.label ?? plan,
+                amountLabel: `${planDef?.label ?? plan} Plan`,
+              }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+            }
           }
           break;
         }
@@ -369,6 +391,17 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                 metadata: { pack: packName, hours, method: 'payment_intent' },
               });
               log.info(`User ${piUserId} purchased ${hours}h via Apple Pay (${packName} pack)`);
+              // v23: Send receipt email
+              const piUser = getUserById(piUserId);
+              if (piUser) {
+                const piPackDef = config.billableHours.packs[packName as keyof typeof config.billableHours.packs];
+                const piBalance = getUserBillableHours(piUserId);
+                sendPaymentReceiptEmail(piUser.email, {
+                  type: 'pack', packName, hours,
+                  amountLabel: piPackDef ? `€${(piPackDef.priceEurCents / 100).toFixed(0)}` : `Pack`,
+                  newBalance: piBalance,
+                }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+              }
             }
           }
           break;

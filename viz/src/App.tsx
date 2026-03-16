@@ -54,6 +54,7 @@ const MyPageView = lazy(() => import('./my-page/MyPageView.js'));
 const MyCasesView = lazy(() => import('./my-cases/MyCasesView.js'));
 const AgentDocsView = lazy(() => import('./agent-docs/AgentDocsView.js'));
 const LoginView = lazy(() => import('./auth/LoginView.js'));
+const ResetPasswordView = lazy(() => import('./auth/ResetPasswordView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
 const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
@@ -65,7 +66,7 @@ const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -73,6 +74,8 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/partner')) return 'partner';
   if (hash.startsWith('#/lobby')) return 'lobby';
   if (hash.startsWith('#/login')) return 'login';
+  if (hash.startsWith('#/reset-password')) return 'reset-password';
+  if (hash.startsWith('#/verify-email')) return 'verify-email';
   if (hash.startsWith('#/dashboard')) return 'dashboard';
   if (hash.startsWith('#/intake')) return 'intake';
   if (hash.startsWith('#/briefing')) return 'briefing';
@@ -106,6 +109,61 @@ function ViewFallback({ text }: { text: string }) {
 /** Fade-up entrance for all views */
 function ViewTransition({ children }: { children: React.ReactNode }) {
   return <div className="view-entrance">{children}</div>;
+}
+
+/** Minimal inline handler for email verification links (#/verify-email?token=xxx). */
+function VerifyEmailHandler() {
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [message, setMessage] = useState('Verifying your email...');
+
+  useEffect(() => {
+    const hashParts = window.location.hash.split('?');
+    const params = new URLSearchParams(hashParts[1] ?? '');
+    const token = params.get('token');
+    if (!token) {
+      setStatus('error');
+      setMessage('Invalid verification link — no token found.');
+      return;
+    }
+    fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then(async res => {
+        if (res.ok) {
+          setStatus('success');
+          setMessage('Email verified! You can now sign in.');
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setStatus('error');
+          setMessage((data as { error?: string }).error || 'Verification failed.');
+        }
+      })
+      .catch(() => {
+        setStatus('error');
+        setMessage('Unable to connect to the server.');
+      });
+  }, []);
+
+  return (
+    <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0ede8', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ textAlign: 'center', maxWidth: 400, padding: 32 }}>
+        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 300, fontStyle: 'italic', marginBottom: 16 }}>
+          {status === 'verifying' ? 'Verifying...' : status === 'success' ? 'Verified' : 'Error'}
+        </h2>
+        <p style={{ fontSize: 14, color: '#6b6560', lineHeight: 1.6 }}>{message}</p>
+        {status !== 'verifying' && (
+          <button
+            onClick={() => { window.location.hash = '#/login'; }}
+            style={{ marginTop: 24, padding: '12px 32px', fontSize: 12, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase' as const, color: '#fff', backgroundColor: '#1a1a1a', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+          >
+            {status === 'success' ? 'Sign In' : 'Back to Login'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function App() {
@@ -784,6 +842,37 @@ export function App() {
             }}
             onBack={() => { window.location.hash = '#/quickstart'; }}
           />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Reset Password — token-based password reset from email link ────────
+  if (view === 'reset-password') {
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Loading..." />}>
+          <ResetPasswordView onBack={() => { window.location.hash = '#/login'; }} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Verify Email — redirect to login after verification ──────────────
+  if (view === 'verify-email') {
+    // Verification is handled inline — redirect to login with a hash that
+    // triggers the verification API call (handled by LoginView or a small inline component).
+    // For now, we render a minimal verify-email handler.
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        {cursor}
+        <Suspense fallback={<ViewFallback text="Verifying..." />}>
+          <VerifyEmailHandler />
         </Suspense>
       </ErrorBoundary>
     );

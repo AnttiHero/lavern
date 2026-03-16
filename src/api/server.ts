@@ -54,7 +54,7 @@ import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
-import { initDatabase, cleanExpiredTokens, rotateAuditLog, logAuditEvent } from '../db/database.js';
+import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent } from '../db/database.js';
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
@@ -131,6 +131,8 @@ export async function startApiServer(port: number): Promise<void> {
   // Clean expired auth tokens at startup and every hour
   const expired = cleanExpiredTokens();
   if (expired > 0) console.log(`[AUTH] Cleaned ${expired} expired auth token${expired === 1 ? '' : 's'}`);
+  const expiredUserTokens = cleanExpiredUserTokens();
+  if (expiredUserTokens > 0) console.log(`[AUTH] Cleaned ${expiredUserTokens} expired user token${expiredUserTokens === 1 ? '' : 's'}`);
 
   // Rotate audit log at startup (retain 90 days)
   const rotated = rotateAuditLog(90);
@@ -139,6 +141,8 @@ export async function startApiServer(port: number): Promise<void> {
   const tokenCleanupInterval = setInterval(() => {
     const cleaned = cleanExpiredTokens();
     if (cleaned > 0) console.log(`[AUTH] Cleaned ${cleaned} expired auth token${cleaned === 1 ? '' : 's'}`);
+    const cleanedUser = cleanExpiredUserTokens();
+    if (cleanedUser > 0) console.log(`[AUTH] Cleaned ${cleanedUser} expired user token${cleanedUser === 1 ? '' : 's'}`);
     // Also rotate audit log hourly
     const auditRotated = rotateAuditLog(90);
     if (auditRotated > 0) console.log(`[AUDIT] Rotated ${auditRotated} audit log entries`);
@@ -190,6 +194,10 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/login',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    // v23: Password reset + email verification (public by definition)
+    'POST /api/auth/forgot-password',
+    'POST /api/auth/reset-password',
+    'POST /api/auth/verify-email',
     // Session-scoped POST mutations — scoped by session ID, work without login
     // so the QuickStart → Working → Delivery flow doesn't require auth.
     // Session ID acts as the auth token (only the user who created it has it).

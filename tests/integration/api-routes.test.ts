@@ -50,6 +50,18 @@ vi.mock('../../src/config.js', () => ({
     stripeSecretKey: '',
     stripePublishableKey: '',
     stripeWebhookSecret: '',
+    email: {
+      resendApiKey: '',
+      from: 'Test <test@test.com>',
+      appUrl: 'http://localhost:5173',
+    },
+    auth: {
+      resetTokenTtlMs: 60 * 60 * 1000,
+      verifyTokenTtlMs: 24 * 60 * 60 * 1000,
+      lowBalanceThresholdHours: 5,
+      rateLimitForgotPasswordMax: 100,
+      rateLimitResendVerificationMax: 100,
+    },
     billableHours: {
       rate: 0.10,
       welcomeHours: 50,
@@ -69,6 +81,10 @@ vi.mock('../../src/email/send.js', () => ({
   sendWelcomeEmail: vi.fn().mockResolvedValue(true),
   sendWaitlistConfirmation: vi.fn().mockResolvedValue(true),
   sendInviteEmail: vi.fn().mockResolvedValue(true),
+  sendPaymentReceiptEmail: vi.fn().mockResolvedValue(true),
+  sendLowBalanceEmail: vi.fn().mockResolvedValue(true),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(true),
+  sendVerificationEmail: vi.fn().mockResolvedValue(true),
 }));
 
 import { initDatabase } from '../../src/db/database.js';
@@ -532,6 +548,155 @@ describe('API Routes Integration', () => {
         payload: { email: deleteEmail, password: deletePassword },
       });
       expect(loginRes.statusCode).toBe(401);
+    });
+  });
+
+  // ── Password Reset ────────────────────────────────────────────────────
+
+  describe('Password Reset', () => {
+    const resetEmail = 'reset@example.com';
+    const resetPassword = 'OldPassword123';
+    const newPassword = 'NewPassword456';
+
+    it('POST /api/auth/forgot-password returns 200 for valid email', async () => {
+      // Create user first
+      await app.inject({ method: 'POST', url: '/api/auth/signup', payload: { email: resetEmail, password: resetPassword } });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/forgot-password',
+        payload: { email: resetEmail },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveProperty('success', true);
+    });
+
+    it('POST /api/auth/forgot-password returns 200 for unknown email (no enumeration)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/forgot-password',
+        payload: { email: 'nonexistent@example.com' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveProperty('success', true);
+    });
+
+    it('POST /api/auth/reset-password with valid token changes password', async () => {
+      // Import DB functions to create a token directly
+      const { getUserByEmail, createPasswordResetToken } = await import('../../src/db/database.js');
+      const user = getUserByEmail(resetEmail);
+      expect(user).toBeDefined();
+
+      const token = createPasswordResetToken(user!.id);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: { token, password: newPassword },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveProperty('success', true);
+
+      // Old password should fail
+      const oldLogin = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: resetEmail, password: resetPassword },
+      });
+      expect(oldLogin.statusCode).toBe(401);
+
+      // New password should work
+      const newLogin = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: resetEmail, password: newPassword },
+      });
+      expect(newLogin.statusCode).toBe(200);
+    });
+
+    it('POST /api/auth/reset-password with invalid token returns 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: { token: 'invalid-token', password: 'SomePassword123' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  // ── Email Verification ────────────────────────────────────────────────
+
+  describe('Email Verification', () => {
+    const verifyEmail = 'verify@example.com';
+    const verifyPassword = 'VerifyPass123';
+
+    it('signup creates unverified user', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: { email: verifyEmail, password: verifyPassword },
+      });
+      expect(res.statusCode).toBe(201);
+      const user = res.json().user;
+      expect(user).toHaveProperty('emailVerified', false);
+    });
+
+    it('POST /api/auth/verify-email with valid token verifies email', async () => {
+      const { getUserByEmail, createVerificationToken } = await import('../../src/db/database.js');
+      const user = getUserByEmail(verifyEmail);
+      expect(user).toBeDefined();
+
+      const token = createVerificationToken(user!.id);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/verify-email',
+        payload: { token },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveProperty('success', true);
+
+      // /me should show emailVerified: true
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: verifyEmail, password: verifyPassword },
+      });
+      const cookie = loginRes.headers['set-cookie'] as string;
+      const meRes = await app.inject({
+        method: 'GET',
+        url: '/api/auth/me',
+        headers: { cookie },
+      });
+      expect(meRes.statusCode).toBe(200);
+      expect(meRes.json().user).toHaveProperty('emailVerified', true);
+    });
+
+    it('POST /api/auth/verify-email with invalid token returns 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/verify-email',
+        payload: { token: 'bad-token' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('POST /api/auth/resend-verification sends new email', async () => {
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: verifyEmail, password: verifyPassword },
+      });
+      const cookie = loginRes.headers['set-cookie'] as string;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/resend-verification',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      // Already verified, so should get alreadyVerified: true
+      expect(res.json()).toHaveProperty('alreadyVerified', true);
     });
   });
 });

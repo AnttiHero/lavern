@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function LoginView({ onAuth, onBack }: Props) {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -24,6 +24,30 @@ export default function LoginView({ onAuth, onBack }: Props) {
   const [firmName, setFirmName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  const handleForgotPassword = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error || 'Request failed.');
+        return;
+      }
+      setForgotSuccess(true);
+    } catch {
+      setError('Unable to connect to the server.');
+    } finally {
+      setLoading(false);
+    }
+  }, [email]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,10 +124,12 @@ export default function LoginView({ onAuth, onBack }: Props) {
 
         {/* Title */}
         <h2 style={styles.title}>
-          {isSignup ? 'Create Account' : 'Welcome Back'}
+          {mode === 'forgot' ? 'Forgot Password' : isSignup ? 'Create Account' : 'Welcome Back'}
         </h2>
         <p style={styles.subtitle}>
-          {isSignup
+          {mode === 'forgot'
+            ? "Enter your email and we'll send a reset link."
+            : isSignup
             ? 'Join the agentic law firm.'
             : 'Sign in to your Whiteshoe account.'}
         </p>
@@ -111,84 +137,141 @@ export default function LoginView({ onAuth, onBack }: Props) {
         {/* Error */}
         {error && <div style={styles.error}>{error}</div>}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={styles.input}
-            required
-            autoFocus
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            style={styles.input}
-            required
-            minLength={mode === 'signup' ? 8 : 1}
-          />
-
-          {isSignup && (
+        {/* Forgot password mode */}
+        {mode === 'forgot' ? (
+          forgotSuccess ? (
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: `0 0 ${spacing.xl}px` }}>
+                If an account with that email exists, we sent a password reset link. Check your inbox.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(null); setForgotSuccess(false); }}
+                style={styles.submitBtn}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : (
             <>
+              <form onSubmit={handleForgotPassword} style={styles.form}>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  style={styles.input}
+                  required
+                  autoFocus
+                />
+                <button type="submit" style={styles.submitBtn} disabled={loading}>
+                  {loading ? 'Please wait...' : 'Send Reset Link'}
+                </button>
+              </form>
+              <div style={styles.toggle}>
+                <span style={styles.toggleText}>Remember your password?</span>
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); }}
+                  style={styles.toggleBtn}
+                >
+                  Sign In
+                </button>
+              </div>
+            </>
+          )
+        ) : (
+          <>
+            {/* Login / Signup Form */}
+            <form onSubmit={handleSubmit} style={styles.form}>
               <input
-                type="text"
-                placeholder="Invite Code"
-                value={inviteCode}
-                onChange={e => setInviteCode(e.target.value)}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 style={styles.input}
                 required
+                autoFocus
               />
-              <p style={styles.waitlistHint}>
-                Don't have a code?{' '}
-                <a
-                  href="#/pricing"
-                  onClick={(e) => { e.preventDefault(); window.location.hash = '#/pricing'; }}
-                  style={styles.waitlistLink}
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                style={styles.input}
+                required
+                minLength={mode === 'signup' ? 8 : 1}
+              />
+
+              {!isSignup && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError(null); }}
+                  style={styles.forgotBtn}
                 >
-                  Join the waitlist.
-                </a>
-              </p>
-              <input
-                type="text"
-                placeholder="Display Name (optional)"
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                style={styles.input}
-              />
-              <input
-                type="text"
-                placeholder="Firm / Organization (optional)"
-                value={firmName}
-                onChange={e => setFirmName(e.target.value)}
-                style={styles.input}
-              />
-            </>
-          )}
+                  Forgot password?
+                </button>
+              )}
 
-          <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading
-              ? 'Please wait...'
-              : isSignup ? 'Create Account' : 'Sign In'}
-          </button>
-        </form>
+              {isSignup && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Invite Code"
+                    value={inviteCode}
+                    onChange={e => setInviteCode(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                  <p style={styles.waitlistHint}>
+                    Don't have a code?{' '}
+                    <a
+                      href="#/pricing"
+                      onClick={(e) => { e.preventDefault(); window.location.hash = '#/pricing'; }}
+                      style={styles.waitlistLink}
+                    >
+                      Join the waitlist.
+                    </a>
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Display Name (optional)"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    style={styles.input}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Firm / Organization (optional)"
+                    value={firmName}
+                    onChange={e => setFirmName(e.target.value)}
+                    style={styles.input}
+                  />
+                </>
+              )}
 
-        {/* Toggle mode */}
-        <div style={styles.toggle}>
-          <span style={styles.toggleText}>
-            {isSignup ? 'Already have an account?' : "Don't have an account?"}
-          </span>
-          <button
-            type="button"
-            onClick={() => { setMode(isSignup ? 'login' : 'signup'); setError(null); }}
-            style={styles.toggleBtn}
-          >
-            {isSignup ? 'Sign In' : 'Sign Up'}
-          </button>
-        </div>
+              <button type="submit" style={styles.submitBtn} disabled={loading}>
+                {loading
+                  ? 'Please wait...'
+                  : isSignup ? 'Create Account' : 'Sign In'}
+              </button>
+            </form>
+
+            {/* Toggle mode */}
+            <div style={styles.toggle}>
+              <span style={styles.toggleText}>
+                {isSignup ? 'Already have an account?' : "Don't have an account?"}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setMode(isSignup ? 'login' : 'signup'); setError(null); }}
+                style={styles.toggleBtn}
+              >
+                {isSignup ? 'Sign In' : 'Sign Up'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -371,6 +454,19 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     textDecoration: 'underline',
     padding: 0,
+  },
+
+  forgotBtn: {
+    background: 'none',
+    border: 'none',
+    color: colors.textMuted,
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    cursor: 'pointer',
+    padding: 0,
+    alignSelf: 'flex-end' as const,
+    marginTop: -spacing.sm,
+    textDecoration: 'underline',
   },
 
   waitlistHint: {

@@ -4,11 +4,15 @@
  * Uses cookie-based auth (whiteshoe_token HttpOnly cookie).
  * Passwords hashed with Node's built-in crypto.scrypt.
  *
- * POST  /api/auth/signup   — Create account
- * POST  /api/auth/login    — Login
- * POST  /api/auth/logout   — Logout
- * GET   /api/auth/me       — Get current user
- * PUT   /api/auth/profile  — Update profile
+ * POST  /api/auth/signup              — Create account
+ * POST  /api/auth/login               — Login
+ * POST  /api/auth/logout              — Logout
+ * GET   /api/auth/me                  — Get current user
+ * PUT   /api/auth/profile             — Update profile
+ * POST  /api/auth/forgot-password     — Request password reset email
+ * POST  /api/auth/reset-password      — Reset password with token
+ * POST  /api/auth/verify-email        — Verify email with token
+ * POST  /api/auth/resend-verification — Resend verification email
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -21,6 +25,7 @@ import {
   updateUserProfile,
   createAuthToken,
   deleteAuthToken,
+  deleteAllUserAuthTokens,
   hashPassword,
   verifyPassword,
   logAuditEvent,
@@ -29,11 +34,20 @@ import {
   getWaitlistEntryByCode,
   markInviteUsed,
   creditBillableHours,
+  createPasswordResetToken,
+  getPasswordResetToken,
+  markTokenUsed,
+  invalidateUserTokens,
+  updatePasswordHash,
+  createVerificationToken,
+  getVerificationToken,
+  setEmailVerified,
+  isEmailVerified,
 } from '../../db/database.js';
 import { validateBody } from '../middleware/validation.js';
 import { parseCookieToken } from '../middleware/auth.js';
 import { config } from '../../config.js';
-import { sendWelcomeEmail } from '../../email/send.js';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail } from '../../email/send.js';
 
 // ── Schemas ──────────────────────────────────────────────────────────────
 
@@ -48,6 +62,19 @@ const SignupSchema = z.object({
 const LoginSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(1).max(200),
+}).strict();
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().email().max(200),
+}).strict();
+
+const ResetPasswordSchema = z.object({
+  token: z.string().min(1).max(200),
+  password: z.string().min(8).max(200),
+}).strict();
+
+const VerifyEmailSchema = z.object({
+  token: z.string().min(1).max(200),
 }).strict();
 
 const ProfileUpdateSchema = z.object({
@@ -75,7 +102,7 @@ function clearAuthCookie(reply: FastifyReply): void {
   reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${SECURE_FLAG}`);
 }
 
-function sanitizeUser(user: { id: string; email: string; display_name: string; firm_name: string; profile_json: string }) {
+function sanitizeUser(user: { id: string; email: string; display_name: string; firm_name: string; profile_json: string; email_verified?: number }) {
   let profile = {};
   let profileCorrupted = false;
   try {
@@ -92,6 +119,7 @@ function sanitizeUser(user: { id: string; email: string; display_name: string; f
     displayName: user.display_name,
     firmName: user.firm_name,
     profile,
+    emailVerified: !!(user.email_verified),
     ...(profileCorrupted ? { profileCorrupted: true } : {}),
   };
 }
@@ -156,6 +184,11 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
     // Welcome email — fire-and-forget
     sendWelcomeEmail(body.email, body.displayName).catch(err => console.error('[EMAIL] Welcome email failed:', err));
+
+    // v23: Send email verification link
+    const verifyToken = createVerificationToken(user.id);
+    const verifyUrl = `${config.email.appUrl}/#/verify-email?token=${verifyToken}`;
+    sendVerificationEmail(body.email, verifyUrl).catch(err => console.error('[EMAIL] Verification email failed:', err));
 
     return reply.status(201).send({ user: sanitizeUser(user) });
   });
@@ -329,5 +362,111 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       success: true,
       message: 'Account data has been anonymized. Your sessions and usage data are retained in anonymized form for analytics.',
     });
+  });
+
+  // ── POST /api/auth/forgot-password ──────────────────────────────────
+
+  fastify.post('/api/auth/forgot-password', {
+    config: {
+      rateLimit: {
+        max: config.auth.rateLimitForgotPasswordMax,
+        timeWindow: config.rateLimitAuthWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const body = validateBody(ForgotPasswordSchema, request, reply);
+    if (!body) return;
+
+    const email = body.email.toLowerCase().trim();
+    logAuditEvent({ action: 'forgot_password', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'], detail: { email } });
+
+    // Always return 200 to prevent email enumeration
+    const user = getUserByEmail(email);
+    if (user) {
+      const token = createPasswordResetToken(user.id);
+      const resetUrl = `${config.email.appUrl}/#/reset-password?token=${token}`;
+      sendPasswordResetEmail(email, resetUrl).catch(err => console.error('[EMAIL] Reset email failed:', err));
+    }
+
+    return reply.send({ success: true, message: 'If an account with that email exists, we sent a password reset link.' });
+  });
+
+  // ── POST /api/auth/reset-password ───────────────────────────────────
+
+  fastify.post('/api/auth/reset-password', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitAuthLoginMax,
+        timeWindow: config.rateLimitAuthWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const body = validateBody(ResetPasswordSchema, request, reply);
+    if (!body) return;
+
+    const tokenRow = getPasswordResetToken(body.token);
+    if (!tokenRow) {
+      return reply.status(400).send({ error: 'Invalid or expired reset link. Please request a new one.' });
+    }
+
+    const newHash = await hashPassword(body.password);
+    updatePasswordHash(tokenRow.user_id, newHash);
+    markTokenUsed(body.token);
+    invalidateUserTokens(tokenRow.user_id, 'reset');
+    deleteAllUserAuthTokens(tokenRow.user_id); // Force re-login everywhere
+
+    logAuditEvent({ userId: tokenRow.user_id, action: 'password_reset', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
+
+    return reply.send({ success: true, message: 'Password has been reset. Please sign in with your new password.' });
+  });
+
+  // ── POST /api/auth/verify-email ─────────────────────────────────────
+
+  fastify.post('/api/auth/verify-email', async (request, reply) => {
+    const body = validateBody(VerifyEmailSchema, request, reply);
+    if (!body) return;
+
+    const tokenRow = getVerificationToken(body.token);
+    if (!tokenRow) {
+      return reply.status(400).send({ error: 'Invalid or expired verification link. Please request a new one.' });
+    }
+
+    setEmailVerified(tokenRow.user_id);
+    markTokenUsed(body.token);
+
+    logAuditEvent({ userId: tokenRow.user_id, action: 'email_verified', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
+
+    return reply.send({ success: true, message: 'Email verified successfully.' });
+  });
+
+  // ── POST /api/auth/resend-verification ──────────────────────────────
+
+  fastify.post('/api/auth/resend-verification', {
+    config: {
+      rateLimit: {
+        max: config.auth.rateLimitResendVerificationMax,
+        timeWindow: config.rateLimitAuthWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const token = parseCookieToken(request.headers.cookie);
+    if (!token) {
+      return reply.status(401).send({ error: 'Not authenticated.' });
+    }
+
+    const user = getUserByToken(token);
+    if (!user) {
+      return reply.status(401).send({ error: 'Session expired.' });
+    }
+
+    if (isEmailVerified(user.id)) {
+      return reply.send({ success: true, alreadyVerified: true, message: 'Email is already verified.' });
+    }
+
+    const verifyToken = createVerificationToken(user.id);
+    const verifyUrl = `${config.email.appUrl}/#/verify-email?token=${verifyToken}`;
+    sendVerificationEmail(user.email, verifyUrl).catch(err => console.error('[EMAIL] Verification email failed:', err));
+
+    return reply.send({ success: true, message: 'Verification email sent.' });
   });
 }

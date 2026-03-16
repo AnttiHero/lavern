@@ -105,6 +105,20 @@ export const config = {
     appUrl: process.env.MARBLE_APP_URL ?? 'http://localhost:5173',
   },
 
+  // ── Auth Tokens & Recovery ────────────────────────────────────────────
+  auth: {
+    /** Password reset token TTL in ms (default: 1 hour) */
+    resetTokenTtlMs: safeInt(process.env.MARBLE_RESET_TOKEN_TTL_MS, 60 * 60 * 1000),
+    /** Email verification token TTL in ms (default: 24 hours) */
+    verifyTokenTtlMs: safeInt(process.env.MARBLE_VERIFY_TOKEN_TTL_MS, 24 * 60 * 60 * 1000),
+    /** Low balance warning threshold in hours (default: 5h) */
+    lowBalanceThresholdHours: safeFloat(process.env.MARBLE_LOW_BALANCE_HOURS, 5),
+    /** Rate limit for forgot-password (per window, default: 3) */
+    rateLimitForgotPasswordMax: safeInt(process.env.SHEM_RATE_LIMIT_FORGOT_PASSWORD_MAX, 3),
+    /** Rate limit for resend-verification (per window, default: 3) */
+    rateLimitResendVerificationMax: safeInt(process.env.SHEM_RATE_LIMIT_RESEND_VERIFY_MAX, 3),
+  },
+
   // ── Voice (Deepgram STT + ElevenLabs TTS) ─────────────────────────────
   voice: {
     deepgramApiKey: process.env.MARBLE_DEEPGRAM_API_KEY ?? '',
