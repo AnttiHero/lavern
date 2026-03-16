@@ -306,7 +306,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         const state = registry.getState();
 
         // Budget approaching limit (>80%)
-        const pct = state.budget.spentUsd / state.budget.totalUsd;
+        const pct = state.budget.totalUsd > 0 ? state.budget.spentUsd / state.budget.totalUsd : 0;
         if (pct > 0.8) alerts.push(`Budget ${Math.round(pct * 100)}% used`);
 
         // Documents needing attention
