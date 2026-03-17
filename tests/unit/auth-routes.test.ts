@@ -30,6 +30,9 @@ import {
   exportUserData,
   softDeleteUser,
   logAuditEvent,
+  creditBillableHours,
+  getUserBillableHours,
+  debitBillableHours,
 } from '../../src/db/database.js';
 
 // ── Setup — Use in-memory SQLite for tests ──────────────────────────────
@@ -631,5 +634,106 @@ describe('Profile JSON handling', () => {
     expect(result.displayName).toBe('<script>alert("xss")</script>');
     expect((result.profile as any).soul).toBe('<img onerror=alert(1) src=x>');
     expect(result).not.toHaveProperty('profileCorrupted');
+  });
+});
+
+// ── Free Trial Billing Tests ─────────────────────────────────────────────
+
+describe('Free trial billing — creditBillableHours / getUserBillableHours', () => {
+  let trialUserId: string;
+
+  it('new user starts with 0 billable hours', async () => {
+    const email = `trial-${Date.now()}@example.com`;
+    const hash = await hashPassword('trial-password-123');
+    const user = createUser(email, hash, 'Trial User');
+    trialUserId = user.id;
+
+    const balance = getUserBillableHours(trialUserId);
+    expect(balance).toBe(0);
+  });
+
+  it('credits free trial hours', () => {
+    const credited = creditBillableHours(
+      trialUserId,
+      10,
+      'welcome',
+      'Free trial — 10 billable hours to get started.',
+    );
+    expect(credited).toBe(true);
+
+    const balance = getUserBillableHours(trialUserId);
+    expect(balance).toBe(10);
+  });
+
+  it('credits invite welcome hours (larger amount)', () => {
+    const email = `invited-${Date.now()}@example.com`;
+    const hash = 'fakehash';
+    const user = createUser(email, hash, 'Invited User');
+
+    creditBillableHours(
+      user.id,
+      50,
+      'welcome',
+      'Welcome to Whiteshoe — 50 billable hours on us.',
+    );
+
+    const balance = getUserBillableHours(user.id);
+    expect(balance).toBe(50);
+  });
+
+  it('debits hours correctly from trial balance', () => {
+    // Trial user has 10 hours, debit 3
+    const debited = debitBillableHours(
+      trialUserId,
+      3,
+      'Session test-session-1',
+      'test-session-1',
+    );
+    expect(debited).toBe(true);
+
+    const balance = getUserBillableHours(trialUserId);
+    expect(balance).toBe(7);
+  });
+
+  it('blocks debit when balance insufficient', () => {
+    // Trial user has 7 hours, try to debit 100
+    const debited = debitBillableHours(
+      trialUserId,
+      100,
+      'Session over-budget',
+      'test-session-over',
+    );
+    expect(debited).toBe(false);
+
+    // Balance unchanged
+    const balance = getUserBillableHours(trialUserId);
+    expect(balance).toBe(7);
+  });
+
+  it('prevents double-credit with same reference ID', () => {
+    const email = `dedup-${Date.now()}@example.com`;
+    const user = createUser(email, 'hash', 'Dedup User');
+
+    const first = creditBillableHours(user.id, 10, 'welcome', 'First credit', undefined, 'ref-unique-1');
+    expect(first).toBe(true);
+
+    const second = creditBillableHours(user.id, 10, 'welcome', 'Duplicate credit', undefined, 'ref-unique-1');
+    expect(second).toBe(false);
+
+    const balance = getUserBillableHours(user.id);
+    expect(balance).toBe(10); // Only credited once
+  });
+
+  it('prevents double-debit with same reference ID', () => {
+    // Trial user has 7 hours
+    const first = debitBillableHours(trialUserId, 2, 'Session s1', 'dedup-session-1');
+    expect(first).toBe(true);
+
+    // Second debit with same reference returns true (idempotent — "already handled")
+    const second = debitBillableHours(trialUserId, 2, 'Session s1 (retry)', 'dedup-session-1');
+    expect(second).toBe(true);
+
+    const balance = getUserBillableHours(trialUserId);
+    expect(balance).toBe(5); // 7 - 2 = 5, not 7 - 2 - 2
   });
 });
