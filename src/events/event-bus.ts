@@ -75,7 +75,7 @@ export class ShemEventBus extends EventEmitter {
 
   constructor() {
     super();
-    this.setMaxListeners(50); // Multiple WebSocket clients + internal consumers
+    this.setMaxListeners(200); // Multiple WebSocket clients + internal consumers (scaled for 50+ users)
   }
 
   /**

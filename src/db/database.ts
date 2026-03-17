@@ -641,6 +641,9 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     const alreadyArchived = db.prepare(`SELECT 1 FROM session_archive WHERE id = ?`).get(session.id);
     if (alreadyArchived) return;
 
+    // v25: Release hold before debiting actual cost (hold was placed at session start)
+    releaseHold(session.id);
+
     // v21: Track per-user monthly usage
     if (userId && session.accumulatedCost > 0) {
       incrementUserUsage(userId, session.accumulatedCost);
@@ -1100,7 +1103,7 @@ export function creditBillableHours(
   db.transaction(() => {
     // Idempotency guard — prevent double-crediting from webhook retries
     if (referenceId) {
-      const existing = db.prepare(`SELECT id FROM billable_hours WHERE reference_id = ?`).get(referenceId);
+      const existing = db.prepare(`SELECT id FROM billable_hours WHERE reference_id = ? AND type != 'debit'`).get(referenceId);
       if (existing) {
         console.log(`[BILLING] Duplicate credit attempt for reference ${referenceId} — skipping`);
         return; // credited stays false
@@ -1117,6 +1120,33 @@ export function creditBillableHours(
     clearLowBalanceWarning(userId);
   })();
   return credited;
+}
+
+/** Place a hold on billable hours at session start (prevents TOCTOU between balance check and debit).
+ *  The hold is a negative ledger entry with type='hold'. Released by releaseHold() at session end. */
+export function holdBillableHours(userId: string, amount: number, sessionId: string): boolean {
+  const db = getDb();
+  const now = new Date().toISOString();
+  let success = false;
+  db.transaction(() => {
+    // Don't double-hold the same session
+    const existing = db.prepare(`SELECT 1 FROM billable_hours WHERE reference_id = ? AND type = 'hold'`).get(`hold:${sessionId}`);
+    if (existing) { success = true; return; }
+    const current = (db.prepare(`SELECT COALESCE(SUM(amount), 0) as balance FROM billable_hours WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)`).get(userId, now) as { balance: number }).balance;
+    if (current < amount) { success = false; return; }
+    const id = `bh-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    db.prepare(`
+      INSERT INTO billable_hours (id, user_id, type, amount, balance_after, description, reference_id, created_at)
+      VALUES (?, ?, 'hold', ?, ?, ?, ?, ?)
+    `).run(id, userId, -amount, current - amount, `Hold for session ${sessionId}`, `hold:${sessionId}`, now);
+    success = true;
+  })();
+  return success;
+}
+
+/** Release a hold placed by holdBillableHours(). Call at session end before debiting actual cost. */
+export function releaseHold(sessionId: string): void {
+  getDb().prepare(`DELETE FROM billable_hours WHERE reference_id = ? AND type = 'hold'`).run(`hold:${sessionId}`);
 }
 
 /** Debit billable hours from a user (negative ledger entry). Returns false if insufficient balance.

@@ -33,6 +33,8 @@ import {
   creditBillableHours,
   getUserBillableHours,
   debitBillableHours,
+  holdBillableHours,
+  releaseHold,
 } from '../../src/db/database.js';
 
 // ── Setup — Use in-memory SQLite for tests ──────────────────────────────
@@ -735,5 +737,85 @@ describe('Free trial billing — creditBillableHours / getUserBillableHours', ()
 
     const balance = getUserBillableHours(trialUserId);
     expect(balance).toBe(5); // 7 - 2 = 5, not 7 - 2 - 2
+  });
+});
+
+describe('Billable hours hold system', () => {
+  let holdUserId: string;
+
+  beforeAll(() => {
+    const user = createUser(`hold-${Date.now()}@example.com`, 'hash', 'Hold User');
+    holdUserId = user.id;
+    creditBillableHours(holdUserId, 20, 'welcome', 'Welcome hours', undefined, `hold-welcome-${Date.now()}`);
+  });
+
+  it('places a hold that reduces visible balance', () => {
+    const before = getUserBillableHours(holdUserId);
+    expect(before).toBe(20);
+
+    const held = holdBillableHours(holdUserId, 5, 'session-hold-1');
+    expect(held).toBe(true);
+
+    const after = getUserBillableHours(holdUserId);
+    expect(after).toBe(15); // 20 - 5
+  });
+
+  it('prevents hold when balance insufficient', () => {
+    // Balance is 15 after previous hold
+    const held = holdBillableHours(holdUserId, 100, 'session-hold-big');
+    expect(held).toBe(false);
+
+    const balance = getUserBillableHours(holdUserId);
+    expect(balance).toBe(15); // unchanged
+  });
+
+  it('prevents duplicate hold for same session', () => {
+    const held = holdBillableHours(holdUserId, 5, 'session-hold-1');
+    expect(held).toBe(true); // idempotent
+
+    const balance = getUserBillableHours(holdUserId);
+    expect(balance).toBe(15); // no double-hold
+  });
+
+  it('releases hold and restores balance', () => {
+    releaseHold('session-hold-1');
+
+    const balance = getUserBillableHours(holdUserId);
+    expect(balance).toBe(20); // hold released, back to full
+  });
+
+  it('release is safe for nonexistent hold', () => {
+    // Should not throw
+    releaseHold('nonexistent-session');
+  });
+
+  it('hold + release + debit flow works end-to-end', () => {
+    // Simulate: place hold for $5 budget, release, debit actual $3 cost
+    const held = holdBillableHours(holdUserId, 5, 'session-e2e');
+    expect(held).toBe(true);
+    expect(getUserBillableHours(holdUserId)).toBe(15);
+
+    // Session completes — release hold, debit actual
+    releaseHold('session-e2e');
+    expect(getUserBillableHours(holdUserId)).toBe(20);
+
+    const debited = debitBillableHours(holdUserId, 3, 'Session session-e2e', 'session-e2e');
+    expect(debited).toBe(true);
+    expect(getUserBillableHours(holdUserId)).toBe(17);
+  });
+
+  it('concurrent holds reduce balance preventing over-spending', () => {
+    // Balance is 17 from previous test. Place two holds of 10 each.
+    const hold1 = holdBillableHours(holdUserId, 10, 'concurrent-1');
+    expect(hold1).toBe(true);
+    expect(getUserBillableHours(holdUserId)).toBe(7);
+
+    // Second hold of 10 should fail — only 7 remaining
+    const hold2 = holdBillableHours(holdUserId, 10, 'concurrent-2');
+    expect(hold2).toBe(false);
+
+    // Cleanup
+    releaseHold('concurrent-1');
+    expect(getUserBillableHours(holdUserId)).toBe(17);
   });
 });

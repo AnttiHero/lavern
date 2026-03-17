@@ -36,7 +36,7 @@ import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent } from '../../db/database.js';
+import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent, holdBillableHours } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -138,6 +138,13 @@ export function registerSessionRoutes(
     // v14: Attach user identity for session archiving
     if (userId) {
       session.userId = userId;
+
+      // v25: Place hold on billable hours to prevent TOCTOU race between balance check and debit
+      const holdHours = sessionBudget / config.billableHours.rate;
+      if (!holdBillableHours(userId, holdHours, session.id)) {
+        sessionManager.destroySession(session.id, 'Insufficient billable hours');
+        return reply.status(402).send({ error: 'Insufficient billable hours', remainingHours: 0 });
+      }
 
       // v17: Load soul from user profile
       try {

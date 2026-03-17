@@ -242,7 +242,7 @@ export class SessionManager {
       }
 
       if (evicted > 0) {
-        log.error(`[SESSION] Cleanup: evicted ${evicted} session(s), ${this.sessions.size} remaining`);
+        log.info(`[SESSION] Cleanup: evicted ${evicted} session(s), ${this.sessions.size} remaining`);
       }
     } finally {
       this.cleaning = false;

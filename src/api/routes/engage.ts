@@ -32,6 +32,7 @@ import { validateBody } from '../middleware/validation.js';
 import { checkX402Payment } from '../middleware/payment.js';
 import { config } from '../../config.js';
 import { canStartSession } from './billing.js';
+import { holdBillableHours } from '../../db/database.js';
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -523,6 +524,16 @@ export function registerEngageRoutes(
       gateResolver,
       budgetUsd,
     });
+
+    // v25: Place hold on billable hours to prevent TOCTOU race
+    if (userId) {
+      const holdHours = budgetUsd / config.billableHours.rate;
+      if (!holdBillableHours(userId, holdHours, session.id)) {
+        sessionManager.destroySession(session.id, 'Insufficient billable hours');
+        return reply.status(402).send({ error: 'Insufficient billable hours', remainingHours: 0 });
+      }
+      session.userId = userId;
+    }
 
     // Attach client identity if present
     if (client) {
