@@ -102,7 +102,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
           <ConfettiBurst />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <div key={activeTab} style={{ animation: 'tabFadeIn 0.3s ease both' }}>
+          <div key={activeTab} role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} style={{ animation: 'tabFadeIn 0.3s ease both' }}>
             {activeTab === 'work' && <TheWorkTab data={data} assemblyStatus={assemblyStatus} onRetryAssembly={retryAssembly} />}
             {activeTab === 'review' && <ReviewTab data={data} />}
             {activeTab === 'story' && <TheStoryTab data={data} />}

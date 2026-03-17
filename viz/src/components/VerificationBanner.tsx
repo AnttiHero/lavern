@@ -9,7 +9,7 @@
  * button that POSTs to /api/auth/resend-verification with feedback states.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
 /** Slide-down entrance + pulsing dot keyframes (injected once). */
@@ -40,8 +40,32 @@ export function VerificationBanner() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [error, setError] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(ensureKeyframes, []);
+
+  // Cleanup cooldown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const startCooldown = useCallback(() => {
+    setCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -50,9 +74,10 @@ export function VerificationBanner() {
   }, []);
 
   const handleResend = useCallback(async () => {
-    if (resending || resent) return;
+    if (resending || cooldown > 0) return;
     setResending(true);
     setError(false);
+    setResent(false);
     try {
       const res = await fetch('/api/auth/resend-verification', {
         method: 'POST',
@@ -66,14 +91,16 @@ export function VerificationBanner() {
           return;
         }
         setResent(true);
+        startCooldown();
       } else if (res.status === 429) {
         setError(true);
+        startCooldown();
       }
     } catch {
       setError(true);
     }
     setResending(false);
-  }, [resending, resent]);
+  }, [resending, cooldown, startCooldown]);
 
   if (dismissed) return null;
 
@@ -93,15 +120,15 @@ export function VerificationBanner() {
         )}
         <button
           onClick={handleResend}
-          disabled={resending || resent}
+          disabled={resending || cooldown > 0}
           style={{
             ...styles.resendBtn,
-            opacity: resending || resent ? 0.5 : 1,
-            cursor: resending || resent ? 'default' : 'pointer',
+            opacity: resending || cooldown > 0 ? 0.5 : 1,
+            cursor: resending || cooldown > 0 ? 'default' : 'pointer',
           }}
-          aria-label={resent ? 'Verification email sent' : 'Resend verification email'}
+          aria-label={cooldown > 0 ? `Resend available in ${cooldown} seconds` : resent ? 'Verification email sent' : 'Resend verification email'}
         >
-          {resent ? 'Sent \u2713' : resending ? 'Sending\u2026' : 'Resend email'}
+          {resending ? 'Sending\u2026' : cooldown > 0 ? `Resend in ${cooldown}s` : resent ? 'Sent \u2713' : 'Resend email'}
         </button>
       </div>
       <button

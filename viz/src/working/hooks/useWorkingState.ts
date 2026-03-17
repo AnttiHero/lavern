@@ -68,6 +68,8 @@ export interface WorkingState {
   lastEventTimestamp: string | null;
   /** True when the session was not found on the server (expired or evicted). */
   sessionExpired: boolean;
+  /** True when the session ended due to an error (orchestrator failure, LLM error, etc.). */
+  sessionFailed: boolean;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -86,6 +88,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   // Connection
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [sessionFailed, setSessionFailed] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [isReplay, setIsReplay] = useState(false);
   const [replayPaused, setReplayPaused] = useState(false);
@@ -132,6 +135,12 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       });
     } else if (event.type === 'gate_decided') {
       setPendingGate(null);
+    } else if (event.type === 'error') {
+      // Detect fatal session errors (orchestrator, assembler, or session-level failures)
+      const fatalSources = ['orchestrator', 'session', 'document-assembler'];
+      if (event.source && fatalSources.includes(event.source)) {
+        setSessionFailed(true);
+      }
     } else if (event.type === 'session_end') {
       setCompletedSteps(prev =>
         prev.includes('delivered') ? prev : [...prev, 'delivered']
@@ -209,6 +218,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     sessionIdRef.current = id;
     deliveredAtRef.current = null;
     setSessionExpired(false);
+    setSessionFailed(false);
     setIsReplay(false);
     setEvents([]);
     setCurrentStep('intake');
@@ -661,6 +671,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     findingCounts,
     lastEventTimestamp: events.length > 0 ? events[events.length - 1].timestamp : null,
     sessionExpired,
+    sessionFailed,
   };
 
   return {

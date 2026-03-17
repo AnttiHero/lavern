@@ -14,6 +14,7 @@
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { retryQuery } from '../utils/retry-query.js';
 import { agentDefinitions } from '../agents/definitions.js';
 import { agentProfiles } from '../agents/profiles.js';
 import { getOrchestratorForWorkflow } from './orchestrator-mapping.js';
@@ -185,7 +186,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
   let result: ReturnType<typeof query>;
   try {
-    result = query({
+    result = retryQuery({
       prompt,
       options: {
         systemPrompt: {
@@ -219,7 +220,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
         effort,
         cwd: options.cwd,
       },
-    });
+    }, session);
   } catch (initError) {
     console.error(`[EXECUTOR] Failed to initialize query:`, initError);
     session.events.emitEvent({

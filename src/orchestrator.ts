@@ -10,6 +10,7 @@
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { retryQuery } from './utils/retry-query.js';
 import { orchestratorPrompt } from './agents/prompts/orchestrator.js';
 import { agentDefinitions } from './agents/definitions.js';
 import { createShemMcpServer } from './mcp/server.js';
@@ -135,7 +136,7 @@ Produce the complete dual-artifact output with full audit trail.
 
   let result;
   try {
-    result = query({
+    result = retryQuery({
       prompt,
       options: {
       systemPrompt: {
@@ -229,7 +230,7 @@ Produce the complete dual-artifact output with full audit trail.
       effort,
       cwd: options.cwd,
     },
-    });
+    }, session);
   } catch (queryError) {
     const sessionError = handleSessionError(session, queryError);
     console.error(`The Shem failed to initialize query at step "${sessionError.step}":`, sessionError.cause);

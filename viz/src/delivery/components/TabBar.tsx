@@ -64,8 +64,10 @@ export function TabBar({ activeTab, onTabChange }: Props) {
         return (
           <button
             key={tab.id}
+            id={`tab-${tab.id}`}
             role="tab"
             aria-selected={isActive}
+            aria-controls={`panel-${tab.id}`}
             ref={el => { if (el) tabRefs.current.set(tab.id, el); }}
             onClick={() => onTabChange(tab.id)}
             style={{

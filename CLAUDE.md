@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Whiteshoe v0.10, a multi-agent legal design system that transforms
+You are part of Whiteshoe v0.11.2, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Whiteshoe is the world's first driverless law firm.
 
@@ -149,7 +149,37 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 
 ## Version History
 
-### v0.11 (Current) — Email Verification Enforcement + Security Hardening
+### v0.11.2 (Current) — 50-User Launch Hardening
+
+**Blocking Fix:**
+- Claude API retry wrapper (`src/utils/retry-query.ts`) — wraps `query()` with exponential backoff (1s→2s→4s, cap 8s) on transient 429/500/502/503/529 errors; emits retry events to session so users see "Retrying..." instead of silence
+
+**Accessibility:**
+- Delivery tab panels: `role="tabpanel"`, `aria-labelledby`, `aria-controls` linkage between tabs and panels
+
+**UX Polish:**
+- Resend verification cooldown: 60-second countdown timer prevents repeated clicks and silent 429s
+- Session error recovery overlay: prominent "Session Interrupted" card with "Start New Session" + "View Partial Results" CTAs and cost consumed display
+
+### v0.11.1 — Production Stability + Mobile Polish
+
+**API Resilience:**
+- Global fetch interceptor (`useApiFetch.ts`) — catches 401/402/429/5xx across all API calls with toast dedup (3s window)
+- Offline detection (`useOnlineStatus` hook + `OfflineBanner`) — fixed amber banner on connectivity loss
+- Document upload retry with exponential backoff (3 retries, 1s→2s→4s→8s cap)
+- `beforeunload` handler on Briefing view when user has unsaved work
+
+**Security & Ops:**
+- Change password endpoint + My Page UI section (invalidates other sessions)
+- Production startup validation — critical env vars (ANTHROPIC_API_KEY, RESEND_API_KEY) cause `exit(1)` if missing
+- SQLite archive retention cleanup (default 180 days, configurable via `SHEM_ARCHIVE_RETENTION_DAYS`)
+- Enhanced deep health check: DB size, email/Stripe/LLM key status
+
+**Mobile:**
+- Document upload: prominent "Upload Files" button on touch devices instead of drag-drop zone
+- Mobile touch targets: minimum 44px height across components
+
+### v0.11 — Email Verification Enforcement + Security Hardening
 
 **Email & Auth Infrastructure** — Complete email verification pipeline:
 - Password reset flow: forgot-password → email with token → reset-password

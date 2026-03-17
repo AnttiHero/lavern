@@ -257,6 +257,69 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         </div>
       )}
 
+      {/* Session error recovery overlay — shown when session fails mid-work */}
+      {state.sessionFailed && state.currentStep === 'delivered' && !state.sessionExpired && (
+        <div style={styles.expiredOverlay}>
+          <div style={styles.expiredCard}>
+            <span style={{ fontFamily: fonts.serif, fontSize: 36, fontWeight: 300, color: colors.danger, opacity: 0.7 }}>!</span>
+            <h2 style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, marginTop: 16 }}>
+              Session Interrupted
+            </h2>
+            <p style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.textSecondary, marginTop: 8, lineHeight: 1.5 }}>
+              The engagement encountered an error and could not complete.
+              {state.cost ? ` Approximately $${state.cost.accumulated.toFixed(2)} was consumed.` : ''}
+            </p>
+            <p style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.textDim, marginTop: 8, lineHeight: 1.5 }}>
+              Any partial analysis may still be available.
+            </p>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button
+                onClick={onBack}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: radii.sm,
+                  border: `2px solid ${colors.text}`,
+                  backgroundColor: 'transparent',
+                  color: colors.text,
+                  fontFamily: fonts.sans,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.25s ease, color 0.25s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+              >
+                Start New Session
+              </button>
+              <button
+                onClick={onComplete}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: radii.sm,
+                  border: `2px solid ${colors.text}`,
+                  backgroundColor: colors.text,
+                  color: '#fff',
+                  fontFamily: fonts.sans,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.25s ease, color 0.25s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+              >
+                View Partial Results {'\u2192'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile sidebar toggle */}
       {isMobile && (
         <button
