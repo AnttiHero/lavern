@@ -229,24 +229,23 @@ export default function LoginView({ onAuth, onBack }: Props) {
 
               {isSignup && (
                 <>
-                  <label htmlFor="auth-invite" className="sr-only">Invite Code</label>
+                  <label htmlFor="auth-invite" className="sr-only">Invite Code (optional)</label>
                   <input
                     id="auth-invite"
                     type="text"
-                    placeholder="Invite Code"
+                    placeholder="Invite Code (optional)"
                     value={inviteCode}
                     onChange={e => setInviteCode(e.target.value)}
                     style={styles.input}
-                    required
                   />
                   <p style={styles.waitlistHint}>
-                    Don't have a code?{' '}
+                    Have a code? Enter it for bonus hours.{' '}
                     <a
                       href="#/pricing"
                       onClick={(e) => { e.preventDefault(); window.location.hash = '#/pricing'; }}
                       style={styles.waitlistLink}
                     >
-                      Join the waitlist.
+                      Learn more.
                     </a>
                   </p>
                   <label htmlFor="auth-display-name" className="sr-only">Display Name</label>

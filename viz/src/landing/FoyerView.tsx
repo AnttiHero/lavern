@@ -421,7 +421,7 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
                       opacity: 0.5,
                     }}
                   >
-                    Invite only. Join the waitlist.
+                    Sign up free. Two engagements on us.
                   </p>
 
                   <WaitlistForm

@@ -133,6 +133,8 @@ export const config = {
     rate: safeFloat(process.env.MARBLE_BILLABLE_HOUR_RATE, 0.10),
     /** Welcome hours granted on signup with invite code */
     welcomeHours: safeInt(process.env.MARBLE_WELCOME_HOURS, 50),
+    /** Free trial hours granted on signup without invite code (0 = no trial) */
+    freeTrialHours: safeInt(process.env.MARBLE_FREE_TRIAL_HOURS, 10),
     /** When true, signup requires an invite code from the waitlist */
     waitlistEnabled: process.env.MARBLE_WAITLIST_ENABLED !== 'false',
     /** Admin key for waitlist management endpoints (X-Admin-Key header) */

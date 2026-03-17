@@ -142,10 +142,11 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 
 ### Scripts
 - `scripts/smoke-test.sh` — API end-to-end lifecycle smoke test (health → create → verify → delete)
+- `scripts/load-test.ts` — 50-user concurrent load test (auth → sessions → WebSocket → poll → teardown, p50/p95 latencies)
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1179+ tests across 69 files (61 unit + 8 integration)
+- `tests/` — 1184+ tests across 69 files (61 unit + 8 integration)
 
 ## Version History
 
@@ -157,9 +158,23 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 **Accessibility:**
 - Delivery tab panels: `role="tabpanel"`, `aria-labelledby`, `aria-controls` linkage between tabs and panels
 
+**Free Trial & Billing:**
+- Free trial hours on signup: new users without invite code get 10 billable hours (~2 quick engagements) automatically
+- Invite code now optional: validated if provided (bonus 50h), but signup works without one
+- Config: `MARBLE_FREE_TRIAL_HOURS` (default 10), `MARBLE_WELCOME_HOURS` (default 50 for invite users)
+- Session creation 402 handling: redirects to pricing page with clear "top up" messaging
+
+**Security:**
+- Voice TTS route rate-limited (30 req/min per IP) to prevent API credit drain
+
 **UX Polish:**
 - Resend verification cooldown: 60-second countdown timer prevents repeated clicks and silent 429s
 - Session error recovery overlay: prominent "Session Interrupted" card with "Start New Session" + "View Partial Results" CTAs and cost consumed display
+- Signup form: invite code field marked optional with "Have a code? Enter it for bonus hours" helper text
+- Landing page: updated copy from "Invite only" to "Sign up free. Two engagements on us."
+
+**Dev Tooling:**
+- `scripts/load-test.ts` — 50-user concurrent load test (auth, sessions, WebSocket, polling, teardown with p50/p95/p99 latencies)
 
 ### v0.11.1 — Production Stability + Mobile Polish
 

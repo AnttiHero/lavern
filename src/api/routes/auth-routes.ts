@@ -155,11 +155,8 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       return reply.status(409).send({ error: 'An account with this email already exists.' });
     }
 
-    // v22: Waitlist gate — require invite code when enabled
-    if (config.billableHours.waitlistEnabled) {
-      if (!body.inviteCode) {
-        return reply.status(403).send({ error: 'An invite code is required to sign up. Join the waitlist at whiteshoe.law.' });
-      }
+    // v24: Validate invite code if provided (optional — free trial without code)
+    if (body.inviteCode) {
       const waitlistEntry = getWaitlistEntryByCode(body.inviteCode);
       if (!waitlistEntry || waitlistEntry.status !== 'invited') {
         return reply.status(403).send({ error: 'Invalid or expired invite code.' });
@@ -176,14 +173,21 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     logAuditEvent({ userId: user.id, action: 'signup', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
     setAuthCookie(reply, token);
 
-    // v22: Mark invite used + credit welcome hours
-    if (config.billableHours.waitlistEnabled && body.inviteCode) {
+    // v24: Credit hours — invite code users get full welcome hours, others get free trial
+    if (body.inviteCode) {
       markInviteUsed(body.inviteCode, user.id);
       creditBillableHours(
         user.id,
         config.billableHours.welcomeHours,
         'welcome',
         `Welcome to Whiteshoe — ${config.billableHours.welcomeHours} billable hours on us.`,
+      );
+    } else if (config.billableHours.freeTrialHours > 0) {
+      creditBillableHours(
+        user.id,
+        config.billableHours.freeTrialHours,
+        'welcome',
+        `Free trial — ${config.billableHours.freeTrialHours} billable hours to get started.`,
       );
     }
 

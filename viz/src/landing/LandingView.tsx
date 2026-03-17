@@ -342,7 +342,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               className="text-xs font-serif italic m-0 mb-4 tracking-wide"
               style={{ color: 'rgba(250, 249, 246, 0.35)' }}
             >
-              Join the waitlist
+              Get notified when we launch
             </p>
 
             <form

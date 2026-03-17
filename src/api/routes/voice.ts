@@ -137,7 +137,14 @@ export function registerVoiceRoutes(fastify: FastifyInstance): void {
 
   // ── POST /api/voice/tts — ElevenLabs TTS streaming proxy ──────────
 
-  fastify.post('/api/voice/tts', async (request, reply) => {
+  fastify.post('/api/voice/tts', {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: 60_000,
+      },
+    },
+  }, async (request, reply) => {
     const apiKey = config.voice.elevenlabsApiKey;
 
     if (!apiKey) {

@@ -526,10 +526,15 @@ export function App() {
         return;
       }
 
-      // API returned non-ok — log the actual error
+      // API returned non-ok — show specific error for billing, generic for others
       console.error('[Session] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Something went wrong. Please try again.');
+      if (res.status === 402) {
+        setErrorToast('No billable hours remaining. Top up to continue.');
+        window.location.hash = '#/pricing';
+        return;
+      }
+      setErrorToast(data?.error || 'Something went wrong. Please try again.');
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');
