@@ -699,4 +699,59 @@ describe('API Routes Integration', () => {
       expect(res.json()).toHaveProperty('alreadyVerified', true);
     });
   });
+
+  // ── Email Verification State ─────────────────────────────────────────
+
+  describe('Email Verification State', () => {
+    it('unverified user shows emailVerified: false on /me', async () => {
+      // Create a fresh unverified user
+      const signupRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: { email: 'unverified-state@example.com', password: 'StatePass123' },
+      });
+      expect(signupRes.statusCode).toBe(201);
+      expect(signupRes.json().user).toHaveProperty('emailVerified', false);
+
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: 'unverified-state@example.com', password: 'StatePass123' },
+      });
+      const cookie = loginRes.headers['set-cookie'] as string;
+
+      const meRes = await app.inject({
+        method: 'GET',
+        url: '/api/auth/me',
+        headers: { cookie },
+      });
+      expect(meRes.statusCode).toBe(200);
+      expect(meRes.json().user).toHaveProperty('emailVerified', false);
+    });
+
+    it('isEmailVerified returns false for unverified user', async () => {
+      const { getUserByEmail, isEmailVerified } = await import('../../src/db/database.js');
+      const user = getUserByEmail('unverified-state@example.com');
+      expect(user).toBeDefined();
+      expect(isEmailVerified(user!.id)).toBe(false);
+    });
+
+    it('verified user shows emailVerified: true on /me', async () => {
+      // verifyEmail user was verified in earlier tests
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { email: 'verify@example.com', password: 'VerifyPass123' },
+      });
+      const cookie = loginRes.headers['set-cookie'] as string;
+
+      const meRes = await app.inject({
+        method: 'GET',
+        url: '/api/auth/me',
+        headers: { cookie },
+      });
+      expect(meRes.statusCode).toBe(200);
+      expect(meRes.json().user).toHaveProperty('emailVerified', true);
+    });
+  });
 });

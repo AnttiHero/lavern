@@ -155,7 +155,9 @@ export default function LoginView({ onAuth, onBack }: Props) {
           ) : (
             <>
               <form onSubmit={handleForgotPassword} style={styles.form}>
+                <label htmlFor="forgot-email" className="sr-only">Email</label>
                 <input
+                  id="forgot-email"
                   type="email"
                   placeholder="Email"
                   value={email}
@@ -163,6 +165,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
                   style={styles.input}
                   required
                   autoFocus
+                  autoComplete="email"
                 />
                 <button type="submit" style={styles.submitBtn} disabled={loading}>
                   {loading ? 'Please wait...' : 'Send Reset Link'}
@@ -184,7 +187,9 @@ export default function LoginView({ onAuth, onBack }: Props) {
           <>
             {/* Login / Signup Form */}
             <form onSubmit={handleSubmit} style={styles.form}>
+              <label htmlFor="auth-email" className="sr-only">Email</label>
               <input
+                id="auth-email"
                 type="email"
                 placeholder="Email"
                 value={email}
@@ -192,8 +197,11 @@ export default function LoginView({ onAuth, onBack }: Props) {
                 style={styles.input}
                 required
                 autoFocus
+                autoComplete="email"
               />
+              <label htmlFor="auth-password" className="sr-only">Password</label>
               <input
+                id="auth-password"
                 type="password"
                 placeholder="Password"
                 value={password}
@@ -201,7 +209,13 @@ export default function LoginView({ onAuth, onBack }: Props) {
                 style={styles.input}
                 required
                 minLength={mode === 'signup' ? 8 : 1}
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
               />
+              {isSignup && password.length > 0 && password.length < 8 && (
+                <p style={{ ...styles.waitlistHint, color: colors.textMuted, marginTop: -4 }}>
+                  Minimum 8 characters
+                </p>
+              )}
 
               {!isSignup && (
                 <button
@@ -215,7 +229,9 @@ export default function LoginView({ onAuth, onBack }: Props) {
 
               {isSignup && (
                 <>
+                  <label htmlFor="auth-invite" className="sr-only">Invite Code</label>
                   <input
+                    id="auth-invite"
                     type="text"
                     placeholder="Invite Code"
                     value={inviteCode}
@@ -233,19 +249,25 @@ export default function LoginView({ onAuth, onBack }: Props) {
                       Join the waitlist.
                     </a>
                   </p>
+                  <label htmlFor="auth-display-name" className="sr-only">Display Name</label>
                   <input
+                    id="auth-display-name"
                     type="text"
                     placeholder="Display Name (optional)"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
                     style={styles.input}
+                    autoComplete="name"
                   />
+                  <label htmlFor="auth-firm" className="sr-only">Firm or Organization</label>
                   <input
+                    id="auth-firm"
                     type="text"
                     placeholder="Firm / Organization (optional)"
                     value={firmName}
                     onChange={e => setFirmName(e.target.value)}
                     style={styles.input}
+                    autoComplete="organization"
                   />
                 </>
               )}

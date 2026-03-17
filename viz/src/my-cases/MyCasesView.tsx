@@ -89,7 +89,7 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
       if (sessionsRes.status === 'fulfilled' && sessionsRes.value) {
         setActiveSessions(sessionsRes.value.sessions ?? []);
       } else if (sessionsRes.status === 'rejected') {
-        console.warn('[MyCases] Failed to fetch active sessions:', sessionsRes.reason);
+        setError('Unable to load active sessions. Please try again.');
       }
       if (archiveRes.status === 'fulfilled' && archiveRes.value) {
         setArchivedSessions(archiveRes.value.sessions ?? []);

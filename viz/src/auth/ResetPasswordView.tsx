@@ -113,7 +113,9 @@ export default function ResetPasswordView({ onBack }: Props) {
             {error && <div style={styles.error}>{error}</div>}
 
             <form onSubmit={handleSubmit} style={styles.form}>
+              <label htmlFor="reset-password" className="sr-only">New Password</label>
               <input
+                id="reset-password"
                 type="password"
                 placeholder="New Password"
                 value={password}
@@ -122,8 +124,16 @@ export default function ResetPasswordView({ onBack }: Props) {
                 required
                 minLength={8}
                 autoFocus
+                autoComplete="new-password"
               />
+              {password.length > 0 && password.length < 8 && (
+                <p style={{ fontSize: 11, color: colors.textMuted, margin: '-4px 0 4px', fontFamily: fonts.sans }}>
+                  Minimum 8 characters
+                </p>
+              )}
+              <label htmlFor="reset-confirm" className="sr-only">Confirm Password</label>
               <input
+                id="reset-confirm"
                 type="password"
                 placeholder="Confirm Password"
                 value={confirmPassword}
@@ -131,6 +141,7 @@ export default function ResetPasswordView({ onBack }: Props) {
                 style={styles.input}
                 required
                 minLength={8}
+                autoComplete="new-password"
               />
               <button type="submit" style={styles.submitBtn} disabled={loading}>
                 {loading ? 'Please wait...' : 'Reset Password'}

@@ -235,6 +235,23 @@ export async function startApiServer(port: number): Promise<void> {
   const authMiddleware = createAuthMiddleware(clientRegistry, publicPaths);
   fastify.addHook('onRequest', authMiddleware);
 
+  // ── Email Verification Enforcement ────────────────────────────────────
+  // Runs AFTER auth (needs userId). Blocks unverified browser users from
+  // paid mutations. Anonymous QuickStart, GET requests, API clients, and
+  // exempt paths (auth, billing) pass through.
+  const { createRequireVerifiedHook } = await import('./middleware/require-verified.js');
+  const requireVerified = createRequireVerifiedHook([
+    '/api/auth/',       // All auth routes (login, signup, verify, reset, etc.)
+    '/api/billing/',    // Must buy hours even if unverified (waitlist = identity check)
+    '/api/waitlist',    // Public waitlist operations
+    '/api/documents/',  // Document parsing (needed by Challenge + Briefing)
+    '/api/challenge',   // Zero-friction challenge
+    '/api/partner/',    // Conversational intake
+    '/api/briefing/',   // Intake flow
+    '/api/voice/',      // STT/TTS proxy
+  ]);
+  fastify.addHook('onRequest', requireVerified);
+
   // ── Per-User Rate Limiting ────────────────────────────────────────────
   // Runs AFTER auth so we have userId. 30 req/min per user, 5 concurrent sessions.
   const perUserRateLimit = createPerUserRateLimitHook(sessionManager);

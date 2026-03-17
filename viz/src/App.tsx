@@ -27,6 +27,7 @@
 import { useEffect, useState, useCallback, useContext, Suspense, lazy } from 'react';
 import { UserContext } from './auth/UserContext.js';
 import { ErrorToast } from './components/ErrorToast.js';
+import { VerificationBanner } from './components/VerificationBanner.js';
 
 import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
@@ -595,6 +596,11 @@ export function App() {
     );
   }
 
+  // ── Verification banner for unverified users ─────────────────────────
+  const verifyBanner = userCtx?.user && !userCtx.user.emailVerified
+    ? <VerificationBanner />
+    : null;
+
   // ── ErrorToast rendered globally above all views ─────────────────────
   const toast = errorToast ? (
     <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
@@ -617,6 +623,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {topUpDialog}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -636,6 +643,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading intake..." />}>
@@ -656,6 +664,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
@@ -676,6 +685,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
@@ -696,6 +706,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading team..." />}>
@@ -716,6 +727,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
           {showMark && <WhiteshoeMark />}
@@ -734,6 +746,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
@@ -754,6 +767,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading billing..." />}>
@@ -772,6 +786,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading profile..." />}>
@@ -788,6 +803,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading cases..." />}>
@@ -816,6 +832,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
@@ -833,6 +850,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <LoginView
@@ -853,6 +871,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
           <ResetPasswordView onBack={() => { window.location.hash = '#/login'; }} />
@@ -870,6 +889,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Verifying..." />}>
           <VerifyEmailHandler />
@@ -884,6 +904,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
@@ -902,6 +923,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -918,6 +940,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -934,6 +957,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
@@ -954,6 +978,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -970,6 +995,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
@@ -987,6 +1013,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -1012,6 +1039,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <ViewTransition>
           <div style={styles.app}>
@@ -1042,6 +1070,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {cursor}
         <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
           <WhiteshoeMark hideCursor />
@@ -1062,6 +1091,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {verifyBanner}
         {topUpDialog}
         {cursor}
         <ViewTransition>
@@ -1095,6 +1125,7 @@ export function App() {
     <ErrorBoundary>
       {skipLink}
       {toast}
+      {verifyBanner}
       {cursor}
       <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#f0ede8' }} />}>
         <FoyerView

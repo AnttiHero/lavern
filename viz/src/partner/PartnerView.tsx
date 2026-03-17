@@ -26,7 +26,7 @@ interface Props {
   isDemo?: boolean;
 }
 
-const GOLD = '#96875f';
+const GOLD = '#B8960B';
 
 // ── Demo case picker data ───────────────────────────────────────────
 

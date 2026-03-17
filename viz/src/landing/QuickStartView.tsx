@@ -203,8 +203,12 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
 
       // If cowork folder is active, read selected files from it
       if (hasFolder && folderHasSelected) {
-        docs = await cowork.getSelectedDocuments();
-        sessionStorage.setItem('shem-cowork-active', 'true');
+        try {
+          docs = await cowork.getSelectedDocuments();
+          sessionStorage.setItem('shem-cowork-active', 'true');
+        } catch (err) {
+          console.warn('[QuickStart] Failed to read cowork folder, falling back to uploaded docs:', err);
+        }
       }
 
       await onQuickStart(question.trim(), TIER_MAP[tier], docs);
@@ -243,6 +247,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
       <img
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
+        role="presentation"
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         style={{ filter: 'contrast(0.65) brightness(1.2) saturate(0.2)', opacity: 0.18 }}
       />
@@ -303,7 +308,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
                     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     fontSize: 12,
                     fontWeight: 500,
-                    color: billableBalance < 5 ? '#e57373' : '#B8960B',
+                    color: billableBalance < 5 ? '#EF5350' : '#B8960B',
                     letterSpacing: 0.3,
                     opacity: 0.85,
                   }}
@@ -319,7 +324,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
                     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     fontSize: 11,
                     fontWeight: 600,
-                    color: '#e57373',
+                    color: '#EF5350',
                     letterSpacing: 0.3,
                     padding: '2px 8px',
                     borderRadius: 12,

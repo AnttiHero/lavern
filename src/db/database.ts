@@ -409,7 +409,9 @@ export function createUser(email: string, passwordHash: string, displayName?: st
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(id, email.toLowerCase().trim(), passwordHash, displayName ?? '', firmName ?? '', now, now);
 
-  return getUserById(id)!;
+  const user = getUserById(id);
+  if (!user) throw new Error(`[DB] Failed to create user — INSERT succeeded but SELECT for ${id} returned nothing`);
+  return user;
 }
 
 export function getUserByEmail(email: string): DbUser | undefined {
@@ -651,7 +653,7 @@ export function archiveSession(session: SessionState, userId: string | null): vo
             import('../email/send.js').then(({ sendLowBalanceEmail }) => {
               sendLowBalanceEmail(user.email, { balance: newBalance, threshold: config.auth.lowBalanceThresholdHours })
                 .catch(err => console.error('[EMAIL] Low balance email failed:', err));
-            }).catch(() => {});
+            }).catch(err => { console.error('[DB] Failed to import email module for low-balance warning:', err); });
           }
         }
       }

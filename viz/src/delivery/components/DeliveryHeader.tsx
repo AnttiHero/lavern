@@ -56,7 +56,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.xl,
   },
   navBtn: {
-    padding: '6px 14px',
+    padding: '10px 16px',
     borderRadius: radii.sm,
     border: `1.5px solid ${colors.text}`,
     backgroundColor: 'transparent',

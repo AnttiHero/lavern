@@ -103,7 +103,8 @@ function NavButton({ onClick, children }: { onClick: () => void; children: React
         cursor: 'pointer',
         border: '1px solid rgba(26,26,26,0.12)',
         borderRadius: 6,
-        padding: '8px 18px',
+        padding: '10px 18px',
+        minHeight: 36,
         backgroundColor: hovered ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.45)',
         backdropFilter: 'blur(16px)',
         color: colors.text,
@@ -198,6 +199,7 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
+        role="presentation"
         style={{
           position: 'absolute',
           inset: 0,
@@ -525,7 +527,9 @@ function WaitlistForm({
         transform: active ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
+      <label htmlFor="foyer-waitlist-email" className="sr-only">Email address</label>
       <input
+        id="foyer-waitlist-email"
         type="email"
         required
         placeholder="your@email.com"
@@ -533,6 +537,7 @@ function WaitlistForm({
         onChange={e => onEmailChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        autoComplete="email"
         style={{
           flex: 1,
           minWidth: 0,

@@ -180,6 +180,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
+        role="presentation"
         className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[whiteshoeBreath_10s_ease_infinite]"
         style={{
           filter: 'brightness(0.14) contrast(1.2) saturate(0.15)',
@@ -254,11 +255,12 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         >
           <button
             onClick={() => handleChoice('human')}
+            aria-label="Enter as a human user"
             className={cn(
               'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
               'rounded border-[1.5px] border-solid',
               'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
-              'cursor-auto lg:cursor-none',
+              'cursor-pointer lg:cursor-none',
             )}
             style={{
               color: hoveredChoice === 'human'
@@ -285,11 +287,12 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
 
           <button
             onClick={() => handleChoice('agent')}
+            aria-label="Enter as an AI agent"
             className={cn(
               'px-6 py-3 sm:px-10 sm:py-3.5 lg:px-[52px] lg:py-3.5',
               'rounded border-[1.5px] border-solid',
               'font-sans text-[10px] sm:text-xs font-medium tracking-[4px] uppercase',
-              'cursor-auto lg:cursor-none',
+              'cursor-pointer lg:cursor-none',
             )}
             style={{
               color: hoveredChoice === 'agent'
@@ -346,7 +349,9 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
               onSubmit={handleWaitlistSubmit}
               className="flex items-center gap-2"
             >
+              <label htmlFor="waitlist-email" className="sr-only">Email address</label>
               <input
+                id="waitlist-email"
                 type="email"
                 required
                 placeholder="your@email.com"
@@ -359,7 +364,9 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
                   border: '1px solid rgba(250, 249, 246, 0.1)',
                   borderRadius: 4,
                   color: 'rgba(250, 249, 246, 0.7)',
-                  width: 200,
+                  width: '100%',
+                  maxWidth: 200,
+                  minWidth: 140,
                   letterSpacing: 0.3,
                 }}
               />
@@ -393,7 +400,8 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             {waitlistError && (
               <p
                 className="text-[11px] font-sans m-0 mt-2"
-                style={{ color: 'rgba(196, 93, 62, 0.7)' }}
+                style={{ color: '#E57373' }}
+                role="alert"
               >
                 {waitlistError}
               </p>
@@ -404,13 +412,15 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         {/* Already have an invite? */}
         <button
           onClick={() => { window.location.hash = '#/login'; }}
-          className="bg-transparent border-none cursor-pointer font-serif italic text-[11px] tracking-wide mt-4 p-0"
+          className="bg-transparent border-none cursor-pointer font-serif italic text-[11px] tracking-wide mt-4"
           style={{
             color: 'rgba(250, 249, 246, 0.18)',
             transition: 'color 0.3s ease',
+            padding: '8px 12px',
           }}
           onMouseEnter={e => { e.currentTarget.style.color = 'rgba(250, 249, 246, 0.4)'; }}
           onMouseLeave={e => { e.currentTarget.style.color = 'rgba(250, 249, 246, 0.18)'; }}
+          aria-label="Sign in with an invite code"
         >
           Already have an invite?
         </button>
