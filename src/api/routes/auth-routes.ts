@@ -409,11 +409,19 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       return reply.status(400).send({ error: 'Invalid or expired reset link. Please request a new one.' });
     }
 
+    // Atomically consume the token FIRST to prevent race conditions
+    if (!markTokenUsed(body.token)) {
+      return reply.status(400).send({ error: 'This reset link has already been used. Please request a new one.' });
+    }
+
     const newHash = await hashPassword(body.password);
-    updatePasswordHash(tokenRow.user_id, newHash);
-    markTokenUsed(body.token);
-    invalidateUserTokens(tokenRow.user_id, 'reset');
-    deleteAllUserAuthTokens(tokenRow.user_id); // Force re-login everywhere
+    // Wrap remaining writes in a transaction for consistency
+    const { getDb } = await import('../../db/database.js');
+    getDb().transaction(() => {
+      updatePasswordHash(tokenRow.user_id, newHash);
+      invalidateUserTokens(tokenRow.user_id, 'reset');
+      deleteAllUserAuthTokens(tokenRow.user_id); // Force re-login everywhere
+    })();
 
     logAuditEvent({ userId: tokenRow.user_id, action: 'password_reset', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
 
@@ -431,8 +439,12 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       return reply.status(400).send({ error: 'Invalid or expired verification link. Please request a new one.' });
     }
 
+    // Atomically consume the token FIRST to prevent race conditions
+    if (!markTokenUsed(body.token)) {
+      return reply.status(400).send({ error: 'This verification link has already been used. Please request a new one.' });
+    }
+
     setEmailVerified(tokenRow.user_id);
-    markTokenUsed(body.token);
 
     logAuditEvent({ userId: tokenRow.user_id, action: 'email_verified', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
 

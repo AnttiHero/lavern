@@ -68,6 +68,7 @@ export function useSoundEffects() {
     // Resume if suspended (browser autoplay policy)
     if (ctx.state === 'suspended') ctx.resume();
     const def = soundDefs[sound];
+    if (!def) return;
     playTone(ctx, def.freq, def.dur, def.vol);
   }, [enabled]);
 

@@ -219,6 +219,7 @@ export function useDeliveryData(): {
       // First, check if the document is already there (assembly may have
       // completed after our polling timeout — no need to reassemble).
       const checkRes = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
+      if (cancelledRef.current) return;
       if (checkRes.ok) {
         const checkData = await checkRes.json();
         if (checkData.assembledDocument && checkData.assembledDocument.length > 100) {
@@ -234,6 +235,7 @@ export function useDeliveryData(): {
         method: 'POST',
         credentials: 'include',
       });
+      if (cancelledRef.current) return;
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: 'Unknown error' }));
@@ -246,6 +248,7 @@ export function useDeliveryData(): {
       startTimeRef.current = Date.now();
       fetchSession(sessionId, startTimeRef.current);
     } catch {
+      if (cancelledRef.current) return;
       console.error('[Retry] Could not reach server');
       setAssemblyStatus('error');
     }

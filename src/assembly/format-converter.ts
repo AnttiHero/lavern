@@ -1471,13 +1471,17 @@ function sanitizeHtmlOutput(html: string): string {
   // Remove event handler attributes (onclick, onerror, onload, etc.)
   sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
 
-  // Remove javascript: and data: URLs from href/src/action attributes
+  // Remove javascript: and data: URLs from href/src/action attributes (quoted and unquoted)
   sanitized = sanitized.replace(/(href|src|action)\s*=\s*["']?\s*javascript\s*:/gi, '$1="');
   sanitized = sanitized.replace(/(href|src|action)\s*=\s*["']?\s*data\s*:/gi, '$1="');
+  // Also catch URL-encoded variants (e.g. java&#115;cript:, data%3A)
+  sanitized = sanitized.replace(/(href|src|action)\s*=\s*["']?\s*(?:&#[xX]?[0-9a-fA-F]+;?\s*)*j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:/gi, '$1="');
 
   // Remove style attributes that could contain expression() or url(javascript:)
+  // Handles double-quoted, single-quoted, AND unquoted style attributes
   sanitized = sanitized.replace(/style\s*=\s*"[^"]*expression\s*\([^"]*"/gi, '');
   sanitized = sanitized.replace(/style\s*=\s*'[^']*expression\s*\([^']*'/gi, '');
+  sanitized = sanitized.replace(/style\s*=\s*[^\s>"'][^\s>]*expression\s*\([^\s>]*/gi, '');
 
   return sanitized;
 }

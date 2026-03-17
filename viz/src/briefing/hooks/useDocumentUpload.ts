@@ -106,42 +106,49 @@ export function useDocumentUpload() {
       });
 
       // Read content for the existing UploadedDocument interface
-      const reader = new FileReader();
-      reader.onload = () => {
-        const doc: UploadedDocument = {
-          id: docId,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          content: reader.result as string,
-          uploadedAt: new Date().toISOString(),
+      // Wrap FileReader in a Promise to prevent race conditions where
+      // documents are submitted before FileReader finishes reading
+      const readPromise = new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const doc: UploadedDocument = {
+            id: docId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: reader.result as string,
+            uploadedAt: new Date().toISOString(),
+          };
+          setDocuments(prev => [...prev, doc]);
+          resolve();
         };
-        setDocuments(prev => [...prev, doc]);
-      };
-      reader.onerror = () => {
-        // FileReader failed — store with empty content so the upload still appears
-        console.warn(`[doc-upload] FileReader failed for ${file.name}`);
-        const doc: UploadedDocument = {
-          id: docId,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          content: '',
-          uploadedAt: new Date().toISOString(),
+        reader.onerror = () => {
+          // FileReader failed — store with empty content so the upload still appears
+          console.warn(`[doc-upload] FileReader failed for ${file.name}`);
+          const doc: UploadedDocument = {
+            id: docId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: '',
+            uploadedAt: new Date().toISOString(),
+          };
+          setDocuments(prev => [...prev, doc]);
+          resolve();
         };
-        setDocuments(prev => [...prev, doc]);
-      };
 
-      if (
-        file.type.startsWith('text/') ||
-        file.name.endsWith('.md') ||
-        file.name.endsWith('.txt') ||
-        file.name.endsWith('.rtf')
-      ) {
-        reader.readAsText(file);
-      } else {
-        reader.readAsDataURL(file);
-      }
+        if (
+          file.type.startsWith('text/') ||
+          file.name.endsWith('.md') ||
+          file.name.endsWith('.txt') ||
+          file.name.endsWith('.rtf')
+        ) {
+          reader.readAsText(file);
+        } else {
+          reader.readAsDataURL(file);
+        }
+      });
+      parsePromises.push(readPromise);
 
       // Also attempt backend parsing (async, non-blocking)
       parsePromises.push(

@@ -5,7 +5,7 @@
  * JSON finalization for the recommendation.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -50,6 +50,11 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
   const [readyToFinalize, setReadyToFinalize] = useState(false);
   const [documents, setDocuments] = useState<Array<{ name: string; content: string }>>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; abortRef.current?.abort(); };
+  }, []);
 
   const addDocument = useCallback((doc: { name: string; content: string }) => {
     setDocuments(prev => [...prev, doc]);
@@ -119,7 +124,10 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
               throw new Error(event.content);
             }
           } catch (e) {
-            if (e instanceof Error && e.message !== jsonStr) throw e;
+            // Re-throw real errors (from event.type === 'error'), but swallow
+            // JSON parse failures from incomplete SSE chunks
+            if (e instanceof SyntaxError) continue;
+            throw e;
           }
         }
       }
@@ -179,12 +187,14 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
       }
 
       const data = await res.json() as PartnerRecommendation;
+      if (!mountedRef.current) return;
       setRecommendation(data);
     } catch (err) {
+      if (!mountedRef.current) return;
       const msg = err instanceof Error ? err.message : 'Finalization failed';
       setError(msg);
     } finally {
-      setIsFinalizing(false);
+      if (mountedRef.current) setIsFinalizing(false);
     }
   }, [messages, documents]);
 

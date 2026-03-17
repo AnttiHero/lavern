@@ -514,9 +514,16 @@ export function getVerificationToken(token: string): UserToken | undefined {
   `).get(token, new Date().toISOString()) as UserToken | undefined;
 }
 
-/** Mark a token as used. */
-export function markTokenUsed(token: string): void {
-  getDb().prepare(`UPDATE user_tokens SET used_at = ? WHERE token = ?`).run(new Date().toISOString(), token);
+/**
+ * Atomically consume a token (mark as used only if not already consumed).
+ * Returns true if the token was consumed, false if it was already used
+ * (prevents race conditions where concurrent requests reuse the same token).
+ */
+export function markTokenUsed(token: string): boolean {
+  const result = getDb().prepare(
+    `UPDATE user_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL`
+  ).run(new Date().toISOString(), token);
+  return result.changes > 0;
 }
 
 /** Invalidate all unused tokens of a given type for a user (e.g., after password reset, invalidate older reset tokens). */

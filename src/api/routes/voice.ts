@@ -93,8 +93,8 @@ export function registerVoiceRoutes(fastify: FastifyInstance): void {
         if (msg.type === 'UtteranceEnd') {
           clientSocket.send(JSON.stringify({ type: 'utterance_end' }));
         }
-      } catch {
-        // Non-JSON or unparseable — ignore
+      } catch (parseErr) {
+        logger.warn('Failed to parse Deepgram message', { error: (parseErr as Error).message });
       }
     });
 

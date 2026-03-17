@@ -191,6 +191,7 @@ export function useLLMInterview(
         }
 
         const result = await res.json();
+        if (!mountedRef.current) return;
         setInterviewResult(result);
         return;
       }

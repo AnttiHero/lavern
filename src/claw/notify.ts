@@ -33,6 +33,8 @@ export interface ClawNotification {
 // ── Deduplication ────────────────────────────────────────────────────────
 
 const recentNotifications = new Map<string, number>();
+/** Hard cap on dedup map size to prevent memory leaks in long-running daemons. */
+const MAX_DEDUP_ENTRIES = 10_000;
 
 function shouldSend(notification: ClawNotification): boolean {
   const key = `${notification.type}:${notification.title}`;
@@ -43,9 +45,17 @@ function shouldSend(notification: ClawNotification): boolean {
 
   recentNotifications.set(key, now);
 
-  // Housekeeping: always prune expired entries to prevent unbounded growth
+  // Housekeeping: prune expired entries to prevent unbounded growth
   for (const [k, ts] of recentNotifications) {
     if (now - ts > config.claw.notifyDedupMs) recentNotifications.delete(k);
+  }
+
+  // Hard cap: if the map still exceeds the limit after pruning,
+  // evict oldest entries to prevent memory leaks
+  if (recentNotifications.size > MAX_DEDUP_ENTRIES) {
+    const entries = [...recentNotifications.entries()].sort((a, b) => a[1] - b[1]);
+    const toRemove = entries.slice(0, recentNotifications.size - MAX_DEDUP_ENTRIES);
+    for (const [k] of toRemove) recentNotifications.delete(k);
   }
 
   return true;
