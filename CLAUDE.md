@@ -145,11 +145,56 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1156 tests across 68 files (60 unit + 8 integration)
+- `tests/` — 1179+ tests across 69 files (61 unit + 8 integration)
 
 ## Version History
 
-### v0.10 (Current) — Soft Launch Hardening + Working View Redesign
+### v0.11 (Current) — Email Verification Enforcement + Security Hardening
+
+**Email & Auth Infrastructure** — Complete email verification pipeline:
+- Password reset flow: forgot-password → email with token → reset-password
+- Email verification flow: signup → verification email → verify-email → banner clears
+- Resend verification endpoint with rate limiting (3/min per IP)
+- Receipt emails on billable hours purchase, low-balance warnings
+- Welcome email on signup with verification link
+
+**Email Verification Enforcement** — Server-side middleware blocking unverified users:
+- `src/api/middleware/require-verified.ts` — Fastify `onRequest` hook
+- Blocks authenticated unverified browser users from POST mutations (sessions, engage, matters)
+- Skips: anonymous requests, API clients (Bearer), GET/HEAD/OPTIONS, exempt paths
+- Exempt paths: `/api/auth/*`, `/api/billing/*`, `/api/documents/*`, `/api/waitlist`, `/api/briefing/*`
+- Returns 403 `EMAIL_NOT_VERIFIED` with user-friendly message
+- Frontend `VerificationBanner` — warm amber banner with pulsing dot, resend button, session-dismissible
+
+**Security Fixes (3 Crucial):**
+- Token race condition: `markTokenUsed()` now atomic (`UPDATE ... WHERE used_at IS NULL`, returns boolean)
+- Password reset: token consumed FIRST before acting, remaining writes wrapped in DB transaction
+- FileReader async race: document content reads now Promise-wrapped, awaited before submission
+
+**Stability Fixes (10 Smaller):**
+- Claw notify dedup Map: hard cap (10K entries) prevents memory leak in long-running daemon
+- `useLLMInterview`: mount guard on `setInterviewResult` after finalization
+- `usePartnerConsult`: mount guards on finalize, SSE JSON parse error logic fixed (was comparing error message to raw JSON string)
+- Voice route: Deepgram JSON parse failures now logged instead of silently swallowed
+- HTML sanitizer: handles unquoted style attributes with `expression()`, catches HTML-encoded `javascript:` URLs
+- `useDeliveryData`: `cancelledRef` checks in `retryAssembly` async operations
+- `useSoundEffects`: null check on soundDefs lookup
+
+**Frontend Polish:**
+- Login/signup: `<label>` + `autoComplete` attributes for accessibility and password managers
+- Real-time password length hints during signup and reset
+- Landing: waitlist error contrast raised to WCAG AA, responsive input widths, ARIA labels
+- QuickStart: low-balance color contrast fix, cowork folder error handling
+- Decorative images: `role="presentation"` across landing views
+- Button touch targets: minimum 36px height, improved padding
+- MyCases: user-facing error messages instead of console.warn
+
+**Test Coverage Expansion** — 1156 → 1179+ tests:
+- Email verification middleware: 12 unit tests (skip/block/exempt logic)
+- Email verification state: 3 integration tests
+- Token atomicity: double-use prevention, concurrent race protection
+
+### v0.10 — Soft Launch Hardening + Working View Redesign
 
 **Working View Redesign** — Transformed from static dashboard to lively team chat room:
 - ActivityCard speech bubbles for agent start/stop/tool activity

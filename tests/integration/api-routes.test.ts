@@ -622,6 +622,32 @@ describe('API Routes Integration', () => {
       });
       expect(res.statusCode).toBe(400);
     });
+
+    it('POST /api/auth/reset-password rejects already-used token', async () => {
+      const { getUserByEmail, createPasswordResetToken } = await import('../../src/db/database.js');
+      const user = getUserByEmail(resetEmail);
+      expect(user).toBeDefined();
+
+      const token = createPasswordResetToken(user!.id);
+
+      // First use: should succeed
+      const res1 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: { token, password: 'FirstReset999!' },
+      });
+      expect(res1.statusCode).toBe(200);
+      expect(res1.json()).toHaveProperty('success', true);
+
+      // Second use: same token should be rejected
+      // (getPasswordResetToken filters out used tokens via `used_at IS NULL`)
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: { token, password: 'SecondReset999!' },
+      });
+      expect(res2.statusCode).toBe(400);
+    });
   });
 
   // ── Email Verification ────────────────────────────────────────────────
@@ -679,6 +705,40 @@ describe('API Routes Integration', () => {
         payload: { token: 'bad-token' },
       });
       expect(res.statusCode).toBe(400);
+    });
+
+    it('POST /api/auth/verify-email rejects already-used token', async () => {
+      // Create a new user to verify
+      const doubleVerifyEmail = 'double-verify@example.com';
+      await app.inject({
+        method: 'POST',
+        url: '/api/auth/signup',
+        payload: { email: doubleVerifyEmail, password: 'DoubleVerify123' },
+      });
+
+      const { getUserByEmail, createVerificationToken } = await import('../../src/db/database.js');
+      const user = getUserByEmail(doubleVerifyEmail);
+      expect(user).toBeDefined();
+
+      const token = createVerificationToken(user!.id);
+
+      // First use: should succeed
+      const res1 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/verify-email',
+        payload: { token },
+      });
+      expect(res1.statusCode).toBe(200);
+      expect(res1.json()).toHaveProperty('success', true);
+
+      // Second use: same token should be rejected
+      // (getVerificationToken filters out used tokens via `used_at IS NULL`)
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/verify-email',
+        payload: { token },
+      });
+      expect(res2.statusCode).toBe(400);
     });
 
     it('POST /api/auth/resend-verification sends new email', async () => {
@@ -752,6 +812,51 @@ describe('API Routes Integration', () => {
       });
       expect(meRes.statusCode).toBe(200);
       expect(meRes.json().user).toHaveProperty('emailVerified', true);
+    });
+  });
+
+  // ── Token Atomicity ───────────────────────────────────────────────────
+
+  describe('Token Atomicity (markTokenUsed)', () => {
+    it('markTokenUsed returns true on first call, false on second (atomic)', async () => {
+      const { getUserByEmail, createPasswordResetToken, markTokenUsed } = await import('../../src/db/database.js');
+      const user = getUserByEmail('integration-test@example.com');
+      expect(user).toBeDefined();
+
+      const token = createPasswordResetToken(user!.id);
+
+      // First consumption: should succeed
+      expect(markTokenUsed(token)).toBe(true);
+
+      // Second consumption: should fail (already consumed)
+      expect(markTokenUsed(token)).toBe(false);
+
+      // Third call: still false
+      expect(markTokenUsed(token)).toBe(false);
+    });
+
+    it('markTokenUsed returns false for non-existent token', async () => {
+      const { markTokenUsed } = await import('../../src/db/database.js');
+      expect(markTokenUsed('completely-fake-token-that-does-not-exist')).toBe(false);
+    });
+
+    it('concurrent token use: only one succeeds', async () => {
+      const { getUserByEmail, createVerificationToken, markTokenUsed } = await import('../../src/db/database.js');
+      const user = getUserByEmail('integration-test@example.com');
+      expect(user).toBeDefined();
+
+      const token = createVerificationToken(user!.id);
+
+      // Simulate concurrent consumption
+      const results = await Promise.all([
+        Promise.resolve(markTokenUsed(token)),
+        Promise.resolve(markTokenUsed(token)),
+        Promise.resolve(markTokenUsed(token)),
+      ]);
+
+      // Exactly one should succeed
+      const successes = results.filter(r => r === true);
+      expect(successes).toHaveLength(1);
     });
   });
 });
