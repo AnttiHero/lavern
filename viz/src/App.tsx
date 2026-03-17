@@ -28,6 +28,9 @@ import { useEffect, useState, useCallback, useContext, Suspense, lazy } from 're
 import { UserContext } from './auth/UserContext.js';
 import { ErrorToast } from './components/ErrorToast.js';
 import { VerificationBanner } from './components/VerificationBanner.js';
+import type { ApiErrorEvent } from './hooks/useApiFetch.js';
+import { useOnlineStatus } from './hooks/useOnlineStatus.js';
+import { OfflineBanner } from './components/OfflineBanner.js';
 
 import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
@@ -171,6 +174,7 @@ export function App() {
   const [view, setView] = useState<AppView>(getViewFromHash);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [showTopUp, setShowTopUp] = useState(false);
+  const { isOnline } = useOnlineStatus();
 
   // Hash-based routing
   useEffect(() => {
@@ -559,6 +563,23 @@ export function App() {
   const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'foyer' && view !== 'partner' && view !== 'login' && view !== 'working';
   const userCtx = useContext(UserContext);
 
+  // ── Global API error handler (listens for shem:api-error events) ────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<ApiErrorEvent>).detail;
+      if (detail.type === 'auth-expired') {
+        setErrorToast(detail.message);
+        userCtx?.logout();
+      } else if (detail.type === 'payment-required') {
+        setShowTopUp(true);
+      } else {
+        setErrorToast(detail.message);
+      }
+    };
+    window.addEventListener('shem:api-error', handler);
+    return () => window.removeEventListener('shem:api-error', handler);
+  }, [userCtx]);
+
   // ── Post-purchase overlay ───────────────────────────────────────────
   // Shown after Stripe redirects back with ?billing=success or ?billing=cancelled.
   if (billingResult) {
@@ -601,6 +622,9 @@ export function App() {
     ? <VerificationBanner />
     : null;
 
+  // ── Offline banner — shown when browser has no network ──────────────
+  const offlineBanner = !isOnline ? <OfflineBanner /> : null;
+
   // ── ErrorToast rendered globally above all views ─────────────────────
   const toast = errorToast ? (
     <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
@@ -623,6 +647,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {topUpDialog}
         {cursor}
@@ -643,6 +668,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -664,6 +690,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -685,6 +712,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -706,6 +734,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -727,6 +756,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
@@ -746,6 +776,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -767,6 +798,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -786,6 +818,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -803,6 +836,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -832,6 +866,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -850,6 +885,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -871,6 +907,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading..." />}>
@@ -889,6 +926,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Verifying..." />}>
@@ -904,6 +942,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -923,6 +962,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -940,6 +980,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -957,6 +998,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -978,6 +1020,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -995,6 +1038,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -1013,6 +1057,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -1039,6 +1084,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <ViewTransition>
@@ -1070,6 +1116,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {cursor}
         <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
@@ -1091,6 +1138,7 @@ export function App() {
       <ErrorBoundary>
         {skipLink}
         {toast}
+        {offlineBanner}
         {verifyBanner}
         {topUpDialog}
         {cursor}
@@ -1125,6 +1173,7 @@ export function App() {
     <ErrorBoundary>
       {skipLink}
       {toast}
+      {offlineBanner}
       {verifyBanner}
       {cursor}
       <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#f0ede8' }} />}>

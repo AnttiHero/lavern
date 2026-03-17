@@ -2,6 +2,7 @@
  * DocumentDropZone — Drag & drop area + click to browse.
  */
 
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { colors, fonts, radii } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -23,6 +24,37 @@ export function DocumentDropZone({
   onClick,
   onFileInput,
 }: Props) {
+  const { isMobile } = useResponsive();
+
+  // On touch devices, show a prominent upload button instead of drag-drop hints
+  if (isMobile) {
+    return (
+      <div style={{ textAlign: 'center', padding: '16px 0' }}>
+        <button
+          type="button"
+          onClick={onClick}
+          style={styles.mobileButton}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: 8 }}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Upload Files
+        </button>
+        <div style={styles.formats}>PDF, DOC, DOCX, TXT, MD, RTF, HTML</div>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.txt,.md,.rtf,.html"
+          onChange={onFileInput}
+          style={{ display: 'none' }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       onDrop={onDrop}
@@ -93,4 +125,21 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 8,
     letterSpacing: 0.3,
   },
+  mobileButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    padding: '12px 32px',
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: '#fff',
+    backgroundColor: colors.text,
+    border: 'none',
+    borderRadius: radii.md,
+    cursor: 'pointer',
+    letterSpacing: 0.3,
+    width: '100%',
+  } as React.CSSProperties,
 };

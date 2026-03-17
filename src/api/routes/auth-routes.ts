@@ -86,6 +86,11 @@ const ProfileUpdateSchema = z.object({
   ),
 }).strict();
 
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: z.string().min(8).max(200),
+}).strict();
+
 // ── Cookie helpers ───────────────────────────────────────────────────────
 
 const COOKIE_NAME = 'whiteshoe_token';
@@ -283,6 +288,43 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
     logAuditEvent({ userId: user.id, action: 'profile_update', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
     return reply.send({ user: sanitizeUser(updated) });
+  });
+
+  // ── POST /api/auth/change-password ────────────────────────────────────
+
+  fastify.post('/api/auth/change-password', async (request, reply) => {
+    const token = parseCookieToken(request.headers.cookie);
+    if (!token) {
+      return reply.status(401).send({ error: 'Not authenticated.' });
+    }
+
+    const user = getUserByToken(token);
+    if (!user) {
+      return reply.status(401).send({ error: 'Session expired.' });
+    }
+
+    const body = validateBody(ChangePasswordSchema, request, reply);
+    if (!body) return;
+
+    // Verify current password
+    const isValid = await verifyPassword(body.currentPassword, user.password_hash);
+    if (!isValid) {
+      return reply.status(400).send({ error: 'Current password is incorrect.' });
+    }
+
+    // Update password hash
+    const newHash = await hashPassword(body.newPassword);
+    updatePasswordHash(user.id, newHash);
+
+    // Invalidate all other sessions (force re-login everywhere else)
+    deleteAllUserAuthTokens(user.id);
+
+    // Issue a new token for the current session
+    const newToken = createAuthToken(user.id);
+    setAuthCookie(reply, newToken);
+
+    logAuditEvent({ userId: user.id, action: 'password_changed', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
+    return reply.send({ success: true, message: 'Password changed successfully.' });
   });
 
   // ── GET /api/auth/export — GDPR data portability (Article 20) ─────────

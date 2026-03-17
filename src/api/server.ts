@@ -54,7 +54,7 @@ import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
-import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent } from '../db/database.js';
+import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives } from '../db/database.js';
 import { config } from '../config.js';
 
 export async function startApiServer(port: number): Promise<void> {
@@ -138,6 +138,10 @@ export async function startApiServer(port: number): Promise<void> {
   const rotated = rotateAuditLog(90);
   if (rotated > 0) console.log(`[AUDIT] Rotated ${rotated} audit log entr${rotated === 1 ? 'y' : 'ies'} older than 90 days`);
 
+  // Clean old session archives (retain configurable days, default 180)
+  const archivedCleaned = cleanOldArchives(config.archiveRetentionDays);
+  if (archivedCleaned > 0) console.log(`[ARCHIVE] Cleaned ${archivedCleaned} archived session${archivedCleaned === 1 ? '' : 's'} older than ${config.archiveRetentionDays} days`);
+
   const tokenCleanupInterval = setInterval(() => {
     const cleaned = cleanExpiredTokens();
     if (cleaned > 0) console.log(`[AUTH] Cleaned ${cleaned} expired auth token${cleaned === 1 ? '' : 's'}`);
@@ -146,6 +150,9 @@ export async function startApiServer(port: number): Promise<void> {
     // Also rotate audit log hourly
     const auditRotated = rotateAuditLog(90);
     if (auditRotated > 0) console.log(`[AUDIT] Rotated ${auditRotated} audit log entries`);
+    // Clean old session archives hourly
+    const archiveCleaned = cleanOldArchives(config.archiveRetentionDays);
+    if (archiveCleaned > 0) console.log(`[ARCHIVE] Cleaned ${archiveCleaned} old archived sessions`);
   }, 60 * 60 * 1000); // 1 hour
   tokenCleanupInterval.unref(); // Don't keep the process alive for cleanup
 
@@ -322,19 +329,37 @@ export async function startApiServer(port: number): Promise<void> {
     // Deep health check — verify dependencies
     const checks: Record<string, { ok: boolean; detail?: string }> = {};
 
-    // SQLite writable
+    // SQLite writable + size
     try {
       const db = (await import('../db/database.js')).getDb();
       db.prepare('SELECT 1').get();
-      checks.database = { ok: true };
+      let dbSizeDetail = 'writable';
+      try {
+        const dbStat = fs.statSync(config.dbPath);
+        const sizeMb = (dbStat.size / (1024 * 1024)).toFixed(1);
+        dbSizeDetail = `writable, ${sizeMb} MB`;
+      } catch { /* size check optional */ }
+      checks.database = { ok: true, detail: dbSizeDetail };
     } catch (err) {
       checks.database = { ok: false, detail: err instanceof Error ? err.message : 'unavailable' };
     }
 
-    // API key present
-    checks.apiKey = {
+    // LLM API key present
+    checks.llm = {
       ok: !!process.env.ANTHROPIC_API_KEY,
       detail: process.env.ANTHROPIC_API_KEY ? 'configured' : 'ANTHROPIC_API_KEY not set',
+    };
+
+    // Email service
+    checks.email = {
+      ok: !!config.email.resendApiKey,
+      detail: config.email.resendApiKey ? 'configured' : 'RESEND_API_KEY not set',
+    };
+
+    // Stripe billing
+    checks.stripe = {
+      ok: !!config.stripe.secretKey,
+      detail: config.stripe.secretKey ? 'configured' : 'STRIPE_SECRET_KEY not set',
     };
 
     // Disk space (data directory)

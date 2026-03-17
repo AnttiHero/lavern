@@ -58,30 +58,44 @@ export function useDocumentUpload() {
 
   /**
    * Send a file to the backend for authoritative parsing.
+   * Retries up to 3 times with exponential backoff on network failures.
    * Returns the parsed document or null if the backend is unavailable.
    */
   const parseOnBackend = useCallback(async (file: File): Promise<FrontendParsedDocument | null> => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    const MAX_RETRIES = 3;
 
-      const res = await fetch('/api/documents/parse', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      if (res.ok) {
-        return await res.json() as FrontendParsedDocument;
+        const res = await fetch('/api/documents/parse', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+
+        if (res.ok) {
+          return await res.json() as FrontendParsedDocument;
+        }
+
+        // Backend returned an error — not fatal, we still have frontend content
+        console.warn(`[doc-parse] Backend returned ${res.status} for ${file.name}`);
+        return null;
+      } catch {
+        // Network failure — retry with backoff if we have attempts left
+        if (attempt < MAX_RETRIES) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.warn(`[doc-parse] Network error for ${file.name}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        // All retries exhausted — fall through
+        console.warn(`[doc-parse] All retries exhausted for ${file.name}`);
+        return null;
       }
-
-      // Backend returned an error — not fatal, we still have frontend content
-      console.warn(`[doc-parse] Backend returned ${res.status} for ${file.name}`);
-      return null;
-    } catch {
-      // Backend unavailable (demo mode) — fall through
-      return null;
     }
+    return null;
   }, []);
 
   const processFiles = useCallback(async (files: File[]) => {

@@ -72,7 +72,7 @@ export function TabBar({ activeTab, onTabChange }: Props) {
               ...styles.tab,
               color: isActive ? colors.text : colors.textMuted,
               fontWeight: isActive ? 600 : 500,
-              ...(isMobile ? { padding: '8px 12px', fontSize: 12 } : {}),
+              ...(isMobile ? { padding: '12px 14px', fontSize: 12, minHeight: 44 } : {}),
             }}
             onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = colors.text; }}
             onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = colors.textMuted; }}
@@ -107,9 +107,15 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.xxl,
     overflowX: 'auto' as const,
     position: 'relative' as const,
+    WebkitOverflowScrolling: 'touch' as const,
+    scrollSnapType: 'x mandatory' as const,
+    scrollbarWidth: 'none' as const, // Firefox
+    msOverflowStyle: 'none' as const, // IE/Edge
   },
   tab: {
     padding: '10px 20px',
+    minHeight: 44,
+    scrollSnapAlign: 'start' as const,
     border: 'none',
     borderBottom: '2px solid transparent',
     backgroundColor: 'transparent',

@@ -174,6 +174,10 @@ export default function MyPageView({ onBack }: Props) {
         </FieldRow>
       </div>
 
+      {/* ── Security: Change Password ──────────────────────────────── */}
+      <SectionDivider label="Security" />
+      <ChangePasswordSection />
+
       {/* ── Section 2: Default Settings ────────────────────────────── */}
       <SectionDivider label="Default Settings" />
 
@@ -484,6 +488,161 @@ function TeamActionButton({ label, onClick, danger }: { label: string; onClick: 
     >
       {label}
     </button>
+  );
+}
+
+function ChangePasswordSection() {
+  const [expanded, setExpanded] = useState(false);
+  const [current, setCurrent] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const canSubmit = current.length > 0 && newPwd.length >= 8 && newPwd === confirm && status !== 'saving';
+  const mismatch = confirm.length > 0 && newPwd !== confirm;
+  const tooShort = newPwd.length > 0 && newPwd.length < 8;
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
+    setStatus('saving');
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword: current, newPassword: newPwd }),
+      });
+
+      if (res.ok) {
+        setStatus('success');
+        setCurrent('');
+        setNewPwd('');
+        setConfirm('');
+        // Collapse after brief success feedback
+        setTimeout(() => { setExpanded(false); setStatus('idle'); }, 2000);
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Something went wrong.' }));
+        setErrorMsg((data as { error?: string }).error || 'Failed to change password.');
+        setStatus('error');
+      }
+    } catch {
+      setErrorMsg('Unable to reach the server.');
+      setStatus('error');
+    }
+  }, [canSubmit, current, newPwd]);
+
+  if (!expanded) {
+    return (
+      <div style={styles.fieldGroup}>
+        <button
+          onClick={() => setExpanded(true)}
+          style={{
+            ...styles.input,
+            cursor: 'pointer',
+            color: colors.textSecondary,
+            textAlign: 'left',
+            border: `1px solid ${colors.border}`,
+          }}
+        >
+          Change password...
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.fieldGroup}>
+      <FieldRow label="Current Password">
+        <input
+          type="password"
+          value={current}
+          onChange={e => setCurrent(e.target.value)}
+          autoComplete="current-password"
+          style={styles.input}
+          placeholder="Enter current password"
+        />
+      </FieldRow>
+      <FieldRow label="New Password">
+        <input
+          type="password"
+          value={newPwd}
+          onChange={e => setNewPwd(e.target.value)}
+          autoComplete="new-password"
+          style={styles.input}
+          placeholder="Min 8 characters"
+        />
+      </FieldRow>
+      {tooShort && (
+        <div style={{ fontSize: 11, color: colors.danger, paddingLeft: spacing.lg, marginTop: -4 }}>
+          Password must be at least 8 characters.
+        </div>
+      )}
+      <FieldRow label="Confirm Password">
+        <input
+          type="password"
+          value={confirm}
+          onChange={e => setConfirm(e.target.value)}
+          autoComplete="new-password"
+          style={styles.input}
+          placeholder="Repeat new password"
+        />
+      </FieldRow>
+      {mismatch && (
+        <div style={{ fontSize: 11, color: colors.danger, paddingLeft: spacing.lg, marginTop: -4 }}>
+          Passwords do not match.
+        </div>
+      )}
+      {errorMsg && (
+        <div style={{ fontSize: 11, color: colors.danger, paddingLeft: spacing.lg }} role="alert">
+          {errorMsg}
+        </div>
+      )}
+      {status === 'success' && (
+        <div style={{ fontSize: 11, color: colors.success, paddingLeft: spacing.lg }} role="status">
+          Password changed. Other sessions have been logged out.
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, paddingLeft: spacing.lg, marginTop: 4 }}>
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          style={{
+            padding: '6px 16px',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: fonts.sans,
+            letterSpacing: 0.5,
+            textTransform: 'uppercase' as const,
+            color: canSubmit ? '#fff' : colors.textDim,
+            backgroundColor: canSubmit ? colors.text : colors.bgInput,
+            border: 'none',
+            borderRadius: radii.sm,
+            cursor: canSubmit ? 'pointer' : 'default',
+            opacity: status === 'saving' ? 0.6 : 1,
+          }}
+        >
+          {status === 'saving' ? 'Saving...' : 'Change Password'}
+        </button>
+        <button
+          onClick={() => { setExpanded(false); setCurrent(''); setNewPwd(''); setConfirm(''); setStatus('idle'); setErrorMsg(''); }}
+          style={{
+            padding: '6px 16px',
+            fontSize: 11,
+            fontFamily: fonts.sans,
+            color: colors.textMuted,
+            backgroundColor: 'transparent',
+            border: `1px solid ${colors.border}`,
+            borderRadius: radii.sm,
+            cursor: 'pointer',
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 

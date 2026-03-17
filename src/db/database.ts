@@ -727,6 +727,20 @@ export function getRecentArchivedSessions(limit = 10): ArchivedSession[] {
   `).all(limit) as ArchivedSession[];
 }
 
+// ── Archive Retention ────────────────────────────────────────────────────
+
+/**
+ * Delete archived sessions older than the specified number of days.
+ * Returns the count of deleted rows.
+ */
+export function cleanOldArchives(retentionDays: number): number {
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+  const result = getDb().prepare(
+    `DELETE FROM session_archive WHERE completed_at < ?`
+  ).run(cutoff);
+  return result.changes;
+}
+
 // ── Reputation Metrics ──────────────────────────────────────────────────
 
 export interface ReputationMetrics {

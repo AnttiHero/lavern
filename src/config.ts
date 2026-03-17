@@ -192,28 +192,38 @@ export const config = {
     heartbeatIntervalMs: safeInt(process.env.MARBLE_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
   },
 
+  // ── Archive Retention ──────────────────────────────────────────────────
+  /** Days to retain session archives before auto-cleanup (default: 180) */
+  archiveRetentionDays: safeInt(process.env.SHEM_ARCHIVE_RETENTION_DAYS, 180),
+
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.10.0',
+  version: '0.11.0',
 } as const;
 
 // ── Production Startup Validation ──────────────────────────────────────
-// Warn loudly if critical env vars are missing or still set to localhost defaults.
-// Runs at import time (module load) so problems surface immediately.
+// In production, CRITICAL env vars cause immediate exit(1).
+// Non-critical missing vars produce warnings only.
 
-if (process.env.NODE_ENV === 'production') {
+export function validateProductionConfig(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  const fatal: string[] = [];
   const warnings: string[] = [];
 
+  // ── Critical — server cannot function without these ──
   if (!process.env.ANTHROPIC_API_KEY && config.provider === 'anthropic') {
-    warnings.push('ANTHROPIC_API_KEY is not set — LLM calls will fail');
+    fatal.push('ANTHROPIC_API_KEY is not set — all agent workflows will fail');
   }
+  if (!process.env.RESEND_API_KEY) {
+    fatal.push('RESEND_API_KEY is not set — cannot send verification or reset emails');
+  }
+
+  // ── Non-critical — degraded but functional ──
   if (!process.env.STRIPE_SECRET_KEY) {
     warnings.push('STRIPE_SECRET_KEY is not set — billing disabled');
   }
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     warnings.push('STRIPE_WEBHOOK_SECRET is not set — webhooks will fail signature verification');
-  }
-  if (!process.env.RESEND_API_KEY) {
-    warnings.push('RESEND_API_KEY is not set — emails will be logged to console only');
   }
   if (!process.env.MARBLE_ADMIN_KEY) {
     warnings.push('MARBLE_ADMIN_KEY is not set — admin endpoints disabled');
@@ -233,11 +243,25 @@ if (process.env.NODE_ENV === 'production') {
     warnings.push('SHEM_BASE_URL still points to localhost — set to production URL');
   }
 
+  // ── Fatal: exit immediately ──
+  if (fatal.length > 0) {
+    console.error('\n╔══════════════════════════════════════════════════════════════╗');
+    console.error('║  FATAL: Missing critical environment variables               ║');
+    console.error('╚══════════════════════════════════════════════════════════════╝');
+    fatal.forEach(f => console.error(`  ✗ ${f}`));
+    console.error('\nServer cannot start. Set the required variables and try again.\n');
+    process.exit(1);
+  }
+
+  // ── Warnings: log and continue ──
   if (warnings.length > 0) {
     console.warn('\n╔══════════════════════════════════════════════════════════════╗');
-    console.warn('║  ⚠  PRODUCTION CONFIGURATION WARNINGS                       ║');
+    console.warn('║  PRODUCTION CONFIGURATION WARNINGS                          ║');
     console.warn('╚══════════════════════════════════════════════════════════════╝');
     warnings.forEach(w => console.warn(`  ▸ ${w}`));
     console.warn('');
   }
 }
+
+// Run validation at import time (module load)
+validateProductionConfig();

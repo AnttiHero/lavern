@@ -117,6 +117,23 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
   // LLM interview mode: active when interviewer is selected and first call didn't fail
   const showConversationalChat = useLLMMode && !interview.fallbackToStatic;
 
+  // ── Unsaved changes warning ───────────────────────────────────────
+  // Warn if user has documents or interview progress and tries to leave
+  const hasUnsavedWork = upload.documents.length > 0
+    || interview.messages.length > 0
+    || phase !== 'documents';
+
+  useEffect(() => {
+    if (!hasUnsavedWork) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Modern browsers show a generic message; returnValue triggers the dialog
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedWork]);
+
   const handleContinueToStaffing = useCallback(() => {
     const payload = buildPayload();
     onComplete(payload);
