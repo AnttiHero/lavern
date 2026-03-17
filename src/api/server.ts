@@ -172,9 +172,9 @@ export async function startApiServer(port: number): Promise<void> {
   const publicPaths: string[] = [
     '/health',
     '/',
-    // Session access — public for demo (no login required).
-    'GET /api/sessions',      // Session listing
-    'GET /api/sessions/*',    // Session detail + WebSocket events
+    // Session access — individual session detail/WS is public (session ID is a capability token).
+    // Listing requires auth to prevent session ID enumeration.
+    'GET /api/sessions/*',    // Session detail + WebSocket events (requires session ID)
     // NOTE: /api/clients, /api/audit-logs, /api/replay are NOT public.
     // They contain sensitive data and require authentication.
     'GET /api/agents/*',      // Agent profiles, presets, recommendations
@@ -186,8 +186,7 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /llms.txt',          // AI crawler guidance
     'GET /api/pricing',       // Deterministic cost estimates
     'GET /api/reputation',    // Machine-readable trust signal
-    // Session creation — public for QuickStart flow (re-enabled for demo).
-    'POST /api/sessions',
+    // Session creation requires auth — all users must log in before starting sessions.
     // Briefing — intake flow before login
     'POST /api/briefing/interview',
     'POST /api/briefing/analyze',

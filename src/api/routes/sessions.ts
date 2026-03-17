@@ -102,8 +102,13 @@ export function registerSessionRoutes(
     const client = (request as typeof request & { client?: ClientIdentity }).client;
     const isAgent = client?.type === 'agent';
 
-    // v21: Per-user monthly budget cap enforcement
+    // v26: All session creation requires authentication
     const userId = (request as typeof request & { userId?: string }).userId;
+    if (!userId && !isAgent) {
+      return reply.status(401).send({ error: 'Authentication required. Please sign in to start a session.' });
+    }
+
+    // v21: Per-user monthly budget cap enforcement
     let sessionBudget = body.options?.budget ?? config.defaultBudgetUsd;
 
     if (userId) {

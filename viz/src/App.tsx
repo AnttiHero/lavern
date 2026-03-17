@@ -24,7 +24,7 @@
  * App.tsx handles routing and cross-view data flow via sessionStorage.
  */
 
-import { useEffect, useState, useCallback, useContext, Suspense, lazy } from 'react';
+import { useEffect, useState, useCallback, useContext, useRef, Suspense, lazy } from 'react';
 import { UserContext } from './auth/UserContext.js';
 import { ErrorToast } from './components/ErrorToast.js';
 import { VerificationBanner } from './components/VerificationBanner.js';
@@ -175,6 +175,9 @@ export function App() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [showTopUp, setShowTopUp] = useState(false);
   const { isOnline } = useOnlineStatus();
+  const userCtx = useContext(UserContext);
+  const userRef = useRef(userCtx?.user);
+  userRef.current = userCtx?.user;
 
   // Hash-based routing
   useEffect(() => {
@@ -211,6 +214,12 @@ export function App() {
 
   /** YOLO Express Lane — skip intake/briefing/staffing, create session directly */
   const handleYoloLaunch = useCallback(async (question: string, tier: YoloTier) => {
+    // v26: Require auth before session creation
+    if (!userRef.current) {
+      setErrorToast('Please sign in to start a session.');
+      window.location.hash = '#/login';
+      return;
+    }
     const config = YOLO_CONFIGS[tier];
     const matterId = `yolo-${Date.now()}`;
 
@@ -304,6 +313,12 @@ export function App() {
     tier: YoloTier,
     parsedDocs: FrontendParsedDocument[],
   ) => {
+    // v26: Require auth before session creation
+    if (!userRef.current) {
+      setErrorToast('Please sign in to start a session.');
+      window.location.hash = '#/login';
+      return;
+    }
     const config = YOLO_CONFIGS[tier];
     const matterId = `qs-${Date.now()}`;
     const hasDocuments = parsedDocs.length > 0;
@@ -465,6 +480,12 @@ export function App() {
 
   /** Team confirmed → create session → Working */
   const handleStaffingComplete = useCallback(async (roles: string[]) => {
+    // v26: Require auth before session creation
+    if (!userRef.current) {
+      setErrorToast('Please sign in to start a session.');
+      window.location.hash = '#/login';
+      return;
+    }
     const memoText = sessionStorage.getItem('shem-briefing-memo') ?? '';
     const matterId = sessionStorage.getItem('shem-matter-id');
     const configStr = sessionStorage.getItem('shem-briefing-config');
@@ -566,7 +587,6 @@ export function App() {
 
   // ── Global M mark — hide on landing (custom cursor) & working (tight header) ──
   const showMark = view !== 'quickstart' && view !== 'landing' && view !== 'lobby' && view !== 'foyer' && view !== 'partner' && view !== 'login' && view !== 'working';
-  const userCtx = useContext(UserContext);
 
   // ── Global API error handler (listens for shem:api-error events) ────
   useEffect(() => {
