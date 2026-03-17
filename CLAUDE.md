@@ -146,7 +146,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1184+ tests across 69 files (61 unit + 8 integration)
+- `tests/` — 1198+ tests across 69 files (61 unit + 8 integration)
 
 ## Version History
 
@@ -163,9 +163,18 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - Invite code now optional: validated if provided (bonus 50h), but signup works without one
 - Config: `MARBLE_FREE_TRIAL_HOURS` (default 10), `MARBLE_WELCOME_HOURS` (default 50 for invite users)
 - Session creation 402 handling: redirects to pricing page with clear "top up" messaging
+- Billing hold system: `holdBillableHours`/`releaseHold` prevents TOCTOU race — hold placed at session start reduces visible balance, released + actual cost debited at session end. Concurrent sessions can't over-spend.
+- Credit idempotency scoped to non-debit entries (prevents edge case where a debit reference could block a credit)
 
 **Security:**
+- Session creation requires authentication — `POST /api/sessions` removed from public paths; unauthenticated requests return 401
+- Session listing requires authentication — `GET /api/sessions` removed from public paths; prevents session ID enumeration (individual session access via ID remains public as a capability token)
+- Frontend auth gates on all session creation paths (YOLO, QuickStart, staffing) — redirects to login with toast
 - Voice TTS route rate-limited (30 req/min per IP) to prevent API credit drain
+
+**Stability:**
+- EventBus max listeners raised from 50 to 200 for 50+ concurrent users
+- Session eviction logged at info level instead of error (reduces noise in production logs)
 
 **UX Polish:**
 - Resend verification cooldown: 60-second countdown timer prevents repeated clicks and silent 429s
