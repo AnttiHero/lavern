@@ -154,11 +154,7 @@
     .fog{position:relative;overflow:hidden}
     .fog::before{
       content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-      background:
-        linear-gradient(to top, transparent 60%, var(--dark) 100%),
-        linear-gradient(to bottom, transparent 60%, var(--dark) 100%),
-        linear-gradient(to right, transparent 70%, var(--dark) 100%),
-        linear-gradient(to left, transparent 70%, var(--dark) 100%)
+      box-shadow:inset 0 0 80px 40px var(--dark)
     }
 
     .art-card{
@@ -211,7 +207,7 @@
     }
     .art-quote-text .pull-quote{
       transition:transform 0.1s linear;will-change:transform;
-      transform:translateY(60px)
+      transform:translateY(40px)
     }
     .pull-quote{
       font-family:var(--serif);font-style:italic;font-weight:300;
@@ -248,8 +244,8 @@
         0 80px 160px rgba(0,0,0,.7),
         0 40px 80px rgba(0,0,0,.4),
         0 0 0 1px rgba(255,255,255,.03) inset;
-      mask-image:linear-gradient(to bottom, transparent 0%, black 3%, black 100%);
-      -webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 3%, black 100%)
+      mask-image:none;
+      -webkit-mask-image:none
     }
     .video-chrome{
       display:flex;align-items:center;gap:7px;padding:14px 20px;
@@ -376,14 +372,17 @@
       /* Hide standalone art card + its spacers on mobile */
       .art-card,.art-card-spacer{display:none}
       /* Remove art-quote image edges */
-      .art-quote-img{overflow:hidden}
-      .art-quote-row::before{backdrop-filter:none;-webkit-backdrop-filter:none}
+      .art-quote-img{overflow:hidden;position:relative;border-radius:0;box-shadow:none}
+      .art-quote-img::after{
+        content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+        box-shadow:inset 0 0 80px 50px var(--dark)
+      }
+      .art-quote-row::before{display:none}
       .art-quote-row{padding:0 16px}
-      .art-quote-img{border-radius:0;box-shadow:none}
-      .pull-quote{font-size:clamp(22px,5.5vw,32px)}
+      .pull-quote{font-size:clamp(22px,5.5vw,32px);color:#fff}
       .video-section{padding:clamp(60px,10vw,120px) 16px}
       .video-label{font-size:clamp(26px,5.5vw,48px);margin-bottom:clamp(32px,6vw,64px)}
-      .video-wrap{border-radius:14px}
+      .video-wrap{border-radius:14px;border:none}
       .video-chrome{padding:10px 14px;gap:5px}
       .dot{width:8px;height:8px}
       .cta{min-height:70vh}
@@ -519,15 +518,27 @@
       },{passive:true});
     }
 
-    // Quote parallax — text rises from below as you scroll
-    const quoteEl=document.querySelector('.art-quote-text');
-    if(quoteEl){
-      const qText=quoteEl.querySelector('.pull-quote');
+    // Autoplay video when visible (iOS Safari needs a nudge)
+    const vid=document.querySelector('.video-container video');
+    if(vid){
+      const vObs=new IntersectionObserver(e=>{
+        if(e[0].isIntersecting){vid.play().catch(()=>{});vObs.disconnect()}
+      },{threshold:0.3});
+      vObs.observe(vid);
+    }
+
+    // Quote parallax — rises on scroll, stops before hitting video-label
+    const qWrap=document.querySelector('.art-quote-text');
+    const qText=qWrap&&qWrap.querySelector('.pull-quote');
+    const vLabel=document.querySelector('.video-label');
+    if(qText&&vLabel){
       addEventListener('scroll',()=>{
         requestAnimationFrame(()=>{
-          const rect=quoteEl.getBoundingClientRect();
+          const rect=qWrap.getBoundingClientRect();
           const progress=(rect.top+rect.height/2-innerHeight/2)/innerHeight;
-          if(qText)qText.style.transform=`translateY(${60+progress*-120}px)`;
+          // Text rises as you scroll past — moves UP, never toward video-label
+          const y=10+progress*30;
+          qText.style.transform=`translateY(${y}px)`;
         });
       },{passive:true});
     }
