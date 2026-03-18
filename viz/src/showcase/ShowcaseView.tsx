@@ -5,7 +5,7 @@ const GOLD_RGB = '150, 135, 95';
 
 /**
  * ShowcaseView — a single-screen iPhone-optimized hero for VC demos.
- * "Whiteshoe" + tagline + pulsing TALK orb. Tap orb to enter demo.
+ * "Lavern" + tagline + pulsing TALK orb. Tap orb to enter demo.
  * Route: #/showcase
  */
 export default function ShowcaseView({ onTap }: { onTap?: () => void }) {
@@ -24,7 +24,7 @@ export default function ShowcaseView({ onTap }: { onTap?: () => void }) {
         <div style={{ flex: 1.2 }} />
 
         {/* Firm name */}
-        <h1 style={S.title}>WHITESHOE</h1>
+        <h1 style={S.title}>LAVERN</h1>
         <div style={S.subtitle}>THE AGENTIC LAW FIRM</div>
         <div style={S.divider} />
         <p style={S.tagline}>Talk to our legal agent</p>

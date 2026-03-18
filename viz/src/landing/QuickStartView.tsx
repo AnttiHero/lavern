@@ -4,7 +4,7 @@
  * One generous input card. Bold serif heading. Everything else
  * inside the card's bottom bar. Extreme restraint.
  *
- * v2: "More Whiteshoe" — tier hints, shimmer buttons, stronger
+ * v2: "More Lavern" — tier hints, shimmer buttons, stronger
  *     texture, decorative rule, card elevation.
  *
  * Inspired by Cowork's "one thing" design, but with
@@ -15,7 +15,7 @@ import { useState, useCallback, useContext, useEffect, useRef } from 'react';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 import { cn } from '../utils/cn.js';
 import { UserContext } from '../auth/UserContext.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 import { DocumentList } from '../briefing/components/DocumentList.js';
 import { useDocumentUpload } from '../briefing/hooks/useDocumentUpload.js';
 import { useCoworkFolder } from '../cowork/useCoworkFolder.js';
@@ -78,7 +78,7 @@ function ShimmerButton({
           className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-            animation: 'whiteshoeShimmer 0.6s ease forwards',
+            animation: 'lavernShimmer 0.6s ease forwards',
           }}
         />
       )}
@@ -586,7 +586,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
                   className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
                   style={{
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                    animation: 'whiteshoeShimmer 0.6s ease forwards',
+                    animation: 'lavernShimmer 0.6s ease forwards',
                   }}
                 />
               )}
@@ -758,7 +758,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
           </h3>
           <p className="text-[13px] font-sans text-text-muted mt-2 leading-relaxed tracking-[0.15px]">
             Client intake. Guided briefing with AI interviewer. Strategy conference.
-            Hand-picked team selection. The complete Whiteshoe experience.
+            Hand-picked team selection. The complete Lavern experience.
           </p>
         </div>
         <div className="shrink-0 w-12 h-12 rounded-full border-[1.5px] border-border flex items-center justify-center transition-[border-color] duration-300 ease-in-out">
@@ -766,7 +766,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
         </div>
       </div>
 
-      {/* ── The Whiteshoe Challenge ─────────────────────── */}
+      {/* ── The Lavern Challenge ─────────────────────── */}
       {onChallenge && (
         <div
           className={cn(
@@ -805,7 +805,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
               className="text-[22px] font-light m-0 tracking-tight"
               style={{ fontFamily: fonts.serif, color: '#B8960B' }}
             >
-              The Whiteshoe Challenge
+              The Lavern Challenge
             </h3>
             <p
               className="text-[13px] mt-2 leading-relaxed tracking-[0.15px]"
@@ -872,7 +872,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
         className="relative z-2 mt-auto pt-16 pb-8 text-center flex flex-col items-center gap-4"
         style={{ animation: 'qsFadeIn 0.4s ease 1s both' }}
       >
-        <WhiteshoeIlluminated
+        <LavernIlluminated
           color={colors.textDim}
           glow="rgba(150, 135, 95, 0.4)"
           style={{ fontSize: 9, letterSpacing: 4 }}

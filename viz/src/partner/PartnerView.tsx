@@ -462,7 +462,7 @@ export default function PartnerView({ onSessionCreated, onManualFlow, onBack, is
                     <span style={S.casePricingLabel}>~{c.billableHours} billable hours</span>
                     <span style={S.casePricingStrike}>{c.lawFirmCost}</span>
                   </div>
-                  <div style={S.casePricingWhiteshoe}>
+                  <div style={S.casePricingLavern}>
                     <span style={S.casePricingWsLabel}>{c.team} specialist agents</span>
                     <span style={S.casePricingValue}>{c.cost}</span>
                   </div>
@@ -1113,7 +1113,7 @@ const S: Record<string, React.CSSProperties> = {
     color: '#bbb',
     textDecoration: 'line-through',
   } as React.CSSProperties,
-  casePricingWhiteshoe: {
+  casePricingLavern: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'baseline',

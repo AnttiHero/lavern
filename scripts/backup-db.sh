@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 #
-# Whiteshoe — SQLite Database Backup
+# Lavern — SQLite Database Backup
 #
 # Creates a timestamped backup of the production database using SQLite's
 # built-in .backup command (safe for concurrent reads/writes).
 #
 # Usage:
-#   ./scripts/backup-db.sh                          # Default: ./data/whiteshoe.db → ./backups/
-#   ./scripts/backup-db.sh /path/to/whiteshoe.db       # Custom source path
+#   ./scripts/backup-db.sh                          # Default: ./data/lavern.db → ./backups/
+#   ./scripts/backup-db.sh /path/to/lavern.db       # Custom source path
 #   DB_BACKUP_DIR=/mnt/nas/backups ./scripts/backup-db.sh  # Custom backup dir
 #
 # Retention: Keeps last 30 daily backups, deletes older ones.
 #
 # Cron example (daily at 3 AM):
-#   0 3 * * * /opt/whiteshoe/scripts/backup-db.sh >> /var/log/whiteshoe-backup.log 2>&1
+#   0 3 * * * /opt/lavern/scripts/backup-db.sh >> /var/log/lavern-backup.log 2>&1
 
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────────────────
 
-DB_PATH="${1:-./data/whiteshoe.db}"
+DB_PATH="${1:-./data/lavern.db}"
 BACKUP_DIR="${DB_BACKUP_DIR:-./backups}"
 RETAIN_DAYS="${DB_BACKUP_RETAIN_DAYS:-30}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="${BACKUP_DIR}/whiteshoe_${TIMESTAMP}.db"
+BACKUP_FILE="${BACKUP_DIR}/lavern_${TIMESTAMP}.db"
 
 # ── Validation ───────────────────────────────────────────────────────────
 
@@ -58,12 +58,12 @@ fi
 
 # ── Rotate old backups ───────────────────────────────────────────────────
 
-DELETED=$(find "$BACKUP_DIR" -name "whiteshoe_*.db" -mtime +"$RETAIN_DAYS" -delete -print | wc -l)
+DELETED=$(find "$BACKUP_DIR" -name "lavern_*.db" -mtime +"$RETAIN_DAYS" -delete -print | wc -l)
 if [ "$DELETED" -gt 0 ]; then
   echo "[BACKUP] Rotated $DELETED backup(s) older than $RETAIN_DAYS days"
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────────
 
-TOTAL=$(find "$BACKUP_DIR" -name "whiteshoe_*.db" | wc -l)
+TOTAL=$(find "$BACKUP_DIR" -name "lavern_*.db" | wc -l)
 echo "[BACKUP] Total backups retained: $TOTAL"

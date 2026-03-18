@@ -1,10 +1,10 @@
 /**
- * Challenge Routes — The Whiteshoe Challenge.
+ * Challenge Routes — The Lavern Challenge.
  *
  * POST /api/challenge — Upload two documents, get a blind comparison from Sonnet.
  *
  * Simple: no sessions, no workflows, no waiting.
- * User uploads two documents (Whiteshoe-created + challenger),
+ * User uploads two documents (Lavern-created + challenger),
  * Sonnet scores both blind, returns scores. One API call. ~5 seconds.
  */
 
@@ -21,8 +21,8 @@ import {
 // ── Schema ───────────────────────────────────────────────────────────────
 
 const ChallengeSchema = z.object({
-  /** Full text of the Whiteshoe-created document. */
-  whiteshoeText: z.string().min(50).max(200_000),
+  /** Full text of the Lavern-created document. */
+  lavernText: z.string().min(50).max(200_000),
   /** Full text of the human-created document. */
   humanText: z.string().min(50).max(200_000),
 });
@@ -43,8 +43,8 @@ interface ComparisonResult {
   dimensions: ComparisonDimension[];
   overallA: number;
   overallB: number;
-  assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' };
-  winner: 'human' | 'whiteshoe' | 'tie';
+  assignment: { A: 'human' | 'lavern'; B: 'human' | 'lavern' };
+  winner: 'human' | 'lavern' | 'tie';
   summary: string;
 }
 
@@ -69,12 +69,12 @@ export function registerChallengeRoutes(
     if (!body) return;
 
     // Randomly assign A/B — coin flip so the judge doesn't know which is which
-    const whiteshoeIsA = Math.random() > 0.5;
-    const docA = whiteshoeIsA ? body.whiteshoeText : body.humanText;
-    const docB = whiteshoeIsA ? body.humanText : body.whiteshoeText;
-    const assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' } = {
-      A: whiteshoeIsA ? 'whiteshoe' : 'human',
-      B: whiteshoeIsA ? 'human' : 'whiteshoe',
+    const lavernIsA = Math.random() > 0.5;
+    const docA = lavernIsA ? body.lavernText : body.humanText;
+    const docB = lavernIsA ? body.humanText : body.lavernText;
+    const assignment: { A: 'human' | 'lavern'; B: 'human' | 'lavern' } = {
+      A: lavernIsA ? 'lavern' : 'human',
+      B: lavernIsA ? 'human' : 'lavern',
     };
 
     try {
@@ -156,13 +156,13 @@ export function registerChallengeRoutes(
       const overallB = Number.isFinite(rawB) ? Math.round(Math.max(0, Math.min(100, rawB))) : 0;
 
       // Determine winner
-      const whiteshoeScore = assignment.A === 'whiteshoe' ? overallA : overallB;
+      const lavernScore = assignment.A === 'lavern' ? overallA : overallB;
       const humanScore = assignment.A === 'human' ? overallA : overallB;
 
-      let winner: 'human' | 'whiteshoe' | 'tie';
-      if (whiteshoeScore > humanScore) {
-        winner = 'whiteshoe';
-      } else if (humanScore > whiteshoeScore) {
+      let winner: 'human' | 'lavern' | 'tie';
+      if (lavernScore > humanScore) {
+        winner = 'lavern';
+      } else if (humanScore > lavernScore) {
         winner = 'human';
       } else {
         winner = 'tie';

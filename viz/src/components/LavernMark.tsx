@@ -1,5 +1,5 @@
 /**
- * WhiteshoeMark — The Whiteshoe "W" logo.
+ * LavernMark — The Lavern "W" logo.
  *
  * A single serif "W" rendered in Cormorant Garamond.
  * Appears in the upper-left corner of every page.
@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 
-interface WhiteshoeMarkProps {
+interface LavernMarkProps {
   /** Font size of the W in pixels. Default 28. */
   size?: number;
   /** Navigate on click. Default: go to landing. */
@@ -18,7 +18,7 @@ interface WhiteshoeMarkProps {
   hideCursor?: boolean;
 }
 
-export function WhiteshoeMark({ size = 28, onClick, hideCursor }: WhiteshoeMarkProps) {
+export function LavernMark({ size = 28, onClick, hideCursor }: LavernMarkProps) {
   const [hovered, setHovered] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +60,7 @@ export function WhiteshoeMark({ size = 28, onClick, hideCursor }: WhiteshoeMarkP
         transition: 'opacity 0.3s ease',
         userSelect: 'none' as const,
       }}
-      aria-label="Whiteshoe — Home"
+      aria-label="Lavern — Home"
     >
       W
     </button>

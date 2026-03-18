@@ -4,7 +4,7 @@
  */
 
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
-import { WhiteshoeIlluminated } from '../../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../../components/LavernIlluminated.js';
 
 interface Props {
   matterNumber?: string;
@@ -24,8 +24,8 @@ export function DeliveryHeader({ matterNumber, matterType, jurisdiction, onBack,
         onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
       >{'\u2190'} Back</button>
       <div style={styles.center}>
-        <div style={styles.logoType}><WhiteshoeIlluminated color={colors.textMuted} /></div>
-        <h1 style={styles.title}>Whiteshoe <span style={{ fontStyle: 'italic' }}>Delivery</span></h1>
+        <div style={styles.logoType}><LavernIlluminated color={colors.textMuted} /></div>
+        <h1 style={styles.title}>Lavern <span style={{ fontStyle: 'italic' }}>Delivery</span></h1>
         {matterNumber && (
           <div style={styles.matterBadge}>
             {matterNumber}

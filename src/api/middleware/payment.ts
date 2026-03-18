@@ -77,13 +77,13 @@ function buildPaymentRequirements(
       network: 'base',
       maxAmountRequired: usdcAmount,
       resource: `${config.baseUrl}/api/engage`,
-      description: `Whiteshoe legal analysis — ${profile.label} tier (up to $${maxCostUsd} USDC)`,
+      description: `Lavern legal analysis — ${profile.label} tier (up to $${maxCostUsd} USDC)`,
       mimeType: 'application/json',
       payTo: config.x402RecipientAddress || '0x0000000000000000000000000000000000000000',
       maxTimeoutSeconds: 300,
       asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       extra: {
-        name: 'Whiteshoe Legal AI',
+        name: 'Lavern Legal AI',
         version: config.version,
       },
     }],

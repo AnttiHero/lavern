@@ -5,7 +5,7 @@
  *   1. About You       — name, firm, jurisdiction
  *   2. Default Settings — workflow, intensity, budget, yolo toggle
  *   3. Custom Instructions — free-text appended to every briefing memo
- *   4. Whiteshoe's Soul — personality, voice, principles that shape agent behavior
+ *   4. Lavern's Soul — personality, voice, principles that shape agent behavior
  *   5. Saved Teams     — reusable team presets
  *
  * Auto-saves on every change (debounced 500ms via React state → localStorage).
@@ -71,7 +71,7 @@ export default function MyPageView({ onBack }: Props) {
       </button>
 
       {/* Page title */}
-      <h1 style={styles.pageTitle}>Whiteshoe <span style={{ fontStyle: 'italic' }}>Profile</span></h1>
+      <h1 style={styles.pageTitle}>Lavern <span style={{ fontStyle: 'italic' }}>Profile</span></h1>
       <p style={styles.pageSub}>
         Your preferences persist across engagements. Everything saves automatically.
       </p>
@@ -272,7 +272,7 @@ export default function MyPageView({ onBack }: Props) {
         </span>
       </div>
 
-      {/* ── Section 4: Whiteshoe's Soul ──────────────────────────────── */}
+      {/* ── Section 4: Lavern's Soul ──────────────────────────────── */}
       <div style={styles.soulContainer}>
         <div style={styles.soulInner}>
           {/* Decorative W watermark */}
@@ -280,7 +280,7 @@ export default function MyPageView({ onBack }: Props) {
 
           <div style={styles.soulLabel}>Soul</div>
           <h2 style={styles.soulHeading}>
-            What kind of firm<br />is Whiteshoe <em>for you?</em>
+            What kind of firm<br />is Lavern <em>for you?</em>
           </h2>
           <p style={styles.soulSub}>
             Voice. Principles. Values. The character that shapes every decision your agents make.

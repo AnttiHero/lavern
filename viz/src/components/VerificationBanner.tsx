@@ -21,8 +21,8 @@ function ensureKeyframes() {
   style.id = STYLE_ID;
   style.textContent = `
     @keyframes shemVerifySlideDown {
-      from { transform: translateY(-100%); opacity: 0; }
-      to   { transform: translateY(0);     opacity: 1; }
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);     opacity: 1; }
     }
     @keyframes shemVerifyPulse {
       0%, 100% { opacity: 1; }
@@ -109,7 +109,7 @@ export function VerificationBanner() {
       <div style={styles.content}>
         <span style={styles.dot} />
         <span style={styles.text}>
-          Please verify your email to use Whiteshoe.
+          Please verify your email to use Lavern.
           {' '}
           Check your inbox for a verification link.
         </span>
@@ -136,7 +136,7 @@ export function VerificationBanner() {
         style={styles.dismiss}
         aria-label="Dismiss verification banner"
       >
-        \u2715
+        {'\u2715'}
       </button>
     </div>
   );
@@ -145,21 +145,27 @@ export function VerificationBanner() {
 const styles: Record<string, React.CSSProperties> = {
   banner: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
+    bottom: 32,
+    left: '50%',
+    transform: 'translateX(-50%)',
     zIndex: 10000,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '8px 20px',
-    backgroundColor: `rgba(184, 134, 11, 0.08)`,
-    borderBottom: `1px solid rgba(184, 134, 11, 0.2)`,
+    gap: 16,
+    padding: '12px 20px',
+    backgroundColor: 'rgba(20,20,20,0.9)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 100,
     fontFamily: fonts.sans,
     fontSize: 12,
-    color: colors.warning,
+    color: 'rgba(250,249,246,0.6)',
     letterSpacing: 0.3,
     animation: 'shemVerifySlideDown 350ms ease-out',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    maxWidth: 'calc(100vw - 48px)',
   },
   content: {
     display: 'flex',
@@ -168,33 +174,34 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap' as const,
   },
   dot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: '50%',
-    backgroundColor: colors.warning,
+    backgroundColor: '#D49060',
     animation: 'shemVerifyPulse 2s ease-in-out infinite',
     flexShrink: 0,
   },
   text: {
-    fontWeight: 500,
+    fontWeight: 400,
     lineHeight: 1.5,
+    whiteSpace: 'nowrap' as const,
   },
   errorHint: {
     fontSize: 11,
-    color: colors.danger,
+    color: '#D49060',
     fontWeight: 500,
   },
   resendBtn: {
     background: 'none',
-    border: `1px solid rgba(184, 134, 11, 0.35)`,
-    borderRadius: 4,
-    color: colors.warning,
-    fontSize: 11,
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 100,
+    color: 'rgba(250,249,246,0.7)',
+    fontSize: 10,
     fontFamily: fonts.sans,
-    fontWeight: 600,
-    padding: '3px 10px',
+    fontWeight: 500,
+    padding: '4px 14px',
     lineHeight: 1.4,
-    letterSpacing: 0.3,
+    letterSpacing: 1,
     textTransform: 'uppercase' as const,
     whiteSpace: 'nowrap' as const,
     transition: 'border-color 150ms, opacity 150ms',
@@ -203,12 +210,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    color: colors.warning,
-    fontSize: 14,
-    padding: '2px 6px',
+    color: 'rgba(250,249,246,0.3)',
+    fontSize: 13,
+    padding: '2px 4px',
     borderRadius: 4,
     lineHeight: 1,
-    opacity: 0.7,
     flexShrink: 0,
   },
 };

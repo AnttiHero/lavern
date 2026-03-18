@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Whiteshoe Load Test — simulates 50 concurrent users through the full lifecycle.
+ * Lavern Load Test — simulates 50 concurrent users through the full lifecycle.
  *
  * Usage:
  *   npx tsx scripts/load-test.ts [base_url] [--users N] [--mock]
@@ -92,7 +92,7 @@ async function timedFetch(
 
 function parseCookie(headers: Headers): string {
   const setCookie = headers.get('set-cookie') ?? '';
-  const match = setCookie.match(/whiteshoe_token=([^;]+)/);
+  const match = setCookie.match(/lavern_token=([^;]+)/);
   return match ? match[1] : '';
 }
 
@@ -169,7 +169,7 @@ async function createSession(user: UserContext): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `whiteshoe_token=${user.cookie}`,
+        Cookie: `lavern_token=${user.cookie}`,
       },
       body: JSON.stringify({
         request: {
@@ -251,7 +251,7 @@ async function pollSession(user: UserContext): Promise<string | null> {
     'poll_status',
     `${BASE}/api/sessions/${user.sessionId}`,
     {
-      headers: { Cookie: `whiteshoe_token=${user.cookie}` },
+      headers: { Cookie: `lavern_token=${user.cookie}` },
     },
   );
   user.timings.push(timing);
@@ -283,7 +283,7 @@ async function approveGate(user: UserContext): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `whiteshoe_token=${user.cookie}`,
+        Cookie: `lavern_token=${user.cookie}`,
       },
       body: JSON.stringify({ decision: 'approve', notes: 'load test auto-approve' }),
     },
@@ -312,7 +312,7 @@ async function cancelSession(user: UserContext): Promise<void> {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `whiteshoe_token=${user.cookie}`,
+        Cookie: `lavern_token=${user.cookie}`,
       },
       body: JSON.stringify({ reason: 'load test cleanup' }),
     },
@@ -343,7 +343,7 @@ async function deleteAccount(user: UserContext): Promise<void> {
     {
       method: 'DELETE',
       headers: {
-        Cookie: `whiteshoe_token=${user.cookie}`,
+        Cookie: `lavern_token=${user.cookie}`,
         'X-Confirm-Delete': 'permanently-delete-my-account',
       },
     },
@@ -384,7 +384,7 @@ async function runUserLifecycle(user: UserContext): Promise<void> {
 
 async function run(): Promise<void> {
   console.log(`\n╔══════════════════════════════════════════════════╗`);
-  console.log(`║  Whiteshoe Load Test                             ║`);
+  console.log(`║  Lavern Load Test                                ║`);
   console.log(`║  Target: ${BASE.padEnd(40)}║`);
   console.log(`║  Users:  ${String(USER_COUNT).padEnd(40)}║`);
   console.log(`╚══════════════════════════════════════════════════╝\n`);
@@ -408,7 +408,7 @@ async function run(): Promise<void> {
   const timestamp = Date.now();
   const users: UserContext[] = Array.from({ length: USER_COUNT }, (_, i) => ({
     index: i,
-    email: `loadtest-${timestamp}-${i}@test.whiteshoe.dev`,
+    email: `loadtest-${timestamp}-${i}@test.lavern.ai`,
     password: `LoadTest!${timestamp}${i}`,
     cookie: '',
     sessionId: null,

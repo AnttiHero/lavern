@@ -1,5 +1,5 @@
 /**
- * WhiteshoeIlluminated — Wordmark with a slow light-sweep effect.
+ * LavernIlluminated — Wordmark with a slow light-sweep effect.
  *
  * A warm highlight band drifts across the letters like sunlight
  * catching veins in stone. Works on both light and dark backgrounds
@@ -17,7 +17,7 @@ interface Props {
   style?: React.CSSProperties;
 }
 
-export function WhiteshoeIlluminated({
+export function LavernIlluminated({
   color = '#1a1a1a',
   glow = '#96875f',
   style,
@@ -30,10 +30,10 @@ export function WhiteshoeIlluminated({
         backgroundSize: '400% 100%',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
-        animation: 'whiteshoeIlluminate 8s ease-in-out infinite',
+        animation: 'lavernIlluminate 8s ease-in-out infinite',
       }}
     >
-      WHITESHOE
+      LAVERN
     </span>
   );
 }

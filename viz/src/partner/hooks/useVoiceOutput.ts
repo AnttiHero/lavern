@@ -18,7 +18,7 @@ export interface UseVoiceOutputReturn {
   stop: () => void;
 }
 
-const STORAGE_KEY = 'whiteshoe-voice-output-enabled';
+const STORAGE_KEY = 'lavern-voice-output-enabled';
 
 function getStoredEnabled(): boolean {
   try {

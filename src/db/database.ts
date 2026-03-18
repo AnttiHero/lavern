@@ -2,7 +2,7 @@
  * Database Layer — SQLite persistence for users, sessions, matters, and knowledge base.
  *
  * Uses better-sqlite3 (synchronous, fast, zero-config).
- * The DB file lives at ./data/whiteshoe.db by default.
+ * The DB file lives at ./data/lavern.db by default.
  *
  * Live sessions stay in-memory (SessionManager handles EventBus, WebSocket).
  * SQLite stores the archive: completed sessions, user accounts, matters.

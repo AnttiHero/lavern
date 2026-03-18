@@ -1,5 +1,5 @@
 /**
- * LoginView — Login / Signup screen for Whiteshoe.
+ * LoginView — Login / Signup screen for Lavern.
  *
  * Same background as the lobby, but with an overlay card.
  * Typography wordmark instead of SVG. Clean, editorial, warm.
@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 import type { AuthUser } from './UserContext.js';
 
 interface Props {
@@ -117,7 +117,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
       {/* Card */}
       <div style={styles.card}>
         {/* Wordmark */}
-        <h1 style={styles.wordmark}><WhiteshoeIlluminated color="rgba(26,26,26,0.8)" /></h1>
+        <h1 style={styles.wordmark}><LavernIlluminated color="rgba(26,26,26,0.8)" /></h1>
 
         {/* Thin rule */}
         <div style={styles.rule} />
@@ -131,7 +131,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
             ? "Enter your email and we'll send a reset link."
             : isSignup
             ? 'Join the agentic law firm.'
-            : 'Sign in to your Whiteshoe account.'}
+            : 'Sign in to your Lavern account.'}
         </p>
 
         {/* Error */}

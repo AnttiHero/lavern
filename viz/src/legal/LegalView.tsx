@@ -23,7 +23,7 @@ export default function LegalView({ page, onBack }: Props) {
 
       <div style={styles.container}>
         <div style={styles.header}>
-          <span style={styles.wordmark}>WHITESHOE</span>
+          <span style={styles.wordmark}>LAVERN</span>
           <div style={styles.rule} />
           <h1 style={styles.title}>
             {isTerms ? 'Terms of Service' : 'Privacy Policy'}
@@ -38,7 +38,7 @@ export default function LegalView({ page, onBack }: Props) {
         <div style={styles.footer}>
           <p style={styles.footerText}>
             Questions? Contact us at{' '}
-            <a href="mailto:legal@whiteshoe.legal" style={styles.link}>legal@whiteshoe.legal</a>
+            <a href="mailto:legal@lavern.legal" style={styles.link}>legal@lavern.legal</a>
           </p>
         </div>
       </div>
@@ -50,7 +50,7 @@ function TermsContent() {
   return (
     <>
       <Section title="1. Service Description">
-        Whiteshoe is an AI-powered legal document analysis platform. Whiteshoe does not provide legal advice.
+        Lavern is an AI-powered legal document analysis platform. Lavern does not provide legal advice.
         All outputs should be reviewed by qualified legal professionals before reliance.
       </Section>
 
@@ -65,7 +65,7 @@ function TermsContent() {
       </Section>
 
       <Section title="4. Billable Hours & Payments">
-        Whiteshoe uses a credit system measured in "billable hours." Purchased hours never expire.
+        Lavern uses a credit system measured in "billable hours." Purchased hours never expire.
         All payments are processed securely through Stripe. Refunds are handled on a case-by-case basis.
       </Section>
 
@@ -75,18 +75,18 @@ function TermsContent() {
       </Section>
 
       <Section title="6. Acceptable Use">
-        You agree not to use Whiteshoe for any unlawful purpose, to attempt to circumvent security measures,
+        You agree not to use Lavern for any unlawful purpose, to attempt to circumvent security measures,
         or to reverse-engineer the service.
       </Section>
 
       <Section title="7. Limitation of Liability">
-        Whiteshoe is provided "as is." We make no warranties regarding the accuracy or completeness
+        Lavern is provided "as is." We make no warranties regarding the accuracy or completeness
         of any analysis. Our total liability is limited to the amount you have paid us in the
         preceding 12 months.
       </Section>
 
       <Section title="8. Disclaimer">
-        Whiteshoe is a legal technology tool, not a law firm. No attorney-client relationship is created
+        Lavern is a legal technology tool, not a law firm. No attorney-client relationship is created
         by using our service. Always consult a qualified legal professional for legal advice.
       </Section>
 
@@ -114,7 +114,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="2. How We Use Your Data">
-        Your data is used exclusively to provide the Whiteshoe service.
+        Your data is used exclusively to provide the Lavern service.
         We do not sell your personal data. We do not use your documents to train AI models.
       </Section>
 
@@ -143,7 +143,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="7. Cookies">
-        We use a single HttpOnly authentication cookie (whiteshoe_token) for session management.
+        We use a single HttpOnly authentication cookie (lavern_token) for session management.
         We do not use tracking cookies or third-party analytics.
       </Section>
 
@@ -153,7 +153,7 @@ function PrivacyContent() {
       </Section>
 
       <Section title="9. Contact">
-        For privacy-related inquiries, contact us at legal@whiteshoe.legal.
+        For privacy-related inquiries, contact us at legal@lavern.legal.
       </Section>
 
       <div style={styles.placeholder}>

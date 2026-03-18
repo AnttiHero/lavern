@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { useResponsive } from '../hooks/useMediaQuery.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 import { useDeliveryData } from './hooks/useDeliveryData.js';
 import { DeliveryHeader } from './components/DeliveryHeader.js';
 import { TabBar, type DeliveryTab } from './components/TabBar.js';
@@ -179,7 +179,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
             >
-              Back to Whiteshoe
+              Back to Lavern
             </button>
           </>
         ) : (
@@ -196,7 +196,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
       {/* Branding footer */}
       <div style={styles.brandingFooter}>
-        <WhiteshoeIlluminated
+        <LavernIlluminated
           color={colors.textDim}
           glow="rgba(150, 135, 95, 0.4)"
           style={{ fontSize: 9, letterSpacing: 4 }}

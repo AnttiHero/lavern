@@ -141,7 +141,7 @@ function ensureSystemUser(): void {
     db.prepare(`
       INSERT INTO users (id, email, password_hash, display_name, firm_name, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(SYSTEM_USER_ID, '__system__@whiteshoe.internal', 'NOLOGIN', 'Whiteshoe System', 'Whiteshoe', now, now);
+    `).run(SYSTEM_USER_ID, '__system__@lavern.internal', 'NOLOGIN', 'Lavern System', 'Lavern', now, now);
     console.log('Created __system__ user.');
   }
 }
@@ -937,7 +937,7 @@ async function main(): Promise<void> {
   const anySpecific = Object.values(flags).some(Boolean);
   const all = !anySpecific; // No specific flag = seed everything
 
-  console.log('Whiteshoe Knowledge Base Seeder');
+  console.log('Lavern Knowledge Base Seeder');
   console.log('═══════════════════════════════════════════════════════');
 
   initDatabase();

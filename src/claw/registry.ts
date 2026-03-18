@@ -6,7 +6,7 @@
  * between folders is still the same document. Detects changes
  * by comparing stored hash vs current file hash.
  *
- * Persistence: `~/.whiteshoe/state.json` (atomic writes).
+ * Persistence: `~/.lavern/state.json` (atomic writes).
  */
 
 import * as fs from 'node:fs';

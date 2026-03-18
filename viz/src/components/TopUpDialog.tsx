@@ -85,7 +85,7 @@ export function TopUpDialog({ balance = 0, onDismiss, message }: Props) {
           <div style={S.headerSubtitle}>
             {balance > 0
               ? `You have ${balance.toFixed(1)} hours remaining.`
-              : 'Purchase hours to continue using Whiteshoe.'}
+              : 'Purchase hours to continue using Lavern.'}
           </div>
         </div>
 

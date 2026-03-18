@@ -2,9 +2,9 @@
  * Claw Init — Client onboarding.
  *
  * Interactive flow that creates the client profile at
- * `~/.whiteshoe/profile.json`. The firm's understanding of who you are.
+ * `~/.lavern/profile.json`. The firm's understanding of who you are.
  *
- * "Welcome to Whiteshoe. Let's get to know you."
+ * "Welcome to Lavern. Let's get to know you."
  */
 
 import * as fs from 'node:fs';
@@ -49,7 +49,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
 
   try {
     console.log('\n═══════════════════════════════════════════════════════');
-    console.log('  WHITESHOE — CLAW MODE SETUP');
+    console.log('  LAVERN — CLAW MODE SETUP');
     console.log('  Welcome to the firm. Let\'s get to know you.');
     console.log('═══════════════════════════════════════════════════════\n');
 
@@ -163,7 +163,7 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
     console.log(`  Budget: $${totalUsd.toFixed(2)} ($${perDocumentMaxUsd.toFixed(2)} per document)`);
     if (ethicalMode) console.log('  \uD83D\uDEE1\uFE0F  Ethical Mode: ON');
     console.log('───────────────────────────────────────────────────────');
-    console.log('\n  Run `whiteshoe claw start` to begin.\n');
+    console.log('\n  Run `lavern claw start` to begin.\n');
 
     return profile;
   } finally {

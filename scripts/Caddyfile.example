@@ -1,9 +1,9 @@
-# Whiteshoe — Reverse proxy with automatic HTTPS
+# Lavern — Reverse proxy with automatic HTTPS
 #
 # Place this at /etc/caddy/Caddyfile on the Mac Mini.
 # Caddy will auto-obtain and renew TLS certificates via Let's Encrypt.
 #
-# Replace whiteshoe.example.com with your actual domain.
+# Replace lavern.example.com with your actual domain.
 # For LAN-only: use `mkcert` for a self-signed cert.
 #
 # Install: brew install caddy
@@ -11,6 +11,6 @@
 #
 # Set SHEM_TRUST_PROXY=true in .env when running behind this proxy.
 
-whiteshoe.example.com {
+lavern.example.com {
     reverse_proxy localhost:3000
 }

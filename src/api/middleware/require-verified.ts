@@ -40,7 +40,7 @@ export function createRequireVerifiedHook(
       return reply.status(403).send({
         error: 'Email verification required',
         code: 'EMAIL_NOT_VERIFIED',
-        detail: 'Please verify your email address before using Whiteshoe.',
+        detail: 'Please verify your email address before using Lavern.',
       });
     }
   };

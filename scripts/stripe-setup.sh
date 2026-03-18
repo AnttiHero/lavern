@@ -23,7 +23,7 @@ warn()  { echo -e "${YELLOW}⚠${NC}  $1"; }
 fail()  { echo -e "${RED}✗${NC}  $1"; }
 
 echo ""
-echo -e "${BOLD}Whiteshoe — Stripe Setup${NC}"
+echo -e "${BOLD}Lavern — Stripe Setup${NC}"
 echo "────────────────────────────────────"
 echo ""
 

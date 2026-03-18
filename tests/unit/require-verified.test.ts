@@ -141,7 +141,7 @@ describe('createRequireVerifiedHook', () => {
     expect(reply.send).toHaveBeenCalledWith({
       error: 'Email verification required',
       code: 'EMAIL_NOT_VERIFIED',
-      detail: 'Please verify your email address before using Whiteshoe.',
+      detail: 'Please verify your email address before using Lavern.',
     });
   });
 });

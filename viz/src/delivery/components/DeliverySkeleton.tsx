@@ -76,7 +76,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 300,
     color: colors.text,
     lineHeight: 1,
-    animation: 'whiteshoeLoadBreath 2.4s ease-in-out infinite',
+    animation: 'lavernLoadBreath 2.4s ease-in-out infinite',
   },
   statusText: {
     fontFamily: fonts.sans,

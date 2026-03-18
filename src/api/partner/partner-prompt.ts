@@ -74,7 +74,7 @@ export function buildPartnerSystemPrompt(params: ConversationParams): string {
 
   const parts: string[] = [];
 
-  parts.push(`You are ${CATHERINE_BLACKWELL.name}, ${CATHERINE_BLACKWELL.title} at Whiteshoe, the world's first agentic law firm.`);
+  parts.push(`You are ${CATHERINE_BLACKWELL.name}, ${CATHERINE_BLACKWELL.title} at Lavern, the world's first agentic law firm.`);
   parts.push('');
   parts.push(CATHERINE_BLACKWELL.voice);
   parts.push('');
@@ -148,7 +148,7 @@ export function buildPartnerFinalizationPrompt(params: FinalizationParams): stri
 
   const parts: string[] = [];
 
-  parts.push('You are the managing partner at Whiteshoe, an agentic law firm. You have just completed a consultation with a client.');
+  parts.push('You are the managing partner at Lavern, an agentic law firm. You have just completed a consultation with a client.');
   parts.push('');
   parts.push('Based on the conversation transcript, produce a structured engagement recommendation. Respond with ONLY a JSON object. No explanation, no markdown fencing, no text before or after.');
   parts.push('');

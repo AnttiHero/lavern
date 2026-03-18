@@ -9,7 +9,7 @@ import type { DocumentStyle } from '../assembly/format-converter.js';
 
 // ── Client Profile ──────────────────────────────────────────────────────
 
-/** Created during `whiteshoe claw init`. The firm's understanding of who you are. */
+/** Created during `lavern claw init`. The firm's understanding of who you are. */
 export interface ClawProfile {
   company: string;
   jurisdiction: string;
@@ -174,7 +174,7 @@ export interface ClawManifest {
 // ── Config ──────────────────────────────────────────────────────────────
 
 export interface ClawConfig {
-  dir: string;                 // Root directory (~/.whiteshoe)
+  dir: string;                 // Root directory (~/.lavern)
   profile: ClawProfile;
   budget: number;              // Override budget
   perDocBudget: number;

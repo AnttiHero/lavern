@@ -36,10 +36,10 @@ export const config = {
   memoryDir: process.env.SHEM_MEMORY_DIR ?? '.shem/memory',
   reportsDir: process.env.SHEM_REPORTS_DIR ?? '.shem/reports',
   baselinesDir: process.env.SHEM_BASELINES_DIR ?? '.shem/baselines',
-  dbPath: process.env.SHEM_DB_PATH ?? './data/whiteshoe.db',
+  dbPath: process.env.SHEM_DB_PATH ?? './data/lavern.db',
 
   // ── Provider ──────────────────────────────────────────────────────────
-  provider: (process.env.MARBLE_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral',
+  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral',
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-6',
@@ -101,18 +101,18 @@ export const config = {
   // ── Email (Resend) ─────────────────────────────────────────────────────
   email: {
     resendApiKey: process.env.RESEND_API_KEY ?? '',
-    from: process.env.MARBLE_EMAIL_FROM ?? 'Whiteshoe <hello@whiteshoe.law>',
-    appUrl: process.env.MARBLE_APP_URL ?? 'http://localhost:5173',
+    from: process.env.LAVERN_EMAIL_FROM ?? 'Lavern <hello@lavern.ai>',
+    appUrl: process.env.LAVERN_APP_URL ?? 'http://localhost:5173',
   },
 
   // ── Auth Tokens & Recovery ────────────────────────────────────────────
   auth: {
     /** Password reset token TTL in ms (default: 1 hour) */
-    resetTokenTtlMs: safeInt(process.env.MARBLE_RESET_TOKEN_TTL_MS, 60 * 60 * 1000),
+    resetTokenTtlMs: safeInt(process.env.LAVERN_RESET_TOKEN_TTL_MS, 60 * 60 * 1000),
     /** Email verification token TTL in ms (default: 24 hours) */
-    verifyTokenTtlMs: safeInt(process.env.MARBLE_VERIFY_TOKEN_TTL_MS, 24 * 60 * 60 * 1000),
+    verifyTokenTtlMs: safeInt(process.env.LAVERN_VERIFY_TOKEN_TTL_MS, 24 * 60 * 60 * 1000),
     /** Low balance warning threshold in hours (default: 5h) */
-    lowBalanceThresholdHours: safeFloat(process.env.MARBLE_LOW_BALANCE_HOURS, 5),
+    lowBalanceThresholdHours: safeFloat(process.env.LAVERN_LOW_BALANCE_HOURS, 5),
     /** Rate limit for forgot-password (per window, default: 3) */
     rateLimitForgotPasswordMax: safeInt(process.env.SHEM_RATE_LIMIT_FORGOT_PASSWORD_MAX, 3),
     /** Rate limit for resend-verification (per window, default: 3) */
@@ -121,24 +121,24 @@ export const config = {
 
   // ── Voice (Deepgram STT + ElevenLabs TTS) ─────────────────────────────
   voice: {
-    deepgramApiKey: process.env.MARBLE_DEEPGRAM_API_KEY ?? '',
-    elevenlabsApiKey: process.env.MARBLE_ELEVENLABS_API_KEY ?? '',
-    elevenlabsVoiceId: process.env.MARBLE_ELEVENLABS_VOICE_ID ?? 'EXAVITQu4vr4xnSDxMaL', // "Sarah" — warm female
-    elevenlabsModelId: process.env.MARBLE_ELEVENLABS_MODEL_ID ?? 'eleven_turbo_v2_5',
+    deepgramApiKey: process.env.LAVERN_DEEPGRAM_API_KEY ?? '',
+    elevenlabsApiKey: process.env.LAVERN_ELEVENLABS_API_KEY ?? '',
+    elevenlabsVoiceId: process.env.LAVERN_ELEVENLABS_VOICE_ID ?? 'EXAVITQu4vr4xnSDxMaL', // "Sarah" — warm female
+    elevenlabsModelId: process.env.LAVERN_ELEVENLABS_MODEL_ID ?? 'eleven_turbo_v2_5',
   },
 
   // ── Billable Hours (v22: Credit System) ────────────────────────────────
   billableHours: {
     /** USD cost per 1 billable hour (default $0.10). 50 hours ≈ $5 of compute. */
-    rate: safeFloat(process.env.MARBLE_BILLABLE_HOUR_RATE, 0.10),
+    rate: safeFloat(process.env.LAVERN_BILLABLE_HOUR_RATE, 0.10),
     /** Welcome hours granted on signup with invite code */
-    welcomeHours: safeInt(process.env.MARBLE_WELCOME_HOURS, 50),
+    welcomeHours: safeInt(process.env.LAVERN_WELCOME_HOURS, 50),
     /** Free trial hours granted on signup without invite code (0 = no trial) */
-    freeTrialHours: safeInt(process.env.MARBLE_FREE_TRIAL_HOURS, 10),
+    freeTrialHours: safeInt(process.env.LAVERN_FREE_TRIAL_HOURS, 10),
     /** When true, signup requires an invite code from the waitlist */
-    waitlistEnabled: process.env.MARBLE_WAITLIST_ENABLED !== 'false',
+    waitlistEnabled: process.env.LAVERN_WAITLIST_ENABLED !== 'false',
     /** Admin key for waitlist management endpoints (X-Admin-Key header) */
-    adminKey: process.env.MARBLE_ADMIN_KEY ?? '',
+    adminKey: process.env.LAVERN_ADMIN_KEY ?? '',
     /** Hour packs — one-time purchases, never expire */
     packs: {
       quick: { hours: 25,  priceEurCents: 500,  label: 'Quick Top-Off' },
@@ -170,28 +170,28 @@ export const config = {
 
   // ── Claw Mode (Law Firm on Retainer) ──────────────────────────────────
   claw: {
-    dir: process.env.MARBLE_CLAW_DIR ?? path.join(os.homedir(), '.whiteshoe'),
-    defaultBudget: safeFloat(process.env.MARBLE_CLAW_BUDGET, 50.0),
-    defaultPerDocBudget: safeFloat(process.env.MARBLE_CLAW_PER_DOC_BUDGET, 10.0),
+    dir: process.env.LAVERN_CLAW_DIR ?? path.join(os.homedir(), '.lavern'),
+    defaultBudget: safeFloat(process.env.LAVERN_CLAW_BUDGET, 50.0),
+    defaultPerDocBudget: safeFloat(process.env.LAVERN_CLAW_PER_DOC_BUDGET, 10.0),
     defaultIntensity: 'standard' as const,
     defaultStyle: 'elegant' as const,
     defaultFormats: ['markdown', 'docx'] as readonly string[],
-    scanIntervalMs: safeInt(process.env.MARBLE_CLAW_SCAN_INTERVAL, 30_000),
+    scanIntervalMs: safeInt(process.env.LAVERN_CLAW_SCAN_INTERVAL, 30_000),
     // Security hardening (v0.8.1)
-    maxFileSizeBytes: safeInt(process.env.MARBLE_CLAW_MAX_FILE_SIZE, 10 * 1024 * 1024),
-    maxDocsPerScan: safeInt(process.env.MARBLE_CLAW_MAX_DOCS_PER_SCAN, 50),
+    maxFileSizeBytes: safeInt(process.env.LAVERN_CLAW_MAX_FILE_SIZE, 10 * 1024 * 1024),
+    maxDocsPerScan: safeInt(process.env.LAVERN_CLAW_MAX_DOCS_PER_SCAN, 50),
     // Notifications
-    webhookUrl: process.env.MARBLE_CLAW_WEBHOOK_URL ?? '',
-    notifyMacOs: process.env.MARBLE_CLAW_MACOS_NOTIFY !== 'false',
+    webhookUrl: process.env.LAVERN_CLAW_WEBHOOK_URL ?? '',
+    notifyMacOs: process.env.LAVERN_CLAW_MACOS_NOTIFY !== 'false',
     /** Notification dedup window in ms (default: 5 minutes) */
-    notifyDedupMs: safeInt(process.env.MARBLE_CLAW_NOTIFY_DEDUP_MS, 5 * 60 * 1000),
+    notifyDedupMs: safeInt(process.env.LAVERN_CLAW_NOTIFY_DEDUP_MS, 5 * 60 * 1000),
     // Local model for confidential documents (Ollama OpenAI-compatible API)
-    localModelUrl: process.env.MARBLE_LOCAL_MODEL_URL ?? 'http://localhost:11434',
-    localModel: process.env.MARBLE_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
-    localAnalysisModel: process.env.MARBLE_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
+    localModelUrl: process.env.LAVERN_LOCAL_MODEL_URL ?? 'http://localhost:11434',
+    localModel: process.env.LAVERN_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
+    localAnalysisModel: process.env.LAVERN_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
     // Heartbeat — periodic check-in (v17)
-    heartbeatEnabled: process.env.MARBLE_CLAW_HEARTBEAT !== 'false',
-    heartbeatIntervalMs: safeInt(process.env.MARBLE_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
+    heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
+    heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
   },
 
   // ── Archive Retention ──────────────────────────────────────────────────
@@ -227,8 +227,8 @@ export function validateProductionConfig(): void {
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     warnings.push('STRIPE_WEBHOOK_SECRET is not set — webhooks will fail signature verification');
   }
-  if (!process.env.MARBLE_ADMIN_KEY) {
-    warnings.push('MARBLE_ADMIN_KEY is not set — admin endpoints disabled');
+  if (!process.env.LAVERN_ADMIN_KEY) {
+    warnings.push('LAVERN_ADMIN_KEY is not set — admin endpoints disabled');
   }
 
   // Detect localhost defaults that should be overridden in production
@@ -239,7 +239,7 @@ export function validateProductionConfig(): void {
     warnings.push('STRIPE_SUCCESS_URL still points to localhost — set to production URL');
   }
   if (config.email.appUrl.includes('localhost')) {
-    warnings.push('MARBLE_APP_URL still points to localhost — set to production URL');
+    warnings.push('LAVERN_APP_URL still points to localhost — set to production URL');
   }
   if (config.baseUrl.includes('localhost')) {
     warnings.push('SHEM_BASE_URL still points to localhost — set to production URL');

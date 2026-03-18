@@ -5,8 +5,8 @@
  * Drop-in replacement for console.error/warn/log/debug — same API surface.
  *
  * File transport (enabled via SHEM_LOG_DIR):
- *   - Daily rotation: whiteshoe-YYYY-MM-DD.log
- *   - Separate error log: whiteshoe-error-YYYY-MM-DD.log
+ *   - Daily rotation: lavern-YYYY-MM-DD.log
+ *   - Separate error log: lavern-error-YYYY-MM-DD.log
  *   - 14-day retention, auto-cleanup
  *   - Gzip compression of rotated files (if available)
  */
@@ -60,8 +60,8 @@ function getStreams(): { logStream: fs.WriteStream | null; errorStream: fs.Write
 
     ensureLogDir();
     currentDate = today;
-    logStream = fs.createWriteStream(path.join(LOG_DIR, `whiteshoe-${today}.log`), { flags: 'a' });
-    errorStream = fs.createWriteStream(path.join(LOG_DIR, `whiteshoe-error-${today}.log`), { flags: 'a' });
+    logStream = fs.createWriteStream(path.join(LOG_DIR, `lavern-${today}.log`), { flags: 'a' });
+    errorStream = fs.createWriteStream(path.join(LOG_DIR, `lavern-error-${today}.log`), { flags: 'a' });
 
     // Rotate old files on day change
     rotateLogFiles();

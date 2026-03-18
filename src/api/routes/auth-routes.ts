@@ -1,7 +1,7 @@
 /**
  * Auth Routes — User signup, login, logout, and profile management.
  *
- * Uses cookie-based auth (whiteshoe_token HttpOnly cookie).
+ * Uses cookie-based auth (lavern_token HttpOnly cookie).
  * Passwords hashed with Node's built-in crypto.scrypt.
  *
  * POST  /api/auth/signup              — Create account
@@ -93,7 +93,7 @@ const ChangePasswordSchema = z.object({
 
 // ── Cookie helpers ───────────────────────────────────────────────────────
 
-const COOKIE_NAME = 'whiteshoe_token';
+const COOKIE_NAME = 'lavern_token';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
 const SECURE_FLAG = process.env.NODE_ENV === 'development' ? '' : '; Secure';
@@ -180,7 +180,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
         user.id,
         config.billableHours.welcomeHours,
         'welcome',
-        `Welcome to Whiteshoe — ${config.billableHours.welcomeHours} billable hours on us.`,
+        `Welcome to Lavern — ${config.billableHours.welcomeHours} billable hours on us.`,
       );
     } else if (config.billableHours.freeTrialHours > 0) {
       creditBillableHours(
@@ -350,7 +350,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const data = exportUserData(user.id);
 
     // Return as JSON (frontend can convert to downloadable ZIP if desired)
-    reply.header('Content-Disposition', 'attachment; filename="whiteshoe-data-export.json"');
+    reply.header('Content-Disposition', 'attachment; filename="lavern-data-export.json"');
     return reply.send({
       exportedAt: new Date().toISOString(),
       user: data.profile ? {

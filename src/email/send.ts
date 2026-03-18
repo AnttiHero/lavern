@@ -47,7 +47,7 @@ function emailWrapper(content: string): string {
 <body style="margin:0;padding:0;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:48px 28px;">
     <div style="text-align:center;margin-bottom:32px;">
-      <span style="font-size:28px;font-weight:300;letter-spacing:8px;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">WHITESHOE</span>
+      <span style="font-size:28px;font-weight:300;letter-spacing:8px;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">LAVERN</span>
     </div>
     ${content}
     <div style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid ${BRAND.border};">
@@ -99,7 +99,7 @@ async function send(payload: EmailPayload): Promise<boolean> {
 export async function sendWaitlistConfirmation(email: string): Promise<boolean> {
   return send({
     to: email,
-    subject: "You're on the Whiteshoe waitlist",
+    subject: "You're on the Lavern waitlist",
     text: "You're on the list. We'll send your invite code when it's your turn.",
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -123,7 +123,7 @@ export async function sendWaitlistConfirmation(email: string): Promise<boolean> 
 export async function sendInviteEmail(email: string, inviteCode: string): Promise<boolean> {
   return send({
     to: email,
-    subject: "Your Whiteshoe invite is ready",
+    subject: "Your Lavern invite is ready",
     text: `Your invite code: ${inviteCode} — Sign up at ${config.email.appUrl} with this code and your email. You'll get 50 free billable hours.`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -131,7 +131,7 @@ export async function sendInviteEmail(email: string, inviteCode: string): Promis
           You're in.
         </h2>
         <p style="margin:0 0 24px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
-          Your invite to Whiteshoe is ready. Use the code below to create your account.
+          Your invite to Lavern is ready. Use the code below to create your account.
         </p>
         <div style="text-align:center;margin:24px 0;padding:20px;background:rgba(201,162,39,0.06);border:1px solid rgba(201,162,39,0.2);border-radius:8px;">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${BRAND.textDim};margin-bottom:8px;">Your Invite Code</div>
@@ -174,7 +174,7 @@ export async function sendPaymentReceiptEmail(
 
   return send({
     to: email,
-    subject: isPack ? `Receipt: ${details.hours}h added to your Whiteshoe account` : `Receipt: ${esc(details.plan ?? '')} plan activated`,
+    subject: isPack ? `Receipt: ${details.hours}h added to your Lavern account` : `Receipt: ${esc(details.plan ?? '')} plan activated`,
     text: `Payment confirmed: ${purchaseDesc} for ${details.amountLabel}.${details.newBalance !== undefined ? ` New balance: ${details.newBalance.toFixed(1)}h.` : ''}`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -206,7 +206,7 @@ export async function sendLowBalanceEmail(
   return send({
     to: email,
     subject: `Low balance: ${details.balance.toFixed(1)} billable hours remaining`,
-    text: `Your Whiteshoe balance is ${details.balance.toFixed(1)} hours. Top up at ${config.email.appUrl}/#/pricing to avoid interruption.`,
+    text: `Your Lavern balance is ${details.balance.toFixed(1)} hours. Top up at ${config.email.appUrl}/#/pricing to avoid interruption.`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
         <h2 style="margin:0 0 16px;font-size:22px;font-weight:300;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">
@@ -230,7 +230,7 @@ export async function sendLowBalanceEmail(
 export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<boolean> {
   return send({
     to: email,
-    subject: 'Reset your Whiteshoe password',
+    subject: 'Reset your Lavern password',
     text: `Reset your password: ${resetUrl} — This link expires in 1 hour.`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -258,7 +258,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
 export async function sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
   return send({
     to: email,
-    subject: 'Verify your Whiteshoe email',
+    subject: 'Verify your Lavern email',
     text: `Verify your email: ${verifyUrl} — This link expires in 24 hours.`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
@@ -275,7 +275,7 @@ export async function sendVerificationEmail(email: string, verifyUrl: string): P
           </a>
         </div>
         <p style="margin:0;font-size:12px;color:${BRAND.textDim};">
-          If you didn't create a Whiteshoe account, you can safely ignore this email.
+          If you didn't create a Lavern account, you can safely ignore this email.
         </p>
       </div>
     `),
@@ -287,8 +287,8 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
   const greeting = esc(displayName ? displayName : 'there');
   return send({
     to: email,
-    subject: "Welcome to Whiteshoe — 50 hours on us",
-    text: `Welcome to Whiteshoe! You have 50 billable hours to start. One hour = $0.10 of compute. Start at ${config.email.appUrl}`,
+    subject: "Welcome to Lavern — 50 hours on us",
+    text: `Welcome to Lavern! You have 50 billable hours to start. One hour = $0.10 of compute. Start at ${config.email.appUrl}`,
     html: emailWrapper(`
       <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
         <h2 style="margin:0 0 16px;font-size:22px;font-weight:300;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">
@@ -297,7 +297,7 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
         <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
           Your account is live. We've credited you
           <strong style="color:${BRAND.gold};">50 billable hours</strong> to explore
-          everything Whiteshoe can do.
+          everything Lavern can do.
         </p>
         <div style="margin:20px 0;padding:16px 20px;background:rgba(201,162,39,0.06);border-radius:8px;border:1px solid rgba(201,162,39,0.12);">
           <div style="font-size:13px;color:${BRAND.textDim};line-height:1.6;">

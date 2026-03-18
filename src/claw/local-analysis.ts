@@ -98,7 +98,7 @@ export async function analyzeLocally(
   const modelName = config.claw.localAnalysisModel || config.claw.localModel;
 
   if (!modelName) {
-    throw new Error('No local model configured. Set MARBLE_LOCAL_MODEL in .env');
+    throw new Error('No local model configured. Set LAVERN_LOCAL_MODEL in .env');
   }
 
   const baseUrl = config.claw.localModelUrl.replace(/\/$/, '');

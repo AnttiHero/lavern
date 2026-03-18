@@ -185,7 +185,7 @@ describe('API Routes Integration', () => {
 
       // Should set auth cookie
       const setCookie = res.headers['set-cookie'] as string;
-      expect(setCookie).toContain('whiteshoe_token=');
+      expect(setCookie).toContain('lavern_token=');
       authCookie = setCookie;
     });
 
@@ -254,7 +254,7 @@ describe('API Routes Integration', () => {
 
       // Save cookie for subsequent requests
       const setCookie = res.headers['set-cookie'] as string;
-      expect(setCookie).toContain('whiteshoe_token=');
+      expect(setCookie).toContain('lavern_token=');
       authCookie = setCookie;
     });
 

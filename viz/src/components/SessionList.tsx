@@ -9,7 +9,7 @@
 import { useState, useCallback, useContext } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
-import { WhiteshoeIlluminated } from './WhiteshoeIlluminated.js';
+import { LavernIlluminated } from './LavernIlluminated.js';
 import { cn } from '../utils/cn.js';
 import type { YoloTier } from '../landing/yolo-config.js';
 
@@ -93,7 +93,7 @@ export function SessionList({ onBeginEngagement, onYoloLaunch }: SessionListProp
       {/* ── Hero ────────────────────────────────────────────────────── */}
       <div className="text-center pt-16 sm:pt-20 lg:pt-[120px] pb-8 sm:pb-12 lg:pb-[60px] max-w-[700px] mx-auto flex flex-col items-center">
         <p className="text-[10px] font-semibold font-sans text-text-muted tracking-[4px] uppercase m-0">
-          <WhiteshoeIlluminated color={colors.textMuted} />
+          <LavernIlluminated color={colors.textMuted} />
         </p>
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[64px] font-light font-serif text-text m-0 mt-4 tracking-tight leading-none">

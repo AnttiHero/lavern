@@ -1,16 +1,16 @@
 /**
- * AgentDocsView — Whiteshoe for Agents.
+ * AgentDocsView — Lavern for Agents.
  *
  * Same dark marble aesthetic as the front door, but the content
  * is data-dense and machine-readable. Serif headlines, monospace
  * data blocks, warm cream on near-black.
  *
- * Still Whiteshoe. Just the back office.
+ * Still Lavern. Just the back office.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 
 interface Props {
   onBack: () => void;
@@ -50,7 +50,7 @@ interface Capabilities {
   quickstart: string[];
 }
 
-// ── Dark palette — Whiteshoe at night ────────────────────────────────
+// ── Dark palette — Lavern at night ────────────────────────────────
 
 const D = {
   bg: '#0A0A0F',
@@ -410,7 +410,7 @@ export default function AgentDocsView({ onBack }: Props) {
         {/* ── Header ─────────────────────────────────────── */}
         <div style={{ ...sty.header, animation: 'agentFadeIn 0.8s ease 0.1s both' }}>
           <h1 style={sty.title}>
-            <WhiteshoeIlluminated color="rgba(250,249,246,0.55)" glow="rgba(250,249,246,0.95)" />
+            <LavernIlluminated color="rgba(250,249,246,0.55)" glow="rgba(250,249,246,0.95)" />
           </h1>
           <p style={sty.subtitle}>for Agents</p>
           <p style={sty.description}>
@@ -420,7 +420,7 @@ export default function AgentDocsView({ onBack }: Props) {
         </div>
 
         {/* ── SIGNAL ──────────────────────────────────── */}
-        <Section label="Why Whiteshoe" delay={0.2}>
+        <Section label="Why Lavern" delay={0.2}>
           <div style={sty.pitch}>
             You handle the reasoning.
             <br />
@@ -794,7 +794,7 @@ export default function AgentDocsView({ onBack }: Props) {
 
         {/* ── Footer ──────────────────────────────────── */}
         <div style={sty.footer}>
-          <WhiteshoeIlluminated color="rgba(250,249,246,0.15)" glow="rgba(250,249,246,0.4)" />
+          <LavernIlluminated color="rgba(250,249,246,0.15)" glow="rgba(250,249,246,0.4)" />
           {capabilities && (
             <>
               <span style={sty.footerDot}>{'\u00b7'}</span>

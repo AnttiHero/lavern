@@ -2,7 +2,7 @@
  * Well-Known Routes — Machine-native discovery endpoints for AI agents.
  *
  * Implements four discovery standards so agents can find, evaluate,
- * and understand Whiteshoe without reading human documentation:
+ * and understand Lavern without reading human documentation:
  *
  *   GET /.well-known/agent.json      — A2A Agent Card (Google/DeepMind standard)
  *   GET /.well-known/ai-plugin.json  — OpenAI Plugin Manifest (ChatGPT Actions)
@@ -40,12 +40,12 @@ function buildAgentCard() {
   }));
 
   return {
-    name: 'Whiteshoe',
+    name: 'Lavern',
     description: 'AI law firm — structured legal intelligence for humans and agents. Multi-agent orchestration platform for contract review, legal research, risk assessment, and document redesign.',
     url: config.baseUrl,
     version: config.version,
     provider: {
-      organization: 'Whiteshoe',
+      organization: 'Lavern',
       url: config.baseUrl,
     },
     capabilities: {
@@ -75,10 +75,10 @@ function buildAgentCard() {
 function buildPluginManifest() {
   return {
     schema_version: 'v1',
-    name_for_human: 'Whiteshoe Legal AI',
-    name_for_model: 'whiteshoe_legal',
+    name_for_human: 'Lavern Legal AI',
+    name_for_model: 'lavern_legal',
     description_for_human: 'AI law firm for contract review, legal research, risk assessment, and document redesign.',
-    description_for_model: 'Whiteshoe is an AI law firm. Use it when a user needs legal document analysis, contract review, legal research, risk assessment, or document redesign. Send structured requests to the /api/engage endpoint. Supports sync and webhook modes. Accepts documents inline or as base64. Returns structured findings, quality signals, and cost.',
+    description_for_model: 'Lavern is an AI law firm. Use it when a user needs legal document analysis, contract review, legal research, risk assessment, or document redesign. Send structured requests to the /api/engage endpoint. Supports sync and webhook modes. Accepts documents inline or as base64. Returns structured findings, quality signals, and cost.',
     auth: {
       type: 'service_http',
       authorization_type: 'bearer',
@@ -90,7 +90,7 @@ function buildPluginManifest() {
       is_user_authenticated: false,
     },
     logo_url: `${config.baseUrl}/dashboard/favicon.svg`,
-    contact_email: 'agents@whiteshoe.law',
+    contact_email: 'agents@lavern.ai',
     legal_info_url: `${config.baseUrl}/llms.txt`,
   };
 }
@@ -111,13 +111,13 @@ function buildOpenApiSpec() {
   return {
     openapi: '3.0.3',
     info: {
-      title: 'Whiteshoe Legal AI — Agent API',
+      title: 'Lavern Legal AI — Agent API',
       description: 'Structured legal intelligence for AI agents. Submit tasks, receive analysis.',
       version: config.version,
-      contact: { email: 'agents@whiteshoe.law' },
+      contact: { email: 'agents@lavern.ai' },
     },
     servers: [
-      { url: config.baseUrl, description: 'Whiteshoe API' },
+      { url: config.baseUrl, description: 'Lavern API' },
     ],
     paths: {
       '/api/engage': {
@@ -343,7 +343,7 @@ function buildOpenApiSpec() {
 
 /**
  * Build llms.txt — a plain text file that tells AI crawlers what
- * Whiteshoe does and where to find machine-readable endpoints.
+ * Lavern does and where to find machine-readable endpoints.
  *
  * @see https://llmstxt.org/
  */
@@ -353,7 +353,7 @@ function buildLlmsTxt(): string {
     .map(t => `  - ${t.id}: ${t.name} — ${t.description}`)
     .join('\n');
 
-  return `# Whiteshoe — AI Law Firm
+  return `# Lavern — AI Law Firm
 
 > Structured legal intelligence for humans and agents.
 > Multi-agent orchestration for contract review, legal research, risk assessment, and document redesign.

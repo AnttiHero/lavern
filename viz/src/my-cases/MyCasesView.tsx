@@ -153,7 +153,7 @@ export default function MyCasesView({ onConnectSession, onConnectReplay, onBack 
           {'\u2190'} Back
         </button>
         <h1 style={styles.title}>
-          Whiteshoe <span style={styles.titleItalic}>Cases</span>
+          Lavern <span style={styles.titleItalic}>Cases</span>
         </h1>
         <button
           style={styles.refreshBtn}

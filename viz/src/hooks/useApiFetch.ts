@@ -1,5 +1,5 @@
 /**
- * API Error Interceptor — Global fetch monitoring for the Whiteshoe SPA.
+ * API Error Interceptor — Global fetch monitoring for the Lavern SPA.
  *
  * Two complementary mechanisms:
  *

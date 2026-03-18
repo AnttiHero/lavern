@@ -17,7 +17,7 @@ export function useTabLock(sessionId: string | undefined): { isLocked: boolean }
 
     let channel: BroadcastChannel;
     try {
-      channel = new BroadcastChannel(`whiteshoe-session-${sessionId}`);
+      channel = new BroadcastChannel(`lavern-session-${sessionId}`);
     } catch {
       // BroadcastChannel constructor can throw in restricted contexts — skip tab locking
       return;

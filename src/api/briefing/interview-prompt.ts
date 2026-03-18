@@ -117,7 +117,7 @@ export function buildInterviewSystemPrompt(params: ConversationPromptParams): st
 
   const parts: string[] = [];
 
-  parts.push(`You are ${persona.name}, ${persona.title} at a legal design firm called Whiteshoe.`);
+  parts.push(`You are ${persona.name}, ${persona.title} at a legal design firm called Lavern.`);
   parts.push('');
   parts.push(persona.voice);
   parts.push('');

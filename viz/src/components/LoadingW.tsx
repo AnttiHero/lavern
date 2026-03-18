@@ -1,5 +1,5 @@
 /**
- * LoadingW — Animated Whiteshoe "W" loading indicator.
+ * LoadingW — Animated Lavern "W" loading indicator.
  *
  * A pulsating serif "W" with a breathing glow. Used as the loading
  * state across all views. The W scales gently and its opacity
@@ -35,7 +35,7 @@ export function LoadingW({ text, size = 64 }: LoadingWProps) {
         color: colors.text,
         lineHeight: 1,
         userSelect: 'none',
-        animation: 'whiteshoeLoadBreath 2.4s ease-in-out infinite',
+        animation: 'lavernLoadBreath 2.4s ease-in-out infinite',
       }}>
         W
       </div>

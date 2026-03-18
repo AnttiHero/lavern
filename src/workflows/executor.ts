@@ -271,7 +271,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   // ── v15: Document Assembly — produce the actual deliverable ────────
   // After the multi-agent pipeline completes, make a focused Claude call
   // to assemble the ACTUAL document from all the structured analysis.
-  // This is what makes Whiteshoe's output better than a single prompt:
+  // This is what makes Lavern's output better than a single prompt:
   // the assembly has ALL the multi-agent intelligence as context.
   try {
     session.assembledDocument = await assembleDocument(session, request);

@@ -37,7 +37,7 @@ export function getMistralClient(): OpenAI {
     const apiKey = config.mistral.apiKey;
     if (!apiKey) {
       throw new Error(
-        'MISTRAL_API_KEY is required when MARBLE_PROVIDER=mistral. ' +
+        'MISTRAL_API_KEY is required when LAVERN_PROVIDER=mistral. ' +
         'Set it in your environment or .env file.'
       );
     }

@@ -1,13 +1,13 @@
-# Whiteshoe — The World's First Driverless Law Firm
+# Lavern — The World's First Driverless Law Firm
 
 ## System Identity
 
-You are part of Whiteshoe v0.11.2, a multi-agent legal design system that transforms
+You are part of Lavern v0.11.2, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
-Whiteshoe is the world's first driverless law firm.
+Lavern is the world's first driverless law firm.
 
 The codebase is called "The Shem" (the name inscribed in the golem's mouth).
-The product is called "Whiteshoe". These names are interchangeable in internal docs.
+The product is called "Lavern". These names are interchangeable in internal docs.
 
 ## Shared Principles
 
@@ -75,7 +75,7 @@ with qualified legal professionals.
     - `briefing.ts` — LLM-powered briefing analysis for intake
     - `auth-routes.ts` — User signup, login, logout, profile (incl. soul)
     - `claw.ts` — Claw Mode remote monitoring & control
-    - `challenge.ts` — Whiteshoe Challenge blind document comparison
+    - `challenge.ts` — Lavern Challenge blind document comparison
     - `challenge-prompt.ts` — Challenge prompt builder
     - `waitlist.ts` — Waitlist email capture + invite code management
     - `well-known.ts` — A2A agent card, OpenAI plugin manifest, OpenAPI spec
@@ -91,13 +91,13 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/staffing/` — Strategy config, team selection, agent cards with DiceBear avatars, ProviderToggle (Claude / EU Sovereign), offline indicator
 - `viz/src/working/` — Team chat room with real-time checklist (ProgressSidebar), activity feed (ActivityCard), reassurance messaging (ReassuranceCard), HeartbeatBand, connection lost banner, session expired overlay, duplicate tab protection
 - `viz/src/delivery/` — Tabbed delivery view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), DownloadPanel with Cowork folder save, derivatives generation, loading skeleton
-- `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Whiteshoe's Soul (firm personality editor), Saved Teams
+- `viz/src/my-page/` — User profile: About You, Default Settings, Custom Instructions, Lavern's Soul (firm personality editor), Saved Teams
 - `viz/src/my-cases/` — Session history (active + past engagements)
 - `viz/src/cowork/` — Cowork folder mode (File System Access API for non-destructive local saves)
-- `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, WhiteshoeMark)
+- `viz/src/components/` — Shared components (GateDialog with focus trap, ErrorToast, LavernMark)
 - `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
-- `viz/src/challenge/` — Whiteshoe Challenge blind document comparison
+- `viz/src/challenge/` — Lavern Challenge blind document comparison
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
 - `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
 - `viz/src/auth/` — Login/signup views
@@ -161,7 +161,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 **Free Trial & Billing:**
 - Free trial hours on signup: new users without invite code get 10 billable hours (~2 quick engagements) automatically
 - Invite code now optional: validated if provided (bonus 50h), but signup works without one
-- Config: `MARBLE_FREE_TRIAL_HOURS` (default 10), `MARBLE_WELCOME_HOURS` (default 50 for invite users)
+- Config: `LAVERN_FREE_TRIAL_HOURS` (default 10), `LAVERN_WELCOME_HOURS` (default 50 for invite users)
 - Session creation 402 handling: redirects to pricing page with clear "top up" messaging
 - Billing hold system: `holdBillableHours`/`releaseHold` prevents TOCTOU race — hold placed at session start reduces visible balance, released + actual cost debited at session end. Concurrent sessions can't over-spend.
 - Credit idempotency scoped to non-debit entries (prevents edge case where a debit reference could block a credit)
@@ -315,7 +315,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - EU badge in Working view header when Mistral active
 - **Maximum Ethical Mode** — One-click toggle for Claw Mode
   - EU-only processing (Mistral), all docs confidential, conservative risk
-  - CLI: `whiteshoe claw start --ethical`
+  - CLI: `lavern claw start --ethical`
   - Dashboard: Config tab card with ON/OFF toggle, CommandStrip shield badge
   - PATCH `/api/claw/ethical` endpoint
 - **Knowledge Base Expansion** — 4 new datasets (6 total)
@@ -335,7 +335,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - **Heartbeat** — Periodic Claw mode check-in (default 30min)
   - Surfaces: budget warnings (>80%), stale docs, errors, flagged items
   - Silent when everything is fine
-  - Configurable via `MARBLE_CLAW_HEARTBEAT` and `MARBLE_CLAW_HEARTBEAT_INTERVAL`
+  - Configurable via `LAVERN_CLAW_HEARTBEAT` and `LAVERN_CLAW_HEARTBEAT_INTERVAL`
 - **Dashboard redesign**
   - Navigation: Landing → Briefing → Strategy → Team → Working → Delivery
   - ProgressSidebar with step-by-step workflow progress

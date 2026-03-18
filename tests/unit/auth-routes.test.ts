@@ -676,7 +676,7 @@ describe('Free trial billing — creditBillableHours / getUserBillableHours', ()
       user.id,
       50,
       'welcome',
-      'Welcome to Whiteshoe — 50 billable hours on us.',
+      'Welcome to Lavern — 50 billable hours on us.',
     );
 
     const balance = getUserBillableHours(user.id);

@@ -50,7 +50,7 @@ describe('StaffingView', () => {
       <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
-    expect(screen.getByText(/Whiteshoe/)).toBeInTheDocument();
+    expect(screen.getByText(/Lavern/)).toBeInTheDocument();
 
     // Wait for async profile loading — section headers appear
     await waitFor(() => {
@@ -102,7 +102,7 @@ describe('StaffingView', () => {
       { withSessionData: false }
     );
 
-    expect(screen.getByText(/Whiteshoe/)).toBeInTheDocument();
+    expect(screen.getByText(/Lavern/)).toBeInTheDocument();
 
     // Wait for loading to finish
     await waitFor(() => {

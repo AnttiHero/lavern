@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 
 interface Props {
   onBack?: () => void;
@@ -67,7 +67,7 @@ export default function ResetPasswordView({ onBack }: Props) {
         <img src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`} alt="" style={styles.heroBg} />
         <div style={styles.veil} />
         <div style={styles.card}>
-          <h1 style={styles.wordmark}><WhiteshoeIlluminated color="rgba(26,26,26,0.8)" /></h1>
+          <h1 style={styles.wordmark}><LavernIlluminated color="rgba(26,26,26,0.8)" /></h1>
           <div style={styles.rule} />
           <h2 style={styles.title}>Invalid Link</h2>
           <p style={styles.subtitle}>This reset link is missing a token. Please request a new one.</p>
@@ -94,7 +94,7 @@ export default function ResetPasswordView({ onBack }: Props) {
       )}
 
       <div style={styles.card}>
-        <h1 style={styles.wordmark}><WhiteshoeIlluminated color="rgba(26,26,26,0.8)" /></h1>
+        <h1 style={styles.wordmark}><LavernIlluminated color="rgba(26,26,26,0.8)" /></h1>
         <div style={styles.rule} />
 
         {success ? (

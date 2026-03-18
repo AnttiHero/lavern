@@ -5,7 +5,7 @@
  * task (review, redesign, research memo, etc.), workflow, and context.
  *
  * Three strategies:
- * 1. Sidecar — `.whiteshoe.md` file next to the document with explicit instructions
+ * 1. Sidecar — `.lavern.md` file next to the document with explicit instructions
  * 2. LLM — Sonnet classification (~$0.01) using document content + client profile
  * 3. Heuristic — Extension + filename pattern matching (zero cost fallback)
  */
@@ -33,17 +33,17 @@ export interface InferenceResult {
 
 /**
  * Look for a sidecar instruction file next to the document.
- * Convention: `filename.whiteshoe.md` or `filename.whiteshoe.json`
+ * Convention: `filename.lavern.md` or `filename.lavern.json`
  */
 function findSidecar(documentPath: string): SidecarConfig | null {
   const dir = path.dirname(documentPath);
   const base = path.basename(documentPath, path.extname(documentPath));
 
-  // Try: filename.whiteshoe.md, filename.whiteshoe.json, .whiteshoe.md (directory-level)
+  // Try: filename.lavern.md, filename.lavern.json, .lavern.md (directory-level)
   const candidates = [
-    path.join(dir, `${base}.whiteshoe.md`),
-    path.join(dir, `${base}.whiteshoe.json`),
-    path.join(dir, '.whiteshoe.md'),
+    path.join(dir, `${base}.lavern.md`),
+    path.join(dir, `${base}.lavern.json`),
+    path.join(dir, '.lavern.md'),
   ];
 
   for (const candidate of candidates) {
@@ -259,7 +259,7 @@ export async function inferTask(
     };
   } catch (err) {
     // LLM failed — fall through to heuristic
-    if (process.env.MARBLE_CLAW_DEBUG === 'true') {
+    if (process.env.LAVERN_CLAW_DEBUG === 'true') {
       console.warn('[CLAW] LLM inference failed, falling back to heuristic:', err);
     }
   }

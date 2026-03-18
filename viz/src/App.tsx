@@ -17,7 +17,7 @@
  *   #/my-page    → User profile & settings
  *   #/claw       → Claw Mode remote monitoring dashboard
  *   #/pricing    → Billable Hours — pricing page
- *   #/challenge  → The Whiteshoe Challenge — blind document comparison
+ *   #/challenge  → The Lavern Challenge — blind document comparison
  *   #/agent-builder → NBA2K-style custom agent builder wizard
  *
  * All views are lazy-loaded React components in their own directories.
@@ -36,7 +36,7 @@ import type { MatterData } from './intake/hooks/useIntakeState.js';
 import type { BriefingPayload } from './briefing/hooks/useBriefingState.js';
 import type { FrontendParsedDocument } from './briefing/hooks/useDocumentUpload.js';
 import { SessionList } from './components/SessionList.js';
-import { WhiteshoeMark } from './components/WhiteshoeMark.js';
+import { LavernMark } from './components/LavernMark.js';
 import { LoadingW } from './components/LoadingW.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
@@ -636,7 +636,7 @@ export function App() {
             border: 'none', borderRadius: 6, cursor: 'pointer',
           }}
         >
-          {isSuccess ? 'Start Working' : 'Back to Whiteshoe'}
+          {isSuccess ? 'Start Working' : 'Back to Lavern'}
         </button>
       </div>
     );
@@ -698,7 +698,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading intake..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <IntakeView
               onComplete={handleIntakeComplete}
               onSkip={handleIntakeSkip}
@@ -720,7 +720,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading briefing..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <BriefingView
               onComplete={handleBriefingComplete}
               onBack={() => { window.location.hash = '#/intake'; }}
@@ -742,7 +742,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading strategy..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <StrategyView
               onComplete={handleStrategyComplete}
               onBack={() => { sessionStorage.removeItem('shem-briefing-config'); window.location.hash = '#/briefing'; }}
@@ -764,7 +764,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading team..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <TeamView
               onTeamConfirmed={handleStaffingComplete}
               onBack={() => { sessionStorage.removeItem('shem-briefing-team'); window.location.hash = '#/strategy'; }}
@@ -785,7 +785,7 @@ export function App() {
         {verifyBanner}
         {cursor}
         <Suspense fallback={<ViewFallback text="Loading session..." />}>
-          {showMark && <WhiteshoeMark />}
+          {showMark && <LavernMark />}
           <WorkingView
             onComplete={navToDelivery}
             onBack={() => { sessionStorage.removeItem('shem-session-id'); sessionStorage.removeItem('shem-demo-case'); window.location.hash = '#/quickstart'; }}
@@ -806,7 +806,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading delivery..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <DeliveryView
               onContinue={handleDeliveryDone}
               onBack={() => { window.location.hash = '#/quickstart'; }}
@@ -828,7 +828,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading billing..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <BillingView
               onClose={handleBillingClose}
             />
@@ -848,7 +848,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading profile..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <MyPageView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -866,7 +866,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading cases..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <MyCasesView
               onConnectSession={(id) => {
                 sessionStorage.setItem('shem-session-id', id);
@@ -896,7 +896,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Archive..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <ArchiveView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -972,7 +972,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading API docs..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <AgentDocsView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -999,7 +999,7 @@ export function App() {
     );
   }
 
-  // ── The Whiteshoe Challenge — blind document comparison ────────────────
+  // ── The Lavern Challenge — blind document comparison ────────────────
   if (view === 'challenge') {
     return (
       <ErrorBoundary>
@@ -1028,7 +1028,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Agent Builder..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <AgentBuilderView
               onBack={() => { window.location.hash = '#/team'; }}
               editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
@@ -1068,7 +1068,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
@@ -1076,7 +1076,7 @@ export function App() {
     );
   }
 
-  // ── Lobby — cinematic WHITESHOE gate ────────────────────────────────────
+  // ── Lobby — cinematic LAVERN gate ────────────────────────────────────
   if (view === 'lobby') {
     return (
       <ErrorBoundary>
@@ -1114,7 +1114,7 @@ export function App() {
         {cursor}
         <ViewTransition>
           <div style={styles.app}>
-            {showMark && <WhiteshoeMark />}
+            {showMark && <LavernMark />}
             <div style={styles.sessionOverlay}>
               <SessionList
                 onConnectSession={(id) => {
@@ -1145,7 +1145,7 @@ export function App() {
         {verifyBanner}
         {cursor}
         <Suspense fallback={<div style={{ width: '100%', height: '100vh', backgroundColor: '#1A1A1A' }} />}>
-          <WhiteshoeMark hideCursor />
+          <LavernMark hideCursor />
           <LandingView
             onEnter={() => { window.location.hash = '#/lobby'; }}
             onMyPage={() => { window.location.hash = '#/my-page'; }}

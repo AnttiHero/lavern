@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Deploy Whiteshoe to a Mac Mini
+# Deploy Lavern to a Mac Mini
 #
 # Usage:
 #   ./scripts/deploy-mac-mini.sh [user@host]
@@ -19,11 +19,11 @@
 
 set -euo pipefail
 
-HOST=${1:-"whiteshoe@mac-mini.local"}
-REMOTE_DIR="/opt/whiteshoe"
+HOST=${1:-"lavern@mac-mini.local"}
+REMOTE_DIR="/opt/lavern"
 
 echo ""
-echo "  Deploying Whiteshoe to ${HOST}:${REMOTE_DIR}"
+echo "  Deploying Lavern to ${HOST}:${REMOTE_DIR}"
 echo "  ─────────────────────────────────────────"
 echo ""
 

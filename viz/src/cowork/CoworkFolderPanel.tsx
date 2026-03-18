@@ -72,7 +72,7 @@ export function CoworkFolderPanel({ folderName, files, status, onToggleFile, onD
       {/* Footer */}
       <div style={styles.footer}>
         <span style={styles.footerText}>
-          Whiteshoe will read selected files and save results here
+          Lavern will read selected files and save results here
         </span>
       </div>
     </div>

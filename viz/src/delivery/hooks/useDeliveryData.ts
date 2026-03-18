@@ -1256,7 +1256,7 @@ For privacy-related inquiries, please see our Privacy Policy at [LINK] or email 
 
 ---
 
-*Prepared by Whiteshoe \u2014 Multi-Agent Legal Design System*
+*Prepared by Lavern \u2014 Multi-Agent Legal Design System*
 *This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
 `;
 
@@ -1568,7 +1568,7 @@ Mailing Address: [Mailing Address]
 
 ---
 
-*Prepared by Whiteshoe \u2014 Multi-Agent Legal Design System*
+*Prepared by Lavern \u2014 Multi-Agent Legal Design System*
 *This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
 `;
 
@@ -1894,6 +1894,6 @@ The Contractor represents and warrants that:
 
 ---
 
-*Prepared by Whiteshoe \u2014 Multi-Agent Legal Design System*
+*Prepared by Lavern \u2014 Multi-Agent Legal Design System*
 *This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
 `;

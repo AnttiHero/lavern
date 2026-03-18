@@ -1,5 +1,5 @@
 /**
- * useChallengeState — Manages the Whiteshoe Challenge lifecycle.
+ * useChallengeState — Manages the Lavern Challenge lifecycle.
  *
  * Simple: upload two documents, POST /api/challenge, get scores back.
  * No sessions, no WebSocket, no polling.
@@ -24,8 +24,8 @@ export interface ComparisonResult {
   dimensions: DimensionScore[];
   overallA: number;
   overallB: number;
-  assignment: { A: 'human' | 'whiteshoe'; B: 'human' | 'whiteshoe' };
-  winner: 'human' | 'whiteshoe' | 'tie';
+  assignment: { A: 'human' | 'lavern'; B: 'human' | 'lavern' };
+  winner: 'human' | 'lavern' | 'tie';
   summary: string;
 }
 
@@ -38,12 +38,12 @@ export function useChallengeState() {
   const [error, setError] = useState<string | null>(null);
 
   // Two independent upload hooks — one for each document
-  const whiteshoeUpload = useDocumentUpload();
+  const lavernUpload = useDocumentUpload();
   const humanUpload = useDocumentUpload();
 
-  // ── Pre-loaded Whiteshoe text (from active session) ──
-  const [whiteshoeSessionText, setWhiteshoeSessionText] = useState<string | null>(null);
-  const [whiteshoeSessionTitle, setWhiteshoeSessionTitle] = useState<string | null>(null);
+  // ── Pre-loaded Lavern text (from active session) ──
+  const [lavernSessionText, setLavernSessionText] = useState<string | null>(null);
+  const [lavernSessionTitle, setLavernSessionTitle] = useState<string | null>(null);
 
   // Timer cleanup for reveal animation and timeout
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,11 +57,11 @@ export function useChallengeState() {
     };
   }, []);
 
-  const bothReady = (whiteshoeUpload.documents.length > 0 || !!whiteshoeSessionText) && humanUpload.documents.length > 0;
-  const eitherParsing = whiteshoeUpload.parsing || humanUpload.parsing;
+  const bothReady = (lavernUpload.documents.length > 0 || !!lavernSessionText) && humanUpload.documents.length > 0;
+  const eitherParsing = lavernUpload.parsing || humanUpload.parsing;
 
-  // ── Load Whiteshoe document directly from an active session ──
-  const loadWhiteshoeFromSession = useCallback(async () => {
+  // ── Load Lavern document directly from an active session ──
+  const loadLavernFromSession = useCallback(async () => {
     try {
       setError(null);
       // Find the active session
@@ -76,8 +76,8 @@ export function useChallengeState() {
       const session = await detailRes.json() as { assembledDocument?: string; matterTitle?: string };
       if (!session.assembledDocument) { setError('Session has no assembled document. Run reassembly first.'); return; }
 
-      setWhiteshoeSessionText(session.assembledDocument);
-      setWhiteshoeSessionTitle(session.matterTitle ?? 'Whiteshoe Work Product');
+      setLavernSessionText(session.assembledDocument);
+      setLavernSessionTitle(session.matterTitle ?? 'Lavern Work Product');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load from session');
     }
@@ -89,14 +89,14 @@ export function useChallengeState() {
     const humanDoc = humanUpload.documents[0];
     if (!humanDoc) return;
 
-    // Whiteshoe text: from session pre-load OR from uploaded file
-    let whiteshoeText: string | null = whiteshoeSessionText;
-    if (!whiteshoeText) {
-      const whiteshoeDoc = whiteshoeUpload.documents[0];
-      if (!whiteshoeDoc) return;
-      const whiteshoeParsed = whiteshoeUpload.parsedDocuments[0]?.fullText;
-      const isWhiteshoeText = whiteshoeDoc.type.startsWith('text/') || whiteshoeDoc.name.endsWith('.md') || whiteshoeDoc.name.endsWith('.txt');
-      whiteshoeText = whiteshoeParsed ?? (isWhiteshoeText ? whiteshoeDoc.content : null);
+    // Lavern text: from session pre-load OR from uploaded file
+    let lavernText: string | null = lavernSessionText;
+    if (!lavernText) {
+      const lavernDoc = lavernUpload.documents[0];
+      if (!lavernDoc) return;
+      const lavernParsed = lavernUpload.parsedDocuments[0]?.fullText;
+      const isLavernText = lavernDoc.type.startsWith('text/') || lavernDoc.name.endsWith('.md') || lavernDoc.name.endsWith('.txt');
+      lavernText = lavernParsed ?? (isLavernText ? lavernDoc.content : null);
     }
 
     // Human text: from uploaded file
@@ -104,16 +104,16 @@ export function useChallengeState() {
     const isHumanText = humanDoc.type.startsWith('text/') || humanDoc.name.endsWith('.md') || humanDoc.name.endsWith('.txt');
     const humanText = humanParsed ?? (isHumanText ? humanDoc.content : null);
 
-    if (!whiteshoeText) {
-      setError('Could not extract text from the Whiteshoe document. Try "Load from session" or a different format.');
+    if (!lavernText) {
+      setError('Could not extract text from the Lavern document. Try "Load from session" or a different format.');
       return;
     }
     if (!humanText) {
       setError('Could not extract text from the challenger document. Try a different format (TXT, MD, PDF, DOCX).');
       return;
     }
-    if (whiteshoeText.length < 50) {
-      setError('Whiteshoe document is too short (minimum 50 characters).');
+    if (lavernText.length < 50) {
+      setError('Lavern document is too short (minimum 50 characters).');
       return;
     }
     if (humanText.length < 50) {
@@ -142,7 +142,7 @@ export function useChallengeState() {
       const res = await fetch('/api/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whiteshoeText, humanText }),
+        body: JSON.stringify({ lavernText, humanText }),
         signal: controller.signal,
       });
 
@@ -167,7 +167,7 @@ export function useChallengeState() {
       setError(err instanceof Error ? err.message : 'Challenge failed');
       setPhase('error');
     }
-  }, [whiteshoeSessionText, whiteshoeUpload.documents, whiteshoeUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
+  }, [lavernSessionText, lavernUpload.documents, lavernUpload.parsedDocuments, humanUpload.documents, humanUpload.parsedDocuments]);
 
   // ── Retry — reset to idle so user can try again ──
   const retry = useCallback(() => {
@@ -192,14 +192,14 @@ export function useChallengeState() {
     phase,
     result,
     revealed,
-    error: error ?? whiteshoeUpload.error ?? humanUpload.error,
+    error: error ?? lavernUpload.error ?? humanUpload.error,
     bothReady,
     eitherParsing,
-    whiteshoeUpload,
+    lavernUpload,
     humanUpload,
-    whiteshoeSessionText,
-    whiteshoeSessionTitle,
-    loadWhiteshoeFromSession,
+    lavernSessionText,
+    lavernSessionTitle,
+    loadLavernFromSession,
     acceptChallenge,
     doReveal,
     retry,

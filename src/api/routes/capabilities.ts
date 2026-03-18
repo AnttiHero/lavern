@@ -2,7 +2,7 @@
  * Capabilities Routes — Machine-readable service manifest.
  *
  * GET /api/capabilities — Returns a structured manifest describing:
- *   - What Whiteshoe can do (available workflows, request types)
+ *   - What Lavern can do (available workflows, request types)
  *   - How to use it (API schema, registration flow)
  *   - What it costs (per-workflow estimates, intensity tiers)
  *   - How to monitor (status endpoints, WebSocket events)
@@ -27,7 +27,7 @@ export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
 
     return reply.send({
       service: {
-        name: 'Whiteshoe',
+        name: 'Lavern',
         tagline: 'AI law firm — structured legal intelligence for humans and agents.',
         version: '10.0.0',
         description: 'Multi-agent legal orchestration platform. Upload documents, describe tasks, and receive structured legal analysis. Same engine serves human clients through a visual interface and AI agents through this API.',

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Whiteshoe API Smoke Test — verifies the core session lifecycle.
+# Lavern API Smoke Test — verifies the core session lifecycle.
 # Usage: ./scripts/smoke-test.sh [base_url]
 # Requires: sqlite3 (for auto-verifying test user email)
 
 BASE="${1:-http://localhost:3000}"
-DB="${SHEM_DB_PATH:-./data/whiteshoe.db}"
+DB="${SHEM_DB_PATH:-./data/lavern.db}"
 PASS=0
 FAIL=0
 COOKIE_JAR=$(mktemp)
@@ -16,7 +16,7 @@ fail() { printf "  ✗ %s\n" "$1"; FAIL=$((FAIL + 1)); }
 # Extract a JSON string value (no jq required)
 json_val() { printf '%s' "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed "s/\"$2\":\"//;s/\"$//" ; }
 
-printf "Whiteshoe Smoke Test\nTarget: %s\n\n" "$BASE"
+printf "Lavern Smoke Test\nTarget: %s\n\n" "$BASE"
 
 # 1. Health
 printf "1. Health check\n"

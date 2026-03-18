@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { cn } from '../utils/cn.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 
 interface Props {
   onEnter: () => void;
@@ -19,9 +19,9 @@ interface Props {
   onAgentDocs?: () => void;
 }
 
-// ── Whiteshoe Logo — Typography wordmark (kept for LoginView import) ──────────
+// ── Lavern Logo — Typography wordmark (kept for LoginView import) ──────────
 
-export function WhiteshoeLogo({
+export function LavernLogo({
   height = 64,
   color = colors.text,
   veinColor = 'rgba(26, 26, 26, 0.12)',
@@ -40,7 +40,7 @@ export function WhiteshoeLogo({
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'block' }}
       role="img"
-      aria-label="Whiteshoe"
+      aria-label="Lavern"
     >
       <path d="M0 72V8h3.2l28 48.5h0.6L60.2 8H64v64h-5V22.5h-0.4L33.2 64h-3l-25-41.5H4.8V72H0Z" fill={color} />
       <line x1="12" y1="16" x2="52" y2="68" stroke={veinColor} strokeWidth="0.8" strokeLinecap="round" />
@@ -54,14 +54,14 @@ export function WhiteshoeLogo({
   );
 }
 
-export function WhiteshoeLogoSmall({
+export function LavernLogoSmall({
   height = 18,
   color = colors.text,
 }: {
   height?: number;
   color?: string;
 }) {
-  return <WhiteshoeLogo height={height} color={color} veinColor="transparent" />;
+  return <LavernLogo height={height} color={color} veinColor="transparent" />;
 }
 
 // ── The Dark Door ──────────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
         alt=""
         role="presentation"
-        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[whiteshoeBreath_10s_ease_infinite]"
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform transition-transform duration-500 ease-out animate-[lavernBreath_10s_ease_infinite]"
         style={{
           filter: 'brightness(0.14) contrast(1.2) saturate(0.15)',
           opacity: 0.7,
@@ -210,7 +210,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         <p
           ref={welcomeRef}
           className={cn(
-            'whiteshoe-spotlight',
+            'lavern-spotlight',
             'text-[10px] sm:text-[13px] font-medium font-sans',
             'text-[rgba(250,249,246,0.25)] tracking-[3px] sm:tracking-[6px] uppercase',
             'm-0 mb-8 sm:mb-12',
@@ -220,7 +220,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
             background: 'rgba(250, 249, 246, 0.25)',
           }}
         >
-          Welcome to Whiteshoe
+          Welcome to Lavern
         </p>
 
         <h1
@@ -445,7 +445,7 @@ export default function LandingView({ onEnter, onMyPage, onAgentDocs }: Props) {
         }}
       >
         <span className="text-[9px] font-medium font-sans text-[rgba(250,249,246,0.12)] tracking-[6px] uppercase">
-          <WhiteshoeIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
+          <LavernIlluminated color="rgba(250,249,246,0.12)" glow="rgba(250,249,246,0.35)" />
         </span>
       </div>
     </div>

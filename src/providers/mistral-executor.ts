@@ -1,7 +1,7 @@
 /**
  * Mistral Executor — Parallel workflow runner for the Mistral provider.
  *
- * This replaces `query()` from the Claude Agent SDK when MARBLE_PROVIDER=mistral.
+ * This replaces `query()` from the Claude Agent SDK when LAVERN_PROVIDER=mistral.
  * Instead of multi-agent subprocess orchestration, it runs a single-orchestrator
  * chat completion loop that calls the same MCP tools.
  *

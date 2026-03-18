@@ -3,7 +3,7 @@
  *
  * Tests:
  * - ClientRegistry (register, authenticate, remove, list)
- * - parseCookieToken (parsing whiteshoe_token from cookie headers)
+ * - parseCookieToken (parsing lavern_token from cookie headers)
  * - createAuthMiddleware (public path matching: exact, prefix, wildcard, method-specific)
  */
 
@@ -138,15 +138,15 @@ describe('ClientRegistry', () => {
 // ── parseCookieToken ────────────────────────────────────────────────────
 
 describe('parseCookieToken', () => {
-  it('should parse whiteshoe_token from a simple cookie header', () => {
-    expect(parseCookieToken('whiteshoe_token=abc123')).toBe('abc123');
+  it('should parse lavern_token from a simple cookie header', () => {
+    expect(parseCookieToken('lavern_token=abc123')).toBe('abc123');
   });
 
-  it('should parse whiteshoe_token from multiple cookies', () => {
-    expect(parseCookieToken('other=foo; whiteshoe_token=token_value; third=bar')).toBe('token_value');
+  it('should parse lavern_token from multiple cookies', () => {
+    expect(parseCookieToken('other=foo; lavern_token=token_value; third=bar')).toBe('token_value');
   });
 
-  it('should return null when whiteshoe_token is not present', () => {
+  it('should return null when lavern_token is not present', () => {
     expect(parseCookieToken('session=xyz; theme=dark')).toBeNull();
   });
 
@@ -158,13 +158,13 @@ describe('parseCookieToken', () => {
     expect(parseCookieToken('')).toBeNull();
   });
 
-  it('should handle whiteshoe_token with no value', () => {
-    // "whiteshoe_token=" → split('=')[1] is '' → '' || null → null
-    expect(parseCookieToken('whiteshoe_token=')).toBeNull();
+  it('should handle lavern_token with no value', () => {
+    // "lavern_token=" → split('=')[1] is '' → '' || null → null
+    expect(parseCookieToken('lavern_token=')).toBeNull();
   });
 
   it('should handle whitespace around the token value', () => {
-    expect(parseCookieToken('whiteshoe_token= abc123 ')).toBe('abc123');
+    expect(parseCookieToken('lavern_token= abc123 ')).toBe('abc123');
   });
 });
 

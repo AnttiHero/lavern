@@ -166,7 +166,7 @@ export async function startApiServer(port: number): Promise<void> {
 
   // ── Public paths ──────────────────────────────────────────────────
   // Paths listed here bypass auth (no Bearer token or cookie required).
-  // Most POST mutations require a whiteshoe_token cookie (set by
+  // Most POST mutations require a lavern_token cookie (set by
   // /api/auth/login). Exceptions: session creation is public so the
   // QuickStart express lane works without login.
   const publicPaths: string[] = [
@@ -217,7 +217,7 @@ export async function startApiServer(port: number): Promise<void> {
     'DELETE /api/sessions/*',
     // Document parsing — needed by Challenge and Briefing before login
     'POST /api/documents/parse',
-    // The Whiteshoe Challenge — zero-friction, no auth required
+    // The Lavern Challenge — zero-friction, no auth required
     'POST /api/challenge',
     // Stripe — webhook must be public, config returns publishable key only
     'POST /api/billing/webhook',
@@ -501,7 +501,7 @@ export async function startApiServer(port: number): Promise<void> {
   registerVerifyRoutes(fastify, sessionManager);
   // Claw Mode — remote monitoring & control
   registerClawRoutes(fastify);
-  // v19: The Whiteshoe Challenge — blind document comparison
+  // v19: The Lavern Challenge — blind document comparison
   registerChallengeRoutes(fastify);
   // v21: Billing — Stripe subscriptions and usage tracking
   registerBillingRoutes(fastify);
@@ -544,8 +544,8 @@ export async function startApiServer(port: number): Promise<void> {
             timestamp: new Date().toISOString(),
             platform: 'node',
             level: 'error',
-            server_name: 'whiteshoe-api',
-            release: `whiteshoe@${config.version}`,
+            server_name: 'lavern-api',
+            release: `lavern@${config.version}`,
             exception: { values: [{ type: err.name, value: err.message, stacktrace: {
               frames: (err.stack ?? '').split('\n').slice(1, 10).map(l => ({ filename: l.trim() })),
             }}] },

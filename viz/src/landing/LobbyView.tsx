@@ -1,5 +1,5 @@
 /**
- * LobbyView — The Whiteshoe Lobby.
+ * LobbyView — The Lavern Lobby.
  *
  * Full-bleed white stone. The firm name in massive serif type.
  * A thin rule, a tagline, and an entrance.
@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { colors } from '../staffing/styles/tokens.js';
 import { UserContext } from '../auth/UserContext.js';
-import { WhiteshoeIlluminated } from '../components/WhiteshoeIlluminated.js';
+import { LavernIlluminated } from '../components/LavernIlluminated.js';
 import { cn } from '../utils/cn.js';
 
 interface Props {
@@ -63,7 +63,7 @@ function ShimmerButton({
           className="absolute top-0 -left-full w-3/5 h-full pointer-events-none"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-            animation: 'whiteshoeShimmer 0.6s ease forwards',
+            animation: 'lavernShimmer 0.6s ease forwards',
           }}
         />
       )}
@@ -193,7 +193,7 @@ export default function LobbyView({ onEnter, onMyPage, onLogin, onAgentDocs, onD
           className="text-4xl sm:text-6xl md:text-7xl lg:text-[130px] font-light font-serif text-text m-0 tracking-[6px] sm:tracking-[12px] md:tracking-[16px] lg:tracking-[22px] uppercase"
           style={{ animation: 'lobbyNameReveal 1.8s ease 0.6s both' }}
         >
-          <WhiteshoeIlluminated />
+          <LavernIlluminated />
         </HoverText>
 
         <div
