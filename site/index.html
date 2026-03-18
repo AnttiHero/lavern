@@ -360,7 +360,11 @@
       .statement-img{transform:none !important}
       .cta-img{transform:none !important}
       .btn-invite{padding:16px 44px;font-size:10px}
-      .statement{min-height:60vh}
+      /* Tighter sections — kill the dead space */
+      .hero::after{height:30%}
+      .statement::before{height:30%}
+      .statement{min-height:50vh}
+      .sp-lg{height:clamp(24px,4vw,48px)}
       /* Bigger statement text on mobile */
       .statement-text{font-size:clamp(36px,9vw,60px);padding:20px}
       /* Hide standalone art card + its spacers on mobile */
@@ -381,8 +385,7 @@
       .footer{padding:32px 16px 24px}
       .footer-mark{font-size:14px;letter-spacing:6px}
       .footer-right{font-size:9px;letter-spacing:2px}
-      .sp{height:clamp(48px,8vw,80px)}
-      .sp-lg{height:clamp(64px,10vw,120px)}
+      .sp{height:clamp(24px,4vw,48px)}
     }
     @media(max-width:420px){
       .logo{top:16px;left:16px;font-size:13px;letter-spacing:5px}
