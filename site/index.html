@@ -355,8 +355,10 @@
       .logo{top:20px;left:20px;font-size:15px;letter-spacing:6px}
       .login{top:22px;right:20px;font-size:13px}
       .hero h1{letter-spacing:-1px;margin-bottom:36px}
-      /* Disable drift animation on mobile — causes scroll jank */
-      .hero-img{animation:none}
+      /* Disable ALL image animation/transform on mobile */
+      .hero-img{animation:none !important;transform:none !important}
+      .statement-img{transform:none !important}
+      .cta-img{transform:none !important}
       .btn-invite{padding:16px 44px;font-size:10px}
       .statement{min-height:60vh}
       /* Bigger statement text on mobile */
