@@ -46,7 +46,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
 
     if (!profile) {
       return reply.status(404).send({
-        error: 'No Claw Mode profile found',
+        error: 'No Clawern profile found',
         hint: 'Run `lavern claw init` to create a client profile.',
       });
     }

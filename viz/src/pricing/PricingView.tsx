@@ -771,7 +771,7 @@ export default function PricingView({ onBack }: Props) {
               <div style={sty.subPerHour}>{'\u20AC'}0.20/h {'\u00B7'} best rate</div>
               <div style={sty.subDivider} />
               <div style={sty.subFeature}>{'\u2713'} Multiple users</div>
-              <div style={sty.subFeature}>{'\u2713'} Claw Mode included</div>
+              <div style={sty.subFeature}>{'\u2713'} Clawern included</div>
               <div style={sty.subFeature}>{'\u2713'} Dedicated support</div>
             </div>
           </div>
@@ -862,12 +862,12 @@ export default function PricingView({ onBack }: Props) {
         </Section>
 
         {/* ---- Claw Mode ----------------------------------------------- */}
-        <Section label={'Claw Mode \u2014 The Night Shift'} delay={0.6}>
+        <Section label={'Clawern \u2014 The Night Shift'} delay={0.6}>
           <div style={sty.clawCard}>
             <div style={sty.clawEmoji}>{'\uD83E\uDD80'}</div>
             <div style={sty.clawTitle}>Law Firm on Retainer</div>
             <div style={sty.clawDesc}>
-              Claw watches your folders, reviews new documents overnight,
+              Clawern watches your folders, reviews new documents overnight,
               delivers findings by morning. Autonomous. Continuous. It works while you sleep.
             </div>
             <div style={sty.clawPrice}>

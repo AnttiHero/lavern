@@ -1,0 +1,68 @@
+[
+  {
+    "id": "IM-001",
+    "category": "pattern",
+    "content": "Dating platform ToS requires special attention to: (1) Auto-renewal point-of-sale disclosure beyond ToS text (CA ARL, FTC), (2) No-background-checks disclaimer at multiple UI touchpoints, (3) GDPR Art. 9 explicit consent for sensitive data (sexual orientation), (4) Biometric data provisions if facial recognition used (BIPA), (5) PAGA carve-out in arbitration if CA employees, (6) Section 230 safe harbor with CSAM reporting obligations. Evaluator gate on haiku had MCP tool access limitations - use sonnet for evaluator or provide findings directly in prompt.",
+    "source": "HeartConnect ToS drafting session",
+    "addedAt": "2026-03-04T08:37:13.425Z",
+    "usageCount": 11,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  },
+  {
+    "id": "IM-002",
+    "category": "pattern",
+    "content": "PandaDoc NDA templates may contain non-standard provisions: non-circumvention clauses, buried indemnification in License to Use, perpetual terms, and missing standard carve-outs. Likely adapted from contractor/services agreements. Flag as structurally deficient — recommend starting from standard NDA form rather than redlining.",
+    "source": "NDA Template review session - PandaDoc format",
+    "addedAt": "2026-03-04T08:37:45.919Z",
+    "usageCount": 2,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  },
+  {
+    "id": "IM-mmdhptme-dixi",
+    "category": "lesson",
+    "content": "Dating platform ToS requires GDPR Article 9 analysis — sexual orientation, religion, and ethnicity are special category data inferred from dating preferences. This is a consistent RED finding for any dating/matching platform serving EU users.",
+    "source": "HeartConnect ToS review session",
+    "addedAt": "2026-03-05T13:17:20.054Z",
+    "usageCount": 3,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  },
+  {
+    "id": "IM-mmdhpwp2-hr2q",
+    "category": "warning",
+    "content": "Subagents launched via Task tool cannot reliably access SHEM MCP tools (debate board, workflow tools, verification tools). Plan to post findings and record results at orchestrator level. Also increase max_turns or provide more targeted prompts — subagents tend to exhaust turns on file exploration before producing deliverables.",
+    "source": "HeartConnect ToS review session — operational issue",
+    "addedAt": "2026-03-05T13:17:24.038Z",
+    "usageCount": 0,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  },
+  {
+    "id": "IM-mmdhpydw-6jop",
+    "category": "pattern",
+    "content": "FTC 2024 click-to-cancel rule: subscription cancellation must be as easy as sign-up. Combined with California ARL and EU withdrawal rights, auto-renewal sections need jurisdiction-specific treatment. Always check for: (1) pre-purchase disclosure, (2) affirmative consent, (3) easy cancellation, (4) pre-renewal reminder.",
+    "source": "HeartConnect ToS review — F-005/DR-003",
+    "addedAt": "2026-03-05T13:17:26.228Z",
+    "usageCount": 4,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  },
+  {
+    "id": "IM-mmdrazdd-kl71",
+    "category": "pattern",
+    "content": "GDPR privacy policy for EU SaaS startups: Key structure is 16 sections covering Art. 13/14 disclosures. Must include purpose-legal basis table, named sub-processor table with transfer safeguards, per-category retention periods. Spanish specifics: LOPDGDD Art. 7 age of consent at 14, AEPD (C/ Jorge Juan 6, 28001 Madrid), LSSI Art. 22 for cookies, Ley General Tributaria Art. 66 for 4-year tax retention. Common RED findings: undefined marketing legal basis, vague retention, missing cookie consent, unsigned DPAs, undocumented transfer safeguards.",
+    "source": "Lumio Technologies S.L. privacy policy session",
+    "addedAt": "2026-03-05T17:45:43.825Z",
+    "usageCount": 6,
+    "effectiveness": 0.5,
+    "usedInSessions": [],
+    "outcomes": []
+  }
+]

@@ -53,7 +53,7 @@ export default function ClawView({ onBack }: Props) {
         <div style={styles.container}>
           <button onClick={onBack} style={styles.plainBackBtn}>{'\u2190'} Back</button>
           <div style={styles.errorBox}>
-            No Claw Mode profile found. Run <code style={styles.code}>lavern claw init</code> to get started.
+            No Clawern profile found. Run <code style={styles.code}>lavern claw init</code> to get started.
           </div>
         </div>
       </div>

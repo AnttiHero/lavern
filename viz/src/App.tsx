@@ -1067,7 +1067,7 @@ export function App() {
         {verifyBanner}
         {cursor}
         <ViewTransition>
-          <Suspense fallback={<ViewFallback text="Loading Claw Mode..." />}>
+          <Suspense fallback={<ViewFallback text="Loading Clawern..." />}>
             {showMark && <LavernMark />}
             <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>

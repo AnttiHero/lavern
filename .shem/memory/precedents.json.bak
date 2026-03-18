@@ -1,0 +1,50 @@
+[
+  {
+    "id": "P-001",
+    "documentType": "NDA",
+    "jurisdiction": "US",
+    "patternName": "Non-circumvention in NDA",
+    "description": "Non-circumvention clauses are not standard NDA provisions. They function as disguised non-competes and should be flagged RED. When found, recommend deletion or separation into standalone agreement with named parties, shorter duration, and capped damages.",
+    "beforeSnippet": "Upon entering into this non disclosure agreement and for a period of 5 years after the conclusion or termination of this agreement the Recipient shall not partake in business with or solicit business that was made available from the Owner to the Recipient for the purpose of circumvention.",
+    "afterSnippet": "DELETE. If Owner insists, negotiate separately: 'For 12 months after termination, Recipient shall not directly engage with [named parties] introduced by Owner solely for [specific transaction], excluding pre-existing relationships. Liability capped at [reasonable amount].'",
+    "qualityScore": 0.95,
+    "addedAt": "2026-03-04T08:37:38.223Z",
+    "timesUsed": 0,
+    "timesQueried": 0,
+    "effectivenessScore": 0.2375,
+    "outcomes": [],
+    "deprecated": false
+  },
+  {
+    "id": "P-002",
+    "documentType": "NDA",
+    "jurisdiction": "US",
+    "patternName": "Buried indemnification in NDA",
+    "description": "Unlimited indemnification 'for any reason' buried in License to Use or similar operational clause. Non-standard for NDAs. Should be flagged RED and deleted. If indemnity needed, make mutual, cap it, and exclude consequential damages.",
+    "beforeSnippet": "The Recipient agrees to hold the Owner harmless in the instance of any loss, damage, theft, or injury for any reason. This is inclusive of any attorney fees, court costs, hospital fees, and loss of funds that may occur from such negligence.",
+    "afterSnippet": "DELETE from NDA. If mutual indemnity needed: 'Each party indemnifies the other for third-party claims arising from such party's breach or negligence. Liability capped at [amount]. Excludes consequential damages.'",
+    "qualityScore": 0.93,
+    "addedAt": "2026-03-04T08:37:43.161Z",
+    "timesUsed": 0,
+    "timesQueried": 0,
+    "effectivenessScore": 0.2325,
+    "outcomes": [],
+    "deprecated": false
+  },
+  {
+    "id": "P-mmdhq1v5-5v3r",
+    "documentType": "terms_of_service",
+    "jurisdiction": "US-EU",
+    "patternName": "Dating Platform EU Compliance Cluster",
+    "description": "Four-part EU compliance check for dating platforms: (1) dedicated EU section with GDPR rights, (2) Article 9 special category data consent, (3) 14-day withdrawal right for subscriptions, (4) arbitration carve-out for EU consumers.",
+    "beforeSnippet": "No EU-specific section. Blanket arbitration clause. No refunds policy. No special category data consent.",
+    "afterSnippet": "Dedicated EU/EEA section with: GDPR data subject rights, DPO contact, Art. 9 explicit consent flow, 14-day withdrawal right with Art. 16(m) waiver option, arbitration carve-out with ODR platform link, Rome I Art. 6 mandatory consumer protection.",
+    "qualityScore": 0.95,
+    "addedAt": "2026-03-05T13:17:30.737Z",
+    "timesUsed": 0,
+    "timesQueried": 0,
+    "effectivenessScore": 0.2375,
+    "outcomes": [],
+    "deprecated": false
+  }
+]

@@ -75,10 +75,10 @@ Walk through the entire firm experience: intake, briefing with an AI interviewer
 **2. Quick Start (Drop and Go)**
 Drop a document, type a question, hit "Instruct." The firm handles everything automatically -- no intake, no strategy conference, no gate approvals. Results in minutes. This is for when you know what you need and just want the answer.
 
-**3. Claw Mode (The Firm on Retainer)**
+**3. Clawern (The Firm on Retainer)**
 Point Lavern at a folder on your computer. Every time a new document appears -- a contract comes in via email, a policy gets updated, an agreement gets drafted -- Lavern automatically picks it up, figures out what kind of document it is, assembles the right team, analyzes it, and delivers the results. No human involvement at all. It runs while you sleep.
 
-Claw Mode is what turns Lavern from a tool you use into a firm that works for you, continuously, in the background.
+Clawern is what turns Lavern from a tool you use into a firm that works for you, continuously, in the background.
 
 ---
 

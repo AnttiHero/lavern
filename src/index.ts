@@ -217,7 +217,7 @@ async function main(): Promise<void> {
         }
       }
 
-      console.log(`Combined mode — API server + Claw Mode on port ${port}...`);
+      console.log(`Combined mode — API server + Clawern on port ${port}...`);
       const { startApiServer } = await import('./api/server.js');
       await startApiServer(port);
       // Start Claw Mode in background (watch mode, never exits)
@@ -268,7 +268,7 @@ Usage:
   lavern --request "text" [options]                 Route through dispatch (auto-selects workflow)
   lavern --request "text" --workflow id             Force specific workflow
 
-Claw Mode (Law Firm on Retainer):
+Clawern (Law Firm on Retainer):
   lavern claw init                                  Onboard — create client profile
   lavern claw start [options]                       Start the firm (watch + process)
   lavern claw status                                Show current state
@@ -295,7 +295,7 @@ CLI Options:
 
 API Server:
   --serve                    Start API + WebSocket server
-  --serve --claw             API + Claw Mode together (Mac Mini mode)
+  --serve --claw             API + Clawern together (Mac Mini mode)
   --port <port>              Server port (default: 3000)
 
 Examples:

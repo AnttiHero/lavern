@@ -372,7 +372,7 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
             }}
             onMouseEnter={() => setAgentsHovered(true)}
             onMouseLeave={() => setAgentsHovered(false)}
-            title="Claw Mode"
+            title="Clawern"
           >
             {'\uD83E\uDD80'}
           </button>

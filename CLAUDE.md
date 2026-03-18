@@ -74,7 +74,7 @@ with qualified legal professionals.
     - `matters.ts` — Matter management (engagements, team selection)
     - `briefing.ts` — LLM-powered briefing analysis for intake
     - `auth-routes.ts` — User signup, login, logout, profile (incl. soul)
-    - `claw.ts` — Claw Mode remote monitoring & control
+    - `claw.ts` — Clawern remote monitoring & control
     - `challenge.ts` — Lavern Challenge blind document comparison
     - `challenge-prompt.ts` — Challenge prompt builder
     - `waitlist.ts` — Waitlist email capture + invite code management
@@ -99,7 +99,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
 - `viz/src/challenge/` — Lavern Challenge blind document comparison
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
-- `viz/src/claw/` — Claw Mode remote monitoring dashboard (Overview, Documents, Deliveries, Config)
+- `viz/src/claw/` — Clawern remote monitoring dashboard (Overview, Documents, Deliveries, Config)
 - `viz/src/auth/` — Login/signup views
 
 ### Providers
@@ -110,7 +110,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `tool-converter.ts` — MCP → Mistral tool format conversion
   - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
-### Claw Mode (Law Firm on Retainer)
+### Clawern (Law Firm on Retainer)
 - `src/claw/` — Autonomous document processing pipeline (13 modules):
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
   - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
@@ -313,7 +313,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - Per-session provider selection: Claude (US) or EU Sovereign (Mistral)
   - ProviderToggle segmented selector in Strategy view
   - EU badge in Working view header when Mistral active
-- **Maximum Ethical Mode** — One-click toggle for Claw Mode
+- **Maximum Ethical Mode** — One-click toggle for Clawern
   - EU-only processing (Mistral), all docs confidential, conservative risk
   - CLI: `lavern claw start --ethical`
   - Dashboard: Config tab card with ON/OFF toggle, CommandStrip shield badge
@@ -332,7 +332,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - Injected into orchestrator system prompt for every engagement
   - `SOUL.md` fallback for CLI/Claw mode
   - Priority: session soul (user profile) > SOUL.md > empty
-- **Heartbeat** — Periodic Claw mode check-in (default 30min)
+- **Heartbeat** — Periodic Clawern check-in (default 30min)
   - Surfaces: budget warnings (>80%), stale docs, errors, flagged items
   - Silent when everything is fine
   - Configurable via `LAVERN_CLAW_HEARTBEAT` and `LAVERN_CLAW_HEARTBEAT_INTERVAL`
@@ -355,7 +355,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - Rate limiting — global + per-route limits (configurable via env vars)
 - All hardcoded values extracted to config.ts with env var overrides
 
-### v0.8.0 — Claw Mode (Law Firm on Retainer)
+### v0.8.0 — Clawern (Law Firm on Retainer)
 - Autonomous document processing pipeline (watch, plan, process, deliver)
 - Filesystem watcher with debounce
 - Budget tracking and per-document cost estimates
