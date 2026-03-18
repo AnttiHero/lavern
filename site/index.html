@@ -355,14 +355,19 @@
       .logo{top:20px;left:20px;font-size:15px;letter-spacing:6px}
       .login{top:22px;right:20px;font-size:13px}
       .hero h1{letter-spacing:-1px;margin-bottom:36px}
+      /* Disable drift animation on mobile — causes scroll jank */
+      .hero-img{animation:none}
       .btn-invite{padding:16px 44px;font-size:10px}
       .statement{min-height:60vh}
-      .statement-text{font-size:clamp(28px,7vw,60px);padding:20px}
-      .art-card{padding:0 16px}
-      .art-card-inner{border-radius:20px}
+      /* Bigger statement text on mobile */
+      .statement-text{font-size:clamp(36px,9vw,60px);padding:20px}
+      /* Art cards — full bleed, no border-radius, no visible edges */
+      .art-card{padding:0}
+      .art-card-inner{border-radius:0;box-shadow:none}
+      .art-card-inner img{min-height:60vh;object-fit:cover}
       .art-quote-row{padding:0 16px}
-      .art-quote-img{border-radius:20px}
-      .pull-quote{font-size:clamp(20px,5vw,32px)}
+      .art-quote-img{border-radius:0;box-shadow:none}
+      .pull-quote{font-size:clamp(22px,5.5vw,32px)}
       .video-section{padding:clamp(60px,10vw,120px) 16px}
       .video-label{font-size:clamp(26px,5.5vw,48px);margin-bottom:clamp(32px,6vw,64px)}
       .video-wrap{border-radius:14px}
@@ -382,9 +387,9 @@
       .hero-content{padding:16px}
       .hero h1{font-size:clamp(40px,12vw,56px)}
       .btn-invite{padding:14px 36px;font-size:9px;letter-spacing:2px}
-      .statement-text{font-size:clamp(24px,6.5vw,40px)}
+      .statement-text{font-size:clamp(32px,8.5vw,48px)}
       .art-quote-text{padding:28px 16px}
-      .pull-quote{font-size:clamp(18px,4.5vw,26px)}
+      .pull-quote{font-size:clamp(20px,5vw,28px)}
       .video-label{font-size:clamp(22px,5vw,36px)}
       .video-wrap{border-radius:10px}
       .cta-title{font-size:clamp(32px,9vw,56px)}
