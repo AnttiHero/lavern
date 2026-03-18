@@ -302,20 +302,6 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
               >
                 The Billable Hours
               </button>
-              {billableBalance != null && billableBalance > 0 && (
-                <span
-                  style={{
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: billableBalance < 5 ? '#EF5350' : '#B8960B',
-                    letterSpacing: 0.3,
-                    opacity: 0.85,
-                  }}
-                >
-                  {billableBalance.toFixed(1)}h
-                </span>
-              )}
               {billableBalance != null && billableBalance <= 0 && (
                 <button
                   onClick={onPricing}
@@ -824,48 +810,6 @@ export default function QuickStartView({ onQuickStart, onGuidedFlow, onPricing, 
         </div>
       )}
 
-      {/* ── Book a Demo — fixed floating pill ────────────── */}
-      <div
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60]"
-        style={{ animation: 'qsFadeIn 0.6s ease 2s both' }}
-      >
-        <button
-          onClick={() => window.open('https://calendly.com', '_blank')}
-          onMouseEnter={e => {
-            const b = e.currentTarget;
-            b.style.borderColor = 'rgba(184, 150, 11, 0.5)';
-            b.style.color = colors.text;
-            b.style.backgroundColor = colors.bgCard;
-            b.style.transform = 'translateY(-2px)';
-            b.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(184, 150, 11, 0.15)';
-          }}
-          onMouseLeave={e => {
-            const b = e.currentTarget;
-            b.style.borderColor = colors.border;
-            b.style.color = colors.textMuted;
-            b.style.backgroundColor = colors.bgCard;
-            b.style.transform = 'translateY(0)';
-            b.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-          }}
-          style={{
-            padding: '9px 28px',
-            borderRadius: 999,
-            border: `1.5px solid ${colors.border}`,
-            backgroundColor: colors.bgCard,
-            fontFamily: fonts.sans,
-            fontSize: 11,
-            fontWeight: 500,
-            letterSpacing: 2,
-            textTransform: 'uppercase' as React.CSSProperties['textTransform'],
-            color: colors.textMuted,
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-          }}
-        >
-          Book a Demo
-        </button>
-      </div>
 
       {/* ── Footer ───────────────────────────────────────── */}
       <div
