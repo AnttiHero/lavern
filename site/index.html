@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    /* Custom cursor — hide native on desktop */
+    @media(pointer:fine){*,*::before,*::after{cursor:none!important}}
     :root{
       --dark:#080808;--text:#FAF9F6;--muted:rgba(250,249,246,0.4);--dim:rgba(250,249,246,0.12);
       --accent:#D49060;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',-apple-system,sans-serif;
@@ -21,6 +23,33 @@
       font-family:var(--sans);background:var(--dark);color:var(--text);
       -webkit-font-smoothing:antialiased;overflow-x:hidden
     }
+
+    /* Film grain */
+    @keyframes grain{
+      0%,100%{transform:translate(0,0)}
+      10%{transform:translate(-5%,-10%)}
+      20%{transform:translate(-15%,5%)}
+      30%{transform:translate(7%,-25%)}
+      40%{transform:translate(-5%,25%)}
+      50%{transform:translate(-15%,10%)}
+      60%{transform:translate(15%,0)}
+      70%{transform:translate(0,15%)}
+      80%{transform:translate(3%,-35%)}
+      90%{transform:translate(-10%,10%)}
+    }
+    body::after{
+      content:'';position:fixed;inset:-50%;z-index:9999;pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:256px 256px;
+      opacity:0.035;
+      animation:grain 8s steps(10) infinite;
+      mix-blend-mode:overlay
+    }
+    @media(prefers-reduced-motion:reduce){body::after{animation:none}}
+
+    /* Word-by-word reveal */
+    [data-words] .w{display:inline-block;opacity:0;transform:translateY(12px);transition:opacity 0.6s var(--ease),transform 0.6s var(--ease)}
+    [data-words].revealed .w{opacity:1;transform:translateY(0)}
 
     /* Reveals */
     .r{opacity:0;transform:translateY(50px);transition:opacity 1.2s var(--ease),transform 1.2s var(--ease)}
@@ -445,7 +474,7 @@
     <section class="statement">
       <img src="img/statement.jpg" alt="" class="statement-img" loading="lazy">
       <div class="statement-overlay"></div>
-      <p class="statement-text r">Law firms sell time.<br>We sell <em>thinking.</em></p>
+      <p class="statement-text r">Law firms sell hours.<br>We sell <em>answers.</em></p>
     </section>
 
     <!-- ═══════ Art + pull quote ═══════ -->
@@ -455,7 +484,7 @@
         <img src="img/detail.jpg" alt="" loading="lazy">
       </div>
       <div class="art-quote-text r r1">
-        <p class="pull-quote">"This might be the strangest legal tech tool I have ever seen." — GC</p>
+        <p class="pull-quote" data-words>"This might be the strangest legal tech tool I have ever seen." — GC</p>
       </div>
     </div>
     <div class="sp-lg"></div>
@@ -502,6 +531,22 @@
       ?new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('v');obs.unobserve(x.target)}}),{threshold:.06,rootMargin:'0px 0px -80px 0px'})
       :null;
     document.querySelectorAll('.r').forEach(el=>obs?obs.observe(el):el.classList.add('v'));
+
+    // Word-by-word reveal for pull quote
+    document.querySelectorAll('[data-words]').forEach(el=>{
+      const text=el.textContent;
+      el.innerHTML=text.split(/(\s+)/).map(w=>
+        /^\s+$/.test(w)?w:`<span class="w" style="transition-delay:${0}ms">${w}</span>`
+      ).join('');
+      // Set staggered delays
+      let i=0;
+      el.querySelectorAll('.w').forEach(w=>{w.style.transitionDelay=`${i*70}ms`;i++});
+      // Trigger on scroll
+      const wObs=new IntersectionObserver(e=>{
+        if(e[0].isIntersecting){el.classList.add('revealed');wObs.disconnect()}
+      },{threshold:0.3});
+      wObs.observe(el);
+    });
 
     // Subtle parallax on full-bleed art (desktop only)
     if(window.innerWidth>768){
@@ -562,6 +607,34 @@
         btn.style.transition='transform 0.5s var(--ease)';
       });
     });
+
+    // Custom cursor (desktop only — fine pointer)
+    if(matchMedia('(pointer:fine)').matches){
+      const dot=document.createElement('div');
+      const trail=document.createElement('div');
+      Object.assign(dot.style,{position:'fixed',width:'8px',height:'8px',borderRadius:'50%',background:'#fff',pointerEvents:'none',zIndex:'99999',mixBlendMode:'difference',left:'-100px',top:'-100px',transition:'width 0.2s,height 0.2s,background 0.2s,border 0.2s'});
+      Object.assign(trail.style,{position:'fixed',width:'32px',height:'32px',borderRadius:'50%',background:'rgba(255,255,255,0.12)',filter:'blur(8px)',pointerEvents:'none',zIndex:'99998',mixBlendMode:'difference',left:'-100px',top:'-100px'});
+      document.body.appendChild(dot);
+      document.body.appendChild(trail);
+      const mouse={x:-100,y:-100},tPos={x:-100,y:-100};
+      let hovering=false;
+      document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY},{passive:true});
+      document.addEventListener('mouseover',e=>{
+        hovering=!!e.target.closest('a,button,[role="button"],input,select,textarea,[tabindex]:not([tabindex="-1"]),label[for],summary');
+        if(hovering){dot.style.width='16px';dot.style.height='16px';dot.style.background='transparent';dot.style.border='1.5px solid rgba(255,255,255,0.6)'}
+        else{dot.style.width='8px';dot.style.height='8px';dot.style.background='#fff';dot.style.border='none'}
+      });
+      document.addEventListener('mouseout',()=>{if(!hovering)return;hovering=false;dot.style.width='8px';dot.style.height='8px';dot.style.background='#fff';dot.style.border='none'});
+      (function tick(){
+        tPos.x+=(mouse.x-tPos.x)*0.12;
+        tPos.y+=(mouse.y-tPos.y)*0.12;
+        dot.style.left=(mouse.x-parseInt(dot.style.width)/2)+'px';
+        dot.style.top=(mouse.y-parseInt(dot.style.height)/2)+'px';
+        trail.style.left=(tPos.x-16)+'px';
+        trail.style.top=(tPos.y-16)+'px';
+        requestAnimationFrame(tick);
+      })();
+    }
   </script>
 </body>
 </html>
