@@ -517,6 +517,21 @@
     document.querySelectorAll('a[href^="#"]').forEach(a=>
       a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}})
     );
+
+    // Magnetic buttons — pull towards cursor on hover
+    document.querySelectorAll('.btn-invite, .login, .footer-link').forEach(btn=>{
+      btn.addEventListener('mousemove',e=>{
+        const r=btn.getBoundingClientRect();
+        const x=e.clientX-r.left-r.width/2;
+        const y=e.clientY-r.top-r.height/2;
+        btn.style.transform=`translate(${x*0.3}px,${y*0.3}px)`;
+        btn.style.transition='transform 0.15s ease-out';
+      });
+      btn.addEventListener('mouseleave',()=>{
+        btn.style.transform='translate(0,0)';
+        btn.style.transition='transform 0.5s var(--ease)';
+      });
+    });
   </script>
 </body>
 </html>
