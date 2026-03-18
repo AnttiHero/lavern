@@ -49,12 +49,12 @@ React SPA with editorial design language (Inter + Cormorant Garamond, warm cream
 - **My Page** — User profile, custom instructions, Lavern's Soul editor, saved teams
 - **My Cases** — Session history (active + past engagements)
 
-### Claw Mode (Law Firm on Retainer)
+### Clawern (Law Firm on Retainer)
 
 Autonomous document processing. Drop files in a watched folder; Lavern reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins and dual-model confidentiality (sensitive documents analyzed on-device via Ollama).
 
 ```bash
-# Initialize Claw Mode
+# Initialize Clawern
 npm run dev -- --claw init
 
 # Start watching
@@ -151,7 +151,7 @@ src/
 │   ├── middleware/   # Auth, validation, x402 payment
 │   └── routes/      # 16 route modules
 ├── assembly/        # Document assembly + format conversion (HTML, DOCX)
-├── claw/            # Claw Mode (13 modules: watch, plan, process, deliver, heartbeat)
+├── claw/            # Clawern (13 modules: watch, plan, process, deliver, heartbeat)
 ├── db/              # SQLite persistence (users, tokens, sessions, matters)
 ├── documents/       # Document parser (PDF, DOCX, MD, TXT)
 ├── events/          # Event bus for real-time streaming
