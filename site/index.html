@@ -359,12 +359,18 @@
       .hero-img{animation:none !important;transform:none !important}
       .statement-img{transform:none !important}
       .cta-img{transform:none !important}
+      /* Fix iOS Safari viewport resize — lock hero height */
+      .hero{min-height:100svh;min-height:-webkit-fill-available;max-height:100svh;overflow:hidden}
+      .hero-img{position:absolute;top:0;left:0;width:100%;height:100svh;height:-webkit-fill-available;object-fit:cover}
       .btn-invite{padding:16px 44px;font-size:10px}
-      /* Tighter sections — kill the dead space */
+      /* Tighter sections + overlap to kill lines */
       .hero::after{height:30%}
+      .statement{min-height:50vh;margin-top:-2px}
       .statement::before{height:30%}
-      .statement{min-height:50vh}
+      .cta{margin-top:-2px}
       .sp-lg{height:clamp(24px,4vw,48px)}
+      /* Uniform fog on all full-bleed image sections */
+      .statement::before,.statement::after,.cta::before,.cta::after{opacity:0.9}
       /* Bigger statement text on mobile */
       .statement-text{font-size:clamp(36px,9vw,60px);padding:20px}
       /* Hide standalone art card + its spacers on mobile */
