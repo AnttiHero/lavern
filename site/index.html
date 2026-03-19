@@ -408,9 +408,9 @@
     @media(max-width:768px){
       /* ── Mobile: hero + footer only, single screen, no scroll ── */
       .statement,.art-quote-row,.video-section,.cta,.sp,.sp-lg,.hero-scroll{display:none !important}
-      html,body{overflow:hidden;height:100svh;height:-webkit-fill-available}
+      html,body{overflow:hidden;height:100vh;height:100dvh}
+      .login{display:none}
       .logo{top:20px;left:20px;font-size:15px;letter-spacing:6px}
-      .login{top:22px;right:20px;font-size:13px}
       .hero h1{letter-spacing:-1px;margin-bottom:36px}
       /* Disable ALL image animation/transform on mobile */
       .hero-img{animation:none !important;transform:none !important}
@@ -418,15 +418,14 @@
       .hero{min-height:calc(100vh + 1px);min-height:calc(100dvh + 1px);max-height:calc(100vh + 1px);max-height:calc(100dvh + 1px);overflow:hidden}
       .hero-img{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 1px);height:calc(100dvh + 1px);object-fit:cover}
       .btn-invite{padding:16px 44px;font-size:10px}
-      .hero::after{height:30%}
-      .smoke{height:30vh}
+      .hero::after{height:40%}
+      .smoke{height:35vh}
       .footer{padding:16px;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:transparent}
       .footer-mark{font-size:14px;letter-spacing:6px}
       .footer-right{font-size:9px;letter-spacing:2px}
     }
     @media(max-width:420px){
       .logo{top:16px;left:16px;font-size:13px;letter-spacing:5px}
-      .login{top:18px;right:16px;font-size:12px}
       .hero-content{padding:16px}
       .hero h1{font-size:clamp(40px,12vw,56px)}
       .btn-invite{padding:14px 36px;font-size:9px;letter-spacing:2px}
@@ -454,7 +453,7 @@
       <div class="hero-fog-right"></div>
       <div class="hero-content">
         <h1 class="r">Excellence<br>doesn't scale.<br><em>Until now.</em></h1>
-        <a href="mailto:hello@lavern.ai?subject=Application" class="btn-invite r r1">Knock</a>
+        <a href="mailto:hello@lavern.ai?subject=Knock%20Knock&body=I%E2%80%99d%20like%20to%20see%20a%20demo." class="btn-invite r r1">Knock</a>
       </div>
     </section>
 
@@ -505,7 +504,7 @@
       <img src="img/cta.jpg" alt="" class="cta-img" loading="lazy">
       <div class="cta-content">
         <h2 class="cta-title r"><em>Speak to Us.</em></h2>
-        <a href="mailto:hello@lavern.ai?subject=Application" class="btn-invite r r1">Knock</a>
+        <a href="mailto:hello@lavern.ai?subject=Knock%20Knock&body=I%E2%80%99d%20like%20to%20see%20a%20demo." class="btn-invite r r1">Knock</a>
       </div>
     </section>
 
