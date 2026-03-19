@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.11.2, a multi-agent legal design system that transforms
+You are part of Lavern v0.11.3, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -140,6 +140,21 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - ContractNLI (10K+ premise/hypothesis NLI pairs, CC BY-NC-SA 4.0)
   - LEDGAR (60K SEC provisions, 98 clause types, CC BY-SA 4.0)
 
+### Marketing Site (`site/`)
+Static single-page site deployed via Netlify drag-and-drop. Dark cinematic design (Cormorant Garamond + Inter, #080808 background, #E8845C accent).
+
+- `site/index.html` — Entire site in one HTML file (CSS + JS inlined)
+  - Hero: LAVERN logo, tagline ("Excellence doesn't scale. Until now."), "Knock" mailto CTA, Log In link
+  - Sections: statement, art-quote, video (demo.mp4), CTA ("Speak to Us.")
+  - Footer: Helsinki · Paris
+  - Effects: film grain overlay, parallax scroll, custom cursor (desktop), word-by-word reveal, magnetic buttons, mist/smoke canvas
+  - **Mobile (≤768px)**: Single-screen hero + footer only — all mid-sections hidden, no scroll, mist preserved
+  - **Desktop**: Full scrolling experience with all sections
+- `site/img/` — Static assets (logo, OG image)
+- `site/demo.mp4` + `site/demo.mov` — Product demo video
+- **Deploy**: Drag-and-drop `site/` folder to Netlify (no build step, no netlify.toml)
+- **Domain**: `lavern.ai` + `www.lavern.ai` (CNAME → Netlify, SSL via Let's Encrypt)
+
 ### Scripts
 - `scripts/smoke-test.sh` — API end-to-end lifecycle smoke test (health → create → verify → delete)
 - `scripts/load-test.ts` — 50-user concurrent load test (auth → sessions → WebSocket → poll → teardown, p50/p95 latencies)
@@ -150,7 +165,21 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 
 ## Version History
 
-### v0.11.2 (Current) — 50-User Launch Hardening
+### v0.11.3 (Current) — Marketing Site Mobile + DNS
+
+**Marketing Site (`site/index.html`):**
+- Mobile single-screen layout (≤768px): hero + footer only, all mid-sections hidden via CSS
+- CTA heading changed from "Try it." to "Speak to Us."
+- Mailto links updated: subject "Knock Knock", pre-filled body requesting demo
+- Mist/smoke canvas effect preserved on mobile
+- Hero Log In link hidden on mobile (clean single-CTA focus)
+- Sub-pixel orange seam fix at hero bottom edge
+
+**DNS & Hosting:**
+- `www.lavern.ai` CNAME → Netlify, SSL provisioned
+- Domain: `lavern.ai` (ALIAS) + `www.lavern.ai` (CNAME) both live
+
+### v0.11.2 — 50-User Launch Hardening
 
 **Blocking Fix:**
 - Claude API retry wrapper (`src/utils/retry-query.ts`) — wraps `query()` with exponential backoff (1s→2s→4s, cap 8s) on transient 429/500/502/503/529 errors; emits retry events to session so users see "Retrying..." instead of silence
