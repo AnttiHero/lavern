@@ -407,7 +407,7 @@
     }
     @media(max-width:768px){
       /* ── Mobile: hero + footer only, single screen, no scroll ── */
-      .statement,.art-quote-row,.video-section,.cta,.sp,.sp-lg,.smoke,.hero-scroll{display:none !important}
+      .statement,.art-quote-row,.video-section,.cta,.sp,.sp-lg,.hero-scroll{display:none !important}
       html,body{overflow:hidden;height:100svh;height:-webkit-fill-available}
       .logo{top:20px;left:20px;font-size:15px;letter-spacing:6px}
       .login{top:22px;right:20px;font-size:13px}
@@ -415,11 +415,12 @@
       /* Disable ALL image animation/transform on mobile */
       .hero-img{animation:none !important;transform:none !important}
       /* Fix iOS Safari viewport resize — lock hero height */
-      .hero{min-height:calc(100svh - 80px);min-height:-webkit-fill-available;max-height:calc(100svh - 80px);overflow:hidden}
-      .hero-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+      .hero{min-height:100vh;min-height:100dvh;max-height:100vh;max-height:100dvh;overflow:hidden}
+      .hero-img{position:absolute;top:0;left:0;width:100%;height:100vh;height:100dvh;object-fit:cover}
       .btn-invite{padding:16px 44px;font-size:10px}
       .hero::after{height:30%}
-      .footer{padding:16px;position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--dark)}
+      .smoke{height:30vh}
+      .footer{padding:16px;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:transparent}
       .footer-mark{font-size:14px;letter-spacing:6px}
       .footer-right{font-size:9px;letter-spacing:2px}
     }
