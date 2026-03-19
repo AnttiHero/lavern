@@ -41,6 +41,7 @@ import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompt
 import { validateDeliverable } from './validate-deliverable.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
+import { ensureApiKey } from '../utils/ensure-api-key.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
 import { createLogger } from '../utils/logger.js';
@@ -126,6 +127,7 @@ async function llmQualityGate(
   request?: LegalRequest,
 ): Promise<{ pass: boolean; critique?: string; cost: number }> {
   try {
+    ensureApiKey(); // Load from .env if not in process.env
     const client = new Anthropic();
 
     // Build a concise summary of what was expected
@@ -255,6 +257,7 @@ export async function assembleDocument(
 
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
+  ensureApiKey(); // Load from .env if not in process.env
   const client = new Anthropic();
 
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
