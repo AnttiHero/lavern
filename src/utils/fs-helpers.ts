@@ -9,6 +9,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('FS');
 
 export function ensureDir(dirPath: string): void {
   if (!fs.existsSync(dirPath)) {
@@ -28,7 +31,7 @@ export function readJsonFile<T>(filePath: string, defaultValue: T): T {
     const backupPath = filePath + '.bak';
     try {
       if (fs.existsSync(backupPath)) {
-        console.warn(`[fs-helpers] Corrupted file ${filePath}, recovering from backup`);
+        logger.warn('Corrupted file, recovering from backup', { filePath });
         const backupContent = fs.readFileSync(backupPath, 'utf-8');
         const backupParsed = JSON.parse(backupContent);
         // Restore from backup
@@ -38,7 +41,7 @@ export function readJsonFile<T>(filePath: string, defaultValue: T): T {
     } catch {
       // Backup also corrupted
     }
-    console.warn(`[fs-helpers] Corrupted file ${filePath}, no backup available — using default`);
+    logger.warn('Corrupted file, no backup available — using default', { filePath });
   }
   return defaultValue;
 }

@@ -14,6 +14,9 @@
 
 import * as readline from 'node:readline';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('GATE');
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -125,7 +128,7 @@ export class AsyncGateResolver implements GateResolver {
     return new Promise<GateDecision>((resolvePromise) => {
       const timer = this.timeoutMs > 0
         ? setTimeout(() => {
-            console.warn(`[GATE] Timeout after ${this.timeoutMs / 1000}s — rejecting gate for safety: ${request.gateType}`);
+            logger.warn('Gate timeout — rejecting for safety', { timeoutSec: this.timeoutMs / 1000, gateType: request.gateType });
             if (this.pendingGate) {
               this.pendingGate = null;
               resolvePromise({
@@ -244,7 +247,7 @@ export class WebhookGateResolver implements GateResolver {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        console.error(`[WEBHOOK] Gate callback failed: ${response.status} ${response.statusText}`);
+        logger.error('Webhook gate callback failed', { status: response.status, statusText: response.statusText });
         return this.fallbackResolve(request);
       }
 
@@ -254,7 +257,7 @@ export class WebhookGateResolver implements GateResolver {
       };
 
       if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
-        console.error('[WEBHOOK] Invalid decision in callback response:', body);
+        logger.error('Invalid decision in webhook callback response', { body });
         return this.fallbackResolve(request);
       }
 
@@ -263,7 +266,7 @@ export class WebhookGateResolver implements GateResolver {
         notes: body.notes,
       };
     } catch (error) {
-      console.error('[WEBHOOK] Gate callback error:', error);
+      logger.error('Webhook gate callback error', { error });
       return this.fallbackResolve(request);
     }
   }
@@ -274,7 +277,7 @@ export class WebhookGateResolver implements GateResolver {
    * knows about the internal AsyncGateResolver instance.
    */
   private async fallbackResolve(_request: GateRequest): Promise<GateDecision> {
-    console.error('[WEBHOOK] Webhook gate failed — rejecting for safety. Agent client should retry or use /gate endpoint.');
+    logger.error('Webhook gate failed — rejecting for safety. Agent client should retry or use /gate endpoint.');
     return {
       decision: 'reject',
       notes: 'Webhook callback failed — gate rejected for safety. Please retry or submit via POST /gate endpoint.',

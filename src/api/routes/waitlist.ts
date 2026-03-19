@@ -20,6 +20,9 @@ import {
   logAuditEvent,
 } from '../../db/database.js';
 import { sendWaitlistConfirmation, sendInviteEmail } from '../../email/send.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('WAITLIST');
 
 // ── Schemas ──────────────────────────────────────────────────────────────
 
@@ -78,7 +81,7 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
     });
 
     // Fire-and-forget — don't block the response on email delivery
-    sendWaitlistConfirmation(entry.email).catch(err => console.error('[EMAIL] Waitlist confirmation failed:', err));
+    sendWaitlistConfirmation(entry.email).catch(err => logger.error('waitlist_confirmation_failed', err));
 
     return reply.status(201).send({
       id: entry.id,
@@ -138,7 +141,7 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
       });
 
       // Send invite email with the code — fire-and-forget
-      sendInviteEmail(email, inviteCode).catch(err => console.error('[EMAIL] Invite email failed:', err));
+      sendInviteEmail(email, inviteCode).catch(err => logger.error('invite_email_failed', err));
 
       return reply.send({ inviteCode, email });
     } catch (err) {

@@ -16,6 +16,9 @@ import type { MatterRecord, ConflictCheckResult, KycResult, EngagementLetter } f
 import { agentProfiles, teamPresets } from '../../agents/profiles.js';
 import { validateBody } from '../middleware/validation.js';
 import { saveMatter as dbSaveMatter, getMattersByUser, getMatterById as dbGetMatterById } from '../../db/database.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('MATTERS');
 
 // ── In-memory matter cache (hot path for active sessions) ───────────────
 // Write-through: every mutation writes to both Map and SQLite.
@@ -51,18 +54,18 @@ function ensureLoaded(userId: string): void {
           const matter = JSON.parse(row.data_json) as MatterRecord;
           matterStore.set(row.id, matter);
           matterOwners.set(row.id, userId);
-        } catch (err) { console.warn(`[MATTERS] Skipping corrupt matter row ${row.id}:`, err instanceof Error ? err.message : err); }
+        } catch (err) { logger.warn('Skipping corrupt matter row', { id: row.id, error: err instanceof Error ? err.message : err }); }
       }
     }
     loadedUsers.add(userId);
-  } catch (err) { console.warn('[MATTERS] Failed to load matters from DB:', err instanceof Error ? err.message : err); }
+  } catch (err) { logger.warn('Failed to load matters from DB', { error: err instanceof Error ? err.message : err }); }
 }
 
 /** Persist a matter to SQLite (write-through). */
 function persistMatter(userId: string, matter: MatterRecord): void {
   try {
     dbSaveMatter(userId, matter.matterId, JSON.stringify(matter), matter.status);
-  } catch (err) { console.warn('[MATTERS] Failed to persist matter:', err instanceof Error ? err.message : err); }
+  } catch (err) { logger.warn('Failed to persist matter', { error: err instanceof Error ? err.message : err }); }
 }
 
 // ── Validation Schemas ──────────────────────────────────────────────────

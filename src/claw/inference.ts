@@ -19,6 +19,9 @@ import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { ClawProfile, SidecarConfig } from './types.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CLAW-INFERENCE');
 
 // ── Zod Schemas ─────────────────────────────────────────────────────────
 
@@ -83,7 +86,7 @@ function findSidecar(documentPath: string): SidecarConfig | null {
           const raw = JSON.parse(content);
           const parsed = SidecarConfigSchema.safeParse(raw);
           if (!parsed.success) {
-            console.warn(`[CLAW] Malformed sidecar ${candidate}: ${parsed.error.message.slice(0, 200)}`);
+            logger.warn('Malformed sidecar', { path: candidate, error: parsed.error.message.slice(0, 200) });
             continue;
           }
           return parsed.data as SidecarConfig;
@@ -91,7 +94,7 @@ function findSidecar(documentPath: string): SidecarConfig | null {
         // Parse markdown sidecar — treat entire content as task instruction
         return { task: content.trim() };
       } catch {
-        console.warn(`[CLAW] Failed to read sidecar ${candidate}`);
+        logger.warn('Failed to read sidecar', { path: candidate });
       }
     }
   }
@@ -297,7 +300,7 @@ export async function inferTask(
   } catch (err) {
     // LLM failed — always log at warn level so users notice misconfiguration
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.warn(`[CLAW] LLM inference failed for ${filename}, falling back to heuristic: ${errMsg.slice(0, 200)}`);
+    logger.warn('LLM inference failed, falling back to heuristic', { filename, error: errMsg.slice(0, 200) });
   }
 
   // 3. Heuristic fallback

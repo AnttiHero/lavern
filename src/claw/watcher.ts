@@ -15,6 +15,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { SUPPORTED_EXTENSIONS } from '../documents/parser.js';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CLAW-WATCHER');
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -75,7 +78,7 @@ export class ClawWatcher {
     for (const wp of watchPaths) {
       const resolved = this.resolvePath(wp);
       if (!fs.existsSync(resolved)) {
-        if (this.debug) console.log(`[CLAW] Watch path does not exist: ${resolved}`);
+        if (this.debug) logger.info('Watch path does not exist', { path: resolved });
         continue;
       }
 
@@ -103,9 +106,9 @@ export class ClawWatcher {
         });
 
         this.watchers.push(watcher);
-        if (this.debug) console.log(`[CLAW] Watching: ${resolved}`);
+        if (this.debug) logger.info('Watching', { path: resolved });
       } catch (err) {
-        console.error(`[CLAW] Failed to watch ${resolved}:`, err);
+        logger.error('Failed to watch path', { path: resolved, error: err });
       }
     }
   }
@@ -147,22 +150,22 @@ export class ClawWatcher {
 
       // SECURITY: Skip oversized files — prevent memory exhaustion
       if (lstat.size > config.claw.maxFileSizeBytes) {
-        if (this.debug) console.log(`[CLAW] Skipping oversized file: ${filePath} (${(lstat.size / 1024 / 1024).toFixed(1)}MB)`);
+        if (this.debug) logger.info('Skipping oversized file', { filePath, sizeMB: (lstat.size / 1024 / 1024).toFixed(1) });
         return;
       }
 
       const event: WatchEvent = this.knownPaths.has(filePath) ? 'changed' : 'new';
       this.knownPaths.add(filePath);
 
-      if (this.debug) console.log(`[CLAW] ${event}: ${filePath}`);
+      if (this.debug) logger.info('File event', { event, filePath });
       // Catch async callback errors to prevent unhandled rejections crashing the daemon
       Promise.resolve(this.onChange(filePath, event)).catch(err => {
-        console.error(`[CLAW] Error processing ${filePath}:`, err);
+        logger.error('Error processing file', { filePath, error: err });
       });
     } catch (err) {
       // ENOENT is expected — file deleted between event and stat
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-        console.warn(`[CLAW] Unexpected error processing ${filePath}:`, err);
+        logger.warn('Unexpected error processing file', { filePath, error: err });
       }
     }
   }

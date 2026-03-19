@@ -15,7 +15,10 @@ import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
 import type { SessionState } from '../session/session-state.js';
+
+const logger = createLogger('DB');
 
 // ── Singleton ────────────────────────────────────────────────────────────
 
@@ -34,7 +37,7 @@ export function initDatabase(dbPath?: string): Database.Database {
 
   runMigrations(db);
 
-  console.log(`[DB] SQLite initialized at ${resolvedPath}`);
+  logger.info('database_initialized', resolvedPath);
   return db;
 }
 
@@ -660,7 +663,7 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       const hoursUsed = session.accumulatedCost / config.billableHours.rate;
       const debited = debitBillableHours(userId, hoursUsed, `Session ${session.id}`, session.id);
       if (!debited) {
-        console.warn(`[BILLING] Insufficient billable hours for user ${userId} — session ${session.id} cost ${hoursUsed.toFixed(2)}h but debit failed (balance too low). Session archived without debit.`);
+        logger.warn('insufficient_hours', { userId, sessionId: session.id, hoursUsed: hoursUsed.toFixed(2) });
       } else {
         // v23: Check if balance is low — schedule warning email (dedup via low_balance_warned_at)
         const newBalance = getUserBillableHours(userId);
@@ -671,8 +674,8 @@ export function archiveSession(session: SessionState, userId: string | null): vo
           if (user) {
             import('../email/send.js').then(({ sendLowBalanceEmail }) => {
               sendLowBalanceEmail(user.email, { balance: newBalance, threshold: config.auth.lowBalanceThresholdHours })
-                .catch(err => console.error('[EMAIL] Low balance email failed:', err));
-            }).catch(err => { console.error('[DB] Failed to import email module for low-balance warning:', err); });
+                .catch(err => logger.error('low_balance_email_failed', err));
+            }).catch(err => logger.error('email_module_import_failed', err));
           }
         }
       }
@@ -1114,7 +1117,7 @@ export function creditBillableHours(
     if (referenceId) {
       const existing = db.prepare(`SELECT id FROM billable_hours WHERE reference_id = ? AND type != 'debit'`).get(referenceId);
       if (existing) {
-        console.log(`[BILLING] Duplicate credit attempt for reference ${referenceId} — skipping`);
+        logger.info('duplicate_credit_skipped', referenceId);
         return; // credited stays false
       }
     }

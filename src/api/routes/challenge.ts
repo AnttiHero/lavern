@@ -17,6 +17,9 @@ import {
   buildComparisonSystemPrompt,
   buildComparisonUserPrompt,
 } from './challenge-prompt.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('CHALLENGE');
 
 // ── Schema ───────────────────────────────────────────────────────────────
 
@@ -180,7 +183,7 @@ export function registerChallengeRoutes(
       return reply.send(comparisonResult);
 
     } catch (err) {
-      console.error('[CHALLENGE] Blind comparison failed:', err);
+      logger.error('Blind comparison failed', { error: err });
       return reply.status(500).send({
         error: 'Blind comparison failed. Please try again.',
       });

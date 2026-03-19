@@ -35,6 +35,9 @@ import { join } from 'path';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import type { SchemOptions } from '../orchestrator.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('EXECUTOR');
 
 export async function runGenericWorkflow(
   request: LegalRequest,
@@ -50,7 +53,7 @@ export async function runGenericWorkflow(
     try {
       return await runMistralWorkflow(request, template, classification, session, options);
     } catch (mistralError) {
-      console.error(`[EXECUTOR] Mistral workflow failed:`, mistralError);
+      logger.error('Mistral workflow failed', { error: mistralError });
       // Emit session_end so frontend isn't stuck waiting
       session.events.emitEvent({
         type: 'error',
@@ -96,22 +99,17 @@ export async function runGenericWorkflow(
     timestamp: eventTimestamp(),
   });
 
-  console.log(`
-\u2554${'═'.repeat(62)}\u2557
-\u2551                        THE SHEM v8                           \u2551
-\u2551              "We know what's written in the Golem's mouth"   \u2551
-\u255a${'═'.repeat(62)}\u255d
-
-Session: ${session.id}
-Workflow: ${template.id} (${template.name})
-Request Type: ${classification.requestType}
-Complexity: ${classification.complexity}
-${request.documentPath ? `Document: ${request.documentPath}` : ''}
-${request.requestText ? `Request: ${request.requestText.substring(0, 100)}...` : ''}
-Budget: $${maxBudgetUsd.toFixed(2)}
-Model: ${model}
-Specialists: ${classification.selectedSpecialists.join(', ')}
-`);
+  logger.info('Starting workflow', {
+    sessionId: session.id,
+    workflow: `${template.id} (${template.name})`,
+    requestType: classification.requestType,
+    complexity: classification.complexity,
+    document: request.documentPath,
+    request: request.requestText?.substring(0, 100),
+    budget: maxBudgetUsd.toFixed(2),
+    model,
+    specialists: classification.selectedSpecialists.join(', '),
+  });
 
   // Create session-bound factories (pass template for generic workflow tools + permissions)
   const shemMcpServer = createShemMcpServer(session, template);
@@ -132,14 +130,14 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     : template.requiredAgents;
   const teamRoles = rawTeamRoles.slice(0, maxTeamSize);
   if (rawTeamRoles.length > maxTeamSize) {
-    console.error(`[TEAM] Capped team from ${rawTeamRoles.length} to ${maxTeamSize} agents`);
+    logger.error('Capped team size', { from: rawTeamRoles.length, to: maxTeamSize });
   }
   const filteredAgents: Record<string, typeof agentDefinitions[keyof typeof agentDefinitions]> = {};
   for (const role of teamRoles) {
     if (role in agentDefinitions) {
       filteredAgents[role] = agentDefinitions[role as keyof typeof agentDefinitions];
     } else {
-      console.warn(`[TEAM] Agent "${role}" requested but not defined — skipping`);
+      logger.warn('Agent requested but not defined — skipping', { role });
     }
   }
   // Always include evaluator if the workflow has evaluator gates
@@ -151,7 +149,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
   // Sanity check: at least one agent must be available
   if (Object.keys(filteredAgents).length === 0) {
     const fallbackTeam = template.requiredAgents;
-    console.error(`[TEAM] No valid agents from selected team — falling back to template defaults: ${fallbackTeam.join(', ')}`);
+    logger.error('No valid agents from selected team — falling back to template defaults', { fallbackTeam: fallbackTeam.join(', ') });
     for (const role of fallbackTeam) {
       if (role in agentDefinitions) {
         filteredAgents[role] = agentDefinitions[role as keyof typeof agentDefinitions];
@@ -222,7 +220,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
       },
     }, session);
   } catch (initError) {
-    console.error(`[EXECUTOR] Failed to initialize query:`, initError);
+    logger.error('Failed to initialize query', { error: initError });
     session.events.emitEvent({
       type: 'error',
       message: `Session initialization failed: ${initError instanceof Error ? initError.message : String(initError)}`,
@@ -253,7 +251,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     pipelineCost = session.accumulatedCost;
   } catch (error) {
     const sessionError = handleSessionError(session, error);
-    console.error(`The Shem (${template.id}) encountered an error at step "${sessionError.step}":`, sessionError.cause);
+    logger.error('Workflow error', { workflow: template.id, step: sessionError.step, error: sessionError.cause });
     // Still emit session_end on error so frontend isn't stuck,
     // but guard against double emission (streamMessages may have already emitted it)
     if (session.workflow?.currentStep !== 'delivered') {
@@ -287,7 +285,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
       });
     }
   } catch (assemblyError) {
-    console.error('Document assembly failed (non-fatal):', assemblyError);
+    logger.error('Document assembly failed (non-fatal)', { error: assemblyError });
     // Non-fatal: the process output is still available via finalOutput.
     // Emit error event so frontend knows assembly failed.
     session.events.emitEvent({

@@ -13,6 +13,9 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { eventTimestamp } from '../events/event-bus.js';
 import type { SessionState } from '../session/session-state.js';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('RETRY');
 
 /** Status codes that indicate a transient error worth retrying. */
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 529]);
@@ -124,7 +127,7 @@ function retryQueryAsync(
       const status = getErrorStatus(lastError);
       const reason = status ? `API ${status}` : (lastError instanceof Error ? lastError.message : 'Unknown error');
 
-      console.warn(`[RETRY] query() failed (${reason}), retrying in ${delay}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      logger.warn('query() failed, retrying', { reason, delayMs: delay, attempt, maxRetries: MAX_RETRIES });
 
       // Emit retry event so the frontend shows "Retrying..."
       if (session) {

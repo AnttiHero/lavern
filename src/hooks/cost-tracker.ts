@@ -12,6 +12,9 @@
 import type { HookInput, HookJSONOutput } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('COST');
 
 // ── Cost Estimation ─────────────────────────────────────────────────────
 // Per-tool cost estimates in USD. These are rough approximations based on
@@ -82,7 +85,7 @@ export function createCostHooks(session: SessionState) {
     const remaining = session.budgetUsd - session.accumulatedCost;
 
     if (remaining <= 0) {
-      console.error(`[COST] Budget exceeded! $${session.accumulatedCost.toFixed(2)} / $${session.budgetUsd.toFixed(2)}`);
+      logger.error('Budget exceeded', { cost: session.accumulatedCost.toFixed(2), budget: session.budgetUsd.toFixed(2) });
       session.events.emitEvent({
         type: 'cost_update',
         totalUsd: session.accumulatedCost,
@@ -100,7 +103,7 @@ export function createCostHooks(session: SessionState) {
     if (toolName) {
       const estimatedCost = estimateToolCost(toolName);
       if (session.accumulatedCost + estimatedCost > session.budgetUsd) {
-        console.error(`[COST] Pre-flight rejection: ${toolName} estimated at $${estimatedCost.toFixed(3)}, only $${remaining.toFixed(2)} remaining`);
+        logger.error('Pre-flight rejection', { toolName, estimatedCost: estimatedCost.toFixed(3), remaining: remaining.toFixed(2) });
         session.events.emitEvent({
           type: 'cost_update',
           totalUsd: session.accumulatedCost,
@@ -117,13 +120,13 @@ export function createCostHooks(session: SessionState) {
     // Early warning at 50% budget consumed (fires once per session)
     if (remaining < session.budgetUsd * 0.5 && session.accumulatedCost > 0 && !warnedThresholds.has('50pct')) {
       warnedThresholds.add('50pct');
-      console.error(`[COST] 50%+ budget consumed: $${session.accumulatedCost.toFixed(2)} / $${session.budgetUsd.toFixed(2)} ($${remaining.toFixed(2)} remaining)`);
+      logger.error('50%+ budget consumed', { cost: session.accumulatedCost.toFixed(2), budget: session.budgetUsd.toFixed(2), remaining: remaining.toFixed(2) });
     }
 
     // Warning at 90% budget consumed (fires once per session)
     if (remaining < session.budgetUsd * 0.1 && !warnedThresholds.has('90pct')) {
       warnedThresholds.add('90pct');
-      console.error(`[COST] Warning: Only $${remaining.toFixed(2)} remaining of $${session.budgetUsd.toFixed(2)} budget.`);
+      logger.warn('Low budget remaining', { remaining: remaining.toFixed(2), budget: session.budgetUsd.toFixed(2) });
     }
 
     return { continue: true };

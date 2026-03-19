@@ -16,6 +16,9 @@ import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import type { AuditEntry } from '../types/audit.js';
 import type { SessionState } from '../session/session-state.js';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('AUDIT');
 
 function computeHash(data: string): string {
   return crypto.createHash('sha256').update(data).digest('hex');
@@ -32,7 +35,7 @@ function appendLine(session: SessionState, data: unknown): void {
   } catch (err) {
     // On write failure (disk full, permissions, etc.), write a corruption marker
     // so verifyAuditChain can identify the exact break point.
-    console.error(`[AUDIT] Failed to append to ${session.auditCurrentFile}:`, err instanceof Error ? err.message : err);
+    logger.error('Failed to append to audit file', { file: session.auditCurrentFile, error: err instanceof Error ? err.message : err });
     try {
       fs.appendFileSync(session.auditCurrentFile, `\n{"type":"corruption_marker","reason":"write_failed","timestamp":"${new Date().toISOString()}"}\n`, 'utf-8');
     } catch { /* best-effort — if even the marker fails, we can't do anything */ }

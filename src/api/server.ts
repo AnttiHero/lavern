@@ -58,6 +58,9 @@ import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives } from '../db/database.js';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('SERVER');
 
 export async function startApiServer(port: number): Promise<void> {
   const isProd = process.env.NODE_ENV === 'production';
@@ -569,7 +572,7 @@ export async function startApiServer(port: number): Promise<void> {
             extra,
           });
           fetch(sentryUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } })
-            .catch(sentryErr => console.error('[SENTRY] Failed to send error to Sentry:', sentryErr));
+            .catch(sentryErr => logger.error('sentry_send_failed', sentryErr));
         } catch (sentryErr) { console.error('[SENTRY] Error building Sentry payload:', sentryErr); }
       };
       console.log('[SENTRY] Error monitoring enabled');

@@ -7,42 +7,15 @@
  * Pattern follows POST /api/briefing/interview exactly.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { PartnerConsultSchema, PartnerRecommendationSchema } from '../partner/partner-schema.js';
 import { buildPartnerSystemPrompt, buildPartnerFinalizationPrompt } from '../partner/partner-prompt.js';
 import { config } from '../../config.js';
+import { createApiKeyAccessor } from '../../utils/ensure-api-key.js';
+import { createLogger } from '../../utils/logger.js';
 
-// ── API key management (same pattern as briefing.ts) ─────────────────────
-
-function ensureApiKey(): string {
-  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-  try {
-    const envPath = path.resolve(process.cwd(), '.env');
-    const content = fs.readFileSync(envPath, 'utf-8');
-    for (const line of content.split('\n')) {
-      const match = line.match(/^ANTHROPIC_API_KEY=(.+)/);
-      if (match) {
-        const key = match[1].trim();
-        process.env.ANTHROPIC_API_KEY = key;
-        return key;
-      }
-    }
-  } catch { /* ignore */ }
-  return '';
-}
-
-let _apiKey: string | undefined;
-function getApiKey(): string {
-  if (!_apiKey) {
-    _apiKey = ensureApiKey();
-    if (!_apiKey) throw new Error('ANTHROPIC_API_KEY is required for partner consultation');
-  }
-  return _apiKey;
-}
-
-const API_KEY_LAZY = { get value() { return getApiKey(); } };
+const logger = createLogger('PARTNER');
+const API_KEY_LAZY = createApiKeyAccessor('partner consultation');
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const PARTNER_MODEL = config.routerModel;
 
@@ -133,14 +106,14 @@ export function registerPartnerRoutes(fastify: FastifyInstance): void {
         const validated = PartnerRecommendationSchema.safeParse(rawResult);
 
         if (!validated.success) {
-          console.error('[PARTNER] Finalization schema validation failed:', validated.error);
+          logger.error('Finalization schema validation failed', { error: validated.error });
           // Return raw result anyway — the frontend can handle partial data
           return reply.send(rawResult);
         }
 
         return reply.send(validated.data);
       } catch (err) {
-        console.error('[PARTNER] Finalization failed:', err);
+        logger.error('Finalization failed', { error: err });
         return reply.status(500).send({
           error: 'Partner finalization failed',
           message: err instanceof Error ? err.message : String(err),
@@ -283,7 +256,7 @@ export function registerPartnerRoutes(fastify: FastifyInstance): void {
       }
       reply.raw.end();
     } catch (err) {
-      console.error('[PARTNER] Turn failed:', err);
+      logger.error('Turn failed', { error: err });
       const errMsg = err instanceof Error ? err.message : String(err);
       if (!reply.raw.headersSent) {
         reply.raw.writeHead(500, { 'Content-Type': 'application/json' });

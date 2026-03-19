@@ -5,58 +5,17 @@
  * POST /api/briefing/interview  — Conversational interview turn (SSE streaming)
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { BriefingAnalyzeRequestSchema, BriefingAnalyzeResponseSchema } from '../briefing/briefing-schema.js';
 import { analyzeBriefing } from '../briefing/briefing-analyzer.js';
 import { InterviewTurnSchema } from '../briefing/interview-schema.js';
 import { buildInterviewSystemPrompt, buildFinalizationSystemPrompt } from '../briefing/interview-prompt.js';
 import { config } from '../../config.js';
+import { createApiKeyAccessor } from '../../utils/ensure-api-key.js';
+import { createLogger } from '../../utils/logger.js';
 
-/**
- * Load ANTHROPIC_API_KEY from .env if not already in process.env.
- */
-function ensureApiKey(): string {
-  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-
-  try {
-    const envPath = path.resolve(process.cwd(), '.env');
-    const content = fs.readFileSync(envPath, 'utf-8');
-    for (const line of content.split('\n')) {
-      const match = line.match(/^ANTHROPIC_API_KEY=(.+)/);
-      if (match) {
-        const key = match[1].trim();
-        process.env.ANTHROPIC_API_KEY = key;
-        return key;
-      }
-    }
-    console.warn('[BRIEFING] .env file found but ANTHROPIC_API_KEY not present — interview calls will fail');
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT') {
-      // .env not found — expected in some environments
-    } else {
-      // .env exists but is unreadable (permissions, encoding, etc.)
-      console.error(`[BRIEFING] Failed to read .env file: ${code ?? err}`);
-    }
-  }
-
-  console.warn('[BRIEFING] ANTHROPIC_API_KEY not found in environment or .env file — interview calls will fail');
-  return '';
-}
-
-let _apiKey: string | undefined;
-function getApiKey(): string {
-  if (!_apiKey) {
-    _apiKey = ensureApiKey();
-    if (!_apiKey) throw new Error('ANTHROPIC_API_KEY is required for interview calls');
-  }
-  return _apiKey;
-}
-
-// Backwards compat — lazy-loaded
-const API_KEY_LAZY = { get value() { return getApiKey(); } };
+const logger = createLogger('BRIEFING');
+const API_KEY_LAZY = createApiKeyAccessor('interview calls');
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const INTERVIEW_MODEL = config.routerModel; // Sonnet — old Haiku was too dumb for interviews
 
@@ -118,7 +77,7 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
       const result = await analyzeBriefing(parsed.data);
       return reply.send(result);
     } catch (err) {
-      console.error('[BRIEFING] Analysis failed:', err);
+      logger.error('Analysis failed', { error: err });
       return reply.status(500).send({
         error: 'Briefing analysis failed',
         message: err instanceof Error ? err.message : String(err),
@@ -173,13 +132,13 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
         const validated = BriefingAnalyzeResponseSchema.safeParse(rawResult);
 
         if (!validated.success) {
-          console.error('[INTERVIEW] Finalization schema validation failed:', validated.error);
+          logger.error('Finalization schema validation failed', { error: validated.error });
           throw new Error('Finalization did not return a valid structured response');
         }
 
         return reply.send(validated.data);
       } catch (err) {
-        console.error('[INTERVIEW] Finalization failed:', err);
+        logger.error('Finalization failed', { error: err });
         return reply.status(500).send({
           error: 'Interview finalization failed',
           message: err instanceof Error ? err.message : String(err),
@@ -335,7 +294,7 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
       }
       reply.raw.end();
     } catch (err) {
-      console.error('[INTERVIEW] Turn failed:', err);
+      logger.error('Interview turn failed', { error: err });
       const errMsg = err instanceof Error ? err.message : String(err);
       if (!reply.raw.headersSent) {
         reply.raw.writeHead(500, { 'Content-Type': 'application/json' });

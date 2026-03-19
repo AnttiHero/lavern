@@ -18,6 +18,9 @@ import { readJsonFile, writeJsonFileAtomic, ensureDir } from '../utils/fs-helper
 import { SUPPORTED_EXTENSIONS } from '../documents/parser.js';
 import { config } from '../config.js';
 import type { ClawState, DocumentEntry, DocumentStatus } from './types.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CLAW-REGISTRY');
 
 // ── Defaults ──────────────────────────────────────────────────────────────
 
@@ -137,7 +140,7 @@ export class DocumentRegistry {
 
     // Quick pre-check with lstat size (may race, but hashFile re-checks atomically)
     if (lstat.size > config.claw.maxFileSizeBytes) {
-      console.warn(`[CLAW] Skipping ${filePath}: ${(lstat.size / 1024 / 1024).toFixed(1)}MB exceeds ${(config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0)}MB limit`);
+      logger.warn('Skipping oversized file', { filePath, sizeMB: (lstat.size / 1024 / 1024).toFixed(1), limitMB: (config.claw.maxFileSizeBytes / 1024 / 1024).toFixed(0) });
       return 'unchanged';
     }
 
@@ -147,7 +150,7 @@ export class DocumentRegistry {
       // closing the TOCTOU window between the lstat above and the actual read.
       hash = hashFile(filePath, config.claw.maxFileSizeBytes);
     } catch (err) {
-      console.warn(`[CLAW] Skipping ${filePath}: ${(err as Error).message}`);
+      logger.warn('Skipping file', { filePath, error: (err as Error).message });
       return 'unchanged';
     }
 
@@ -386,13 +389,13 @@ export class DocumentRegistry {
         const merged = { ...existingArchive, ...archiveEntries };
         writeJsonFileAtomic(archivePath, merged);
         this.save();
-        console.log(`[CLAW] Compacted state: archived ${archivedCount} entries (>${maxAgeDays} days old). Active: ${Object.keys(this.state.documents).length}`);
+        logger.info('Compacted state', { archivedCount, maxAgeDays, activeCount: Object.keys(this.state.documents).length });
       } catch (err) {
         // Restore archived entries to active state on failure
         for (const [hash, doc] of Object.entries(archiveEntries)) {
           this.state.documents[hash] = doc;
         }
-        console.error(`[CLAW] Compaction failed, restored ${archivedCount} entries:`, err);
+        logger.error('Compaction failed, restored entries', { archivedCount, error: err });
         archivedCount = 0;
       }
     }

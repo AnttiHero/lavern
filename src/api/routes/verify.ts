@@ -17,6 +17,9 @@ import { AutoApproveGateResolver } from '../../gates/gate-resolver.js';
 import type { LegalRequest } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { validateBody } from '../middleware/validation.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('VERIFY');
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -86,7 +89,7 @@ export function registerVerifyRoutes(
         maxBudgetUsd: 3.0,
         yoloMode: true,
       }).catch((err) => {
-        console.error(`[VERIFY] Session ${session.id} failed:`, err);
+        logger.error('Session failed', { sessionId: session.id, error: err });
       });
 
       return reply.status(202).send({

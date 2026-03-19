@@ -43,6 +43,9 @@ import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('ASSEMBLY');
 
 // ── Token Pricing ────────────────────────────────────────────────────────
 const PRICING: Record<string, { input: number; output: number }> = {
@@ -187,7 +190,7 @@ FAIL: [one sentence explaining why this document is not good enough]`;
 
     // Parse response
     if (responseText.startsWith('PASS')) {
-      console.log(`[QUALITY GATE] PASSED (~$${gateCost.toFixed(4)})`);
+      logger.info('Quality gate passed', { cost: gateCost.toFixed(4) });
       return { pass: true, cost: gateCost };
     }
 
@@ -198,13 +201,13 @@ FAIL: [one sentence explaining why this document is not good enough]`;
         ? responseText.substring(4).replace(/^[\s:—-]+/, '').trim() || 'Document did not meet quality standards'
         : 'Quality gate returned ambiguous result: ' + responseText.substring(0, 200);
 
-    console.warn(`[QUALITY GATE] FAILED: ${critique} (~$${gateCost.toFixed(4)})`);
+    logger.warn('Quality gate failed', { critique, cost: gateCost.toFixed(4) });
     return { pass: false, critique, cost: gateCost };
   } catch (error) {
     // Quality gate API error — log and let the document through since
     // it already passed structural validation. Better to deliver a
     // structurally-valid document than block on an API flake.
-    console.error('[QUALITY GATE] API error (allowing structurally-valid document through):', error);
+    logger.error('Quality gate API error (allowing structurally-valid document through)', { error });
     return { pass: true, critique: undefined, cost: 0 };
   }
 }
@@ -246,9 +249,9 @@ export async function assembleDocument(
     timestamp: eventTimestamp(),
   });
 
-  console.log('\n' + '─'.repeat(60));
-  console.log('DOCUMENT ASSEMBLY — Producing final deliverable...');
-  console.log('─'.repeat(60));
+  logger.info('─'.repeat(60));
+  logger.info('DOCUMENT ASSEMBLY — Producing final deliverable...');
+  logger.info('─'.repeat(60));
 
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
@@ -266,7 +269,7 @@ export async function assembleDocument(
         assemblyContext += RETRY_ADDENDUM_3.replace('{{REASONS}}', rejectionReasons.join('; '));
       }
 
-      console.log(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS}...`);
+      logger.info('Assembly attempt', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS });
 
       const response = await client.messages.create({
         model,
@@ -311,11 +314,11 @@ export async function assembleDocument(
         rejectionReasons.push(`structural: ${reason}`);
 
         const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
-        console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (structural): ${reason} (${assembledText.length} chars)`);
-        console.warn(`[ASSEMBLY] Rejected output preview: ${preview}`);
+        logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
+        logger.warn('Rejected output preview', { preview });
 
         if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
-          console.log(`[ASSEMBLY] Retrying with escalated instructions (attempt ${attempt + 1})...`);
+          logger.info('Retrying with escalated instructions', { nextAttempt: attempt + 1 });
           session.events.emitEvent({
             type: 'tool_used',
             tool: 'document_assembly_retry',
@@ -336,8 +339,8 @@ export async function assembleDocument(
       }
 
       if (qualityGate.pass) {
-        console.log(`Assembly complete (attempt ${attempt}): ${assembledText.length} chars, ${inputTokens} in / ${outputTokens} out, ~$${totalAssemblyCost.toFixed(2)}`);
-        console.log('─'.repeat(60));
+        logger.info('Assembly complete', { attempt, chars: assembledText.length, inputTokens, outputTokens, cost: totalAssemblyCost.toFixed(2) });
+        logger.info('─'.repeat(60));
 
         emitAssemblyComplete(session, totalAssemblyCost);
         return assembledText;
@@ -347,10 +350,10 @@ export async function assembleDocument(
       const critique = qualityGate.critique ?? 'Document did not pass quality review';
       rejectionReasons.push(`quality_gate: ${critique}`);
 
-      console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (quality gate): ${critique} (${assembledText.length} chars)`);
+      logger.warn('Assembly attempt rejected (quality gate)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, critique, chars: assembledText.length });
 
       if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
-        console.log(`[ASSEMBLY] Retrying with escalated instructions + quality feedback (attempt ${attempt + 1})...`);
+        logger.info('Retrying with escalated instructions + quality feedback', { nextAttempt: attempt + 1 });
         session.events.emitEvent({
           type: 'tool_used',
           tool: 'document_assembly_retry',
@@ -359,7 +362,7 @@ export async function assembleDocument(
         });
       }
     } catch (error) {
-      console.error(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} API error:`, error);
+      logger.error('Assembly attempt API error', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, error });
       rejectionReasons.push(`api_error: ${error instanceof Error ? error.message : String(error)}`);
 
       session.events.emitEvent({
@@ -372,12 +375,12 @@ export async function assembleDocument(
       // If this was the last attempt, fall through to the return below
       if (attempt >= MAX_ASSEMBLY_ATTEMPTS) break;
 
-      console.warn('[ASSEMBLY] Retrying after API error...');
+      logger.warn('Retrying after API error...');
     }
   }
 
   // All attempts exhausted — return empty string, NEVER return session.finalOutput
-  console.error(`[ASSEMBLY] All ${MAX_ASSEMBLY_ATTEMPTS} attempts failed. Returning empty document.`);
+  logger.error('All assembly attempts failed, returning empty document', { attempts: MAX_ASSEMBLY_ATTEMPTS });
 
   session.events.emitEvent({
     type: 'error',
@@ -442,7 +445,7 @@ export function stripProcessText(text: string): string {
       const isProcess = processPatterns.some(p => p.test(preamble));
       if (isProcess) {
         cleaned = cleaned.substring(headingIndex);
-        console.log(`[ASSEMBLY] Stripped ${headingIndex} chars of preamble`);
+        logger.info('Stripped preamble', { chars: headingIndex });
       }
     }
   }

@@ -7,6 +7,9 @@
  */
 
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('EMAIL');
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -66,10 +69,8 @@ async function send(payload: EmailPayload): Promise<boolean> {
   const apiKey = config.email.resendApiKey;
 
   if (!apiKey) {
-    console.log(`[EMAIL] (no RESEND_API_KEY — logging instead)`);
-    console.log(`[EMAIL]   To: ${payload.to}`);
-    console.log(`[EMAIL]   Subject: ${payload.subject}`);
-    if (payload.text) console.log(`[EMAIL]   ${payload.text}`);
+    logger.info('email_dev_mode', { to: payload.to, subject: payload.subject });
+    if (payload.text) logger.debug('email_text', payload.text);
     return true; // Graceful — don't break the flow
   }
 
@@ -85,10 +86,10 @@ async function send(payload: EmailPayload): Promise<boolean> {
       ...(payload.text ? { text: payload.text } : {}),
     });
 
-    console.log(`[EMAIL] Sent "${payload.subject}" to ${payload.to}`);
+    logger.info('email_sent', { subject: payload.subject, to: payload.to });
     return true;
   } catch (err) {
-    console.error('[EMAIL] Failed to send:', err);
+    logger.error('email_send_failed', err);
     return false;
   }
 }

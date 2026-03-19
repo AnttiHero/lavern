@@ -26,7 +26,10 @@ import { RouterClassificationSchema } from './router-schema.js';
 import { zodToOutputFormat } from '../types/output-schemas.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
 import { mistralChat } from '../providers/mistral.js';
+
+const logger = createLogger('ROUTER');
 
 // Ensure templates are registered
 import '../workflows/index.js';
@@ -85,12 +88,12 @@ export async function routeRequest(
         routingMethod = 'llm';
       } else {
         // LLM hallucinated a workflow — fall back to deterministic
-        console.warn(`[ROUTER] LLM returned unknown workflow "${llmResult.selectedWorkflow}" — falling back to deterministic routing`);
+        logger.warn('llm_unknown_workflow', llmResult.selectedWorkflow);
         classification = classifyRequest(request);
       }
     } catch (err) {
       // LLM call failed — fall back to deterministic
-      console.warn('[ROUTER] LLM classification failed, falling back to deterministic routing:', err instanceof Error ? err.message : err);
+      logger.warn('llm_classification_failed', err instanceof Error ? err.message : err);
       classification = classifyRequest(request);
     }
   } else {

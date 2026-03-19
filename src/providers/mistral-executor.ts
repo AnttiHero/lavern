@@ -32,6 +32,9 @@ import type { LegalRequest, RouterClassification } from '../types/index.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import type { SchemOptions } from '../orchestrator.js';
 import type OpenAI from 'openai';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('MISTRAL');
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -82,23 +85,14 @@ export async function runMistralWorkflow(
     timestamp: eventTimestamp(),
   });
 
-  console.log(`
-╔${'═'.repeat(62)}╗
-║                        THE SHEM v8                           ║
-║        "We know what's written in the Golem's mouth"         ║
-║                    ⚡ MISTRAL PROVIDER ⚡                     ║
-╚${'═'.repeat(62)}╝
-
-Session: ${session.id}
-Provider: mistral (${model})
-Workflow: ${template.id} (${template.name})
-Request Type: ${classification.requestType}
-Complexity: ${classification.complexity}
-${request.documentPath ? `Document: ${request.documentPath}` : ''}
-${request.requestText ? `Request: ${request.requestText.substring(0, 100)}...` : ''}
-Budget: $${maxBudgetUsd.toFixed(2)}
-Specialists: ${classification.selectedSpecialists.join(', ')}
-`);
+  logger.info('Starting Mistral workflow', {
+    sessionId: session.id,
+    workflow: `${template.id} (${template.name})`,
+    requestType: classification.requestType,
+    budget: maxBudgetUsd.toFixed(2),
+    model: config.mistral.defaultModel,
+    specialists: classification.selectedSpecialists.join(', '),
+  });
 
   // ── Build system prompt (identical to Claude path) ──────────────────
 
@@ -150,13 +144,13 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     while (turns < maxTurns) {
       // Check if session was halted (cancelled by user)
       if (session.isHalted()) {
-        console.log('[MISTRAL] Session halted — stopping execution');
+        logger.info('Session halted — stopping execution');
         break;
       }
 
       // Budget check
       if (totalCost >= maxBudgetUsd) {
-        console.log(`[MISTRAL] Budget exhausted ($${totalCost.toFixed(4)} >= $${maxBudgetUsd.toFixed(2)})`);
+        logger.info('Budget exhausted', { cost: totalCost.toFixed(4), budget: maxBudgetUsd.toFixed(2) });
         break;
       }
 
@@ -174,7 +168,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
       session.updateCost(totalCost);
 
       if (logLevel === 'debug') {
-        console.error(`[MISTRAL] Turn ${turns}: +$${result.cost.toFixed(4)} (total: $${totalCost.toFixed(4)}), finish: ${result.finishReason}`);
+        logger.error('Turn completed', { turn: turns, turnCost: result.cost.toFixed(4), totalCost: totalCost.toFixed(4), finishReason: result.finishReason });
       }
 
       const msg = result.message;
@@ -216,12 +210,12 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
         try {
           toolArgs = JSON.parse(toolCall.function.arguments);
         } catch (parseErr) {
-          console.warn(`[MISTRAL] Failed to parse tool arguments for ${toolName}:`, parseErr instanceof Error ? parseErr.message : parseErr);
+          logger.warn('Failed to parse tool arguments', { toolName, error: parseErr instanceof Error ? parseErr.message : parseErr });
           toolArgs = {};
         }
 
         if (logLevel === 'debug') {
-          console.error(`[MISTRAL] Tool call: ${toolName}(${JSON.stringify(toolArgs).substring(0, 100)})`);
+          logger.error('Tool call', { toolName, args: JSON.stringify(toolArgs).substring(0, 100) });
         }
 
         // Emit tool use event
@@ -252,19 +246,19 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
 
         // Check halt between tool calls
         if (session.isHalted()) {
-          console.log('[MISTRAL] Session halted during tool execution');
+          logger.info('Session halted during tool execution');
           break;
         }
       }
     }
 
     if (turns >= maxTurns) {
-      console.warn(`[MISTRAL] Hit max turns (${maxTurns})`);
+      logger.warn('Hit max turns', { maxTurns });
     }
 
   } catch (error) {
     const sessionError = handleSessionError(session, error);
-    console.error(`[MISTRAL] (${template.id}) error at step "${sessionError.step}":`, sessionError.cause);
+    logger.error('Workflow error', { workflow: template.id, step: sessionError.step, error: sessionError.cause });
 
     session.events.emitEvent({
       type: 'session_end',
@@ -289,7 +283,7 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
       });
     }
   } catch (assemblyError) {
-    console.error('[MISTRAL] Document assembly failed (non-fatal):', assemblyError);
+    logger.error('Document assembly failed (non-fatal)', { error: assemblyError });
     session.events.emitEvent({
       type: 'error',
       message: `Document assembly error: ${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`,
@@ -307,13 +301,14 @@ Specialists: ${classification.selectedSpecialists.join(', ')}
     timestamp: eventTimestamp(),
   });
 
-  console.log('\n' + '═'.repeat(60));
-  console.log(`SESSION COMPLETE (${template.id}) — Mistral`);
-  console.log(`Cost: $${totalCost.toFixed(2)}`);
-  console.log(`Turns: ${turns}`);
-  console.log(`Findings: ${session.debate.findings.length}`);
-  console.log(`Resolutions: ${session.debate.resolutions.length}`);
-  console.log('═'.repeat(60));
+  logger.info('Session complete', {
+    workflow: template.id,
+    provider: 'Mistral',
+    cost: totalCost.toFixed(2),
+    turns,
+    findings: session.debate.findings.length,
+    resolutions: session.debate.resolutions.length,
+  });
 
   return session;
 }

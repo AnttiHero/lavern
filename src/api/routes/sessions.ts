@@ -46,6 +46,9 @@ import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('SESSIONS');
 
 /** Safely parse JSON, returning fallback on failure. */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
@@ -175,7 +178,7 @@ export function registerSessionRoutes(
           }
         }
       } catch (err) {
-        console.warn(`[SESSION] Failed to parse soul from user profile ${userId}:`, err);
+        logger.warn('Failed to parse soul from user profile', { userId, error: err });
       }
     }
 
@@ -219,11 +222,10 @@ export function registerSessionRoutes(
         intensity: body.options?.intensity,
         effort: body.options?.effort,
         yoloMode: body.options?.yoloMode,
-        verification: body.options?.verification,
         provider: body.options?.provider,
       }).catch((err) => {
         try {
-          console.error(`[API] Session ${session.id} failed:`, err);
+          logger.error('Session failed', { sessionId: session.id, error: err });
           session.events.emitEvent({
             type: 'error',
             message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -239,7 +241,7 @@ export function registerSessionRoutes(
             timestamp: new Date().toISOString(),
           });
         } catch (innerErr) {
-          console.error(`[API] Session ${session.id} — error handler failed:`, innerErr);
+          logger.error('Session error handler failed', { sessionId: session.id, error: innerErr });
         }
       });
     } else if (body.documentPath) {
@@ -259,7 +261,7 @@ export function registerSessionRoutes(
         model: body.options?.model,
         maxTurns: body.options?.maxTurns,
       }).catch((err) => {
-        console.error(`[API] Session ${session.id} failed:`, err);
+        logger.error('Session failed', { sessionId: session.id, error: err });
         session.events.emitEvent({
           type: 'error',
           message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -596,7 +598,7 @@ export function registerSessionRoutes(
     if (format === 'md' || format === 'docx' || format === 'pdf') {
       const validation = validateDeliverable(deliverable);
       if (!validation.valid) {
-        console.error(`[DOWNLOAD] Blocked invalid deliverable for session ${id}: ${validation.reason}`);
+        logger.error('Blocked invalid deliverable', { sessionId: id, reason: validation.reason });
         return reply.status(503).send({
           error: 'The document is not ready. Assembly may still be in progress or failed. Try downloading structured data (JSON) instead, or retry later.',
           reason: validation.reason,
@@ -622,7 +624,7 @@ export function registerSessionRoutes(
           .header('Content-Disposition', `attachment; filename="${filename}"`)
           .send(docxBuffer);
       } catch (err) {
-        console.error('DOCX conversion error:', err);
+        logger.error('DOCX conversion error', { sessionId: id, error: err });
         return reply.status(500).send({ error: 'Failed to generate DOCX. Try downloading as Markdown instead.' });
       }
     }
@@ -645,7 +647,7 @@ export function registerSessionRoutes(
             .send(buffer);
         }
       } catch (err) {
-        console.error('PDF conversion error:', err);
+        logger.error('PDF conversion error', { sessionId: id, error: err });
         return reply.status(500).send({ error: 'Failed to generate PDF. Try downloading as Markdown instead.' });
       }
     }
@@ -690,7 +692,7 @@ export function registerSessionRoutes(
       const hasResolutions = session.debate.resolutions.length > 0;
 
       if (!hasAssembledDoc && !hasFindings && !hasResolutions) {
-        console.error(`[DOWNLOAD] Blocked empty summary for session ${id}: no document, no findings, no resolutions`);
+        logger.error('Blocked empty summary', { sessionId: id, reason: 'no document, no findings, no resolutions' });
         return reply.status(503).send({
           error: 'Summary not available. Document assembly failed and no analysis findings were produced. Try downloading structured data (JSON) instead.',
           reason: 'no_content',
@@ -736,7 +738,7 @@ export function registerSessionRoutes(
       // v19: Validate the assembled summary has substance before serving
       const summaryContent = lines.join('\n');
       if (summaryContent.length < 200) {
-        console.error(`[DOWNLOAD] Blocked thin summary for session ${id}: only ${summaryContent.length} chars`);
+        logger.error('Blocked thin summary', { sessionId: id, chars: summaryContent.length });
         return reply.status(503).send({
           error: 'Summary content is insufficient. The analysis may not have produced enough findings. Try downloading structured data (JSON) instead.',
           reason: 'thin_summary',
@@ -803,7 +805,7 @@ export function registerSessionRoutes(
         success: false,
       });
     } catch (err) {
-      console.error(`[API] Reassembly failed for session ${id}:`, err);
+      logger.error('Reassembly failed', { sessionId: id, error: err });
       return reply.status(500).send({
         error: 'Assembly failed',
         details: err instanceof Error ? err.message : String(err),
@@ -884,7 +886,7 @@ export function registerSessionRoutes(
 
       // v18: Reject if the model produced process-dump text instead of a document
       if (isProcessDump(generatedContent)) {
-        console.error(`[API] Derivative generation produced process dump (${body.type})`);
+        logger.error('Derivative generation produced process dump', { type: body.type });
         return reply.status(503).send({
           error: 'Generation produced internal processing notes instead of a document. Please try again.',
         });
@@ -919,7 +921,7 @@ export function registerSessionRoutes(
         sessionId: id,
       });
     } catch (err) {
-      console.error(`[API] Derivative generation failed (${body.type}):`, err);
+      logger.error('Derivative generation failed', { type: body.type, error: err });
       return reply.status(500).send({
         error: `Failed to generate ${derivativeType.title}`,
         details: err instanceof Error ? err.message : String(err),
@@ -1069,7 +1071,7 @@ ${buildFullContext(session)}`;
       }
       reply.raw.end();
     } catch (err) {
-      console.error(`[API] Conversation failed for session ${id}:`, err);
+      logger.error('Conversation failed', { sessionId: id, error: err });
       // If headers haven't been sent yet, send a normal error
       if (!reply.raw.headersSent) {
         return reply.status(500).send({

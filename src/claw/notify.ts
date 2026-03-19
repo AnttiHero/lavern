@@ -11,6 +11,9 @@
 
 import { execFileSync } from 'node:child_process';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('NOTIFY');
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -89,7 +92,7 @@ async function sendWebhook(notification: ClawNotification, retries = 2): Promise
       await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt), 30_000)));
     }
   }
-  console.warn(`[CLAW] Webhook delivery failed for ${notification.type} after ${retries + 1} attempts`);
+  logger.warn('webhook_delivery_failed', { type: notification.type, attempts: retries + 1 });
 }
 
 function sendMacOsNotification(notification: ClawNotification): void {
@@ -108,7 +111,7 @@ function sendMacOsNotification(notification: ClawNotification): void {
       `display notification "${message}" with title "Lavern" subtitle "${title}"`,
     ], { timeout: 3000, stdio: 'ignore' });
   } catch (err) {
-    console.warn(`[CLAW] macOS notification failed for ${notification.type}:`, (err as Error).message ?? err);
+    logger.warn('macos_notification_failed', { type: notification.type, error: (err as Error).message ?? err });
   }
 }
 
@@ -122,6 +125,6 @@ export function notify(notification: ClawNotification): void {
   if (!shouldSend(notification)) return;
 
   // Fire both in parallel, don't await
-  sendWebhook(notification).catch(err => console.error('[NOTIFY] Webhook send failed:', err));
+  sendWebhook(notification).catch(err => logger.error('webhook_send_failed', err));
   sendMacOsNotification(notification);
 }

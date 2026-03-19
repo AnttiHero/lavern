@@ -16,6 +16,9 @@ import * as path from 'node:path';
 import { eventTimestamp } from '../events/event-bus.js';
 import { ensureDir, writeJsonFileAtomic } from './fs-helpers.js';
 import type { SessionState } from '../session/session-state.js';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('ERROR-RECOVERY');
 
 // ── Structured Error ──────────────────────────────────────────────────────
 
@@ -128,6 +131,6 @@ function saveErrorState(session: SessionState, error: SessionError): void {
     writeJsonFileAtomic(errorFile, state);
   } catch {
     // Best-effort — don't let error saving fail the error handling
-    console.error(`[ErrorRecovery] Failed to save error state for ${session.id}`);
+    logger.error('Failed to save error state', { sessionId: session.id });
   }
 }

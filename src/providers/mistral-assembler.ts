@@ -16,6 +16,9 @@ import { config } from '../config.js';
 import { mistralChat, estimateMistralCost } from './mistral.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('MISTRAL-ASSEMBLY');
 
 /** Maximum number of assembly attempts. */
 const MAX_ASSEMBLY_ATTEMPTS = 3;
@@ -112,7 +115,7 @@ FAIL: [one sentence explaining why]`;
     const responseText = (result.message.content ?? '').trim();
 
     if (responseText.startsWith('PASS')) {
-      console.log(`[QUALITY GATE] PASSED (~$${result.cost.toFixed(4)}) [Mistral]`);
+      logger.info('Quality gate passed', { cost: result.cost.toFixed(4) });
       return { pass: true, cost: result.cost };
     }
 
@@ -122,10 +125,10 @@ FAIL: [one sentence explaining why]`;
         ? responseText.substring(4).replace(/^[\s:—-]+/, '').trim() || 'Document did not meet quality standards'
         : 'Quality gate returned ambiguous result: ' + responseText.substring(0, 200);
 
-    console.warn(`[QUALITY GATE] FAILED: ${critique} (~$${result.cost.toFixed(4)}) [Mistral]`);
+    logger.warn('Quality gate failed', { critique, cost: result.cost.toFixed(4) });
     return { pass: false, critique, cost: result.cost };
   } catch (error) {
-    console.error('[QUALITY GATE] Error (allowing document through) [Mistral]:', error);
+    logger.error('Quality gate error (allowing document through)', { error });
     return { pass: true, critique: undefined, cost: 0 };
   }
 }
@@ -160,9 +163,9 @@ export async function assembleMistralDocument(
     timestamp: eventTimestamp(),
   });
 
-  console.log('\n' + '─'.repeat(60));
-  console.log('DOCUMENT ASSEMBLY — Producing final deliverable... [Mistral]');
-  console.log('─'.repeat(60));
+  logger.info('─'.repeat(60));
+  logger.info('DOCUMENT ASSEMBLY — Producing final deliverable...');
+  logger.info('─'.repeat(60));
 
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
@@ -177,7 +180,7 @@ export async function assembleMistralDocument(
         assemblyContext += RETRY_ADDENDUM_3.replace('{{REASONS}}', rejectionReasons.join('; '));
       }
 
-      console.log(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS}... [Mistral]`);
+      logger.info('Assembly attempt', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS });
 
       const result = await mistralChat({
         model,
@@ -207,8 +210,8 @@ export async function assembleMistralDocument(
         rejectionReasons.push(`structural: ${reason}`);
 
         const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
-        console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (structural): ${reason} (${assembledText.length} chars) [Mistral]`);
-        console.warn(`[ASSEMBLY] Rejected output preview: ${preview}`);
+        logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
+        logger.warn('Rejected output preview', { preview });
 
         if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
           session.events.emitEvent({
@@ -229,8 +232,8 @@ export async function assembleMistralDocument(
       }
 
       if (qualityGate.pass) {
-        console.log(`Assembly complete (attempt ${attempt}): ${assembledText.length} chars, ~$${totalAssemblyCost.toFixed(2)} [Mistral]`);
-        console.log('─'.repeat(60));
+        logger.info('Assembly complete', { attempt, chars: assembledText.length, cost: totalAssemblyCost.toFixed(2) });
+        logger.info('─'.repeat(60));
 
         emitAssemblyComplete(session, totalAssemblyCost);
         return assembledText;
@@ -239,7 +242,7 @@ export async function assembleMistralDocument(
       const critique = qualityGate.critique ?? 'Document did not pass quality review';
       rejectionReasons.push(`quality_gate: ${critique}`);
 
-      console.warn(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} REJECTED (quality gate): ${critique} [Mistral]`);
+      logger.warn('Assembly attempt rejected (quality gate)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, critique });
 
       if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
         session.events.emitEvent({
@@ -250,7 +253,7 @@ export async function assembleMistralDocument(
         });
       }
     } catch (error) {
-      console.error(`[ASSEMBLY] Attempt ${attempt}/${MAX_ASSEMBLY_ATTEMPTS} API error [Mistral]:`, error);
+      logger.error('Assembly attempt API error', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, error });
       rejectionReasons.push(`api_error: ${error instanceof Error ? error.message : String(error)}`);
 
       session.events.emitEvent({
@@ -264,7 +267,7 @@ export async function assembleMistralDocument(
     }
   }
 
-  console.error(`[ASSEMBLY] All ${MAX_ASSEMBLY_ATTEMPTS} attempts failed. Returning empty document. [Mistral]`);
+  logger.error('All assembly attempts failed, returning empty document', { attempts: MAX_ASSEMBLY_ATTEMPTS });
 
   session.events.emitEvent({
     type: 'error',

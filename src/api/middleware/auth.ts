@@ -14,6 +14,9 @@ import type { ClientIdentity } from '../../types/client.js';
 import { createClientIdentity, generateApiKey } from '../../types/client.js';
 import { CreateClientSchema, validateBody, type CreateClientBody } from './validation.js';
 import { getUserByToken as dbGetUserByToken, saveApiClient, getApiClientByKeyHash, getAllApiClients, removeApiClient as dbRemoveApiClient, updateApiClientLastActive } from '../../db/database.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('AUTH');
 
 /**
  * SQLite-backed client registry with in-memory cache for fast lookups.
@@ -48,15 +51,15 @@ export class ClientRegistry {
           this.clients.set(client.id, client);
           this.keyHashToClientId.set(row.api_key_hash, client.id);
         } catch {
-          console.warn(`[AUTH] Skipping corrupt client row ${row.id}`);
+          logger.warn('Skipping corrupt client row', { id: row.id });
         }
       }
       if (dbClients.length > 0) {
-        console.log(`[AUTH] Loaded ${dbClients.length} API client${dbClients.length === 1 ? '' : 's'} from database`);
+        logger.info(`Loaded ${dbClients.length} API client${dbClients.length === 1 ? '' : 's'} from database`);
       }
     } catch {
       // DB not initialized yet — that's OK, we'll work in-memory only
-      console.log('[AUTH] Database not available — client registry running in-memory only');
+      logger.info('Database not available — client registry running in-memory only');
     }
     this._loaded = true;
   }
@@ -99,7 +102,7 @@ export class ClientRegistry {
         registeredAt: client.registeredAt,
       });
     } catch (err) {
-      console.error('[AUTH] Failed to persist client to database:', err);
+      logger.error('Failed to persist client to database', { error: err });
       // Continue — in-memory still works
     }
 

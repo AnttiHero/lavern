@@ -26,6 +26,9 @@ import { config } from './config.js';
 import type { DocumentContext } from './types/index.js';
 import type { GateResolver } from './gates/gate-resolver.js';
 import type { EffortLevel } from './types/engagement.js';
+import { createLogger } from './utils/logger.js';
+
+const logger = createLogger('ORCHESTRATOR');
 
 export interface SchemOptions {
   maxBudgetUsd?: number;
@@ -77,19 +80,13 @@ export async function runTheShem(
     timestamp: eventTimestamp(),
   });
 
-  console.log(`
-\u2554${'═'.repeat(62)}\u2557
-\u2551                        THE SHEM v8                           \u2551
-\u2551              "We know what's written in the Golem's mouth"   \u2551
-\u255a${'═'.repeat(62)}\u255d
-
-Session: ${session.id}
-Document: ${documentPath}
-Context: ${context.moment} | ${context.audience} | ${context.jurisdiction}
-Budget: $${maxBudgetUsd.toFixed(2)}
-Model: ${model}
-Agents: 13 specialists (analysis, legal core, risk, quality, transformation, synthesis)
-`);
+  logger.info('Starting session', {
+    sessionId: session.id,
+    document: documentPath,
+    context: `${context.moment} | ${context.audience} | ${context.jurisdiction}`,
+    budget: maxBudgetUsd.toFixed(2),
+    model,
+  });
 
   // Create session-bound factories
   const shemMcpServer = createShemMcpServer(session);
@@ -233,7 +230,7 @@ Produce the complete dual-artifact output with full audit trail.
     }, session);
   } catch (queryError) {
     const sessionError = handleSessionError(session, queryError);
-    console.error(`The Shem failed to initialize query at step "${sessionError.step}":`, sessionError.cause);
+    logger.error('Failed to initialize query', { step: sessionError.step, error: sessionError.cause });
     throw queryError;
   }
 
@@ -246,7 +243,7 @@ Produce the complete dual-artifact output with full audit trail.
     });
   } catch (error) {
     const sessionError = handleSessionError(session, error);
-    console.error(`The Shem encountered an error at step "${sessionError.step}":`, sessionError.cause);
+    logger.error('Session error', { step: sessionError.step, error: sessionError.cause });
     throw error;
   }
 

@@ -33,6 +33,9 @@ import { checkX402Payment } from '../middleware/payment.js';
 import { config } from '../../config.js';
 import { canStartSession } from './billing.js';
 import { holdBillableHours } from '../../db/database.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('ENGAGE');
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -461,7 +464,7 @@ async function postWebhookWithRetry(
       await new Promise(r => setTimeout(r, delay));
     }
   }
-  console.error(`[ENGAGE] Webhook POST to ${url} failed after ${maxRetries + 1} attempts`);
+  logger.error('Webhook POST failed after retries', { url, attempts: maxRetries + 1 });
 }
 
 // ── Route Registration ──────────────────────────────────────────────────
@@ -574,11 +577,11 @@ export function registerEngageRoutes(
         const response = buildEngageResponse(session, 'completed', startTime);
         await postWebhookWithRetry(callbackUrl, response);
       }).catch(async (err) => {
-        console.error(`[ENGAGE] Session ${session.id} failed:`, err);
+        logger.error('Session failed', { sessionId: session.id, error: err });
         // Attempt to notify the callback of failure (with retry)
         const errorResponse = buildEngageResponse(session, 'failed', startTime);
         await postWebhookWithRetry(callbackUrl, errorResponse).catch(() => {
-          console.error(`[ENGAGE] Could not deliver failure notification for ${session.id}`);
+          logger.error('Could not deliver failure notification', { sessionId: session.id });
         });
       });
 

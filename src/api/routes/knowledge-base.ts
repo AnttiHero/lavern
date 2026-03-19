@@ -21,6 +21,9 @@ import { getDb } from '../../db/database.js';
 import { indexDocument } from '../../knowledge-base/indexer.js';
 import { listCollections, searchKnowledgeBase } from '../../knowledge-base/retriever.js';
 import { SUPPORTED_EXTENSIONS, MAX_FILE_SIZE } from '../../documents/parser.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('KB');
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -153,7 +156,7 @@ export function registerKnowledgeBaseRoutes(fastify: FastifyInstance): void {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Document indexing failed';
-      console.error(`[KB] Indexing failed for ${data.filename}:`, err);
+      logger.error('Indexing failed', { filename: data.filename, error: err });
       return reply.status(500).send({ error: message });
     }
   });

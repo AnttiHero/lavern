@@ -314,7 +314,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                   type: 'pack', packName, hours,
                   amountLabel: packDef ? `€${(packDef.priceEurCents / 100).toFixed(0)}` : `Pack`,
                   newBalance,
-                }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+                }).catch(err => log.error('receipt_email_failed', err));
               }
             }
             break;
@@ -348,7 +348,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
               sendPaymentReceiptEmail(subUser.email, {
                 type: 'subscription', plan: planDef?.label ?? plan,
                 amountLabel: `${planDef?.label ?? plan} Plan`,
-              }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+              }).catch(err => log.error('receipt_email_failed', err));
             }
           }
           break;
@@ -401,7 +401,7 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
                   type: 'pack', packName, hours,
                   amountLabel: piPackDef ? `€${(piPackDef.priceEurCents / 100).toFixed(0)}` : `Pack`,
                   newBalance: piBalance,
-                }).catch(err => console.error('[EMAIL] Receipt email failed:', err));
+                }).catch(err => log.error('receipt_email_failed', err));
               }
             }
           }

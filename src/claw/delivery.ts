@@ -22,6 +22,9 @@ import { extractSessionFindings } from './types.js';
 import type { ClawManifest, ClawConfig } from './types.js';
 import type { InferenceResult } from './inference.js';
 import type { LocalAnalysisResult } from './local-analysis.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CLAW-DELIVERY');
 import { extractLocalFindings } from './local-analysis.js';
 
 // ── Delivery ─────────────────────────────────────────────────────────────
@@ -53,7 +56,7 @@ export class ClawDelivery {
     const validation = validateDeliverable(rawMarkdown);
     const markdown = validation.valid ? rawMarkdown : '';
     if (!validation.valid && rawMarkdown) {
-      console.warn(`[CLAW-DELIVERY] Rejected invalid deliverable for ${sessionId}: ${validation.reason}`);
+      logger.warn('Rejected invalid deliverable', { sessionId, reason: validation.reason });
     }
     const title = path.basename(documentPath, path.extname(documentPath));
 
@@ -118,7 +121,7 @@ export class ClawDelivery {
         fs.writeFileSync(path.join(deliveryDir, 'deliverable.docx'), docxBuffer);
         manifest.outputs.docx = 'deliverable.docx';
       } catch (err) {
-        console.warn(`[CLAW] DOCX conversion failed: ${err}`);
+        logger.warn('DOCX conversion failed', { error: err });
       }
     }
 
@@ -129,7 +132,7 @@ export class ClawDelivery {
         fs.writeFileSync(path.join(deliveryDir, 'deliverable.html'), html, 'utf-8');
         manifest.outputs.html = 'deliverable.html';
       } catch (err) {
-        console.warn(`[CLAW] HTML conversion failed: ${err}`);
+        logger.warn('HTML conversion failed', { error: err });
       }
     }
 
@@ -301,7 +304,7 @@ export class ClawDelivery {
         manifest.outputs.docx = 'deliverable.docx';
         writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);
       } catch (err) {
-        console.warn(`[CLAW] DOCX conversion failed: ${err}`);
+        logger.warn('DOCX conversion failed', { error: err });
       }
     }
 

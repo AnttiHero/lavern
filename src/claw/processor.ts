@@ -29,6 +29,9 @@ import { notify } from './notify.js';
 import { config } from '../config.js';
 import { analyzeLocally, extractLocalFindings } from './local-analysis.js';
 import type { ClawProfile, ClawJob, ClawConfig } from './types.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CLAW-PROCESSOR');
 
 // ── MIME from extension ──────────────────────────────────────────────────
 
@@ -75,7 +78,7 @@ export async function processDocument(
 
   const log = (msg: string) => {
     if (onProgress) onProgress(msg);
-    if (clawConfig.debug) console.log(`[CLAW:${sessionId}] ${msg}`);
+    if (clawConfig.debug) logger.info(msg, { sessionId });
   };
 
   try {
@@ -264,7 +267,7 @@ export async function processDocument(
     try {
       delivery.saveFailed(sessionId, documentPath, error, clawConfig.dir);
     } catch (deliveryErr) {
-      console.error(`[CLAW] Failed to save failure record for ${path.basename(documentPath)}:`, deliveryErr);
+      logger.error('Failed to save failure record', { document: path.basename(documentPath), error: deliveryErr });
     }
 
     return {

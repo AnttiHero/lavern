@@ -13,6 +13,9 @@
 import { compileAuditTrail } from '../hooks/audit-logger.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import type { SessionState } from '../session/session-state.js';
+import { createLogger } from './logger.js';
+
+const logger = createLogger('STREAM');
 
 // ── Token Pricing (per million tokens) ────────────────────────────────
 // Source: Anthropic pricing as of 2025. Updated here if prices change.
@@ -85,7 +88,7 @@ export async function streamMessages(
     switch (message.type) {
       case 'system':
         if (logLevel === 'debug') {
-          console.error('[SYSTEM] Session initialized');
+          logger.error('Session initialized');
         }
         break;
 
@@ -111,7 +114,7 @@ export async function streamMessages(
           session.updateCost(estimatedCost);
 
           if (logLevel === 'debug') {
-            console.error(`[COST] Turn estimate: +$${turnCost.toFixed(4)} (running: $${estimatedCost.toFixed(4)})`);
+            logger.error('Turn cost estimate', { turnCost: turnCost.toFixed(4), runningCost: estimatedCost.toFixed(4) });
           }
         }
         break;
@@ -140,20 +143,18 @@ export async function streamMessages(
             });
           }
 
-          console.log('\n' + '\u2550'.repeat(60));
-          console.log(label);
-          console.log(`Cost: $${totalCost.toFixed?.(2) ?? 'unknown'}`);
-          console.log(`Duration: ${(message as Record<string, unknown>).duration_ms ?? 'unknown'}ms`);
-          console.log(`Entries logged: ${auditTrail.agentActivity.length}`);
-          if (auditTrail.subagentActivities.length > 0) {
-            console.log(`Subagents tracked: ${auditTrail.subagentActivities.length}`);
-          }
-          console.log('\u2550'.repeat(60));
+          logger.info('Session complete', {
+            label,
+            cost: totalCost.toFixed?.(2) ?? 'unknown',
+            durationMs: (message as Record<string, unknown>).duration_ms ?? 'unknown',
+            entriesLogged: auditTrail.agentActivity.length,
+            subagentsTracked: auditTrail.subagentActivities.length,
+          });
         } else {
           // Error result — still capture cost and emit session_end
           const errors = (message as Record<string, unknown>).errors;
           const subtype = (message as Record<string, unknown>).subtype as string;
-          console.error(`\nSession ended (${subtype}):`, errors);
+          logger.error('Session ended with error', { subtype, errors });
 
           if (!suppressSessionEnd) {
             session.events.emitEvent({

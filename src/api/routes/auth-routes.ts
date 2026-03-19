@@ -51,6 +51,9 @@ import { validateBody } from '../middleware/validation.js';
 import { parseCookieToken } from '../middleware/auth.js';
 import { config } from '../../config.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail, sendReferralEmail } from '../../email/send.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('AUTH');
 
 // ── Schemas ──────────────────────────────────────────────────────────────
 
@@ -204,17 +207,17 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
         creditBillableHours(user.id, hours, 'referral', `Referral bonus — welcome to Lavern.`);
         creditBillableHours(referrer.id, hours, 'referral', `Referral bonus — someone joined with your link.`);
         // Notify referrer
-        sendReferralEmail(referrer.email, referrer.display_name, hours).catch(err => console.error('[EMAIL] Referral email failed:', err));
+        sendReferralEmail(referrer.email, referrer.display_name, hours).catch(err => logger.error('referral_email_failed', err));
       }
     }
 
     // Welcome email — fire-and-forget
-    sendWelcomeEmail(body.email, body.displayName).catch(err => console.error('[EMAIL] Welcome email failed:', err));
+    sendWelcomeEmail(body.email, body.displayName).catch(err => logger.error('welcome_email_failed', err));
 
     // v23: Send email verification link
     const verifyToken = createVerificationToken(user.id);
     const verifyUrl = `${config.email.appUrl}/#/verify-email?token=${verifyToken}`;
-    sendVerificationEmail(body.email, verifyUrl).catch(err => console.error('[EMAIL] Verification email failed:', err));
+    sendVerificationEmail(body.email, verifyUrl).catch(err => logger.error('verification_email_failed', err));
 
     return reply.status(201).send({ user: sanitizeUser(user) });
   });
@@ -448,7 +451,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     if (user) {
       const token = createPasswordResetToken(user.id);
       const resetUrl = `${config.email.appUrl}/#/reset-password?token=${token}`;
-      sendPasswordResetEmail(email, resetUrl).catch(err => console.error('[EMAIL] Reset email failed:', err));
+      sendPasswordResetEmail(email, resetUrl).catch(err => logger.error('reset_email_failed', err));
     }
 
     return reply.send({ success: true, message: 'If an account with that email exists, we sent a password reset link.' });
@@ -540,7 +543,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
     const verifyToken = createVerificationToken(user.id);
     const verifyUrl = `${config.email.appUrl}/#/verify-email?token=${verifyToken}`;
-    sendVerificationEmail(user.email, verifyUrl).catch(err => console.error('[EMAIL] Verification email failed:', err));
+    sendVerificationEmail(user.email, verifyUrl).catch(err => logger.error('verification_email_failed', err));
 
     return reply.send({ success: true, message: 'Verification email sent.' });
   });

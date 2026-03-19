@@ -21,6 +21,9 @@ import {
   ShadingType, LevelFormat,
 } from 'docx';
 import { marked } from 'marked';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('FORMAT');
 
 // ── Soul Branding ────────────────────────────────────────────────────────
 
@@ -1544,14 +1547,14 @@ export async function convertToPdf(
 
       // Puppeteer returns Uint8Array, convert to Buffer
       const buffer = Buffer.from(pdfBuffer);
-      console.log(`[PDF] Generated real PDF: ${buffer.length} bytes (${title})`);
+      logger.info('Generated real PDF', { bytes: buffer.length, title });
       return { buffer, isRealPdf: true };
     } finally {
       await browser.close();
     }
   } catch (error) {
     // Puppeteer unavailable or failed — fall back to HTML
-    console.warn('[PDF] Puppeteer unavailable, falling back to styled HTML:', error instanceof Error ? error.message : error);
+    logger.warn('Puppeteer unavailable, falling back to styled HTML', { error: error instanceof Error ? error.message : error });
     return { buffer: Buffer.from(html, 'utf-8'), isRealPdf: false };
   }
 }

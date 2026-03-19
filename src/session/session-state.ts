@@ -14,7 +14,10 @@
 import * as crypto from 'node:crypto';
 import { ShemEventBus } from '../events/event-bus.js';
 import { config } from '../config.js';
+import { createLogger } from '../utils/logger.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
+
+const logger = createLogger('SESSION');
 import { ReadlineGateResolver } from '../gates/gate-resolver.js';
 import type { DebateState, Finding, Challenge, Response, DebateResolution, DebateRound } from '../types/debate.js';
 import type { WorkflowState, WorkflowStep, GenericWorkflowState, HandoffSummary } from '../types/workflow.js';
@@ -44,7 +47,7 @@ export function boundedPush<T>(arr: T[], item: T, max = MAX_ARRAY_SIZE): T[] {
     const dropCount = Math.ceil(max * 0.1);
     arr.splice(0, dropCount);
     boundedPushDropCount += dropCount;
-    console.warn(`[SESSION] boundedPush: dropped ${dropCount} oldest entries (array at ${max} cap). Total dropped: ${boundedPushDropCount}`);
+    logger.warn('bounded_push_drop', { dropCount, total: boundedPushDropCount });
   }
   arr.push(item);
   return arr;
@@ -162,7 +165,7 @@ export class SessionState {
       source: 'halt',
       timestamp: new Date().toISOString(),
     });
-    console.error(`[HALT] Session ${this.id} halted: ${reason}`);
+    logger.error('session_halted', { sessionId: this.id, reason });
   }
 
   isHalted(): boolean {
