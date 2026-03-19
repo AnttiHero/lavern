@@ -61,8 +61,10 @@ const PRICING: Record<string, { input: number; output: number }> = {
  */
 const QUALITY_GATE_MODEL = 'claude-sonnet-4-5-20250929';
 
-/** Maximum number of assembly attempts before giving up. */
-const MAX_ASSEMBLY_ATTEMPTS = 3;
+/** Maximum number of assembly attempts before giving up.
+ *  5 attempts allows for both structural retries (escalating prompts) AND
+ *  transient API errors (429/500/529) without exhausting too quickly. */
+const MAX_ASSEMBLY_ATTEMPTS = 5;
 
 /** Addendum for attempt 2: stronger instructions after first failure. */
 const RETRY_ADDENDUM_2 = `
@@ -378,7 +380,14 @@ export async function assembleDocument(
       // If this was the last attempt, fall through to the return below
       if (attempt >= MAX_ASSEMBLY_ATTEMPTS) break;
 
-      logger.warn('Retrying after API error...');
+      // Exponential backoff for transient errors (429/500/502/503/529)
+      const status = (error as Record<string, unknown>)?.status as number | undefined;
+      const isTransient = status && [429, 500, 502, 503, 529].includes(status);
+      const delayMs = isTransient
+        ? Math.min(1000 * Math.pow(2, attempt), 8000) // 2s, 4s, 8s
+        : 1000; // 1s for other errors
+      logger.warn('Retrying after API error...', { delayMs, transient: isTransient, status });
+      await new Promise(r => setTimeout(r, delayMs));
     }
   }
 
