@@ -17,13 +17,6 @@ import { z } from 'zod';
 import { config } from '../../config.js';
 import { createLogger } from '../../utils/logger.js';
 import { parseCookieToken } from '../middleware/auth.js';
-
-// ── Schemas ───────────────────────────────────────────────────────────
-const PackIntentSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
-const CheckoutSchema = z.object({ plan: z.enum(['starter', 'professional', 'enterprise']) }).strict();
-const CheckoutPackSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
-
-const log = createLogger('BILLING');
 import {
   getUserByToken,
   getUserById,
@@ -37,6 +30,13 @@ import {
   getDb,
 } from '../../db/database.js';
 import { sendPaymentReceiptEmail } from '../../email/send.js';
+
+// ── Schemas ───────────────────────────────────────────────────────────
+const PackIntentSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
+const CheckoutSchema = z.object({ plan: z.enum(['starter', 'professional', 'enterprise']) }).strict();
+const CheckoutPackSchema = z.object({ pack: z.enum(['quick', 'standard', 'bulk']) }).strict();
+
+const log = createLogger('BILLING');
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

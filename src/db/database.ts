@@ -576,8 +576,8 @@ export function getLowBalanceWarnedAt(userId: string): string | null {
   return row?.low_balance_warned_at ?? null;
 }
 
-/** Clear low-balance warning flag (called when user tops up). */
-export function clearLowBalanceWarning(userId: string): void {
+/** Clear low-balance warning flag (called internally when user tops up). */
+function clearLowBalanceWarning(userId: string): void {
   getDb().prepare(`UPDATE users SET low_balance_warned_at = NULL WHERE id = ?`).run(userId);
 }
 

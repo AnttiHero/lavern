@@ -31,7 +31,6 @@ export function UsageAnalytics() {
   if (!data || data.totalEngagements === 0) return null;
 
   const maxEngagements = Math.max(...data.weeks.map(w => w.engagements), 1);
-  const barWidth = 100 / data.weeks.length;
 
   return (
     <div style={styles.card}>

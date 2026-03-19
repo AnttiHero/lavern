@@ -53,23 +53,14 @@ describe('overload protection', () => {
       expect(cap.current).toBe(2);
     });
 
-    it('reports unavailable when at limit', () => {
+    it('fills to capacity and reports correctly', () => {
       manager.createSession();
       manager.createSession();
       manager.createSession();
       const cap = manager.getCapacity();
-      // At capacity, cleanup evicts the least recently active (so it's still available)
-      // Actually, cleanup runs during createSession and evicts if OVER limit
-      // With 3 max, creating 3 sessions should be fine.
-      // The 4th would trigger eviction of oldest.
-      expect(cap.current).toBeLessThanOrEqual(3);
-    });
-
-    it('returns estimated wait time when unavailable', () => {
-      manager.createSession();
-      manager.createSession();
-      manager.createSession();
-      const cap = manager.getCapacity();
+      // 3 sessions created with max=3; cleanup evicts oldest if OVER limit on createSession
+      // so current should equal max
+      expect(cap.current).toBeLessThanOrEqual(cap.max);
       expect(cap.estimatedWaitMs).toBeGreaterThan(0);
     });
   });

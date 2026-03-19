@@ -55,6 +55,7 @@ export function TemplatePicker({ onSelect }: Props) {
             key={t.id}
             onClick={() => handleSelect(t.id, t.name)}
             disabled={loading !== null}
+            aria-label={`Start from ${t.name} template — ${t.description}`}
             className="text-left p-3 rounded-lg border border-border bg-surface hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
           >
             <div className="text-[10px] font-sans text-text-dim uppercase tracking-[0.5px] mb-1">

@@ -11,7 +11,7 @@
  * Auto-saves on every change (debounced 500ms via React state → localStorage).
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { colors, fonts, spacing, radii } from '../staffing/styles/tokens.js';
 import { useUserProfile } from './hooks/useUserProfile.js';
 import { useBillingStatus } from './hooks/useBillingStatus.js';
@@ -465,13 +465,19 @@ export default function MyPageView({ onBack }: Props) {
 function ReferralCard() {
   const [data, setData] = useState<{ shareUrl: string; referralCount: number; hoursEarned: number; hoursPerReferral: number } | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useState(() => {
+  useEffect(() => {
+    let cancelled = false;
     fetch('/api/referral', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setData(d); })
+      .then(d => { if (!cancelled && d) setData(d); })
       .catch(() => {});
-  });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Cleanup copy timer on unmount
+  useEffect(() => () => { clearTimeout(copyTimerRef.current); }, []);
 
   if (!data) return null;
 
@@ -496,7 +502,8 @@ function ReferralCard() {
           onClick={() => {
             navigator.clipboard.writeText(data.shareUrl).then(() => {
               setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
+              clearTimeout(copyTimerRef.current);
+              copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
             });
           }}
           style={{

@@ -51,9 +51,9 @@ export function QueueBanner({ retryAfterMs, onCapacityAvailable, onDismiss }: Pr
   const minutes = Math.max(1, Math.ceil(waitMs / 60_000));
 
   return (
-    <div style={styles.banner}>
+    <div style={styles.banner} role="alert" aria-live="polite">
       <div style={styles.content}>
-        <div style={styles.title}>Lavern is at capacity.</div>
+        <h2 style={styles.title}>Lavern is at capacity.</h2>
         <p style={styles.message}>
           All session slots are in use. Estimated wait: ~{minutes} minute{minutes !== 1 ? 's' : ''}.
           {checking && ' Checking...'}
