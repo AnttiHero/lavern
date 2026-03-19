@@ -191,6 +191,8 @@ export const config = {
     localModelUrl: process.env.LAVERN_LOCAL_MODEL_URL ?? 'http://localhost:11434',
     localModel: process.env.LAVERN_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
     localAnalysisModel: process.env.LAVERN_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
+    /** Model for Claw document processing (default: Sonnet for batch cost efficiency) */
+    model: process.env.LAVERN_CLAW_MODEL ?? 'claude-sonnet-4-5-20250929',
     // Heartbeat — periodic check-in (v17)
     heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
     heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
@@ -201,7 +203,7 @@ export const config = {
   archiveRetentionDays: safeInt(process.env.SHEM_ARCHIVE_RETENTION_DAYS, 180),
 
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.11.2',
+  version: '0.12.0',
 } as const;
 
 // ── Production Startup Validation ──────────────────────────────────────

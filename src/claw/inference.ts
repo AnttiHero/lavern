@@ -12,12 +12,41 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
 import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { ClawProfile, SidecarConfig } from './types.js';
+
+// ── Zod Schemas ─────────────────────────────────────────────────────────
+
+const SidecarConfigSchema = z.object({
+  task: z.string().optional(),
+  request: z.string().optional(),
+  workflow: z.string().optional(),
+  intensity: z.enum(['quick', 'standard', 'thorough', 'maximal']).optional(),
+  budget: z.number().positive().optional(),
+  context: z.object({
+    jurisdiction: z.string().optional(),
+    audience: z.string().optional(),
+    moment: z.string().optional(),
+    focus: z.string().optional(),
+  }).optional(),
+  output: z.object({
+    format: z.string().optional(),
+    style: z.string().optional(),
+  }).optional(),
+}).passthrough();
+
+const LlmInferenceSchema = z.object({
+  type: z.enum(['contract_review', 'document_redesign', 'risk_assessment', 'legal_research', 'general']).catch('contract_review'),
+  workflow: z.string().nullable().catch(null),
+  reasoning: z.string().catch('No reasoning provided'),
+  documentType: z.string().catch('Document'),
+  riskLevel: z.enum(['low', 'medium', 'high']).catch('medium'),
+});
 
 // ── Inference Result ─────────────────────────────────────────────────────
 
@@ -51,12 +80,18 @@ function findSidecar(documentPath: string): SidecarConfig | null {
       try {
         const content = fs.readFileSync(candidate, 'utf-8');
         if (candidate.endsWith('.json')) {
-          return JSON.parse(content) as SidecarConfig;
+          const raw = JSON.parse(content);
+          const parsed = SidecarConfigSchema.safeParse(raw);
+          if (!parsed.success) {
+            console.warn(`[CLAW] Malformed sidecar ${candidate}: ${parsed.error.message.slice(0, 200)}`);
+            continue;
+          }
+          return parsed.data as SidecarConfig;
         }
         // Parse markdown sidecar — treat entire content as task instruction
         return { task: content.trim() };
       } catch {
-        // Malformed sidecar — skip
+        console.warn(`[CLAW] Failed to read sidecar ${candidate}`);
       }
     }
   }
@@ -97,11 +132,12 @@ async function llmInfer(
   const firstBlock = response.content?.[0];
   const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
-  // Extract JSON from response
+  // Extract and validate JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
-      return JSON.parse(jsonMatch[0]);
+      const raw = JSON.parse(jsonMatch[0]);
+      return LlmInferenceSchema.parse(raw);
     } catch {
       // Matched something that looks like JSON but isn't valid — fall through
     }
@@ -122,7 +158,7 @@ async function mistralInfer(
   documentExcerpt: string,
   filename: string,
   profile: ClawProfile,
-): Promise<{ type: string; workflow: string | null; reasoning: string; documentType: string; riskLevel: string }> {
+): Promise<z.infer<typeof LlmInferenceSchema>> {
   const result = await mistralChat({
     model: config.mistral.routerModel,
     messages: [
@@ -140,7 +176,8 @@ async function mistralInfer(
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
-      return JSON.parse(jsonMatch[0]);
+      const raw = JSON.parse(jsonMatch[0]);
+      return LlmInferenceSchema.parse(raw);
     } catch {
       // Matched something that looks like JSON but isn't valid — fall through
     }
@@ -258,10 +295,9 @@ export async function inferTask(
       reasoning: llmResult.reasoning,
     };
   } catch (err) {
-    // LLM failed — fall through to heuristic
-    if (process.env.LAVERN_CLAW_DEBUG === 'true') {
-      console.warn('[CLAW] LLM inference failed, falling back to heuristic:', err);
-    }
+    // LLM failed — always log at warn level so users notice misconfiguration
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.warn(`[CLAW] LLM inference failed for ${filename}, falling back to heuristic: ${errMsg.slice(0, 200)}`);
   }
 
   // 3. Heuristic fallback

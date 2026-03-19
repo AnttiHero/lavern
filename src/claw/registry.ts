@@ -256,6 +256,30 @@ export class DocumentRegistry {
     return Object.values(this.state.documents).filter(d => statuses.includes(d.status));
   }
 
+  /** Recover documents stuck in 'processing' state (from prior crashes). Resets to 'queued'. */
+  recoverStuckDocuments(): number {
+    const stuck = this.getDocumentsByStatus('processing');
+    for (const doc of stuck) {
+      doc.status = 'queued';
+      doc.error = undefined;
+    }
+    if (stuck.length > 0) this.save();
+    return stuck.length;
+  }
+
+  /** Reset all error documents to 'new' for reprocessing. Returns count of reset documents. */
+  retryFailed(hash?: string): number {
+    const targets = hash
+      ? [this.state.documents[hash]].filter(d => d && d.status === 'error')
+      : this.getDocumentsByStatus('error');
+    for (const doc of targets) {
+      doc.status = 'new';
+      doc.error = undefined;
+    }
+    if (targets.length > 0) this.save();
+    return targets.length;
+  }
+
   get totalDocuments(): number {
     return Object.keys(this.state.documents).length;
   }

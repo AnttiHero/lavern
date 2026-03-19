@@ -119,6 +119,7 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
     dryRun: args.dryRun ?? false,
     debug: args.debug ?? false,
     ethicalMode: args.ethical ?? profile?.ethicalMode ?? false,
+    model: config.claw.model,
   };
 }
 
@@ -171,6 +172,12 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
   // Initialize registry
   const registry = new DocumentRegistry(dir, clawConfig.budget);
+
+  // Crash recovery: reset documents stuck in 'processing' from prior crashes
+  const recovered = registry.recoverStuckDocuments();
+  if (recovered > 0) {
+    console.log(`⟳ Recovered ${recovered} document${recovered === 1 ? '' : 's'} stuck in processing state`);
+  }
 
   // Print banner
   printBanner(profile);

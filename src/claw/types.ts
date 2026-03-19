@@ -187,6 +187,8 @@ export interface ClawConfig {
   debug: boolean;
   /** When true, use EU provider for all frontier processing + treat all docs as confidential. */
   ethicalMode: boolean;
+  /** LLM model for document processing (default: Sonnet for batch efficiency). */
+  model?: string;
 }
 
 // ── Shared Helpers ─────────────────────────────────────────────────────
