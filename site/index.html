@@ -15,7 +15,7 @@
     @media(pointer:fine){*,*::before,*::after{cursor:none!important}}
     :root{
       --dark:#080808;--text:#FAF9F6;--muted:rgba(250,249,246,0.4);--dim:rgba(250,249,246,0.12);
-      --accent:#D49060;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',-apple-system,sans-serif;
+      --accent:#E8845C;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',-apple-system,sans-serif;
       --ease:cubic-bezier(0.16,1,0.3,1)
     }
     html{scroll-behavior:smooth}
@@ -41,7 +41,7 @@
       content:'';position:fixed;inset:-50%;z-index:9999;pointer-events:none;
       background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size:256px 256px;
-      opacity:0.035;
+      opacity:0.35;
       animation:grain 8s steps(10) infinite;
       mix-blend-mode:overlay
     }
@@ -183,7 +183,7 @@
     .fog{position:relative;overflow:hidden}
     .fog::before{
       content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-      box-shadow:inset 0 0 80px 40px var(--dark)
+      box-shadow:inset 0 0 120px 60px var(--dark)
     }
 
     .art-card{
@@ -265,13 +265,30 @@
       font-size:clamp(36px,6vw,72px);font-weight:300;line-height:1.1;
       margin-bottom:clamp(48px,8vw,96px)
     }
+    .video-glow{
+      position:relative;max-width:1000px;margin:0 auto;isolation:isolate
+    }
+    .video-glow::before{
+      content:'';position:absolute;
+      top:50%;left:50%;transform:translate(-50%,-50%);
+      width:320%;height:350%;
+      background:radial-gradient(ellipse at center,
+        rgba(232,132,92,0.9) 0%,
+        rgba(232,132,92,0.5) 15%,
+        rgba(200,110,80,0.25) 30%,
+        rgba(150,80,50,0.1) 50%,
+        transparent 65%);
+      filter:blur(120px);
+      pointer-events:none;z-index:-1
+    }
     .video-wrap{
       max-width:1000px;margin:0 auto;
       background:#0a0a0a;border-radius:20px;overflow:hidden;
       border:1px solid rgba(255,255,255,.06);
       box-shadow:
-        0 80px 160px rgba(0,0,0,.7),
-        0 40px 80px rgba(0,0,0,.4),
+        0 100px 200px rgba(0,0,0,.8),
+        0 50px 100px rgba(0,0,0,.5),
+        0 0 120px rgba(232,132,92,.04),
         0 0 0 1px rgba(255,255,255,.03) inset;
       mask-image:none;
       -webkit-mask-image:none
@@ -340,6 +357,18 @@
       text-shadow:0 4px 60px rgba(0,0,0,.5)
     }
     .cta-title em{font-style:italic}
+
+    /* Mist — soft fog rising from the bottom of the page */
+    .smoke{
+      position:fixed;bottom:0;left:0;right:0;height:40vh;pointer-events:none;z-index:9998;
+      background:linear-gradient(to top,
+        var(--dark) 0%,
+        rgba(8,8,8,0.85) 20%,
+        rgba(8,8,8,0.5) 45%,
+        rgba(8,8,8,0.15) 70%,
+        transparent 100%
+      )
+    }
 
     /* Footer */
     .footer{
@@ -411,7 +440,9 @@
       .pull-quote{font-size:clamp(22px,5.5vw,32px);color:#fff}
       .video-section{padding:clamp(60px,10vw,120px) 16px}
       .video-label{font-size:clamp(26px,5.5vw,48px);margin-bottom:clamp(32px,6vw,64px)}
+      .video-glow::before{width:200%;height:220%;filter:blur(80px)}
       .video-wrap{border-radius:14px;border:none}
+      .smoke{height:30vh}
       .video-chrome{padding:10px 14px;gap:5px}
       .dot{width:8px;height:8px}
       .cta{min-height:70vh}
@@ -431,8 +462,10 @@
       .art-quote-text{padding:28px 16px}
       .pull-quote{font-size:clamp(20px,5vw,28px)}
       .video-label{font-size:clamp(22px,5vw,36px)}
+      .video-glow::before{width:160%;height:180%;filter:blur(60px)}
       .video-wrap{border-radius:10px}
       .cta-title{font-size:clamp(32px,9vw,56px)}
+      .smoke{height:25vh}
       .footer{flex-direction:column;align-items:flex-start;gap:16px}
     }
 
@@ -461,14 +494,7 @@
       </div>
     </section>
 
-    <!-- ═══════ Art break ═══════ -->
-    <div class="sp-lg art-card-spacer"></div>
-    <div class="art-card r">
-      <div class="art-card-inner fog">
-        <img src="img/features.jpg" alt="" loading="lazy">
-      </div>
-    </div>
-    <div class="sp-lg art-card-spacer"></div>
+    <div class="sp-lg"></div>
 
     <!-- ═══════ STATEMENT — darkened image for text visibility ═══════ -->
     <section class="statement">
@@ -492,16 +518,18 @@
     <!-- ═══════ VIDEO — framed like Vesence ═══════ -->
     <section class="video-section">
       <h2 class="video-label r">It is a law firm.<br>Just that the offices are in a Mac Mini.</h2>
-      <div class="video-wrap fog r r1">
-        <div class="video-chrome">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="video-chrome-url">lavern.ai</div>
-        </div>
-        <div class="video-container">
-          <video autoplay muted loop playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">
-            <source src="demo.mov" type="video/quicktime">
-            <source src="demo.mp4" type="video/mp4">
-          </video>
+      <div class="video-glow">
+        <div class="video-wrap fog r r1">
+          <div class="video-chrome">
+            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+            <div class="video-chrome-url">lavern.ai</div>
+          </div>
+          <div class="video-container">
+            <video autoplay muted loop playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">
+              <source src="demo.mov" type="video/quicktime">
+              <source src="demo.mp4" type="video/mp4">
+            </video>
+          </div>
         </div>
       </div>
     </section>
@@ -518,6 +546,8 @@
     </section>
 
   </main>
+
+  <div class="smoke"></div>
 
   <footer class="footer">
     <div class="footer-left">
@@ -592,6 +622,15 @@
     document.querySelectorAll('a[href^="#"]').forEach(a=>
       a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}})
     );
+
+    // Mist — fade out when near bottom of page so footer is visible
+    const smokeEl=document.querySelector('.smoke');
+    if(smokeEl){
+      addEventListener('scroll',()=>{
+        const distFromBottom=document.documentElement.scrollHeight-window.scrollY-window.innerHeight;
+        smokeEl.style.opacity=distFromBottom<200?String(distFromBottom/200):'1';
+      },{passive:true});
+    }
 
     // Magnetic buttons — pull towards cursor on hover
     document.querySelectorAll('.btn-invite, .login, .footer-link').forEach(btn=>{
