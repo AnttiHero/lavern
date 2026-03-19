@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { UserContext } from '../auth/UserContext.js';
+import { useMediaQuery } from '../hooks/useMediaQuery.js';
 
 const DARK = '#080808';
 const TEXT = '#FAF9F6';
@@ -29,6 +30,7 @@ interface Props {
 export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, onAgentDocs, onDemo }: Props) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
+  const isMobile = useMediaQuery('mobile');
   const [ready, setReady] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -81,6 +83,194 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
   if (!ready) {
     return <div style={{ position: 'fixed', inset: 0, backgroundColor: DARK }} />;
   }
+
+  /* ── Mobile: single-screen hero ──────────────────────────────────────── */
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100vw',
+          height: '100dvh',
+          overflow: 'hidden',
+          zIndex: 9999,
+          backgroundColor: DARK,
+        }}
+      >
+        {/* Background image */}
+        <img
+          src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
+          alt=""
+          role="presentation"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            filter: 'brightness(0.25) saturate(0.3)',
+            opacity: 0.7,
+            transform: 'scale(1.06)',
+            animation: 'lobbyPhotoReveal 2s ease 0s both',
+          }}
+        />
+
+        {/* Warm orb glow — large amber sphere */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: [
+              'radial-gradient(circle 40vw at 50% 36%, rgba(200,120,60,0.55) 0%, rgba(180,90,40,0.35) 30%, rgba(140,60,20,0.15) 55%, transparent 75%)',
+            ].join(', '),
+            animation: 'lobbyFadeIn 1.5s ease 0.3s both',
+          }}
+        />
+
+        {/* Edge vignette */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: 'radial-gradient(ellipse 55% 50% at 50% 40%, transparent 0%, rgba(8,8,8,0.9) 100%)',
+          }}
+        />
+
+        {/* Bottom fade to black */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '35%',
+            background: `linear-gradient(to bottom, transparent, ${DARK})`,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Top bar — LAVERN left, Log In right */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '24px 24px',
+            zIndex: 10,
+            animation: 'lobbyFadeIn 0.8s ease 0.6s both',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: SANS,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: 6,
+              color: TEXT,
+              textTransform: 'uppercase',
+              opacity: 0.7,
+            }}
+          >
+            LAVERN
+          </span>
+
+          {isLoggedIn ? (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <TopLink onClick={onMyPage}>My Page</TopLink>
+              <TopLink onClick={() => { userCtx!.logout(); }}>Logout</TopLink>
+            </div>
+          ) : (
+            <TopLink onClick={onLogin ?? (() => {})}>Log In</TopLink>
+          )}
+        </div>
+
+        {/* Center — hero */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5,
+            padding: '0 32px',
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: SERIF,
+              fontSize: 42,
+              fontWeight: 300,
+              lineHeight: 1.15,
+              color: TEXT,
+              textAlign: 'center',
+              margin: 0,
+              letterSpacing: 0.5,
+              animation: 'lobbyFadeUp 1.2s ease 0.8s both',
+            }}
+          >
+            Excellence<br />
+            doesn{'\u2019'}t scale.<br />
+            <span style={{ fontStyle: 'italic' }}>Until now.</span>
+          </h1>
+
+          {/* KNOCK button */}
+          <button
+            onClick={isLoggedIn ? onQuickStart : (onLogin ?? (() => {}))}
+            style={{
+              marginTop: 48,
+              fontFamily: SANS,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 5,
+              textTransform: 'uppercase',
+              color: TEXT,
+              backgroundColor: 'rgba(0,0,0,0.85)',
+              border: 'none',
+              borderRadius: 100,
+              padding: '18px 56px',
+              cursor: 'pointer',
+              animation: 'lobbyFadeUp 0.8s ease 1.4s both',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            }}
+          >
+            Speak to Us
+          </button>
+        </div>
+
+        {/* Bottom — cities */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 28,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 10,
+            animation: 'lobbyFadeIn 0.8s ease 2s both',
+          }}
+        >
+          <CityLink>Helsinki</CityLink>
+          <span style={{ fontFamily: SANS, fontSize: 9, color: MUTED, opacity: 0.3, margin: '0 8px' }}>&middot;</span>
+          <CityLink>Paris</CityLink>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Desktop: unchanged ──────────────────────────────────────────────── */
 
   return (
     <div
