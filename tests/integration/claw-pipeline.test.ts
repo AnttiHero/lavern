@@ -479,4 +479,145 @@ describe('Claw Mode Pipeline Integration', () => {
       expect(findings).toHaveLength(2); // 1 clause + 1 risk
     });
   });
+
+  // ── Retry & Recovery ──────────────────────────────────────────────────
+
+  describe('Retry and recovery operations', () => {
+    it('should reset all error docs to new via retryFailed()', () => {
+      createTestFile(watchDir, 'fail-doc-1.md', '# Fail 1\nContent alpha.');
+      createTestFile(watchDir, 'fail-doc-2.md', '# Fail 2\nContent beta.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      const allDocs = registry.getDocumentsByStatus('new');
+      expect(allDocs).toHaveLength(2);
+
+      // Mark both as error
+      for (const doc of allDocs) {
+        registry.markFailed(doc.hash, 'API timeout');
+      }
+      expect(registry.getDocumentsByStatus('error')).toHaveLength(2);
+
+      // Retry all failed
+      const count = registry.retryFailed();
+      expect(count).toBe(2);
+      expect(registry.getDocumentsByStatus('error')).toHaveLength(0);
+      expect(registry.getDocumentsByStatus('new')).toHaveLength(2);
+
+      // Verify error field is cleared
+      for (const doc of registry.getDocumentsByStatus('new')) {
+        expect(doc.error).toBeUndefined();
+      }
+    });
+
+    it('should reset only the specified error doc when retryFailed(hash) is called', () => {
+      createTestFile(watchDir, 'err-a.md', '# Error A\nFirst error doc.');
+      createTestFile(watchDir, 'err-b.md', '# Error B\nSecond error doc.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      const allDocs = registry.getDocumentsByStatus('new');
+      expect(allDocs).toHaveLength(2);
+
+      // Mark both as error
+      for (const doc of allDocs) {
+        registry.markFailed(doc.hash, 'Network error');
+      }
+
+      // Retry only the first by hash
+      const targetHash = allDocs[0].hash;
+      const count = registry.retryFailed(targetHash);
+
+      expect(count).toBe(1);
+      expect(registry.getDocument(targetHash)!.status).toBe('new');
+      expect(registry.getDocument(allDocs[1].hash)!.status).toBe('error');
+    });
+
+    it('should reset stale docs to new via retryStale()', () => {
+      const docPath = createTestFile(watchDir, 'stale-doc.md', 'Version 1');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      // Mark as reviewed first, then modify to make it stale
+      const doc = registry.getDocumentByPath(docPath);
+      registry.markReviewed(doc!.hash, 'sess-1', { critical: 0, major: 0, minor: 0 }, 1);
+
+      // Modify file to trigger stale on rescan
+      fs.writeFileSync(docPath, 'Version 2 — updated', 'utf-8');
+      const { changedDocs } = registry.scan([watchDir]);
+      expect(changedDocs).toHaveLength(1);
+
+      const staleDocs = registry.getDocumentsByStatus('stale');
+      expect(staleDocs).toHaveLength(1);
+
+      // Retry stale
+      const count = registry.retryStale();
+      expect(count).toBe(1);
+      expect(registry.getDocumentsByStatus('stale')).toHaveLength(0);
+      expect(registry.getDocumentsByStatus('new')).toHaveLength(1);
+    });
+
+    it('should recover stuck processing documents on startup', () => {
+      createTestFile(watchDir, 'stuck-doc.md', '# Stuck\nThis was processing when daemon crashed.');
+
+      const registry1 = new DocumentRegistry(clawDir, 100);
+      registry1.scan([watchDir]);
+
+      // Simulate a doc that was mid-processing when daemon crashed
+      const doc = registry1.getDocumentsByStatus('new')[0];
+      registry1.updateStatus(doc.hash, 'processing');
+      expect(registry1.getDocument(doc.hash)!.status).toBe('processing');
+
+      // Simulate restart: create new registry from same dir
+      const registry2 = new DocumentRegistry(clawDir, 100);
+      const reloaded = registry2.getDocument(doc.hash);
+      expect(reloaded!.status).toBe('processing');
+
+      // Recover stuck documents
+      const recovered = registry2.recoverStuckDocuments();
+      expect(recovered).toBe(1);
+      expect(registry2.getDocument(doc.hash)!.status).toBe('queued');
+    });
+
+    it('should compact old reviewed entries to archive', () => {
+      createTestFile(watchDir, 'old-reviewed.md', '# Old Doc\nReviewed long ago.');
+      createTestFile(watchDir, 'recent-reviewed.md', '# Recent Doc\nReviewed recently.');
+
+      const registry = new DocumentRegistry(clawDir, 100);
+      registry.scan([watchDir]);
+
+      const allDocs = registry.getDocumentsByStatus('new');
+      expect(allDocs).toHaveLength(2);
+
+      // Mark both as reviewed
+      for (const doc of allDocs) {
+        registry.markReviewed(doc.hash, 'sess-compact', { critical: 0, major: 0, minor: 0 }, 1);
+      }
+
+      // Manually backdate the first doc's lastReviewed to 60 days ago
+      const oldDoc = registry.getDocument(allDocs[0].hash)!;
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      oldDoc.lastReviewed = sixtyDaysAgo.toISOString();
+      registry.save();
+
+      // Compact with 30-day threshold
+      const archived = registry.compact(30);
+
+      expect(archived).toBe(1);
+      // Old doc removed from active state
+      expect(registry.getDocument(allDocs[0].hash)).toBeUndefined();
+      // Recent doc still in active state
+      expect(registry.getDocument(allDocs[1].hash)).toBeDefined();
+
+      // Archive file should exist
+      const archivePath = path.join(clawDir, 'state-archive.json');
+      expect(fs.existsSync(archivePath)).toBe(true);
+      const archive = JSON.parse(fs.readFileSync(archivePath, 'utf-8'));
+      expect(archive[allDocs[0].hash]).toBeDefined();
+    });
+  });
 });

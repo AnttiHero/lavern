@@ -67,3 +67,80 @@ describe('matchesSensitivityPattern', () => {
     expect(matchesSensitivityPattern('doc-privileged', DEFAULT_SENSITIVITY_PATTERNS)).toBe('*privileged*');
   });
 });
+
+// ── DocumentRegistry retry methods ──────────────────────────────────────
+
+import { DocumentRegistry } from '../../src/claw/registry.js';
+
+describe('DocumentRegistry retryFailed / retryStale', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claw-registry-unit-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('retryFailed returns the count of reset documents', () => {
+    const clawDir = path.join(tempDir, 'claw');
+    const watchDir = path.join(tempDir, 'watch');
+    fs.mkdirSync(clawDir);
+    fs.mkdirSync(watchDir);
+
+    fs.writeFileSync(path.join(watchDir, 'doc1.md'), '# Doc 1\nAlpha content.', 'utf-8');
+    fs.writeFileSync(path.join(watchDir, 'doc2.md'), '# Doc 2\nBeta content.', 'utf-8');
+    fs.writeFileSync(path.join(watchDir, 'doc3.md'), '# Doc 3\nGamma content.', 'utf-8');
+
+    const registry = new DocumentRegistry(clawDir, 100);
+    registry.scan([watchDir]);
+
+    const docs = registry.getDocumentsByStatus('new');
+    // Mark 2 out of 3 as error
+    registry.markFailed(docs[0].hash, 'Error one');
+    registry.markFailed(docs[1].hash, 'Error two');
+
+    const count = registry.retryFailed();
+    expect(count).toBe(2);
+  });
+
+  it('retryStale returns the count of reset documents', () => {
+    const clawDir = path.join(tempDir, 'claw');
+    const watchDir = path.join(tempDir, 'watch');
+    fs.mkdirSync(clawDir);
+    fs.mkdirSync(watchDir);
+
+    const docPath = path.join(watchDir, 'evolving.md');
+    fs.writeFileSync(docPath, 'Version 1 content', 'utf-8');
+
+    const registry = new DocumentRegistry(clawDir, 100);
+    registry.scan([watchDir]);
+
+    // Mark as reviewed then modify to trigger stale
+    const doc = registry.getDocumentByPath(docPath);
+    registry.markReviewed(doc!.hash, 'sess', { critical: 0, major: 0, minor: 0 }, 1);
+
+    fs.writeFileSync(docPath, 'Version 2 content', 'utf-8');
+    registry.scan([watchDir]);
+
+    const count = registry.retryStale();
+    expect(count).toBe(1);
+  });
+
+  it('retryFailed returns 0 when there are no error documents', () => {
+    const clawDir = path.join(tempDir, 'claw');
+    const watchDir = path.join(tempDir, 'watch');
+    fs.mkdirSync(clawDir);
+    fs.mkdirSync(watchDir);
+
+    fs.writeFileSync(path.join(watchDir, 'clean.md'), '# Clean\nNo errors here at all.', 'utf-8');
+
+    const registry = new DocumentRegistry(clawDir, 100);
+    registry.scan([watchDir]);
+
+    // All docs are 'new', none in error state
+    const count = registry.retryFailed();
+    expect(count).toBe(0);
+  });
+});

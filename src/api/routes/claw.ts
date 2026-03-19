@@ -6,6 +6,7 @@
  * your main machine or the dashboard.
  *
  * Endpoints:
+ *   GET   /api/claw/health      — Structured health check (healthy/degraded/unhealthy)
  *   GET   /api/claw/status      — Profile + registry summary + budget + daemon
  *   GET   /api/claw/documents   — List all tracked documents with status
  *   GET   /api/claw/deliveries  — List completed delivery sessions
@@ -16,6 +17,7 @@
 
 import * as fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
@@ -39,6 +41,102 @@ function getRegistry(dir: string, budgetUsd: number): DocumentRegistry {
 // ── Route Registration ──────────────────────────────────────────────────
 
 export function registerClawRoutes(fastify: FastifyInstance): void {
+
+  // ── GET /api/claw/health ────────────────────────────────────────────
+  fastify.get('/api/claw/health', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    const timestamp = new Date().toISOString();
+
+    // Individual checks
+    const profileCheck = profile
+      ? { ok: true as const, company: profile.company }
+      : { ok: false as const, company: null };
+
+    // Watch paths
+    let watchPathCount = 0;
+    let accessibleCount = 0;
+    if (profile) {
+      watchPathCount = profile.watchPaths.length;
+      for (const wp of profile.watchPaths) {
+        const resolved = path.resolve(wp.replace(/^~/, os.homedir()));
+        try {
+          fs.accessSync(resolved, fs.constants.R_OK);
+          accessibleCount++;
+        } catch { /* not accessible */ }
+      }
+    }
+    const watchPathsCheck = {
+      ok: accessibleCount > 0,
+      count: watchPathCount,
+      accessible: accessibleCount,
+    };
+
+    // Budget
+    let budgetCheck = { ok: false, remainingUsd: 0, percentUsed: 0 };
+    let registryCheck = { ok: true, documents: 0, errors: 0 };
+    let lastProcessingCheck = { ok: true, lastScan: null as string | null };
+
+    if (profile) {
+      const registry = getRegistry(dir, profile.budget.totalUsd);
+      const state = registry.getState();
+      const summary = registry.summary;
+
+      const pctUsed = state.budget.totalUsd > 0
+        ? Math.round((state.budget.spentUsd / state.budget.totalUsd) * 100)
+        : 0;
+
+      budgetCheck = {
+        ok: !registry.budgetExhausted,
+        remainingUsd: parseFloat(registry.budgetRemaining.toFixed(2)),
+        percentUsed: pctUsed,
+      };
+
+      registryCheck = {
+        ok: summary.errors === 0,
+        documents: summary.total,
+        errors: summary.errors,
+      };
+
+      lastProcessingCheck = {
+        ok: true,
+        lastScan: state.lastScan,
+      };
+    }
+
+    // Daemon status
+    let daemonCheck = { installed: false, running: false };
+    try {
+      const ds = getDaemonStatus();
+      daemonCheck = { installed: ds.installed, running: ds.running };
+    } catch { /* non-macOS */ }
+
+    // Determine overall status
+    const isUnhealthy =
+      !profileCheck.ok ||
+      !watchPathsCheck.ok ||
+      !budgetCheck.ok;
+
+    const isDegraded =
+      (budgetCheck.percentUsed > 80 && budgetCheck.ok) ||
+      registryCheck.errors > 0 ||
+      !daemonCheck.running;
+
+    const status = isUnhealthy ? 'unhealthy' : isDegraded ? 'degraded' : 'healthy';
+
+    return reply.send({
+      status,
+      checks: {
+        profile: profileCheck,
+        watchPaths: watchPathsCheck,
+        budget: budgetCheck,
+        registry: registryCheck,
+        lastProcessing: lastProcessingCheck,
+        daemon: daemonCheck,
+      },
+      timestamp,
+    });
+  });
 
   // ── GET /api/claw/status ────────────────────────────────────────────
   fastify.get('/api/claw/status', async (_request, reply) => {

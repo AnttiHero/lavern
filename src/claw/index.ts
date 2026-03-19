@@ -11,8 +11,11 @@
  *   lavern claw daemon logs       — Tail daemon log files
  */
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { config } from '../config.js';
+import { ensureApiKey } from '../utils/ensure-api-key.js';
 import { initClaw, loadProfile } from './init.js';
 import { DocumentRegistry } from './registry.js';
 import { ClawWatcher } from './watcher.js';
@@ -129,6 +132,61 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
   };
 }
 
+// ── Log Rotation ────────────────────────────────────────────────────────
+
+const LOG_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const LOG_MAX_ROTATED = 3;
+
+/**
+ * Rotate daemon log files if they exceed 10 MB.
+ *
+ * The structured logger (`src/utils/logger.ts`) handles its own daily
+ * rotation for the application log directory (SHEM_LOG_DIR). This
+ * function covers the daemon stdout/stderr logs that launchd writes to
+ * `<clawDir>/logs/claw.stdout.log` and `claw.stderr.log`, which are
+ * not managed by the structured logger.
+ *
+ * Rotation scheme: `claw.stdout.log` -> `.1` -> `.2` -> `.3` (max 3).
+ */
+export function rotateDaemonLogs(clawDir: string): void {
+  const logsDir = path.join(clawDir, 'logs');
+  if (!fs.existsSync(logsDir)) return;
+
+  const logFiles = ['claw.stdout.log', 'claw.stderr.log'];
+
+  for (const logFile of logFiles) {
+    const logPath = path.join(logsDir, logFile);
+    if (!fs.existsSync(logPath)) continue;
+
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(logPath);
+    } catch {
+      continue;
+    }
+
+    if (stat.size < LOG_MAX_BYTES) continue;
+
+    // Rotate: delete oldest, shift others up
+    const oldest = path.join(logsDir, `${logFile}.${LOG_MAX_ROTATED}`);
+    try { fs.unlinkSync(oldest); } catch { /* may not exist */ }
+
+    for (let i = LOG_MAX_ROTATED - 1; i >= 1; i--) {
+      const from = path.join(logsDir, `${logFile}.${i}`);
+      const to = path.join(logsDir, `${logFile}.${i + 1}`);
+      try { fs.renameSync(from, to); } catch { /* may not exist */ }
+    }
+
+    // Move current log to .1
+    try {
+      fs.renameSync(logPath, path.join(logsDir, `${logFile}.1`));
+    } catch {
+      // If rename fails, truncate instead
+      try { fs.writeFileSync(logPath, ''); } catch { /* best effort */ }
+    }
+  }
+}
+
 // ── Commands ─────────────────────────────────────────────────────────────
 
 /**
@@ -159,12 +217,68 @@ function runStatus(args: ClawCliArgs): void {
  */
 async function runStart(args: ClawCliArgs): Promise<void> {
   const dir = args.dir ?? config.claw.dir;
-  const profile = loadProfile(dir);
 
-  if (!profile) {
-    console.error('\nNo profile found. Run `lavern claw init` first.\n');
-    process.exit(1);
+  // ── Pre-flight checks ──────────────────────────────────────────────
+  console.log('\nPre-flight checks:');
+  const checks: Array<{ label: string; ok: boolean; detail: string }> = [];
+
+  // 1. API key present
+  const apiKey = ensureApiKey();
+  checks.push({
+    label: 'API key configured',
+    ok: apiKey.length > 0,
+    detail: apiKey.length > 0 ? '' : 'ANTHROPIC_API_KEY not found in env or .env',
+  });
+
+  // 2. Profile exists
+  const profile = loadProfile(dir);
+  checks.push({
+    label: profile ? `Profile loaded (${profile.company})` : 'Profile loaded',
+    ok: profile !== null,
+    detail: profile ? '' : 'No profile found. Run `lavern claw init` first.',
+  });
+
+  // 3. Watch paths exist
+  const allWatchPaths = [...(profile?.watchPaths ?? []), ...(args.watch ?? [])];
+  const resolvedWatchPaths = allWatchPaths.map(wp => path.resolve(wp.replace(/^~/, os.homedir())));
+  const accessiblePaths = resolvedWatchPaths.filter(p => fs.existsSync(p));
+  checks.push({
+    label: `Watch paths: ${accessiblePaths.length} director${accessiblePaths.length === 1 ? 'y' : 'ies'}`,
+    ok: accessiblePaths.length > 0,
+    detail: accessiblePaths.length > 0 ? '' : 'No watch path directories exist on disk',
+  });
+
+  // 4. Mistral key (if ethical mode)
+  const ethicalMode = args.ethical ?? profile?.ethicalMode ?? false;
+  if (ethicalMode) {
+    const hasMistralKey = config.mistral.apiKey.length > 0;
+    checks.push({
+      label: 'Mistral API key (ethical mode)',
+      ok: hasMistralKey,
+      detail: hasMistralKey ? '' : 'Mistral API key missing (required for ethical mode)',
+    });
   }
+
+  // Print results
+  let hasFatal = false;
+  for (const check of checks) {
+    if (check.ok) {
+      console.log(`  \u2713 ${check.label}`);
+    } else {
+      console.log(`  \u2717 ${check.detail || check.label}`);
+      hasFatal = true;
+    }
+  }
+  console.log('');
+
+  if (hasFatal || !profile) {
+    console.error('Pre-flight failed. Resolve the issues above and try again.\n');
+    process.exit(1);
+    return; // Unreachable — helps TypeScript narrow `profile` to non-null
+  }
+
+  // ── Log rotation ───────────────────────────────────────────────────
+  rotateDaemonLogs(dir);
 
   const clawConfig = buildClawConfig(args);
 
@@ -336,6 +450,11 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         // Archives reviewed/error entries older than 30 days to keep state.json lean
         if (heartbeatCount % 12 === 0 && docs.length > 100) {
           registry.compact(30);
+        }
+
+        // Log rotation: check daemon logs every 6th heartbeat (~3 hours)
+        if (heartbeatCount % 6 === 0) {
+          rotateDaemonLogs(dir);
         }
 
         if (alerts.length === 0) return; // Silent — everything is fine
