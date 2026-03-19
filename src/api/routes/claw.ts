@@ -11,6 +11,7 @@
  *   GET   /api/claw/deliveries  — List completed delivery sessions
  *   PATCH /api/claw/ethical     — Toggle maximum ethical mode
  *   POST  /api/claw/scan        — Trigger an immediate rescan of watch paths
+ *   POST  /api/claw/retry       — Retry failed or stale documents
  */
 
 import * as fs from 'node:fs';
@@ -227,6 +228,39 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       newDocuments: newDocs.length,
       changedDocuments: changedDocs.length,
       total: registry.totalDocuments,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // ── POST /api/claw/retry ──────────────────────────────────────────────
+  fastify.post('/api/claw/retry', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+
+    if (!profile) {
+      return reply.status(404).send({ error: 'No profile found' });
+    }
+
+    const registry = getRegistry(dir, profile.budget.totalUsd);
+    const body = (request.body as { hash?: string; stale?: boolean } | null) ?? {};
+
+    let retriedCount: number;
+    if (body.stale) {
+      retriedCount = registry.retryStale();
+    } else {
+      retriedCount = registry.retryFailed(body.hash);
+    }
+
+    return reply.send({
+      retriedCount,
+      type: body.stale ? 'stale' : 'failed',
       timestamp: new Date().toISOString(),
     });
   });

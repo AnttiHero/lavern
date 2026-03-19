@@ -31,10 +31,29 @@ interface Props {
   demoMode: boolean;
 }
 
+async function retryDocuments(body: { hash?: string; stale?: boolean } = {}): Promise<number> {
+  try {
+    const res = await fetch('/api/claw/retry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.retriedCount ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function DocumentsTab({ documents, demoMode }: Props) {
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [retryMsg, setRetryMsg] = useState<string | null>(null);
 
   const filtered = documents.filter(d => matchesFilter(d, filter));
+  const errorCount = documents.filter(d => d.status === 'error').length;
+  const staleCount = documents.filter(d => d.status === 'stale').length;
 
   return (
     <div>
@@ -55,6 +74,37 @@ export function DocumentsTab({ documents, demoMode }: Props) {
           </button>
         ))}
       </div>
+
+      {/* Retry actions */}
+      {!demoMode && (errorCount > 0 || staleCount > 0) && (
+        <div style={styles.retryRow}>
+          {errorCount > 0 && (
+            <button
+              style={styles.retryBtn}
+              onClick={async () => {
+                const count = await retryDocuments();
+                setRetryMsg(count > 0 ? `⟳ Queued ${count} failed doc${count === 1 ? '' : 's'} for retry` : 'No failed documents');
+                setTimeout(() => setRetryMsg(null), 4000);
+              }}
+            >
+              ⟳ Retry {errorCount} Failed
+            </button>
+          )}
+          {staleCount > 0 && (
+            <button
+              style={styles.retryBtn}
+              onClick={async () => {
+                const count = await retryDocuments({ stale: true });
+                setRetryMsg(count > 0 ? `⟳ Queued ${count} stale doc${count === 1 ? '' : 's'} for reprocessing` : 'No stale documents');
+                setTimeout(() => setRetryMsg(null), 4000);
+              }}
+            >
+              ⟳ Reprocess {staleCount} Stale
+            </button>
+          )}
+          {retryMsg && <span style={styles.retryMsg}>{retryMsg}</span>}
+        </div>
+      )}
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -199,5 +249,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     fontFamily: fonts.mono,
     fontSize: 11,
+  },
+  retryRow: {
+    display: 'flex',
+    gap: spacing.sm,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  retryBtn: {
+    padding: '5px 14px',
+    borderRadius: radii.sm,
+    border: `1px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  retryMsg: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
 };

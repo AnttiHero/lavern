@@ -39,8 +39,12 @@ import {
 // ── CLI Argument Parsing ─────────────────────────────────────────────────
 
 export interface ClawCliArgs {
-  command: 'init' | 'start' | 'status' | 'daemon';
+  command: 'init' | 'start' | 'status' | 'daemon' | 'retry';
   daemonSubcommand?: string;
+  /** Retry a specific document by hash. */
+  retryHash?: string;
+  /** Retry stale (changed) documents instead of errors. */
+  retryStale?: boolean;
   dir?: string;
   budget?: number;
   perDocBudget?: number;
@@ -56,7 +60,7 @@ export interface ClawCliArgs {
 
 export function parseClawArgs(args: string[]): ClawCliArgs {
   // Find the subcommand (init, start, status, daemon)
-  const command = args.find(a => ['init', 'start', 'status', 'daemon'].includes(a)) ?? 'start';
+  const command = args.find(a => ['init', 'start', 'status', 'daemon', 'retry'].includes(a)) ?? 'start';
 
   const getFlag = (flag: string): boolean => args.includes(flag);
   const getValue = (flag: string): string | undefined => {
@@ -73,6 +77,8 @@ export function parseClawArgs(args: string[]): ClawCliArgs {
   return {
     command: command as ClawCliArgs['command'],
     daemonSubcommand,
+    retryHash: getValue('--hash'),
+    retryStale: getFlag('--stale'),
     dir: getValue('--dir'),
     budget: (() => { const v = getValue('--budget'); if (!v) return undefined; const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
     perDocBudget: (() => { const v = getValue('--per-doc-budget'); if (!v) return undefined; const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
@@ -361,6 +367,41 @@ async function runStart(args: ClawCliArgs): Promise<void> {
   }
 }
 
+/**
+ * `lavern claw retry` — Retry failed or stale documents.
+ */
+function runRetry(args: ClawCliArgs): void {
+  const dir = args.dir ?? config.claw.dir;
+  const profile = loadProfile(dir);
+
+  if (!profile) {
+    console.error('\nNo profile found. Run `lavern claw init` first.\n');
+    process.exit(1);
+  }
+
+  const registry = new DocumentRegistry(dir, profile.budget.totalUsd);
+
+  if (args.retryStale) {
+    const count = registry.retryStale();
+    if (count === 0) {
+      console.log('\nNo stale documents to retry.\n');
+    } else {
+      console.log(`\n⟳ Queued ${count} stale document${count === 1 ? '' : 's'} for reprocessing.\n`);
+      console.log('Run `lavern claw start` to process them.\n');
+    }
+  } else {
+    const count = registry.retryFailed(args.retryHash);
+    if (count === 0) {
+      console.log(args.retryHash
+        ? `\nNo failed document found with hash ${args.retryHash}.\n`
+        : '\nNo failed documents to retry.\n');
+    } else {
+      console.log(`\n⟳ Queued ${count} failed document${count === 1 ? '' : 's'} for reprocessing.\n`);
+      console.log('Run `lavern claw start` to process them.\n');
+    }
+  }
+}
+
 // ── Entry Point ──────────────────────────────────────────────────────────
 
 export async function runClaw(args: string[]): Promise<void> {
@@ -375,6 +416,9 @@ export async function runClaw(args: string[]): Promise<void> {
       break;
     case 'start':
       await runStart(parsed);
+      break;
+    case 'retry':
+      runRetry(parsed);
       break;
     case 'daemon':
       await runDaemon(parsed.daemonSubcommand ? [parsed.daemonSubcommand] : []);

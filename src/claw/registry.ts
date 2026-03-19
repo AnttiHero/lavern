@@ -270,7 +270,7 @@ export class DocumentRegistry {
     return stuck.length;
   }
 
-  /** Reset all error documents to 'new' for reprocessing. Returns count of reset documents. */
+  /** Reset error documents to 'new' for reprocessing. Returns count of reset documents. */
   retryFailed(hash?: string): number {
     const targets = hash
       ? [this.state.documents[hash]].filter(d => d && d.status === 'error')
@@ -278,6 +278,16 @@ export class DocumentRegistry {
     for (const doc of targets) {
       doc.status = 'new';
       doc.error = undefined;
+    }
+    if (targets.length > 0) this.save();
+    return targets.length;
+  }
+
+  /** Reset stale documents to 'new' for reprocessing. Returns count of reset documents. */
+  retryStale(): number {
+    const targets = this.getDocumentsByStatus('stale');
+    for (const doc of targets) {
+      doc.status = 'new';
     }
     if (targets.length > 0) this.save();
     return targets.length;
