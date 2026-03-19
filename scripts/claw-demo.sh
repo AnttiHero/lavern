@@ -16,7 +16,7 @@
 #   6. Cleans up
 # ──────────────────────────────────────────────────────────────────────────
 
-set -euo pipefail
+set -uo pipefail
 
 DEMO_DIR="$HOME/.lavern-demo"
 PROVIDER="claude"
@@ -162,7 +162,7 @@ echo ""
 echo "Starting Clawern processing..."
 echo "─────────────────────────────────────────────────────"
 
-npx tsx src/claw/index.ts start \
+npx tsx src/index.ts claw start \
   --dir "$DEMO_DIR" \
   --once \
   --intensity quick \
@@ -181,6 +181,12 @@ ERROR_COUNT=$(find "$DEMO_DIR/delivery/failed" -type f 2>/dev/null | wc -l | tr 
 
 if [[ -n "$DRY_RUN" ]]; then
   echo "✓ Dry run complete — no documents were processed"
+  # Cleanup
+  rm -rf "$DEMO_DIR"
+  echo "✓ Cleaned up $DEMO_DIR"
+  echo ""
+  echo "Done."
+  exit 0
 else
   echo "  Deliveries: $DELIVERY_COUNT"
   echo "  Errors:     $ERROR_COUNT"
