@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   // Standalone: / (Vercel auto-sets VERCEL=1; also accepts explicit VITE_BASE_PATH).
   // Embedded in API server: /dashboard/.
-  base: process.env.VITE_BASE_PATH || (process.env.VERCEL ? '/' : '/dashboard/'),
+  base: process.env.VITE_BASE_PATH || '/',
   build: {
     outDir: 'dist',
   },
