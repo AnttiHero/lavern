@@ -16,6 +16,7 @@ import { colors, fonts, spacing, radii } from '../staffing/styles/tokens.js';
 import { useUserProfile } from './hooks/useUserProfile.js';
 import { useBillingStatus } from './hooks/useBillingStatus.js';
 import { useCustomAgents } from '../agent-builder/hooks/useCustomAgents.js';
+import { UsageAnalytics } from '../billing/UsageAnalytics.js';
 import type { UserProfile } from './hooks/useUserProfile.js';
 
 interface Props {
@@ -140,6 +141,14 @@ export default function MyPageView({ onBack }: Props) {
           </div>
         </>
       )}
+
+      {/* ── Share Lavern (Referral) ──────────────────────────────── */}
+      <SectionDivider label="Share Lavern" />
+      <ReferralCard />
+
+      {/* ── Usage Analytics ──────────────────────────────────────── */}
+      <SectionDivider label="Usage" />
+      <UsageAnalytics />
 
       {/* ── Section 1: About You ───────────────────────────────────── */}
       <SectionDivider label="About You" />
@@ -384,8 +393,7 @@ export default function MyPageView({ onBack }: Props) {
                   <TeamActionButton
                     label="Edit"
                     onClick={() => {
-                      // TODO: Pre-fill builder with agent data (future enhancement)
-                      window.location.hash = '#/agent-builder';
+                      window.location.hash = `#/agent-builder?edit=${agent.id}`;
                     }}
                   />
                   {isDeleting ? (
@@ -451,6 +459,65 @@ export default function MyPageView({ onBack }: Props) {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────
+
+// ── Referral Card ────────────────────────────────────────────────────
+
+function ReferralCard() {
+  const [data, setData] = useState<{ shareUrl: string; referralCount: number; hoursEarned: number; hoursPerReferral: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useState(() => {
+    fetch('/api/referral', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setData(d); })
+      .catch(() => {});
+  });
+
+  if (!data) return null;
+
+  return (
+    <div style={styles.billingCard}>
+      <p style={{ margin: 0, fontSize: 14, color: colors.textMuted, lineHeight: 1.6 }}>
+        Give <strong style={{ color: colors.text }}>{data.hoursPerReferral}h</strong>, get{' '}
+        <strong style={{ color: colors.text }}>{data.hoursPerReferral}h</strong>.
+        Share your link — both of you earn hours.
+      </p>
+      <div style={{
+        display: 'flex', gap: spacing.sm, marginTop: spacing.lg, alignItems: 'center',
+      }}>
+        <input
+          type="text"
+          readOnly
+          value={data.shareUrl}
+          style={{ ...styles.input, flex: 1, fontSize: 12, fontFamily: 'monospace' }}
+          onFocus={e => e.target.select()}
+        />
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(data.shareUrl).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+          style={{
+            ...styles.buyHoursBtn,
+            whiteSpace: 'nowrap' as const,
+            minWidth: 80,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text; }}
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      {data.referralCount > 0 && (
+        <p style={{ margin: `${spacing.md}px 0 0`, fontSize: 13, color: colors.textMuted }}>
+          {data.referralCount} referral{data.referralCount !== 1 ? 's' : ''} · {data.hoursEarned.toFixed(0)}h earned
+        </p>
+      )}
+    </div>
+  );
+}
 
 function SectionDivider({ label }: { label: string }) {
   return (

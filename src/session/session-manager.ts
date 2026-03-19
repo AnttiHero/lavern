@@ -241,6 +241,21 @@ export class SessionManager {
         }
       }
 
+      // Phase 3: Zombie detection — terminate sessions idle 15+ minutes in working phase
+      const ZOMBIE_IDLE_MS = 15 * 60 * 1000;
+      for (const [id, entry] of this.sessions) {
+        if (entry.archived) continue;
+        const idleMs = now - entry.lastActivityAt;
+        if (idleMs > ZOMBIE_IDLE_MS && !entry.session.isHalted()) {
+          // Only terminate if session has started (has events) but went quiet
+          if (entry.session.events.getEventLog().length > 0) {
+            log.info(`[SESSION] Zombie detected: ${id} idle ${Math.round(idleMs / 60000)}min — terminating`);
+            this.evictSession(id, entry, `Zombie session: idle ${Math.round(idleMs / 60000)} minutes`);
+            evicted++;
+          }
+        }
+      }
+
       if (evicted > 0) {
         log.info(`[SESSION] Cleanup: evicted ${evicted} session(s), ${this.sessions.size} remaining`);
       }
@@ -249,5 +264,39 @@ export class SessionManager {
     }
 
     return evicted;
+  }
+
+  /** Check if the server has capacity for a new session. */
+  getCapacity(): { current: number; max: number; available: boolean; estimatedWaitMs: number } {
+    const current = this.sessions.size;
+    const max = config.maxSessions;
+    const available = current < max;
+
+    // Estimate wait based on average session duration from active sessions
+    let estimatedWaitMs = 5 * 60 * 1000; // Default: 5 minutes
+    if (!available && current > 0) {
+      // Find the oldest active session's age as a rough estimate
+      let oldestAge = 0;
+      for (const [, entry] of this.sessions) {
+        const age = Date.now() - entry.createdAt;
+        if (age > oldestAge) oldestAge = age;
+      }
+      // Rough estimate: oldest session is ~halfway done
+      estimatedWaitMs = Math.max(60_000, Math.min(oldestAge / 2, 30 * 60 * 1000));
+    }
+
+    return { current, max, available, estimatedWaitMs };
+  }
+
+  /** Count sessions for a specific user. */
+  countUserSessions(userId: string): number {
+    let count = 0;
+    for (const [, entry] of this.sessions) {
+      if (!entry.session.isHalted()) {
+        const uid = entry.session.userId ?? entry.session.clientIdentity?.id;
+        if (uid === userId) count++;
+      }
+    }
+    return count;
   }
 }

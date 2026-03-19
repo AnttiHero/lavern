@@ -282,6 +282,35 @@ export async function sendVerificationEmail(email: string, verifyUrl: string): P
   });
 }
 
+/** Sent to the referrer when someone signs up with their referral code. */
+export async function sendReferralEmail(email: string, displayName: string | undefined, hoursEarned: number): Promise<boolean> {
+  const greeting = esc(displayName || 'there');
+  return send({
+    to: email,
+    subject: `You earned ${hoursEarned} hours — someone joined Lavern with your link`,
+    text: `Someone signed up with your referral link. You earned ${hoursEarned} billable hours. Keep sharing: ${config.email.appUrl}`,
+    html: emailWrapper(`
+      <div style="background:${BRAND.surface};border-radius:12px;padding:32px 28px;border:1px solid ${BRAND.border};">
+        <h2 style="margin:0 0 16px;font-size:22px;font-weight:300;color:${BRAND.text};font-family:Georgia,'Times New Roman',serif;">
+          Nice one, ${greeting}.
+        </h2>
+        <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
+          Someone signed up with your referral link. We've credited
+          <strong style="color:${BRAND.gold};">${hoursEarned} billable hours</strong> to your account.
+        </p>
+        <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:${BRAND.textDim};">
+          Keep sharing — every signup earns you both ${hoursEarned} hours.
+        </p>
+        <div style="text-align:center;margin-top:28px;">
+          <a href="${config.email.appUrl}/#/my-page" style="display:inline-block;padding:14px 32px;background:${BRAND.gold};color:${BRAND.bg};font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;border-radius:6px;">
+            View Your Balance
+          </a>
+        </div>
+      </div>
+    `),
+  });
+}
+
 /** Sent after successful signup. */
 export async function sendWelcomeEmail(email: string, displayName?: string): Promise<boolean> {
   const greeting = esc(displayName ? displayName : 'there');

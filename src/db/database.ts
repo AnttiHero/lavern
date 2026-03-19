@@ -336,6 +336,15 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_billing_events_stripe ON billing_events(stripe_session_id);
   `);
 
+  // v26 migration: Referral system columns
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN referral_code TEXT`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN referred_by TEXT`);
+  } catch { /* column already exists */ }
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)`);
+
   // v23 migration: User tokens (password reset + email verification) + user columns
   try {
     db.exec(`ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`);
@@ -1186,6 +1195,40 @@ export function getBillableHoursHistory(userId: string, limit = 50): BillableHou
   return getDb().prepare(`
     SELECT * FROM billable_hours WHERE user_id = ? ORDER BY created_at DESC LIMIT ?
   `).all(userId, limit) as BillableHoursEntry[];
+}
+
+// ── Referral System ──────────────────────────────────────────────────────
+
+/** Generate and set a referral code for a user (first 8 chars of user ID hex suffix). */
+export function ensureReferralCode(userId: string): string {
+  const user = getDb().prepare(`SELECT referral_code FROM users WHERE id = ?`).get(userId) as { referral_code: string | null } | undefined;
+  if (user?.referral_code) return user.referral_code;
+
+  // Generate from user ID suffix + random bytes for uniqueness
+  const code = `ref-${crypto.randomBytes(4).toString('hex')}`;
+  getDb().prepare(`UPDATE users SET referral_code = ? WHERE id = ?`).run(code, userId);
+  return code;
+}
+
+/** Look up a user by referral code. */
+export function getUserByReferralCode(code: string): DbUser | undefined {
+  return getDb().prepare(`SELECT * FROM users WHERE referral_code = ?`).get(code) as DbUser | undefined;
+}
+
+/** Set the referred_by field on a user. */
+export function setReferredBy(userId: string, referrerId: string): void {
+  getDb().prepare(`UPDATE users SET referred_by = ? WHERE id = ?`).run(referrerId, userId);
+}
+
+/** Get referral stats for a user. */
+export function getReferralStats(userId: string): { referralCode: string; referralCount: number; hoursEarned: number } {
+  const code = ensureReferralCode(userId);
+  const row = getDb().prepare(`SELECT COUNT(*) as cnt FROM users WHERE referred_by = ?`).get(userId) as { cnt: number };
+  // Each referral credits configurable hours (tracked via billable_hours with type='referral')
+  const earned = getDb().prepare(`
+    SELECT COALESCE(SUM(amount), 0) as total FROM billable_hours WHERE user_id = ? AND type = 'referral'
+  `).get(userId) as { total: number };
+  return { referralCode: code, referralCount: row.cnt, hoursEarned: earned.total };
 }
 
 // ── Audit Log ───────────────────────────────────────────────────────────

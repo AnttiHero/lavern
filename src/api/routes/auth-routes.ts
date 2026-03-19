@@ -43,11 +43,14 @@ import {
   getVerificationToken,
   setEmailVerified,
   isEmailVerified,
+  getUserByReferralCode,
+  setReferredBy,
+  ensureReferralCode,
 } from '../../db/database.js';
 import { validateBody } from '../middleware/validation.js';
 import { parseCookieToken } from '../middleware/auth.js';
 import { config } from '../../config.js';
-import { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail } from '../../email/send.js';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail, sendReferralEmail } from '../../email/send.js';
 
 // ── Schemas ──────────────────────────────────────────────────────────────
 
@@ -57,6 +60,7 @@ const SignupSchema = z.object({
   displayName: z.string().max(200).optional(),
   firmName: z.string().max(200).optional(),
   inviteCode: z.string().max(50).optional(),
+  referralCode: z.string().max(50).optional(),
 }).strict();
 
 const LoginSchema = z.object({
@@ -189,6 +193,19 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
         'welcome',
         `Free trial — ${config.billableHours.freeTrialHours} billable hours to get started.`,
       );
+    }
+
+    // v26: Referral — credit both referrer and referee
+    if (body.referralCode) {
+      const referrer = getUserByReferralCode(body.referralCode);
+      if (referrer && referrer.id !== user.id) {
+        const hours = config.billableHours.referralHours;
+        setReferredBy(user.id, referrer.id);
+        creditBillableHours(user.id, hours, 'referral', `Referral bonus — welcome to Lavern.`);
+        creditBillableHours(referrer.id, hours, 'referral', `Referral bonus — someone joined with your link.`);
+        // Notify referrer
+        sendReferralEmail(referrer.email, referrer.display_name, hours).catch(err => console.error('[EMAIL] Referral email failed:', err));
+      }
     }
 
     // Welcome email — fire-and-forget

@@ -218,6 +218,35 @@ export function useDocumentUpload() {
     [processFiles],
   );
 
+  /** Add a plain-text document (e.g., from a template). */
+  const addTextDocument = useCallback((name: string, content: string) => {
+    const id = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const doc: UploadedDocument = {
+      id,
+      name,
+      size: new Blob([content]).size,
+      type: 'text/markdown',
+      content,
+      uploadedAt: new Date().toISOString(),
+    };
+    setDocuments(prev => [...prev, doc]);
+    const parsed: FrontendParsedDocument = {
+      id,
+      name,
+      mimeType: 'text/markdown',
+      size: doc.size,
+      pageCount: 1,
+      wordCount: content.split(/\s+/).length,
+      fullText: content,
+      sections: [],
+      tables: [],
+      definedTerms: [],
+      parseMethod: 'template',
+      parsedAt: new Date().toISOString(),
+    };
+    setParsedDocuments(prev => [...prev, parsed]);
+  }, []);
+
   const removeDocument = useCallback((id: string) => {
     setDocuments(prev => prev.filter(d => d.id !== id));
     setRawFiles(prev => {
@@ -242,5 +271,6 @@ export function useDocumentUpload() {
     openFilePicker,
     handleFileInput,
     removeDocument,
+    addTextDocument,
   };
 }

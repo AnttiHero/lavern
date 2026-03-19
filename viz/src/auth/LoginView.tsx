@@ -16,7 +16,8 @@ interface Props {
 }
 
 export default function LoginView({ onAuth, onBack }: Props) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const hasRef = window.location.hash.includes('ref=');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(hasRef ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -25,6 +26,13 @@ export default function LoginView({ onAuth, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  // Read referral code from URL hash (e.g., #/login?ref=ref-abcd1234)
+  const [referralCode] = useState(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/[?&]ref=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+  });
 
   const handleForgotPassword = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +66,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
       const body = mode === 'login'
         ? { email, password }
-        : { email, password, inviteCode, displayName: displayName || undefined, firmName: firmName || undefined };
+        : { email, password, inviteCode: inviteCode || undefined, displayName: displayName || undefined, firmName: firmName || undefined, referralCode: referralCode || undefined };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -88,7 +96,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [mode, email, password, inviteCode, displayName, firmName, onAuth]);
+  }, [mode, email, password, inviteCode, displayName, firmName, referralCode, onAuth]);
 
   const isSignup = mode === 'signup';
 

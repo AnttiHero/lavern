@@ -15,6 +15,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { BriefingHeader } from './components/BriefingHeader.js';
 import { DocumentDropZone } from './components/DocumentDropZone.js';
 import { DocumentList } from './components/DocumentList.js';
+import { TemplatePicker } from './components/TemplatePicker.js';
 import { BriefingChat } from './components/BriefingChat.js';
 import { ConversationalChat } from './components/ConversationalChat.js';
 import { BriefingMemo } from './components/BriefingMemo.js';
@@ -308,6 +309,12 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
             />
 
             <UrlImportField onImport={handleUrlImport} />
+
+            {upload.documents.length === 0 && (
+              <TemplatePicker onSelect={(content, name) => {
+                upload.addTextDocument(`${name}.md`, content);
+              }} />
+            )}
 
             <DocumentList
               documents={upload.documents}

@@ -51,6 +51,8 @@ import { registerClawRoutes } from './routes/claw.js';
 import { registerChallengeRoutes } from './routes/challenge.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerWaitlistRoutes } from './routes/waitlist.js';
+import { registerReferralRoutes } from './routes/referral.js';
+import { registerTemplateRoutes } from './routes/templates.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
@@ -171,6 +173,7 @@ export async function startApiServer(port: number): Promise<void> {
   // QuickStart express lane works without login.
   const publicPaths: string[] = [
     '/health',
+    '/health/capacity',
     '/',
     // Session access — individual session detail/WS is public (session ID is a capability token).
     // Listing requires auth to prevent session ID enumeration.
@@ -387,6 +390,18 @@ export async function startApiServer(port: number): Promise<void> {
     };
   });
 
+  // v27: Capacity endpoint — for monitoring and frontend queue display
+  fastify.get('/health/capacity', async () => {
+    const capacity = sessionManager.getCapacity();
+    return {
+      current: capacity.current,
+      max: capacity.max,
+      available: capacity.available,
+      estimatedWaitMs: capacity.estimatedWaitMs,
+      utilization: capacity.max > 0 ? Math.round((capacity.current / capacity.max) * 100) : 0,
+    };
+  });
+
   // API info
   fastify.get('/', async () => ({
     name: 'The Shem API',
@@ -507,6 +522,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerBillingRoutes(fastify);
   // v22: Waitlist — join, status, admin invite & listing
   registerWaitlistRoutes(fastify);
+  registerReferralRoutes(fastify);
+  registerTemplateRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
 

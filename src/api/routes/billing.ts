@@ -34,6 +34,7 @@ import {
   getUserMonthlyUsage,
   getUserBillableHours,
   creditBillableHours,
+  getDb,
 } from '../../db/database.js';
 import { sendPaymentReceiptEmail } from '../../email/send.js';
 
@@ -467,6 +468,58 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
       engagementCount: usage.engagement_count,
       monthlyCapUsd: limits.monthlyCapUsd,
       remainingBudget: Math.max(0, Math.round((limits.monthlyCapUsd - usage.total_cost_usd) * 100) / 100),
+    });
+  });
+
+  // ── GET /api/billing/analytics ────────────────────────────────────────
+  // Returns 8-week engagement history, spend trend, workflow breakdown, hours burn-down.
+  fastify.get('/api/billing/analytics', async (request, reply) => {
+    const user = getAuthenticatedUser(request, reply);
+    if (!user) return;
+
+    const db = getDb();
+    const now = new Date();
+
+    // 8-week history from session_archive
+    const weeks: Array<{ week: string; engagements: number; costUsd: number }> = [];
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() - i * 7);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+      const label = weekStart.toISOString().slice(0, 10);
+
+      const row = db.prepare(`
+        SELECT COUNT(*) as cnt, COALESCE(SUM(cost_usd), 0) as cost
+        FROM session_archive
+        WHERE user_id = ? AND created_at >= ? AND created_at < ?
+      `).get(user.id, weekStart.toISOString(), weekEnd.toISOString()) as { cnt: number; cost: number };
+
+      weeks.push({ week: label, engagements: row.cnt, costUsd: Math.round(row.cost * 100) / 100 });
+    }
+
+    // Workflow breakdown
+    const workflowRows = db.prepare(`
+      SELECT workflow_id, COUNT(*) as cnt FROM session_archive
+      WHERE user_id = ? AND workflow_id IS NOT NULL
+      GROUP BY workflow_id ORDER BY cnt DESC
+    `).all(user.id) as Array<{ workflow_id: string; cnt: number }>;
+
+    // Average session cost
+    const avgRow = db.prepare(`
+      SELECT AVG(cost_usd) as avg_cost, COUNT(*) as total FROM session_archive WHERE user_id = ?
+    `).get(user.id) as { avg_cost: number | null; total: number };
+
+    // Current balance
+    const balance = getUserBillableHours(user.id);
+
+    return reply.send({
+      weeks,
+      workflows: workflowRows.map(r => ({ workflowId: r.workflow_id, count: r.cnt })),
+      avgSessionCost: avgRow.avg_cost ? Math.round(avgRow.avg_cost * 100) / 100 : 0,
+      totalEngagements: avgRow.total,
+      hoursRemaining: Math.round(balance * 10) / 10,
     });
   });
 }

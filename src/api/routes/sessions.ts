@@ -108,6 +108,20 @@ export function registerSessionRoutes(
       return reply.status(401).send({ error: 'Authentication required. Please sign in to start a session.' });
     }
 
+    // v27: Graceful overload protection — return 503 if at capacity
+    const capacity = sessionManager.getCapacity();
+    if (!capacity.available) {
+      const retryAfterSec = Math.ceil(capacity.estimatedWaitMs / 1000);
+      reply.header('Retry-After', retryAfterSec.toString());
+      return reply.status(503).send({
+        error: 'Lavern is at capacity.',
+        current: capacity.current,
+        max: capacity.max,
+        retryAfterMs: capacity.estimatedWaitMs,
+        message: `All ${capacity.max} session slots are in use. Estimated wait: ~${Math.ceil(retryAfterSec / 60)} minutes.`,
+      });
+    }
+
     // v21: Per-user monthly budget cap enforcement
     let sessionBudget = body.options?.budget ?? config.defaultBudgetUsd;
 
