@@ -219,6 +219,20 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
     }
   }, [recommendedRoles, engagementConfig.intensity, engagementConfig.workflowId, setRoles, wasPresetRecentlyApplied]);
 
+  // ── Collapsible sections ───────────────────────────────────────────────
+
+  const DEFAULT_COLLAPSED = new Set(['infrastructure', 'legacy', 'industry', 'tech']);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set(DEFAULT_COLLAPSED));
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  }, []);
+
   // ── Sub-group filter state ─────────────────────────────────────────────
 
   const [subGroup, setSubGroup] = useState<SubGroupFilter>('all');
@@ -451,37 +465,58 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
         </div>
       )}
 
-      {/* Agent card grid */}
-      {!loading && sections.map(section => (
-        <div key={section.id}>
-          <SectionHeader
-            title={section.title}
-            subtitle={section.subtitle}
-            count={section.profiles.length}
-            accentColor={section.accentColor}
-          />
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: spacing.xl,
-              padding: `${spacing.lg}px 0`,
-            }}
-          >
-            {section.profiles.map(p => (
-              <FlippableCard
-                key={p.role}
-                profile={p}
-                selected={isSelected(p.role)}
-                onToggle={handleToggle}
-              />
-            ))}
-          </motion.div>
+      {/* Recommended team banner */}
+      {!loading && recommendedRoles.length > 0 && teamSize > 0 && (
+        <div style={styles.recommendedBanner}>
+          <span style={styles.recommendedLabel}>Recommended for your engagement</span>
+          <span style={styles.recommendedDetail}>
+            {teamSize} agents auto-selected based on your briefing and strategy.
+            Adjust below or proceed with this team.
+          </span>
         </div>
-      ))}
+      )}
+
+      {/* Agent card grid */}
+      {!loading && sections.map(section => {
+        const isCollapsed = collapsedSections.has(section.id);
+        const sectionSelectedCount = section.profiles.filter(p => isSelected(p.role)).length;
+
+        return (
+          <div key={section.id}>
+            <SectionHeader
+              title={section.title}
+              subtitle={section.subtitle}
+              count={section.profiles.length}
+              accentColor={section.accentColor}
+              collapsed={isCollapsed}
+              onToggleCollapse={() => toggleSection(section.id)}
+              selectedCount={sectionSelectedCount}
+            />
+            {!isCollapsed && (
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                  gap: spacing.xl,
+                  padding: `${spacing.lg}px 0`,
+                }}
+              >
+                {section.profiles.map(p => (
+                  <FlippableCard
+                    key={p.role}
+                    profile={p}
+                    selected={isSelected(p.role)}
+                    onToggle={handleToggle}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </div>
+        );
+      })}
 
       {/* Empty state */}
       {!loading && sections.length === 0 && displayProfiles.length === 0 && (
@@ -717,5 +752,29 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.success,
     fontWeight: 500,
     fontFamily: fonts.sans,
+  },
+  recommendedBanner: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 4,
+    padding: '14px 20px',
+    backgroundColor: 'rgba(232, 132, 92, 0.04)',
+    border: `1px solid rgba(232, 132, 92, 0.15)`,
+    borderRadius: radii.md,
+    marginBottom: spacing.xl,
+  },
+  recommendedLabel: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.accent,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  recommendedDetail: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    lineHeight: 1.5,
   },
 };

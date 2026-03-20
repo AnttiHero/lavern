@@ -56,6 +56,7 @@ import { registerTemplateRoutes } from './routes/templates.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
+import { registerGoogleAuthRoutes } from './routes/google-auth.js';
 import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives } from '../db/database.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
@@ -210,6 +211,9 @@ export async function startApiServer(port: number): Promise<void> {
     'POST /api/auth/forgot-password',
     'POST /api/auth/reset-password',
     'POST /api/auth/verify-email',
+    // Google OAuth flow
+    'GET /api/auth/google',
+    'GET /api/auth/google/callback',
     // Session-scoped POST mutations — scoped by session ID, work without login
     // so the QuickStart → Working → Delivery flow doesn't require auth.
     // Session ID acts as the auth token (only the user who created it has it).
@@ -494,6 +498,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerAuthRoutes(fastify, clientRegistry);
   // v14: User auth (signup, login, logout, profile)
   registerUserAuthRoutes(fastify);
+  // v0.12: Google OAuth
+  registerGoogleAuthRoutes(fastify);
   // v8: Pre-engagement & team staffing routes
   registerMatterRoutes(fastify);
   registerAgentRoutes(fastify);

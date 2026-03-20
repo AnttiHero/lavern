@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.11.3, a multi-agent legal design system that transforms
+You are part of Lavern v0.12.0, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -74,6 +74,7 @@ with qualified legal professionals.
     - `matters.ts` — Matter management (engagements, team selection)
     - `briefing.ts` — LLM-powered briefing analysis for intake
     - `auth-routes.ts` — User signup, login, logout, profile (incl. soul)
+    - `google-auth.ts` — Google OAuth login/signup (CSRF state, token exchange, account linking)
     - `claw.ts` — Clawern remote monitoring & control
     - `challenge.ts` — Lavern Challenge blind document comparison
     - `challenge-prompt.ts` — Challenge prompt builder
@@ -165,7 +166,54 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 
 ## Version History
 
-### v0.11.3 (Current) — Marketing Site Mobile + DNS
+### v0.12.0 (Current) — Launch Ready
+
+**Legal Compliance:**
+- Terms of Service and Privacy Policy fully authored (all `[PLACEHOLDER]` fields resolved)
+  - Company: Lavern, Helsinki, Finland; Jurisdiction: Finland, courts of Helsinki
+  - AI disclaimer (Section 6): "does not constitute legal advice"
+  - Subprocessor list (Section 13): Anthropic, Mistral, Stripe, Resend, Plausible, Netlify
+- Static `/terms` and `/privacy` pages on marketing site (dark cinematic design)
+- Footer links (Terms, Privacy) added to `site/index.html`
+- Signup consent text: "By creating an account, you agree to our Terms and Privacy Policy"
+- AI disclaimer in Delivery view: "does not provide legal advice"
+
+**Google OAuth:**
+- `GET /api/auth/google` — CSRF state token + redirect to Google consent screen
+- `GET /api/auth/google/callback` — Token exchange, profile fetch, 3-way account resolution:
+  - Existing Google user → login
+  - Existing email user → link Google account
+  - New user → create account + auto-verify email + credit free trial hours
+- "Continue with Google" button + divider in LoginView
+- OAuth success/error redirect handling in App.tsx
+- Login error display for OAuth failures (denied/failed)
+
+**Analytics & Monitoring:**
+- Plausible Analytics on marketing site (`script.js`) and dashboard (`script.hash.js` for SPA)
+- Sentry React SDK in dashboard (`@sentry/react`, ErrorBoundary with editorial fallback UI)
+- `VITE_SENTRY_DSN` env var for client-side Sentry
+
+**Stuck Agent Fix:**
+- Delivered-state fallback: force all active agents to 'complete' when workflow reaches 'delivered'
+- Agent timeout: mark agents as 'Timed out' after 10 minutes of no events
+
+**Document Assembly Fix:**
+- `bestAttempt` tracking: keeps longest output even if validation failed
+- Returns best attempt instead of empty string on all-attempts failure
+- Users get a document with warnings instead of perpetual loading
+
+**Strategy & Team Simplification:**
+- Strategy screen intro text: "Defaults work well for most engagements. Adjust only if you need to."
+- Workflow picker: "Default" badge on Quick Counsel card
+- TeamView: collapsible sections (Infrastructure, Legacy, Industry, Tech collapsed by default)
+- Section headers show collapse chevron, selected count, and click-to-expand
+- "Recommended for your engagement" banner when auto-selected team is present
+
+**Build & Type Safety:**
+- Clean `tsc --noEmit` for both backend and frontend (0 errors)
+- Fixed timestamp type mismatch in useWorkingState agent timeout logic
+
+### v0.11.3 — Marketing Site Mobile + DNS
 
 **Marketing Site (`site/index.html`):**
 - Mobile single-screen layout (≤768px): hero + footer only, all mid-sections hidden via CSS

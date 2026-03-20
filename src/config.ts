@@ -119,6 +119,13 @@ export const config = {
     rateLimitResendVerificationMax: safeInt(process.env.SHEM_RATE_LIMIT_RESEND_VERIFY_MAX, 3),
   },
 
+  // ── Google OAuth ───────────────────────────────────────────────────────
+  google: {
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+    redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI ?? 'http://localhost:3000/api/auth/google/callback',
+  },
+
   // ── Voice (Deepgram STT + ElevenLabs TTS) ─────────────────────────────
   voice: {
     deepgramApiKey: process.env.LAVERN_DEEPGRAM_API_KEY ?? '',

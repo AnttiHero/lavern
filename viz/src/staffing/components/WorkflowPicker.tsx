@@ -104,6 +104,20 @@ export function WorkflowPicker({ workflows, activeWorkflow, onSelect, loading }:
                   ...styles.cardTitle,
                   color: isActive ? '#fff' : colors.text,
                 }}>{label}</span>
+                {w.id === 'counsel' && (
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase' as const,
+                    color: isActive ? 'rgba(255,255,255,0.6)' : colors.accent,
+                    border: `1px solid ${isActive ? 'rgba(255,255,255,0.25)' : 'rgba(232,132,92,0.3)'}`,
+                    borderRadius: radii.pill,
+                    padding: '1px 7px',
+                    marginLeft: 'auto',
+                    flexShrink: 0,
+                  }}>Default</span>
+                )}
               </div>
 
               {/* Description */}

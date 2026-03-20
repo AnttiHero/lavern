@@ -92,6 +92,11 @@ export default function StrategyView({ onComplete, onBack, onSkip }: Props) {
         </div>
       </div>
 
+      {/* Intro */}
+      <p style={styles.intro}>
+        Defaults work well for most engagements. Adjust only if you need to.
+      </p>
+
       {/* Configurator: workflow cards, connector, orchestrator, depth, autopilot */}
       <EngagementConfigurator
         config={engagementConfig}
@@ -190,6 +195,14 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'center',
     padding: `${spacing.xxl}px 0`,
+  },
+  intro: {
+    fontSize: 13,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    margin: `0 0 ${spacing.lg}px`,
+    lineHeight: 1.5,
   },
   ctaButton: {
     padding: '12px 32px',

@@ -399,6 +399,38 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       if (s) s.status = 'active';
     }
 
+    // Fallback: if workflow has reached 'delivered', force-complete any stuck agents
+    const hasDelivered = events.some(e => e.type === 'workflow_step' && e.step === 'delivered');
+    if (hasDelivered) {
+      for (const role of activeAgents) {
+        const s = statuses.get(role);
+        if (s && s.status === 'active') {
+          s.status = 'complete';
+          s.lastActivity = 'Done';
+        }
+      }
+    }
+
+    // Timeout: if an agent has been active for >10 minutes with no events, mark as timed out
+    const now = Date.now();
+    const AGENT_TIMEOUT_MS = 10 * 60 * 1000;
+    for (const role of activeAgents) {
+      const s = statuses.get(role);
+      if (!s || s.status !== 'active') continue;
+      // Find last event for this agent
+      let lastEventTime = 0;
+      for (const e of events) {
+        if ('role' in e && e.role === role || 'agent' in e && e.agent === role) {
+          const t = typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
+          lastEventTime = Math.max(lastEventTime, t);
+        }
+      }
+      if (lastEventTime > 0 && now - lastEventTime > AGENT_TIMEOUT_MS) {
+        s.status = 'complete';
+        s.lastActivity = 'Timed out';
+      }
+    }
+
     return statuses;
   }, [events]);
 

@@ -194,6 +194,12 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
         )}
       </div>
 
+      {/* AI disclaimer */}
+      <p style={styles.aiDisclaimer}>
+        Lavern assists with document design and analysis. It does not provide legal advice.
+        Always verify results with qualified legal professionals.
+      </p>
+
       {/* Branding footer */}
       <div style={styles.brandingFooter}>
         <LavernIlluminated
@@ -285,5 +291,16 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.7,
     maxWidth: 480,
     margin: '0 auto',
+  },
+  aiDisclaimer: {
+    textAlign: 'center' as const,
+    fontSize: 11,
+    fontFamily: fonts.serif,
+    fontStyle: 'italic' as const,
+    color: colors.textDim,
+    lineHeight: 1.6,
+    maxWidth: 480,
+    margin: '0 auto',
+    paddingTop: spacing.lg,
   },
 };

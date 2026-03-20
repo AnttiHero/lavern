@@ -259,6 +259,7 @@ export async function assembleDocument(
 
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
+  let bestAttempt = ''; // Track the best output even if it failed validation
   ensureApiKey(); // Load from .env if not in process.env
   const client = new Anthropic();
 
@@ -293,6 +294,11 @@ export async function assembleDocument(
 
       // Post-process: strip any preamble that leaked through despite instructions
       assembledText = stripProcessText(assembledText);
+
+      // Track the longest output as fallback (better than nothing)
+      if (assembledText.length > bestAttempt.length) {
+        bestAttempt = assembledText;
+      }
 
       // Calculate cost
       const pricing = PRICING[model] ?? PRICING['claude-opus-4-6'];
@@ -391,18 +397,29 @@ export async function assembleDocument(
     }
   }
 
-  // All attempts exhausted — return empty string, NEVER return session.finalOutput
-  logger.error('All assembly attempts failed, returning empty document', { attempts: MAX_ASSEMBLY_ATTEMPTS });
+  // All attempts exhausted — return the best attempt instead of empty string.
+  // Even a partially-valid document is better than nothing for the user.
+  if (bestAttempt.length > 0) {
+    logger.warn('All assembly attempts failed validation, returning best attempt as fallback', {
+      attempts: MAX_ASSEMBLY_ATTEMPTS,
+      chars: bestAttempt.length,
+      reasons: rejectionReasons,
+    });
+  } else {
+    logger.error('All assembly attempts failed with no output', { attempts: MAX_ASSEMBLY_ATTEMPTS });
+  }
 
   session.events.emitEvent({
     type: 'error',
-    message: `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts. The deliverable could not be produced.`,
+    message: bestAttempt.length > 0
+      ? `Document assembly completed with warnings after ${MAX_ASSEMBLY_ATTEMPTS} attempts. Please review carefully.`
+      : `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts. The deliverable could not be produced.`,
     source: 'document-assembler',
     timestamp: eventTimestamp(),
   });
 
   emitAssemblyComplete(session, totalAssemblyCost);
-  return '';
+  return bestAttempt;
 }
 
 /**

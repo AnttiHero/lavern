@@ -201,6 +201,20 @@ export function App() {
     }
   }, []);
 
+  // ── Google OAuth redirect handler ──────────────────────────────────
+  // Google OAuth redirects to /#/?oauth=success (hash contains the param).
+  // Detect, clean URL, and redirect to dashboard.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('oauth=success')) {
+      // Clean the hash — remove the query string
+      window.location.hash = '#/briefing';
+    } else if (hash.includes('oauth_denied') || hash.includes('oauth_failed')) {
+      setErrorToast('Google sign-in was not completed. Please try again.');
+      window.location.hash = '#/login';
+    }
+  }, []);
+
   // ── Stable navigation callbacks (prevent WS effect re-runs) ────────
   const navToDelivery = useCallback(() => { window.location.hash = '#/delivery'; }, []);
   const navToTeam = useCallback(() => { window.location.hash = '#/team'; }, []);

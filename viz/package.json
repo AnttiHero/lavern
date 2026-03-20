@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@sentry/react": "^10.45.0",
     "canvas-confetti": "^1.9.4",
     "motion": "^12.34.0",
     "pdfjs-dist": "^5.4.624",

@@ -356,6 +356,15 @@ function runMigrations(db: Database.Database): void {
     db.exec(`ALTER TABLE users ADD COLUMN low_balance_warned_at TEXT`);
   } catch { /* column already exists */ }
 
+  // v0.12 migration: Google OAuth provider support
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'password'`);
+  } catch { /* column already exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN google_id TEXT`);
+  } catch { /* column already exists */ }
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL`);
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_tokens (
       token      TEXT PRIMARY KEY,
@@ -410,6 +419,9 @@ export interface DbUser {
   profile_json: string;
   created_at: string;
   updated_at: string;
+  email_verified?: number;
+  auth_provider?: string;
+  google_id?: string;
 }
 
 export function createUser(email: string, passwordHash: string, displayName?: string, firmName?: string): DbUser {
@@ -432,6 +444,14 @@ export function getUserByEmail(email: string): DbUser | undefined {
 
 export function getUserById(id: string): DbUser | undefined {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(id) as DbUser | undefined;
+}
+
+export function getUserByGoogleId(googleId: string): DbUser | undefined {
+  return getDb().prepare('SELECT * FROM users WHERE google_id = ?').get(googleId) as DbUser | undefined;
+}
+
+export function linkGoogleAccount(userId: string, googleId: string): void {
+  getDb().prepare('UPDATE users SET google_id = ?, auth_provider = ? WHERE id = ?').run(googleId, 'google', userId);
 }
 
 export function updateUserProfile(id: string, updates: { displayName?: string; firmName?: string; profileJson?: string }): DbUser | undefined {
