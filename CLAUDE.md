@@ -67,7 +67,7 @@ with qualified legal professionals.
 ### API Server
 - `src/api/` — Fastify API server with WebSocket event streaming
   - `src/api/middleware/` — Auth (Bearer + cookie), Zod validation, x402 payment
-  - `src/api/routes/` — 19 route modules:
+  - `src/api/routes/` — 20 route modules:
     - `sessions.ts` — Session CRUD + gate decisions + soul injection from user profile
     - `engage.ts` — Agent-native engagement (sync + webhook modes)
     - `verify.ts` — Standalone document verification
@@ -151,8 +151,11 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
   - Effects: film grain overlay, parallax scroll, custom cursor (desktop), word-by-word reveal, magnetic buttons, mist/smoke canvas
   - **Mobile (≤768px)**: Single-screen hero + footer only — all mid-sections hidden, no scroll, mist preserved
   - **Desktop**: Full scrolling experience with all sections
+- `site/terms/index.html` — Terms of Service (static HTML, dark cinematic design)
+- `site/privacy/index.html` — Privacy Policy (static HTML, dark cinematic design)
 - `site/img/` — Static assets (logo, OG image)
 - `site/demo.mp4` + `site/demo.mov` — Product demo video
+- **Analytics**: Plausible (`script.js` on site, `script.hash.js` on dashboard for SPA)
 - **Deploy**: Drag-and-drop `site/` folder to Netlify (no build step, no netlify.toml)
 - **Domain**: `lavern.ai` + `www.lavern.ai` (CNAME → Netlify, SSL via Let's Encrypt)
 
@@ -162,7 +165,7 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1198+ tests across 69 files (61 unit + 8 integration)
+- `tests/` — 1249+ tests across 74 files (65 unit + 9 integration)
 
 ## Version History
 

@@ -22,11 +22,11 @@ npm run dev:viz
 
 ## Architecture
 
-Lavern uses a multi-agent pipeline where 64 agents (57 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
+Lavern uses a multi-agent pipeline where 65 agents (58 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
 
 ### Core Concepts
 
-- **Workflows** — 11 templates from quick queries (`counsel`) to full parallel expert panels (`roundtable`)
+- **Workflows** — 8 templates from quick queries (`counsel`) to full parallel expert panels (`roundtable`)
 - **Debate Board** — Agents post findings, challenge each other, respond, and resolve
 - **Human Gates** — Mandatory approval checkpoints before irreversible actions
 - **Verification Pipeline** — 10-pass verification with self-check, cross-check, and score dimensions
@@ -64,7 +64,7 @@ npm run dev -- --claw start
 ## Development
 
 ```bash
-# Run tests (565 tests across 31 files)
+# Run tests (1249+ tests across 74 files)
 npm test
 
 # Run tests in watch mode
@@ -108,6 +108,7 @@ Default: `http://localhost:3000`
 | `/api/engage` | POST | Agent-native engagement (sync + webhook) |
 | `/api/auth/signup` | POST | User registration |
 | `/api/auth/login` | POST | User login (sets cookie) |
+| `/api/auth/google` | GET | Google OAuth redirect |
 | `/api/auth/profile` | PUT | Update profile (incl. soul) |
 | `/api/capabilities` | GET | Machine-readable service manifest |
 | `/.well-known/agent.json` | GET | A2A agent card |
@@ -146,10 +147,10 @@ Key variables:
 
 ```
 src/
-├── agents/          # 64 agent prompts (57 specialists + 7 orchestrators)
+├── agents/          # 65 agent prompts (58 specialists + 7 orchestrators)
 ├── api/             # Fastify API server + WebSocket
 │   ├── middleware/   # Auth, validation, x402 payment
-│   └── routes/      # 16 route modules
+│   └── routes/      # 20 route modules
 ├── assembly/        # Document assembly + format conversion (HTML, DOCX)
 ├── claw/            # Clawern (13 modules: watch, plan, process, deliver, heartbeat)
 ├── db/              # SQLite persistence (users, tokens, sessions, matters)
@@ -158,10 +159,10 @@ src/
 ├── gates/           # Human gate resolvers (readline, async, webhook, auto-approve)
 ├── hooks/           # Audit logging, gate enforcement, cost tracking
 ├── knowledge-base/  # Reference document collections (FTS)
-├── mcp/tools/       # 21 MCP tool modules
+├── mcp/tools/       # 19 MCP tool modules
 ├── router/          # LLM request router + deterministic fallback
 ├── session/         # Session state + session manager
-├── workflows/       # 11 workflow templates + executor
+├── workflows/       # 8 workflow templates + executor
 ├── config.ts        # Centralized configuration
 └── index.ts         # CLI entry point
 
@@ -176,7 +177,7 @@ viz/                 # React dashboard (23 feature directories)
 ├── cowork/          # Cowork folder mode (File System Access API)
 └── components/      # Shared (GateDialog, ErrorToast, LavernMark)
 
-tests/               # 565 tests across 31 files
+tests/               # 1249+ tests across 74 files
 SOUL.md              # Default firm personality (CLI/Claw fallback)
 CLAUDE.md            # Project documentation
 ```
