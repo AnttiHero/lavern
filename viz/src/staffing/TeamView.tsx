@@ -142,6 +142,9 @@ const SECTION_DEFS: SectionDef[] = [
   },
 ];
 
+/** Sections collapsed by default — less commonly needed categories. */
+const DEFAULT_COLLAPSED_IDS = new Set(['infrastructure', 'legacy', 'industry', 'tech']);
+
 // ── Component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -221,8 +224,7 @@ export default function TeamView({ onTeamConfirmed, onBack, onSkip }: Props) {
 
   // ── Collapsible sections ───────────────────────────────────────────────
 
-  const DEFAULT_COLLAPSED = new Set(['infrastructure', 'legacy', 'industry', 'tech']);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set(DEFAULT_COLLAPSED));
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set(DEFAULT_COLLAPSED_IDS));
 
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections(prev => {

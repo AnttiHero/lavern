@@ -420,7 +420,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       // Find last event for this agent
       let lastEventTime = 0;
       for (const e of events) {
-        if ('role' in e && e.role === role || 'agent' in e && e.agent === role) {
+        if (('role' in e && e.role === role) || ('agent' in e && e.agent === role)) {
           const t = typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
           lastEventTime = Math.max(lastEventTime, t);
         }

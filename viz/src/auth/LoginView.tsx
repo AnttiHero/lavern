@@ -5,7 +5,7 @@
  * Typography wordmark instead of SVG. Clean, editorial, warm.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { LavernIlluminated } from '../components/LavernIlluminated.js';
 import type { AuthUser } from './UserContext.js';
@@ -35,15 +35,15 @@ export default function LoginView({ onAuth, onBack }: Props) {
   });
 
   // Read OAuth error from URL hash (e.g., #/login?error=oauth_denied)
-  useState(() => {
+  const [oauthError] = useState(() => {
     const hash = window.location.hash;
     const match = hash.match(/[?&]error=([^&]+)/);
-    if (match) {
-      const code = decodeURIComponent(match[1]);
-      if (code === 'oauth_denied') setError('Google sign-in was cancelled.');
-      else if (code === 'oauth_failed') setError('Google sign-in failed. Please try again.');
-    }
+    return match ? decodeURIComponent(match[1]) : null;
   });
+  useEffect(() => {
+    if (oauthError === 'oauth_denied') setError('Google sign-in was cancelled.');
+    else if (oauthError === 'oauth_failed') setError('Google sign-in failed. Please try again.');
+  }, [oauthError]);
 
   const handleForgotPassword = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
