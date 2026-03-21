@@ -16,6 +16,7 @@ import { ClawTabBar, type ClawTab } from './components/ClawTabBar.js';
 import { OverviewTab } from './components/OverviewTab.js';
 import { DocumentsTab } from './components/DocumentsTab.js';
 import { DeliveriesTab } from './components/DeliveriesTab.js';
+import { PrecedentsTab } from './components/PrecedentsTab.js';
 import { ConfigTab } from './components/ConfigTab.js';
 
 interface Props {
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export default function ClawView({ onBack }: Props) {
-  const { status, documents, deliveries, loading, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries } = useClawData();
+  const { status, documents, deliveries, precedents, precedentSummary, loading, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries } = useClawData();
   const [activeTab, setActiveTab] = useState<ClawTab>('overview');
   const [demoPlaying, setDemoPlaying] = useState(false);
   const [activityLog, setActivityLog] = useState<ClawLogEntry[]>([]);
@@ -91,6 +92,7 @@ export default function ClawView({ onBack }: Props) {
           onTabChange={setActiveTab}
           documentCount={documents.length}
           deliveryCount={deliveries.length}
+          precedentCount={precedents.length}
         />
 
         {/* Tab content */}
@@ -112,6 +114,13 @@ export default function ClawView({ onBack }: Props) {
         {activeTab === 'deliveries' && (
           <DeliveriesTab
             deliveries={deliveries}
+            demoMode={demoMode}
+          />
+        )}
+        {activeTab === 'precedents' && (
+          <PrecedentsTab
+            precedents={precedents}
+            summary={precedentSummary}
             demoMode={demoMode}
           />
         )}

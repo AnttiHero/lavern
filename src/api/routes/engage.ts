@@ -583,6 +583,9 @@ export function registerEngageRoutes(
         await postWebhookWithRetry(callbackUrl, errorResponse).catch(() => {
           logger.error('Could not deliver failure notification', { sessionId: session.id });
         });
+      }).catch((err) => {
+        // Safety net: prevent unhandled rejection if the error handler itself throws
+        logger.error('Unhandled error in webhook dispatch chain', { sessionId: session.id, error: err });
       });
 
       const accepted: EngageAcceptedResponse = {

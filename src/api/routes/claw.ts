@@ -23,6 +23,7 @@ import type { FastifyInstance } from 'fastify';
 import { config } from '../../config.js';
 import { loadProfile } from '../../claw/init.js';
 import { DocumentRegistry } from '../../claw/registry.js';
+import { getPrecedentBoard } from '../../claw/precedent-board.js';
 import { getDaemonStatus } from '../../claw/daemon.js';
 import { writeJsonFileAtomic } from '../../utils/fs-helpers.js';
 
@@ -266,6 +267,56 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     );
 
     return reply.send({ deliveries, total: deliveries.length });
+  });
+
+  // ── GET /api/claw/precedents ──────────────────────────────────────
+  fastify.get('/api/claw/precedents', async (request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    if (!profile) return reply.status(404).send({ error: 'No profile found' });
+
+    const board = getPrecedentBoard(dir);
+    const summary = board.summary;
+
+    const query = request.query as {
+      findingType?: string;
+      jurisdiction?: string;
+      documentType?: string;
+      q?: string;
+      limit?: string;
+    };
+
+    const parsedLimit = query.limit ? parseInt(query.limit, 10) : 20;
+    const safeLimit = isNaN(parsedLimit) ? 20 : Math.max(1, Math.min(100, parsedLimit));
+
+    const matches = board.search({
+      findingType: query.findingType,
+      jurisdiction: query.jurisdiction,
+      documentType: query.documentType,
+      textQuery: query.q,
+      limit: safeLimit,
+    });
+
+    return reply.send({
+      summary,
+      precedents: matches.map(m => ({
+        id: m.entry.id,
+        patternName: m.entry.patternName,
+        description: m.entry.description,
+        documentType: m.entry.tags?.documentType ?? m.entry.documentType,
+        jurisdiction: m.entry.tags?.jurisdiction ?? m.entry.jurisdiction,
+        qualityScore: m.entry.qualityScore,
+        effectivenessScore: m.entry.effectivenessScore,
+        timesUsed: m.entry.timesUsed,
+        timesQueried: m.entry.timesQueried,
+        addedAt: m.entry.addedAt,
+        deprecated: m.entry.deprecated,
+        relevanceScore: m.relevanceScore,
+        evidence: m.entry.beforeSnippet,
+        lastOutcome: m.entry.outcomes[m.entry.outcomes.length - 1] ?? null,
+      })),
+      total: matches.length,
+    });
   });
 
   // ── PATCH /api/claw/ethical ────────────────────────────────────────

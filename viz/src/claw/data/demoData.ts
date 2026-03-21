@@ -3,7 +3,9 @@
  * 12 documents, 6 deliveries, full status profile.
  */
 
-import type { ClawStatus, ClawDocument, ClawDelivery } from '../hooks/useClawData.js';
+import type { ClawStatus, ClawDocument, ClawDelivery, ClawPrecedent, ClawPrecedentSummary } from '../hooks/useClawData.js';
+
+export type DemoPrecedentSummary = { summary: ClawPrecedentSummary; precedents: ClawPrecedent[] };
 
 const ago = (hours: number) => new Date(Date.now() - hours * 3600_000).toISOString();
 
@@ -50,6 +52,20 @@ export function buildDemoDocuments(): ClawDocument[] {
     { name: 'merger-agreement-draft.docx', path: '/Users/acme/Documents/Legal/merger-agreement-draft.docx', type: 'Merger Agreement', status: 'flagged', sizeBytes: 445_000, lastModified: ago(8), lastReviewed: ago(7), findings: { critical: 3, major: 4, minor: 2 }, costUsd: 0, error: null, confidential: true },
     { name: 'board-resolution.pdf', path: '/Users/acme/Downloads/Legal-Review/board-resolution.pdf', type: 'Board Resolution', status: 'pending', sizeBytes: 67_000, lastModified: ago(0.75), lastReviewed: null, findings: null, costUsd: null, error: null, confidential: false },
   ];
+}
+
+export function buildDemoPrecedents(): DemoPrecedentSummary {
+  const precedents: ClawPrecedent[] = [
+    { id: 'PREC-demo-001', patternName: 'Contract Risk Pattern', description: 'Unlimited liability exposure without cap — indemnification clause lacks monetary ceiling, exposing party to uncapped damages.', documentType: 'NDA', jurisdiction: 'Delaware, USA', qualityScore: 0.95, effectivenessScore: 0.72, timesUsed: 4, timesQueried: 7, addedAt: ago(72), deprecated: false, relevanceScore: 0.85, evidence: 'Section 4.2: "Company shall indemnify and hold harmless..."', lastOutcome: { sessionId: 'shem-demo-002', timestamp: ago(2.5) } },
+    { id: 'PREC-demo-002', patternName: 'Dark Pattern Pattern', description: 'Auto-renewal clause buried in Section 12 with 60-day notice requirement — easily missed by consumers.', documentType: 'Terms of Service', jurisdiction: 'EU', qualityScore: 0.88, effectivenessScore: 0.65, timesUsed: 3, timesQueried: 5, addedAt: ago(120), deprecated: false, relevanceScore: 0.73, evidence: 'Section 12.3: "This agreement shall automatically renew..."', lastOutcome: { sessionId: 'shem-demo-003', timestamp: ago(17) } },
+    { id: 'PREC-demo-003', patternName: 'Contract Deviation Pattern', description: 'Non-standard IP assignment clause — assigns all pre-existing IP to employer without carve-out for personal projects.', documentType: 'Employment Agreement', jurisdiction: 'California, USA', qualityScore: 0.91, effectivenessScore: 0.58, timesUsed: 2, timesQueried: 3, addedAt: ago(48), deprecated: false, relevanceScore: 0.68, evidence: 'Section 8.1: "All intellectual property conceived during..."', lastOutcome: { sessionId: 'shem-demo-004', timestamp: ago(11) } },
+    { id: 'PREC-demo-004', patternName: 'Adversarial Ambiguity Pattern', description: 'Termination clause uses "reasonable efforts" without defining the standard — ambiguous in dispute.', documentType: 'Master Service Agreement', jurisdiction: 'Delaware, USA', qualityScore: 0.82, effectivenessScore: 0.45, timesUsed: 1, timesQueried: 2, addedAt: ago(168), deprecated: false, relevanceScore: 0.52, evidence: 'Section 9.2: "Either party may terminate upon reasonable efforts to cure..."', lastOutcome: { sessionId: 'shem-demo-002', timestamp: ago(2.5) } },
+  ];
+
+  return {
+    summary: { total: 4, active: 4, deprecated: 0, topPatterns: ['Contract Risk Pattern', 'Dark Pattern Pattern', 'Contract Deviation Pattern'] },
+    precedents,
+  };
 }
 
 export function buildDemoDeliveries(): ClawDelivery[] {

@@ -208,6 +208,10 @@ export const config = {
     // Heartbeat — periodic check-in (v17)
     heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
     heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
+    // Precedent Board — institutional memory (v0.13)
+    precedentDecayDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_DECAY_DAYS, 30),
+    precedentArchiveDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS, 90),
+    precedentMaxOutcomes: safeInt(process.env.LAVERN_CLAW_PRECEDENT_MAX_OUTCOMES, 50),
   },
 
   // ── Archive Retention ──────────────────────────────────────────────────

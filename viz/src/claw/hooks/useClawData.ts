@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { buildDemoStatus, buildDemoDocuments, buildDemoDeliveries } from '../data/demoData.js';
+import { buildDemoStatus, buildDemoDocuments, buildDemoDeliveries, buildDemoPrecedents, type DemoPrecedentSummary } from '../data/demoData.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -87,10 +87,36 @@ export interface ClawDelivery {
   confidential?: boolean;
 }
 
+export interface ClawPrecedent {
+  id: string;
+  patternName: string;
+  description: string;
+  documentType: string;
+  jurisdiction: string;
+  qualityScore: number;
+  effectivenessScore: number;
+  timesUsed: number;
+  timesQueried: number;
+  addedAt: string;
+  deprecated: boolean;
+  relevanceScore: number;
+  evidence: string;
+  lastOutcome: { sessionId: string; timestamp: string } | null;
+}
+
+export interface ClawPrecedentSummary {
+  total: number;
+  active: number;
+  deprecated: number;
+  topPatterns: string[];
+}
+
 export interface ClawData {
   status: ClawStatus | null;
   documents: ClawDocument[];
   deliveries: ClawDelivery[];
+  precedents: ClawPrecedent[];
+  precedentSummary: ClawPrecedentSummary | null;
   loading: boolean;
   error: string | null;
   demoMode: boolean;
@@ -110,6 +136,8 @@ export function useClawData(): ClawData {
   const [status, setStatus] = useState<ClawStatus | null>(null);
   const [documents, setDocuments] = useState<ClawDocument[]>([]);
   const [deliveries, setDeliveries] = useState<ClawDelivery[]>([]);
+  const [precedents, setPrecedents] = useState<ClawPrecedent[]>([]);
+  const [precedentSummary, setPrecedentSummary] = useState<ClawPrecedentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
@@ -122,16 +150,20 @@ export function useClawData(): ClawData {
     setStatus(buildDemoStatus());
     setDocuments(buildDemoDocuments());
     setDeliveries(buildDemoDeliveries());
+    const demoPrec = buildDemoPrecedents();
+    setPrecedents(demoPrec.precedents);
+    setPrecedentSummary(demoPrec.summary);
     setDemoMode(true);
     setError(null);
   }, []);
 
   const fetchData = useCallback(async () => {
     try {
-      const [statusRes, docsRes, delRes] = await Promise.all([
+      const [statusRes, docsRes, delRes, precRes] = await Promise.all([
         fetch('/api/claw/status', { credentials: 'include' }),
         fetch('/api/claw/documents', { credentials: 'include' }),
         fetch('/api/claw/deliveries', { credentials: 'include' }),
+        fetch('/api/claw/precedents', { credentials: 'include' }),
       ]);
 
       if (!mounted.current) return;
@@ -160,6 +192,13 @@ export function useClawData(): ClawData {
         try {
           const data = await delRes.json();
           setDeliveries(data.deliveries ?? []);
+        } catch { /* keep empty */ }
+      }
+      if (precRes.ok) {
+        try {
+          const data = await precRes.json();
+          setPrecedents(data.precedents ?? []);
+          setPrecedentSummary(data.summary ?? null);
         } catch { /* keep empty */ }
       }
       setDemoMode(false);
@@ -215,5 +254,5 @@ export function useClawData(): ClawData {
     } catch { /* ignore — will refresh on next poll */ }
   }, [demoMode, fetchData]);
 
-  return { status, documents, deliveries, loading, error, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries };
+  return { status, documents, deliveries, precedents, precedentSummary, loading, error, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries };
 }

@@ -4,12 +4,13 @@
 
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
-export type ClawTab = 'overview' | 'documents' | 'deliveries' | 'config';
+export type ClawTab = 'overview' | 'documents' | 'deliveries' | 'precedents' | 'config';
 
 const TABS: { id: ClawTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'documents', label: 'Documents' },
   { id: 'deliveries', label: 'Deliveries' },
+  { id: 'precedents', label: 'Precedents' },
   { id: 'config', label: 'Configuration' },
 ];
 
@@ -18,15 +19,17 @@ interface Props {
   onTabChange: (tab: ClawTab) => void;
   documentCount: number;
   deliveryCount: number;
+  precedentCount: number;
 }
 
-export function ClawTabBar({ activeTab, onTabChange, documentCount, deliveryCount }: Props) {
+export function ClawTabBar({ activeTab, onTabChange, documentCount, deliveryCount, precedentCount }: Props) {
   return (
     <div style={styles.bar}>
       {TABS.map(tab => {
         const isActive = activeTab === tab.id;
         const count = tab.id === 'documents' ? documentCount
           : tab.id === 'deliveries' ? deliveryCount
+          : tab.id === 'precedents' ? precedentCount
           : 0;
 
         return (

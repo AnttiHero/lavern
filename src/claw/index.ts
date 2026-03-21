@@ -23,6 +23,7 @@ import { planWork, planSingleJob } from './planner.js';
 import { processDocument } from './processor.js';
 import { runDaemon } from './daemon.js';
 import { notify } from './notify.js';
+import { getPrecedentBoard } from './precedent-board.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { DocumentStyle } from '../assembly/format-converter.js';
@@ -446,10 +447,22 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         if (errors > 0) alerts.push(`${errors} doc(s) failed processing`);
         if (flagged > 0) alerts.push(`${flagged} doc(s) need human review`);
 
+        // Precedent board: check deprecated count + decay on compaction cycle
+        let precBoard: ReturnType<typeof getPrecedentBoard> | null = null;
+        try {
+          precBoard = getPrecedentBoard(dir);
+          const precSummary = precBoard.summary;
+          if (precSummary.deprecated > 0) alerts.push(`${precSummary.deprecated} deprecated precedent(s)`);
+        } catch { /* precedent board unavailable — non-fatal */ }
+
         // State compaction: run every 12th heartbeat (~6 hours at 30min interval)
         // Archives reviewed/error entries older than 30 days to keep state.json lean
         if (heartbeatCount % 12 === 0 && docs.length > 100) {
           registry.compact(30);
+        }
+        if (heartbeatCount % 12 === 0 && precBoard && precBoard.summary.total > 0) {
+          precBoard.decay();
+          precBoard.compact();
         }
 
         // Log rotation: check daemon logs every 6th heartbeat (~3 hours)

@@ -28,6 +28,7 @@ import { extractSessionFindings } from './types.js';
 import { notify } from './notify.js';
 import { config } from '../config.js';
 import { analyzeLocally, extractLocalFindings } from './local-analysis.js';
+import { getPrecedentBoard } from './precedent-board.js';
 import type { ClawProfile, ClawJob, ClawConfig } from './types.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -150,6 +151,43 @@ export async function processDocument(
     const inference = await inferTask(documentPath, parsed.fullText, profile);
     log(`→ ${inference.request.type} — ${inference.method} (${inference.reasoning.slice(0, 80)})`);
 
+    // ── 2b. PRECEDENT LOOKUP ─────────────────────────────────────────
+    const board = getPrecedentBoard(clawConfig.dir);
+    try {
+      const precedentMatches = board.search({
+        documentType: inference.request.type,
+        jurisdiction: profile.jurisdiction,
+        limit: 5,
+      });
+
+      if (precedentMatches.length > 0) {
+        // Sanitize precedent context before injection: strip control chars, cap length
+        const precedentLines = precedentMatches.map(m => {
+          const desc = m.entry.description.replace(/[\x00-\x1f]/g, ' ').slice(0, 200);
+          return `[Precedent ${m.entry.id}] ${m.entry.patternName}: ${desc} (seen ${m.entry.timesUsed}x, effectiveness: ${(m.entry.effectivenessScore * 100).toFixed(0)}%)`;
+        });
+        // Cap total injected context to prevent prompt bloat
+        let context = '';
+        for (const line of precedentLines) {
+          if (context.length + line.length > 1000) break;
+          context += (context ? '\n' : '') + line;
+        }
+        inference.request.requestText = (inference.request.requestText ?? '') + `\n\n--- Precedent Context (from prior engagements) ---\n${context}`;
+        log(`Found ${precedentMatches.length} relevant precedent(s)`);
+
+        if (precedentMatches[0].relevanceScore > 0.8) {
+          notify({
+            type: 'precedent_match',
+            title: `Precedent match: ${precedentMatches[0].entry.patternName}`,
+            message: `Strong match (${(precedentMatches[0].relevanceScore * 100).toFixed(0)}%) found for ${path.basename(documentPath)}`,
+            details: { documentPath, precedentId: precedentMatches[0].entry.id },
+          });
+        }
+      }
+    } catch (precErr) {
+      logger.warn('Precedent lookup failed (non-fatal)', { error: precErr });
+    }
+
     // ── 3. DISPATCH ───────────────────────────────────────────────────
     log(`Dispatching: ${inference.workflow ?? 'auto-route'}`);
 
@@ -224,6 +262,22 @@ export async function processDocument(
     const findings = extractSessionFindings(session);
 
     registry.markReviewed(documentHash, sessionId, findings, cost);
+
+    // Index findings into precedent board
+    const fullFindings = Array.isArray(session.debate?.findings) ? session.debate.findings : [];
+    if (fullFindings.length > 0) {
+      try {
+        const docEntry = registry.getDocument(documentHash);
+        board.indexFindings(
+          documentHash,
+          docEntry?.type ?? inference.request.type,
+          profile.jurisdiction,
+          fullFindings,
+        );
+      } catch (indexErr) {
+        logger.warn('Precedent indexing failed (non-fatal)', { sessionId, error: indexErr });
+      }
+    }
 
     // Notify on critical findings
     if (findings.critical > 0) {
