@@ -159,6 +159,11 @@ export const config = {
   // ── Budgets ────────────────────────────────────────────────────────────
   defaultBudgetUsd: safeFloat(process.env.SHEM_DEFAULT_BUDGET, 5.0),
   routerBudgetUsd: 0.01,
+  /** Platform-wide daily spend cap in USD. When reached, new sessions are rejected
+   *  (in-flight sessions finish normally). Resets at midnight UTC. Default: $50. */
+  dailySpendCapUsd: safeFloat(process.env.LAVERN_DAILY_SPEND_CAP_USD, 50.0),
+  /** Webhook URL to notify the owner when daily spend reaches 80% of cap. */
+  ownerAlertWebhook: process.env.LAVERN_OWNER_WEBHOOK ?? '',
 
   // ── Sessions ─────────────────────────────────────────────────────────
   /** Session TTL in ms before eviction (default: 4 hours) */

@@ -41,6 +41,7 @@ import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
 import { canStartSession, getPlanLimits } from './billing.js';
+import { checkDailySpendCap } from '../../utils/spend-tracker.js';
 import type { ParsedDocument } from '../../documents/types.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
@@ -109,6 +110,18 @@ export function registerSessionRoutes(
     const userId = (request as typeof request & { userId?: string }).userId;
     if (!userId && !isAgent) {
       return reply.status(401).send({ error: 'Authentication required. Please sign in to start a session.' });
+    }
+
+    // Global daily spend cap — protect the founder's wallet
+    const spendCheck = checkDailySpendCap();
+    if (!spendCheck.allowed) {
+      const retryAfterSec = Math.ceil((spendCheck.retryAfterMs ?? 3600_000) / 1000);
+      reply.header('Retry-After', retryAfterSec.toString());
+      return reply.status(503).send({
+        error: 'Lavern is resting.',
+        message: spendCheck.reason,
+        retryAfterMs: spendCheck.retryAfterMs,
+      });
     }
 
     // v27: Graceful overload protection — return 503 if at capacity

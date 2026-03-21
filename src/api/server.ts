@@ -30,6 +30,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
 import { SessionManager } from '../session/session-manager.js';
+import { getDailySpendStats } from '../utils/spend-tracker.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { getWsConnectionCount } from './ws-handler.js';
 import { registerReplayRoutes } from './routes/replay.js';
@@ -400,12 +401,20 @@ export async function startApiServer(port: number): Promise<void> {
   // v27: Capacity endpoint — for monitoring and frontend queue display
   fastify.get('/health/capacity', async () => {
     const capacity = sessionManager.getCapacity();
+    const spend = getDailySpendStats();
     return {
       current: capacity.current,
       max: capacity.max,
       available: capacity.available,
       estimatedWaitMs: capacity.estimatedWaitMs,
       utilization: capacity.max > 0 ? Math.round((capacity.current / capacity.max) * 100) : 0,
+      dailySpend: {
+        date: spend.date,
+        totalUsd: Math.round(spend.totalUsd * 100) / 100,
+        capUsd: spend.capUsd,
+        pct: Math.round(spend.pct),
+        capReached: spend.capReached,
+      },
     };
   });
 

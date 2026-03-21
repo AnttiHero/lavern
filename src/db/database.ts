@@ -16,6 +16,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { recordSpend } from '../utils/spend-tracker.js';
 import type { SessionState } from '../session/session-state.js';
 
 const logger = createLogger('DB');
@@ -672,6 +673,11 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     // increments still execute, causing double charges.
     const alreadyArchived = db.prepare(`SELECT 1 FROM session_archive WHERE id = ?`).get(session.id);
     if (alreadyArchived) return;
+
+    // Track platform-wide daily spend (for global spend cap)
+    if (session.accumulatedCost > 0) {
+      recordSpend(session.accumulatedCost);
+    }
 
     // v25: Release hold before debiting actual cost (hold was placed at session start)
     releaseHold(session.id);
