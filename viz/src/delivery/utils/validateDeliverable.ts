@@ -51,10 +51,13 @@ export function processTextRatio(text: string): number {
 
   if (paragraphs.length === 0) return 0;
 
+  // NOTE: "First,", "Now,", "Next," are intentionally EXCLUDED here (common in
+  // legal prose: "First, the parties agree..."). They ARE in isProcessDump()
+  // which only checks the opening 500 chars where they indicate agent preamble.
   const processPatterns = [
     /^I'll /im, /^I will /im, /^Let me /im, /^I need to/im,
     /^I can see/im, /^I have /im, /^I've /im, /^I see /im,
-    /^First,/im, /^Now,/im, /^Next,/im, /^Now let/im,
+    /^Now let/im,
     /^OK[,.\s]/im, /^Okay/im, /^Sure/im, /^Certainly/im,
     /^Good\./im, /^Good —/im, /^Great/im, /^Excellent/im, /^Perfect/im,
     /^Here is/im, /^Here's /im, /^Based on my/im,
@@ -168,8 +171,8 @@ export function countEmptySections(text: string): number {
 // ── Main Validation ───────────────────────────────────────────────────────
 
 /**
- * Structural validation only — no placeholder detection (that's the LLM quality
- * gate's job, since regex can't tell legitimate template fields from garbage).
+ * Structural validation with placeholder detection and process contamination scan.
+ * KEEP IN SYNC with src/assembly/validate-deliverable.ts.
  */
 export function validateDeliverable(text: string): { valid: boolean; reason?: string } {
   if (!text) return { valid: false, reason: 'empty' };
@@ -191,8 +194,13 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: st
   const emptySections = countEmptySections(trimmed);
   if (emptySections > 2) return { valid: false, reason: 'empty_sections' };
 
+  // Excessive placeholders — ≥5 indicates unfinished garbage
+  const placeholderCount = countPlaceholders(trimmed);
+  if (placeholderCount >= 5) return { valid: false, reason: 'excessive_placeholders' };
+
+  // Full-text process contamination — 5% threshold
   const contamination = processTextRatio(trimmed);
-  if (contamination > 0.2) return { valid: false, reason: 'process_contamination' };
+  if (contamination > 0.05) return { valid: false, reason: 'process_contamination' };
 
   return { valid: true };
 }

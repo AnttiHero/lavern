@@ -56,8 +56,7 @@ export default function LoginView({ onAuth, onBack }: Props) {
         body: JSON.stringify({ email }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error || 'Request failed.');
+        setError('Something went wrong. Please try again.');
         return;
       }
       setForgotSuccess(true);
@@ -95,7 +94,14 @@ export default function LoginView({ onAuth, onBack }: Props) {
       }
 
       if (!res.ok) {
-        setError((data.error as string) || 'Authentication failed.');
+        // Map all auth errors to a generic message — prevents leaking
+        // account existence, internal error details, or implementation hints.
+        const serverMsg = (data.error as string) || '';
+        const safeMsg = res.status === 401 ? 'Invalid email or password.'
+          : res.status === 429 ? 'Too many attempts. Please wait a moment.'
+          : res.status === 403 ? 'Please verify your email before logging in.'
+          : 'Authentication failed. Please try again.';
+        setError(serverMsg.includes('email or password') ? serverMsg : safeMsg);
         return;
       }
 

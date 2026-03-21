@@ -59,6 +59,12 @@ export interface ParsedDocument {
   parseMethod: 'pdf-parse' | 'mammoth' | 'plaintext';
   /** ISO timestamp of when parsing completed */
   parsedAt: string;
+  /** Audit log of invisible/hidden content stripped during sanitization (SMAC-L1) */
+  sanitizationLog?: Array<{
+    type: 'zero_width' | 'html_comment' | 'ansi_escape';
+    count: number;
+    sample?: string;
+  }>;
 }
 
 // ── Preview (lightweight, frontend-only) ────────────────────────────────

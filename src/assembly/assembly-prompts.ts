@@ -233,6 +233,12 @@ export function buildAssemblyContext(session: SessionState, request?: LegalReque
       }
     }
     parts.push('');
+  } else {
+    parts.push('# ⚠️ WARNING: NO VERIFICATION');
+    parts.push('No verification passes were run during analysis. The findings below are UNVERIFIED.');
+    parts.push('Apply extra rigor: cross-reference claims against the source document, be conservative');
+    parts.push('in your assessments, and flag any findings you cannot independently confirm.');
+    parts.push('');
   }
 
   // ── Gate Decisions ──

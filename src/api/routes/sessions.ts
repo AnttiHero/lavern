@@ -195,6 +195,20 @@ export function registerSessionRoutes(
     // v12: Store parsed documents in session state
     if (body.documents && Array.isArray(body.documents)) {
       session.documents = (body.documents as ParsedDocument[]).slice(0, 20);
+
+      // SMAC-L1: Alert agents if any documents had invisible content stripped
+      const sanitizedDocs = session.documents.filter(d => d.sanitizationLog && d.sanitizationLog.length > 0);
+      if (sanitizedDocs.length > 0) {
+        const totalRemoved = sanitizedDocs.reduce(
+          (sum, d) => sum + (d.sanitizationLog?.reduce((s, e) => s + e.count, 0) ?? 0), 0,
+        );
+        session.events.emitEvent({
+          type: 'tool_used',
+          tool: `document_sanitization_warning: ${sanitizedDocs.length} doc(s), ${totalRemoved} hidden char(s) removed`,
+          agent: 'system',
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // v13: Accept team roles from frontend staffing

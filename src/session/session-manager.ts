@@ -14,7 +14,7 @@
 
 import { SessionState } from './session-state.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
-import { archiveSession } from '../db/database.js';
+import { archiveSession, releaseHold } from '../db/database.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -105,6 +105,9 @@ export class SessionManager {
           archiveSession(entry.session, userId);
         } catch (err) {
           log.error(`[SESSION] Failed to archive destroyed session ${id}:`, err);
+          // Safety net: if archive transaction rolled back, the hold is still locked.
+          // Release it to prevent the user's billable hours from being permanently frozen.
+          try { releaseHold(id); } catch { /* best effort */ }
         }
       }
       // Halt running agents
@@ -171,6 +174,9 @@ export class SessionManager {
         archiveSession(entry.session, userId);
       } catch (err) {
         log.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+        // Safety net: if archive transaction rolled back, the hold is still locked.
+        // Release it to prevent the user's billable hours from being permanently frozen.
+        try { releaseHold(id); } catch { /* best effort */ }
       }
     }
     // Halt any running agents

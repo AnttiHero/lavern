@@ -87,10 +87,13 @@ export function processTextRatio(text: string): number {
 
   if (paragraphs.length === 0) return 0;
 
+  // NOTE: "First,", "Now,", "Next," are intentionally EXCLUDED here (common in
+  // legal prose: "First, the parties agree..."). They ARE in isProcessDump()
+  // which only checks the opening 500 chars where they indicate agent preamble.
   const processPatterns = [
     /^I'll /im, /^I will /im, /^Let me /im, /^I need to/im,
     /^I can see/im, /^I have /im, /^I've /im, /^I see /im,
-    /^First,/im, /^Now,/im, /^Next,/im, /^Now let/im,
+    /^Now let/im,
     /^OK[,.\s]/im, /^Okay/im, /^Sure/im, /^Certainly/im,
     /^Good\./im, /^Good —/im, /^Great/im, /^Excellent/im, /^Perfect/im,
     /^Here is/im, /^Here's /im, /^Based on my/im,
@@ -237,6 +240,7 @@ export type ValidationReason =
   | 'no_structure'
   | 'thin_content'
   | 'empty_sections'
+  | 'excessive_placeholders'
   | 'process_contamination';
 
 /**
@@ -253,12 +257,8 @@ export type ValidationReason =
  *   5. Has at least 3 markdown headings (structure)
  *   6. Sufficient content density (sections have real content)
  *   6b. No more than 2 empty sections (heading with no content before next heading)
- *   7. Full-text process contamination < 20%
- *
- * NOTE: Placeholder detection (e.g., [Insert Date], [TBD]) is intentionally
- * NOT here. Regex cannot distinguish legitimate template fields from garbage.
- * The LLM quality gate handles this — it reads the document and judges whether
- * placeholders are appropriate in context.
+ *   7. No excessive placeholders (≥5 = fail; legal templates with 1-3 are fine)
+ *   8. Full-text process contamination < 5%
  */
 export function validateDeliverable(text: string): { valid: boolean; reason?: ValidationReason } {
   if (!text) return { valid: false, reason: 'empty' };
@@ -290,9 +290,16 @@ export function validateDeliverable(text: string): { valid: boolean; reason?: Va
   const emptySections = countEmptySections(trimmed);
   if (emptySections > 2) return { valid: false, reason: 'empty_sections' };
 
-  // 7. Full-text process contamination check
+  // 7. Excessive placeholders — ≥5 indicates unfinished garbage.
+  //    Legal template drafts legitimately use 1-3 fields like [Insert Date],
+  //    [Company Name]. But 5+ means the assembler didn't fill in content.
+  const placeholderCount = countPlaceholders(trimmed);
+  if (placeholderCount >= 5) return { valid: false, reason: 'excessive_placeholders' };
+
+  // 8. Full-text process contamination check — 5% threshold means at most
+  //    1 contaminated paragraph in a 20-paragraph document.
   const contamination = processTextRatio(trimmed);
-  if (contamination > 0.2) return { valid: false, reason: 'process_contamination' };
+  if (contamination > 0.05) return { valid: false, reason: 'process_contamination' };
 
   return { valid: true };
 }

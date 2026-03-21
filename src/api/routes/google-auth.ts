@@ -143,11 +143,20 @@ export function registerGoogleAuthRoutes(fastify: FastifyInstance): void {
         const existingByEmail = getUserByEmail(email);
 
         if (existingByEmail) {
-          // Link Google to existing account
-          linkGoogleAccount(existingByEmail.id, googleId);
-          if (!existingByEmail.email_verified) {
-            setEmailVerified(existingByEmail.id);
+          // Only auto-link if the existing account's email is already verified
+          // AND the Google profile claims the email is verified.
+          // This prevents account takeover: an attacker can't create a Google
+          // account with victim@example.com and auto-link to the victim's Lavern account.
+          if (!existingByEmail.email_verified || !profile.email_verified) {
+            logger.warn('google_link_blocked', {
+              email,
+              existingVerified: existingByEmail.email_verified,
+              googleVerified: profile.email_verified,
+            });
+            return reply.redirect(`${config.email.appUrl}/#/login?error=oauth_failed`);
           }
+          // Link Google to existing verified account
+          linkGoogleAccount(existingByEmail.id, googleId);
           user = existingByEmail;
           logAuditEvent({ userId: user.id, action: 'google_link', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
           logger.info('google_account_linked', { userId: user.id, email });

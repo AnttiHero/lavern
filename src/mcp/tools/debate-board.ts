@@ -16,6 +16,38 @@ import { boundedPush } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
 import type { Finding, Challenge, Response, DebateResolution } from '../../types/debate.js';
 
+/**
+ * Strip process-text preambles from finding content before storing.
+ * Agents sometimes prefix findings with "I'll analyze...", "Let me review..." —
+ * this strips that preamble so users see only the substantive finding.
+ */
+const FINDING_PROCESS_PATTERNS = [
+  /^I'll /i, /^I will /i, /^Let me /i, /^I need to/i, /^I see /i,
+  /^I can see/i, /^I have /i, /^I've /i,
+  /^OK[,.\s]/i, /^Okay/i, /^Sure/i, /^Certainly/i,
+  /^Here is/i, /^Here's /i, /^Based on my/i,
+  /^Looking at/i, /^After review/i, /^I'll get started/i,
+  /^Let me check/i, /^I'll start/i, /^I'll now/i,
+];
+
+export function sanitizeFindingContent(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) return trimmed;
+
+  // If the entire content is a single sentence matching a process pattern, keep it
+  // (better than returning empty). Only strip if there's substantive content after.
+  const sentences = trimmed.split(/(?<=\.)\s+/);
+  if (sentences.length <= 1) return trimmed;
+
+  // Find the first sentence that doesn't match a process pattern
+  const firstSubstantiveIdx = sentences.findIndex(
+    s => !FINDING_PROCESS_PATTERNS.some(p => p.test(s.trim())),
+  );
+
+  if (firstSubstantiveIdx <= 0) return trimmed; // No preamble or all substantive
+  return sentences.slice(firstSubstantiveIdx).join(' ').trim();
+}
+
 export function createDebateBoardTools(session: SessionState) {
   const state = session.debate;
   const counters = session.debateCounters;
@@ -48,11 +80,12 @@ export function createDebateBoardTools(session: SessionState) {
         .describe('Confidence in this finding (0.0-1.0). Based on evidence strength, not self-assessment. Default: 0.8'),
     },
     async (args) => {
+      const sanitizedContent = sanitizeFindingContent(args.content);
       const finding: Finding = {
         id: `F-${String(++counters.finding).padStart(3, '0')}`,
         agentRole: args.agent_role as Finding['agentRole'],
         findingType: args.finding_type,
-        content: args.content,
+        content: sanitizedContent,
         severity: args.severity,
         evidence: args.evidence,
         confidence: args.confidence ?? 0.8,
@@ -68,7 +101,7 @@ export function createDebateBoardTools(session: SessionState) {
         category: args.finding_type,
         severity: args.severity,
         confidence: finding.confidence,
-        content: args.content,
+        content: sanitizedContent,
         evidence: args.evidence,
         timestamp: eventTimestamp(),
       });

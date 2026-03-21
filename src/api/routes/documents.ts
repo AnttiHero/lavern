@@ -58,9 +58,18 @@ export function registerDocumentRoutes(fastify: FastifyInstance): void {
         });
       }
 
-      // Parse the document
+      // Parse the document (includes SMAC-L1 sanitization)
       const mimeType = data.mimetype || 'application/octet-stream';
       const parsed = await parseDocument(buffer, filename, mimeType);
+
+      // Audit trail: log if invisible/hidden content was stripped
+      if (parsed.sanitizationLog && parsed.sanitizationLog.length > 0) {
+        fastify.log.warn({
+          msg: 'document_sanitized',
+          filename,
+          removals: parsed.sanitizationLog,
+        });
+      }
 
       return reply.status(200).send(parsed);
     } catch (err) {

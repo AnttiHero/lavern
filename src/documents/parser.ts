@@ -9,6 +9,7 @@
 import { parsePdf } from './pdf-parser.js';
 import { parseDocx } from './docx-parser.js';
 import { detectSections, detectDefinedTerms, detectTables } from './structure-detector.js';
+import { sanitizeDocumentFields } from './sanitize-text.js';
 import type { ParsedDocument } from './types.js';
 
 // ── MIME type mapping ───────────────────────────────────────────────────
@@ -60,19 +61,27 @@ export async function parseDocument(
   const ext = filename.toLowerCase().slice(filename.lastIndexOf('.'));
 
   // Route to format-specific parser
+  let doc: ParsedDocument;
+
   if (PDF_TYPES.has(mime) || ext === '.pdf') {
-    return parsePdf(buffer, filename, buffer.length);
+    doc = await parsePdf(buffer, filename, buffer.length);
+  } else if (DOCX_TYPES.has(mime) || ext === '.docx' || ext === '.doc') {
+    doc = await parseDocx(buffer, filename, buffer.length);
+  } else if (TEXT_TYPES.has(mime) || ['.txt', '.md', '.rtf', '.html', '.htm'].includes(ext)) {
+    doc = parsePlainText(buffer, filename, mime || 'text/plain');
+  } else {
+    throw new Error(`Unsupported document type: ${mime} (${filename})`);
   }
 
-  if (DOCX_TYPES.has(mime) || ext === '.docx' || ext === '.doc') {
-    return parseDocx(buffer, filename, buffer.length);
+  // SMAC-L1: Sanitize all text fields for invisible/hidden content before
+  // any LLM sees this document. Strips zero-width Unicode, HTML comments,
+  // ANSI escapes. Logs everything removed for audit trail.
+  const sanitizationLog = sanitizeDocumentFields(doc);
+  if (sanitizationLog.length > 0) {
+    doc.sanitizationLog = sanitizationLog;
   }
 
-  if (TEXT_TYPES.has(mime) || ['.txt', '.md', '.rtf', '.html', '.htm'].includes(ext)) {
-    return parsePlainText(buffer, filename, mime || 'text/plain');
-  }
-
-  throw new Error(`Unsupported document type: ${mime} (${filename})`);
+  return doc;
 }
 
 // ── Plain Text Parser ───────────────────────────────────────────────────

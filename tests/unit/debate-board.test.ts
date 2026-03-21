@@ -516,4 +516,47 @@ describe('Debate Board', () => {
       expect(text).not.toContain('F-002'); // GREEN orphan not flagged
     });
   });
+
+  describe('Finding Content Sanitization', () => {
+    it('should strip process-text preamble from finding content', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-analyst',
+        finding_type: 'risk',
+        content: "Let me analyze this carefully. The liability cap of $100K is below industry standard.",
+        severity: 'YELLOW',
+        evidence: ['Section 3.2: "total liability shall not exceed $100,000"'],
+      });
+
+      const finding = session.debate.findings[0];
+      expect(finding.content).toBe('The liability cap of $100K is below industry standard.');
+      expect(finding.content).not.toContain('Let me analyze');
+    });
+
+    it('should keep content unchanged when no process preamble', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-analyst',
+        finding_type: 'risk',
+        content: 'The indemnification clause lacks a mutual obligation, creating asymmetric risk.',
+        severity: 'RED',
+        evidence: ['Section 5'],
+      });
+
+      const finding = session.debate.findings[0];
+      expect(finding.content).toBe('The indemnification clause lacks a mutual obligation, creating asymmetric risk.');
+    });
+
+    it('should keep single-sentence content even if it matches a process pattern', async () => {
+      await postFinding.handler({
+        agent_role: 'contract-analyst',
+        finding_type: 'risk',
+        content: "I'll note that the termination clause is missing a cure period.",
+        severity: 'YELLOW',
+        evidence: ['Section 8'],
+      });
+
+      const finding = session.debate.findings[0];
+      // Single sentence — kept as-is (better than returning empty)
+      expect(finding.content).toBe("I'll note that the termination clause is missing a cure period.");
+    });
+  });
 });

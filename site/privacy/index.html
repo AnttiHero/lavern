@@ -28,9 +28,10 @@
     li{margin-bottom:8px}
     a{color:var(--accent);text-decoration:none}
     a:hover{text-decoration:underline}
-    .footer{padding:48px 0 32px;border-top:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px;margin-top:80px}
+    .footer{padding:48px 24px 32px;border-top:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px;max-width:1200px;margin:80px auto 0}
+    .footer-left{display:flex;align-items:center;gap:24px}
     .footer-mark{font-family:var(--serif);font-size:16px;font-weight:300;letter-spacing:8px;color:var(--text)}
-    .footer-link{font-size:12px;color:var(--muted);text-decoration:none;transition:color .2s;margin-left:24px}
+    .footer-link{font-size:12px;color:var(--muted);text-decoration:none;transition:color .2s}
     .footer-link:hover{color:var(--text)}
     .footer-right{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
   </style>
@@ -123,14 +124,14 @@
     <h2>14. Contact</h2>
     <p>For privacy-related inquiries, contact us at <a href="mailto:privacy@lavern.ai">privacy@lavern.ai</a> or write to Lavern, Helsinki, Finland.</p>
 
-    <footer class="footer">
-      <div>
-        <span class="footer-mark">LAVERN</span>
-        <a href="/terms" class="footer-link">Terms</a>
-        <a href="/privacy" class="footer-link">Privacy</a>
-      </div>
-      <div class="footer-right">Helsinki &nbsp;&middot;&nbsp; Paris</div>
-    </footer>
   </div>
+  <footer class="footer">
+    <div class="footer-left">
+      <span class="footer-mark">LAVERN</span>
+      <a href="/terms" class="footer-link">Terms</a>
+      <a href="/privacy" class="footer-link">Privacy</a>
+    </div>
+    <div class="footer-right"><a href="#" onclick="event.preventDefault();window.location='mailto:helsinki@lavern.ai'" class="footer-link">Helsinki</a> &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();window.location='mailto:paris@lavern.ai'" class="footer-link">Paris</a></div>
+  </footer>
 </body>
 </html>

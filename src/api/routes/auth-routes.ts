@@ -237,6 +237,10 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
 
     const user = getUserByEmail(body.email.toLowerCase().trim());
     if (!user) {
+      // Constant-time delay to prevent email enumeration via timing attack.
+      // verifyPassword() takes ~100ms (scrypt), so match that latency for
+      // non-existent users to make both paths indistinguishable.
+      await new Promise(r => setTimeout(r, 80 + Math.random() * 40));
       return reply.status(401).send({ error: 'Invalid email or password.' });
     }
 

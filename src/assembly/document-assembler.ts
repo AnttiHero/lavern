@@ -127,7 +127,7 @@ async function llmQualityGate(
   assembledText: string,
   session: SessionState,
   request?: LegalRequest,
-): Promise<{ pass: boolean; critique?: string; cost: number }> {
+): Promise<{ pass: boolean; critique?: string; cost: number; apiError?: boolean }> {
   try {
     ensureApiKey(); // Load from .env if not in process.env
     const client = new Anthropic();
@@ -167,6 +167,7 @@ Judge this document on these criteria:
 3. COMPLETENESS — Does it cover the key issues you'd expect? A contract review should cover liability, termination, IP, indemnification, etc. A research memo should have analysis and conclusions.
 4. CLIENT VALUE — Would a paying client be satisfied receiving this? Or would they feel ripped off?
 5. PLACEHOLDERS — Does it contain garbage placeholders like [TBD], [PLACEHOLDER], [TODO], [SECTION TITLE], or [Analysis goes here]? That's a FAIL. But template fields like [Insert Date], [Company Name], [Effective Date] in a drafted document (policy, contract, terms of service) are EXPECTED and fine — that's a PASS.
+6. VERIFICATION — Was the analysis verified? If the context includes "NO VERIFICATION" warning, apply stricter standards: demand specific evidence citations and flag any vague or unsupported claims.
 
 Respond with EXACTLY one of these two formats (no other text):
 PASS
@@ -208,11 +209,11 @@ FAIL: [one sentence explaining why this document is not good enough]`;
     logger.warn('Quality gate failed', { critique, cost: gateCost.toFixed(4) });
     return { pass: false, critique, cost: gateCost };
   } catch (error) {
-    // Quality gate API error — log and let the document through since
-    // it already passed structural validation. Better to deliver a
-    // structurally-valid document than block on an API flake.
-    logger.error('Quality gate API error (allowing structurally-valid document through)', { error });
-    return { pass: true, critique: undefined, cost: 0 };
+    // Quality gate API error — fail-closed on first failure (trigger retry),
+    // allow pass-through after 2+ consecutive failures (avoid exhausting all
+    // retries on a genuinely-down API). The caller tracks gateFailureCount.
+    logger.error('Quality gate API error', { error });
+    return { pass: false, critique: 'Quality gate unavailable — document needs re-evaluation', cost: 0, apiError: true };
   }
 }
 
@@ -260,6 +261,7 @@ export async function assembleDocument(
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
   let bestAttempt = ''; // Track the best output even if it failed validation
+  let gateFailureCount = 0; // Track consecutive quality gate API failures
   ensureApiKey(); // Load from .env if not in process.env
   const client = new Anthropic();
 
@@ -267,11 +269,11 @@ export async function assembleDocument(
     try {
       const model = config.defaultModel;
 
-      // Build context with escalating retry addendums
+      // Build context with escalating retry addendums — ALL retries get feedback
       let assemblyContext = baseContext;
       if (attempt === 2 && rejectionReasons.length > 0) {
-        assemblyContext += RETRY_ADDENDUM_2.replace('{{REASON}}', rejectionReasons[0]);
-      } else if (attempt === 3) {
+        assemblyContext += RETRY_ADDENDUM_2.replace('{{REASON}}', rejectionReasons[rejectionReasons.length - 1]);
+      } else if (attempt >= 3 && rejectionReasons.length > 0) {
         assemblyContext += RETRY_ADDENDUM_3.replace('{{REASONS}}', rejectionReasons.join('; '));
       }
 
@@ -349,6 +351,31 @@ export async function assembleDocument(
         session.updateCost(session.accumulatedCost + qualityGate.cost);
       }
 
+      // Handle quality gate API failures: fail-closed on first failure,
+      // allow pass-through after 2+ consecutive failures to avoid exhausting
+      // all retries on a genuinely-down API.
+      if (qualityGate.apiError) {
+        gateFailureCount++;
+        if (gateFailureCount >= 2) {
+          // API is genuinely down — accept structurally-valid doc
+          logger.warn('Quality gate API down (2+ failures), accepting structurally-valid document');
+          emitAssemblyComplete(session, totalAssemblyCost);
+          return assembledText;
+        }
+        // First failure — treat as rejection to trigger retry
+        rejectionReasons.push('quality_gate_api_error: Quality gate unavailable');
+        if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
+          logger.info('Quality gate API error — retrying assembly', { nextAttempt: attempt + 1 });
+          session.events.emitEvent({
+            type: 'tool_used',
+            tool: 'document_assembly_retry',
+            agent: 'document-assembler',
+            timestamp: eventTimestamp(),
+          });
+        }
+        continue;
+      }
+
       if (qualityGate.pass) {
         logger.info('Assembly complete', { attempt, chars: assembledText.length, inputTokens, outputTokens, cost: totalAssemblyCost.toFixed(2) });
         logger.info('─'.repeat(60));
@@ -397,12 +424,36 @@ export async function assembleDocument(
     }
   }
 
-  // All attempts exhausted — return the best attempt instead of empty string.
-  // Even a partially-valid document is better than nothing for the user.
+  // All attempts exhausted — re-validate bestAttempt before returning.
+  // Only return it if it passes structural validation (acceptable degradation
+  // if it only failed the quality gate). If it fails structural validation too,
+  // return '' — the download endpoint returns 503 and the frontend shows the
+  // "assembly did not complete" view with retry + JSON download.
   if (bestAttempt.length > 0) {
-    logger.warn('All assembly attempts failed validation, returning best attempt as fallback', {
+    const bestValidation = validateDeliverable(bestAttempt);
+    if (bestValidation.valid) {
+      logger.warn('Returning best attempt (passed structural validation, failed quality gate)', {
+        attempts: MAX_ASSEMBLY_ATTEMPTS,
+        chars: bestAttempt.length,
+        reasons: rejectionReasons,
+      });
+
+      session.events.emitEvent({
+        type: 'error',
+        message: `Document assembly completed with warnings after ${MAX_ASSEMBLY_ATTEMPTS} attempts. Please review carefully.`,
+        source: 'document-assembler',
+        timestamp: eventTimestamp(),
+      });
+
+      emitAssemblyComplete(session, totalAssemblyCost);
+      return bestAttempt;
+    }
+
+    // bestAttempt failed structural validation — do NOT return it
+    logger.error('All assembly attempts failed — best attempt also fails structural validation', {
       attempts: MAX_ASSEMBLY_ATTEMPTS,
-      chars: bestAttempt.length,
+      bestAttemptChars: bestAttempt.length,
+      structuralReason: bestValidation.reason,
       reasons: rejectionReasons,
     });
   } else {
@@ -411,15 +462,13 @@ export async function assembleDocument(
 
   session.events.emitEvent({
     type: 'error',
-    message: bestAttempt.length > 0
-      ? `Document assembly completed with warnings after ${MAX_ASSEMBLY_ATTEMPTS} attempts. Please review carefully.`
-      : `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts. The deliverable could not be produced.`,
+    message: `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts. The deliverable could not be produced. Your analysis findings and debate data are still available.`,
     source: 'document-assembler',
     timestamp: eventTimestamp(),
   });
 
   emitAssemblyComplete(session, totalAssemblyCost);
-  return bestAttempt;
+  return '';
 }
 
 /**
