@@ -51,7 +51,7 @@ React SPA with editorial design language (Inter + Cormorant Garamond, warm cream
 
 ### Clawern (Law Firm on Retainer)
 
-Autonomous document processing. Drop files in a watched folder; Lavern reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins and dual-model confidentiality (sensitive documents analyzed on-device via Ollama).
+Autonomous document processing. Drop files in a watched folder; Lavern reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins, dual-model confidentiality (sensitive documents analyzed on-device via Ollama), and a **Precedent Board** — persistent institutional memory that indexes findings across engagements and injects matching precedents as context for future document analysis.
 
 ```bash
 # Initialize Clawern
@@ -64,7 +64,7 @@ npm run dev -- --claw start
 ## Development
 
 ```bash
-# Run tests (1249+ tests across 74 files)
+# Run tests (1319+ tests across 76 files)
 npm test
 
 # Run tests in watch mode
@@ -152,7 +152,7 @@ src/
 │   ├── middleware/   # Auth, validation, x402 payment
 │   └── routes/      # 20 route modules
 ├── assembly/        # Document assembly + format conversion (HTML, DOCX)
-├── claw/            # Clawern (13 modules: watch, plan, process, deliver, heartbeat)
+├── claw/            # Clawern (14 modules: watch, plan, process, deliver, heartbeat, precedents)
 ├── db/              # SQLite persistence (users, tokens, sessions, matters)
 ├── documents/       # Document parser (PDF, DOCX, MD, TXT)
 ├── events/          # Event bus for real-time streaming
@@ -177,7 +177,7 @@ viz/                 # React dashboard (23 feature directories)
 ├── cowork/          # Cowork folder mode (File System Access API)
 └── components/      # Shared (GateDialog, ErrorToast, LavernMark)
 
-tests/               # 1249+ tests across 74 files
+tests/               # 1319+ tests across 76 files
 SOUL.md              # Default firm personality (CLI/Claw fallback)
 CLAUDE.md            # Project documentation
 ```

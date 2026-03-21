@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.12.0, a multi-agent legal design system that transforms
+You are part of Lavern v0.13.0, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -100,7 +100,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
 - `viz/src/challenge/` — Lavern Challenge blind document comparison
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
-- `viz/src/claw/` — Clawern remote monitoring dashboard (Overview, Documents, Deliveries, Config)
+- `viz/src/claw/` — Clawern remote monitoring dashboard (Overview, Documents, Deliveries, Precedents, Config)
 - `viz/src/auth/` — Login/signup views
 
 ### Providers
@@ -112,15 +112,16 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
 ### Clawern (Law Firm on Retainer)
-- `src/claw/` — Autonomous document processing pipeline (13 modules):
+- `src/claw/` — Autonomous document processing pipeline (14 modules):
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
   - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
-  - `processor.ts` — Document processing (parse, infer, dispatch, deliver)
+  - `processor.ts` — Document processing (parse, infer, dispatch, deliver) + precedent lookup/indexing
+  - `precedent-board.ts` — Institutional memory: cross-document finding persistence, O(1) dedup, relevance search, decay + compaction
   - `watcher.ts` — Filesystem watcher with debounce and symlink protection
   - `delivery.ts` — Output bundle generation (manifest, deliverable, findings)
   - `local-analysis.ts` — On-device analysis via Ollama for confidential docs
   - `daemon.ts` — macOS LaunchAgent daemon management
-  - `notify.ts` — Webhook + macOS native notifications with dedup (incl. heartbeat)
+  - `notify.ts` — Webhook + macOS native notifications with dedup (incl. heartbeat, precedent match)
   - `init.ts` — Interactive onboarding (profile creation, ethical mode question)
   - `inference.ts` — Document type inference
   - `terminal.ts` — Rich terminal output formatting
@@ -165,11 +166,55 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1283+ tests across 75 files (66 unit + 9 integration)
+- `tests/` — 1319+ tests across 76 files (67 unit + 9 integration)
 
 ## Version History
 
-### v0.12.0 (Current) — Launch Ready + Hardening
+### v0.13.0 (Current) — Precedent Board (Institutional Memory)
+
+**Precedent Board — Cross-Document Intelligence:**
+- `src/claw/precedent-board.ts` — Persistent institutional memory for Claw Mode
+- After each document is processed, significant findings (RED/YELLOW, confidence ≥ 0.7) are auto-indexed to `~/.lavern/precedents.json`
+- Before processing future documents, matching precedents are queried and injected as agent context
+- O(1) dedup index (SHA-256 of findingType + first evidence text)
+- Relevance-scored search: `usage × 0.3 + effectiveness × 0.4 + recency × 0.3`
+- Reinforcement via incremental update (clamped [0, 1]) when patterns recur
+- Time-based decay: configurable threshold (default 30d), deprecation at 6× threshold
+- Compaction: archives deprecated/old entries to `precedents-archive.json`
+- All logic is local (no LLM calls), per-client isolated, evidence-linked
+
+**Processor Integration:**
+- Precedent lookup before dispatch — injects matching context into agent request
+- Sanitized context injection (control chars stripped, descriptions ≤ 200 chars, total ≤ 1000 chars)
+- Precedent indexing after delivery — extracts findings from session debate state
+- Non-fatal error handling: board failures never fail a document processing run
+- `precedent_match` notification on strong matches (relevance > 80%)
+
+**Dashboard:**
+- New "Precedents" tab in Clawern dashboard (5 tabs: Overview, Documents, Deliveries, Precedents, Config)
+- Summary bar: active count, top patterns, deprecated count
+- Searchable precedent cards with pattern name, description, evidence citation, metadata
+- Evidence truncated to 200 chars, WCAG AA accessible (`role=list/listitem`, `aria-label`)
+- Demo mode: 4 synthetic precedents (Contract Risk, Dark Pattern, Contract Deviation, Adversarial Ambiguity)
+
+**Heartbeat Integration:**
+- Precedent board decay + compaction runs on 12th heartbeat cycle (~6 hours)
+- Deprecated precedent count surfaced in heartbeat alerts
+
+**API:**
+- `GET /api/claw/precedents` — query by findingType, jurisdiction, documentType, text; validated limit [1, 100]
+
+**Configuration:**
+- `LAVERN_CLAW_PRECEDENT_DECAY_DAYS` (default 30) — threshold before effectiveness decay
+- `LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS` (default 90) — threshold before archival
+- `LAVERN_CLAW_PRECEDENT_MAX_OUTCOMES` (default 50) — cap on outcome history per entry
+
+**Bug Fix:**
+- `engage.ts`: safety-net `.catch()` on webhook dispatch promise chain (prevents unhandled rejection)
+
+**Test Coverage:** 1283 → 1319 tests (36 new: 26 core + 10 hardening edge cases)
+
+### v0.12.0 — Launch Ready + Hardening
 
 **Output Quality Hardening (7 gaps closed):**
 - `bestAttempt` fallback re-validates before returning — structurally invalid documents never reach users
