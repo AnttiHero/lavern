@@ -131,7 +131,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `src/db/` — SQLite database (user auth, tokens, session archive, matter storage)
 - `src/knowledge-base/` — Reference document collections (FTS5 search, retrieval, global datasets)
 - `src/assembly/` — Document assembly and format conversion (HTML, DOCX)
-- `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text)
+- `src/documents/` — Document parser (PDF, DOCX, Markdown, plain text) + SMAC-L1 input sanitization
 - `src/utils/logger.ts` — Structured logging utility
 - Legal dataset seeder (`scripts/seed-knowledge-base.ts`, 6 datasets):
   - CUAD (510 contracts, 41 clause types, CC BY 4.0)
@@ -165,11 +165,35 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1249+ tests across 74 files (65 unit + 9 integration)
+- `tests/` — 1283+ tests across 75 files (66 unit + 9 integration)
 
 ## Version History
 
-### v0.12.0 (Current) — Launch Ready
+### v0.12.0 (Current) — Launch Ready + Hardening
+
+**Output Quality Hardening (7 gaps closed):**
+- `bestAttempt` fallback re-validates before returning — structurally invalid documents never reach users
+- Quality gate fail-closed on first API error (was silently passing garbage through)
+- Quality gate critique feeds into ALL retry attempts (was blind after attempt 3)
+- Placeholder detection (`[TBD]`, `[PLACEHOLDER]`) added to structural validation (≥5 = fail)
+- Process contamination threshold dropped 20% → 5%; `First,`/`Now,`/`Next,` excluded from full-text scan (legal prose)
+- Finding content sanitized via `sanitizeFindingContent()` — strips agent preambles before display
+- Assembly context warns when analysis is unverified; quality gate applies stricter standards
+
+**Document Input Sanitization (SMAC-L1):**
+- `src/documents/sanitize-text.ts` — strips zero-width Unicode, HTML comments, ANSI escapes from all parsed document text
+- NFC normalization for consistent Unicode representation
+- Single sanitization point in `parser.ts` — all downstream consumers (MCP tools, assembly, orchestrator, Claw) get clean text
+- Audit trail: `sanitizationLog` field on `ParsedDocument`, server warning log, session event emission
+- Preserves legitimate Unicode (accented chars, CJK, Cyrillic, Arabic), markdown, legal bracket patterns
+
+**Security Hardening:**
+- Google OAuth: auto-link blocked unless BOTH existing account AND Google profile have verified emails (prevents account takeover)
+- Session manager: `releaseHold()` safety net on archive failure (prevents permanent billable hours lock)
+- Login: constant-time delay (80-120ms) for non-existent users (timing attack mitigation)
+- Login error messages mapped to generic text (prevents account enumeration via error disclosure)
+- GateDialog: removed `console.error` that leaked stack traces to browser DevTools
+- Terms/Privacy footer: moved outside `.page` container, matched main site layout + clickable mailto links
 
 **Legal Compliance:**
 - Terms of Service and Privacy Policy fully authored (all `[PLACEHOLDER]` fields resolved)
