@@ -482,11 +482,10 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         // State compaction: run every 12th heartbeat (~6 hours at 30min interval)
         // Archives reviewed/error entries older than 30 days to keep state.json lean
         if (heartbeatCount % 12 === 0 && docs.length > 100) {
-          registry.compact(30);
+          try { registry.compact(30); } catch { /* compaction non-fatal */ }
         }
         if (heartbeatCount % 12 === 0 && precBoard && precBoard.summary.total > 0) {
-          precBoard.decay();
-          precBoard.compact();
+          try { precBoard.decay(); precBoard.compact(); } catch { /* decay non-fatal */ }
         }
 
         // Log rotation: check daemon logs every 6th heartbeat (~3 hours)
@@ -515,28 +514,35 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         }
 
         // Weekly digest email: fire on configured day/hour
+        // Uses hour-window check instead of exact minute to tolerate heartbeat drift
         if (config.claw.notifyEmail) {
           const now = new Date();
           if (now.getDay() === config.claw.digestDay && now.getHours() === config.claw.digestHour) {
-            // Only fire once per digest window (check heartbeat count to avoid duplicates)
-            if (heartbeatCount % 2 === 1) { // Odd heartbeats only — max one per hour
-              // Fire-and-forget — setInterval callback is not async
-              import('../email/send.js').then(({ sendClawDigestEmail }) => {
-                const precBoard = getPrecedentBoard(dir);
-                const week = `${now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} week`;
-                return sendClawDigestEmail(config.claw.notifyEmail, {
-                  period: week,
-                  documentsProcessed: state.sessionsCompleted,
-                  findingsSummary: {
-                    critical: docs.filter(d => d.findingsSummary?.critical).reduce((sum, d) => sum + (d.findingsSummary?.critical ?? 0), 0),
-                    major: docs.filter(d => d.findingsSummary?.major).reduce((sum, d) => sum + (d.findingsSummary?.major ?? 0), 0),
-                    minor: docs.filter(d => d.findingsSummary?.minor).reduce((sum, d) => sum + (d.findingsSummary?.minor ?? 0), 0),
-                  },
-                  costUsd: state.budget.spentUsd,
-                  precedentsLearned: precBoard.summary.total,
-                  budgetRemainingUsd: registry.budgetRemaining,
-                });
-              }).catch(() => { /* digest email non-fatal */ });
+            if (heartbeatCount % 2 === 1) {
+              // Fire-and-forget with full error handling
+              try {
+                let precedentsLearned = 0;
+                try { precedentsLearned = getPrecedentBoard(dir).summary.total; } catch { /* non-fatal */ }
+
+                const weekStart = new Date(now);
+                weekStart.setDate(weekStart.getDate() - 7);
+                const period = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+
+                import('../email/send.js').then(({ sendClawDigestEmail }) =>
+                  sendClawDigestEmail(config.claw.notifyEmail, {
+                    period,
+                    documentsProcessed: state.sessionsCompleted,
+                    findingsSummary: {
+                      critical: docs.reduce((sum, d) => sum + (d.findingsSummary?.critical ?? 0), 0),
+                      major: docs.reduce((sum, d) => sum + (d.findingsSummary?.major ?? 0), 0),
+                      minor: docs.reduce((sum, d) => sum + (d.findingsSummary?.minor ?? 0), 0),
+                    },
+                    costUsd: state.budget.spentUsd,
+                    precedentsLearned,
+                    budgetRemainingUsd: registry.budgetRemaining,
+                  }),
+                ).catch(() => { /* digest email non-fatal */ });
+              } catch { /* digest computation non-fatal */ }
             }
           }
         }

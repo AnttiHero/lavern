@@ -14,6 +14,11 @@
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
 import { loadProfile } from './init.js';
+
+/** Escape Telegram Markdown v1 special characters. */
+function esc(text: string): string {
+  return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+}
 import { DocumentRegistry } from './registry.js';
 import { getPrecedentBoard } from './precedent-board.js';
 
@@ -68,8 +73,8 @@ function executeCommand(command: Command): string {
     case 'findings': {
       const flaggedDocs = Object.values(state.documents).filter(d => d.status === 'flagged');
       if (flaggedDocs.length === 0) return '✅ No critical findings. Everything looks clean.';
-      const names = flaggedDocs.slice(0, 5).map(d => `• ${d.name}`).join('\n');
-      return `⚠️ *${flaggedDocs.length} flagged document(s):*\n${names}`;
+      const names = flaggedDocs.slice(0, 5).map(d => `• ${esc(d.name)}`).join('\n');
+      return `⚠️ *${flaggedDocs.length} flagged document\\(s\\):*\n${names}`;
     }
 
     case 'budget': {
