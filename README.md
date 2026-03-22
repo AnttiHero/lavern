@@ -57,9 +57,20 @@ Autonomous document processing. Drop files in a watched folder; Lavern reviews t
 # Initialize Clawern
 npm run dev -- --claw init
 
+# Validate configuration
+npm run dev -- --claw validate
+
 # Start watching
 npm run dev -- --claw start
+
+# Pause / Resume
+npm run dev -- --claw pause
+npm run dev -- --claw resume
 ```
+
+Features: Voice Dispatch (`/#/dispatch`), Telegram bot (two-way chat control), email alerts, weekly digest, scheduled re-review, change detection, cost forecasting, portfolio intelligence, audit trail, daily backups, Prometheus metrics.
+
+See the [visual architecture explainer](https://lavern.ai/claw/how-it-works.html) for a full technical deep-dive.
 
 ## Development
 

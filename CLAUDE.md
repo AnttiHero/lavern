@@ -160,6 +160,8 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
   - Effects: film grain overlay, parallax scroll, custom cursor (desktop), word-by-word reveal, magnetic buttons, mist/smoke canvas
   - **Mobile (≤768px)**: Single-screen hero + footer only — all mid-sections hidden, no scroll, mist preserved
   - **Desktop**: Full scrolling experience with all sections
+- `site/claw/index.html` — Clawern landing page (dark cinematic, crab hero, 65% grain, 3-step setup)
+- `site/claw/how-it-works.html` — Comprehensive visual architecture explainer (Lavern + Clawern technical deep-dive with SVG diagrams)
 - `site/terms/index.html` — Terms of Service (static HTML, dark cinematic design)
 - `site/privacy/index.html` — Privacy Policy (static HTML, dark cinematic design)
 - `site/img/` — Static assets (logo, OG image)
@@ -167,6 +169,9 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 - **Analytics**: Plausible (`script.js` on site, `script.hash.js` on dashboard for SPA)
 - **Deploy**: Drag-and-drop `site/` folder to Netlify (no build step, no netlify.toml)
 - **Domain**: `lavern.ai` + `www.lavern.ai` (CNAME → Netlify, SSL via Let's Encrypt)
+
+### Menu Bar App (`menubar/`)
+Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every 30s, shows popover with document counts, budget gauge, daemon status. Quick actions: Scan Now, Dashboard, Dispatch. No dock icon.
 
 ### Scripts
 - `scripts/smoke-test.sh` — API end-to-end lifecycle smoke test (health → create → verify → delete)
