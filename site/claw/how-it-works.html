@@ -78,6 +78,13 @@
     .novel{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
     .footer{text-align:center;padding:40px 0;font-size:12px;color:var(--dim);letter-spacing:1px}
     .footer a{color:var(--muted);text-decoration:none}
+    .product-shot{margin:40px -40px;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--border)}
+    .product-shot img{display:block;width:100%;height:auto}
+    .product-shot-caption{background:var(--surface);padding:16px 24px;font-size:13px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border)}
+    .product-shot-caption strong{color:var(--text);font-weight:600}
+    .product-shot-pair{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:40px 0}
+    .product-shot-pair .product-shot{margin:0}
+    @media(max-width:600px){.product-shot{margin:40px -12px;border-radius:10px}.product-shot-pair{grid-template-columns:1fr}}
     .pullquote{font-family:var(--serif);font-size:clamp(22px,3.5vw,30px);font-weight:300;line-height:1.4;color:var(--text);text-align:center;padding:48px 20px;margin:48px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .pullquote em{font-style:italic;color:var(--accent)}
     .intro-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 40px;margin-bottom:48px;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
@@ -102,6 +109,11 @@
       <p>It can work like your regular AI tool. You prompt it, it responds. But you can also configure it: create new agents, build agent teams, define the firm's personality. While other tools act like a "junior associate," Lavern aims to be <strong>a law firm</strong>. With agents as workers.</p>
       <p>And it can work in <strong>autonomous mode</strong>. A miniature law firm living on your computer. A 30-minute heartbeat. You don't need to prompt it. Your data doesn't leave your machine.</p>
       <p>Lavern is still in an early stage. But the architecture and the ideas are different enough from the current tools that we believe it has the potential to be very influential.</p>
+    </div>
+
+    <div class="product-shot">
+      <img src="img/landing.png" alt="Lavern landing: Your firm is ready. 50+ agent experts across Counsel, Review, and Full Bench tiers." loading="lazy">
+      <div class="product-shot-caption"><strong>Your firm is ready.</strong> Choose your engagement depth: Quick Counsel for a fast opinion, Review for a dedicated team, or Full Bench for every specialist.</div>
     </div>
 
     <div class="pullquote">This is a technical deep-dive into building an ambitious legal tech tool that starts from a different analogy. It is not a tool for lawyers. It is a law firm that happens to have offices in your <em>Mac Mini.</em></div>
@@ -183,6 +195,11 @@
           <text x="280" y="158" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#4a7c59">Ethical Mode locks everything to the left</text>
         </svg>
         <div class="diagram-caption">The data sovereignty gradient. You choose per engagement where the data goes. Ethical Mode locks everything to the left.</div>
+      </div>
+
+      <div class="product-shot">
+        <img src="img/config.png" alt="Lavern configuration: Autopilot toggle, Verification toggle, Claude vs EU Sovereign engine selector." loading="lazy">
+        <div class="product-shot-caption"><strong>You decide per engagement.</strong> Autopilot, verification depth, and engine selection. Claude for maximum capability, EU Sovereign for data that stays in Europe.</div>
       </div>
 
       <h3>What does it cost?</h3>
@@ -300,6 +317,17 @@
       <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
       <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
 
+      <div class="product-shot-pair">
+        <div class="product-shot">
+          <img src="img/team.png" alt="Agent team selection: Partner agents with radar charts showing skill profiles across 8 dimensions." loading="lazy">
+          <div class="product-shot-caption"><strong>Your team.</strong> Each agent has skill ratings, a personality, and a specialty. Select who works on your matter.</div>
+        </div>
+        <div class="product-shot">
+          <img src="img/agent-builder.png" alt="Agent builder: Design a custom agent face, personality sliders, practice areas." loading="lazy">
+          <div class="product-shot-caption"><strong>Build your own.</strong> Identity, face, personality, practice areas. Your institutional knowledge as a permanent team member.</div>
+        </div>
+      </div>
+
 
       <h3>The Soul of the firm.</h3>
       <p>Every real law firm has a culture: how they communicate, what they prioritize, how formal they are. Lavern has a <strong>Soul</strong>: a user-defined firm personality (voice, principles, style, values) that's injected into every agent's system prompt. The Soul shapes how agents write, what they emphasize, and how they resolve ambiguity.</p>
@@ -327,6 +355,17 @@
 
       <p>This context follows the document through every stage of analysis. It shapes which agents are dispatched, what they look for, how they weight their findings, and how they communicate the results.</p>
 
+      <div class="product-shot-pair">
+        <div class="product-shot">
+          <img src="img/interview.png" alt="Partner interview selection: Choose Margaret Chen, James Whitfield, Dr. Amara Osei, or Rafael Torres." loading="lazy">
+          <div class="product-shot-caption"><strong>Choose your interviewer.</strong> Each partner brings a different style. Precise, warm, analytical, or direct.</div>
+        </div>
+        <div class="product-shot">
+          <img src="img/strategy.png" alt="Strategy view: Workflow selection with Roundtable, Deep Review, Stress Test, Quick Counsel options." loading="lazy">
+          <div class="product-shot-caption"><strong>Match the workflow to the matter.</strong> The router suggests, you decide. Or let Autopilot choose.</div>
+        </div>
+      </div>
+
       <div class="flow-steps">
         <div class="flow-step"><div class="flow-circle" style="background:rgba(232,132,92,0.1)">📋</div><div class="flow-label">Briefing</div><div class="flow-sub">LLM interview</div></div>
         <div class="flow-step"><div class="flow-circle" style="background:rgba(184,134,11,0.1)">⚙️</div><div class="flow-label">Strategy</div><div class="flow-sub">Workflow + intensity</div></div>
@@ -338,6 +377,11 @@
       <h3>Talk to a Partner.</h3>
       <p>For quick questions ("What does this indemnification clause actually mean for us?"), Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds.</p>
       <p>The interface is a single glowing orb: tap to speak, listen to the answer. No forms. No menus. Just a conversation.</p>
+
+      <div class="product-shot">
+        <img src="img/voice-dispatch.png" alt="Voice Dispatch: Catherine M. Blackwell, Managing Partner Agent, with Press to Speak button on marble background." loading="lazy">
+        <div class="product-shot-caption"><strong>Press to speak.</strong> Catherine Blackwell, Managing Partner Agent. Ask a question, get an answer. Like calling your lawyer.</div>
+      </div>
 
       <h3>Dual artifacts.</h3>
       <p>Every engagement produces two outputs.</p>
@@ -433,6 +477,11 @@
       <p>Every finding must cite specific text as evidence. Not "there may be a risk in section 4." Instead: <em>"Section 4.2: 'Company shall indemnify and hold harmless without limitation' creates unlimited liability exposure without a monetary cap."</em> If an agent can't cite evidence, the finding is rejected.</p>
 
       <p>Every resolution is a <strong>first-class auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. Full provenance. Not a black box.</p>
+
+      <div class="product-shot">
+        <img src="img/working.png" alt="Working view: Live agents analyzing with checklist, findings streaming in with confidence scores." loading="lazy">
+        <div class="product-shot-caption"><strong>You can watch the agents work.</strong> The Ethics Auditor flags an EU AI Act transparency issue. The Plain Language Specialist measures readability. Findings stream in with evidence citations and confidence scores. The checklist on the left tracks progress through each phase.</div>
+      </div>
 
     </div>
 
@@ -551,6 +600,11 @@
       </div>
 
       <p>That's the entire setup. Three commands. The validate step runs a color-coded health report: API key configured, watch paths exist, local model reachable, Telegram connected, email set up, budget allocated. Every check passes or tells you exactly what to fix.</p>
+
+      <div class="product-shot">
+        <img src="img/nightshift.png" alt="Clawern dashboard: The Night Shift. Live activity feed, budget gauge, pause/resume, document processing status." loading="lazy">
+        <div class="product-shot-caption"><strong>The Night Shift.</strong> Live activity feed shows agents reviewing documents in real-time. Budget gauge, pause/resume controls, and per-document status. The Contract Reviewer found 2 critical findings in the MSA. A confidential merger agreement was automatically routed to local analysis.</div>
+      </div>
     </div>
 
     <div class="pullquote">Three commands. Drop files.<br><em>Walk away.</em></div>
@@ -591,6 +645,11 @@
 
       <h3>Change detection.</h3>
       <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become genuinely useful instead of a full re-read.</p>
+
+      <div class="product-shot">
+        <img src="img/memory.png" alt="Session memory: What your firm has learned. Findings, resolutions, and patterns accumulating over time." loading="lazy">
+        <div class="product-shot-caption"><strong>What your firm has learned.</strong> Knowledge accumulates as agents work. Findings, resolutions, and patterns emerge across engagements. The firm remembers what it learned last month.</div>
+      </div>
 
       <h3>Scheduled re-review.</h3>
       <p>Real law firms don't only review documents when they change. They review contracts on a schedule: every 90 days, every quarter, before renewal dates. Clawern supports this natively. Set a review interval, and the heartbeat timer marks documents as stale when they're due. The existing staleness pipeline picks them up and processes them automatically.</p>
@@ -779,6 +838,10 @@
     </div>
 
     <hr>
+
+    <div class="product-shot" style="margin:48px -40px">
+      <img src="img/crab-hero.png" alt="Your Firm Working While You Sleep." loading="lazy">
+    </div>
 
     <div style="text-align:center">
       <p style="font-size:15.5px;color:var(--muted);max-width:520px;margin:0 auto 40px;line-height:1.7">Lavern is still early. But the architecture and the ideas are different enough from the current tools that we believe it has the potential to change how legal work gets done.</p>
