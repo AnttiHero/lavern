@@ -26,6 +26,7 @@ import { notify } from './notify.js';
 import { getPrecedentBoard } from './precedent-board.js';
 import { clawEventBus } from './events.js';
 import { eventTimestamp } from '../events/event-bus.js';
+import { startTelegramBot, stopTelegramBot } from './telegram-bot.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { DocumentStyle } from '../assembly/format-converter.js';
@@ -441,6 +442,9 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
     watcher.start(watchPaths);
 
+    // Telegram bot — two-way chat control
+    startTelegramBot();
+
     // v17: Heartbeat — periodic status check
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
     let heartbeatCount = 0;
@@ -510,6 +514,33 @@ async function runStart(args: ClawCliArgs): Promise<void> {
           }
         }
 
+        // Weekly digest email: fire on configured day/hour
+        if (config.claw.notifyEmail) {
+          const now = new Date();
+          if (now.getDay() === config.claw.digestDay && now.getHours() === config.claw.digestHour) {
+            // Only fire once per digest window (check heartbeat count to avoid duplicates)
+            if (heartbeatCount % 2 === 1) { // Odd heartbeats only — max one per hour
+              // Fire-and-forget — setInterval callback is not async
+              import('../email/send.js').then(({ sendClawDigestEmail }) => {
+                const precBoard = getPrecedentBoard(dir);
+                const week = `${now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} week`;
+                return sendClawDigestEmail(config.claw.notifyEmail, {
+                  period: week,
+                  documentsProcessed: state.sessionsCompleted,
+                  findingsSummary: {
+                    critical: docs.filter(d => d.findingsSummary?.critical).reduce((sum, d) => sum + (d.findingsSummary?.critical ?? 0), 0),
+                    major: docs.filter(d => d.findingsSummary?.major).reduce((sum, d) => sum + (d.findingsSummary?.major ?? 0), 0),
+                    minor: docs.filter(d => d.findingsSummary?.minor).reduce((sum, d) => sum + (d.findingsSummary?.minor ?? 0), 0),
+                  },
+                  costUsd: state.budget.spentUsd,
+                  precedentsLearned: precBoard.summary.total,
+                  budgetRemainingUsd: registry.budgetRemaining,
+                });
+              }).catch(() => { /* digest email non-fatal */ });
+            }
+          }
+        }
+
         if (alerts.length === 0) return; // Silent — everything is fine
 
         notify({
@@ -524,6 +555,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
     process.on('SIGINT', () => {
       console.log('\n\nShutting down...');
       if (heartbeatTimer) clearInterval(heartbeatTimer);
+      stopTelegramBot();
       watcher.stop();
       process.exit(0);
     });

@@ -581,4 +581,58 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
 
     attachClawStream(socket, fromIndex);
   });
+
+  // ── GET /api/claw/clients ──────────────────────────────────────────
+  fastify.get('/api/claw/clients', async (_request, reply) => {
+    const { getClientRegistry } = await import('../../claw/client-registry.js');
+    const registry = getClientRegistry();
+    const clients = registry.listClients(false);
+    return reply.send({
+      clients: clients.map(c => ({
+        id: c.id,
+        name: c.name,
+        active: c.active,
+        createdAt: c.createdAt,
+      })),
+      summary: registry.summary,
+    });
+  });
+
+  // ── POST /api/claw/clients ─────────────────────────────────────────
+  fastify.post('/api/claw/clients', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as { name?: string; jurisdiction?: string; industry?: string } | null;
+    if (!body?.name) {
+      return reply.status(400).send({ error: 'Body must include { name: string }' });
+    }
+
+    const { getClientRegistry } = await import('../../claw/client-registry.js');
+    const registry = getClientRegistry();
+
+    try {
+      const profile = {
+        company: body.name,
+        jurisdiction: body.jurisdiction ?? 'Delaware, USA',
+        industry: body.industry ?? 'Technology',
+        size: 'Unknown',
+        concerns: [],
+        preferences: { style: 'plain-language' as const, intensity: 'standard' as const, riskAppetite: 'balanced' as const },
+        watchPaths: [],
+        budget: { totalUsd: 50, perDocumentMaxUsd: 10 },
+        createdAt: new Date().toISOString(),
+      };
+
+      const client = registry.addClient(body.name, profile);
+      return reply.status(201).send({ client: { id: client.id, name: client.name, dir: client.dir } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return reply.status(409).send({ error: msg });
+    }
+  });
 }
