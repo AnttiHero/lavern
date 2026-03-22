@@ -34,7 +34,7 @@
     .section p strong{color:var(--text);font-weight:600}
     .section p a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(232,132,92,0.3)}
     .section p a:hover{border-bottom-color:var(--accent)}
-    .diagram{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 32px;margin:28px 0;overflow-x:auto}
+    .diagram{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;margin:32px 0;overflow-x:auto;box-shadow:0 4px 24px rgba(0,0,0,0.06),0 1px 4px rgba(0,0,0,0.04)}
     .diagram svg{display:block;margin:0 auto}
     .diagram-caption{text-align:center;font-size:11px;color:var(--dim);margin-top:12px;font-style:italic}
     .callout{background:var(--code-bg);border-left:3px solid var(--gold);padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;font-size:14px;color:var(--text)}
@@ -123,7 +123,8 @@
 
       <div class="diagram">
         <svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="200" y="50" width="160" height="50" rx="25" fill="#E8845C" fill-opacity="0.12" stroke="#E8845C" stroke-width="1.5"/>
+          <defs><filter id="sh1" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter></defs>
+          <rect x="200" y="50" width="160" height="50" rx="25" fill="#E8845C" fill-opacity="0.12" stroke="#E8845C" stroke-width="1.5" filter="url(#sh1)"/>
           <text x="280" y="80" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Orchestrator</text>
           <rect x="0" y="0" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
           <text x="50" y="22" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Reviewer</text>
@@ -212,32 +213,37 @@
       <h3>Three layers of checking</h3>
 
       <div class="diagram">
-        <svg width="500" height="260" viewBox="0 0 500 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Layer 1: Agent self-check -->
-          <rect x="50" y="10" width="400" height="60" rx="8" fill="#E8845C" fill-opacity="0.06" stroke="#E8845C" stroke-width="1"/>
-          <text x="250" y="35" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Layer 1: Evaluator Gate</text>
-          <text x="250" y="55" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">Each agent's output checked before proceeding. Fail → revision loop.</text>
-          <!-- Loop arrow -->
-          <path d="M450 40 L475 40 L475 10 L450 10" stroke="#E8845C" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#aE)"/>
-          <text x="488" y="28" font-family="Inter" font-size="8" fill="#E8845C">retry</text>
+        <svg width="540" height="270" viewBox="0 0 540 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Drop shadow filter -->
+          <defs>
+            <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+            </filter>
+          </defs>
 
-          <!-- Layer 2: Debate -->
-          <rect x="50" y="90" width="400" height="60" rx="8" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1"/>
-          <text x="250" y="115" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#B8860B">Layer 2: Adversarial Debate</text>
-          <text x="250" y="135" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.7">Agents challenge each other's findings. Evidence-weighted resolution.</text>
-          <path d="M50 120 L25 120 L25 40 L50 40" stroke="#B8860B" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#aG)"/>
-          <text x="12" y="83" font-family="Inter" font-size="8" fill="#B8860B" transform="rotate(-90,12,83)">escalate</text>
+          <!-- Layer 1: Evaluator Gate -->
+          <rect x="50" y="10" width="400" height="64" rx="10" fill="#E8845C" fill-opacity="0.06" stroke="#E8845C" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="36" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#E8845C">Layer 1: Evaluator Gate</text>
+          <text x="250" y="56" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">Each agent's output checked before proceeding. Fail → revision loop.</text>
+          <path d="M450 42 L480 42 L480 12 L450 12" stroke="#E8845C" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aE)"/>
+          <text x="498" y="30" font-family="Inter" font-size="9" font-weight="500" fill="#E8845C">retry</text>
 
-          <!-- Layer 3: Verification pipeline -->
-          <rect x="50" y="170" width="400" height="60" rx="8" fill="#4a7c59" fill-opacity="0.06" stroke="#4a7c59" stroke-width="1"/>
-          <text x="250" y="195" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#4a7c59">Layer 3: 10-Pass Verification Pipeline</text>
-          <text x="250" y="215" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Self-check, cross-check, score dimensions. Quality gate fail-closed.</text>
-          <path d="M450 200 L475 200 L475 170 L450 170" stroke="#4a7c59" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#aGr)"/>
-          <text x="488" y="188" font-family="Inter" font-size="8" fill="#4a7c59">retry</text>
+          <!-- Layer 2: Adversarial Debate -->
+          <rect x="50" y="94" width="400" height="64" rx="10" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="120" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Layer 2: Adversarial Debate</text>
+          <text x="250" y="140" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.7">Agents challenge each other's findings. Evidence-weighted resolution.</text>
+          <path d="M50 126 L22 126 L22 42 L50 42" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aG)"/>
+          <text x="8" y="88" font-family="Inter" font-size="9" font-weight="500" fill="#B8860B" transform="rotate(-90,8,88)">escalate</text>
+
+          <!-- Layer 3: Verification Pipeline -->
+          <rect x="50" y="178" width="400" height="64" rx="10" fill="#4a7c59" fill-opacity="0.06" stroke="#4a7c59" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="204" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#4a7c59">Layer 3: 10-Pass Verification Pipeline</text>
+          <text x="250" y="224" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Self-check, cross-check, score dimensions. Quality gate fail-closed.</text>
+          <path d="M450 210 L480 210 L480 180 L450 180" stroke="#4a7c59" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aGr)"/>
+          <text x="498" y="198" font-family="Inter" font-size="9" font-weight="500" fill="#4a7c59">retry</text>
 
           <!-- Final output -->
-          <rect x="150" y="248" width="200" height="0" rx="0" fill="none"/>
-          <text x="250" y="255" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Output.only if all three layers pass</text>
+          <text x="250" y="264" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#1a1a1a">Output: only if all three layers pass</text>
 
           <defs>
             <marker id="aE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E8845C"/></marker>
@@ -270,7 +276,8 @@
 
       <div class="diagram">
         <svg width="480" height="200" viewBox="0 0 480 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="120" y="60" width="240" height="80" rx="10" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5"/>
+          <defs><filter id="sh2" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="6" flood-opacity="0.1"/></filter></defs>
+          <rect x="120" y="60" width="240" height="80" rx="12" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5" filter="url(#sh2)"/>
           <text x="240" y="85" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Debate Board</text>
           <text x="240" y="105" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B">findings · challenges · resolutions</text>
           <text x="240" y="125" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.6">evidence-linked shared state</text>
