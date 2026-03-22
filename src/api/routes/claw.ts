@@ -33,6 +33,7 @@ import { eventTimestamp } from '../../events/event-bus.js';
 import type { ShemEvent } from '../../events/event-bus.js';
 import { getDaemonStatus } from '../../claw/daemon-factory.js';
 import { forecastWork } from '../../claw/planner.js';
+import { audit, readAuditLog } from '../../claw/audit.js';
 import { writeJsonFileAtomic } from '../../utils/fs-helpers.js';
 
 // ── Claw WebSocket helpers ──────────────────────────────────────────────
@@ -461,6 +462,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
 
     const registry = getRegistry(dir, profile.budget.totalUsd);
     const { newDocs, changedDocs } = registry.scan(profile.watchPaths);
+    audit('scan_triggered', 'api', { newDocs: newDocs.length, changedDocs: changedDocs.length });
 
     return reply.send({
       scanned: true,
@@ -529,6 +531,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     writeJsonFileAtomic(profilePath, profile);
 
     clawEventBus.emitEvent({ type: 'claw_paused', pausedAt, timestamp: eventTimestamp() });
+    audit('pause', 'api');
 
     return reply.send({ paused: true, pausedAt });
   });
@@ -565,6 +568,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     } catch { /* scan failure non-fatal on resume */ }
 
     clawEventBus.emitEvent({ type: 'claw_resumed', resumedAt: new Date().toISOString(), pendingRescan: pendingDocuments > 0, timestamp: eventTimestamp() });
+    audit('resume', 'api', { pendingDocuments });
 
     return reply.send({
       paused: false,
@@ -634,5 +638,128 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       const msg = err instanceof Error ? err.message : String(err);
       return reply.status(409).send({ error: msg });
     }
+  });
+
+  // ── GET /api/claw/portfolio ──────────────────────────────────────────
+  fastify.get('/api/claw/portfolio', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    if (!profile) return reply.status(404).send({ error: 'No profile found' });
+
+    const registry = getRegistry(dir, profile.budget.totalUsd);
+    const state = registry.getState();
+    const docs = Object.values(state.documents);
+
+    // Aggregate findings across all documents
+    let totalCritical = 0, totalMajor = 0, totalMinor = 0;
+    const typeCounts = new Map<string, number>();
+    const criticalDocs: Array<{ name: string; critical: number }> = [];
+
+    for (const doc of docs) {
+      if (doc.findingsSummary) {
+        totalCritical += doc.findingsSummary.critical;
+        totalMajor += doc.findingsSummary.major;
+        totalMinor += doc.findingsSummary.minor;
+
+        if (doc.findingsSummary.critical > 0) {
+          criticalDocs.push({ name: doc.name, critical: doc.findingsSummary.critical });
+        }
+      }
+      typeCounts.set(doc.type, (typeCounts.get(doc.type) ?? 0) + 1);
+    }
+
+    // Top document types
+    const topTypes = [...typeCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([type, count]) => ({ type, count }));
+
+    // Top critical documents
+    criticalDocs.sort((a, b) => b.critical - a.critical);
+
+    // Precedent patterns
+    let topPatterns: string[] = [];
+    try {
+      topPatterns = getPrecedentBoard(dir).summary.topPatterns;
+    } catch { /* non-fatal */ }
+
+    return reply.send({
+      portfolio: {
+        totalDocuments: docs.length,
+        findings: { critical: totalCritical, major: totalMajor, minor: totalMinor, total: totalCritical + totalMajor + totalMinor },
+        topDocumentTypes: topTypes,
+        criticalDocuments: criticalDocs.slice(0, 5),
+        topPatterns,
+        budgetUtilization: state.budget.totalUsd > 0 ? Math.round((state.budget.spentUsd / state.budget.totalUsd) * 100) : 0,
+      },
+    });
+  });
+
+  // ── GET /api/claw/audit ────────────────────────────────────────────
+  fastify.get('/api/claw/audit', async (request, reply) => {
+    const query = request.query as { limit?: string };
+    const limit = Math.min(500, Math.max(1, parseInt(query.limit ?? '100', 10) || 100));
+    const entries = readAuditLog(limit);
+    return reply.send({ entries, total: entries.length });
+  });
+
+  // ── GET /api/claw/metrics ──────────────────────────────────────────
+  fastify.get('/api/claw/metrics', async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    if (!profile) return reply.status(404).send('# No profile\n');
+
+    const registry = getRegistry(dir, profile.budget.totalUsd);
+    const state = registry.getState();
+    const summary = registry.summary;
+
+    let precActive = 0;
+    try { precActive = getPrecedentBoard(dir).summary.active; } catch { /* non-fatal */ }
+
+    const lines = [
+      '# HELP claw_documents_total Total tracked documents',
+      '# TYPE claw_documents_total gauge',
+      `claw_documents_total ${summary.total}`,
+      '',
+      '# HELP claw_documents_reviewed Documents successfully reviewed',
+      '# TYPE claw_documents_reviewed gauge',
+      `claw_documents_reviewed ${summary.reviewed}`,
+      '',
+      '# HELP claw_documents_flagged Documents with critical findings',
+      '# TYPE claw_documents_flagged gauge',
+      `claw_documents_flagged ${summary.flagged}`,
+      '',
+      '# HELP claw_documents_errors Documents that failed processing',
+      '# TYPE claw_documents_errors gauge',
+      `claw_documents_errors ${summary.errors}`,
+      '',
+      '# HELP claw_documents_pending Documents awaiting processing',
+      '# TYPE claw_documents_pending gauge',
+      `claw_documents_pending ${summary.pending}`,
+      '',
+      '# HELP claw_budget_spent_usd Budget spent in USD',
+      '# TYPE claw_budget_spent_usd gauge',
+      `claw_budget_spent_usd ${state.budget.spentUsd}`,
+      '',
+      '# HELP claw_budget_total_usd Total budget in USD',
+      '# TYPE claw_budget_total_usd gauge',
+      `claw_budget_total_usd ${state.budget.totalUsd}`,
+      '',
+      '# HELP claw_sessions_completed Total successful sessions',
+      '# TYPE claw_sessions_completed counter',
+      `claw_sessions_completed ${state.sessionsCompleted}`,
+      '',
+      '# HELP claw_sessions_failed Total failed sessions',
+      '# TYPE claw_sessions_failed counter',
+      `claw_sessions_failed ${state.sessionsFailed}`,
+      '',
+      '# HELP claw_precedents_active Active precedent patterns',
+      '# TYPE claw_precedents_active gauge',
+      `claw_precedents_active ${precActive}`,
+      '',
+    ];
+
+    reply.header('content-type', 'text/plain; version=0.0.4; charset=utf-8');
+    return reply.send(lines.join('\n'));
   });
 }

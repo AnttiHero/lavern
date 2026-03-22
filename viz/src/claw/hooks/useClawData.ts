@@ -58,6 +58,14 @@ export interface ClawStatus {
     confidentialCount: number;
     skippedCount: number;
   };
+  portfolio?: {
+    totalDocuments: number;
+    findings: { critical: number; major: number; minor: number; total: number };
+    topDocumentTypes: Array<{ type: string; count: number }>;
+    criticalDocuments: Array<{ name: string; critical: number }>;
+    topPatterns: string[];
+    budgetUtilization: number;
+  };
   daemon: {
     installed: boolean;
     running: boolean;
@@ -194,11 +202,12 @@ export function useClawData(): ClawData {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statusRes, docsRes, delRes, precRes] = await Promise.all([
+      const [statusRes, docsRes, delRes, precRes, portfolioRes] = await Promise.all([
         fetch('/api/claw/status', { credentials: 'include' }),
         fetch('/api/claw/documents', { credentials: 'include' }),
         fetch('/api/claw/deliveries', { credentials: 'include' }),
         fetch('/api/claw/precedents', { credentials: 'include' }),
+        fetch('/api/claw/portfolio', { credentials: 'include' }),
       ]);
 
       if (!mounted.current) return;
@@ -234,6 +243,12 @@ export function useClawData(): ClawData {
           const data = await precRes.json();
           setPrecedents(data.precedents ?? []);
           setPrecedentSummary(data.summary ?? null);
+        } catch { /* keep empty */ }
+      }
+      if (portfolioRes.ok) {
+        try {
+          const data = await portfolioRes.json();
+          setStatus(prev => prev ? { ...prev, portfolio: data.portfolio } : prev);
         } catch { /* keep empty */ }
       }
       setDemoMode(false);

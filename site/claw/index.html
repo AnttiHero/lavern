@@ -40,8 +40,8 @@
       content:'';position:fixed;inset:-50%;z-index:9999;pointer-events:none;
       background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size:256px 256px;
-      opacity:0.5;
-      animation:grain 6s steps(8) infinite;
+      opacity:0.65;
+      animation:grain 4s steps(6) infinite;
       mix-blend-mode:overlay
     }
     @media(prefers-reduced-motion:reduce){body::after{animation:none}}
@@ -82,8 +82,9 @@
     .hero-content{position:relative;z-index:2;padding:24px;max-width:720px}
 
     .mark{
-      font-family:var(--serif);font-size:15px;font-weight:300;letter-spacing:10px;
-      text-transform:uppercase;color:var(--muted);margin-bottom:48px
+      font-family:var(--serif);font-size:clamp(28px,5vw,48px);font-weight:300;letter-spacing:16px;
+      text-transform:uppercase;color:var(--text);margin-bottom:48px;
+      opacity:0.7
     }
 
     .hero h1{
@@ -94,40 +95,47 @@
     .hero h1 em{font-style:italic;display:block;margin-top:4px}
 
     .tagline{
-      font-family:var(--sans);font-size:clamp(13px,2vw,16px);font-weight:300;
-      color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto 48px;
-      letter-spacing:0.02em
+      font-family:var(--serif);font-size:clamp(20px,3.5vw,32px);font-weight:300;font-style:italic;
+      color:var(--text);line-height:1.5;max-width:640px;margin:0 auto 64px;
+      letter-spacing:0;opacity:0.6
+    }
+
+    /* Below-the-fold section for setup steps */
+    .below-fold{
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;text-align:center;padding:120px 32px;
+      position:relative;z-index:2
     }
 
     /* Setup steps */
     .setup{
-      display:flex;flex-direction:column;align-items:center;gap:20px;
-      margin-bottom:48px
+      display:flex;flex-direction:column;align-items:center;gap:28px;
+      margin-bottom:64px
     }
     .step{
-      display:flex;align-items:center;gap:14px;
-      font-family:var(--sans);font-size:13px;color:var(--text);
-      letter-spacing:0.02em;opacity:0.7
+      display:flex;align-items:center;gap:18px;
+      font-family:var(--sans);font-size:16px;color:var(--text);
+      letter-spacing:0.02em;opacity:0.8
     }
     .step-num{
-      width:28px;height:28px;border-radius:50%;
+      width:36px;height:36px;border-radius:50%;
       border:1px solid rgba(250,249,246,0.15);
       display:flex;align-items:center;justify-content:center;
-      font-size:11px;font-weight:600;color:var(--accent);flex-shrink:0
+      font-size:13px;font-weight:600;color:var(--accent);flex-shrink:0
     }
     .step code{
-      font-family:'SF Mono',Menlo,monospace;font-size:12px;
-      background:rgba(250,249,246,0.06);padding:2px 8px;border-radius:4px;
+      font-family:'SF Mono',Menlo,monospace;font-size:15px;
+      background:rgba(250,249,246,0.06);padding:4px 14px;border-radius:6px;
       color:var(--accent)
     }
 
     /* CTA button */
     .btn{
       display:inline-flex;align-items:center;gap:10px;
-      font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+      font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:4px;text-transform:uppercase;
       text-decoration:none;color:var(--text);
       background:rgba(232,132,92,0.12);border:1px solid rgba(232,132,92,0.25);
-      padding:16px 48px;border-radius:100px;
+      padding:22px 64px;border-radius:100px;
       cursor:pointer;transition:all .5s var(--ease)
     }
     .btn:hover{
@@ -188,21 +196,24 @@
       <img src="crab.jpg" alt="" role="presentation" class="hero-img" loading="eager">
       <div class="fog-top"></div>
       <div class="hero-content">
-        <div class="mark r">CLAWERN</div>
-        <h1 class="r r1">Your Firm<br><em>on Retainer.</em></h1>
-        <p class="tagline r r2">
-          Drop documents in a folder. Clawern reviews them overnight.
-          Critical findings hit your phone. It works while you sleep.
-        </p>
-
-        <div class="setup r r3">
-          <div class="step"><span class="step-num">1</span> <code>lavern claw init</code></div>
-          <div class="step"><span class="step-num">2</span> <code>lavern claw start</code></div>
-          <div class="step"><span class="step-num">3</span> Drop files. Walk away.</div>
-        </div>
-
-        <a href="https://github.com/AnttiHero/Marble" class="btn r r4">Get Started</a>
+        <h1 class="r">Your Firm<br>Working While<br><em>You Sleep.</em></h1>
       </div>
+    </section>
+
+    <section class="below-fold">
+      <div class="mark r">CLAWERN</div>
+      <p class="tagline r r1">
+        Drop documents in a folder. Clawern reviews them overnight.<br>
+        Critical findings hit your phone.
+      </p>
+
+      <div class="setup r r2">
+        <div class="step"><span class="step-num">1</span> <code>lavern claw init</code></div>
+        <div class="step"><span class="step-num">2</span> <code>lavern claw start</code></div>
+        <div class="step"><span class="step-num">3</span> Drop files. Walk away.</div>
+      </div>
+
+      <a href="https://github.com/AnttiHero/Marble" class="btn r r3">Get Started</a>
     </section>
 
     <section class="features">

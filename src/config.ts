@@ -212,6 +212,8 @@ export const config = {
     precedentDecayDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_DECAY_DAYS, 30),
     precedentArchiveDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS, 90),
     precedentMaxOutcomes: safeInt(process.env.LAVERN_CLAW_PRECEDENT_MAX_OUTCOMES, 50),
+    // Notification level: 'minimal' (counts only), 'summary' (default), 'full' (include evidence)
+    notifyLevel: (process.env.LAVERN_CLAW_NOTIFY_LEVEL ?? 'summary') as 'minimal' | 'summary' | 'full',
     // Telegram notifications (v0.14)
     telegramToken: process.env.LAVERN_CLAW_TELEGRAM_TOKEN ?? '',
     telegramChatId: process.env.LAVERN_CLAW_TELEGRAM_CHAT_ID ?? '',

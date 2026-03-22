@@ -232,6 +232,46 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
         />
       </div>
 
+      {/* Portfolio summary */}
+      {status.portfolio && status.portfolio.findings.total > 0 && (
+        <div style={styles.portfolioCard}>
+          <div style={styles.sectionLabel}>Portfolio Intelligence</div>
+          <div style={styles.portfolioGrid}>
+            <div style={styles.portfolioStat}>
+              <span style={{ ...styles.portfolioValue, color: colors.danger }}>{status.portfolio.findings.critical}</span>
+              <span style={styles.portfolioLabel}>critical</span>
+            </div>
+            <div style={styles.portfolioStat}>
+              <span style={{ ...styles.portfolioValue, color: '#B8860B' }}>{status.portfolio.findings.major}</span>
+              <span style={styles.portfolioLabel}>major</span>
+            </div>
+            <div style={styles.portfolioStat}>
+              <span style={{ ...styles.portfolioValue, color: colors.textMuted }}>{status.portfolio.findings.minor}</span>
+              <span style={styles.portfolioLabel}>minor</span>
+            </div>
+            <div style={styles.portfolioStat}>
+              <span style={styles.portfolioValue}>{status.portfolio.findings.total}</span>
+              <span style={styles.portfolioLabel}>total findings</span>
+            </div>
+          </div>
+          {status.portfolio.criticalDocuments.length > 0 && (
+            <div style={styles.portfolioCritical}>
+              <span style={styles.portfolioCriticalLabel}>Highest risk:</span>
+              {status.portfolio.criticalDocuments.slice(0, 3).map((d, i) => (
+                <span key={i} style={styles.portfolioCriticalDoc}>{d.name} ({d.critical})</span>
+              ))}
+            </div>
+          )}
+          {status.portfolio.topPatterns.length > 0 && (
+            <div style={styles.portfolioPatterns}>
+              {status.portfolio.topPatterns.map(p => (
+                <span key={p} style={styles.portfolioPatternTag}>{p}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Activity timeline */}
       {activity.length > 0 && (
         <div style={styles.activitySection}>
@@ -508,5 +548,66 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontFamily: fonts.sans,
     color: colors.textDim,
+  },
+  portfolioCard: {
+    padding: `${spacing.lg}px`,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+  },
+  portfolioGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  portfolioStat: {
+    textAlign: 'center' as const,
+  },
+  portfolioValue: {
+    display: 'block',
+    fontSize: 22,
+    fontWeight: 700,
+    fontFamily: fonts.mono,
+    color: colors.text,
+  },
+  portfolioLabel: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.06em',
+  },
+  portfolioCritical: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+    marginBottom: spacing.sm,
+  },
+  portfolioCriticalLabel: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.danger,
+    fontWeight: 600,
+  },
+  portfolioCriticalDoc: {
+    fontSize: 11,
+    fontFamily: fonts.mono,
+    color: colors.textMuted,
+  },
+  portfolioPatterns: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap' as const,
+  },
+  portfolioPatternTag: {
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: '#B8860B',
+    backgroundColor: 'rgba(184, 134, 11, 0.06)',
+    padding: '2px 8px',
+    borderRadius: 999,
   },
 };

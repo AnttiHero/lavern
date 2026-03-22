@@ -17,6 +17,7 @@ import * as path from 'node:path';
 import { config } from '../config.js';
 import { ensureApiKey } from '../utils/ensure-api-key.js';
 import { initClaw, loadProfile } from './init.js';
+import { writeJsonFileAtomic } from '../utils/fs-helpers.js';
 import { DocumentRegistry } from './registry.js';
 import { ClawWatcher } from './watcher.js';
 import { planWork, planSingleJob } from './planner.js';
@@ -46,7 +47,7 @@ import {
 // ── CLI Argument Parsing ─────────────────────────────────────────────────
 
 export interface ClawCliArgs {
-  command: 'init' | 'start' | 'status' | 'daemon' | 'retry';
+  command: 'init' | 'start' | 'status' | 'daemon' | 'retry' | 'validate' | 'pause' | 'resume';
   daemonSubcommand?: string;
   /** Retry a specific document by hash. */
   retryHash?: string;
@@ -67,7 +68,7 @@ export interface ClawCliArgs {
 
 export function parseClawArgs(args: string[]): ClawCliArgs {
   // Find the subcommand (init, start, status, daemon)
-  const command = args.find(a => ['init', 'start', 'status', 'daemon', 'retry'].includes(a)) ?? 'start';
+  const command = args.find(a => ['init', 'start', 'status', 'daemon', 'retry', 'validate', 'pause', 'resume'].includes(a)) ?? 'start';
 
   const getFlag = (flag: string): boolean => args.includes(flag);
   const getValue = (flag: string): string | undefined => {
@@ -633,5 +634,118 @@ export async function runClaw(args: string[]): Promise<void> {
     case 'daemon':
       await runDaemon(parsed.daemonSubcommand ? [parsed.daemonSubcommand] : []);
       break;
+    case 'validate':
+      runValidate(parsed);
+      break;
+    case 'pause':
+      runPauseResume(parsed, true);
+      break;
+    case 'resume':
+      runPauseResume(parsed, false);
+      break;
+  }
+}
+
+// ── Validate ────────────────────────────────────────────────────────────
+
+function runValidate(args: ClawCliArgs): void {
+  const dir = args.dir ?? config.claw.dir;
+  const checks: Array<{ label: string; ok: boolean; detail: string }> = [];
+
+  // Profile
+  const profile = loadProfile(dir);
+  checks.push({ label: 'Profile exists', ok: !!profile, detail: profile ? dir + '/profile.json' : 'Run `lavern claw init` to create' });
+
+  // API key
+  const apiKey = process.env.ANTHROPIC_API_KEY ?? '';
+  checks.push({ label: 'API key configured', ok: apiKey.length > 0, detail: apiKey.length > 0 ? `${apiKey.slice(0, 8)}...` : 'Set ANTHROPIC_API_KEY' });
+
+  // Watch paths
+  if (profile) {
+    for (const wp of profile.watchPaths) {
+      const resolved = path.resolve(wp.replace(/^~/, os.homedir()));
+      const exists = fs.existsSync(resolved);
+      checks.push({ label: `Watch path: ${wp}`, ok: exists, detail: exists ? 'exists' : 'does not exist' });
+    }
+  }
+
+  // Local model
+  const localModel = config.claw.localModel;
+  if (localModel) {
+    checks.push({ label: 'Local model configured', ok: true, detail: localModel });
+  } else if (profile?.ethicalMode) {
+    checks.push({ label: 'Local model (required for ethical mode)', ok: false, detail: 'Set LAVERN_LOCAL_MODEL' });
+  }
+
+  // Telegram
+  const tgToken = config.claw.telegramToken;
+  const tgChat = config.claw.telegramChatId;
+  if (tgToken && tgChat) {
+    checks.push({ label: 'Telegram notifications', ok: true, detail: `chat ${tgChat}` });
+  } else if (tgToken || tgChat) {
+    checks.push({ label: 'Telegram notifications', ok: false, detail: 'Both TOKEN and CHAT_ID required' });
+  }
+
+  // Email
+  const email = config.claw.notifyEmail;
+  if (email) {
+    checks.push({ label: 'Email notifications', ok: email.includes('@'), detail: email });
+  }
+
+  // Webhook
+  const webhook = config.claw.webhookUrl;
+  if (webhook) {
+    checks.push({ label: 'Webhook URL', ok: webhook.startsWith('http'), detail: webhook.slice(0, 50) });
+  }
+
+  // Budget
+  if (profile) {
+    checks.push({ label: 'Budget', ok: profile.budget.totalUsd > 0, detail: `$${profile.budget.totalUsd} total, $${profile.budget.perDocumentMaxUsd} per doc` });
+  }
+
+  // Print results
+  console.log('\n  Clawern Configuration Report\n');
+  let allOk = true;
+  for (const check of checks) {
+    const icon = check.ok ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m';
+    console.log(`  ${icon}  ${check.label}`);
+    if (check.detail) console.log(`     ${check.ok ? '\x1b[2m' : '\x1b[33m'}${check.detail}\x1b[0m`);
+    if (!check.ok) allOk = false;
+  }
+
+  console.log(allOk
+    ? '\n  \x1b[32mAll checks passed.\x1b[0m Ready to start.\n'
+    : '\n  \x1b[33mSome checks failed.\x1b[0m Review the items above.\n');
+}
+
+// ── Pause / Resume CLI ──────────────────────────────────────────────────
+
+function runPauseResume(args: ClawCliArgs, pause: boolean): void {
+  const dir = args.dir ?? config.claw.dir;
+  const profile = loadProfile(dir);
+  if (!profile) {
+    console.error('\nNo profile found. Run `lavern claw init` first.\n');
+    return;
+  }
+
+  if (pause && profile.paused) {
+    console.log('\n⏸  Already paused.\n');
+    return;
+  }
+  if (!pause && !profile.paused) {
+    console.log('\n▶  Already running.\n');
+    return;
+  }
+
+  profile.paused = pause;
+  profile.pausedAt = pause ? new Date().toISOString() : undefined;
+
+  const profilePath = path.join(dir, 'profile.json');
+  writeJsonFileAtomic(profilePath, profile);
+
+  if (pause) {
+    console.log('\n⏸  Processing paused. Resume with `lavern claw resume`.\n');
+  } else {
+    console.log('\n▶  Processing resumed.\n');
   }
 }

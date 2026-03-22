@@ -163,7 +163,12 @@ export async function initClaw(dir?: string, force = false): Promise<ClawProfile
     console.log(`  Budget: $${totalUsd.toFixed(2)} ($${perDocumentMaxUsd.toFixed(2)} per document)`);
     if (ethicalMode) console.log('  \uD83D\uDEE1\uFE0F  Ethical Mode: ON');
     console.log('───────────────────────────────────────────────────────');
-    console.log('\n  Run `lavern claw start` to begin.\n');
+    console.log('\n  Next steps:\n');
+    console.log('    lavern claw validate     — Verify your configuration');
+    console.log('    lavern claw start        — Start processing documents');
+    console.log('    lavern claw start --once  — Process once, then exit');
+    console.log('    lavern claw daemon install — Run as background service');
+    console.log('');
 
     return profile;
   } finally {
@@ -181,7 +186,23 @@ export function loadProfile(dir?: string): ClawProfile | null {
   if (!fs.existsSync(profilePath)) return null;
 
   try {
-    return JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+    const profile = JSON.parse(fs.readFileSync(profilePath, 'utf-8')) as ClawProfile;
+
+    // Auto-migrate old profiles (add missing fields with defaults)
+    let migrated = false;
+    if (!profile.preferences) {
+      profile.preferences = { style: 'plain-language', intensity: 'standard', riskAppetite: 'balanced' };
+      migrated = true;
+    }
+    if (profile.budget === undefined) {
+      (profile as any).budget = { totalUsd: 50, perDocumentMaxUsd: 10 };
+      migrated = true;
+    }
+    if (migrated) {
+      writeJsonFileAtomic(profilePath, profile);
+    }
+
+    return profile;
   } catch {
     console.error(`Failed to load profile from ${profilePath}`);
     return null;

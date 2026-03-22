@@ -36,6 +36,14 @@ export function buildDemoStatus(): ClawStatus {
     lastScan: ago(0.25),
     lastHeartbeat: ago(0.05),
     forecast: { pendingCount: 2, estimatedCostUsd: 3.20, budgetAfterUsd: 23.33, confidentialCount: 1, skippedCount: 0 },
+    portfolio: {
+      totalDocuments: 12,
+      findings: { critical: 6, major: 12, minor: 11, total: 29 },
+      topDocumentTypes: [{ type: 'NDA', count: 3 }, { type: 'MSA', count: 2 }, { type: 'Employment Agreement', count: 2 }],
+      criticalDocuments: [{ name: 'merger-agreement-draft.docx', critical: 3 }, { name: 'cloud-services-msa.pdf', critical: 2 }, { name: 'terms-of-service-v2.pdf', critical: 1 }],
+      topPatterns: ['Contract Risk Pattern', 'Dark Pattern Pattern', 'Contract Deviation Pattern'],
+      budgetUtilization: 47,
+    },
     daemon: { installed: true, running: true, pid: 42847 },
   };
 }
