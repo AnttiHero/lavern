@@ -89,9 +89,10 @@
     <div class="section">
       <div class="section-label">The Shift</div>
       <h2>From Copilots to <em>Autonomous Systems.</em></h2>
-      <p>2025 was the year of the copilot.AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>.AI that acts. <a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. <a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026">Claude Code</a> showed that agentic loops.where the AI gathers context, acts, verifies, and iterates.could handle entire implementation workflows.</p>
-      <p>Lavern applies this same paradigm shift to law. Not a chatbot that answers legal questions. <strong>A firm that does legal work.</strong></p>
-      <p>Harvey and Legora are built for lawyers inside law firms. Powerful tools, but still tools. Someone has to prompt them, guide them, babysit them. Lavern started from a different question: what if the entire firm was staffed with agents? And what if those agents lived on your Mac Mini?</p>
+      <p>2025 was the year of the copilot: AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>: AI that acts.</p>
+      <p><a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. <a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026">Claude Code</a> showed that agentic loops, where the AI gathers context, acts, verifies, and iterates, could handle entire implementation workflows.</p>
+      <p>Harvey and Legora are built for lawyers inside law firms. Powerful tools, but still tools. Someone has to prompt them, guide them, babysit them.</p>
+      <p>Lavern started from a different question: what if the entire firm was staffed with agents? And what if those agents lived on your Mac Mini?</p>
     </div>
 
     <!-- THE THREE BLOCKERS -->
@@ -146,6 +147,10 @@
         </svg>
         <div class="diagram-caption">The orchestrator-worker pattern. Specialists are dispatched, challenged, and resolved by the orchestrator.</div>
       </div>
+
+      <div class="callout">
+        <strong>In practice:</strong> A contract review engagement dispatches a reviewer, an adversarial attacker, a risk assessor, and a synthesizer. The orchestrator manages the debate, resolves conflicts, and produces a coherent output. The user sees a live feed of findings as they emerge, not a spinner and a prayer.
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -156,7 +161,8 @@
       <div class="section-label">The Problem</div>
       <h2>Law Is a <em>Context Game.</em></h2>
       <p>The hardest part of legal analysis isn't reading the document. It's understanding <em>why</em> the client cares. A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. An indemnification cap matters differently in a $10M deal vs. a $100K engagement. <strong>Without context, analysis is noise.</strong></p>
-      <p>This is why Lavern starts every engagement with a structured briefing.an LLM-powered interview that builds understanding before any agent touches the document. The interview adapts based on document type, asking about jurisdiction, commercial intent, risk appetite, and specific concerns. This context follows the document through every stage of analysis.</p>
+      <p>This is why Lavern starts every engagement with a structured briefing: an LLM-powered interview that builds understanding before any agent touches the document. The interview adapts based on document type, asking about jurisdiction, commercial intent, risk appetite, and specific concerns.</p>
+      <p>This context follows the document through every stage of analysis.</p>
 
       <div class="flow-steps">
         <div class="flow-step">
@@ -187,7 +193,7 @@
       </div>
 
       <h3>Talk to a Partner</h3>
-      <p>For quick questions."Is this non-compete enforceable in California?".Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds. The interface is a single glowing orb.tap to speak, listen to the answer.</p>
+      <p>For quick questions ("Is this non-compete enforceable in California?"), Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds. The interface is a single glowing orb: tap to speak, listen to the answer.</p>
 
       <div class="callout accent">
         <strong>The context advantage:</strong> A traditional legal AI tool gets a document and returns findings. Lavern gets a briefing, understands the commercial context, selects the right team, and produces findings that are <em>relevant to what the client actually needs</em>. This is the difference between "this clause is unusual" and "this clause costs you $2M if the deal falls through."
@@ -242,11 +248,11 @@
         <div class="diagram-caption">Three nested verification loops. Each layer can send output back for revision. Nothing reaches the user without passing all three.</div>
       </div>
 
-      <p><strong>Layer 1: The Evaluator Gate.</strong> After each specialist agent completes its work, an evaluator checks the output against quality criteria.structural validity, evidence requirements, contamination detection. If the output fails, it's sent back to the same agent with specific critique. This is the Ralph pattern: the agent reads its own failed output, understands what's wrong, and tries again. Up to 3 iterations before escalation.</p>
+      <p><strong>Layer 1: The Evaluator Gate.</strong> After each specialist agent completes its work, an evaluator checks the output against quality criteria: structural validity, evidence requirements, contamination detection. If the output fails, it's sent back to the same agent with specific critique. This is the Ralph pattern: the agent reads its own failed output, understands what's wrong, and tries again. Up to 3 iterations before escalation.</p>
 
       <p><strong>Layer 2: Adversarial Debate.</strong> Findings that pass the evaluator gate are posted to the Debate Board.shared state where agents challenge each other's conclusions. A contract reviewer posts a risk finding; the adversarial attacker challenges with counter-evidence; the reviewer responds; the orchestrator resolves. This is not decoration.the adversarial structure catches issues that single-pass analysis misses, the same way cross-examination catches what direct testimony doesn't.</p>
 
-      <p><strong>Layer 3: The 10-Pass Verification Pipeline.</strong> The assembled output goes through 10 independent verification passes.self-consistency check, cross-reference check, score dimensions (accuracy, completeness, clarity), placeholder detection, process contamination detection. The quality gate <strong>fails closed</strong>: if any pass encounters an API error, the output is rejected. No garbage reaches the user.</p>
+      <p><strong>Layer 3: The 10-Pass Verification Pipeline.</strong> The assembled output goes through 10 independent verification passes: self-consistency check, cross-reference check, score dimensions (accuracy, completeness, clarity), placeholder detection, process contamination detection. The quality gate <strong>fails closed</strong>: if any pass encounters an API error, the output is rejected. No garbage reaches the user.</p>
 
       <div class="callout blue">
         <strong>Why three layers?</strong> A single check catches ~80% of issues. Two layers catch ~95%. Three layers with adversarial debate consistently reach >99% on the failure modes we track. The marginal cost of each layer is small compared to the cost of a wrong finding in a legal context.
@@ -339,7 +345,7 @@
     <div class="section">
       <div class="section-label">Institutional Memory</div>
       <h2>The Firm Gets <em>Smarter.</em></h2>
-      <p>This is where Clawern diverges from every other document processing tool. Each review's significant findings are indexed into a <strong>Precedent Board</strong>.persistent institutional memory with evidence-linked entries, confidence decay, and relevance scoring. Before processing a new document, the board is queried and matching patterns are injected as context.</p>
+      <p>This is where Clawern diverges from every other document processing tool. Each review's significant findings are indexed into a <strong>Precedent Board</strong>: persistent institutional memory with evidence-linked entries, confidence decay, and relevance scoring. Before processing a new document, the board is queried and matching patterns are injected as context.</p>
       <p>The same Ralph Loop pattern that powers iterative verification now operates across time: the firm reads its own past analysis to inform future work. A liability cap pattern found in an NDA in January informs the review of a different client's MSA in March.automatically.</p>
 
       <div class="diagram">
@@ -364,7 +370,7 @@
     <div class="section">
       <div class="section-label">Privacy</div>
       <h2>Confidential by <em>Default.</em></h2>
-      <p>Documents matching sensitivity patterns (<code>*confidential*</code>, <code>*privileged*</code>, <code>*merger*</code>) are analyzed entirely on-device via local models. In ethical mode, <em>all</em> documents stay local. This isn't a feature toggle.it's a <strong>privilege preservation guarantee</strong>. The data physically cannot leave the machine.</p>
+      <p>Documents matching sensitivity patterns (<code>*confidential*</code>, <code>*privileged*</code>, <code>*merger*</code>) are analyzed entirely on-device via local models. In ethical mode, <em>all</em> documents stay local. This isn't a feature toggle. It's a <strong>privilege preservation guarantee</strong>. The data physically cannot leave the machine.</p>
 
       <div class="diagram">
         <svg width="520" height="160" viewBox="0 0 520 160" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -399,7 +405,7 @@
       <div class="section-label">Reach</div>
       <h2>The Firm <em>Finds You.</em></h2>
       <p>Following OpenClaw's multi-channel philosophy, Clawern pushes findings to every surface the user inhabits: Telegram (with two-way command control), email (critical alerts + weekly digest), webhooks (Slack, Discord), macOS native notifications, and real-time WebSocket streaming to the dashboard.</p>
-      <p><strong>Voice Dispatch</strong> completes the picture: open your phone, say "What's the status?" and the firm responds with a spoken summary. Keyword-based command parsing.no LLM cost for control commands. The same pattern as OpenClaw's chat-based control, adapted for legal work.</p>
+      <p><strong>Voice Dispatch</strong> completes the picture: open your phone, say "What's the status?" and the firm responds with a spoken summary. Keyword-based command parsing, no LLM cost for control commands. The same pattern as OpenClaw's chat-based control, adapted for legal work.</p>
 
       <div class="features">
         <div class="feat"><div class="feat-title">Change Detection</div><div class="feat-desc">When a document changes: "+3 new, -1 resolved, ~2 changed." Re-reviews tell you what's actually different.</div></div>
