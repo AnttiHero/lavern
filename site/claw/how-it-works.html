@@ -162,46 +162,6 @@
       <p>We call this <strong>Ethical Mode</strong>. One switch: all documents processed locally, EU provider when frontier is needed, conservative risk appetite. The firm handles privilege the same way a real firm would: by never letting the data out of the building.</p>
       <p>And because local processing carries a fraction of the energy cost of frontier inference, your environmental footprint shrinks too. Your data. Your hardware. Your call.</p>
 
-      <div class="diagram">
-        <svg width="560" height="180" viewBox="0 0 560 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="ds1_sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
-            <marker id="ds1_ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker>
-            <marker id="ds1_al" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 10 0 L 0 5 L 10 10 z" fill="#bbb"/></marker>
-          </defs>
-          <!-- Local box -->
-          <rect x="10" y="20" width="160" height="80" rx="10" fill="#4a7c59" fill-opacity="0.1" stroke="#4a7c59" stroke-width="2" filter="url(#ds1_sh)"/>
-          <text x="90" y="50" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4a7c59">Local</text>
-          <text x="90" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Your hardware · $0</text>
-          <text x="90" y="84" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Data stays on machine</text>
-          <!-- Mistral EU box -->
-          <rect x="200" y="20" width="160" height="80" rx="10" fill="#2E5D9C" fill-opacity="0.1" stroke="#2E5D9C" stroke-width="2" filter="url(#ds1_sh)"/>
-          <text x="280" y="50" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#2E5D9C">Mistral EU</text>
-          <text x="280" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#2E5D9C" opacity="0.7">EU servers · GDPR</text>
-          <text x="280" y="84" text-anchor="middle" font-family="Inter" font-size="10" fill="#2E5D9C" opacity="0.7">Data stays in Europe</text>
-          <!-- Claude US box -->
-          <rect x="390" y="20" width="160" height="80" rx="10" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="2" filter="url(#ds1_sh)"/>
-          <text x="470" y="50" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#E8845C">Claude US</text>
-          <text x="470" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">US servers</text>
-          <text x="470" y="84" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">Maximum capability</text>
-          <!-- Top arrow: more power → -->
-          <path d="M180 36 L390 36" stroke="#bbb" stroke-width="2" marker-end="url(#ds1_ar)"/>
-          <text x="280" y="30" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#999">more power →</text>
-          <!-- Bottom arrow: ← more control -->
-          <path d="M380 88 L170 88" stroke="#bbb" stroke-width="2" marker-end="url(#ds1_al)"/>
-          <text x="280" y="114" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#999">← more control</text>
-          <!-- Ethical Mode label -->
-          <rect x="130" y="140" width="300" height="28" rx="6" fill="#4a7c59" fill-opacity="0.06" stroke="#4a7c59" stroke-width="1.5" stroke-dasharray="6 4"/>
-          <text x="280" y="158" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#4a7c59">Ethical Mode locks everything to the left</text>
-        </svg>
-        <div class="diagram-caption">The data sovereignty gradient. You choose per engagement where the data goes. Ethical Mode locks everything to the left.</div>
-      </div>
-
-      <div class="product-shot">
-        <img src="img/config.png" alt="Lavern configuration: Autopilot toggle, Verification toggle, Claude vs EU Sovereign engine selector." loading="lazy">
-        <div class="product-shot-caption"><strong>You decide per engagement.</strong> Autopilot, verification depth, and engine selection. Claude for maximum capability, EU Sovereign for data that stays in Europe.</div>
-      </div>
-
       <h3>What does it cost?</h3>
       <p>Confidential documents analyzed locally cost <strong>$0</strong>. Zero. The model runs on your hardware, there is no API call, there is no meter running.</p>
       <p>For frontier analysis, Lavern forecasts the cost <em>before</em> processing and shows you a budget gauge in real-time. Per-document caps prevent surprises. You set a total retainer budget and the firm stops when it's spent. No hourly billing. No opaque invoices. You see exactly where every dollar goes, which agents used it, and what they produced.</p>
@@ -317,15 +277,9 @@
       <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
       <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
 
-      <div class="product-shot-pair">
-        <div class="product-shot">
-          <img src="img/team.png" alt="Agent team selection: Partner agents with radar charts showing skill profiles across 8 dimensions." loading="lazy">
-          <div class="product-shot-caption"><strong>Your team.</strong> Each agent has skill ratings, a personality, and a specialty. Select who works on your matter.</div>
-        </div>
-        <div class="product-shot">
-          <img src="img/agent-builder.png" alt="Agent builder: Design a custom agent face, personality sliders, practice areas." loading="lazy">
-          <div class="product-shot-caption"><strong>Build your own.</strong> Identity, face, personality, practice areas. Your institutional knowledge as a permanent team member.</div>
-        </div>
+      <div class="product-shot">
+        <img src="img/team.png" alt="Agent team selection: Partner agents with radar charts showing skill profiles across 8 dimensions." loading="lazy">
+        <div class="product-shot-caption"><strong>Your team.</strong> Each agent has skill ratings, a personality, and a specialty. Select who works on your matter.</div>
       </div>
 
 
@@ -333,8 +287,6 @@
       <p>Every real law firm has a culture: how they communicate, what they prioritize, how formal they are. Lavern has a <strong>Soul</strong>: a user-defined firm personality (voice, principles, style, values) that's injected into every agent's system prompt. The Soul shapes how agents write, what they emphasize, and how they resolve ambiguity.</p>
       <p>A conservative insurance defense firm gets different outputs than a startup-friendly tech boutique, even on the same document. Not because the analysis is different, but because the communication is tailored to what matters to that firm's clients.</p>
     </div>
-
-    <div class="pullquote">The senior partner who always catches the termination clause issue?<br>Build an agent with their instincts. It never retires. It never <em>forgets.</em></div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <!--                     LAW IS A CONTEXT GAME                          -->
