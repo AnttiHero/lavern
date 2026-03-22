@@ -138,7 +138,7 @@
 
       <p>2025 was the year of the copilot: AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>: AI that acts. <a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. Claude Code showed that agentic loops could handle entire implementation workflows.</p>
 
-      <p>The analogy isn't "better cruise control." It's the self-driving car. Cruise control assists a driver. A self-driving car replaces the need for one. Harvey and Legora are cruise control for lawyers: powerful, but someone still has to sit in the seat, hands on the wheel, eyes on the road. Lavern is built from a totally different analogy. That is why it looks and feels very different from other legal technology.</p>
+      <p>The analogy isn't "better cruise control." It's the self-driving car. Cruise control assists a driver. A self-driving car replaces the need for one. Harvey and Legora are cruise control for lawyers: powerful, but someone still has to sit in the seat, hands on the wheel, eyes on the road. Lavern is built from a different analogy.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -153,18 +153,17 @@
 
       <h3>Who does the work?</h3>
       <p>Every other tool waits for you. You prompt it, it responds, you move on.</p>
-      <p>Lavern is different. You can guide the briefing, select the team, choose the workflow, intervene at every gate. But you don't have to. Lavern runs on a <strong>30-minute heartbeat</strong>: always on, always working, always making progress on your matters. It doesn't need you. That's the point.</p>
-      <p><strong>The agents do the work. You run the firm.</strong></p>
+      <p>Lavern is different. You can guide the briefing, select the team, choose the workflow, intervene at every gate. But you don't have to. Lavern runs on a <strong>30-minute heartbeat</strong>: always on, always working, always making progress on your matters. It doesn't need you.</p>
 
       <h3>Where does the data go?</h3>
       <p>Most AI tools run on frontier models. Great answers, but your client's confidential information is traveling to a third-party server, usually in the US. That's a privilege problem. In some jurisdictions, it's a regulatory problem. In all jurisdictions, it's a trust problem.</p>
-      <p>When you run Lavern in local mode, <strong>the data doesn't go anywhere.</strong> It doesn't leave your machine. When you want more firepower, you choose: <strong>Mistral</strong> (EU, data stays in Europe) or <strong>Claude</strong> (US). You decide per engagement. You can run the entire firm in EU-only mode with a single toggle.</p>
+      <p>When you run Lavern in local mode, <strong>the data doesn't go anywhere.</strong> It doesn't leave your machine. When you want more firepower, you choose: <strong>Mistral</strong> (EU, data stays in Europe) or <strong>Claude</strong> (US). You can run the entire firm in EU-only mode with a single toggle.</p>
       <p>We call this <strong>Ethical Mode</strong>. One switch: all documents processed locally, EU provider when frontier is needed, conservative risk appetite. The firm handles privilege the same way a real firm would: by never letting the data out of the building.</p>
-      <p>And because local processing carries a fraction of the energy cost of frontier inference, your environmental footprint shrinks too. Your data. Your hardware. Your call.</p>
+      <p>And because local processing carries a fraction of the energy cost of frontier inference, your environmental footprint shrinks too.</p>
 
       <h3>What does it cost?</h3>
       <p>Confidential documents analyzed locally cost <strong>$0</strong>. Zero. The model runs on your hardware, there is no API call, there is no meter running.</p>
-      <p>For frontier analysis, Lavern forecasts the cost <em>before</em> processing and shows you a budget gauge in real-time. Per-document caps prevent surprises. You set a total retainer budget and the firm stops when it's spent. No hourly billing. No opaque invoices. You see exactly where every dollar goes, which agents used it, and what they produced.</p>
+      <p>For frontier analysis, Lavern forecasts the cost <em>before</em> processing and shows you a budget gauge in real-time. Per-document caps prevent surprises. You set a total retainer budget and the firm stops when it's spent. You see where every dollar goes, which agents used it, and what they produced.</p>
 
       <div class="callout">
         <strong>Cost transparency is a design constraint, not a feature.</strong> The system was built this way because the alternative, a bill you can't predict, is the reason clients hate law firms in the first place.
@@ -181,11 +180,11 @@
       <div class="section-label">The Ideas</div>
       <h2>The Ideas Behind <em>the Firm.</em></h2>
 
-      <p>Lavern wasn't built by assembling features. It was built from a set of convictions about how AI and law intersect. These are the ideas that shaped every architectural decision.</p>
+      <p>Lavern wasn't built by assembling features. It was built from a set of convictions about how AI and law intersect. These are the ideas behind it.</p>
 
       <p><strong>Agents produce better results in work-like environments.</strong> A single LLM call returns an answer. A team of agents that debate, challenge, and revise each other's work returns a defensible position. When agents operate in structures that mirror real work, with orchestrators compiling output and specialists contributing their perspective, the quality of the result improves in ways that simply scaling the model does not.</p>
 
-      <p><strong>Multiple perspectives are the whole point.</strong> When you have a team of specialists, it becomes trivially easy to look at the same problem from different angles. How does this contract look from the client's perspective? Is it understandable by a non-lawyer? What would an adversary exploit? What would a regulator flag? Adding competencies is as simple as adding agents. You don't need a bigger model. You need more viewpoints.</p>
+      <p><strong>Multiple perspectives are the whole point.</strong> When you have a team of specialists, it becomes trivially easy to look at the same problem from different angles. How does this contract look from the client's perspective? Is it understandable by a non-lawyer? What would an adversary exploit? What would a regulator flag? Adding competencies is as simple as adding agents. Adding competencies is as simple as adding agents.</p>
 
       <p><strong>Law is a context game.</strong> The bottleneck in legal AI is not model quality. Current LLMs do solid legal work when they have rich context. The bottleneck is that most tools send a document to an LLM and hope for the best. Lavern's structured briefing, knowledge base queries, precedent injection, and soul personality all serve the same purpose: giving the agents enough context to do work that actually matters for the specific situation.</p>
 
@@ -227,13 +226,13 @@
 
       <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 8 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
 
-      <p><strong>Speech will be the primary prompting mode.</strong> Typing legal questions into a chat box is a 2024 interaction pattern. The natural interface for legal counsel is a conversation. That's why you can talk to partner agents, dictate briefing answers, and control Clawern by voice. The interface should feel like calling a lawyer, not operating a search engine.</p>
+      <p><strong>Speech will be the primary prompting mode.</strong> Typing legal questions into a chat box is a 2024 interaction pattern. The natural interface for legal counsel is a conversation. You can talk to partner agents, dictate briefing answers, and control Clawern by voice.</p>
 
-      <p><strong>Law is worth investing in.</strong> If you'd pay $500 to $1,000 per hour for a lawyer, it follows that investing in a thorough AI review is worthwhile. Lavern costs more than a typical AI chatbot. These are serious documents with real consequences. A good agent team running a proper adversarial review costs a few dollars. That's not expensive. That's a rounding error compared to what's at stake.</p>
+      <p><strong>Law is worth investing in.</strong> If you'd pay $500 to $1,000 per hour for a lawyer, it follows that investing in a thorough AI review is worthwhile. Lavern costs more than a typical AI chatbot. These are serious documents with real consequences. A good agent team running a proper adversarial review costs a few dollars. That's not expensive.</p>
 
-      <p><strong>Truly agentic work happens on local models working tirelessly.</strong> The most powerful form of AI assistance isn't a frontier model that runs once. It's a local model that runs continuously, on your hardware, processing your documents on its own schedule. That's why Clawern lives in your Mac Mini. The daemon never stops. The heartbeat never misses.</p>
+      <p><strong>Truly agentic work happens on local models working tirelessly.</strong> The most powerful form of AI assistance isn't a frontier model that runs once. It's a local model that runs continuously, on your hardware, processing your documents on its own schedule. Clawern lives in your Mac Mini.</p>
 
-      <p><strong>AI works well with loops.</strong> A single pass produces a draft. A loop that checks, revises, and checks again produces a deliverable. The Ralph pattern, named after the agentic coding technique of reading your own past work to improve it, is at the core of everything Lavern does. Agents don't submit work and move on. They submit work, receive critique, revise, and submit again. The loop is the product.</p>
+      <p><strong>AI works well with loops.</strong> A single pass produces a draft. A loop that checks, revises, and checks again produces a deliverable. The Ralph pattern, named after the agentic coding technique of reading your own past work to improve it, is at the core of everything Lavern does. Agents don't submit work and move on. They submit work, receive critique, revise, and submit again.</p>
 
       <p><strong>Feedback loops are the most important thing.</strong> More important than model size, agent count, or workflow complexity. Good checking loops, where output is verified against specific criteria and sent back for revision when it fails, are what separate a toy demo from a production system. The three-layer verification pipeline, the debate board, the precedent board's reinforcement scoring: these are all feedback loops. They are what makes the output better.</p>
     </div>
@@ -275,7 +274,7 @@
       <h3>Build your own agents.</h3>
       <p>The built-in specialists cover the common ground: contract risk, dark patterns, IP assignment, non-compete enforceability, regulatory compliance. But every firm has domain expertise that no pre-built agent can match. A maritime law boutique needs different instincts than a tech M&A shop.</p>
       <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
-      <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
+      <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts.</p>
 
       <div class="product-shot">
         <img src="img/team.png" alt="Agent team selection: Partner agents with radar charts showing skill profiles across 8 dimensions." loading="lazy">
@@ -298,9 +297,7 @@
 
       <p>The hardest part of legal analysis isn't reading the document. It's understanding <em>why</em> the client cares.</p>
 
-      <p>A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. An indemnification cap matters differently in a $10M deal versus a $100K engagement. A termination clause that's perfectly standard in Delaware could be unenforceable in California. <strong>Without context, analysis is noise.</strong></p>
-
-      <p>This is why most legal AI tools fall short. They get the document. They don't get the situation. They can tell you a clause is "unusual." They can't tell you it costs you $2M if the deal falls through.</p>
+      <p>A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. An indemnification cap matters differently in a $10M deal versus a $100K engagement. A termination clause that's perfectly standard in Delaware could be unenforceable in California. <strong>Without context, analysis is difficult.</strong></p>
 
       <h3>The briefing interview.</h3>
       <p>Lavern starts every engagement with a structured briefing: an LLM-powered interview that builds understanding before any agent touches the document. The interview adapts based on document type, asking about jurisdiction, commercial intent, risk appetite, deal size, and specific concerns. You can choose an interviewer persona. You can answer by voice.</p>
@@ -334,11 +331,7 @@
       <p>The first is the <strong>user-facing deliverable</strong>: the review, the redesigned document, the analysis. What the client sees and acts on.</p>
       <p>The second is the <strong>legal review package</strong>: the complete audit trail of every finding, every challenge, every response, every resolution, with evidence citations, confidence scores, and which agent resolved each dispute. The full chain of reasoning, preserved.</p>
       <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as a artifact alongside the output itself.</p>
-      <p>And you can (and should) question the output of Lavern. But it is easier if you see the thinking.</p>
-
     </div>
-
-    <div class="pullquote">You can (and should) question the output.<br>But it is easier if you see the <em>thinking.</em></div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <!--                      THE CHECKING LOOPS                            -->
@@ -420,7 +413,7 @@
 
       <p>Every finding must cite specific text as evidence. Not "there may be a risk in section 4." Instead: <em>"Section 4.2: 'Company shall indemnify and hold harmless without limitation' creates unlimited liability exposure without a monetary cap."</em> If an agent can't cite evidence, the finding is rejected.</p>
 
-      <p>Every resolution is an <strong>auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. Full provenance. Not a black box.</p>
+      <p>Every resolution is an <strong>auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. The reasoning is traceable.</p>
 
       <div class="product-shot">
         <img src="img/working.png" alt="Working view: Live agents analyzing with checklist, findings streaming in with confidence scores." loading="lazy">
@@ -587,9 +580,9 @@
         <div class="diagram-caption">The intelligence loop. Findings flow down into the Precedent Board; context flows back up into future processing. The firm compounds knowledge over time.</div>
       </div>
 
-      <p>The same Ralph Loop pattern that powers iterative verification now operates <strong>across time</strong>: the firm reads its own past analysis to inform future work. A liability cap pattern found in an NDA in January informs the review of a different client's MSA in March. Automatically. No human has to remember. No institutional knowledge walks out the door when someone leaves.</p>
+      <p>The same Ralph Loop pattern that powers iterative verification now operates <strong>across time</strong>: the firm reads its own past analysis to inform future work. A liability cap pattern found in an NDA in January informs the review of a different client's MSA in March. Automatically. No human has to remember.</p>
 
-      <p>Precedents have confidence decay (old patterns lose weight unless reinforced by new findings), archival (deprecated entries are compacted to keep the active set lean), and effectiveness scoring (tracked via exponential moving average over outcomes). This isn't a static database. It's a learning system.</p>
+      <p>Precedents have confidence decay (old patterns lose weight unless reinforced by new findings), archival (deprecated entries are compacted to keep the active set lean), and effectiveness scoring (tracked via exponential moving average over outcomes). The precedent board evolves over time.</p>
 
       <h3>Change detection.</h3>
       <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become useful instead of a full re-read.</p>
@@ -604,7 +597,7 @@
 
     </div>
 
-    <div class="pullquote">The firm reads its own past analysis<br>to inform <em>future work.</em><br>No institutional knowledge walks out the door.</div>
+    <div class="pullquote">The firm reads its own past analysis<br>to inform <em>future work.</em></div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <!--                       REACH & VOICE                                -->
@@ -623,7 +616,6 @@
         <div class="feat"><div class="feat-title">WebSocket Dashboard</div><div class="feat-desc">Real-time event streaming. 9 event types with late-join replay. See agents working, findings posted, debates resolved. Not a polling page: a live feed.</div></div>
       </div>
 
-      <p>Plus webhook support (Slack, Discord, generic JSON) and macOS native notifications. Notifications are automatically redacted for confidential documents: filenames replaced with [Confidential], evidence stripped.</p>
 
       <div class="diagram">
         <svg width="480" height="320" viewBox="0 0 480 320" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -663,8 +655,7 @@
       </div>
 
       <h3>Portfolio Intelligence.</h3>
-      <p>Clawern doesn't just review individual documents. It aggregates findings across your entire portfolio. The Portfolio Intelligence endpoint returns: total findings by severity, top document types, highest-risk documents, recurring patterns from the Precedent Board, and budget utilization. The dashboard shows this as a card in the Overview tab.</p>
-      <p>This is the kind of insight that used to require a partner reviewing the full book of business. "You have 47 liability caps across 12 contracts. 3 are stricter than your standard. Top recurring pattern: missing termination cure periods." That's not a document review. That's a portfolio strategy.</p>
+      <p>Clawern also aggregates findings across your entire portfolio. Total findings by severity, top document types, highest-risk documents, recurring patterns from the Precedent Board, and budget utilization.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -675,10 +666,10 @@
       <div class="section-label">Production</div>
       <h2>Built to <em>Run.</em></h2>
 
-      <p>A law firm can't crash. It can't lose data. It can't expose confidential information in a notification. It can't silently stop watching for new documents. These aren't features. They're the minimum bar for something you'd trust with legal work.</p>
+      <p>A law firm can't crash. It can't lose data. It can't expose confidential information in a notification. It can't silently stop watching for new documents. These are the basics.</p>
 
       <div class="features">
-        <div class="feat"><div class="feat-title">1,392 Tests</div><div class="feat-desc">85 test files. Unit tests, integration tests, edge case hardening. The codebase is tested the way you'd test code that handles money. Because it handles something more important.</div></div>
+        <div class="feat"><div class="feat-title">1,392 Tests</div><div class="feat-desc">85 test files. Unit tests, integration tests, edge case hardening. Unit tests, integration tests, edge case hardening.</div></div>
         <div class="feat"><div class="feat-title">Audit Trail</div><div class="feat-desc">Append-only JSON lines log. Every action recorded with initiator, timestamp, and details. Rotation at 5MB, 3 rotated files. The firm keeps records.</div></div>
         <div class="feat"><div class="feat-title">Daily Backups</div><div class="feat-desc">State, precedents, and profile backed up daily with 30-day retention. Recoverable after any failure. Your institutional memory is protected.</div></div>
         <div class="feat"><div class="feat-title">Prometheus Metrics</div><div class="feat-desc">GET /api/claw/metrics exports documents processed, findings by severity, budget utilization, session counts, precedent activity. Observable from any monitoring stack.</div></div>
@@ -687,7 +678,7 @@
       </div>
 
       <div class="callout">
-        <strong>Configuration validation:</strong> <code>lavern claw validate</code> runs a color-coded health report before you start: API key, watch paths, local model, Telegram, email, budget. Every check passes or tells you exactly what to fix. No guessing. No "it's probably fine."
+        <strong>Configuration validation:</strong> <code>lavern claw validate</code> runs a color-coded health report before you start: API key, watch paths, local model, Telegram, email, budget. Every check passes or tells you exactly what to fix. Every check passes or tells you what to fix.
       </div>
     </div>
 
@@ -731,7 +722,7 @@
         <div class="diagram-caption">Full isolation. Each client gets their own state, precedent history, budget, and delivery folder. No data crosses the boundary.</div>
       </div>
 
-      <p>This means you can run Clawern for your own company's contracts AND for a client's portfolio on the same machine without any data leakage between them. Different budgets. Different watch paths. Different precedent histories. Full isolation.</p>
+      <p>This means you can run Clawern for your own company's contracts AND for a client's portfolio on the same machine without any data leakage between them. Different budgets. Different watch paths. Different precedent histories.</p>
     </div>
 
     <hr>
