@@ -223,7 +223,7 @@
         <div class="diagram-caption">The edges are where the product lives. We can always improve intake and output. The middle improves on its own.</div>
       </div>
 
-      <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 65 agents, through three verification layers, across every workflow. The compound advantage of a multi-agent architecture is that incremental model improvements produce exponential output improvements. The system was designed to ride that curve.</p>
+      <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 65 agents, through three verification layers, across every workflow. In a multi-agent architecture, incremental model improvements compound across the whole team. The system benefits from that.</p>
 
       <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 8 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
 
@@ -235,7 +235,7 @@
 
       <p><strong>AI works well with loops.</strong> A single pass produces a draft. A loop that checks, revises, and checks again produces a deliverable. The Ralph pattern, named after the agentic coding technique of reading your own past work to improve it, is at the core of everything Lavern does. Agents don't submit work and move on. They submit work, receive critique, revise, and submit again. The loop is the product.</p>
 
-      <p><strong>Feedback loops are the most important thing.</strong> More important than model size, agent count, or workflow complexity. Good checking loops, where output is verified against specific criteria and sent back for revision when it fails, are what separate a toy demo from a production system. The three-layer verification pipeline, the debate board, the precedent board's reinforcement scoring: these are all feedback loops. They are the reason the output is trustworthy.</p>
+      <p><strong>Feedback loops are the most important thing.</strong> More important than model size, agent count, or workflow complexity. Good checking loops, where output is verified against specific criteria and sent back for revision when it fails, are what separate a toy demo from a production system. The three-layer verification pipeline, the debate board, the precedent board's reinforcement scoring: these are all feedback loops. They are what makes the output better.</p>
     </div>
 
     <div class="pullquote">You don't need a bigger model.<br>You need more <em>viewpoints.</em></div>
@@ -250,7 +250,7 @@
 
       <p>Most AI legal tools are a single LLM call wrapped in a UI. One prompt in, one answer out. Lavern is modeled on how a real law firm operates: <strong>58 specialist agents</strong> and <strong>7 orchestrators</strong> who coordinate through structured debate.</p>
 
-      <p>This follows the orchestrator-worker architecture, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a fundamentally different design goal, and it produces fundamentally different architecture.</p>
+      <p>This follows the orchestrator-worker architecture, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a different design goal, and it produces different architecture.</p>
 
       <div class="diagram">
         <svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -300,7 +300,7 @@
 
       <p>A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. An indemnification cap matters differently in a $10M deal versus a $100K engagement. A termination clause that's perfectly standard in Delaware could be unenforceable in California. <strong>Without context, analysis is noise.</strong></p>
 
-      <p>This is why every other legal AI tool falls short. They get the document. They don't get the situation. They can tell you a clause is "unusual." They can't tell you it costs you $2M if the deal falls through.</p>
+      <p>This is why most legal AI tools fall short. They get the document. They don't get the situation. They can tell you a clause is "unusual." They can't tell you it costs you $2M if the deal falls through.</p>
 
       <h3>The briefing interview.</h3>
       <p>Lavern starts every engagement with a structured briefing: an LLM-powered interview that builds understanding before any agent touches the document. The interview adapts based on document type, asking about jurisdiction, commercial intent, risk appetite, deal size, and specific concerns. You can choose an interviewer persona. You can answer by voice.</p>
@@ -333,7 +333,7 @@
       <p>Every engagement produces two outputs.</p>
       <p>The first is the <strong>user-facing deliverable</strong>: the review, the redesigned document, the analysis. What the client sees and acts on.</p>
       <p>The second is the <strong>legal review package</strong>: the complete audit trail of every finding, every challenge, every response, every resolution, with evidence citations, confidence scores, and which agent resolved each dispute. The full chain of reasoning, preserved.</p>
-      <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as a first-class artifact alongside the output itself.</p>
+      <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as a artifact alongside the output itself.</p>
       <p>And you can (and should) question the output of Lavern. But it is easier if you see the thinking.</p>
 
     </div>
@@ -350,7 +350,7 @@
 
       <p>The <a href="https://claude.com/plugins/ralph-loop">Ralph Loop</a>, named after the "Ralph Wiggum technique" in agentic coding, is the pattern where an AI reads its own past work to inform improvements. In Claude Code, this means iterating until tests pass. In Lavern, we apply the same principle to legal analysis: <strong>agents review their own output, and other agents review theirs.</strong></p>
 
-      <p>In software, a wrong line of code produces a failing test. In law, a wrong finding produces a wrong decision. A missed liability cap costs money. A false positive wastes a client's time and erodes trust. The cost of error is categorically different. So the verification has to be categorically more thorough.</p>
+      <p>In software, a wrong line of code produces a failing test. In law, a wrong finding produces a wrong decision. A missed liability cap costs money. A false positive wastes a client's time and erodes trust. The cost of error is different. So the verification has to be more thorough.</p>
 
       <h3>Three layers of checking.</h3>
 
@@ -389,7 +389,7 @@
       <p><strong>Layer 3: The 10-Pass Verification Pipeline.</strong> The assembled output goes through 10 independent verification passes: self-consistency, cross-reference, accuracy, completeness, clarity, placeholder detection (<code>[TBD]</code>, <code>[PLACEHOLDER]</code>), process contamination (<code>"I'll analyze..."</code>), citation validity, and structural integrity. The quality gate <strong>fails closed</strong>: if any pass encounters an API error, the output is rejected rather than silently passing through. No garbage reaches the user.</p>
 
       <div class="callout blue">
-        <strong>Why three layers?</strong> A single check catches approximately 80% of issues. Two layers catch approximately 95%. Three layers with adversarial debate consistently exceed 99% on the failure modes we track. The marginal cost of each additional layer is small. The marginal cost of a wrong finding in a legal context is not.
+        <strong>Why three layers?</strong> A single check catches approximately 80% of issues. Two layers catch approximately 95%. Three layers with adversarial debate catch significantly more. The marginal cost of each additional layer is small. The marginal cost of a wrong finding in a legal context is not.
       </div>
 
     </div>
@@ -422,7 +422,7 @@
 
       <p>Every finding must cite specific text as evidence. Not "there may be a risk in section 4." Instead: <em>"Section 4.2: 'Company shall indemnify and hold harmless without limitation' creates unlimited liability exposure without a monetary cap."</em> If an agent can't cite evidence, the finding is rejected.</p>
 
-      <p>Every resolution is a <strong>first-class auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. Full provenance. Not a black box.</p>
+      <p>Every resolution is an <strong>auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. Full provenance. Not a black box.</p>
 
       <div class="product-shot">
         <img src="img/working.png" alt="Working view: Live agents analyzing with checklist, findings streaming in with confidence scores." loading="lazy">
@@ -515,7 +515,7 @@
         <img src="img/crab-hero.png" alt="Your Firm Working While You Sleep." loading="lazy">
       </div>
 
-      <p><a href="https://openclaw.ai">OpenClaw</a> proved that personal AI assistants running on your own hardware could be transformative. Jensen Huang called it "probably the single most important release of software, probably ever." OpenClaw's insight was <strong>meeting users where they already are</strong>: WhatsApp, Telegram, Signal. Your assistant lives in your chat apps, not in a browser tab.</p>
+      <p><a href="https://openclaw.ai">OpenClaw</a> showed that personal AI assistants running on your own hardware could work well. OpenClaw's insight was <strong>meeting users where they already are</strong>: WhatsApp, Telegram, Signal. Your assistant lives in your chat apps, not in a browser tab.</p>
 
       <p>We wanted to pay homage to ClawdBot, so we call the autonomous version "Clawern." Claw + Lavern. The crab is not accidental.</p>
 
@@ -569,7 +569,7 @@
       <div class="section-label">Institutional Memory</div>
       <h2>The Firm Gets <em>Smarter.</em></h2>
 
-      <p>This is where Clawern diverges from every other document processing tool on the market. And possibly from every AI system in production in legal today.</p>
+      <p>This is where Clawern gets interesting.</p>
 
       <p>Each review's significant findings (RED or YELLOW severity with confidence above 0.7) are automatically indexed into a <strong>Precedent Board</strong>: persistent institutional memory with evidence-linked entries, O(1) dedup indexing, confidence decay, and relevance scoring. Before processing a new document, the board is queried and matching precedents are injected as context into the agent pipeline.</p>
 
@@ -596,7 +596,7 @@
       <p>Precedents have confidence decay (old patterns lose weight unless reinforced by new findings), archival (deprecated entries are compacted to keep the active set lean), and effectiveness scoring (tracked via exponential moving average over outcomes). This isn't a static database. It's a learning system.</p>
 
       <h3>Change detection.</h3>
-      <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become genuinely useful instead of a full re-read.</p>
+      <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become useful instead of a full re-read.</p>
 
       <div class="product-shot">
         <img src="img/memory.png" alt="Session memory: What your firm has learned. Findings, resolutions, and patterns accumulating over time." loading="lazy">
