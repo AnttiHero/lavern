@@ -1,5 +1,5 @@
 /**
- * DocumentsTab — Filterable document table.
+ * DocumentsTab — Filterable document table with inline error recovery.
  * "What has the night shift looked at?"
  */
 
@@ -26,11 +26,6 @@ function matchesFilter(doc: ClawDocument, filter: FilterKey): boolean {
   return doc.status === filter;
 }
 
-interface Props {
-  documents: ClawDocument[];
-  demoMode: boolean;
-}
-
 async function retryDocuments(body: { hash?: string; stale?: boolean } = {}): Promise<number> {
   try {
     const res = await fetch('/api/claw/retry', {
@@ -47,13 +42,37 @@ async function retryDocuments(body: { hash?: string; stale?: boolean } = {}): Pr
   }
 }
 
+interface Props {
+  documents: ClawDocument[];
+  demoMode: boolean;
+}
+
 export function DocumentsTab({ documents, demoMode }: Props) {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [retryMsg, setRetryMsg] = useState<string | null>(null);
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+  const [retryingHash, setRetryingHash] = useState<string | null>(null);
 
   const filtered = documents.filter(d => matchesFilter(d, filter));
   const errorCount = documents.filter(d => d.status === 'error').length;
   const staleCount = documents.filter(d => d.status === 'stale').length;
+
+  const toggleErrorExpand = (hash: string) => {
+    setExpandedErrors(prev => {
+      const next = new Set(prev);
+      if (next.has(hash)) next.delete(hash);
+      else next.add(hash);
+      return next;
+    });
+  };
+
+  const retryOne = async (hash: string) => {
+    setRetryingHash(hash);
+    const count = await retryDocuments({ hash });
+    setRetryMsg(count > 0 ? `Queued for retry` : 'Retry failed');
+    setTimeout(() => setRetryMsg(null), 3000);
+    setRetryingHash(null);
+  };
 
   return (
     <div>
@@ -75,7 +94,7 @@ export function DocumentsTab({ documents, demoMode }: Props) {
         ))}
       </div>
 
-      {/* Retry actions */}
+      {/* Bulk retry actions */}
       {!demoMode && (errorCount > 0 || staleCount > 0) && (
         <div style={styles.retryRow}>
           {errorCount > 0 && (
@@ -83,11 +102,11 @@ export function DocumentsTab({ documents, demoMode }: Props) {
               style={styles.retryBtn}
               onClick={async () => {
                 const count = await retryDocuments();
-                setRetryMsg(count > 0 ? `⟳ Queued ${count} failed doc${count === 1 ? '' : 's'} for retry` : 'No failed documents');
+                setRetryMsg(count > 0 ? `Queued ${count} failed doc${count === 1 ? '' : 's'} for retry` : 'No failed documents');
                 setTimeout(() => setRetryMsg(null), 4000);
               }}
             >
-              ⟳ Retry {errorCount} Failed
+              Retry {errorCount} Failed
             </button>
           )}
           {staleCount > 0 && (
@@ -95,11 +114,11 @@ export function DocumentsTab({ documents, demoMode }: Props) {
               style={styles.retryBtn}
               onClick={async () => {
                 const count = await retryDocuments({ stale: true });
-                setRetryMsg(count > 0 ? `⟳ Queued ${count} stale doc${count === 1 ? '' : 's'} for reprocessing` : 'No stale documents');
+                setRetryMsg(count > 0 ? `Queued ${count} stale doc${count === 1 ? '' : 's'} for reprocessing` : 'No stale documents');
                 setTimeout(() => setRetryMsg(null), 4000);
               }}
             >
-              ⟳ Reprocess {staleCount} Stale
+              Reprocess {staleCount} Stale
             </button>
           )}
           {retryMsg && <span style={styles.retryMsg}>{retryMsg}</span>}
@@ -127,36 +146,62 @@ export function DocumentsTab({ documents, demoMode }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((doc, i) => (
-                <tr key={i} style={doc.status === 'flagged' ? styles.flaggedRow : undefined}>
-                  <td style={styles.td}>
-                    {doc.confidential && <span style={styles.lockIcon} title="Processed locally — privilege preserved">🔒 </span>}
-                    <span style={styles.docName}>{doc.name}</span>
-                  </td>
-                  <td style={styles.td}>{doc.type}</td>
-                  <td style={styles.td}><StatusBadge status={doc.status} /></td>
-                  <td style={styles.td}><FindingsBadges findings={doc.findings} /></td>
-                  <td style={styles.td}>
-                    {doc.confidential
-                      ? <span style={styles.localBadge}>Local</span>
-                      : doc.costUsd != null ? `$${doc.costUsd.toFixed(2)}` : '\u2014'}
-                  </td>
-                  <td style={styles.td}>
-                    {doc.lastReviewed ? new Date(doc.lastReviewed).toLocaleString() : '\u2014'}
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((doc) => {
+                const isError = doc.status === 'error' && doc.error;
+                const isExpanded = expandedErrors.has(doc.hash);
+                const errorTruncated = doc.error && doc.error.length > 120;
+
+                return (
+                  <tr key={doc.hash} style={doc.status === 'flagged' ? styles.flaggedRow : doc.status === 'error' ? styles.errorRow : undefined}>
+                    <td style={styles.td}>
+                      {doc.confidential && <span style={styles.lockIcon} title="Processed locally — privilege preserved">{'🔒'} </span>}
+                      <span style={styles.docName}>{doc.name}</span>
+                      {isError && (
+                        <div style={styles.inlineError}>
+                          <span style={styles.inlineErrorText}>
+                            {isExpanded || !errorTruncated
+                              ? doc.error
+                              : doc.error!.slice(0, 120) + '...'}
+                          </span>
+                          {errorTruncated && (
+                            <button
+                              style={styles.expandBtn}
+                              onClick={() => toggleErrorExpand(doc.hash)}
+                            >
+                              {isExpanded ? 'Less' : 'More'}
+                            </button>
+                          )}
+                          {!demoMode && (
+                            <button
+                              style={styles.retryOneBtn}
+                              onClick={() => retryOne(doc.hash)}
+                              disabled={retryingHash === doc.hash}
+                              aria-label={`Retry ${doc.name}`}
+                            >
+                              {retryingHash === doc.hash ? 'Retrying...' : 'Retry'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td style={styles.td}>{doc.type}</td>
+                    <td style={styles.td}><StatusBadge status={doc.status} /></td>
+                    <td style={styles.td}><FindingsBadges findings={doc.findings} /></td>
+                    <td style={styles.td}>
+                      {doc.confidential
+                        ? <span style={styles.localBadge}>Local</span>
+                        : doc.costUsd != null ? `$${doc.costUsd.toFixed(2)}` : '\u2014'}
+                    </td>
+                    <td style={styles.td}>
+                      {doc.lastReviewed ? new Date(doc.lastReviewed).toLocaleString() : '\u2014'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-
-      {/* Error detail for error docs */}
-      {filtered.filter(d => d.error).map((doc, i) => (
-        <div key={i} style={styles.errorDetail}>
-          <span style={styles.errorDocName}>{doc.name}:</span> {doc.error}
-        </div>
-      ))}
     </div>
   );
 }
@@ -205,10 +250,13 @@ const styles: Record<string, React.CSSProperties> = {
   td: {
     padding: '10px 12px',
     borderBottom: `1px solid ${colors.border}`,
-    verticalAlign: 'middle' as const,
+    verticalAlign: 'top' as const,
   },
   flaggedRow: {
     backgroundColor: 'rgba(196, 93, 62, 0.03)',
+  },
+  errorRow: {
+    backgroundColor: 'rgba(196, 93, 62, 0.02)',
   },
   docName: {
     fontWeight: 500,
@@ -227,6 +275,50 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(46, 125, 156, 0.08)',
     color: '#2E7D9C',
   },
+  inlineError: {
+    marginTop: 6,
+    padding: '6px 8px',
+    backgroundColor: 'rgba(196, 93, 62, 0.05)',
+    borderLeft: '2px solid rgba(196, 93, 62, 0.3)',
+    borderRadius: '0 4px 4px 0',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+  },
+  inlineErrorText: {
+    fontSize: 11,
+    fontFamily: fonts.mono,
+    color: colors.danger,
+    lineHeight: 1.4,
+    flex: 1,
+    minWidth: 0,
+    wordBreak: 'break-word' as const,
+  },
+  expandBtn: {
+    padding: '1px 6px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    flexShrink: 0,
+  },
+  retryOneBtn: {
+    padding: '2px 10px',
+    borderRadius: radii.sm,
+    border: `1px solid rgba(196, 93, 62, 0.3)`,
+    backgroundColor: 'transparent',
+    color: colors.danger,
+    fontSize: 10,
+    fontWeight: 600,
+    fontFamily: fonts.sans,
+    cursor: 'pointer',
+    flexShrink: 0,
+    transition: 'all 0.2s ease',
+  },
   empty: {
     fontSize: 14,
     fontFamily: fonts.serif,
@@ -234,21 +326,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textDim,
     padding: `${spacing.xl}px`,
     textAlign: 'center' as const,
-  },
-  errorDetail: {
-    fontSize: 12,
-    fontFamily: fonts.sans,
-    color: colors.danger,
-    backgroundColor: 'rgba(196, 93, 62, 0.04)',
-    border: `1px solid rgba(196, 93, 62, 0.1)`,
-    borderRadius: radii.sm,
-    padding: `${spacing.sm}px ${spacing.md}px`,
-    marginTop: spacing.sm,
-  },
-  errorDocName: {
-    fontWeight: 600,
-    fontFamily: fonts.mono,
-    fontSize: 11,
   },
   retryRow: {
     display: 'flex',

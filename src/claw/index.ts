@@ -21,9 +21,11 @@ import { DocumentRegistry } from './registry.js';
 import { ClawWatcher } from './watcher.js';
 import { planWork, planSingleJob } from './planner.js';
 import { processDocument } from './processor.js';
-import { runDaemon } from './daemon.js';
+import { runDaemon } from './daemon-factory.js';
 import { notify } from './notify.js';
 import { getPrecedentBoard } from './precedent-board.js';
+import { clawEventBus } from './events.js';
+import { eventTimestamp } from '../events/event-bus.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { DocumentStyle } from '../assembly/format-converter.js';
@@ -304,7 +306,9 @@ async function runStart(args: ClawCliArgs): Promise<void> {
   printBanner(profile);
 
   // ── Initial scan ──────────────────────────────────────────────────
+  clawEventBus.emitEvent({ type: 'claw_scan_started', watchPaths, timestamp: eventTimestamp() });
   const { newDocs, changedDocs } = registry.scan(watchPaths);
+  clawEventBus.emitEvent({ type: 'claw_scan_completed', newDocs: newDocs.length, changedDocs: changedDocs.length, totalDocs: Object.keys(registry.getState().documents).length, timestamp: eventTimestamp() });
 
   if (newDocs.length > 0 || changedDocs.length > 0) {
     console.log(`Scan complete: ${newDocs.length} new, ${changedDocs.length} changed\n`);
@@ -339,6 +343,13 @@ async function runStart(args: ClawCliArgs): Promise<void> {
   }
 
   for (const job of plan.jobs) {
+    // Pause guard — check profile on each iteration (may be set via API)
+    const currentProfile = loadProfile(dir);
+    if (currentProfile?.paused) {
+      console.log('\n⏸  Paused — skipping remaining jobs. Resume via dashboard or API.');
+      break;
+    }
+
     if (registry.budgetExhausted) {
       printBudgetExhausted(registry);
       notify({
@@ -349,6 +360,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
       break;
     }
 
+    clawEventBus.emitEvent({ type: 'claw_job_started', documentPath: job.documentPath, documentHash: job.documentHash, documentType: registry.getDocument(job.documentHash)?.type ?? job.documentName, trigger: job.trigger, timestamp: eventTimestamp() });
     printJobStart(job.documentName, job.trigger);
 
     const result = await processDocument(
@@ -379,6 +391,10 @@ async function runStart(args: ClawCliArgs): Promise<void> {
       debounceMs: 2000,
       debug: clawConfig.debug,
       onChange: async (filePath, event) => {
+        // Pause guard — accept changes silently, process on resume
+        const currentProfile = loadProfile(dir);
+        if (currentProfile?.paused) return;
+
         if (registry.budgetExhausted) {
           printBudgetExhausted(registry);
           notify({
@@ -406,6 +422,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
         if (!job) return;
 
+        clawEventBus.emitEvent({ type: 'claw_job_started', documentPath: job.documentPath, documentHash: job.documentHash, documentType: registry.getDocument(job.documentHash)?.type ?? job.documentName, trigger: job.trigger, timestamp: eventTimestamp() });
         printJobStart(job.documentName, job.trigger);
 
         const processResult = await processDocument(
@@ -435,7 +452,10 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
         // Budget approaching limit (>80%)
         const pct = state.budget.totalUsd > 0 ? state.budget.spentUsd / state.budget.totalUsd : 0;
-        if (pct > 0.8) alerts.push(`Budget ${Math.round(pct * 100)}% used`);
+        if (pct > 0.8) {
+          alerts.push(`Budget ${Math.round(pct * 100)}% used`);
+          clawEventBus.emitEvent({ type: 'claw_budget_warning', percentUsed: Math.round(pct * 100), remainingUsd: parseFloat((state.budget.totalUsd - state.budget.spentUsd).toFixed(2)), timestamp: eventTimestamp() });
+        }
 
         // Documents needing attention
         const docs = Object.values(state.documents);

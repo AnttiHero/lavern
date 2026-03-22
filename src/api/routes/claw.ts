@@ -13,6 +13,9 @@
  *   PATCH /api/claw/ethical     — Toggle maximum ethical mode
  *   POST  /api/claw/scan        — Trigger an immediate rescan of watch paths
  *   POST  /api/claw/retry       — Retry failed or stale documents
+ *   PATCH /api/claw/pause       — Pause document processing
+ *   PATCH /api/claw/resume      — Resume processing + trigger rescan
+ *   GET   /api/claw/events      — WebSocket event stream (real-time push)
  */
 
 import * as fs from 'node:fs';
@@ -20,12 +23,88 @@ import { readFile } from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import type { FastifyInstance } from 'fastify';
+import type { WebSocket } from '@fastify/websocket';
 import { config } from '../../config.js';
 import { loadProfile } from '../../claw/init.js';
 import { DocumentRegistry } from '../../claw/registry.js';
 import { getPrecedentBoard } from '../../claw/precedent-board.js';
-import { getDaemonStatus } from '../../claw/daemon.js';
+import { clawEventBus } from '../../claw/events.js';
+import { eventTimestamp } from '../../events/event-bus.js';
+import type { ShemEvent } from '../../events/event-bus.js';
+import { getDaemonStatus } from '../../claw/daemon-factory.js';
+import { forecastWork } from '../../claw/planner.js';
 import { writeJsonFileAtomic } from '../../utils/fs-helpers.js';
+
+// ── Claw WebSocket helpers ──────────────────────────────────────────────
+
+function safeSendClaw(socket: WebSocket, data: unknown): void {
+  try {
+    if (socket.readyState === 1) {
+      socket.send(JSON.stringify(data));
+    }
+  } catch { /* ignore send errors */ }
+}
+
+function attachClawStream(socket: WebSocket, fromIndex = 0): void {
+  // Set up cleanup first to prevent listener leaks on early disconnect
+  let cleaned = false;
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+  let lastIndex = clawEventBus.getEventCount();
+
+  const onEvent = (event: ShemEvent) => {
+    lastIndex++;
+    safeSendClaw(socket, { type: 'live', event, index: lastIndex });
+  };
+
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    if (heartbeat) clearInterval(heartbeat);
+    clawEventBus.off('event', onEvent);
+  };
+
+  socket.on('close', cleanup);
+  socket.on('error', cleanup);
+
+  // Check socket is still open after attaching cleanup
+  if (socket.readyState !== 1) { cleanup(); return; }
+
+  safeSendClaw(socket, {
+    type: 'connected',
+    source: 'claw',
+    eventCount: clawEventBus.getEventCount(),
+    replayFrom: fromIndex,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Replay missed events
+  if (fromIndex < clawEventBus.getEventCount()) {
+    const missed = clawEventBus.getEventsSince(fromIndex);
+    for (const event of missed) {
+      safeSendClaw(socket, { type: 'replay', event });
+    }
+    safeSendClaw(socket, { type: 'replay_complete', count: missed.length });
+  }
+
+  // Subscribe to live events
+  clawEventBus.on('event', onEvent);
+
+  // Heartbeat (30s ping)
+  heartbeat = setInterval(() => {
+    if (socket.readyState !== 1) { cleanup(); return; }
+    try { socket.ping(); } catch { cleanup(); }
+  }, 30_000);
+
+  // Client messages
+  socket.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'ping') {
+        safeSendClaw(socket, { type: 'pong', timestamp: new Date().toISOString() });
+      }
+    } catch { /* ignore */ }
+  });
+}
 
 // ── Singleton registry cache — prevents concurrent read-overwrite races ──
 const registryCache = new Map<string, DocumentRegistry>();
@@ -108,9 +187,9 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     // Daemon status
     let daemonCheck = { installed: false, running: false };
     try {
-      const ds = getDaemonStatus();
+      const ds = await getDaemonStatus();
       daemonCheck = { installed: ds.installed, running: ds.running };
-    } catch { /* non-macOS */ }
+    } catch { /* unsupported platform */ }
 
     // Determine overall status
     const isUnhealthy =
@@ -158,8 +237,8 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
     // Daemon status (safe on non-macOS — returns not-installed)
     let daemon = { installed: false, running: false, label: 'com.lavern.claw', plistPath: '', logDir: '' };
     try {
-      daemon = getDaemonStatus();
-    } catch { /* non-macOS */ }
+      daemon = await getDaemonStatus();
+    } catch { /* unsupported platform */ }
 
     return reply.send({
       profile: {
@@ -174,6 +253,8 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
         createdAt: profile.createdAt,
       },
       ethicalMode: profile.ethicalMode ?? false,
+      paused: profile.paused ?? false,
+      pausedAt: profile.pausedAt ?? null,
       watchPaths: profile.watchPaths,
       budget: {
         totalUsd: state.budget.totalUsd,
@@ -187,6 +268,13 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
         failed: state.sessionsFailed,
       },
       lastScan: state.lastScan,
+      forecast: forecastWork(
+        registry,
+        profile.preferences.intensity,
+        profile.budget.perDocumentMaxUsd,
+        profile.ethicalMode ?? false,
+        profile.sensitivityPatterns ?? [],
+      ),
       daemon,
     });
   });
@@ -209,6 +297,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       .map(doc => ({
         name: doc.name,
         path: doc.path,
+        hash: doc.hash,
         type: doc.type,
         status: doc.status,
         sizeBytes: doc.sizeBytes,
@@ -254,6 +343,7 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
               costUsd: manifest.execution?.totalCostUsd,
               durationSeconds: manifest.execution?.durationSeconds,
               findings: manifest.analysis,
+              diff: manifest.diff ?? null,
               completedAt: manifest.execution?.completedAt,
             });
           } catch { /* skip malformed manifests */ }
@@ -412,5 +502,83 @@ export function registerClawRoutes(fastify: FastifyInstance): void {
       type: body.stale ? 'stale' : 'failed',
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // ── PATCH /api/claw/pause ──────────────────────────────────────────
+  fastify.patch('/api/claw/pause', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    if (!profile) return reply.status(404).send({ error: 'No profile found' });
+
+    if (profile.paused) {
+      return reply.send({ paused: true, pausedAt: profile.pausedAt, alreadyPaused: true });
+    }
+
+    const pausedAt = new Date().toISOString();
+    profile.paused = true;
+    profile.pausedAt = pausedAt;
+
+    const profilePath = path.join(dir, 'profile.json');
+    writeJsonFileAtomic(profilePath, profile);
+
+    clawEventBus.emitEvent({ type: 'claw_paused', pausedAt, timestamp: eventTimestamp() });
+
+    return reply.send({ paused: true, pausedAt });
+  });
+
+  // ── PATCH /api/claw/resume ─────────────────────────────────────────
+  fastify.patch('/api/claw/resume', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (_request, reply) => {
+    const dir = config.claw.dir;
+    const profile = loadProfile(dir);
+    if (!profile) return reply.status(404).send({ error: 'No profile found' });
+
+    if (!profile.paused) {
+      return reply.send({ paused: false, alreadyResumed: true });
+    }
+
+    profile.paused = false;
+    profile.pausedAt = undefined;
+
+    const profilePath = path.join(dir, 'profile.json');
+    writeJsonFileAtomic(profilePath, profile);
+
+    // Trigger rescan to catch changes accumulated during pause
+    let pendingDocuments = 0;
+    try {
+      const registry = getRegistry(dir, profile.budget.totalUsd);
+      const { newDocs, changedDocs } = registry.scan(profile.watchPaths);
+      pendingDocuments = newDocs.length + changedDocs.length;
+    } catch { /* scan failure non-fatal on resume */ }
+
+    clawEventBus.emitEvent({ type: 'claw_resumed', resumedAt: new Date().toISOString(), pendingRescan: pendingDocuments > 0, timestamp: eventTimestamp() });
+
+    return reply.send({
+      paused: false,
+      resumedAt: new Date().toISOString(),
+      pendingDocuments,
+    });
+  });
+
+  // ── GET /api/claw/events (WebSocket) ───────────────────────────────
+  fastify.get('/api/claw/events', { websocket: true }, (socket, request) => {
+    const query = request.query as { from?: string };
+    const parsed = query.from ? parseInt(query.from, 10) : 0;
+    const fromIndex = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+
+    attachClawStream(socket, fromIndex);
   });
 }

@@ -116,7 +116,17 @@ export type ShemEvent =
   | { type: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
   | { type: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }
   | { type: 'verification_finding'; findingId: string; pass: string; severity: string; location: string; description: string; autoFixable: boolean; timestamp: string }
-  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string };
+  | { type: 'verification_report_compiled'; verdict: string; overallScore: number; totalFindings: number; timestamp: string }
+  // v0.13: Claw Mode events — daemon-scoped (not session-scoped)
+  | { type: 'claw_scan_started'; watchPaths: string[]; timestamp: string }
+  | { type: 'claw_scan_completed'; newDocs: number; changedDocs: number; totalDocs: number; timestamp: string }
+  | { type: 'claw_job_started'; documentPath: string; documentHash: string; documentType: string; trigger: string; timestamp: string }
+  | { type: 'claw_job_completed'; documentPath: string; documentHash: string; costUsd: number; durationMs: number; findings: { critical: number; major: number; minor: number }; timestamp: string }
+  | { type: 'claw_job_failed'; documentPath: string; documentHash: string; error: string; timestamp: string }
+  | { type: 'claw_precedent_indexed'; precedentId: string; patternName: string; documentType: string; timestamp: string }
+  | { type: 'claw_paused'; pausedAt: string; timestamp: string }
+  | { type: 'claw_resumed'; resumedAt: string; pendingRescan: boolean; timestamp: string }
+  | { type: 'claw_budget_warning'; percentUsed: number; remainingUsd: number; timestamp: string };
 
 /**
  * WebSocket message wrapper types.

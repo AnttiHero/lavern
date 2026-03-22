@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { buildDemoStatus, buildDemoDocuments, buildDemoDeliveries, buildDemoPrecedents, type DemoPrecedentSummary } from '../data/demoData.js';
+import { useClawWebSocket } from './useClawWebSocket.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -25,6 +26,9 @@ export interface ClawStatus {
   profile: ClawProfile;
   /** Maximum ethical mode — EU provider, all-confidential, conservative. */
   ethicalMode: boolean;
+  /** When true, the daemon defers processing until resumed. */
+  paused: boolean;
+  pausedAt: string | null;
   watchPaths: string[];
   budget: {
     totalUsd: number;
@@ -47,6 +51,13 @@ export interface ClawStatus {
   };
   lastScan: string;
   lastHeartbeat?: string;
+  forecast?: {
+    pendingCount: number;
+    estimatedCostUsd: number;
+    budgetAfterUsd: number;
+    confidentialCount: number;
+    skippedCount: number;
+  };
   daemon: {
     installed: boolean;
     running: boolean;
@@ -57,6 +68,7 @@ export interface ClawStatus {
 export interface ClawDocument {
   name: string;
   path: string;
+  hash: string;
   type: string;
   status: string;
   sizeBytes: number;
@@ -83,6 +95,13 @@ export interface ClawDelivery {
     minorCount: number;
     resolutionCount: number;
   };
+  diff?: {
+    added: number;
+    resolved: number;
+    changed: number;
+    unchanged: number;
+    previousSessionId: string;
+  } | null;
   completedAt: string;
   confidential?: boolean;
 }
@@ -121,9 +140,13 @@ export interface ClawData {
   error: string | null;
   demoMode: boolean;
   scanning: boolean;
+  paused: boolean;
+  wsConnected: boolean;
   triggerScan: () => Promise<void>;
   /** Toggle maximum ethical mode via PATCH /api/claw/ethical. */
   toggleEthicalMode: (enabled: boolean) => Promise<void>;
+  /** Toggle pause/resume. */
+  togglePause: () => Promise<void>;
   // Exposed for demo simulator
   setStatus: React.Dispatch<React.SetStateAction<ClawStatus | null>>;
   setDocuments: React.Dispatch<React.SetStateAction<ClawDocument[]>>;
@@ -145,6 +168,18 @@ export function useClawData(): ClawData {
   const mounted = useRef(true);
   const demoRef = useRef(false);
   demoRef.current = demoMode;
+  // Ref for fetchData so WebSocket callbacks can call it without circular deps
+  const fetchDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
+
+  // WebSocket — real-time push from Claw daemon (must be before any useEffect/useCallback that references it)
+  const wsState = useClawWebSocket(!demoMode, {
+    onScanCompleted: () => fetchDataRef.current?.(),
+    onJobCompleted: () => fetchDataRef.current?.(),
+    onJobFailed: () => fetchDataRef.current?.(),
+    onPauseChange: (paused) => {
+      setStatus(prev => prev ? { ...prev, paused, pausedAt: paused ? new Date().toISOString() : null } : prev);
+    },
+  });
 
   const goDemo = useCallback(() => {
     setStatus(buildDemoStatus());
@@ -211,20 +246,23 @@ export function useClawData(): ClawData {
     }
   }, [goDemo]);
 
+  fetchDataRef.current = fetchData;
+
   useEffect(() => {
     mounted.current = true;          // reset on remount (React strict mode)
     fetchData();
 
-    // Poll every 10s in live mode only
+    // Poll: 60s when WebSocket connected, 10s otherwise
+    const pollMs = wsState.connected ? 60_000 : 10_000;
     const interval = setInterval(() => {
       if (!demoRef.current) fetchData();
-    }, 10_000);
+    }, pollMs);
 
     return () => {
       mounted.current = false;
       clearInterval(interval);
     };
-  }, [fetchData]);
+  }, [fetchData, wsState.connected]);
 
   const triggerScan = useCallback(async () => {
     if (demoMode) return;
@@ -239,7 +277,6 @@ export function useClawData(): ClawData {
 
   const toggleEthicalMode = useCallback(async (enabled: boolean) => {
     if (demoMode) {
-      // In demo mode, update status locally
       setStatus(prev => prev ? { ...prev, ethicalMode: enabled } : prev);
       return;
     }
@@ -254,5 +291,23 @@ export function useClawData(): ClawData {
     } catch { /* ignore — will refresh on next poll */ }
   }, [demoMode, fetchData]);
 
-  return { status, documents, deliveries, precedents, precedentSummary, loading, error, demoMode, scanning, triggerScan, toggleEthicalMode, setStatus, setDocuments, setDeliveries };
+  const togglePause = useCallback(async () => {
+    if (demoMode) {
+      setStatus(prev => prev ? { ...prev, paused: !prev.paused, pausedAt: prev.paused ? null : new Date().toISOString() } : prev);
+      return;
+    }
+    const endpoint = status?.paused ? '/api/claw/resume' : '/api/claw/pause';
+    try {
+      await fetch(endpoint, { method: 'PATCH', credentials: 'include' });
+      await fetchData();
+    } catch { /* ignore — will refresh on next poll */ }
+  }, [demoMode, status?.paused, fetchData]);
+
+  return {
+    status, documents, deliveries, precedents, precedentSummary, loading, error, demoMode, scanning,
+    paused: status?.paused ?? false,
+    wsConnected: wsState.connected,
+    triggerScan, toggleEthicalMode, togglePause,
+    setStatus, setDocuments, setDeliveries,
+  };
 }

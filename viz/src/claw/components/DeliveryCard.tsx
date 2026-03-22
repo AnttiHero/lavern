@@ -56,6 +56,15 @@ export function DeliveryCard({ delivery }: Props) {
         <span style={styles.meta}>{formatDuration(delivery.durationSeconds)}</span>
       </div>
 
+      {/* Change detection diff */}
+      {delivery.diff && (delivery.diff.added > 0 || delivery.diff.resolved > 0 || delivery.diff.changed > 0) && (
+        <div style={styles.diffRow}>
+          {delivery.diff.added > 0 && <span style={styles.diffAdded}>+{delivery.diff.added} new</span>}
+          {delivery.diff.resolved > 0 && <span style={styles.diffResolved}>-{delivery.diff.resolved} resolved</span>}
+          {delivery.diff.changed > 0 && <span style={styles.diffChanged}>~{delivery.diff.changed} changed</span>}
+        </div>
+      )}
+
       <div style={styles.timestamp}>{formatDate(delivery.completedAt)}</div>
     </div>
   );
@@ -130,5 +139,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.mono,
     color: colors.textDim,
     marginTop: 4,
+  },
+  diffRow: {
+    display: 'flex',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap' as const,
+  },
+  diffAdded: {
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.mono,
+    color: colors.success,
+  },
+  diffResolved: {
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.mono,
+    color: colors.danger,
+  },
+  diffChanged: {
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: fonts.mono,
+    color: '#B8860B',
   },
 };

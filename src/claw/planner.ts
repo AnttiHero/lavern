@@ -19,7 +19,7 @@ import * as path from 'node:path';
 import { config as globalConfig } from '../config.js';
 import { DocumentRegistry } from './registry.js';
 import { notify } from './notify.js';
-import type { ClawJob, ClawConfig, DocumentEntry } from './types.js';
+import type { ClawJob, ClawConfig, CostForecast, DocumentEntry } from './types.js';
 
 // ── Default Sensitivity Patterns ─────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export function matchesSensitivityPattern(filename: string, patterns: string[]):
  * Rough cost estimate based on document size and intensity.
  * Used for budget planning before actual dispatch.
  */
-function estimateCost(doc: DocumentEntry, intensity: string): number {
+export function estimateCost(doc: DocumentEntry, intensity: string): number {
   const sizeMultiplier = Math.min(doc.sizeBytes / (100 * 1024), 5); // 0–5 based on size
   const intensityMultiplier =
     intensity === 'quick' ? 0.5 :
@@ -242,5 +242,62 @@ export function planSingleJob(
     status: 'queued',
     confidential: isConfidential || undefined,
     matchedPattern: matchedPattern ?? undefined,
+  };
+}
+
+/**
+ * Read-only cost forecast for pending documents.
+ * Same estimation logic as planWork but does NOT mutate registry state.
+ * Safe to call from GET endpoints.
+ */
+export function forecastWork(
+  registry: DocumentRegistry,
+  intensity: string,
+  perDocBudget: number,
+  ethicalMode: boolean,
+  sensitivityPatterns: string[],
+): CostForecast {
+  const actionable = registry.getDocumentsByStatus('new', 'stale', 'queued');
+  const patterns = sensitivityPatterns.length > 0 ? sensitivityPatterns : DEFAULT_SENSITIVITY_PATTERNS;
+
+  let estimatedTotal = 0;
+  let pendingCount = 0;
+  let confidentialCount = 0;
+  let skippedCount = 0;
+
+  for (const doc of actionable) {
+    const matchedPattern = matchesSensitivityPattern(doc.name, patterns);
+    const isConfidential = ethicalMode
+      ? !!globalConfig.claw.localModel
+      : !!matchedPattern;
+
+    if (isConfidential && !globalConfig.claw.localModel) {
+      skippedCount++;
+      continue;
+    }
+
+    const estimated = isConfidential ? 0 : estimateCost(doc, intensity);
+
+    if (!isConfidential && estimated > perDocBudget) {
+      skippedCount++;
+      continue;
+    }
+
+    if (!isConfidential && estimatedTotal + estimated > registry.budgetRemaining) {
+      skippedCount++;
+      continue;
+    }
+
+    pendingCount++;
+    estimatedTotal += estimated;
+    if (isConfidential) confidentialCount++;
+  }
+
+  return {
+    pendingCount,
+    estimatedCostUsd: parseFloat(estimatedTotal.toFixed(2)),
+    budgetAfterUsd: parseFloat((registry.budgetRemaining - estimatedTotal).toFixed(2)),
+    confidentialCount,
+    skippedCount,
   };
 }

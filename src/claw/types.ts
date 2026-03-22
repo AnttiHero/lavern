@@ -30,6 +30,10 @@ export interface ClawProfile {
   sensitivityPatterns?: string[];
   /** Maximum ethical mode — EU provider, all-confidential, conservative risk. One toggle, full protection. */
   ethicalMode?: boolean;
+  /** When true, the daemon accepts file changes but defers processing until resumed. */
+  paused?: boolean;
+  /** ISO 8601 timestamp when the daemon was paused. */
+  pausedAt?: string;
   createdAt: string;
 }
 
@@ -75,6 +79,17 @@ export interface ClawState {
   lastScan: string;            // ISO 8601
   sessionsCompleted: number;
   sessionsFailed: number;
+}
+
+// ── Cost Forecast ────────────────────────────────────────────────────────
+
+/** Read-only cost estimate for pending documents (no registry mutation). */
+export interface CostForecast {
+  pendingCount: number;
+  estimatedCostUsd: number;
+  budgetAfterUsd: number;
+  confidentialCount: number;
+  skippedCount: number;
 }
 
 // ── Job ─────────────────────────────────────────────────────────────────
@@ -163,6 +178,15 @@ export interface ClawManifest {
     docx?: string;
     html?: string;
     findings: string;
+  };
+
+  /** Change detection: diff against previous review (if re-reviewed). */
+  diff?: {
+    added: number;
+    resolved: number;
+    changed: number;
+    unchanged: number;
+    previousSessionId: string;
   };
 
   status: 'completed' | 'failed' | 'partial';

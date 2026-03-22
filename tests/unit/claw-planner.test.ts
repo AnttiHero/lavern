@@ -8,7 +8,9 @@ import { describe, it, expect } from 'vitest';
 import {
   matchesSensitivityPattern,
   DEFAULT_SENSITIVITY_PATTERNS,
+  estimateCost,
 } from '../../src/claw/planner.js';
+import type { DocumentEntry } from '../../src/claw/types.js';
 
 describe('matchesSensitivityPattern', () => {
   const patterns = DEFAULT_SENSITIVITY_PATTERNS;
@@ -85,5 +87,41 @@ describe('DEFAULT_SENSITIVITY_PATTERNS', () => {
 
   it('has at least 5 patterns', () => {
     expect(DEFAULT_SENSITIVITY_PATTERNS.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe('estimateCost', () => {
+  function makeDoc(sizeBytes: number): DocumentEntry {
+    return {
+      path: '/test/doc.pdf', name: 'doc.pdf', type: 'NDA', hash: 'abc',
+      sizeBytes, firstSeen: '', lastModified: '', status: 'new',
+    };
+  }
+
+  it('returns minimum $0.10 for tiny documents', () => {
+    expect(estimateCost(makeDoc(100), 'standard')).toBe(0.10);
+  });
+
+  it('scales with document size', () => {
+    const small = estimateCost(makeDoc(50_000), 'standard');
+    const large = estimateCost(makeDoc(200_000), 'standard');
+    expect(large).toBeGreaterThan(small);
+  });
+
+  it('scales with intensity', () => {
+    const doc = makeDoc(100_000);
+    const quick = estimateCost(doc, 'quick');
+    const standard = estimateCost(doc, 'standard');
+    const thorough = estimateCost(doc, 'thorough');
+    expect(quick).toBeLessThan(standard);
+    expect(thorough).toBeGreaterThan(standard);
+  });
+
+  it('caps size multiplier at 5', () => {
+    const huge = estimateCost(makeDoc(10_000_000), 'standard');
+    const exactCap = estimateCost(makeDoc(512_000), 'standard'); // 512KB / 100KB = 5.12 → capped at 5
+    // Both should be the same because size multiplier caps at 5
+    expect(huge).toBe(exactCap);
+    expect(huge).toBe(5);
   });
 });

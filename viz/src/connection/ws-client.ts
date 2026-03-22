@@ -55,6 +55,16 @@ export class ShemWsClient {
   }
 
   /**
+   * Connect to an arbitrary WebSocket URL.
+   * Used by Claw Mode and other non-session event streams.
+   */
+  connectToUrl(url: string, fromIndex = 0): void {
+    this.url = url;
+    this.lastEventIndex = fromIndex;
+    this.connect();
+  }
+
+  /**
    * Disconnect and stop reconnection attempts.
    */
   disconnect(): void {

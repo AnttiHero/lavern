@@ -1,17 +1,21 @@
 /**
- * CommandStrip — Persistent control bar: scan trigger + last scan + budget compact.
+ * CommandStrip — Persistent control bar: scan trigger + pause/resume + last scan + budget compact.
  */
 
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 /** EU sovereign blue — same as ProviderToggle / ConfigTab. */
 const EU_COLOR = '#2E5D9C';
+const PAUSE_COLOR = '#FF9800';
+const RESUME_COLOR = '#4CAF50';
 
 interface Props {
   lastScan: string;
   scanning: boolean;
   budget: { spentUsd: number; totalUsd: number; exhausted: boolean };
   onScan: () => void;
+  paused?: boolean;
+  onTogglePause?: () => void;
   demoMode: boolean;
   demoPlaying?: boolean;
   onWatchDemo?: () => void;
@@ -28,7 +32,9 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, demoPlaying, onWatchDemo, ethicalMode }: Props) {
+export function CommandStrip({ lastScan, scanning, budget, onScan, paused, onTogglePause, demoMode, demoPlaying, onWatchDemo, ethicalMode }: Props) {
+  const pauseBtnColor = paused ? RESUME_COLOR : PAUSE_COLOR;
+
   return (
     <div style={styles.strip}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -38,6 +44,11 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, dem
         {ethicalMode && (
           <span style={styles.ethicalBadge}>
             {'\uD83D\uDEE1\uFE0F'} ETHICAL
+          </span>
+        )}
+        {paused && (
+          <span style={styles.pausedBadge} aria-label="Processing paused">
+            {'\u23F8'} PAUSED
           </span>
         )}
       </div>
@@ -77,21 +88,43 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, demoMode, dem
           </button>
         )}
 
+        {onTogglePause && (
+          <button
+            onClick={onTogglePause}
+            aria-label={paused ? 'Resume processing' : 'Pause processing'}
+            style={{
+              ...styles.scanBtn,
+              borderColor: pauseBtnColor,
+              color: pauseBtnColor,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = pauseBtnColor;
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = pauseBtnColor;
+            }}
+          >
+            {paused ? 'Resume' : 'Pause'}
+          </button>
+        )}
+
         <button
           onClick={onScan}
-          disabled={scanning || demoMode}
+          disabled={scanning || demoMode || !!paused}
           style={{
             ...styles.scanBtn,
-            opacity: scanning || demoMode ? 0.4 : 1,
-            cursor: scanning || demoMode ? 'default' : 'pointer',
+            opacity: scanning || demoMode || paused ? 0.4 : 1,
+            cursor: scanning || demoMode || paused ? 'default' : 'pointer',
           }}
           onMouseEnter={e => {
-            if (scanning || demoMode) return;
+            if (scanning || demoMode || paused) return;
             e.currentTarget.style.backgroundColor = '#B8860B';
             e.currentTarget.style.color = '#fff';
           }}
           onMouseLeave={e => {
-            if (scanning || demoMode) return;
+            if (scanning || demoMode || paused) return;
             e.currentTarget.style.backgroundColor = 'transparent';
             e.currentTarget.style.color = '#B8860B';
           }}
@@ -113,6 +146,8 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.border}`,
     borderRadius: radii.md,
     marginBottom: spacing.md,
+    flexWrap: 'wrap' as const,
+    gap: 8,
   },
   scanTime: {
     fontSize: 12,
@@ -123,6 +158,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.md,
+    flexWrap: 'wrap' as const,
   },
   budgetCompact: {
     fontSize: 12,
@@ -136,6 +172,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: EU_COLOR,
     backgroundColor: 'rgba(46, 93, 156, 0.08)',
     border: `1px solid rgba(46, 93, 156, 0.2)`,
+    borderRadius: radii.sm,
+    padding: '3px 8px',
+    whiteSpace: 'nowrap' as const,
+  },
+  pausedBadge: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    letterSpacing: 1,
+    color: PAUSE_COLOR,
+    backgroundColor: 'rgba(255, 152, 0, 0.08)',
+    border: '1px solid rgba(255, 152, 0, 0.2)',
     borderRadius: radii.sm,
     padding: '3px 8px',
     whiteSpace: 'nowrap' as const,

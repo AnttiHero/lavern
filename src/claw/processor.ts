@@ -17,6 +17,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
+import { writeJsonFileAtomic } from '../utils/fs-helpers.js';
 import { dispatch } from '../dispatch.js';
 import type { DispatchOptions } from '../dispatch.js';
 import { parseDocument } from '../documents/parser.js';
@@ -29,6 +30,9 @@ import { notify } from './notify.js';
 import { config } from '../config.js';
 import { analyzeLocally, extractLocalFindings } from './local-analysis.js';
 import { getPrecedentBoard } from './precedent-board.js';
+import { loadPreviousFindings, computeDiff, diffSummary, type FindingsDiff } from './diff.js';
+import { clawEventBus } from './events.js';
+import { eventTimestamp } from '../events/event-bus.js';
 import type { ClawProfile, ClawJob, ClawConfig } from './types.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -122,6 +126,8 @@ export async function processDocument(
           });
         }
 
+        clawEventBus.emitEvent({ type: 'claw_job_completed', documentPath, documentHash, costUsd: 0, durationMs, findings: localFindings, timestamp: eventTimestamp() });
+
         return {
           sessionId, documentPath, documentHash,
           success: true, costUsd: 0, durationMs, findings: localFindings, deliveryDir,
@@ -131,6 +137,7 @@ export async function processDocument(
         log(`🔒 Local analysis failed: ${error}`);
         // Don't fall through to frontier — confidential documents MUST NOT leave the machine
         registry.markFailed(documentHash, `Local analysis failed: ${error}`);
+        clawEventBus.emitEvent({ type: 'claw_job_failed', documentPath, documentHash, error, timestamp: eventTimestamp() });
         notify({
           type: 'document_failed',
           title: `🔒 Local analysis failed: ${path.basename(documentPath)}`,
@@ -261,19 +268,57 @@ export async function processDocument(
     const cost = session.accumulatedCost;
     const findings = extractSessionFindings(session);
 
+    // Capture previous session BEFORE markReviewed overwrites it
+    const previousSessionId = registry.getDocument(documentHash)?.lastReviewSession;
+
     registry.markReviewed(documentHash, sessionId, findings, cost);
+
+    // ── 5b. CHANGE DETECTION ─────────────────────────────────────────
+    let diff: FindingsDiff | undefined;
+    if (previousSessionId && previousSessionId !== sessionId) {
+      try {
+        const previousFindings = loadPreviousFindings(clawConfig.dir, previousSessionId);
+        const currentFindings = (session.debate?.findings ?? []).map(f => ({
+          id: f.id,
+          category: f.findingType,
+          severity: f.severity,
+          content: f.content,
+          evidence: f.evidence,
+        }));
+        if (previousFindings.length > 0 || currentFindings.length > 0) {
+          diff = computeDiff(previousFindings, currentFindings, previousSessionId);
+          const ds = diffSummary(diff);
+          log(`  Δ ${ds.added} new, ${ds.resolved} resolved, ${ds.changed} changed`);
+
+          // Write diff.json + update manifest with summary
+          try {
+            writeJsonFileAtomic(path.join(deliveryDir, 'diff.json'), diff);
+            const manifestPath = path.join(deliveryDir, 'manifest.json');
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+            manifest.diff = ds;
+            writeJsonFileAtomic(manifestPath, manifest);
+          } catch { /* non-fatal — diff data optional */ }
+        }
+      } catch (diffErr) {
+        logger.warn('Change detection failed (non-fatal)', { sessionId, error: diffErr });
+      }
+    }
 
     // Index findings into precedent board
     const fullFindings = Array.isArray(session.debate?.findings) ? session.debate.findings : [];
     if (fullFindings.length > 0) {
       try {
         const docEntry = registry.getDocument(documentHash);
-        board.indexFindings(
+        const docType = docEntry?.type ?? inference.request.type;
+        const indexed = board.indexFindings(
           documentHash,
-          docEntry?.type ?? inference.request.type,
+          docType,
           profile.jurisdiction,
           fullFindings,
         );
+        if (indexed > 0) {
+          clawEventBus.emitEvent({ type: 'claw_precedent_indexed', precedentId: documentHash, patternName: docType, documentType: docType, timestamp: eventTimestamp() });
+        }
       } catch (indexErr) {
         logger.warn('Precedent indexing failed (non-fatal)', { sessionId, error: indexErr });
       }
@@ -290,6 +335,7 @@ export async function processDocument(
     }
 
     const durationMs = Date.now() - startTime;
+    clawEventBus.emitEvent({ type: 'claw_job_completed', documentPath, documentHash, costUsd: cost, durationMs, findings, timestamp: eventTimestamp() });
     log(`✓ Delivered → ${path.relative(clawConfig.dir, deliveryDir)}/`);
     log(`  $${cost.toFixed(2)} · ${(durationMs / 1000).toFixed(0)}s · ${findings.critical} critical, ${findings.major} major, ${findings.minor} minor`);
     if (retried) log(`  (succeeded on retry)`);
@@ -309,6 +355,7 @@ export async function processDocument(
     log(`✗ Failed: ${error}`);
 
     registry.markFailed(documentHash, error);
+    clawEventBus.emitEvent({ type: 'claw_job_failed', documentPath, documentHash, error, timestamp: eventTimestamp() });
 
     notify({
       type: 'document_failed',

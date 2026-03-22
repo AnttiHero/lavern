@@ -169,6 +169,42 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
         <StatCard label="Sessions" value={status.sessions.completed} />
       </div>
 
+      {/* Cost forecast banner */}
+      {status.forecast && status.forecast.pendingCount > 0 && (
+        <div style={styles.forecastBanner}>
+          <div style={styles.forecastMain}>
+            <span style={styles.forecastCount}>{status.forecast.pendingCount}</span>
+            <span style={styles.forecastLabel}>
+              document{status.forecast.pendingCount === 1 ? '' : 's'} pending
+            </span>
+            {status.forecast.estimatedCostUsd > 0 ? (
+              <span style={styles.forecastCost}>
+                Est. ${status.forecast.estimatedCostUsd.toFixed(2)}
+              </span>
+            ) : (
+              <span style={styles.forecastFree}>All local — $0</span>
+            )}
+          </div>
+          <div style={styles.forecastMeta}>
+            {status.forecast.confidentialCount > 0 && (
+              <span style={styles.forecastMetaItem}>
+                {'🔒'} {status.forecast.confidentialCount} local ($0)
+              </span>
+            )}
+            {status.forecast.estimatedCostUsd > 0 && (
+              <span style={styles.forecastMetaItem}>
+                Budget after: ${status.forecast.budgetAfterUsd.toFixed(2)}
+              </span>
+            )}
+            {status.forecast.skippedCount > 0 && (
+              <span style={styles.forecastMetaItem}>
+                {status.forecast.skippedCount} skipped
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Model split */}
       {(status.documents.confidential > 0 || status.documents.frontier > 0) && (
         <div style={styles.modelRow}>
@@ -423,6 +459,54 @@ const styles: Record<string, React.CSSProperties> = {
   timelineTime: {
     fontSize: 11,
     fontFamily: fonts.mono,
+    color: colors.textDim,
+  },
+  forecastBanner: {
+    padding: `${spacing.md}px ${spacing.lg}px`,
+    backgroundColor: 'rgba(184, 134, 11, 0.06)',
+    border: '1px solid rgba(184, 134, 11, 0.15)',
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+  },
+  forecastMain: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 4,
+  },
+  forecastCount: {
+    fontSize: 18,
+    fontWeight: 700,
+    fontFamily: fonts.sans,
+    color: '#B8860B',
+  },
+  forecastLabel: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: colors.text,
+  },
+  forecastCost: {
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: fonts.mono,
+    color: '#B8860B',
+    marginLeft: 'auto',
+  },
+  forecastFree: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.success,
+    fontWeight: 600,
+    marginLeft: 'auto',
+  },
+  forecastMeta: {
+    display: 'flex',
+    gap: 12,
+    flexWrap: 'wrap' as const,
+  },
+  forecastMetaItem: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
     color: colors.textDim,
   },
 };

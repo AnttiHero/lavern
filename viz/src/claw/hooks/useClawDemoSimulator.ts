@@ -72,7 +72,7 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
   // ── Step 3: First document detected ──
   add(1500, ({ setDocuments, setStatus, log }) => {
     setDocuments(d => [...d, {
-      name: 'vendor-nda-2025.pdf', path: '/Users/acme/Contracts/vendor-nda-2025.pdf',
+      name: 'vendor-nda-2025.pdf', path: '/Users/acme/Contracts/vendor-nda-2025.pdf', hash: 'demo-a1b2',
       type: 'NDA', status: 'pending', sizeBytes: 84_200,
       lastModified: now(), lastReviewed: null, findings: null, costUsd: null, error: null, confidential: false,
     }]);
@@ -91,7 +91,7 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
   // ── Step 5: Second document detected ──
   add(2000, ({ setDocuments, setStatus, log }) => {
     setDocuments(d => [...d, {
-      name: 'cloud-services-msa.pdf', path: '/Users/acme/Contracts/cloud-services-msa.pdf',
+      name: 'cloud-services-msa.pdf', path: '/Users/acme/Contracts/cloud-services-msa.pdf', hash: 'demo-c9d0',
       type: 'Master Service Agreement', status: 'pending', sizeBytes: 312_000,
       lastModified: now(), lastReviewed: null, findings: null, costUsd: null, error: null, confidential: false,
     }]);
@@ -139,7 +139,7 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
   // ── Step 8: Third document detected (confidential!) ──
   add(1000, ({ setDocuments, setStatus, log }) => {
     setDocuments(d => [...d, {
-      name: 'merger-agreement-draft.docx', path: '/Users/acme/Documents/Legal/merger-agreement-draft.docx',
+      name: 'merger-agreement-draft.docx', path: '/Users/acme/Documents/Legal/merger-agreement-draft.docx', hash: 'demo-d1e2',
       type: 'Merger Agreement', status: 'pending', sizeBytes: 445_000,
       lastModified: now(), lastReviewed: null, findings: null, costUsd: null, error: null, confidential: true,
     }]);
