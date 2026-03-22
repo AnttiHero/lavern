@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How Lavern Works: Architecture of a Driverless Law Firm</title>
-  <meta name="description" content="Technical deep-dive into the world's first driverless law firm. Multi-agent debate, iterative verification, autonomous processing, institutional memory.">
+  <meta name="description" content="Technical deep-dive into building a driverless law firm. Multi-agent debate, iterative verification, autonomous processing, institutional memory.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -299,8 +299,6 @@
       <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
       <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
 
-      <div class="novel">What's new here</div>
-      <p>No other legal AI tool lets you create custom agents with personality traits and skill ratings that participate in adversarial debate alongside built-in specialists. This is the difference between "AI that answers questions" and "AI that has opinions."</p>
 
       <h3>The Soul of the firm.</h3>
       <p>Every real law firm has a culture: how they communicate, what they prioritize, how formal they are. Lavern has a <strong>Soul</strong>: a user-defined firm personality (voice, principles, style, values) that's injected into every agent's system prompt. The Soul shapes how agents write, what they emphasize, and how they resolve ambiguity.</p>
@@ -345,8 +343,6 @@
       <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as a first-class artifact alongside the output itself.</p>
       <p>And you can (and should) question the output of Lavern. But it is easier if you see the thinking.</p>
 
-      <div class="novel">What's new here</div>
-      <p>The briefing interview, the context injection through the full pipeline, the dual artifact output, and the Partner voice mode are all unique to Lavern. Every other tool gives you a document in, findings out. Lavern gives you a relationship: it understands your situation before it starts working. And it doesn't just review documents, it can <em>transform</em> them. Take a 40-page MSA written in dense legalese and redesign it into something a human can actually read, while preserving every clause's legal effect. Better documents, not just reviewed documents.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -359,7 +355,7 @@
 
       <p>The <a href="https://claude.com/plugins/ralph-loop">Ralph Loop</a>, named after the "Ralph Wiggum technique" in agentic coding, is the pattern where an AI reads its own past work to inform improvements. In Claude Code, this means iterating until tests pass. In Lavern, we apply the same principle to legal analysis: <strong>agents review their own output, and other agents review theirs.</strong></p>
 
-      <p>This is not a nice-to-have. In software, a wrong line of code produces a failing test. In law, a wrong finding produces a wrong decision. A missed liability cap costs money. A false positive wastes a client's time and erodes trust. The cost of error is categorically different. So the verification has to be categorically more thorough.</p>
+      <p>In software, a wrong line of code produces a failing test. In law, a wrong finding produces a wrong decision. A missed liability cap costs money. A false positive wastes a client's time and erodes trust. The cost of error is categorically different. So the verification has to be categorically more thorough.</p>
 
       <h3>Three layers of checking.</h3>
 
@@ -401,8 +397,6 @@
         <strong>Why three layers?</strong> A single check catches approximately 80% of issues. Two layers catch approximately 95%. Three layers with adversarial debate consistently exceed 99% on the failure modes we track. The marginal cost of each additional layer is small. The marginal cost of a wrong finding in a legal context is not.
       </div>
 
-      <div class="novel">What's new here</div>
-      <p>No other legal AI tool has iterative self-revision (the Ralph pattern), adversarial multi-agent debate, AND a 10-pass verification pipeline operating in sequence. Most tools do a single LLM call and return the result. The three-layer architecture is why Lavern's output quality is structurally different from everything else on the market.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -433,8 +427,6 @@
 
       <p>Every resolution is a <strong>first-class auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. Full provenance. Not a black box.</p>
 
-      <div class="novel">What's new here</div>
-      <p>The structured debate protocol with formal resolutions is unique to Lavern. Other tools generate findings. Lavern generates findings, <em>challenges those findings</em>, resolves the disagreements with evidence, and produces a complete audit trail of the reasoning. This is the difference between an opinion and a defensible position.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -592,8 +584,6 @@
       <h3>Scheduled re-review.</h3>
       <p>Real law firms don't only review documents when they change. They review contracts on a schedule: every 90 days, every quarter, before renewal dates. Clawern supports this natively. Set a review interval, and the heartbeat timer marks documents as stale when they're due. The existing staleness pipeline picks them up and processes them automatically.</p>
 
-      <div class="novel">What's new here</div>
-      <p>The Precedent Board with evidence-linked entries, confidence decay, scheduled re-review, and change detection across review sessions is, as far as we know, unique. No other legal AI tool has persistent cross-document institutional memory that actively informs future analysis. This is the feature that makes Clawern more than a document processor. It makes it a firm that learns.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
