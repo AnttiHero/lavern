@@ -123,7 +123,7 @@
 
       <p>We started playing with different analogies. What if the whole firm was staffed with agents? What if the office was in a Mac Mini? What would a self-driving law firm look like?</p>
 
-      <p>2025 was the year of the copilot: AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>: AI that acts. <a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. <a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026">Claude Code</a> showed that agentic loops could handle entire implementation workflows.</p>
+      <p>2025 was the year of the copilot: AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>: AI that acts. <a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. Claude Code showed that agentic loops could handle entire implementation workflows.</p>
 
       <p>The analogy isn't "better cruise control." It's the self-driving car. Cruise control assists a driver. A self-driving car replaces the need for one. Harvey and Legora are cruise control for lawyers: powerful, but someone still has to sit in the seat, hands on the wheel, eyes on the road. Lavern is built from a totally different analogy. That is why it looks and feels very different from other legal technology.</p>
     </div>
@@ -272,7 +272,7 @@
 
       <p>Most AI legal tools are a single LLM call wrapped in a UI. One prompt in, one answer out. Lavern is modeled on how a real law firm operates: <strong>58 specialist agents</strong> and <strong>7 orchestrators</strong> who coordinate through structured debate.</p>
 
-      <p>This follows the <a href="https://www.anthropic.com/research/building-effective-agents">Anthropic pattern</a> of orchestrator-worker architectures, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a fundamentally different design goal, and it produces fundamentally different architecture.</p>
+      <p>This follows the orchestrator-worker architecture, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a fundamentally different design goal, and it produces fundamentally different architecture.</p>
 
       <div class="diagram">
         <svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -296,7 +296,7 @@
 
       <h3>Build your own agents.</h3>
       <p>The 58 built-in specialists cover the common ground: contract risk, dark patterns, IP assignment, non-compete enforceability, regulatory compliance. But every firm has domain expertise that no pre-built agent can match. A maritime law boutique needs different instincts than a tech M&A shop.</p>
-      <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists, with their own DiceBear avatar, and participate in the same debate process.</p>
+      <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
       <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
 
       <div class="novel">What's new here</div>
@@ -335,17 +335,18 @@
       </div>
 
       <h3>Talk to a Partner.</h3>
-      <p>For quick questions ("Is this non-compete enforceable in California?"), Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds.</p>
+      <p>For quick questions ("What does this indemnification clause actually mean for us?"), Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds.</p>
       <p>The interface is a single glowing orb: tap to speak, listen to the answer. No forms. No menus. Just a conversation.</p>
 
       <h3>Dual artifacts.</h3>
-      <p>Every engagement produces two outputs. Always. This is a hard constraint, not an option.</p>
+      <p>Every engagement produces two outputs.</p>
       <p>The first is the <strong>user-facing deliverable</strong>: the review, the redesigned document, the analysis. What the client sees and acts on.</p>
       <p>The second is the <strong>legal review package</strong>: the complete audit trail of every finding, every challenge, every response, every resolution, with evidence citations, confidence scores, and which agent resolved each dispute. The full chain of reasoning, preserved.</p>
       <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as a first-class artifact alongside the output itself.</p>
+      <p>And you can (and should) question the output of Lavern. But it is easier if you see the thinking.</p>
 
       <div class="novel">What's new here</div>
-      <p>The briefing interview, the context injection through the full pipeline, the dual artifact output, and the Partner voice mode are all unique to Lavern. Every other tool gives you a document in, findings out. Lavern gives you a relationship: it understands your situation before it starts working. And it doesn't just review documents.it can <em>transform</em> them. Take a 40-page MSA written in dense legalese and redesign it into something a human can actually read, while preserving every clause's legal effect. Better documents, not just reviewed documents.</p>
+      <p>The briefing interview, the context injection through the full pipeline, the dual artifact output, and the Partner voice mode are all unique to Lavern. Every other tool gives you a document in, findings out. Lavern gives you a relationship: it understands your situation before it starts working. And it doesn't just review documents, it can <em>transform</em> them. Take a 40-page MSA written in dense legalese and redesign it into something a human can actually read, while preserving every clause's legal effect. Better documents, not just reviewed documents.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
