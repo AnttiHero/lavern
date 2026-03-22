@@ -34,6 +34,11 @@ export interface ClawProfile {
   paused?: boolean;
   /** ISO 8601 timestamp when the daemon was paused. */
   pausedAt?: string;
+  /** Scheduled periodic re-review of all documents. */
+  reviewSchedule?: {
+    enabled: boolean;
+    intervalDays: number;   // e.g., 90
+  };
   createdAt: string;
 }
 

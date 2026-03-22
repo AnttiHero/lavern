@@ -490,6 +490,26 @@ async function runStart(args: ClawCliArgs): Promise<void> {
           rotateDaemonLogs(dir);
         }
 
+        // Scheduled re-review: mark old documents as stale
+        const currentProfile = loadProfile(dir);
+        if (currentProfile?.reviewSchedule?.enabled && currentProfile.reviewSchedule.intervalDays > 0) {
+          const intervalMs = currentProfile.reviewSchedule.intervalDays * 24 * 60 * 60 * 1000;
+          const now = Date.now();
+          let dueCount = 0;
+          for (const doc of docs) {
+            if ((doc.status === 'reviewed' || doc.status === 'flagged') && doc.lastReviewed) {
+              const lastReviewedMs = new Date(doc.lastReviewed).getTime();
+              if (!isNaN(lastReviewedMs) && now - lastReviewedMs > intervalMs) {
+                registry.updateStatus(doc.hash, 'stale');
+                dueCount++;
+              }
+            }
+          }
+          if (dueCount > 0) {
+            alerts.push(`${dueCount} doc(s) due for scheduled re-review`);
+          }
+        }
+
         if (alerts.length === 0) return; // Silent — everything is fine
 
         notify({

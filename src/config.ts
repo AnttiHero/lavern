@@ -212,6 +212,14 @@ export const config = {
     precedentDecayDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_DECAY_DAYS, 30),
     precedentArchiveDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS, 90),
     precedentMaxOutcomes: safeInt(process.env.LAVERN_CLAW_PRECEDENT_MAX_OUTCOMES, 50),
+    // Telegram notifications (v0.14)
+    telegramToken: process.env.LAVERN_CLAW_TELEGRAM_TOKEN ?? '',
+    telegramChatId: process.env.LAVERN_CLAW_TELEGRAM_CHAT_ID ?? '',
+    // Email notifications for Claw alerts
+    notifyEmail: process.env.LAVERN_CLAW_NOTIFY_EMAIL ?? '',
+    // Weekly digest schedule
+    digestDay: safeInt(process.env.LAVERN_CLAW_DIGEST_DAY, 1),    // 0=Sun, 1=Mon
+    digestHour: safeInt(process.env.LAVERN_CLAW_DIGEST_HOUR, 9),  // Local hour
   },
 
   // ── Archive Retention ──────────────────────────────────────────────────

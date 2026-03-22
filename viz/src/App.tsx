@@ -61,6 +61,7 @@ const LoginView = lazy(() => import('./auth/LoginView.js'));
 const ResetPasswordView = lazy(() => import('./auth/ResetPasswordView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
+const DispatchView = lazy(() => import('./dispatch/DispatchView.js'));
 const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 const PricingView = lazy(() => import('./pricing/PricingView.js'));
 const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
@@ -70,7 +71,7 @@ const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -93,6 +94,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/my-cases')) return 'my-cases';
   if (hash.startsWith('#/my-page')) return 'my-page';
   if (hash.startsWith('#/agent-docs')) return 'agent-docs';
+  if (hash.startsWith('#/dispatch')) return 'dispatch';
   if (hash.startsWith('#/claw')) return 'claw';
   if (hash.startsWith('#/archive')) return 'archive';
   if (hash.startsWith('#/pricing')) return 'pricing';
@@ -1086,6 +1088,17 @@ export function App() {
             <ClawView onBack={() => { window.location.hash = '#/quickstart'; }} />
           </Suspense>
         </ViewTransition>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Dispatch — Voice command interface ────────────────────────────────
+  if (view === 'dispatch') {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<ViewFallback text="Loading Dispatch..." />}>
+          <DispatchView onBack={() => { window.location.hash = '#/claw'; }} />
+        </Suspense>
       </ErrorBoundary>
     );
   }

@@ -346,3 +346,75 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
     `),
   });
 }
+
+// ── Claw Mode Email Templates ───────────────────────────────────────────
+
+/** Sent when Claw finds critical issues in a document. */
+export async function sendClawAlertEmail(
+  email: string,
+  title: string,
+  message: string,
+  dashboardUrl?: string,
+): Promise<boolean> {
+  return send({
+    to: email,
+    subject: `Lavern: ${title}`,
+    text: `${title}\n\n${message}\n\n${dashboardUrl ? `Dashboard: ${dashboardUrl}` : ''}`,
+    html: emailWrapper(`
+      <div style="background:${BRAND.surface};border-radius:12px;padding:28px;border:1px solid ${BRAND.border};">
+        <div style="font-size:18px;font-weight:600;color:${BRAND.gold};margin-bottom:12px;font-family:Georgia,'Times New Roman',serif;">
+          ${esc(title)}
+        </div>
+        <div style="font-size:14px;color:${BRAND.text};line-height:1.6;margin-bottom:20px;">
+          ${esc(message)}
+        </div>
+        ${dashboardUrl ? `
+        <div style="text-align:center;margin-top:20px;">
+          <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:${BRAND.gold};color:${BRAND.bg};font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;border-radius:6px;">
+            View in Dashboard
+          </a>
+        </div>
+        ` : ''}
+      </div>
+    `),
+  });
+}
+
+/** Weekly digest of Claw activity. */
+export async function sendClawDigestEmail(
+  email: string,
+  digest: {
+    period: string;
+    documentsProcessed: number;
+    findingsSummary: { critical: number; major: number; minor: number };
+    costUsd: number;
+    precedentsLearned: number;
+    budgetRemainingUsd: number;
+  },
+): Promise<boolean> {
+  const { period, documentsProcessed, findingsSummary, costUsd, precedentsLearned, budgetRemainingUsd } = digest;
+  const findings = `${findingsSummary.critical} critical, ${findingsSummary.major} major, ${findingsSummary.minor} minor`;
+
+  return send({
+    to: email,
+    subject: `Lavern Weekly Digest — ${period}`,
+    text: `Weekly Digest: ${period}\n\n${documentsProcessed} documents processed\nFindings: ${findings}\nCost: $${costUsd.toFixed(2)}\nPrecedents learned: ${precedentsLearned}\nBudget remaining: $${budgetRemainingUsd.toFixed(2)}`,
+    html: emailWrapper(`
+      <div style="background:${BRAND.surface};border-radius:12px;padding:28px;border:1px solid ${BRAND.border};">
+        <div style="font-size:18px;font-weight:600;color:${BRAND.gold};margin-bottom:20px;font-family:Georgia,'Times New Roman',serif;">
+          Weekly Digest
+        </div>
+        <div style="font-size:11px;color:${BRAND.textDim};letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;">
+          ${esc(period)}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;color:${BRAND.text};">
+          <tr><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};">Documents processed</td><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};text-align:right;font-weight:600;">${documentsProcessed}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};">Findings</td><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};text-align:right;">${findings}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};">Cost</td><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};text-align:right;font-family:monospace;">$${costUsd.toFixed(2)}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};">Precedents learned</td><td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};text-align:right;">${precedentsLearned}</td></tr>
+          <tr><td style="padding:8px 0;">Budget remaining</td><td style="padding:8px 0;text-align:right;font-family:monospace;font-weight:600;">$${budgetRemainingUsd.toFixed(2)}</td></tr>
+        </table>
+      </div>
+    `),
+  });
+}

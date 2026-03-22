@@ -12,6 +12,8 @@
 import { execFileSync } from 'node:child_process';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { sendTelegramMessage, formatTelegramAlert } from './notify-telegram.js';
+import { sendClawAlertEmail } from '../email/send.js';
 
 const logger = createLogger('NOTIFY');
 
@@ -125,7 +127,19 @@ function sendMacOsNotification(notification: ClawNotification): void {
 export function notify(notification: ClawNotification): void {
   if (!shouldSend(notification)) return;
 
-  // Fire both in parallel, don't await
+  // Fire all channels in parallel, don't await
   sendWebhook(notification).catch(err => logger.error('webhook_send_failed', err));
   sendMacOsNotification(notification);
+
+  // Telegram — send for all alerts
+  if (config.claw.telegramToken && config.claw.telegramChatId) {
+    const text = formatTelegramAlert(notification.title, notification.message);
+    sendTelegramMessage(text).catch(err => logger.warn('telegram_send_failed', err));
+  }
+
+  // Email — send for critical alerts only (flagged, failed, budget exhausted)
+  const emailCriticalTypes: ClawNotificationType[] = ['document_flagged', 'document_failed', 'budget_exhausted'];
+  if (config.claw.notifyEmail && emailCriticalTypes.includes(notification.type)) {
+    sendClawAlertEmail(config.claw.notifyEmail, notification.title, notification.message).catch(err => logger.warn('email_alert_failed', err));
+  }
 }
