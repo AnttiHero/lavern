@@ -223,7 +223,7 @@
         <div class="diagram-caption">The edges are where the product lives. We can always improve intake and output. The middle improves on its own.</div>
       </div>
 
-      <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 65 agents, through three verification layers, across every workflow. In a multi-agent architecture, incremental model improvements compound across the whole team. The system benefits from that.</p>
+      <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 50+ agents, through three verification layers, across every workflow. In a multi-agent architecture, incremental model improvements compound across the whole team. The system benefits from that.</p>
 
       <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 8 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
 
@@ -248,7 +248,7 @@
       <div class="section-label">The Architecture</div>
       <h2>Not One Agent. <em>A Firm.</em></h2>
 
-      <p>Most AI legal tools are a single LLM call wrapped in a UI. One prompt in, one answer out. Lavern is modeled on how a real law firm operates: <strong>58 specialist agents</strong> and <strong>7 orchestrators</strong> who coordinate through structured debate.</p>
+      <p>Most AI legal tools are a single LLM call wrapped in a UI. One prompt in, one answer out. Lavern is modeled on how a real law firm operates: <strong>50+ specialist agents</strong> and <strong>orchestrators</strong> who coordinate through structured debate.</p>
 
       <p>This follows the orchestrator-worker architecture, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a different design goal, and it produces different architecture.</p>
 
@@ -273,7 +273,7 @@
       </div>
 
       <h3>Build your own agents.</h3>
-      <p>The 58 built-in specialists cover the common ground: contract risk, dark patterns, IP assignment, non-compete enforceability, regulatory compliance. But every firm has domain expertise that no pre-built agent can match. A maritime law boutique needs different instincts than a tech M&A shop.</p>
+      <p>The built-in specialists cover the common ground: contract risk, dark patterns, IP assignment, non-compete enforceability, regulatory compliance. But every firm has domain expertise that no pre-built agent can match. A maritime law boutique needs different instincts than a tech M&A shop.</p>
       <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
       <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts. It never retires. It never forgets.</p>
 
@@ -515,7 +515,7 @@
 
       <p>We wanted to pay homage to ClawdBot, so we call the autonomous version "Clawern." Claw + Lavern. The crab is not accidental.</p>
 
-      <p>Clawern applies the same principle to legal work. It watches your folders, processes documents with the full 65-agent pipeline, learns from past reviews, and pushes findings to your Telegram. The interface isn't a dashboard you check. It's a notification that finds you. A law firm that runs on a Mac Mini (or a Linux server) while you sleep.</p>
+      <p>Clawern applies the same principle to legal work. It watches your folders, processes documents with the full agent pipeline, learns from past reviews, and pushes findings to your Telegram. The interface isn't a dashboard you check. It's a notification that finds you. A law firm that runs on a Mac Mini (or a Linux server) while you sleep.</p>
 
       <div class="diagram">
         <svg width="600" height="110" viewBox="0 0 600 110" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -534,7 +534,7 @@
           <path d="M496 48 L518 48" stroke="#bbb" stroke-width="2" marker-end="url(#a1)"/>
           <text x="50" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">fs.watch</text>
           <text x="182" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">PDF / DOCX / MD</text>
-          <text x="314" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">65 agents</text>
+          <text x="314" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">50+ agents</text>
           <text x="446" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">MD + DOCX</text>
           <text x="558" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59">precedents</text>
         </svg>
@@ -763,7 +763,7 @@
 
     <div class="stats-hero">
       <div class="stats">
-        <div class="stat"><div class="stat-value">65</div><div class="stat-label">Agents</div></div>
+        <div class="stat"><div class="stat-value">50+</div><div class="stat-label">Agents</div></div>
         <div class="stat"><div class="stat-value">8</div><div class="stat-label">Workflows</div></div>
         <div class="stat"><div class="stat-value">20</div><div class="stat-label">Claw Modules</div></div>
         <div class="stat"><div class="stat-value">1,392</div><div class="stat-label">Tests</div></div>
@@ -774,7 +774,7 @@
 
     <div class="section" style="margin-bottom:40px">
       <p>This is a long read. And it can be difficult to have an overview of what we are building.</p>
-      <p>But imagine if you had a law firm with 60 legal professionals at your disposal. Instead of them having a fancy office downtown, they live in your computer. They work while you sleep. They make sure that all your legal documents, contracts, everything is in order. Safely.</p>
+      <p>But imagine if you had a law firm with 50+ legal professionals at your disposal. Instead of them having a fancy office downtown, they live in your computer. They work while you sleep. They make sure that all your legal documents, contracts, everything is in order. Safely.</p>
     </div>
 
     <div class="pullquote">That is what we are <em>building.</em></div>
