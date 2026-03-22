@@ -64,7 +64,7 @@ npm run dev -- --claw start
 ## Development
 
 ```bash
-# Run tests (1319+ tests across 76 files)
+# Run tests (1392+ tests across 85 files)
 npm test
 
 # Run tests in watch mode
@@ -152,7 +152,7 @@ src/
 │   ├── middleware/   # Auth, validation, x402 payment
 │   └── routes/      # 20 route modules
 ├── assembly/        # Document assembly + format conversion (HTML, DOCX)
-├── claw/            # Clawern (14 modules: watch, plan, process, deliver, heartbeat, precedents)
+├── claw/            # Clawern (20 modules: watch, plan, process, deliver, precedents, audit, backup, dispatch, telegram, multi-client)
 ├── db/              # SQLite persistence (users, tokens, sessions, matters)
 ├── documents/       # Document parser (PDF, DOCX, MD, TXT)
 ├── events/          # Event bus for real-time streaming
@@ -177,7 +177,7 @@ viz/                 # React dashboard (23 feature directories)
 ├── cowork/          # Cowork folder mode (File System Access API)
 └── components/      # Shared (GateDialog, ErrorToast, LavernMark)
 
-tests/               # 1319+ tests across 76 files
+tests/               # 1392+ tests across 85 files
 SOUL.md              # Default firm personality (CLI/Claw fallback)
 CLAUDE.md            # Project documentation
 ```

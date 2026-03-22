@@ -28,6 +28,7 @@ import { getPrecedentBoard } from './precedent-board.js';
 import { clawEventBus } from './events.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { startTelegramBot, stopTelegramBot } from './telegram-bot.js';
+import { createDailyBackup } from './backup.js';
 import type { ClawConfig } from './types.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { DocumentStyle } from '../assembly/format-converter.js';
@@ -455,6 +456,16 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         const alerts: string[] = [];
         const state = registry.getState();
 
+        // Health check: verify API key still available
+        if (!process.env.ANTHROPIC_API_KEY) {
+          alerts.push('API key missing — processing will fail');
+        }
+
+        // Health check: verify watcher is still running
+        if (!watcher.isRunning) {
+          alerts.push('File watcher stopped — documents not being monitored');
+        }
+
         // Budget approaching limit (>80%)
         const pct = state.budget.totalUsd > 0 ? state.budget.spentUsd / state.budget.totalUsd : 0;
         if (pct > 0.8) {
@@ -492,6 +503,11 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         // Log rotation: check daemon logs every 6th heartbeat (~3 hours)
         if (heartbeatCount % 6 === 0) {
           rotateDaemonLogs(dir);
+        }
+
+        // Daily backup: once every 48th heartbeat (~24 hours at 30min interval)
+        if (heartbeatCount % 48 === 0) {
+          try { createDailyBackup(dir); } catch { /* backup non-fatal */ }
         }
 
         // Scheduled re-review: mark old documents as stale

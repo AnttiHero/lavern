@@ -229,7 +229,7 @@ export const config = {
   archiveRetentionDays: safeInt(process.env.SHEM_ARCHIVE_RETENTION_DAYS, 180),
 
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.13.0',
+  version: '0.14.0',
 } as const;
 
 // ── Production Startup Validation ──────────────────────────────────────

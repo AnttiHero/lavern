@@ -55,7 +55,13 @@ export class ClawWatcher {
    * Resolve a path — expand ~ and resolve to absolute.
    */
   private resolvePath(p: string): string {
-    return path.resolve(p.replace(/^~/, os.homedir()));
+    const resolved = path.resolve(p.replace(/^~/, os.homedir()));
+    // Security: reject path traversal attempts
+    if (p.includes('..')) {
+      logger.warn('Rejected watch path with traversal', { path: p });
+      return ''; // Will fail existsSync check
+    }
+    return resolved;
   }
 
   /**

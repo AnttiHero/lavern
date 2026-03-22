@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.13.0, a multi-agent legal design system that transforms
+You are part of Lavern v0.14.0, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -100,7 +100,8 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/pricing/` — Billable Hours pricing page (credits explainer, plan tiers, waitlist CTA)
 - `viz/src/challenge/` — Lavern Challenge blind document comparison
 - `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
-- `viz/src/claw/` — Clawern remote monitoring dashboard (Overview, Documents, Deliveries, Precedents, Config)
+- `viz/src/claw/` — Clawern remote monitoring dashboard (Overview with Portfolio Intelligence, Documents with inline error recovery, Deliveries with change detection, Precedents, Config)
+- `viz/src/dispatch/` — Voice Dispatch (mobile-optimized voice command interface)
 - `viz/src/auth/` — Login/signup views
 
 ### Providers
@@ -112,7 +113,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
 ### Clawern (Law Firm on Retainer)
-- `src/claw/` — Autonomous document processing pipeline (14 modules):
+- `src/claw/` — Autonomous document processing pipeline (20 modules):
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
   - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
   - `processor.ts` — Document processing (parse, infer, dispatch, deliver) + precedent lookup/indexing
@@ -121,8 +122,15 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `delivery.ts` — Output bundle generation (manifest, deliverable, findings)
   - `local-analysis.ts` — On-device analysis via Ollama for confidential docs
   - `daemon.ts` — macOS LaunchAgent daemon management
-  - `notify.ts` — Webhook + macOS native notifications with dedup (incl. heartbeat, precedent match)
-  - `init.ts` — Interactive onboarding (profile creation, ethical mode question)
+  - `notify.ts` — Webhook + macOS native notifications with dedup, redaction (incl. heartbeat, precedent match)
+  - `notify-telegram.ts` — Telegram message sender with Markdown escaping
+  - `telegram-bot.ts` — Two-way Telegram bot (long polling, command parsing)
+  - `client-registry.ts` — Multi-client isolation (per-client directories, profiles, budgets)
+  - `events.ts` — ClawEventBus singleton for real-time WebSocket streaming
+  - `diff.ts` — Findings diff across review sessions (added/resolved/changed)
+  - `audit.ts` — Append-only JSON lines audit trail with rotation
+  - `backup.ts` — Daily state backup with 30-day retention
+  - `init.ts` — Interactive onboarding with profile versioning + migration
   - `inference.ts` — Document type inference
   - `terminal.ts` — Rich terminal output formatting
   - `index.ts` — CLI entry point with heartbeat timer, `--ethical` flag
@@ -166,11 +174,84 @@ Static single-page site deployed via Netlify drag-and-drop. Dark cinematic desig
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1319+ tests across 76 files (67 unit + 9 integration)
+- `tests/` — 1392+ tests across 85 files (76 unit + 9 integration)
 
 ## Version History
 
-### v0.13.0 (Current) — Precedent Board (Institutional Memory)
+### v0.14.0 (Current) — Clawern: Law Firm in Your Mac Mini
+
+**Real-time Dashboard:**
+- WebSocket push via ClawEventBus (9 event types, late-join replay)
+- Adaptive polling: 60s when WS connected, 10s fallback
+- Pause/Resume with PAUSED badge + Scan Now disable
+
+**Voice Dispatch (`/#/dispatch`):**
+- Mobile-optimized dark cinematic interface with Web Speech API
+- Keyword-based command parsing (no LLM cost): status, findings, scan, pause, resume, retry, budget
+- SpeechSynthesis spoken responses
+
+**Notifications:**
+- Telegram bot with two-way chat control (long polling, authorized chat only)
+- Email alerts for critical findings via Resend (sendClawAlertEmail)
+- Weekly digest email (sendClawDigestEmail) triggered by heartbeat
+- Notification redaction: configurable level (minimal/summary/full), confidential docs redacted
+
+**Change Detection:**
+- Findings diff between consecutive reviews (added/resolved/changed/unchanged)
+- diff.json + manifest update per delivery
+- DeliveryCard shows "+N new · -N resolved · ~N changed"
+
+**Cost Forecasting:**
+- forecastWork() — read-only cost estimation (no registry mutation)
+- Forecast banner in OverviewTab with pending count, est. cost, local count
+
+**Portfolio Intelligence:**
+- GET /api/claw/portfolio — cross-document findings aggregation
+- Portfolio Intelligence card: severity grid, highest-risk docs, recurring patterns
+
+**Observability:**
+- Audit logging (audit.ts): append-only JSON lines, 5MB rotation, 3 rotated files
+- GET /api/claw/audit — last N entries
+- GET /api/claw/metrics — Prometheus-format gauges/counters
+- Daily backup of state.json, precedents.json, profile.json (30-day retention)
+- Health verification in heartbeat (API key, watcher status)
+
+**Security Hardening:**
+- Watch path validation: reject `..` traversal
+- Notification redaction for confidential documents
+- WebSocket cleanup-first pattern (prevents listener leaks)
+- Engage.ts safety-net .catch() on webhook dispatch chain
+
+**Setup Simplification:**
+- `claw validate` — color-coded configuration health report
+- `claw pause` / `claw resume` — CLI commands for direct control
+- Profile auto-migration for old profiles
+- Post-init guidance with all available commands
+
+**Multi-client Isolation:**
+- ClientRegistry with per-client directories (~/.lavern/clients/{id}/)
+- GET/POST /api/claw/clients endpoints
+- Backward compatible: default client uses root ~/.lavern/
+
+**Linux Daemon (systemd):**
+- daemon-systemd.ts: user service management (no root)
+- daemon-factory.ts: routes to launchd (macOS) or systemd (Linux)
+
+**Failed Document Recovery:**
+- Inline error display in DocumentsTab with per-document retry
+- Document hash exposed in API for single-doc retry
+
+**macOS Menu Bar App (menubar/):**
+- Native SwiftUI status bar presence
+- 30s polling, budget gauge, quick actions
+
+**Marketing Site:**
+- Clawern front page (site/claw/): dark cinematic design with crab hero
+- 65% grain, fog vignette, 3-step setup
+
+**Test Coverage:** 1283 → 1392 tests (109 new across 9 test files)
+
+### v0.13.0 — Precedent Board (Institutional Memory)
 
 **Precedent Board — Cross-Document Intelligence:**
 - `src/claw/precedent-board.ts` — Persistent institutional memory for Claw Mode
