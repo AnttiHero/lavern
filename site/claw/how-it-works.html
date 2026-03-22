@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Clawern Works — Visual Architecture</title>
-  <meta name="description" content="Visual explanation of Clawern's autonomous legal document processing architecture.">
+  <title>How Lavern Works — The World's First Driverless Law Firm</title>
+  <meta name="description" content="Visual explanation of Lavern's multi-agent legal design system and Clawern's autonomous document processing architecture.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,65 +19,58 @@
       --mono:'JetBrains Mono',monospace;
     }
     body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
-
     .container{max-width:720px;margin:0 auto;padding:80px 24px 120px}
 
-    /* Header */
     .header{text-align:center;margin-bottom:80px}
     .header-mark{font-family:var(--serif);font-size:13px;letter-spacing:8px;color:var(--dim);text-transform:uppercase;margin-bottom:24px}
-    .header h1{font-family:var(--serif);font-size:clamp(32px,5vw,48px);font-weight:300;line-height:1.2;margin-bottom:16px}
+    .header h1{font-family:var(--serif);font-size:clamp(32px,5vw,52px);font-weight:300;line-height:1.15;margin-bottom:20px}
     .header h1 em{font-style:italic}
-    .header .subtitle{font-size:16px;color:var(--muted);max-width:520px;margin:0 auto}
+    .header .subtitle{font-size:16px;color:var(--muted);max-width:540px;margin:0 auto;line-height:1.7}
 
-    /* Section */
-    .section{margin-bottom:80px}
+    .section{margin-bottom:72px}
     .section-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
     .section h2{font-family:var(--serif);font-size:28px;font-weight:300;margin-bottom:16px}
     .section h2 em{font-style:italic}
-    .section p{font-size:15px;color:var(--muted);margin-bottom:24px}
+    .section p{font-size:15px;color:var(--muted);margin-bottom:20px}
+    .section p strong{color:var(--text);font-weight:600}
 
-    /* Diagram container */
-    .diagram{
-      background:var(--surface);border:1px solid var(--border);border-radius:12px;
-      padding:40px 32px;margin:32px 0;overflow-x:auto
-    }
+    .diagram{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 32px;margin:28px 0;overflow-x:auto}
     .diagram svg{display:block;margin:0 auto}
 
-    /* Callout */
-    .callout{
-      background:var(--code-bg);border-left:3px solid var(--gold);
-      padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;
-      font-size:14px;color:var(--text)
-    }
+    .callout{background:var(--code-bg);border-left:3px solid var(--gold);padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;font-size:14px;color:var(--text)}
     .callout strong{color:var(--gold)}
 
-    /* Feature grid */
-    .features{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:32px 0}
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:28px 0}
     .feat{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
     .feat-title{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:8px}
     .feat-desc{font-size:13px;color:var(--muted);line-height:1.6}
     @media(max-width:600px){.features{grid-template-columns:1fr}}
 
-    /* Code */
-    code{font-family:var(--mono);font-size:13px;background:var(--code-bg);padding:2px 6px;border-radius:4px}
-    .code-block{
-      background:#1a1a1a;color:#e8e0d4;padding:20px 24px;border-radius:8px;
-      font-family:var(--mono);font-size:13px;line-height:1.7;margin:24px 0;
-      overflow-x:auto
-    }
+    .flow-steps{display:flex;gap:0;margin:28px 0;flex-wrap:wrap;justify-content:center}
+    .flow-step{text-align:center;flex:1;min-width:100px;max-width:140px;position:relative}
+    .flow-step::after{content:'→';position:absolute;right:-8px;top:20px;color:var(--dim);font-size:18px}
+    .flow-step:last-child::after{content:''}
+    .flow-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:18px}
+    .flow-label{font-size:11px;font-weight:600;letter-spacing:0.5px;color:var(--text)}
+    .flow-sub{font-size:9px;color:var(--dim);margin-top:2px}
+
+    .code-block{background:#1a1a1a;color:#e8e0d4;padding:20px 24px;border-radius:8px;font-family:var(--mono);font-size:13px;line-height:1.7;margin:24px 0;overflow-x:auto}
     .code-block .comment{color:#666}
     .code-block .cmd{color:#E8845C}
 
-    /* Stats */
+    .part-divider{text-align:center;padding:64px 0;margin:40px 0}
+    .part-divider-mark{font-family:var(--serif);font-size:11px;letter-spacing:6px;color:var(--dim);text-transform:uppercase;margin-bottom:16px}
+    .part-divider h2{font-family:var(--serif);font-size:clamp(28px,4vw,40px);font-weight:300}
+    .part-divider h2 em{font-style:italic}
+    .part-divider p{font-size:15px;color:var(--muted);max-width:480px;margin:12px auto 0}
+
+    hr{border:none;height:1px;background:var(--border);margin:56px 0}
+
     .stats{display:flex;gap:32px;justify-content:center;margin:40px 0;flex-wrap:wrap}
     .stat{text-align:center}
-    .stat-value{font-size:36px;font-weight:700;font-family:var(--mono);color:var(--text)}
-    .stat-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+    .stat-value{font-size:32px;font-weight:700;font-family:var(--mono);color:var(--text)}
+    .stat-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
 
-    /* Divider */
-    hr{border:none;height:1px;background:var(--border);margin:64px 0}
-
-    /* Footer */
     .footer{text-align:center;padding:40px 0;font-size:12px;color:var(--dim);letter-spacing:1px}
     .footer a{color:var(--muted);text-decoration:none}
   </style>
@@ -85,294 +78,312 @@
 <body>
   <div class="container">
 
-    <!-- Header -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!--                        PART I: LAVERN                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
     <div class="header">
-      <div class="header-mark">CLAWERN</div>
-      <h1>How It <em>Works.</em></h1>
-      <p class="subtitle">A visual guide to the architecture of an autonomous law firm that runs on a Mac Mini.</p>
+      <div class="header-mark">LAVERN</div>
+      <h1>The World's First<br><em>Driverless Law Firm.</em></h1>
+      <p class="subtitle">65 AI specialists collaborate to analyze legal documents — debating findings, challenging each other, and producing work product that rivals a team of lawyers. Here's how.</p>
+    </div>
+
+    <!-- NOT ONE AGENT. A FIRM. -->
+    <div class="section">
+      <div class="section-label">The Idea</div>
+      <h2>Not One Agent. <em>A Firm.</em></h2>
+      <p>Most AI legal tools are a single prompt wrapped in a UI. Lavern is modeled on how a real law firm works: <strong>58 specialist agents</strong> and <strong>7 orchestrators</strong> who coordinate through structured debate.</p>
+      <p>The contract reviewer finds a risk. The adversarial attacker challenges it. The synthesizer weighs the evidence. The orchestrator resolves the debate. Just like partners arguing in a conference room — except it takes 90 seconds instead of 3 billable hours.</p>
+
+      <div class="diagram">
+        <svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="200" y="50" width="160" height="50" rx="25" fill="#E8845C" fill-opacity="0.12" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="280" y="80" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Orchestrator</text>
+          <rect x="0" y="0" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="50" y="22" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Reviewer</text>
+          <path d="M100 18 L200 62" stroke="#ddd" stroke-width="1"/>
+          <rect x="0" y="60" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="50" y="82" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Attacker</text>
+          <path d="M100 78 L200 75" stroke="#ddd" stroke-width="1"/>
+          <rect x="0" y="120" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="50" y="142" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Synthesizer</text>
+          <path d="M100 138 L200 88" stroke="#ddd" stroke-width="1"/>
+          <rect x="460" y="0" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="510" y="22" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Verifier</text>
+          <path d="M460 18 L360 62" stroke="#ddd" stroke-width="1"/>
+          <rect x="460" y="60" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="510" y="82" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Designer</text>
+          <path d="M460 78 L360 75" stroke="#ddd" stroke-width="1"/>
+          <rect x="460" y="120" width="100" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="510" y="142" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Assembler</text>
+          <path d="M460 138 L360 88" stroke="#ddd" stroke-width="1"/>
+          <text x="280" y="130" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">+ 52 more specialists</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- THE JOURNEY -->
+    <div class="section">
+      <div class="section-label">The Journey</div>
+      <h2>From Upload to <em>Delivery.</em></h2>
+      <p>The user uploads a document, briefs the team, picks a strategy, and watches the agents work in real-time. No black box — you see every finding, every debate, every resolution.</p>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-circle" style="background:rgba(232,132,92,0.1)">📋</div>
+          <div class="flow-label">Briefing</div>
+          <div class="flow-sub">Upload + context</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle" style="background:rgba(184,134,11,0.1)">⚙️</div>
+          <div class="flow-label">Strategy</div>
+          <div class="flow-sub">Workflow + intensity</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle" style="background:rgba(46,93,156,0.1)">👥</div>
+          <div class="flow-label">Team</div>
+          <div class="flow-sub">Agent selection</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle" style="background:rgba(232,132,92,0.15)">⚡</div>
+          <div class="flow-label">Working</div>
+          <div class="flow-sub">Live progress</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle" style="background:rgba(74,124,89,0.1)">📦</div>
+          <div class="flow-label">Delivery</div>
+          <div class="flow-sub">Dual artifacts</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Dual artifacts:</strong> Every engagement produces two outputs — a user-facing deliverable and a legal review package (the audit trail of every finding, debate, and resolution). The second artifact is what makes this defensible.
+      </div>
+    </div>
+
+    <!-- DEBATE -->
+    <div class="section">
+      <div class="section-label">The Core Mechanism</div>
+      <h2>Debate Is a <em>Feature.</em></h2>
+      <p>Agents don't just analyze — they <strong>argue</strong>. The Debate Board is shared state where agents post findings, challenge each other, respond with evidence, and resolve disputes. This adversarial structure catches issues that a single pass would miss.</p>
+
+      <div class="diagram">
+        <svg width="480" height="200" viewBox="0 0 480 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="120" y="60" width="240" height="80" rx="10" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5"/>
+          <text x="240" y="85" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Debate Board</text>
+          <text x="240" y="105" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B">findings · challenges · resolutions</text>
+          <text x="240" y="125" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.6">shared state</text>
+          <rect x="0" y="0" width="100" height="32" rx="6" fill="#c45d3e" fill-opacity="0.08" stroke="#c45d3e" stroke-width="1"/>
+          <text x="50" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="#c45d3e">Post Finding</text>
+          <path d="M100 16 L120 70" stroke="#c45d3e" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="380" y="0" width="100" height="32" rx="6" fill="#E8845C" fill-opacity="0.08" stroke="#E8845C" stroke-width="1"/>
+          <text x="430" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="#E8845C">Challenge</text>
+          <path d="M380 16 L360 70" stroke="#E8845C" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="0" y="160" width="100" height="32" rx="6" fill="#2E5D9C" fill-opacity="0.08" stroke="#2E5D9C" stroke-width="1"/>
+          <text x="50" y="180" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="#2E5D9C">Respond</text>
+          <path d="M100 176 L120 130" stroke="#2E5D9C" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="380" y="160" width="100" height="32" rx="6" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1"/>
+          <text x="430" y="180" text-anchor="middle" font-family="Inter" font-size="10" font-weight="500" fill="#4a7c59">Resolve</text>
+          <path d="M380 176 L360 130" stroke="#4a7c59" stroke-width="1" stroke-dasharray="3 2"/>
+        </svg>
+      </div>
+
+      <p>Every resolution is a <strong>first-class auditable event</strong>. An insurance reviewer can ask: "Why did the system flag this clause?" and trace the answer through findings, challenges, evidence, and the winning position.</p>
+    </div>
+
+    <!-- WORKFLOWS -->
+    <div class="section">
+      <div class="section-label">Workflows</div>
+      <h2>Eight Ways to <em>Work.</em></h2>
+      <p>Different legal tasks need different approaches. From a 30-second question to a full adversarial review with parallel expert panels.</p>
+
+      <div class="features">
+        <div class="feat"><div class="feat-title">Quick Counsel</div><div class="feat-desc">Direct question → direct answer. 30 seconds, minimal cost. Like texting a lawyer friend.</div></div>
+        <div class="feat"><div class="feat-title">Contract Review</div><div class="feat-desc">Full multi-agent review with debate. Risks, deviations, missing protections.</div></div>
+        <div class="feat"><div class="feat-title">Adversarial</div><div class="feat-desc">Builder + Attacker + Synthesizer. One writes, another breaks it, a third reconciles.</div></div>
+        <div class="feat"><div class="feat-title">Roundtable</div><div class="feat-desc">Parallel expert panel. 5+ specialists analyze simultaneously, then debate and synthesize.</div></div>
+        <div class="feat"><div class="feat-title">Legal Design</div><div class="feat-desc">Transform legalese into readable documents while preserving legal effect.</div></div>
+        <div class="feat"><div class="feat-title">Full Bench</div><div class="feat-desc">Every available specialist. Maximum coverage. For high-stakes documents.</div></div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 1. THE BASIC LOOP -->
+    <!--                      PART II: CLAWERN                         -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <div class="part-divider">
+      <div class="part-divider-mark">CLAWERN</div>
+      <h2>Your Firm <em>on Retainer.</em></h2>
+      <p>Everything above runs interactively. But what if the firm could work without you?</p>
+    </div>
+
+    <!-- AUTONOMOUS LOOP -->
     <div class="section">
-      <div class="section-label">Pattern 1</div>
-      <h2>The Basic Loop</h2>
-      <p>At its core, Clawern watches a folder. When a new document appears, it runs the full Lavern multi-agent pipeline — debate, verification, assembly — and delivers results. No human interaction needed.</p>
+      <div class="section-label">Autonomous Mode</div>
+      <h2>It Works While <em>You Sleep.</em></h2>
+      <p>Clawern watches your folders, processes documents overnight, learns from past reviews, and pushes critical findings to your phone. A law firm on a Mac Mini.</p>
 
       <div class="diagram">
         <svg width="620" height="100" viewBox="0 0 620 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Boxes -->
           <rect x="0" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
           <text x="50" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Watch</text>
-
           <rect x="140" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
           <text x="190" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Parse</text>
-
           <rect x="280" y="25" width="100" height="50" rx="8" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="1.5"/>
           <text x="330" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Process</text>
-
           <rect x="420" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
           <text x="470" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Deliver</text>
-
           <rect x="560" y="25" width="60" height="50" rx="8" fill="#4a7c59" fill-opacity="0.1" stroke="#4a7c59" stroke-width="1.5"/>
           <text x="590" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#4a7c59">Done</text>
-
-          <!-- Arrows -->
-          <path d="M100 50 L140 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <path d="M240 50 L280 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <path d="M380 50 L420 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <path d="M520 50 L560 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-          <!-- Sub-labels -->
+          <path d="M100 50 L140 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <path d="M240 50 L280 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <path d="M380 50 L420 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <path d="M520 50 L560 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
           <text x="50" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">fs.watch</text>
           <text x="190" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">PDF/DOCX/MD</text>
           <text x="330" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">65 agents</text>
           <text x="470" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">MD + DOCX</text>
-
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ccc"/>
-            </marker>
-          </defs>
+          <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ccc"/></marker></defs>
         </svg>
       </div>
 
       <div class="code-block">
-        <span class="comment"># That's it. Two commands.</span><br>
-        <span class="cmd">lavern claw init</span><br>
-        <span class="cmd">lavern claw start</span><br>
-        <span class="comment"># Drop files. Walk away.</span>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 2. THE INTELLIGENCE LOOP -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="section">
-      <div class="section-label">Pattern 2</div>
-      <h2>The Intelligence Loop</h2>
-      <p>Every document Clawern reviews makes it smarter. Significant findings are indexed into a Precedent Board — persistent institutional memory. Before processing future documents, matching precedents are injected as context.</p>
-
-      <div class="diagram">
-        <svg width="500" height="220" viewBox="0 0 500 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Process box -->
-          <rect x="160" y="20" width="180" height="50" rx="8" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="1.5"/>
-          <text x="250" y="50" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#E8845C">Process Document</text>
-
-          <!-- Arrow down to findings -->
-          <path d="M250 70 L250 100" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-          <!-- Findings -->
-          <rect x="160" y="100" width="180" height="40" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
-          <text x="250" y="125" text-anchor="middle" font-family="Inter" font-size="12" font-weight="500" fill="#1a1a1a">Extract Findings</text>
-
-          <!-- Arrow down to precedent board -->
-          <path d="M250 140 L250 170" stroke="#B8860B" stroke-width="1.5" marker-end="url(#arrowGold)"/>
-
-          <!-- Precedent Board -->
-          <rect x="120" y="170" width="260" height="45" rx="8" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1.5"/>
-          <text x="250" y="197" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Precedent Board</text>
-
-          <!-- Loop arrow back up -->
-          <path d="M120 192 L40 192 L40 45 L160 45" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowGold)"/>
-
-          <!-- Label on loop -->
-          <text x="40" y="125" text-anchor="middle" font-family="Inter" font-size="9" fill="#B8860B" transform="rotate(-90, 40, 125)">inject context</text>
-
-          <!-- Reinforcement label -->
-          <text x="420" y="160" font-family="Inter" font-size="9" fill="#B8860B">reinforce</text>
-          <text x="420" y="172" font-family="Inter" font-size="9" fill="#B8860B">or create</text>
-
-          <defs>
-            <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#B8860B"/>
-            </marker>
-          </defs>
-        </svg>
-      </div>
-
-      <div class="callout">
-        <strong>Key insight:</strong> The firm gets smarter with every document. A liability cap pattern found in an NDA in January informs the review of a different NDA in March — automatically, with no human intervention.
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 3. THE CONFIDENTIALITY GATE -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="section">
-      <div class="section-label">Pattern 3</div>
-      <h2>The Confidentiality Gate</h2>
-      <p>Documents matching sensitivity patterns (<code>*confidential*</code>, <code>*privileged*</code>, <code>*merger*</code>) are analyzed entirely on-device via local models. Data never leaves the machine. Zero cost.</p>
-
-      <div class="diagram">
-        <svg width="520" height="180" viewBox="0 0 520 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Input -->
-          <rect x="0" y="60" width="120" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
-          <text x="60" y="90" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">New Document</text>
-
-          <!-- Arrow to gate -->
-          <path d="M120 85 L170 85" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-          <!-- Diamond gate -->
-          <polygon points="220,60 270,85 220,110 170,85" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
-          <text x="220" y="89" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Sensitive?</text>
-
-          <!-- Yes path - up to local -->
-          <path d="M220 60 L220 30 L370 30" stroke="#2E5D9C" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
-          <text x="290" y="24" font-family="Inter" font-size="9" font-weight="600" fill="#2E5D9C">YES</text>
-
-          <!-- Local box -->
-          <rect x="370" y="10" width="140" height="40" rx="8" fill="#2E5D9C" fill-opacity="0.08" stroke="#2E5D9C" stroke-width="1.5"/>
-          <text x="440" y="28" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#2E5D9C">Local Model</text>
-          <text x="440" y="42" text-anchor="middle" font-family="Inter" font-size="9" fill="#2E5D9C">on-device · $0</text>
-
-          <!-- No path - down to frontier -->
-          <path d="M270 85 L370 85" stroke="#E8845C" stroke-width="1.5" marker-end="url(#arrowAccent)"/>
-          <text x="310" y="79" font-family="Inter" font-size="9" font-weight="600" fill="#E8845C">NO</text>
-
-          <!-- Frontier box -->
-          <rect x="370" y="65" width="140" height="40" rx="8" fill="#E8845C" fill-opacity="0.08" stroke="#E8845C" stroke-width="1.5"/>
-          <text x="440" y="83" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#E8845C">Frontier API</text>
-          <text x="440" y="97" text-anchor="middle" font-family="Inter" font-size="9" fill="#E8845C">Claude · multi-agent</text>
-
-          <!-- Both converge to delivery -->
-          <path d="M440 50 L440 65" stroke="#ccc" stroke-width="1" stroke-dasharray="3 2"/>
-          <rect x="370" y="130" width="140" height="40" rx="8" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5"/>
-          <text x="440" y="155" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#4a7c59">Delivery Bundle</text>
-
-          <path d="M440 105 L440 130" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <path d="M510 30 L520 30 L520 150 L510 150" stroke="#ccc" stroke-width="1" stroke-dasharray="3 2"/>
-
-          <defs>
-            <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#2E5D9C"/>
-            </marker>
-            <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#E8845C"/>
-            </marker>
-          </defs>
-        </svg>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 4. THE NOTIFICATION WEB -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="section">
-      <div class="section-label">Pattern 4</div>
-      <h2>The Notification Web</h2>
-      <p>A real law firm calls you when something matters. Clawern pushes critical findings to every channel you use — Telegram, email, webhook, macOS notifications. You don't check the dashboard; the dashboard checks you.</p>
-
-      <div class="diagram">
-        <svg width="440" height="200" viewBox="0 0 440 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Center: Finding -->
-          <rect x="140" y="70" width="160" height="50" rx="8" fill="#c45d3e" fill-opacity="0.1" stroke="#c45d3e" stroke-width="1.5"/>
-          <text x="220" y="100" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#c45d3e">Critical Finding</text>
-
-          <!-- Telegram -->
-          <rect x="0" y="0" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
-          <text x="55" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Telegram</text>
-          <path d="M140 80 L110 36" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
-
-          <!-- Email -->
-          <rect x="330" y="0" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
-          <text x="385" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Email</text>
-          <path d="M300 80 L330 36" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
-
-          <!-- Webhook -->
-          <rect x="0" y="160" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
-          <text x="55" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Webhook</text>
-          <path d="M140 110 L110 160" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
-
-          <!-- macOS -->
-          <rect x="330" y="160" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
-          <text x="385" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">macOS Native</text>
-          <path d="M300 110 L330 160" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
-
-          <!-- Dashboard WS -->
-          <rect x="165" y="160" width="110" height="36" rx="6" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1"/>
-          <text x="220" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#B8860B">WebSocket</text>
-          <path d="M220 120 L220 160" stroke="#B8860B" stroke-width="1" marker-end="url(#arrowGold)"/>
-        </svg>
-      </div>
-    </div>
-
-    <hr>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 5. THE FULL SYSTEM -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="section">
-      <div class="section-label">The Full Picture</div>
-      <h2>Everything <em>Together.</em></h2>
-      <p>Clawern is not a single agent. It's an orchestrated system: a file watcher, a planner, a processor (which dispatches 65 agents), a delivery engine, an institutional memory, an audit trail, a notification web, and a voice interface — all running autonomously on your hardware.</p>
-
-      <div class="features">
-        <div class="feat">
-          <div class="feat-title">Autonomous Processing</div>
-          <div class="feat-desc">Watches folders, parses documents (PDF, DOCX, MD), infers workflow, dispatches agents, delivers results. Budget-aware, sensitivity-aware.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-title">Institutional Memory</div>
-          <div class="feat-desc">Precedent Board indexes findings across engagements. Evidence-linked, confidence-decaying, relevance-scored. The firm remembers.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-title">Change Detection</div>
-          <div class="feat-desc">When a document changes, Clawern compares new findings to the previous review: "+3 new, -1 resolved, ~2 changed." Re-reviews actually tell you what's different.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-title">Voice Dispatch</div>
-          <div class="feat-desc">"What's the status?" from your phone. Web Speech API input, keyword routing (no LLM cost), spoken response. The firm in your pocket.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-title">Cost Transparency</div>
-          <div class="feat-desc">Forecast before processing. Budget gauges. Cost per document. Per-agent breakdown. Confidential docs are always $0 (local model). Never a surprise bill.</div>
-        </div>
-        <div class="feat">
-          <div class="feat-title">Production Hardened</div>
-          <div class="feat-desc">1,392 tests. Audit trail. Daily backups. Prometheus metrics. Path traversal defense. Notification redaction. The firm doesn't crash.</div>
-        </div>
-      </div>
-    </div>
-
-    <hr>
-
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-value">65</div>
-        <div class="stat-label">Agents</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">20</div>
-        <div class="stat-label">Claw Modules</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">1,392</div>
-        <div class="stat-label">Tests</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">$0</div>
-        <div class="stat-label">Confidential Cost</div>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="section" style="text-align:center">
-      <h2 style="margin-bottom:24px"><em>It works while you sleep.</em></h2>
-      <div class="code-block" style="display:inline-block;text-align:left">
         <span class="cmd">lavern claw init</span>      <span class="comment"># Set up your firm</span><br>
-        <span class="cmd">lavern claw validate</span>  <span class="comment"># Check everything's ready</span><br>
         <span class="cmd">lavern claw start</span>     <span class="comment"># Start the firm</span><br>
         <span class="comment"># Drop files. Walk away.</span>
       </div>
     </div>
 
-    <footer class="footer">
-      <a href="/claw/">CLAWERN</a> · by LAVERN · <a href="/">lavern.ai</a>
-    </footer>
+    <!-- INTELLIGENCE LOOP -->
+    <div class="section">
+      <div class="section-label">Institutional Memory</div>
+      <h2>The Firm Gets <em>Smarter.</em></h2>
+      <p>Every document Clawern reviews makes it smarter. Findings are indexed into a <strong>Precedent Board</strong> — persistent memory. Before processing future documents, matching precedents are injected as context.</p>
+
+      <div class="diagram">
+        <svg width="500" height="220" viewBox="0 0 500 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="160" y="20" width="180" height="50" rx="8" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="250" y="50" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#E8845C">Process Document</text>
+          <path d="M250 70 L250 100" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <rect x="160" y="100" width="180" height="40" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="250" y="125" text-anchor="middle" font-family="Inter" font-size="12" font-weight="500" fill="#1a1a1a">Extract Findings</text>
+          <path d="M250 140 L250 170" stroke="#B8860B" stroke-width="1.5" marker-end="url(#a2)"/>
+          <rect x="120" y="170" width="260" height="45" rx="8" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1.5"/>
+          <text x="250" y="197" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Precedent Board</text>
+          <path d="M120 192 L40 192 L40 45 L160 45" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+          <text x="40" y="125" text-anchor="middle" font-family="Inter" font-size="9" fill="#B8860B" transform="rotate(-90, 40, 125)">inject context</text>
+          <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#B8860B"/></marker></defs>
+        </svg>
+      </div>
+
+      <div class="callout">
+        <strong>Key insight:</strong> A liability cap pattern found in an NDA in January informs the review of a different NDA in March — automatically, with no human intervention. The firm compounds its knowledge.
+      </div>
+    </div>
+
+    <!-- CONFIDENTIALITY -->
+    <div class="section">
+      <div class="section-label">Privacy</div>
+      <h2>Confidential by <em>Default.</em></h2>
+      <p>Documents matching sensitivity patterns are analyzed entirely on-device via local models. Data never leaves the machine. Zero cost. Privilege preserved.</p>
+
+      <div class="diagram">
+        <svg width="520" height="160" viewBox="0 0 520 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="50" width="120" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="60" y="80" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">New Document</text>
+          <path d="M120 75 L170 75" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <polygon points="220,50 270,75 220,100 170,75" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="220" y="79" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Sensitive?</text>
+          <path d="M220 50 L220 20 L370 20" stroke="#2E5D9C" stroke-width="1.5" marker-end="url(#a3)"/>
+          <text x="290" y="14" font-family="Inter" font-size="9" font-weight="600" fill="#2E5D9C">YES</text>
+          <rect x="370" y="5" width="140" height="35" rx="8" fill="#2E5D9C" fill-opacity="0.08" stroke="#2E5D9C" stroke-width="1.5"/>
+          <text x="440" y="20" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#2E5D9C">Local Model</text>
+          <text x="440" y="34" text-anchor="middle" font-family="Inter" font-size="9" fill="#2E5D9C">on-device · $0</text>
+          <path d="M270 75 L370 75" stroke="#E8845C" stroke-width="1.5" marker-end="url(#a4)"/>
+          <text x="310" y="69" font-family="Inter" font-size="9" font-weight="600" fill="#E8845C">NO</text>
+          <rect x="370" y="58" width="140" height="35" rx="8" fill="#E8845C" fill-opacity="0.08" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="440" y="73" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#E8845C">Frontier API</text>
+          <text x="440" y="87" text-anchor="middle" font-family="Inter" font-size="9" fill="#E8845C">Claude · multi-agent</text>
+          <rect x="370" y="120" width="140" height="35" rx="8" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5"/>
+          <text x="440" y="142" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#4a7c59">Delivery Bundle</text>
+          <path d="M440 93 L440 120" stroke="#ccc" stroke-width="1.5" marker-end="url(#a1)"/>
+          <defs>
+            <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2E5D9C"/></marker>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E8845C"/></marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION WEB -->
+    <div class="section">
+      <div class="section-label">Reach</div>
+      <h2>The Firm <em>Calls You.</em></h2>
+      <p>Critical findings push to every channel you use. You don't check the dashboard; the dashboard checks you.</p>
+
+      <div class="diagram">
+        <svg width="440" height="180" viewBox="0 0 440 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="140" y="60" width="160" height="50" rx="8" fill="#c45d3e" fill-opacity="0.1" stroke="#c45d3e" stroke-width="1.5"/>
+          <text x="220" y="90" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#c45d3e">Critical Finding</text>
+          <rect x="0" y="0" width="100" height="32" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/><text x="50" y="20" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Telegram</text>
+          <path d="M140 72 L100 32" stroke="#ccc" stroke-width="1"/>
+          <rect x="340" y="0" width="100" height="32" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/><text x="390" y="20" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Email</text>
+          <path d="M300 72 L340 32" stroke="#ccc" stroke-width="1"/>
+          <rect x="0" y="148" width="100" height="32" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/><text x="50" y="168" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">Webhook</text>
+          <path d="M140 100 L100 148" stroke="#ccc" stroke-width="1"/>
+          <rect x="340" y="148" width="100" height="32" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/><text x="390" y="168" text-anchor="middle" font-family="Inter" font-size="10" fill="#1a1a1a">macOS</text>
+          <path d="M300 100 L340 148" stroke="#ccc" stroke-width="1"/>
+          <rect x="170" y="148" width="100" height="32" rx="6" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1"/><text x="220" y="168" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B">Voice Dispatch</text>
+          <path d="M220 110 L220 148" stroke="#B8860B" stroke-width="1"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- EVERYTHING TOGETHER -->
+    <div class="section">
+      <div class="section-label">The Full Picture</div>
+      <h2>Everything <em>Together.</em></h2>
+
+      <div class="features">
+        <div class="feat"><div class="feat-title">Change Detection</div><div class="feat-desc">When a document changes: "+3 new, -1 resolved, ~2 changed." Re-reviews tell you what's different.</div></div>
+        <div class="feat"><div class="feat-title">Cost Transparency</div><div class="feat-desc">Forecast before processing. Budget gauges. Confidential docs always $0. Never a surprise bill.</div></div>
+        <div class="feat"><div class="feat-title">Voice Dispatch</div><div class="feat-desc">"What's the status?" from your phone. Spoken response. The firm in your pocket.</div></div>
+        <div class="feat"><div class="feat-title">Portfolio Intelligence</div><div class="feat-desc">Cross-document aggregation. "47 liability caps across your portfolio; 3 stricter than standard."</div></div>
+        <div class="feat"><div class="feat-title">Audit Trail</div><div class="feat-desc">Every action logged. Prometheus metrics. Daily backups. The firm keeps records.</div></div>
+        <div class="feat"><div class="feat-title">Mac or Linux</div><div class="feat-desc">macOS LaunchAgent or Linux systemd. Starts on boot. Restarts on crash. The firm never sleeps.</div></div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Principles -->
+    <div class="section">
+      <div class="section-label">Principles</div>
+      <h2>What We <em>Believe.</em></h2>
+      <div class="callout" style="border-left-color:var(--accent)"><strong style="color:var(--accent)">1. Legal effect must remain identical after transformation.</strong><br>Every word matters. Redesigned documents look different but mean the same thing.</div>
+      <div class="callout" style="border-left-color:var(--green)"><strong style="color:var(--green)">2. Every finding must cite specific text as evidence.</strong><br>No vague warnings. The exact clause, every time.</div>
+      <div class="callout" style="border-left-color:var(--gold)"><strong style="color:var(--gold)">3. Debate is a feature, not a bug.</strong><br>Disagreement produces better outcomes than consensus.</div>
+      <div class="callout" style="border-left-color:var(--blue)"><strong style="color:var(--blue)">4. Human gates are mandatory.</strong><br>The system assists, never decides. Critical moments pause for human judgment.</div>
+      <div class="callout" style="border-left-color:var(--red)"><strong style="color:var(--red)">5. This is not legal advice.</strong><br>Always verify with qualified legal professionals.</div>
+    </div>
+
+    <hr>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-value">65</div><div class="stat-label">Agents</div></div>
+      <div class="stat"><div class="stat-value">8</div><div class="stat-label">Workflows</div></div>
+      <div class="stat"><div class="stat-value">6</div><div class="stat-label">Legal Datasets</div></div>
+      <div class="stat"><div class="stat-value">1,392</div><div class="stat-label">Tests</div></div>
+    </div>
+
+    <hr>
+
+    <div style="text-align:center">
+      <h2 style="font-family:var(--serif);font-weight:300;margin-bottom:16px"><em>Excellence doesn't scale. Until now.</em></h2>
+      <p><a href="/" style="color:var(--accent);text-decoration:none;font-weight:600;letter-spacing:1px;font-size:13px;text-transform:uppercase">lavern.ai →</a></p>
+    </div>
+
+    <footer class="footer"><a href="/">LAVERN</a> · Helsinki · Paris</footer>
   </div>
 </body>
 </html>
