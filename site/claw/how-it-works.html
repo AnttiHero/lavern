@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Clawern Works — Visual Architecture</title>
+  <meta name="description" content="Visual explanation of Clawern's autonomous legal document processing architecture.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#FAFAF8;--surface:#fff;--text:#1a1a1a;--muted:#666;--dim:#999;
+      --accent:#E8845C;--gold:#B8860B;--green:#4a7c59;--red:#c45d3e;--blue:#2E5D9C;
+      --border:#e8e5e0;--code-bg:#f5f3f0;
+      --serif:'Cormorant Garamond',Georgia,serif;
+      --sans:'Inter',-apple-system,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+
+    .container{max-width:720px;margin:0 auto;padding:80px 24px 120px}
+
+    /* Header */
+    .header{text-align:center;margin-bottom:80px}
+    .header-mark{font-family:var(--serif);font-size:13px;letter-spacing:8px;color:var(--dim);text-transform:uppercase;margin-bottom:24px}
+    .header h1{font-family:var(--serif);font-size:clamp(32px,5vw,48px);font-weight:300;line-height:1.2;margin-bottom:16px}
+    .header h1 em{font-style:italic}
+    .header .subtitle{font-size:16px;color:var(--muted);max-width:520px;margin:0 auto}
+
+    /* Section */
+    .section{margin-bottom:80px}
+    .section-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+    .section h2{font-family:var(--serif);font-size:28px;font-weight:300;margin-bottom:16px}
+    .section h2 em{font-style:italic}
+    .section p{font-size:15px;color:var(--muted);margin-bottom:24px}
+
+    /* Diagram container */
+    .diagram{
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      padding:40px 32px;margin:32px 0;overflow-x:auto
+    }
+    .diagram svg{display:block;margin:0 auto}
+
+    /* Callout */
+    .callout{
+      background:var(--code-bg);border-left:3px solid var(--gold);
+      padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;
+      font-size:14px;color:var(--text)
+    }
+    .callout strong{color:var(--gold)}
+
+    /* Feature grid */
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:32px 0}
+    .feat{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+    .feat-title{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:8px}
+    .feat-desc{font-size:13px;color:var(--muted);line-height:1.6}
+    @media(max-width:600px){.features{grid-template-columns:1fr}}
+
+    /* Code */
+    code{font-family:var(--mono);font-size:13px;background:var(--code-bg);padding:2px 6px;border-radius:4px}
+    .code-block{
+      background:#1a1a1a;color:#e8e0d4;padding:20px 24px;border-radius:8px;
+      font-family:var(--mono);font-size:13px;line-height:1.7;margin:24px 0;
+      overflow-x:auto
+    }
+    .code-block .comment{color:#666}
+    .code-block .cmd{color:#E8845C}
+
+    /* Stats */
+    .stats{display:flex;gap:32px;justify-content:center;margin:40px 0;flex-wrap:wrap}
+    .stat{text-align:center}
+    .stat-value{font-size:36px;font-weight:700;font-family:var(--mono);color:var(--text)}
+    .stat-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+
+    /* Divider */
+    hr{border:none;height:1px;background:var(--border);margin:64px 0}
+
+    /* Footer */
+    .footer{text-align:center;padding:40px 0;font-size:12px;color:var(--dim);letter-spacing:1px}
+    .footer a{color:var(--muted);text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-mark">CLAWERN</div>
+      <h1>How It <em>Works.</em></h1>
+      <p class="subtitle">A visual guide to the architecture of an autonomous law firm that runs on a Mac Mini.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 1. THE BASIC LOOP -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-label">Pattern 1</div>
+      <h2>The Basic Loop</h2>
+      <p>At its core, Clawern watches a folder. When a new document appears, it runs the full Lavern multi-agent pipeline — debate, verification, assembly — and delivers results. No human interaction needed.</p>
+
+      <div class="diagram">
+        <svg width="620" height="100" viewBox="0 0 620 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Boxes -->
+          <rect x="0" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="50" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Watch</text>
+
+          <rect x="140" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="190" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Parse</text>
+
+          <rect x="280" y="25" width="100" height="50" rx="8" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="330" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Process</text>
+
+          <rect x="420" y="25" width="100" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="470" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Deliver</text>
+
+          <rect x="560" y="25" width="60" height="50" rx="8" fill="#4a7c59" fill-opacity="0.1" stroke="#4a7c59" stroke-width="1.5"/>
+          <text x="590" y="55" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#4a7c59">Done</text>
+
+          <!-- Arrows -->
+          <path d="M100 50 L140 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <path d="M240 50 L280 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <path d="M380 50 L420 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <path d="M520 50 L560 50" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- Sub-labels -->
+          <text x="50" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">fs.watch</text>
+          <text x="190" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">PDF/DOCX/MD</text>
+          <text x="330" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">65 agents</text>
+          <text x="470" y="90" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">MD + DOCX</text>
+
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ccc"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="code-block">
+        <span class="comment"># That's it. Two commands.</span><br>
+        <span class="cmd">lavern claw init</span><br>
+        <span class="cmd">lavern claw start</span><br>
+        <span class="comment"># Drop files. Walk away.</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 2. THE INTELLIGENCE LOOP -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-label">Pattern 2</div>
+      <h2>The Intelligence Loop</h2>
+      <p>Every document Clawern reviews makes it smarter. Significant findings are indexed into a Precedent Board — persistent institutional memory. Before processing future documents, matching precedents are injected as context.</p>
+
+      <div class="diagram">
+        <svg width="500" height="220" viewBox="0 0 500 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Process box -->
+          <rect x="160" y="20" width="180" height="50" rx="8" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="250" y="50" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#E8845C">Process Document</text>
+
+          <!-- Arrow down to findings -->
+          <path d="M250 70 L250 100" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- Findings -->
+          <rect x="160" y="100" width="180" height="40" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="250" y="125" text-anchor="middle" font-family="Inter" font-size="12" font-weight="500" fill="#1a1a1a">Extract Findings</text>
+
+          <!-- Arrow down to precedent board -->
+          <path d="M250 140 L250 170" stroke="#B8860B" stroke-width="1.5" marker-end="url(#arrowGold)"/>
+
+          <!-- Precedent Board -->
+          <rect x="120" y="170" width="260" height="45" rx="8" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1.5"/>
+          <text x="250" y="197" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Precedent Board</text>
+
+          <!-- Loop arrow back up -->
+          <path d="M120 192 L40 192 L40 45 L160 45" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowGold)"/>
+
+          <!-- Label on loop -->
+          <text x="40" y="125" text-anchor="middle" font-family="Inter" font-size="9" fill="#B8860B" transform="rotate(-90, 40, 125)">inject context</text>
+
+          <!-- Reinforcement label -->
+          <text x="420" y="160" font-family="Inter" font-size="9" fill="#B8860B">reinforce</text>
+          <text x="420" y="172" font-family="Inter" font-size="9" fill="#B8860B">or create</text>
+
+          <defs>
+            <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#B8860B"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="callout">
+        <strong>Key insight:</strong> The firm gets smarter with every document. A liability cap pattern found in an NDA in January informs the review of a different NDA in March — automatically, with no human intervention.
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3. THE CONFIDENTIALITY GATE -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-label">Pattern 3</div>
+      <h2>The Confidentiality Gate</h2>
+      <p>Documents matching sensitivity patterns (<code>*confidential*</code>, <code>*privileged*</code>, <code>*merger*</code>) are analyzed entirely on-device via local models. Data never leaves the machine. Zero cost.</p>
+
+      <div class="diagram">
+        <svg width="520" height="180" viewBox="0 0 520 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Input -->
+          <rect x="0" y="60" width="120" height="50" rx="8" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="60" y="90" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">New Document</text>
+
+          <!-- Arrow to gate -->
+          <path d="M120 85 L170 85" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- Diamond gate -->
+          <polygon points="220,60 270,85 220,110 170,85" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1.5"/>
+          <text x="220" y="89" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Sensitive?</text>
+
+          <!-- Yes path - up to local -->
+          <path d="M220 60 L220 30 L370 30" stroke="#2E5D9C" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+          <text x="290" y="24" font-family="Inter" font-size="9" font-weight="600" fill="#2E5D9C">YES</text>
+
+          <!-- Local box -->
+          <rect x="370" y="10" width="140" height="40" rx="8" fill="#2E5D9C" fill-opacity="0.08" stroke="#2E5D9C" stroke-width="1.5"/>
+          <text x="440" y="28" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#2E5D9C">Local Model</text>
+          <text x="440" y="42" text-anchor="middle" font-family="Inter" font-size="9" fill="#2E5D9C">on-device · $0</text>
+
+          <!-- No path - down to frontier -->
+          <path d="M270 85 L370 85" stroke="#E8845C" stroke-width="1.5" marker-end="url(#arrowAccent)"/>
+          <text x="310" y="79" font-family="Inter" font-size="9" font-weight="600" fill="#E8845C">NO</text>
+
+          <!-- Frontier box -->
+          <rect x="370" y="65" width="140" height="40" rx="8" fill="#E8845C" fill-opacity="0.08" stroke="#E8845C" stroke-width="1.5"/>
+          <text x="440" y="83" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#E8845C">Frontier API</text>
+          <text x="440" y="97" text-anchor="middle" font-family="Inter" font-size="9" fill="#E8845C">Claude · multi-agent</text>
+
+          <!-- Both converge to delivery -->
+          <path d="M440 50 L440 65" stroke="#ccc" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="370" y="130" width="140" height="40" rx="8" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5"/>
+          <text x="440" y="155" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#4a7c59">Delivery Bundle</text>
+
+          <path d="M440 105 L440 130" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <path d="M510 30 L520 30 L520 150 L510 150" stroke="#ccc" stroke-width="1" stroke-dasharray="3 2"/>
+
+          <defs>
+            <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#2E5D9C"/>
+            </marker>
+            <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#E8845C"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 4. THE NOTIFICATION WEB -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-label">Pattern 4</div>
+      <h2>The Notification Web</h2>
+      <p>A real law firm calls you when something matters. Clawern pushes critical findings to every channel you use — Telegram, email, webhook, macOS notifications. You don't check the dashboard; the dashboard checks you.</p>
+
+      <div class="diagram">
+        <svg width="440" height="200" viewBox="0 0 440 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Center: Finding -->
+          <rect x="140" y="70" width="160" height="50" rx="8" fill="#c45d3e" fill-opacity="0.1" stroke="#c45d3e" stroke-width="1.5"/>
+          <text x="220" y="100" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#c45d3e">Critical Finding</text>
+
+          <!-- Telegram -->
+          <rect x="0" y="0" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="55" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Telegram</text>
+          <path d="M140 80 L110 36" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
+
+          <!-- Email -->
+          <rect x="330" y="0" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="385" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Email</text>
+          <path d="M300 80 L330 36" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
+
+          <!-- Webhook -->
+          <rect x="0" y="160" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="55" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Webhook</text>
+          <path d="M140 110 L110 160" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
+
+          <!-- macOS -->
+          <rect x="330" y="160" width="110" height="36" rx="6" fill="#f5f3f0" stroke="#e8e5e0" stroke-width="1"/>
+          <text x="385" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">macOS Native</text>
+          <path d="M300 110 L330 160" stroke="#ccc" stroke-width="1" marker-end="url(#arrow)"/>
+
+          <!-- Dashboard WS -->
+          <rect x="165" y="160" width="110" height="36" rx="6" fill="#B8860B" fill-opacity="0.08" stroke="#B8860B" stroke-width="1"/>
+          <text x="220" y="182" text-anchor="middle" font-family="Inter" font-size="11" fill="#B8860B">WebSocket</text>
+          <path d="M220 120 L220 160" stroke="#B8860B" stroke-width="1" marker-end="url(#arrowGold)"/>
+        </svg>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 5. THE FULL SYSTEM -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-label">The Full Picture</div>
+      <h2>Everything <em>Together.</em></h2>
+      <p>Clawern is not a single agent. It's an orchestrated system: a file watcher, a planner, a processor (which dispatches 65 agents), a delivery engine, an institutional memory, an audit trail, a notification web, and a voice interface — all running autonomously on your hardware.</p>
+
+      <div class="features">
+        <div class="feat">
+          <div class="feat-title">Autonomous Processing</div>
+          <div class="feat-desc">Watches folders, parses documents (PDF, DOCX, MD), infers workflow, dispatches agents, delivers results. Budget-aware, sensitivity-aware.</div>
+        </div>
+        <div class="feat">
+          <div class="feat-title">Institutional Memory</div>
+          <div class="feat-desc">Precedent Board indexes findings across engagements. Evidence-linked, confidence-decaying, relevance-scored. The firm remembers.</div>
+        </div>
+        <div class="feat">
+          <div class="feat-title">Change Detection</div>
+          <div class="feat-desc">When a document changes, Clawern compares new findings to the previous review: "+3 new, -1 resolved, ~2 changed." Re-reviews actually tell you what's different.</div>
+        </div>
+        <div class="feat">
+          <div class="feat-title">Voice Dispatch</div>
+          <div class="feat-desc">"What's the status?" from your phone. Web Speech API input, keyword routing (no LLM cost), spoken response. The firm in your pocket.</div>
+        </div>
+        <div class="feat">
+          <div class="feat-title">Cost Transparency</div>
+          <div class="feat-desc">Forecast before processing. Budget gauges. Cost per document. Per-agent breakdown. Confidential docs are always $0 (local model). Never a surprise bill.</div>
+        </div>
+        <div class="feat">
+          <div class="feat-title">Production Hardened</div>
+          <div class="feat-desc">1,392 tests. Audit trail. Daily backups. Prometheus metrics. Path traversal defense. Notification redaction. The firm doesn't crash.</div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">65</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">20</div>
+        <div class="stat-label">Claw Modules</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1,392</div>
+        <div class="stat-label">Tests</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">$0</div>
+        <div class="stat-label">Confidential Cost</div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section" style="text-align:center">
+      <h2 style="margin-bottom:24px"><em>It works while you sleep.</em></h2>
+      <div class="code-block" style="display:inline-block;text-align:left">
+        <span class="cmd">lavern claw init</span>      <span class="comment"># Set up your firm</span><br>
+        <span class="cmd">lavern claw validate</span>  <span class="comment"># Check everything's ready</span><br>
+        <span class="cmd">lavern claw start</span>     <span class="comment"># Start the firm</span><br>
+        <span class="comment"># Drop files. Walk away.</span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <a href="/claw/">CLAWERN</a> · by LAVERN · <a href="/">lavern.ai</a>
+    </footer>
+  </div>
+</body>
+</html>
