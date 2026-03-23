@@ -246,8 +246,10 @@ export function validateProductionConfig(): void {
   if (!process.env.ANTHROPIC_API_KEY && config.provider === 'anthropic') {
     fatal.push('ANTHROPIC_API_KEY is not set — all agent workflows will fail');
   }
+
+  // ── Important but not fatal — degraded email functionality ──
   if (!process.env.RESEND_API_KEY) {
-    fatal.push('RESEND_API_KEY is not set — cannot send verification or reset emails');
+    warnings.push('RESEND_API_KEY is not set — email notifications disabled (verification, reset, alerts)');
   }
 
   // ── Non-critical — degraded but functional ──

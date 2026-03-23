@@ -227,7 +227,8 @@ async function main(): Promise<void> {
     }
 
     // Pre-flight checks before starting server
-    const preflightResults = await runPreflightChecks({ port, requireApiKey: true });
+    // API key is NOT required — server starts in demo mode without it
+    const preflightResults = await runPreflightChecks({ port, requireApiKey: false });
     const preflightOk = printPreflightResults(preflightResults);
     if (!preflightOk) {
       const critical = preflightResults.filter(r => !r.ok && r.check !== 'Disk space');
@@ -236,6 +237,23 @@ async function main(): Promise<void> {
         process.exit(1);
       }
       // Non-critical warnings (disk space) — continue with warning
+    }
+
+    // Auto-copy .env.example → .env if no .env exists
+    const envPath = path.join(process.cwd(), '.env');
+    const examplePath = path.join(process.cwd(), '.env.example');
+    if (!fs.existsSync(envPath) && fs.existsSync(examplePath)) {
+      fs.copyFileSync(examplePath, envPath);
+      console.log('  📋 Created .env from .env.example — add your API keys to enable full functionality.\n');
+    }
+
+    const demoMode = !process.env.ANTHROPIC_API_KEY;
+    if (demoMode) {
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║  DEMO MODE — no ANTHROPIC_API_KEY detected                  ║');
+      console.log('║  Dashboard, auth, and Clawern dashboard will work.          ║');
+      console.log('║  Agent workflows require an API key in .env                 ║');
+      console.log('╚══════════════════════════════════════════════════════════════╝\n');
     }
 
     console.log(`API server mode — starting on port ${port}...`);
