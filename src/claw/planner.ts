@@ -131,8 +131,11 @@ export function planWork(
       continue;
     }
 
-    // Confidential documents processed locally are free ($0)
-    const estimated = isConfidential ? 0 : estimateCost(doc, config.intensity);
+    // Cost estimation: local = $0, hybrid = ~30% of frontier, frontier = full
+    const processingMode = config.profile.processing ?? 'local';
+    const estimated = isConfidential
+      ? (processingMode === 'hybrid' ? estimateCost(doc, config.intensity) * 0.3 : 0)
+      : estimateCost(doc, config.intensity);
 
     // Budget gate — per-document (skip for confidential/free)
     if (!isConfidential && estimated > config.perDocBudget) {
@@ -166,6 +169,7 @@ export function planWork(
       trigger,
       status: 'queued',
       confidential: isConfidential || undefined,
+      processing: isConfidential ? (processingMode as 'local' | 'hybrid') : undefined,
       matchedPattern: matchedPattern ?? undefined,
     };
 
@@ -256,6 +260,7 @@ export function forecastWork(
   perDocBudget: number,
   ethicalMode: boolean,
   sensitivityPatterns: string[],
+  processingMode: 'local' | 'frontier' | 'hybrid' = 'local',
 ): CostForecast {
   const actionable = registry.getDocumentsByStatus('new', 'stale', 'queued');
   const patterns = sensitivityPatterns.length > 0 ? sensitivityPatterns : DEFAULT_SENSITIVITY_PATTERNS;
@@ -276,7 +281,9 @@ export function forecastWork(
       continue;
     }
 
-    const estimated = isConfidential ? 0 : estimateCost(doc, intensity);
+    const estimated = isConfidential
+      ? (processingMode === 'hybrid' ? estimateCost(doc, intensity) * 0.3 : 0)
+      : estimateCost(doc, intensity);
 
     if (!isConfidential && estimated > perDocBudget) {
       skippedCount++;

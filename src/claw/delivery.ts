@@ -312,6 +312,163 @@ export class ClawDelivery {
   }
 
   /**
+   * Write output bundle for a hybrid-analyzed document.
+   * Local triage + anonymized frontier analysis, merged findings with provenance.
+   */
+  async deliverHybrid(
+    sessionId: string,
+    result: import('./hybrid-analysis.js').HybridAnalysisResult,
+    documentPath: string,
+    documentHash: string,
+    clawConfig: ClawConfig,
+  ): Promise<string> {
+    const deliveryDir = path.join(this.baseDir, 'delivery', sessionId);
+    ensureDir(deliveryDir);
+
+    const filename = path.basename(documentPath);
+    const title = path.basename(documentPath, path.extname(documentPath));
+    const now = new Date().toISOString();
+
+    // Count findings by severity
+    let critical = 0, major = 0, minor = 0;
+    for (const f of result.findings) {
+      const sev = f.severity.toUpperCase();
+      if (sev === 'RED' || sev === 'CRITICAL') critical++;
+      else if (sev === 'YELLOW' || sev === 'MAJOR') major++;
+      else minor++;
+    }
+
+    // Group findings by source
+    const localFindings = result.findings.filter(f => f.source === 'local');
+    const frontierFindings = result.findings.filter(f => f.source === 'frontier');
+    const mergedFindings = result.findings.filter(f => f.source === 'both');
+
+    // Build markdown
+    const formatFinding = (f: import('./hybrid-analysis.js').HybridFinding) =>
+      `### ${f.title}\n\n${f.content}\n\n${f.evidence ? `> ${f.evidence}\n\n` : ''}**Severity:** ${f.severity} | **Source:** ${f.source}\n`;
+
+    const sections: string[] = [
+      `# Hybrid Analysis: ${title}`,
+      ``,
+      `> 🔒🌐 **CONFIDENTIAL — Hybrid Processing**`,
+      `> Structural analysis on-device. ${result.frontierClauseCount} of ${result.totalClauseCount} clauses sent to frontier (anonymized, ${result.entityCount} entities replaced).`,
+      `> No complete document was transmitted externally.`,
+      ``,
+      `## Summary`,
+      ``,
+      result.localResult.summary,
+      ``,
+    ];
+
+    if (mergedFindings.length > 0) {
+      sections.push(`## Enhanced Findings (Local + Frontier)`, ``);
+      sections.push(...mergedFindings.map(formatFinding));
+    }
+
+    if (frontierFindings.length > 0) {
+      sections.push(`## Frontier Findings`, ``);
+      sections.push(...frontierFindings.map(formatFinding));
+    }
+
+    if (localFindings.length > 0) {
+      sections.push(`## Local Findings`, ``);
+      sections.push(...localFindings.map(formatFinding));
+    }
+
+    if (result.localResult.recommendations.length > 0) {
+      sections.push(`## Recommendations`, ``);
+      sections.push(...result.localResult.recommendations.map((r, i) => `${i + 1}. ${r}`));
+    }
+
+    sections.push(``, `---`, ``);
+    sections.push(`*Hybrid: local (${result.localResult.model}) + frontier | Cost: $${result.cost.totalUsd.toFixed(2)} | ${now}*`);
+
+    const markdown = sections.join('\n');
+
+    // Manifest
+    const manifest: ClawManifest = {
+      sessionId,
+      version: '1.0.0',
+      input: {
+        filename,
+        path: documentPath,
+        extension: path.extname(documentPath),
+        sizeBytes: fs.statSync(documentPath).size,
+        detectedType: result.localResult.documentType,
+        sidecarUsed: false,
+      },
+      task: {
+        requestText: `Hybrid analysis of ${filename} (confidential)`,
+        workflow: 'hybrid',
+        intensity: clawConfig.intensity,
+        inferenceMethod: 'heuristic',
+      },
+      execution: {
+        startedAt: now,
+        completedAt: now,
+        durationSeconds: 0,
+        model: `hybrid:${result.localResult.model}+frontier`,
+        totalCostUsd: result.cost.totalUsd,
+        budgetUsd: clawConfig.perDocBudget,
+        agentsUsed: ['local-analyst', 'frontier-review'],
+      },
+      analysis: {
+        findingsCount: result.findings.length,
+        criticalCount: critical,
+        majorCount: major,
+        minorCount: minor,
+        resolutionCount: 0,
+        debateRounds: 0,
+        verificationPassed: null,
+      },
+      outputs: {
+        markdown: 'deliverable.md',
+        findings: 'findings.json',
+      },
+      processing: 'hybrid',
+      hybridStats: {
+        localFindings: localFindings.length,
+        frontierFindings: frontierFindings.length,
+        mergedFindings: mergedFindings.length,
+        clausesSentToFrontier: result.frontierClauseCount,
+        totalClauses: result.totalClauseCount,
+        entityCount: result.entityCount,
+      },
+      status: 'completed',
+      confidential: true,
+    };
+
+    // Write files
+    writeJsonFileAtomic(path.join(deliveryDir, 'manifest.json'), manifest);
+    fs.writeFileSync(path.join(deliveryDir, 'deliverable.md'), markdown, 'utf-8');
+
+    // Findings JSON with provenance
+    writeJsonFileAtomic(path.join(deliveryDir, 'findings.json'), result.findings);
+
+    // Summary text
+    const summary = [
+      `Session: ${sessionId}`,
+      `Document: ${filename} (CONFIDENTIAL — hybrid analysis)`,
+      `Type: ${result.localResult.documentType}`,
+      `Processing: hybrid (${result.frontierClauseCount}/${result.totalClauseCount} clauses to frontier, ${result.entityCount} entities anonymized)`,
+      `Cost: $${result.cost.totalUsd.toFixed(2)} (local: $0.00, frontier: $${result.cost.frontierUsd.toFixed(2)})`,
+      ``,
+      `Findings: ${result.findings.length} total`,
+      `  Critical: ${critical}`,
+      `  Major: ${major}`,
+      `  Minor: ${minor}`,
+      `  From local: ${localFindings.length}`,
+      `  From frontier: ${frontierFindings.length}`,
+      `  Merged: ${mergedFindings.length}`,
+      ``,
+      result.processingNote,
+    ].join('\n');
+    fs.writeFileSync(path.join(deliveryDir, 'summary.txt'), summary, 'utf-8');
+
+    return deliveryDir;
+  }
+
+  /**
    * Save failed job details for debugging.
    */
   saveFailed(sessionId: string, documentPath: string, error: string, baseDir: string): void {

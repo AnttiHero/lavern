@@ -102,6 +102,60 @@ export async function processDocument(
     // process entirely on-device. No data leaves the machine.
     if (confidential && config.claw.localModel) {
       const localModelName = config.claw.localAnalysisModel || config.claw.localModel;
+      const processingMode = profile.processing ?? 'local';
+
+      // ── HYBRID PATH: local triage + anonymized frontier ──────────
+      if (processingMode === 'hybrid') {
+        log(`🔒🌐 Hybrid — local triage + anonymized frontier (${localModelName})`);
+        try {
+          const { analyzeHybrid } = await import('./hybrid-analysis.js');
+          const hybridResult = await analyzeHybrid(
+            parsed.fullText, path.basename(documentPath), profile, clawConfig, parsed, log,
+          );
+
+          // Convert hybrid findings to summary counts
+          const hybridFindings = { critical: 0, major: 0, minor: 0 };
+          for (const f of hybridResult.findings) {
+            const sev = f.severity.toUpperCase();
+            if (sev === 'RED' || sev === 'CRITICAL') hybridFindings.critical++;
+            else if (sev === 'YELLOW' || sev === 'MAJOR') hybridFindings.major++;
+            else hybridFindings.minor++;
+          }
+
+          const deliveryDir = await delivery.deliverHybrid(
+            sessionId, hybridResult, documentPath, documentHash, clawConfig,
+          );
+
+          registry.markReviewed(documentHash, sessionId, hybridFindings, hybridResult.cost.totalUsd, true);
+
+          const durationMs = Date.now() - startTime;
+          log(`🔒🌐 Delivered (hybrid) → ${path.relative(clawConfig.dir, deliveryDir)}/`);
+          log(`  $${hybridResult.cost.totalUsd.toFixed(2)} · ${(durationMs / 1000).toFixed(0)}s · ${hybridResult.frontierClauseCount}/${hybridResult.totalClauseCount} clauses sent to frontier`);
+          log(`  ${hybridFindings.critical} critical, ${hybridFindings.major} major, ${hybridFindings.minor} minor`);
+
+          if (hybridFindings.critical > 0) {
+            notify({
+              type: 'document_flagged',
+              title: `🔒🌐 Critical findings (hybrid): ${path.basename(documentPath)}`,
+              message: `${hybridFindings.critical} critical, ${hybridFindings.major} major — hybrid analysis (${hybridResult.entityCount} entities anonymized)`,
+              details: { documentPath, sessionId, findings: hybridFindings, confidential: true, processing: 'hybrid' },
+            });
+          }
+
+          clawEventBus.emitEvent({ type: 'claw_job_completed', documentPath, documentHash, costUsd: hybridResult.cost.totalUsd, durationMs, findings: hybridFindings, timestamp: eventTimestamp() });
+
+          return {
+            sessionId, documentPath, documentHash,
+            success: true, costUsd: hybridResult.cost.totalUsd, durationMs, findings: hybridFindings, deliveryDir,
+          };
+        } catch (err) {
+          const error = err instanceof Error ? err.message : String(err);
+          log(`🔒🌐 Hybrid failed, falling back to local-only: ${error}`);
+          // Fall through to local-only path below
+        }
+      }
+
+      // ── LOCAL-ONLY PATH ──────────────────────────────────────────
       log(`🔒 Confidential — processing locally (${localModelName})`);
 
       try {

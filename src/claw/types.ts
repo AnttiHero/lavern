@@ -39,6 +39,8 @@ export interface ClawProfile {
     enabled: boolean;
     intervalDays: number;   // e.g., 90
   };
+  /** Processing mode for sensitive documents: 'local' (default), 'frontier', 'hybrid' */
+  processing?: 'local' | 'frontier' | 'hybrid';
   createdAt: string;
 }
 
@@ -108,6 +110,8 @@ export interface ClawJob {
   status: 'queued' | 'processing' | 'completed' | 'failed';
   /** When true, process with local model only — no data leaves the machine */
   confidential?: boolean;
+  /** Processing mode override */
+  processing?: 'local' | 'frontier' | 'hybrid';
   /** Sensitivity pattern that matched */
   matchedPattern?: string;
   startedAt?: string;
@@ -192,6 +196,19 @@ export interface ClawManifest {
     changed: number;
     unchanged: number;
     previousSessionId: string;
+  };
+
+  /** Processing mode used */
+  processing?: 'local' | 'frontier' | 'hybrid';
+
+  /** For hybrid: breakdown of local vs frontier findings */
+  hybridStats?: {
+    localFindings: number;
+    frontierFindings: number;
+    mergedFindings: number;
+    clausesSentToFrontier: number;
+    totalClauses: number;
+    entityCount: number;
   };
 
   status: 'completed' | 'failed' | 'partial';
