@@ -48,8 +48,13 @@ import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type D
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
 import { createLogger } from '../../utils/logger.js';
+import { createMassActionGuard } from '../middleware/mass-action-guard.js';
 
 const logger = createLogger('SESSIONS');
+const massActionGuard = createMassActionGuard();
+
+// Periodic cleanup of stale mass-action tracking entries (every 10 minutes)
+setInterval(() => massActionGuard.cleanup(), 10 * 60_000);
 
 /** Safely parse JSON, returning fallback on failure. */
 function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
@@ -153,6 +158,34 @@ export function registerSessionRoutes(
       // Cap session budget to remaining monthly budget and plan limit
       const planLimits = getPlanLimits((await import('../../db/database.js')).getUserPlan(userId)?.plan ?? 'free');
       sessionBudget = Math.min(sessionBudget, budgetCheck.remainingBudget, planLimits.maxSessionBudget);
+    }
+
+    // Mass-action detection — flag or block bulk legal document generation
+    const workflowId = body.workflow ?? 'default';
+    const requestText = body.request?.requestText ?? '';
+    if (userId) {
+      const massCheck = massActionGuard.check(userId, workflowId, requestText);
+      if (massCheck.flagged) {
+        logger.warn('Mass-action pattern detected', {
+          userId,
+          reason: massCheck.reason,
+          templateCount: massCheck.templateCount,
+          similarCount: massCheck.similarCount,
+        });
+        logAuditEvent({
+          userId,
+          action: 'mass_action_detected',
+          resource: `template:${workflowId} count:${massCheck.templateCount}`,
+        });
+        if (!massCheck.allowed) {
+          return reply.status(429).send({
+            error: 'Mass-action pattern detected',
+            detail: massCheck.reason,
+            message: 'This looks like bulk document generation. If this is legitimate, please contact support.',
+          });
+        }
+        // If flagged but allowed, the ethics-reviewer agent will see this in session metadata
+      }
     }
 
     const gateResolver = yoloMode

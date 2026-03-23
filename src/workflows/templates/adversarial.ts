@@ -96,6 +96,7 @@ export const adversarialTemplate: WorkflowTemplate = {
     'legal-researcher',
     'red-team',
     'synthesis-editor',
+    'ethics-reviewer',
   ],
   maxTeamSize: 12,
   orchestratorArchetype: 'orchestrator-professor',

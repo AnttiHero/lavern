@@ -116,6 +116,7 @@ export const reviewTemplate: WorkflowTemplate = {
     'plain-language-specialist',
     'evaluator',
     'risk-pricer',
+    'ethics-reviewer',
   ],
   maxTeamSize: 14,
   orchestratorArchetype: 'orchestrator-closer',

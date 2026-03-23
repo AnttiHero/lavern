@@ -154,6 +154,7 @@ export const fullBenchTemplate: WorkflowTemplate = {
     'synthesis-editor',
     'evaluator',
     'risk-pricer',
+    'ethics-reviewer',
   ],
   maxTeamSize: 25,
   orchestratorArchetype: 'orchestrator-conductor',
