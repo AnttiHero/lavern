@@ -113,7 +113,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
 ### Clawern (Law Firm on Retainer)
-- `src/claw/` — Autonomous document processing pipeline (20 modules):
+- `src/claw/` — Autonomous document processing pipeline (22 modules):
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
   - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
   - `processor.ts` — Document processing (parse, infer, dispatch, deliver) + precedent lookup/indexing
@@ -130,11 +130,13 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `diff.ts` — Findings diff across review sessions (added/resolved/changed)
   - `audit.ts` — Append-only JSON lines audit trail with rotation
   - `backup.ts` — Daily state backup with 30-day retention
+  - `anonymize.ts` — Legal entity anonymization (parties, amounts, dates, emails, phones) with reversible mapping
+  - `hybrid-analysis.ts` — Hybrid local+frontier pipeline (local triage → anonymize → frontier selective → de-anonymize → merge)
   - `init.ts` — Interactive onboarding with profile versioning + migration
   - `inference.ts` — Document type inference
   - `terminal.ts` — Rich terminal output formatting
   - `index.ts` — CLI entry point with heartbeat timer, `--ethical` flag
-  - `types.ts` — Claw-specific type definitions (incl. ethicalMode)
+  - `types.ts` — Claw-specific type definitions (incl. ethicalMode, processing mode)
 
 ### Data Layer
 - `src/db/` — SQLite database (user auth, tokens, session archive, matter storage)
@@ -179,7 +181,7 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1392+ tests across 85 files (76 unit + 9 integration)
+- `tests/` — 1440+ tests across 87 files (78 unit + 9 integration)
 
 ## Version History
 
@@ -254,7 +256,21 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - Clawern front page (site/claw/): dark cinematic design with crab hero
 - 65% grain, fog vignette, 3-step setup
 
-**Test Coverage:** 1283 → 1392 tests (109 new across 9 test files)
+**Hybrid Local+Frontier Processing:**
+- `src/claw/anonymize.ts` — Regex-based legal entity extraction (party names from defined terms, monetary amounts, dates, emails, phones), stable placeholder replacement, reversible de-anonymization
+- `src/claw/hybrid-analysis.ts` — 5-stage pipeline: local triage → filter major/critical → anonymize flagged clauses → frontier dispatch (30% budget) → de-anonymize + merge with provenance tagging
+- Processing mode config: `ClawProfile.processing: 'local' | 'frontier' | 'hybrid'`
+- Fast path: if all findings are low-severity, skip frontier entirely
+- Graceful degradation: frontier failure falls back to local-only findings
+- Entity mapping stays in memory only, never serialized or sent externally
+- Delivery with provenance tags (source: 'local' | 'frontier' | 'both') and hybridStats in manifest
+
+**Developer Experience:**
+- Demo mode: server starts without ANTHROPIC_API_KEY (dashboard, auth, Clawern dashboard work)
+- Auto-copy `.env.example` → `.env` on first run
+- RESEND_API_KEY downgraded from fatal to warning
+
+**Test Coverage:** 1283 → 1440 tests (157 new across 11 test files)
 
 ### v0.13.0 — Precedent Board (Institutional Memory)
 
