@@ -388,6 +388,58 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      GROUNDING: HALLUCINATION PREVENTION           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Ground Truth</div>
+      <h2>Grounding: How Lavern Prevents <em>Hallucination.</em></h2>
+
+      <p>People ask two different questions that sound the same. <strong>"Is it accurate?"</strong> means: are the legal findings correct? <strong>"Does it hallucinate?"</strong> means: does it make things up? Different failure modes need different defenses.</p>
+
+      <p><strong>The source document is the ground truth.</strong> Every finding must include evidence: specific quotes, section references, clause numbers from the actual document. After agents post their findings, a mechanical grounding verifier cross-references every citation against the parsed document. If an agent says "Section 5.2 states X," the system confirms Section 5.2 exists and contains X. This is not LLM judgment. It is string matching. Zero cost, zero ambiguity.</p>
+
+      <div class="diagram">
+        <svg width="700" height="140" viewBox="0 0 700 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="shg" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter></defs>
+          <!-- Finding -->
+          <rect x="20" y="35" width="130" height="65" rx="10" fill="#C1543D" fill-opacity="0.08" stroke="#C1543D" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="85" y="62" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#C1543D">Finding</text>
+          <text x="85" y="80" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">with evidence[]</text>
+          <!-- Arrow -->
+          <line x1="155" y1="67" x2="195" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <defs><marker id="arrowG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker></defs>
+          <!-- Extract -->
+          <rect x="200" y="35" width="130" height="65" rx="10" fill="#ddd" stroke="#bbb" stroke-width="1" filter="url(#shg)"/>
+          <text x="265" y="58" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#555">Extract</text>
+          <text x="265" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">Section refs</text>
+          <text x="265" y="88" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">Quoted text</text>
+          <!-- Arrow -->
+          <line x1="335" y1="67" x2="375" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <!-- Cross-Reference -->
+          <rect x="380" y="35" width="150" height="65" rx="10" fill="#1a5276" fill-opacity="0.06" stroke="#1a5276" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="455" y="58" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a5276">Cross-Reference</text>
+          <text x="455" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">vs. parsed document</text>
+          <text x="455" y="88" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">string matching</text>
+          <!-- Arrow -->
+          <line x1="535" y1="67" x2="575" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <!-- Score -->
+          <rect x="580" y="35" width="100" height="65" rx="10" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="630" y="58" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#4a7c59">Score</text>
+          <text x="630" y="78" text-anchor="middle" font-family="Inter" font-size="11" fill="#999">0.0 - 1.0</text>
+        </svg>
+        <div class="diagram-caption">The grounding pipeline. Evidence is extracted from each finding, cross-referenced mechanically against the source document, and scored. No LLM involved.</div>
+      </div>
+
+      <p><strong>Cross-model evaluation catches correlated errors.</strong> The evaluator agent runs on a different model than the specialists. This is deliberate. If all agents run on the same model, they make the same mistakes. The evaluator scores work across 8 dimensions including factual correctness and citation validity, each with auto-fail triggers: a fabricated citation scores 0.0 regardless of everything else.</p>
+
+      <p><strong>Post-assembly fidelity verification.</strong> After the final document is assembled from all agent work, it is checked against what agents actually found. Are the critical findings represented? Are debate resolutions reflected? This catches the subtle failure where assembly "summarizes" findings in a way that distorts them.</p>
+
+      <p><strong>What the user sees.</strong> The delivery includes a confidence score: a weighted average across findings, debate resolutions, verification checks, and evaluator scores. Low-confidence findings are flagged. Grounding scores show how well evidence is rooted in the source document. The full audit trail is in the review package.</p>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <!--                      THE DEBATE BOARD                              -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
 

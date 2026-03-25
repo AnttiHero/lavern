@@ -104,6 +104,17 @@ export interface DeliveryData {
   agentPerformance: AgentPerf[];
   eventCount: number;
 
+  // Confidence & grounding
+  confidenceSummary?: {
+    overall: number;
+    findings: number;
+    resolutions: number;
+    verification: number;
+    grounding: number | null;
+    evaluatorScore: number;
+    lowConfidenceCount: number;
+  };
+
   // Limitations & transparency
   limitations?: {
     flaggedForHumanReview: string[];
@@ -513,6 +524,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     cost: { accumulated: cost?.accumulated ?? 0, budget: cost?.budget ?? 0, remaining: cost?.remaining ?? 0 },
     agentPerformance: agentPerfList,
     eventCount: (raw.eventCount as number | undefined) ?? 0,
+    confidenceSummary: (raw.confidenceSummary as DeliveryData['confidenceSummary']) ?? undefined,
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,
   };

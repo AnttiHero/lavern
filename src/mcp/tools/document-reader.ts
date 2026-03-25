@@ -235,7 +235,7 @@ function flattenHeadings(
   return result;
 }
 
-function flattenSections(sections: DocumentSection[]): DocumentSection[] {
+export function flattenSections(sections: DocumentSection[]): DocumentSection[] {
   const result: DocumentSection[] = [];
   for (const s of sections) {
     result.push(s);

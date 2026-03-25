@@ -594,7 +594,33 @@ export function registerSessionRoutes(
         content: f.content,
         evidence: f.evidence,
         confidence: f.confidence,
+        groundingScore: f.groundingScore ?? null,
       })),
+
+      // ── Confidence summary ──────────────────────────────────────
+      confidenceSummary: (() => {
+        const findings = session.debate.findings;
+        const resolutions = session.debate.resolutions;
+        const avgFinding = findings.length > 0
+          ? findings.reduce((s, f) => s + f.confidence, 0) / findings.length : 0;
+        const avgResolution = resolutions.length > 0
+          ? resolutions.reduce((s, r) => s + r.confidence, 0) / resolutions.length : 0;
+        const avgGrounding = findings.filter(f => f.groundingScore != null).length > 0
+          ? findings.filter(f => f.groundingScore != null).reduce((s, f) => s + (f.groundingScore ?? 0), 0) / findings.filter(f => f.groundingScore != null).length : null;
+        const avgVerification = session.verificationSummary?.averageConfidence ?? 0;
+        const weights = { findings: 0.3, resolutions: 0.2, verification: 0.3, evaluator: 0.2 };
+        const overall = (avgFinding * weights.findings) + (avgResolution * weights.resolutions)
+          + (avgVerification * weights.verification) + (bestEvalScore * weights.evaluator);
+        return {
+          overall: Math.round(overall * 100) / 100,
+          findings: Math.round(avgFinding * 100) / 100,
+          resolutions: Math.round(avgResolution * 100) / 100,
+          verification: Math.round(avgVerification * 100) / 100,
+          grounding: avgGrounding != null ? Math.round(avgGrounding * 100) / 100 : null,
+          evaluatorScore: Math.round(bestEvalScore * 100) / 100,
+          lowConfidenceCount: findings.filter(f => f.confidence < 0.7).length,
+        };
+      })(),
 
       // ── Documents ──────────────────────────────────────────────────
       documents: session.documents.map(d => ({

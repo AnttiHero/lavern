@@ -28,6 +28,7 @@ export interface Finding {
   severity: Severity;
   evidence: string[];
   confidence: number;  // 0.0-1.0 — operational confidence in this finding
+  groundingScore?: number;  // 0.0-1.0 — mechanical evidence grounding (computed post-hoc)
   timestamp: string;
   resolved: boolean;
 }
