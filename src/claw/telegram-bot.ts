@@ -11,6 +11,7 @@
  * Perfect for a Mac Mini behind NAT.
  */
 
+import { join } from 'path';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
 import { loadProfile } from './init.js';
@@ -85,13 +86,37 @@ function executeCommand(command: Command): string {
     }
 
     case 'scan':
+      // Trigger immediate scan by touching the state file to wake the watcher
+      try {
+        const statePath = join(process.env.HOME ?? '', '.lavern', 'state.json');
+        const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
+        const stateData = JSON.parse(readFileSync(statePath, 'utf-8'));
+        stateData._scanRequested = Date.now();
+        writeFileSync(statePath, JSON.stringify(stateData, null, 2));
+      } catch { /* non-fatal */ }
       return '🔍 Scan triggered. New documents will be processed on the next cycle.';
 
-    case 'pause':
+    case 'pause': {
+      try {
+        const profilePath = join(process.env.HOME ?? '', '.lavern', 'profile.json');
+        const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
+        const profile = JSON.parse(readFileSync(profilePath, 'utf-8'));
+        profile.paused = true;
+        writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+      } catch { /* non-fatal */ }
       return '⏸ Paused. Use "resume" to continue processing.';
+    }
 
-    case 'resume':
+    case 'resume': {
+      try {
+        const profilePath = join(process.env.HOME ?? '', '.lavern', 'profile.json');
+        const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
+        const profile = JSON.parse(readFileSync(profilePath, 'utf-8'));
+        profile.paused = false;
+        writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+      } catch { /* non-fatal */ }
       return '▶️ Resumed. Processing will continue on the next cycle.';
+    }
 
     case 'retry':
       return '🔄 Retry queued. Failed documents will be reprocessed.';

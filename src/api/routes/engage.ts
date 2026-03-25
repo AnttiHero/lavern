@@ -34,8 +34,11 @@ import { config } from '../../config.js';
 import { canStartSession } from './billing.js';
 import { holdBillableHours } from '../../db/database.js';
 import { createLogger } from '../../utils/logger.js';
+import { createMassActionGuard } from '../middleware/mass-action-guard.js';
 
 const logger = createLogger('ENGAGE');
+const massActionGuard = createMassActionGuard();
+setInterval(() => massActionGuard.cleanup(), 10 * 60_000);
 
 // ── Request Schema ──────────────────────────────────────────────────────
 
@@ -543,11 +546,27 @@ export function registerEngageRoutes(
       session.clientIdentity = client;
     }
 
+    // Mass-action detection (same guard as /api/sessions)
+    if (userId) {
+      const workflowId = body.constraints?.workflow ?? 'default';
+      const requestText = body.task ?? '';
+      const massCheck = massActionGuard.check(userId, workflowId, requestText);
+      if (massCheck.flagged && !massCheck.allowed) {
+        sessionManager.destroySession(session.id, 'Mass-action blocked');
+        return reply.status(429).send({
+          error: 'Mass-action pattern detected',
+          detail: massCheck.reason,
+        });
+      }
+    }
+
     // Build legal request from engage body (async — resolves base64/URL docs)
     let legalRequest: LegalRequest;
     try {
       legalRequest = await buildLegalRequest(body);
     } catch (err) {
+      // Fix: release billing hold + destroy session on document fetch failure
+      sessionManager.destroySession(session.id, 'Document fetch failed');
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(422).send({ error: message });
     }

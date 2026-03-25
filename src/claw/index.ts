@@ -585,6 +585,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
     process.on('SIGTERM', () => {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
+      stopTelegramBot();
       watcher.stop();
       process.exit(0);
     });

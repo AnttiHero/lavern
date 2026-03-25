@@ -2897,7 +2897,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     role: 'ethics-reviewer',
     displayName: 'Ethics Reviewer',
     tagline: 'The firm\'s conscience. Evaluates engagements for proportionality, mass-action risk, and professional responsibility.',
-    category: 'specialist',
+    category: 'infrastructure',
     seniority: 'partner',
     costTier: 'sonnet',
     billingRateUsd: 800,
