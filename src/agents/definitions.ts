@@ -88,6 +88,8 @@ import { publicLawCounselPrompt } from './prompts/public-law-counsel.js';
 import { restructuringSpecialistPrompt } from './prompts/restructuring-specialist.js';
 import { startupCounselPrompt } from './prompts/startup-counsel.js';
 import { techTransactionsPrompt } from './prompts/tech-transactions.js';
+// Ethics reviewer — engagement-level ethical review (distinct from ethics-auditor's document-level dark pattern scan)
+import { ethicsReviewerPrompt } from './prompts/ethics-reviewer.js';
 import { outputFormats } from '../types/output-schemas.js';
 import { agentProfiles } from './profiles.js';
 
@@ -724,6 +726,17 @@ export const agentDefinitions = {
     model: 'sonnet' as const,
     maxTurns: 8,
     outputFormat: outputFormats['corporate-lawyer'],
+  },
+
+  // ── Ethics Reviewer — Engagement-Level Ethical Review ─────────────────
+
+  'ethics-reviewer': {
+    description: 'Engagement-level ethics reviewer. Evaluates whether the engagement raises professional responsibility, proportionality, or mass-action concerns. Posts findings to the debate board. Does NOT block work — raises concerns for the team and human gates to weigh.',
+    prompt: enrichPrompt('ethics-reviewer', ethicsReviewerPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'sonnet' as const,
+    maxTurns: 6,
+    outputFormat: outputFormats['ethics-auditor'],
   },
 
 };
