@@ -108,7 +108,16 @@ function enrichPrompt(role: string, basePrompt: string): string {
   if (profile.successMetrics?.length) {
     sections.push(`\n## Success Metrics (your output is measured by these)\n${profile.successMetrics.map(m => `- ${m}`).join('\n')}`);
   }
-  return sections.length > 0 ? basePrompt + '\n' + sections.join('\n') : basePrompt;
+  // Universal uncertainty guidance — applies to all agents
+  sections.push(`\n## When You Are Not Sure
+If you cannot make a confident determination about something, use the \`decline_to_find\` tool instead of posting a low-confidence finding. It is better to say "I don't know" than to guess.
+Use decline_to_find when:
+- The document lacks information needed for your analysis
+- The text is ambiguous and could be read multiple ways
+- You would need jurisdiction-specific knowledge you don't have
+- Your confidence would be below 0.5
+A declined finding triggers human review. A wrong finding causes harm.`);
+  return basePrompt + '\n' + sections.join('\n');
 }
 
 // Shared read-only tools available to all agents
@@ -117,6 +126,7 @@ const readOnlyTools = ['Read', 'Grep', 'Glob'];
 // Debate board tools (prefixed with MCP server name)
 const debateTools = [
   'mcp__shem__post_finding',
+  'mcp__shem__decline_to_find',
   'mcp__shem__post_challenge',
   'mcp__shem__post_response',
   'mcp__shem__get_findings',

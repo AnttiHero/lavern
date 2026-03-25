@@ -25,7 +25,9 @@ export interface Finding {
     // v11: Full Bench pattern
     | 'workstream-output' | 'synthesis-gap' | 'integration-risk'
     // v14: Ethics reviewer
-    | 'ETHICAL_CONCERN';
+    | 'ETHICAL_CONCERN'
+    // v14: Uncertainty — agent declines to make a determination
+    | 'UNCERTAIN' | 'INSUFFICIENT_EVIDENCE' | 'AMBIGUOUS_DOCUMENT';
   content: string;
   severity: Severity;
   evidence: string[];

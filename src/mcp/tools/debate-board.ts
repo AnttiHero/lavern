@@ -72,6 +72,10 @@ export function createDebateBoardTools(session: SessionState) {
         'panel-insight', 'cross-domain-connection', 'dissenting-view',
         // Full Bench types
         'workstream-output', 'synthesis-gap', 'integration-risk',
+        // Ethics reviewer
+        'ETHICAL_CONCERN',
+        // Uncertainty — agent declines to make a determination
+        'UNCERTAIN', 'INSUFFICIENT_EVIDENCE', 'AMBIGUOUS_DOCUMENT',
       ]).describe('Type of finding'),
       content: z.string().describe('The finding content — what was discovered'),
       severity: z.enum(['RED', 'YELLOW', 'GREEN']).describe('Severity classification'),
@@ -108,6 +112,47 @@ export function createDebateBoardTools(session: SessionState) {
 
       return {
         content: [{ type: 'text' as const, text: `Finding ${finding.id} posted. Severity: ${finding.severity}. Confidence: ${(finding.confidence * 100).toFixed(0)}%. Total findings: ${state.findings.length}.` }],
+      };
+    }
+  );
+
+  const declineToFind = tool(
+    'decline_to_find',
+    'Explicitly declare that you cannot make a confident determination about something. Use this when evidence is insufficient, the document is ambiguous, or you would be guessing. This is better than posting a low-confidence finding. It triggers human review.',
+    {
+      agent_role: z.string().describe('The role of the agent declining'),
+      category: z.enum(['UNCERTAIN', 'INSUFFICIENT_EVIDENCE', 'AMBIGUOUS_DOCUMENT'])
+        .describe('Why you are declining: UNCERTAIN (general), INSUFFICIENT_EVIDENCE (document lacks info), AMBIGUOUS_DOCUMENT (could be read multiple ways)'),
+      subject: z.string().describe('What you cannot determine (e.g., "whether the indemnification clause is mutual or one-sided")'),
+      reason: z.string().describe('Why you cannot determine this — what specific evidence is missing or ambiguous'),
+      attempted_evidence: z.array(z.string()).optional()
+        .describe('Any partial evidence you did find that was not sufficient'),
+    },
+    async (args) => {
+      const finding: Finding = {
+        id: `F-${String(++counters.finding).padStart(3, '0')}`,
+        agentRole: args.agent_role as Finding['agentRole'],
+        findingType: args.category,
+        content: `[DECLINED] ${args.subject}: ${args.reason}`,
+        severity: 'YELLOW',  // Uncertainty is always YELLOW — not RED (that would overreact), not GREEN (that would hide it)
+        evidence: args.attempted_evidence ?? [],
+        confidence: 0.0,  // Explicitly zero — the agent is saying "I don't know"
+        timestamp: eventTimestamp(),
+        resolved: false,
+      };
+      boundedPush(state.findings, finding);
+
+      session.events.emitEvent({
+        type: 'uncertainty_declared',
+        findingId: finding.id,
+        agent: args.agent_role,
+        reason: args.reason,
+        category: args.category,
+        timestamp: eventTimestamp(),
+      });
+
+      return {
+        content: [{ type: 'text' as const, text: `Uncertainty ${finding.id} declared: "${args.subject}". Category: ${args.category}. This will be flagged for human review. Total findings: ${state.findings.length}.` }],
       };
     }
   );
@@ -538,6 +583,7 @@ ${state.challenges.filter(c => !c.resolved).map(c => `- ${c.id}: ${c.challengeTe
 
   return [
     postFinding,
+    declineToFind,
     postChallenge,
     postResponse,
     resolveDebate,

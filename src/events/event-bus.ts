@@ -71,7 +71,9 @@ export type ShemEvent =
   | { type: 'claw_precedent_indexed'; precedentId: string; patternName: string; documentType: string; timestamp: string }
   | { type: 'claw_paused'; pausedAt: string; timestamp: string }
   | { type: 'claw_resumed'; resumedAt: string; pendingRescan: boolean; timestamp: string }
-  | { type: 'claw_budget_warning'; percentUsed: number; remainingUsd: number; timestamp: string };
+  | { type: 'claw_budget_warning'; percentUsed: number; remainingUsd: number; timestamp: string }
+  // v14: Uncertainty — agent explicitly declines to make a determination
+  | { type: 'uncertainty_declared'; findingId: string; agent: string; reason: string; category: string; timestamp: string };
 
 // ── Event Bus ────────────────────────────────────────────────────────────
 

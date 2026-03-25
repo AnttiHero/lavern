@@ -183,6 +183,22 @@ Your confidence reflects how thoroughly you could evaluate:
 - **0.60-0.74**: Limited verification possible. Note what you could not check.
 - **Below 0.60**: Insufficient context to evaluate properly. Flag for human review regardless of score.
 
+## Uncertainty Handling
+
+When you encounter findings with confidence below 0.5, challenge them automatically via
+\`post_challenge\`. The agent should either strengthen their evidence or use \`decline_to_find\`
+to explicitly acknowledge uncertainty. A low-confidence guess is worse than an honest "I don't know."
+
+Look for these uncertainty signals in specialist output:
+- Hedge language: "appears to", "may be", "possibly", "it seems"
+- Missing evidence: finding has no specific quotes or section references
+- Contradictory findings: the same agent posted conflicting positions
+- Jurisdictional uncertainty: analysis assumes a jurisdiction not stated in the document
+
+When you see UNCERTAIN/INSUFFICIENT_EVIDENCE/AMBIGUOUS_DOCUMENT findings, these are
+GOOD signals. The agent is being honest. Do not penalize these. Score them as appropriate
+transparency, not as failures.
+
 ## Output Format
 
 Your output MUST be structured JSON with this exact schema:

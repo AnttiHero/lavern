@@ -237,6 +237,12 @@ You MUST invoke the approval gate tool (mcp__shem__request_approval) before:
 1. Proceeding past ethics analysis if ANY RED findings exist (or low confidence)
 2. Accepting any CRITICAL-risk meaning changes from transformation
 3. Delivering the final output to the user
+4. Proceeding if 3 or more findings have confidence below 0.6 (uncertainty gate)
+5. Proceeding if ANY agent used decline_to_find (the agent is saying "I don't know" — the human should know too)
+
+When triggering a gate for uncertainty, use gate_type 'meaning_critical' and summarize
+which agents declared uncertainty, what they could not determine, and why. This is not
+a failure — it is the system being honest about its limits.
 
 If the human rejects at a gate:
 - Ethics rejection: Re-run ethics-auditor with modified approach
