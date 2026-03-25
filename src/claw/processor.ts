@@ -318,6 +318,30 @@ export async function processDocument(
       clawConfig,
     );
 
+    // ── 4b. GROUNDING VERIFICATION ──────────────────────────────────
+    // Run mechanical grounding check on all findings (zero LLM cost)
+    try {
+      const { verifyFindingEvidence } = await import('../mcp/tools/grounding-verifier.js');
+      const { flattenSections } = await import('../mcp/tools/document-reader.js');
+      const allText = session.documents.map(d => d.fullText ?? '').join('\n\n');
+      const allHeadings = session.documents.flatMap(d =>
+        d.sections ? flattenSections(d.sections).map(s => s.heading ?? '') : []
+      );
+      for (const finding of session.debate.findings) {
+        const results = verifyFindingEvidence(finding.evidence, allText, allHeadings);
+        const avg = results.length > 0
+          ? results.reduce((s, r) => s + r.score, 0) / results.length
+          : 1.0;
+        finding.groundingScore = Math.round(avg * 100) / 100;
+      }
+      const avgGrounding = session.debate.findings.length > 0
+        ? session.debate.findings.reduce((s, f) => s + (f.groundingScore ?? 0), 0) / session.debate.findings.length
+        : 1.0;
+      log(`  Grounding: avg ${(avgGrounding * 100).toFixed(0)}% across ${session.debate.findings.length} findings`);
+    } catch (groundingErr) {
+      logger.warn('Grounding verification failed (non-fatal)', { sessionId, error: groundingErr });
+    }
+
     // ── 5. UPDATE ─────────────────────────────────────────────────────
     const cost = session.accumulatedCost;
     const findings = extractSessionFindings(session);

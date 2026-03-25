@@ -608,7 +608,7 @@ export function registerSessionRoutes(
         const avgGrounding = findings.filter(f => f.groundingScore != null).length > 0
           ? findings.filter(f => f.groundingScore != null).reduce((s, f) => s + (f.groundingScore ?? 0), 0) / findings.filter(f => f.groundingScore != null).length : null;
         const avgVerification = session.verificationSummary?.averageConfidence ?? 0;
-        const weights = { findings: 0.3, resolutions: 0.2, verification: 0.3, evaluator: 0.2 };
+        const weights = config.confidenceWeights;
         const overall = (avgFinding * weights.findings) + (avgResolution * weights.resolutions)
           + (avgVerification * weights.verification) + (bestEvalScore * weights.evaluator);
         return {

@@ -65,6 +65,29 @@ function sectionExists(ref: string, allText: string, sectionHeadings: string[]):
   return patterns.some(p => p.test(allText));
 }
 
+/** Common legal boilerplate phrases that appear in many contracts. */
+const COMMON_LEGAL_PHRASES = new Set([
+  'shall not be liable',
+  'to the fullest extent permitted by law',
+  'without limitation',
+  'including but not limited to',
+  'in no event shall',
+  'notwithstanding anything to the contrary',
+  'subject to the terms and conditions',
+  'representations and warranties',
+  'indemnify and hold harmless',
+  'governing law',
+]);
+
+/** Check if a quote is a common boilerplate phrase (case-insensitive). */
+function isBoilerplate(quote: string): boolean {
+  const lower = quote.toLowerCase().trim();
+  for (const phrase of COMMON_LEGAL_PHRASES) {
+    if (lower === phrase || lower.includes(phrase)) return true;
+  }
+  return false;
+}
+
 /** Calculate character overlap ratio between two strings. */
 function charOverlap(a: string, b: string): number {
   const aLower = a.toLowerCase();
@@ -116,16 +139,21 @@ export function verifyFindingEvidence(
 
     const quoteResults = quotes.map(quote => {
       const overlap = charOverlap(quote, documentText);
+      const boilerplate = isBoilerplate(quote);
       return {
         quote: quote.slice(0, 80),
+        // Boilerplate phrases found in the doc don't count as strong grounding
+        // (they'd match any contract). Still mark as found but with reduced weight.
         found: overlap >= 0.8,
         overlap: Math.round(overlap * 100) / 100,
+        boilerplate,
       };
     });
 
     const totalChecks = sectionResults.length + quoteResults.length;
+    // Boilerplate quotes that match count as 0.5 instead of 1.0
     const matched = sectionResults.filter(r => r.found).length
-      + quoteResults.filter(r => r.found).length;
+      + quoteResults.filter(r => r.found).reduce((sum, r) => sum + (r.boilerplate ? 0.5 : 1.0), 0);
 
     return {
       evidenceText: ev.slice(0, 120),
@@ -139,19 +167,21 @@ export function verifyFindingEvidence(
 /** Create MCP tools for grounding verification. */
 export function createGroundingVerifierTools(session: SessionState) {
 
-  // Get document text and headings from session (use first uploaded document)
+  // Get combined document text and headings from ALL session documents
   function getDocumentContext(): { text: string; headings: string[] } {
-    const doc = session.documents[0];
-    if (!doc) return { text: '', headings: [] };
+    if (session.documents.length === 0) return { text: '', headings: [] };
 
-    const allText = doc.fullText ?? '';
+    const textParts: string[] = [];
     const headings: string[] = [];
-    if (doc.sections) {
-      for (const s of flattenSections(doc.sections)) {
-        headings.push(s.heading ?? '');
+    for (const doc of session.documents) {
+      textParts.push(doc.fullText ?? '');
+      if (doc.sections) {
+        for (const s of flattenSections(doc.sections)) {
+          headings.push(s.heading ?? '');
+        }
       }
     }
-    return { text: allText, headings };
+    return { text: textParts.join('\n\n'), headings };
   }
 
   const verifyFindingGrounding = tool(

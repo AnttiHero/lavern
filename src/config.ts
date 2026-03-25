@@ -224,6 +224,15 @@ export const config = {
     digestHour: safeInt(process.env.LAVERN_CLAW_DIGEST_HOUR, 9),  // Local hour
   },
 
+  // ── Confidence Weights ─────────────────────────────────────────────────
+  /** Weights for the overall confidence score (must sum to ~1.0). Tunable. */
+  confidenceWeights: {
+    findings: safeFloat(process.env.LAVERN_CONFIDENCE_W_FINDINGS, 0.3),
+    resolutions: safeFloat(process.env.LAVERN_CONFIDENCE_W_RESOLUTIONS, 0.2),
+    verification: safeFloat(process.env.LAVERN_CONFIDENCE_W_VERIFICATION, 0.3),
+    evaluator: safeFloat(process.env.LAVERN_CONFIDENCE_W_EVALUATOR, 0.2),
+  },
+
   // ── Archive Retention ──────────────────────────────────────────────────
   /** Days to retain session archives before auto-cleanup (default: 180) */
   archiveRetentionDays: safeInt(process.env.SHEM_ARCHIVE_RETENTION_DAYS, 180),
