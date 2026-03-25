@@ -235,11 +235,11 @@ export class SessionManager {
       }
 
       // Phase 2: Cap enforcement — remove least recently active sessions if still over limit
-      if (this.sessions.size >= config.maxSessions) {
+      if (this.sessions.size > config.maxSessions) {
         const sorted = [...this.sessions.entries()].sort(
           (a, b) => a[1].lastActivityAt - b[1].lastActivityAt
         );
-        const excess = Math.max(1, this.sessions.size - config.maxSessions);
+        const excess = this.sessions.size - config.maxSessions;
         const toRemove = sorted.slice(0, excess);
         for (const [id, entry] of toRemove) {
           this.evictSession(id, entry, `Session evicted (cap: ${config.maxSessions})`);

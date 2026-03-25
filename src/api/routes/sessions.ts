@@ -163,9 +163,11 @@ export function registerSessionRoutes(
     // Mass-action detection — flag or block bulk legal document generation
     const workflowId = body.workflow ?? 'default';
     const requestText = body.request?.requestText ?? '';
+    let massActionFlagReason: string | undefined;
     if (userId) {
       const massCheck = massActionGuard.check(userId, workflowId, requestText);
       if (massCheck.flagged) {
+        massActionFlagReason = massCheck.reason;
         logger.warn('Mass-action pattern detected', {
           userId,
           reason: massCheck.reason,
@@ -184,7 +186,6 @@ export function registerSessionRoutes(
             message: 'This looks like bulk document generation. If this is legitimate, please contact support.',
           });
         }
-        // If flagged but allowed, the ethics-reviewer agent will see this in session metadata
       }
     }
 
@@ -202,6 +203,11 @@ export function registerSessionRoutes(
 
     // Audit: session creation
     logAuditEvent({ userId: userId || undefined, action: 'session_create', resource: `session:${session.id}`, ip: request.ip, userAgent: request.headers['user-agent'] });
+
+    // Store mass-action flag so ethics-reviewer can see it in session context
+    if (massActionFlagReason) {
+      (session as unknown as Record<string, unknown>).massActionFlagged = massActionFlagReason;
+    }
 
     // v14: Attach user identity for session archiving
     if (userId) {

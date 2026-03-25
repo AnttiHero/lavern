@@ -79,29 +79,46 @@ const COMMON_LEGAL_PHRASES = new Set([
   'governing law',
 ]);
 
-/** Check if a quote is a common boilerplate phrase (case-insensitive). */
+/** Check if a quote is ONLY a common boilerplate phrase (case-insensitive).
+ *  Exact match only — "shall not be liable for damages exceeding $1M"
+ *  should NOT be flagged as boilerplate because it contains specific detail. */
 function isBoilerplate(quote: string): boolean {
   const lower = quote.toLowerCase().trim();
-  for (const phrase of COMMON_LEGAL_PHRASES) {
-    if (lower === phrase || lower.includes(phrase)) return true;
-  }
-  return false;
+  return COMMON_LEGAL_PHRASES.has(lower);
 }
+
+/** Max chars to search in the sliding window fallback (prevents O(n*m) DoS). */
+const MAX_SEARCH_WINDOW = 10_000;
 
 /** Calculate character overlap ratio between two strings. */
 function charOverlap(a: string, b: string): number {
   const aLower = a.toLowerCase();
   const bLower = b.toLowerCase();
+  // Fast paths: exact substring match (O(n) via native includes)
   if (bLower.includes(aLower)) return 1.0;
   if (aLower.includes(bLower)) return 1.0;
 
-  // Sliding window: find best overlap of a within b
+  // For very long documents, narrow the search window around keyword matches
+  let searchText = bLower;
+  if (bLower.length > MAX_SEARCH_WINDOW) {
+    const firstWord = aLower.split(/\s+/)[0];
+    const idx = firstWord ? bLower.indexOf(firstWord) : -1;
+    if (idx >= 0) {
+      const windowStart = Math.max(0, idx - 2000);
+      searchText = bLower.slice(windowStart, windowStart + MAX_SEARCH_WINDOW);
+    } else {
+      // First word not found anywhere — very unlikely to be a match
+      return 0;
+    }
+  }
+
+  // Sliding window: find best overlap of a within searchText
   const aChars = aLower.split('');
   let bestMatch = 0;
-  for (let start = 0; start <= bLower.length - Math.floor(aChars.length * 0.5); start++) {
+  for (let start = 0; start <= searchText.length - Math.floor(aChars.length * 0.5); start++) {
     let matched = 0;
-    for (let i = 0; i < aChars.length && start + i < bLower.length; i++) {
-      if (aChars[i] === bLower[start + i]) matched++;
+    for (let i = 0; i < aChars.length && start + i < searchText.length; i++) {
+      if (aChars[i] === searchText[start + i]) matched++;
     }
     bestMatch = Math.max(bestMatch, matched);
   }

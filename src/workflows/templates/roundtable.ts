@@ -144,6 +144,7 @@ export const roundtableTemplate: WorkflowTemplate = {
     'plain-language-specialist',
     'client-proxy',
     'synthesis-editor',
+    'ethics-reviewer',
   ],
   maxTeamSize: 14,
   orchestratorArchetype: 'orchestrator-conductor',

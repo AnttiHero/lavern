@@ -37,14 +37,15 @@ interface SessionEvent {
 /** Max entries per user to prevent memory leaks. */
 const MAX_ENTRIES_PER_USER = 1000;
 
-/** Normalize request text into a fingerprint for similarity matching. */
+/** Normalize request text into a fingerprint for similarity matching.
+ *  Uses a hash of the full normalized text to avoid truncation bypass. */
 function fingerprint(text: string): string {
   if (!text) return '';
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 50);
+  const normalized = text.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  // Hash the full text so prepending unique prefixes doesn't bypass detection
+  const { createHash } = require('crypto') as typeof import('crypto');
+  return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
 function resolveConfig(partial?: Partial<MassActionConfig>): MassActionConfig {

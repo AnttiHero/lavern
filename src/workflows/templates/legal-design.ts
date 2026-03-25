@@ -103,6 +103,7 @@ export const legalDesignTemplate: WorkflowTemplate = {
     'transformation-specialist',
     'meaning-guardian',
     'synthesis-editor',
+    'ethics-reviewer',
   ],
   orchestratorPrompt: '(uses existing orchestratorPrompt from src/agents/prompts/orchestrator.ts)',
   phasePermissions: {

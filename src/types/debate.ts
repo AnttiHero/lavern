@@ -23,7 +23,9 @@ export interface Finding {
     // v11: Roundtable pattern
     | 'panel-insight' | 'cross-domain-connection' | 'dissenting-view'
     // v11: Full Bench pattern
-    | 'workstream-output' | 'synthesis-gap' | 'integration-risk';
+    | 'workstream-output' | 'synthesis-gap' | 'integration-risk'
+    // v14: Ethics reviewer
+    | 'ETHICAL_CONCERN';
   content: string;
   severity: Severity;
   evidence: string[];

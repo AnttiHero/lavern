@@ -67,7 +67,8 @@ export function verifyAssemblyFidelity(
   assembledText: string,
   session: SessionState,
 ): FidelityResult {
-  const { findings, resolutions } = session.debate;
+  const debate = session.debate ?? { findings: [], resolutions: [] };
+  const { findings, resolutions } = debate;
 
   // Check RED findings are represented
   const redFindings = findings.filter(f => f.severity === 'RED');

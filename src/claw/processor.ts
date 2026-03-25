@@ -307,26 +307,16 @@ export async function processDocument(
       }
     }
 
-    // ── 4. DELIVER ────────────────────────────────────────────────────
-    log(`Delivering results...`);
-    const deliveryDir = await delivery.deliver(
-      sessionId,
-      session,
-      inference,
-      documentPath,
-      documentHash,
-      clawConfig,
-    );
-
-    // ── 4b. GROUNDING VERIFICATION ──────────────────────────────────
-    // Run mechanical grounding check on all findings (zero LLM cost)
+    // ── 4. GROUNDING VERIFICATION ──────────────────────────────────
+    // Run BEFORE delivery so grounding scores are included in findings.json
     try {
       const { verifyFindingEvidence } = await import('../mcp/tools/grounding-verifier.js');
       const { flattenSections } = await import('../mcp/tools/document-reader.js');
-      const allText = session.documents.map(d => d.fullText ?? '').join('\n\n');
-      const allHeadings = session.documents.flatMap(d =>
-        d.sections ? flattenSections(d.sections).map(s => s.heading ?? '') : []
-      );
+      // Use parsed document directly (not session.documents which may be empty in Claw)
+      const allText = parsed.fullText ?? '';
+      const allHeadings = parsed.sections
+        ? flattenSections(parsed.sections).map(s => s.heading ?? '')
+        : [];
       for (const finding of session.debate.findings) {
         const results = verifyFindingEvidence(finding.evidence, allText, allHeadings);
         const avg = results.length > 0
@@ -341,6 +331,17 @@ export async function processDocument(
     } catch (groundingErr) {
       logger.warn('Grounding verification failed (non-fatal)', { sessionId, error: groundingErr });
     }
+
+    // ── 4b. DELIVER ─────────────────────────────────────────────────
+    log(`Delivering results...`);
+    const deliveryDir = await delivery.deliver(
+      sessionId,
+      session,
+      inference,
+      documentPath,
+      documentHash,
+      clawConfig,
+    );
 
     // ── 5. UPDATE ─────────────────────────────────────────────────────
     const cost = session.accumulatedCost;
