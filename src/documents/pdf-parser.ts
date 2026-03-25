@@ -6,7 +6,7 @@
  */
 
 import { PDFParse } from 'pdf-parse';
-import { detectSections, detectDefinedTerms, detectTables } from './structure-detector.js';
+import { detectSections, detectDefinedTerms, detectTables, detectParseWarnings } from './structure-detector.js';
 import type { ParsedDocument } from './types.js';
 
 /**
@@ -33,6 +33,7 @@ export async function parsePdf(
   const sections = detectSections(fullText);
   const definedTerms = detectDefinedTerms(fullText);
   const tables = detectTables(fullText);
+  const parseWarnings = detectParseWarnings(fullText, 'pdf-parse');
 
   return {
     id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -47,5 +48,6 @@ export async function parsePdf(
     definedTerms,
     parseMethod: 'pdf-parse',
     parsedAt: new Date().toISOString(),
+    parseWarnings: parseWarnings.length > 0 ? parseWarnings : undefined,
   };
 }

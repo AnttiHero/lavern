@@ -65,6 +65,19 @@ export interface ParsedDocument {
     count: number;
     sample?: string;
   }>;
+  /** Parse quality warnings — regions where extraction may be unreliable */
+  parseWarnings?: ParseWarning[];
+}
+
+export interface ParseWarning {
+  /** What type of issue was detected */
+  type: 'garbled_table' | 'misaligned_columns' | 'dense_numbers' | 'possible_ocr_errors';
+  /** Human-readable description */
+  message: string;
+  /** Approximate location in the document (line number or char offset) */
+  location?: string;
+  /** The problematic text snippet (first 200 chars) */
+  sample?: string;
 }
 
 // ── Preview (lightweight, frontend-only) ────────────────────────────────

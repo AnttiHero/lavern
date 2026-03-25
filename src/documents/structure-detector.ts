@@ -10,7 +10,7 @@
  * - Tables: Aligned columns with consistent whitespace
  */
 
-import type { DocumentSection, DocumentTable } from './types.js';
+import type { DocumentSection, DocumentTable, ParseWarning } from './types.js';
 
 // ── Section Detection ───────────────────────────────────────────────────
 
@@ -292,4 +292,96 @@ function parseTabTable(lines: string[]): DocumentTable | null {
 
   const rows = lines.slice(1).map(parseLine).filter(row => row.length > 0);
   return { headers, rows };
+}
+
+// ── Parse Warning Detection ────────────────────────────────────────────
+
+/**
+ * Detect regions where text extraction may be unreliable.
+ * Agents should use decline_to_find for analysis based on these regions.
+ */
+export function detectParseWarnings(text: string, parseMethod: string): ParseWarning[] {
+  const warnings: ParseWarning[] = [];
+  const lines = text.split('\n');
+
+  // 1. Garbled tables: lines with 3+ consecutive spaces that look like
+  //    misaligned columns (common when PDF table extraction fails)
+  let garbledRun = 0;
+  let garbledStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const hasMultiSpaceGaps = (line.match(/\S {3,}\S/g) ?? []).length >= 2;
+    const hasNumbers = /\d/.test(line);
+    if (hasMultiSpaceGaps && hasNumbers && line.trim().length > 10) {
+      if (garbledRun === 0) garbledStart = i;
+      garbledRun++;
+    } else {
+      if (garbledRun >= 3) {
+        warnings.push({
+          type: 'garbled_table',
+          message: `Possible garbled table detected (${garbledRun} lines with misaligned columns). Data in this region may be unreliable.`,
+          location: `lines ${garbledStart + 1}-${garbledStart + garbledRun}`,
+          sample: lines.slice(garbledStart, garbledStart + 3).join('\n').slice(0, 200),
+        });
+      }
+      garbledRun = 0;
+    }
+  }
+  // Catch trailing run
+  if (garbledRun >= 3) {
+    warnings.push({
+      type: 'garbled_table',
+      message: `Possible garbled table detected (${garbledRun} lines with misaligned columns). Data in this region may be unreliable.`,
+      location: `lines ${garbledStart + 1}-${garbledStart + garbledRun}`,
+      sample: lines.slice(garbledStart, garbledStart + 3).join('\n').slice(0, 200),
+    });
+  }
+
+  // 2. Dense number regions: clusters of numbers that may be fee schedules
+  //    or financial tables where extraction quality matters most
+  let numberDenseRun = 0;
+  let numberStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const numberChars = (line.match(/[\d$€£%,.]/g) ?? []).length;
+    const ratio = numberChars / line.length;
+    if (ratio > 0.4 && line.length > 15) {
+      if (numberDenseRun === 0) numberStart = i;
+      numberDenseRun++;
+    } else {
+      if (numberDenseRun >= 4) {
+        warnings.push({
+          type: 'dense_numbers',
+          message: `Dense numerical region detected (${numberDenseRun} lines). May be a fee schedule, financial table, or pricing matrix. Verify numbers against source.`,
+          location: `lines ${numberStart + 1}-${numberStart + numberDenseRun}`,
+          sample: lines.slice(numberStart, numberStart + 3).join('\n').slice(0, 200),
+        });
+      }
+      numberDenseRun = 0;
+    }
+  }
+  if (numberDenseRun >= 4) {
+    warnings.push({
+      type: 'dense_numbers',
+      message: `Dense numerical region detected (${numberDenseRun} lines). May be a fee schedule, financial table, or pricing matrix. Verify numbers against source.`,
+      location: `lines ${numberStart + 1}-${numberStart + numberDenseRun}`,
+      sample: lines.slice(numberStart, numberStart + 3).join('\n').slice(0, 200),
+    });
+  }
+
+  // 3. Possible OCR artifacts (PDF only): unusual character sequences
+  if (parseMethod === 'pdf-parse') {
+    const ocrPatterns = /[^\x20-\x7E\xA0-\xFF\n\r\t]{3,}/g;
+    const matches = text.match(ocrPatterns);
+    if (matches && matches.length >= 3) {
+      warnings.push({
+        type: 'possible_ocr_errors',
+        message: `${matches.length} sequences of non-standard characters detected. This PDF may be scanned or contain OCR artifacts. Text in affected regions may be unreliable.`,
+        sample: matches.slice(0, 3).join(' | ').slice(0, 200),
+      });
+    }
+  }
+
+  return warnings;
 }

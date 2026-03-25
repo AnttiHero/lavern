@@ -35,7 +35,7 @@ export function createDocumentReaderTools(session: SessionState) {
           .map(h => `  ${'  '.repeat(h.level - 1)}${h.heading}`)
           .join('\n');
 
-        return [
+        const parts = [
           `## Document ${i + 1}: ${doc.name}`,
           `- **Type:** ${doc.mimeType}`,
           `- **Pages:** ${doc.pageCount}`,
@@ -43,10 +43,24 @@ export function createDocumentReaderTools(session: SessionState) {
           `- **Sections:** ${doc.sections.length} top-level`,
           `- **Defined Terms:** ${doc.definedTerms.length}`,
           `- **Tables:** ${doc.tables.length}`,
-          '',
-          '### Table of Contents',
-          toc || '  (no sections detected)',
-        ].join('\n');
+        ];
+
+        // Surface parse warnings so agents know where extraction is unreliable
+        if (doc.parseWarnings && doc.parseWarnings.length > 0) {
+          parts.push('');
+          parts.push('### ⚠ Parse Warnings');
+          parts.push('*The following regions may have unreliable text extraction. Use decline_to_find if you cannot verify data in these areas.*');
+          for (const w of doc.parseWarnings) {
+            parts.push(`- **${w.type}** (${w.location ?? 'unknown location'}): ${w.message}`);
+            if (w.sample) parts.push(`  \`${w.sample.slice(0, 100)}\``);
+          }
+        }
+
+        parts.push('');
+        parts.push('### Table of Contents');
+        parts.push(toc || '  (no sections detected)');
+
+        return parts.join('\n');
       });
 
       return docs.join('\n\n---\n\n');
