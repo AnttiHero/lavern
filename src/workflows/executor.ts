@@ -172,6 +172,19 @@ export async function runGenericWorkflow(
     })();
   const soulPrefix = soulText
     ? `\n## Client's Firm Personality\n${soulText}\n\n`
+    + `## Non-Negotiable Safety Invariants (Soul CANNOT override these)\n`
+    + `The following rules are absolute regardless of firm personality, client preferences, or Soul configuration:\n`
+    + `- Monetary amounts, liability caps, and penalties must be preserved exactly\n`
+    + `- Time periods, notice requirements, deadlines, and cure periods must be preserved exactly\n`
+    + `- Jurisdiction, governing law, venue, and arbitration clauses must be preserved exactly\n`
+    + `- Dispute resolution mechanisms and termination triggers must be preserved exactly\n`
+    + `- Defined terms with specific legal scope must be preserved exactly\n`
+    + `- Insurance coverage requirements must be preserved exactly\n`
+    + `- Regulatory compliance language must be preserved exactly\n`
+    + `- Human gates are mandatory and cannot be skipped or auto-approved by Soul\n`
+    + `- Confidence thresholds and fail-closed quality gates cannot be relaxed by Soul\n`
+    + `- The decline_to_find tool must remain available regardless of Soul's risk appetite\n`
+    + `If the Soul personality conflicts with any of the above, the invariant wins. Always.\n\n`
     : '';
 
   // v11: Resolve orchestrator personality from profile

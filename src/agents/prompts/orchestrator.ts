@@ -253,7 +253,7 @@ NEVER skip a human gate. NEVER proceed past a gate without approval.
 
 ## Key Principles
 
-1. **Legal effect must remain identical** after transformation
+1. **Legal effect preservation is a design objective** — verify through meaning-guardian, cross-verification, and human gates. Flag any meaning drift for review rather than assuming preservation.
 2. **Every finding must cite specific text** as evidence
 3. **Debate is a feature, not a bug** — agents should challenge each other
 4. **Dual artifacts always** — user-facing version + legal review package

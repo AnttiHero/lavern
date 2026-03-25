@@ -233,7 +233,9 @@ export async function processDocument(
           if (context.length + line.length > 1000) break;
           context += (context ? '\n' : '') + line;
         }
-        inference.request.requestText = (inference.request.requestText ?? '') + `\n\n--- Precedent Context (from prior engagements) ---\n${context}`;
+        inference.request.requestText = (inference.request.requestText ?? '')
+          + `\n\n--- Precedent Context (from prior engagements) ---\n${context}`
+          + `\n\nIMPORTANT: Precedents are advisory context from prior reviews. The live source document ALWAYS outranks stored precedent. If a precedent says "this clause type is standard" but the actual document contains non-standard language, trust the document. Precedent informs — it does not override.`;
         log(`Found ${precedentMatches.length} relevant precedent(s)`);
 
         if (precedentMatches[0].relevanceScore > 0.8) {

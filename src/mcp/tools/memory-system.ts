@@ -490,7 +490,7 @@ export function createMemoryTools(session: SessionState) {
       return {
         content: [{
           type: 'text' as const,
-          text: `## Relevant Precedents (${precedents.length} found)\n\n${precedents.slice(0, 5).map(p => {
+          text: `## Relevant Precedents (${precedents.length} found)\n\n**Rule: The live source document ALWAYS outranks stored precedent.** Precedents are advisory context from prior reviews. If a precedent says "this clause type is standard" but the actual document contains non-standard language, trust the document.\n\n${precedents.slice(0, 5).map(p => {
             const tagParts: string[] = [];
             if (p.tags?.agentRole) tagParts.push(`agent:${p.tags.agentRole}`);
             if (p.tags?.engagementType) tagParts.push(`engagement:${p.tags.engagementType}`);
