@@ -49,8 +49,13 @@ export interface KbCollectionSummary {
 // ── Full-Text Search ──────────────────────────────────────────────────
 
 /**
- * Search the knowledge base using FTS5 full-text search with BM25 ranking.
- * Falls back to LIKE search if the FTS query fails (e.g., syntax issues).
+ * Search the knowledge base using hybrid retrieval:
+ * 1. BM25 keyword search (FTS5) with legal synonym expansion — over-fetches 3x
+ * 2. N-gram overlap re-ranking — scores conceptual similarity
+ * 3. Return top-k by combined score
+ *
+ * This catches both exact term matches (BM25) and conceptual matches (n-gram).
+ * Falls back to LIKE search if the FTS query fails.
  */
 export function searchKnowledgeBase(options: KbSearchOptions): KbSearchResult[] {
   const maxResults = options.maxResults ?? 10;
@@ -59,11 +64,49 @@ export function searchKnowledgeBase(options: KbSearchOptions): KbSearchResult[] 
   if (!ftsQuery) return [];
 
   try {
-    return ftsSearch(ftsQuery, options, maxResults);
+    // Over-fetch 3x from BM25, then re-rank with n-gram overlap
+    const candidates = ftsSearch(ftsQuery, options, maxResults * 3);
+    if (candidates.length <= maxResults) return candidates;
+    return rerankWithNgramOverlap(candidates, options.query, maxResults);
   } catch {
     // FTS query syntax error — fall back to LIKE search
     return fallbackLikeSearch(options, maxResults);
   }
+}
+
+/** Extract bigrams from text for conceptual similarity matching. */
+function extractBigrams(text: string): Set<string> {
+  const words = text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+  const bigrams = new Set<string>();
+  for (let i = 0; i < words.length - 1; i++) {
+    bigrams.add(`${words[i]} ${words[i + 1]}`);
+  }
+  return bigrams;
+}
+
+/** Re-rank BM25 candidates by n-gram overlap with the original query. */
+function rerankWithNgramOverlap(
+  candidates: KbSearchResult[],
+  query: string,
+  maxResults: number,
+): KbSearchResult[] {
+  const queryBigrams = extractBigrams(query);
+  if (queryBigrams.size === 0) return candidates.slice(0, maxResults);
+
+  const scored = candidates.map(candidate => {
+    const contentBigrams = extractBigrams(candidate.content.slice(0, 2000));
+    let overlap = 0;
+    for (const bg of queryBigrams) {
+      if (contentBigrams.has(bg)) overlap++;
+    }
+    const ngramScore = overlap / queryBigrams.size;
+    // Combined score: BM25 rank position (inverted, normalized) + n-gram overlap
+    const bm25Score = 1 / (1 + Math.abs(candidate.rank));
+    return { candidate, combinedScore: bm25Score * 0.6 + ngramScore * 0.4 };
+  });
+
+  scored.sort((a, b) => b.combinedScore - a.combinedScore);
+  return scored.slice(0, maxResults).map(s => s.candidate);
 }
 
 function ftsSearch(

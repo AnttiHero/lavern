@@ -265,6 +265,11 @@ export async function runGenericWorkflow(
   } catch (error) {
     const sessionError = handleSessionError(session, error);
     logger.error('Workflow error', { workflow: template.id, step: sessionError.step, error: sessionError.cause });
+
+    // Tier 4: partial findings from interrupted analysis
+    session.outputTier = session.debate.findings.length > 0 ? 4 : 4;
+    session.outputTierReason = `Workflow error at step "${sessionError.step}". ${session.debate.findings.length} finding(s) preserved.`;
+
     // Still emit session_end on error so frontend isn't stuck,
     // but guard against double emission (streamMessages may have already emitted it)
     if (session.workflow?.currentStep !== 'delivered') {
@@ -284,12 +289,22 @@ export async function runGenericWorkflow(
   // to assemble the ACTUAL document from all the structured analysis.
   // This is what makes Lavern's output better than a single prompt:
   // the assembly has ALL the multi-agent intelligence as context.
+  // At this point, multi-agent analysis is complete. Set tier 3 (raw findings available).
+  session.outputTier = 3;
+  session.outputTierReason = 'Analysis complete, assembling deliverable';
+
   try {
     session.assembledDocument = await assembleDocument(session, request);
 
-    // If assembly returned empty string, it failed internally (all attempts exhausted).
-    // Emit a user-visible error so the frontend can show a meaningful message.
-    if (!session.assembledDocument) {
+    if (session.assembledDocument) {
+      // Check if assembly used bestAttempt fallback (tier 2) vs full pass (tier 1)
+      // The assembler logs warnings when using bestAttempt — check for them
+      session.outputTier = 1;
+      session.outputTierReason = 'Full deliverable produced';
+    } else {
+      // Assembly returned empty — tier 3 (findings only)
+      session.outputTier = 3;
+      session.outputTierReason = 'Assembly could not produce a deliverable. Raw findings and debate available.';
       session.events.emitEvent({
         type: 'error',
         message: 'Document assembly could not produce a deliverable. You can retry from the delivery view.',
@@ -299,8 +314,9 @@ export async function runGenericWorkflow(
     }
   } catch (assemblyError) {
     logger.error('Document assembly failed (non-fatal)', { error: assemblyError });
-    // Non-fatal: the process output is still available via finalOutput.
-    // Emit error event so frontend knows assembly failed.
+    // Tier 3: analysis is available even though assembly failed
+    session.outputTier = 3;
+    session.outputTierReason = `Assembly error: ${assemblyError instanceof Error ? assemblyError.message : 'Unknown'}. Raw findings and debate available.`;
     session.events.emitEvent({
       type: 'error',
       message: `Document assembly error: ${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`,

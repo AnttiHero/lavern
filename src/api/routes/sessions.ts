@@ -649,6 +649,8 @@ export function registerSessionRoutes(
       workflowTemplateId: session.workflowTemplateId ?? null,
       provider: session.provider ?? config.provider,
       selectedTeam: session.selectedTeam,
+      outputTier: session.outputTier,
+      outputTierReason: session.outputTierReason,
       halted: session.isHalted(),
       haltReason: session.haltReason,
       durationMs: (() => {
@@ -1263,6 +1265,35 @@ ${buildFullContext(session)}`;
       gateType: pendingGate.gateType,
       sessionId: id,
     });
+  });
+
+  // ── POST /api/sessions/:id/pause — Circuit breaker pause ────────────
+  fastify.post('/api/sessions/:id/pause', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+    if (session.isHalted()) {
+      return reply.status(409).send({ error: 'Session is already halted and cannot be paused' });
+    }
+    const body = request.body as { reason?: string } | undefined;
+    session.pause(body?.reason ?? 'Paused by user');
+    return reply.send({ success: true, sessionId: id, paused: true });
+  });
+
+  // ── POST /api/sessions/:id/resume — Circuit breaker resume ─────────
+  fastify.post('/api/sessions/:id/resume', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+    if (!session.isPaused()) {
+      return reply.status(409).send({ error: 'Session is not paused' });
+    }
+    session.resume();
+    return reply.send({ success: true, sessionId: id, paused: false });
   });
 
   // ── DELETE /api/sessions/:id — Cancel session ──────────────────────

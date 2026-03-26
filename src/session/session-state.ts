@@ -176,6 +176,46 @@ export class SessionState {
     return this._haltReason;
   }
 
+  // ── Circuit Breaker — Pause/Resume ──
+  private _paused = false;
+  private _pauseReason = '';
+
+  /** Pause the session. Agents will stop at the next tool call boundary. */
+  pause(reason: string): void {
+    if (this._paused || this._haltReason) return;
+    this._paused = true;
+    this._pauseReason = reason;
+    this.events.emitEvent({
+      type: 'session_paused' as 'error', // reuse error type for compat
+      message: `⏸ Session paused: ${reason}`,
+      source: 'circuit-breaker',
+      timestamp: new Date().toISOString(),
+    });
+    logger.info('session_paused', { sessionId: this.id, reason });
+  }
+
+  /** Resume a paused session. */
+  resume(): void {
+    if (!this._paused) return;
+    this._paused = false;
+    this._pauseReason = '';
+    this.events.emitEvent({
+      type: 'session_resumed' as 'error', // reuse error type for compat
+      message: '▶ Session resumed',
+      source: 'circuit-breaker',
+      timestamp: new Date().toISOString(),
+    });
+    logger.info('session_resumed', { sessionId: this.id });
+  }
+
+  isPaused(): boolean {
+    return this._paused;
+  }
+
+  get pauseReason(): string {
+    return this._pauseReason;
+  }
+
   // ── Cost Tracker State ──
   public budgetUsd = 5.0;
   public accumulatedCost = 0;
@@ -278,6 +318,14 @@ export class SessionState {
    *  the multi-agent pipeline completes. This is the ACTUAL deliverable (ToS, review,
    *  memo) — separate from finalOutput which retains the process log for audit. */
   public assembledDocument = '';
+
+  /** Tiered output — tracks what's available at each quality level.
+   *  Tier 1: Full deliverable (assembly passed all gates)
+   *  Tier 2: Best-effort deliverable (assembly passed structural but not quality gate)
+   *  Tier 3: Raw findings + debate (no assembly, but analysis is available)
+   *  Tier 4: Partial findings (session halted/errored mid-analysis) */
+  public outputTier: 1 | 2 | 3 | 4 = 4;
+  public outputTierReason = '';
 
   /** The original legal request that created this session (stored for assembly context). */
   public legalRequest?: import('../types/index.js').LegalRequest;

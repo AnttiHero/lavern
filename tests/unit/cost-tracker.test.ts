@@ -15,6 +15,7 @@ function makeSession(budgetUsd: number, accumulatedCost: number, halted = false,
     budgetUsd,
     accumulatedCost,
     isHalted: () => halted,
+    isPaused: () => false,
     haltReason: haltReason ?? null,
     events: {
       emitEvent: vi.fn(),

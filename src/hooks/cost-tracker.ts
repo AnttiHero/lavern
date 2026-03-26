@@ -74,6 +74,23 @@ export function createCostHooks(session: SessionState) {
         stopReason: `Emergency stop: ${session.haltReason ?? 'Session halted'}`,
       };
     }
+    // Circuit breaker: pause check — wait loop until resumed or halted
+    if (session.isPaused()) {
+      // Wait up to 5 minutes for resume, checking every 2 seconds
+      const maxWaitMs = 5 * 60 * 1000;
+      const started = Date.now();
+      while (session.isPaused() && !session.isHalted() && Date.now() - started < maxWaitMs) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      if (session.isHalted()) {
+        return { continue: false, stopReason: `Halted while paused: ${session.haltReason}` };
+      }
+      if (session.isPaused()) {
+        // Timed out waiting — halt the session
+        session.halt('Paused for too long (5 minutes). Session halted to preserve resources.');
+        return { continue: false, stopReason: 'Session halted after 5-minute pause timeout' };
+      }
+    }
     return { continue: true };
   };
 
