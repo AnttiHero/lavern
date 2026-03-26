@@ -1,198 +1,137 @@
-# Lavern (The Shem)
+# Lavern
 
-The world's first driverless law firm. Multi-agent legal design system that transforms legal documents through collaborative AI analysis and human-centered design.
+An agentic legal architecture. A law firm staffed with AI agents.
 
-> **Disclaimer:** This system assists with document design and accessibility. It does not provide legal advice. Always verify outputs with qualified legal professionals.
+Lavern reviews documents, debates risks across a team of 65 AI agents, and delivers defensible outputs. It can work like a regular AI tool (you prompt it, it responds), or in **autonomous mode** (it watches a folder, reviews documents overnight, and sends you the findings).
+
+> **Disclaimer:** This software assists with document analysis and legal design. It does not provide legal advice. Always verify outputs with qualified legal professionals.
+
+**[Architecture Deep-Dive](https://lavern.ai/claw/how-it-works.html)** | **[lavern.ai](https://lavern.ai)**
 
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone https://github.com/AnttiHero/Marble.git
+cd Marble
 npm install
+cd viz && npm install && cd ..
 
-# Run in CLI mode (interactive)
-npm run dev -- ./path/to/document.pdf
+# Start in demo mode (no API key needed)
+npm run dev -- --serve
 
-# Run as API server + dashboard
-npm run serve
-
-# Start dashboard dev server
-npm run dev:viz
+# Open dashboard
+open http://localhost:3000
 ```
 
-## Architecture
+Demo mode gives you the full dashboard, auth system, and Clawern monitoring. To process documents, add your Anthropic API key to `.env`.
 
-Lavern uses a multi-agent pipeline where 65 agents (58 specialists + 7 orchestrators) collaborate to analyze legal documents. Agents debate findings, challenge each other's conclusions, and produce dual artifacts: a user-facing deliverable and a legal review package.
+## What This Is
 
-### Core Concepts
+65 agents (58 specialists + 7 orchestrators) organized into 8 workflows, from quick legal questions to full adversarial review. Agents post findings with evidence, challenge each other through a formal debate protocol, and resolve disputes with auditable reasoning.
 
-- **Workflows** — 8 templates from quick queries (`counsel`) to full parallel expert panels (`roundtable`)
-- **Debate Board** — Agents post findings, challenge each other, respond, and resolve
-- **Human Gates** — Mandatory approval checkpoints before irreversible actions
-- **Verification Pipeline** — 10-pass verification with self-check, cross-check, and score dimensions
-- **Dual Artifacts** — Every engagement produces both a deliverable and an audit trail
-- **Soul** — User-defined firm personality that shapes how agents communicate and make decisions
-- **Document Assembly** — Post-pipeline assembly step produces clean deliverables (Markdown, HTML, DOCX)
+Every engagement produces two outputs: a user-facing deliverable and a complete legal review package with the full chain of reasoning.
 
-### Dashboard
+**Key architectural ideas:**
+- **Debate is the product.** Agents challenge each other's findings. Disagreement produces better results than consensus.
+- **Three verification layers.** Evaluator gate, adversarial debate, 10-pass verification pipeline. Fail-closed.
+- **Grounding verification.** Mechanical cross-reference of cited clauses against the parsed document. Zero LLM cost.
+- **Human gates are mandatory.** Critical findings require human approval. The system raises concerns, humans decide.
+- **Uncertainty is a feature.** Agents can decline to find when evidence is insufficient. Low confidence triggers escalation, not guessing.
+- **Precedent Board.** Institutional memory that compounds across engagements. Every document reviewed makes the next review smarter.
+- **Soul.** User-defined firm personality. Safety invariants (preservation rules, confidence thresholds) are firewalled from personality.
 
-React SPA with editorial design language (Inter + Cormorant Garamond, warm cream palette).
+## Clawern (Autonomous Mode)
+
+Drop files in a folder. Clawern reviews them overnight. Critical findings hit your phone.
+
+```bash
+npm run dev -- claw init       # Interactive setup
+npm run dev -- claw validate   # Check configuration
+npm run dev -- claw start      # Start watching
+npm run dev -- claw pause      # Pause processing
+npm run dev -- claw resume     # Resume processing
+```
+
+Features: 30-minute heartbeat, Telegram bot, email alerts, weekly digest, scheduled re-review, change detection, cost forecasting, portfolio intelligence, hybrid local+frontier processing, multi-client isolation, audit trail, Prometheus metrics.
+
+## Dashboard
+
+React SPA with editorial design language. WCAG AA accessible, responsive.
 
 **Flow:** Landing → Briefing → Strategy → Team → Working → Delivery
 
-- **Landing** — QuickStart with 3-tier express engagement (Quick / Standard / Deep)
-- **Briefing** — LLM-powered intake with document upload
-- **Strategy** — Workflow, intensity, budget configuration
-- **Team** — Agent selection with DiceBear avatars, personality bars, skill radars
-- **Working** — Live progress sidebar, agent presence orbs, insight feed, debate threads
-- **Delivery** — Tabbed view (The Work, The Story, The Scorecard, Review, Conversation, Next Steps), Cowork folder save, derivative document generation
-- **My Page** — User profile, custom instructions, Lavern's Soul editor, saved teams
-- **My Cases** — Session history (active + past engagements)
-
-### Clawern (Law Firm on Retainer)
-
-Autonomous document processing. Drop files in a watched folder; Lavern reviews them in the background and delivers analysis bundles. Includes periodic heartbeat check-ins, dual-model confidentiality (sensitive documents analyzed on-device via Ollama), and a **Precedent Board** — persistent institutional memory that indexes findings across engagements and injects matching precedents as context for future document analysis.
-
-```bash
-# Initialize Clawern
-npm run dev -- --claw init
-
-# Validate configuration
-npm run dev -- --claw validate
-
-# Start watching
-npm run dev -- --claw start
-
-# Pause / Resume
-npm run dev -- --claw pause
-npm run dev -- --claw resume
-```
-
-Features: Voice Dispatch (`/#/dispatch`), Telegram bot (two-way chat control), email alerts, weekly digest, scheduled re-review, change detection, cost forecasting, portfolio intelligence, audit trail, daily backups, Prometheus metrics.
-
-See the [visual architecture explainer](https://lavern.ai/claw/how-it-works.html) for a full technical deep-dive.
+The Working view is a live team chat room where you watch agents analyze, post findings, debate, and resolve disputes in real-time. The Delivery view includes confidence scores, grounding indicators, and the full audit trail.
 
 ## Development
 
 ```bash
-# Run tests (1392+ tests across 85 files)
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run integration tests only
-npm run test:integration
-
-# Type check (src/)
-npm run typecheck
-
-# Type check (src/ + viz/)
-npm run typecheck:all
-
-# Build
-npm run build
-
-# Build dashboard
-npm run build:viz
+npm test                  # 1507 tests across 92 files
+npm run typecheck:all     # TSC check (backend + frontend)
+npm run build             # Build backend
+cd viz && npm run build   # Build dashboard
 ```
 
-## API Server
+## API
 
 ```bash
-npm run serve
+npm run dev -- --serve    # Start API server (default: localhost:3000)
 ```
 
-Default: `http://localhost:3000`
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/sessions` | Create analysis session |
+| `GET /api/sessions/:id/events` | WebSocket event stream |
+| `POST /api/sessions/:id/gate` | Submit gate decision |
+| `GET /api/sessions/:id/download` | Download work product |
+| `POST /api/engage` | Agent-native engagement |
+| `POST /api/auth/signup` | User registration |
+| `GET /.well-known/agent.json` | A2A agent card |
 
-### Key Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/api/sessions` | POST | Create analysis session |
-| `/api/sessions/:id/events` | GET | WebSocket event stream |
-| `/api/sessions/:id/gate` | POST | Submit gate decision |
-| `/api/sessions/:id/download` | GET | Download work product |
-| `/api/sessions/:id/derivatives` | POST | Generate derivative document |
-| `/api/sessions/:id/conversation` | POST | Ask the team (SSE streaming) |
-| `/api/engage` | POST | Agent-native engagement (sync + webhook) |
-| `/api/auth/signup` | POST | User registration |
-| `/api/auth/login` | POST | User login (sets cookie) |
-| `/api/auth/google` | GET | Google OAuth redirect |
-| `/api/auth/profile` | PUT | Update profile (incl. soul) |
-| `/api/capabilities` | GET | Machine-readable service manifest |
-| `/.well-known/agent.json` | GET | A2A agent card |
-| `/dashboard/` | GET | Visual dashboard (if built) |
-
-### Authentication
-
-Two auth methods:
-
-1. **Bearer token** (API clients/agents): `Authorization: Bearer shem_agent_...`
-2. **Cookie** (browser users): `lavern_token` HttpOnly cookie via `/api/auth/login`
-
-Register a client:
-```bash
-curl -X POST http://localhost:3000/api/clients \
-  -H 'Content-Type: application/json' \
-  -d '{"type": "agent", "name": "My Bot"}'
-```
-
-### Configuration
-
-All settings are environment-variable configurable. See `.env.example` for the full list.
-
-```bash
-cp .env.example .env
-# Edit .env with your values
-```
-
-Key variables:
-- `ANTHROPIC_API_KEY` — Your Anthropic API key
+See `.env.example` for configuration. Key variables:
+- `ANTHROPIC_API_KEY` — Anthropic API key (optional in demo mode)
 - `SHEM_PORT` — Server port (default: 3000)
-- `SHEM_MODEL` — Primary model (default: claude-opus-4-6)
 - `SHEM_DEFAULT_BUDGET` — Per-session budget in USD (default: 5.0)
 
 ## Project Structure
 
 ```
 src/
-├── agents/          # 65 agent prompts (58 specialists + 7 orchestrators)
-├── api/             # Fastify API server + WebSocket
-│   ├── middleware/   # Auth, validation, x402 payment
-│   └── routes/      # 20 route modules
-├── assembly/        # Document assembly + format conversion (HTML, DOCX)
-├── claw/            # Clawern (20 modules: watch, plan, process, deliver, precedents, audit, backup, dispatch, telegram, multi-client)
-├── db/              # SQLite persistence (users, tokens, sessions, matters)
-├── documents/       # Document parser (PDF, DOCX, MD, TXT)
-├── events/          # Event bus for real-time streaming
-├── gates/           # Human gate resolvers (readline, async, webhook, auto-approve)
-├── hooks/           # Audit logging, gate enforcement, cost tracking
-├── knowledge-base/  # Reference document collections (FTS)
-├── mcp/tools/       # 19 MCP tool modules
-├── router/          # LLM request router + deterministic fallback
-├── session/         # Session state + session manager
-├── workflows/       # 8 workflow templates + executor
-├── config.ts        # Centralized configuration
-└── index.ts         # CLI entry point
+├── agents/          # 65 agent prompts + profiles + definitions
+├── api/             # Fastify API server + WebSocket + middleware
+├── assembly/        # Document assembly + format conversion + fidelity check
+├── claw/            # Clawern: 22 modules (watch, plan, process, deliver,
+│                    #   precedents, audit, backup, telegram, multi-client,
+│                    #   hybrid analysis, anonymization, voice dispatch)
+├── db/              # SQLite persistence
+├── documents/       # Document parser (PDF, DOCX, MD, TXT) + sanitization
+├── mcp/tools/       # 20 MCP tools (debate, scoring, verification, grounding,
+│                    #   memory, knowledge base, quality checks)
+├── workflows/       # 8 templates + executor
+├── config.ts        # Centralized config (all env-var backed)
+└── index.ts         # Entry point
 
-viz/                 # React dashboard (23 feature directories)
-├── landing/         # Landing, QuickStart, YOLO launcher
-├── briefing/        # LLM intake + document upload
-├── staffing/        # Strategy, team selection, agent cards
-├── working/         # Live progress (23 components)
-├── delivery/        # Tabbed delivery (12 components)
-├── my-page/         # Profile + soul editor
-├── my-cases/        # Session history
-├── cowork/          # Cowork folder mode (File System Access API)
-└── components/      # Shared (GateDialog, ErrorToast, LavernMark)
+viz/                 # React dashboard
+├── landing/         # Landing, QuickStart
+├── briefing/        # LLM-powered intake
+├── staffing/        # Strategy + team selection
+├── working/         # Live agent activity
+├── delivery/        # Tabbed delivery with confidence scores
+├── claw/            # Clawern monitoring dashboard
+├── dispatch/        # Voice Dispatch
+└── agent-builder/   # Custom agent builder
 
-tests/               # 1392+ tests across 85 files
-SOUL.md              # Default firm personality (CLI/Claw fallback)
-CLAUDE.md            # Project documentation
+site/                # Marketing site (static, Netlify)
+menubar/             # macOS menu bar app (SwiftUI)
+tests/               # 1507 tests across 92 files
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-UNLICENSED — Private
+[MIT](LICENSE) — Copyright (c) 2025-2026 Antti Innanen
+
+See [NOTICE](NOTICE) for third-party attributions and dataset licenses.

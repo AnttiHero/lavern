@@ -1,7 +1,14 @@
 {
-  "name": "the-shem",
-  "version": "0.12.0",
-  "description": "The Shem - Multi-agent legal design system. The world's first driverless law firm.",
+  "name": "lavern",
+  "version": "0.14.0",
+  "description": "Lavern — An agentic legal architecture. A law firm staffed with AI agents.",
+  "license": "MIT",
+  "author": "Antti Innanen",
+  "homepage": "https://lavern.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnttiHero/Marble.git"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {

@@ -36,5 +36,16 @@ test-results/
 # Claude Code
 .claude/
 
+# Proprietary/test documents (do not commit)
+Test material/
+Pictures/
+Boris.docx
+*.pdf
+!site/**/*.pdf
+
+# Demo videos (too large for git)
+site/demo.mp4
+site/demo.mov
+
 # OS
 Thumbs.db
