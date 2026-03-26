@@ -18,7 +18,13 @@ export interface ClawLogEntry {
   agent?: string;
   message: string;
   detail?: string;
-  type: 'system' | 'agent' | 'finding' | 'complete';
+  type: 'system' | 'agent' | 'finding' | 'debate' | 'precedent' | 'complete';
+  /** For findings: severity indicator */
+  severity?: 'critical' | 'major' | 'minor';
+  /** For findings: quoted evidence from the document */
+  evidence?: string;
+  /** For debate: the debate phase */
+  debatePhase?: 'challenge' | 'response' | 'resolution';
 }
 
 interface ClawDemoOptions {
@@ -102,9 +108,9 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
     log({ icon: '\uD83D\uDCC4', message: 'New document: cloud-services-msa.pdf', detail: 'Master Service Agreement \u00B7 305 KB \u00B7 queued for review', type: 'system' });
   });
 
-  // ── Step 5b: Finding from first doc ──
+  // ── Step 5b: Finding from first doc with evidence ──
   add(1200, ({ log }) => {
-    log({ icon: '\u26A0\uFE0F', agent: 'Contract Analyst', message: '1 major finding in vendor-nda-2025.pdf', detail: 'Non-compete clause exceeds 2-year reasonable scope (currently 5 years)', type: 'finding' });
+    log({ icon: '\u26A0\uFE0F', agent: 'Contract Analyst', message: 'Non-compete exceeds reasonable scope', detail: 'vendor-nda-2025.pdf', type: 'finding', severity: 'major', evidence: 'Section 7.1: "Employee shall not engage in any competing business within a 200-mile radius for a period of five (5) years"' });
   });
 
   // ── Step 6: First document → reviewed ──
@@ -150,9 +156,29 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
     log({ icon: '\uD83D\uDD12', message: 'Confidential: merger-agreement-draft.docx', detail: 'Merger Agreement \u00B7 434 KB \u00B7 Routed to local analysis (Ollama)', type: 'system' });
   });
 
-  // ── Step 8b: Critical findings from MSA ──
+  // ── Step 8b: Critical finding 1 from MSA with evidence ──
   add(1500, ({ log }) => {
-    log({ icon: '\uD83D\uDD34', agent: 'Contract Reviewer', message: '2 critical findings in cloud-services-msa.pdf', detail: 'Unlimited liability exposure \u00B7 Missing data protection clause (GDPR Art. 28)', type: 'finding' });
+    log({ icon: '\uD83D\uDD34', agent: 'Contract Reviewer', message: 'Unlimited liability exposure', detail: 'cloud-services-msa.pdf', type: 'finding', severity: 'critical', evidence: 'Section 8.2: "Vendor shall indemnify and hold harmless Client without limitation against any and all claims"' });
+  });
+
+  // ── Step 8c: Critical finding 2 ──
+  add(1200, ({ log }) => {
+    log({ icon: '\uD83D\uDD34', agent: 'Privacy Counsel', message: 'No data processing agreement', detail: 'cloud-services-msa.pdf', type: 'finding', severity: 'critical', evidence: 'Section 6 references "data handling" but contains no DPA, no sub-processor list, no GDPR Article 28 terms' });
+  });
+
+  // ── Step 8d: Debate — Risk Pricer challenges the liability finding ──
+  add(1500, ({ log }) => {
+    log({ icon: '\u2694\uFE0F', agent: 'Risk Pricer', message: 'Challenges: unlimited liability is standard in SaaS agreements under $500K', detail: 'cloud-services-msa.pdf', type: 'debate', debatePhase: 'challenge' });
+  });
+
+  // ── Step 8e: Contract Reviewer responds ──
+  add(1200, ({ log }) => {
+    log({ icon: '\uD83D\uDDE3\uFE0F', agent: 'Contract Reviewer', message: 'This is a $2.1M engagement. Unlimited liability at this scale is non-standard.', detail: 'cloud-services-msa.pdf', type: 'debate', debatePhase: 'response' });
+  });
+
+  // ── Step 8f: Debate resolved ──
+  add(1000, ({ log }) => {
+    log({ icon: '\u2696\uFE0F', message: 'Debate resolved: Contract Reviewer position upheld', detail: 'Evidence: deal size exceeds standard SaaS threshold. Confidence: 0.91', type: 'debate', debatePhase: 'resolution' });
   });
 
   // ── Step 9: Second document → flagged ──
@@ -193,7 +219,7 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
 
   // ── Step 12: Third document → flagged (local, $0 cost) ──
   add(3000, ({ setDocuments, setStatus, log }) => {
-    log({ icon: '\uD83D\uDD34', agent: 'Local Analyst', message: '3 critical findings in merger-agreement-draft.docx', detail: 'Vague consideration clause \u00B7 Missing MAC clause \u00B7 Unilateral termination right', type: 'finding' });
+    log({ icon: '\uD83D\uDD34', agent: 'Local Analyst', message: 'Missing Material Adverse Change clause', detail: 'merger-agreement-draft.docx', type: 'finding', severity: 'critical', evidence: 'No MAC/MAE clause found. Buyer has no protection against material deterioration between signing and closing.' });
     setDocuments(d => d.map(doc =>
       doc.name === 'merger-agreement-draft.docx'
         ? { ...doc, status: 'flagged', lastReviewed: now(), findings: { critical: 3, major: 4, minor: 2 }, costUsd: 0 }
@@ -208,6 +234,11 @@ function buildClawDemoScript(): Array<{ delayMs: number; action: (ctx: Ctx) => v
   // ── Step 12b: Flagged notice ──
   add(800, ({ log }) => {
     log({ icon: '\uD83D\uDEA9', message: 'Flagged \u2014 merger-agreement-draft.docx', detail: '9 findings (3 critical, 4 major, 2 minor) \u00B7 $0 \u00B7 Analyzed locally', type: 'complete' });
+  });
+
+  // ── Step 12c: Precedent learned from MSA ──
+  add(1200, ({ log }) => {
+    log({ icon: '\uD83E\uDDE0', message: 'Precedent indexed: Unlimited Indemnification', detail: 'Pattern learned from cloud-services-msa.pdf. Will inform future vendor MSA reviews.', type: 'precedent' });
   });
 
   // ── Step 13: Second delivery appears ──

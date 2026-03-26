@@ -110,10 +110,53 @@ function LiveActivityFeed({ entries }: { entries: ClawLogEntry[] }) {
             <div style={styles.liveBody}>
               <div style={styles.liveLine}>
                 {entry.agent && <span style={styles.liveAgent}>{entry.agent}</span>}
-                <span style={styles.liveMessage}>{entry.message}</span>
+                <span style={{
+                  ...styles.liveMessage,
+                  ...(entry.severity === 'critical' ? { color: colors.danger, fontWeight: 600 } : {}),
+                  ...(entry.severity === 'major' ? { color: colors.warning, fontWeight: 600 } : {}),
+                  ...(entry.debatePhase === 'resolution' ? { color: colors.success, fontWeight: 600 } : {}),
+                }}>{entry.message}</span>
+                {entry.severity && (
+                  <span style={{
+                    display: 'inline-block',
+                    width: 8, height: 8, borderRadius: '50%', marginLeft: 6,
+                    background: entry.severity === 'critical' ? colors.danger : entry.severity === 'major' ? colors.warning : colors.success,
+                  }} />
+                )}
               </div>
               {entry.detail && (
-                <div style={styles.liveDetail}>{entry.detail}</div>
+                <div style={{
+                  ...styles.liveDetail,
+                  ...(entry.debatePhase ? { fontStyle: 'italic', paddingLeft: 12, borderLeft: `2px solid ${colors.border}` } : {}),
+                }}>{entry.detail}</div>
+              )}
+              {entry.evidence && (
+                <div style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 11,
+                  color: colors.textMuted,
+                  background: colors.bgPanel,
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  marginTop: 4,
+                  lineHeight: 1.5,
+                  borderLeft: `3px solid ${entry.severity === 'critical' ? colors.danger : entry.severity === 'major' ? colors.warning : colors.border}`,
+                }}>
+                  {entry.evidence}
+                </div>
+              )}
+              {entry.type === 'precedent' && (
+                <div style={{
+                  fontSize: 11,
+                  color: colors.success,
+                  background: colors.successBg,
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  marginTop: 4,
+                  display: 'inline-block',
+                }}>
+                  Institutional memory updated
+                </div>
               )}
             </div>
             {entry.type === 'agent' && <span style={styles.liveWorking} />}

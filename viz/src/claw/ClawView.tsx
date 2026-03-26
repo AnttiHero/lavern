@@ -84,7 +84,7 @@ export default function ClawView({ onBack }: Props) {
           onTogglePause={togglePause}
           demoMode={demoMode}
           demoPlaying={demoPlaying}
-          onWatchDemo={() => { setActivityLog([]); setDemoPlaying(true); }}
+          onWatchDemo={() => { setActivityLog([]); setDemoPlaying(true); setActiveTab('overview'); }}
           ethicalMode={status.ethicalMode}
         />
 
