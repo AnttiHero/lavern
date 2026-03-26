@@ -420,16 +420,19 @@ export class PrecedentBoard {
 
 // ── Singleton ───────────────────────────────────────────────────────────
 
-let _instance: PrecedentBoard | null = null;
+const _instances = new Map<string, PrecedentBoard>();
 
 export function getPrecedentBoard(dir?: string): PrecedentBoard {
-  if (!_instance) {
-    _instance = new PrecedentBoard(dir ?? config.claw.dir);
+  const resolvedDir = dir ?? config.claw.dir;
+  let instance = _instances.get(resolvedDir);
+  if (!instance) {
+    instance = new PrecedentBoard(resolvedDir);
+    _instances.set(resolvedDir, instance);
   }
-  return _instance;
+  return instance;
 }
 
-/** Reset singleton (for testing). */
+/** Reset all instances (for testing). */
 export function resetPrecedentBoard(): void {
-  _instance = null;
+  _instances.clear();
 }

@@ -56,8 +56,7 @@ const PRICING: Record<string, { input: number; output: number }> = {
 };
 
 /**
- * Model used for the quality gate. Prefers Haiku (fast + cheap), falls back to
- * Sonnet when Haiku is unavailable on the API key.
+ * Model used for the quality gate. Uses Sonnet for reliable semantic evaluation.
  */
 const QUALITY_GATE_MODEL = 'claude-sonnet-4-5-20250929';
 

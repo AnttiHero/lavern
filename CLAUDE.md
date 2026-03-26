@@ -36,8 +36,8 @@ with qualified legal professionals.
 ## Project Structure
 
 ### Core Engine
-- `src/agents/` — 65 agent prompts (58 specialists + 7 orchestrators), 58 agent definitions
-- `src/agents/profiles.ts` — 62-agent profile registry (skill ratings, personality, DiceBear avatars)
+- `src/agents/` — 66 agent prompts (59 specialists + 7 orchestrators), 59 agent definitions
+- `src/agents/profiles.ts` — 63-agent profile registry (skill ratings, personality, DiceBear avatars)
 - `src/mcp/tools/` — 19 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
@@ -181,7 +181,7 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1440+ tests across 87 files (78 unit + 9 integration)
+- `tests/` — 1500+ tests across 92 files (83 unit + 9 integration)
 
 ## Version History
 

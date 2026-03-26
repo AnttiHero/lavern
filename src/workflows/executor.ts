@@ -266,9 +266,11 @@ export async function runGenericWorkflow(
     const sessionError = handleSessionError(session, error);
     logger.error('Workflow error', { workflow: template.id, step: sessionError.step, error: sessionError.cause });
 
-    // Tier 4: partial findings from interrupted analysis
-    session.outputTier = session.debate.findings.length > 0 ? 4 : 4;
-    session.outputTierReason = `Workflow error at step "${sessionError.step}". ${session.debate.findings.length} finding(s) preserved.`;
+    // Tier 4: partial findings from interrupted analysis (or 4 with zero findings)
+    session.outputTier = 4;
+    session.outputTierReason = session.debate.findings.length > 0
+      ? `Workflow error at step "${sessionError.step}". ${session.debate.findings.length} finding(s) preserved.`
+      : `Workflow error at step "${sessionError.step}". No findings were produced before the error.`;
 
     // Still emit session_end on error so frontend isn't stuck,
     // but guard against double emission (streamMessages may have already emitted it)
