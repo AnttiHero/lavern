@@ -12,7 +12,7 @@ interface Props {
   demoMode: boolean;
 }
 
-export function DeliveriesTab({ deliveries, demoMode }: Props) {
+export function DeliveriesTab({ deliveries }: Props) {
   if (deliveries.length === 0) {
     return (
       <div style={styles.empty}>

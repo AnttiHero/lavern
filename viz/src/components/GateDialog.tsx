@@ -100,7 +100,7 @@ export function GateDialog({
       if (response.ok) {
         onDecision(decision, notes);
       } else {
-        const errBody = await response.text().catch(() => '');
+        await response.text().catch(() => ''); // drain response body
         setErrorMsg('Submission failed. Please try again.');
       }
     } catch (err) {

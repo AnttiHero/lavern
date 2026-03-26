@@ -198,6 +198,11 @@ export function useDispatch(): UseDispatchReturn {
     setError(null);
     setTranscript('');
 
+    // Stop any existing recognition instance before creating a new one
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
+    }
+
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true;

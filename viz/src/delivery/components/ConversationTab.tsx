@@ -242,6 +242,7 @@ export function ConversationTab({
         <input
           ref={inputRef}
           type="text"
+          aria-label="Ask a question about the analysis"
           placeholder="Ask a question about the analysis..."
           value={input}
           onChange={e => setInput(e.target.value)}

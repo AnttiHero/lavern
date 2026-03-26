@@ -277,7 +277,9 @@ export function useLLMInterview(
         await new Promise(r => setTimeout(r, (retryAttempt + 1) * 2000));
         // Guard against retry after unmount — component may have been unmounted during backoff
         if (!mountedRef.current) return;
-        return callInterview(userMessage, finalize, retryAttempt + 1);
+        // Recursive retry
+        await callInterview(userMessage, finalize, retryAttempt + 1);
+        return;
       } else {
         // All retries exhausted — clean up and show error
         setError(errorMessage);
@@ -300,9 +302,13 @@ export function useLLMInterview(
       }
     } finally {
       clearTimeout(timeout);
-      isStreamingRef.current = false;
-      setIsStreaming(false);
-      abortRef.current = null;
+      // Only reset streaming state if this is the final call in the retry chain
+      // (not an intermediate call that already handed off to a retry)
+      if (retryAttempt >= MAX_RETRIES || !isStreamingRef.current) {
+        isStreamingRef.current = false;
+        setIsStreaming(false);
+        abortRef.current = null;
+      }
     }
   }, [documents, workflowId, interviewerId]);
 

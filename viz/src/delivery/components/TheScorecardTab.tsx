@@ -30,10 +30,10 @@ export function TheScorecardTab({ data }: Props) {
           <div style={styles.sectionTitle}>Engagement Confidence</div>
           <div style={styles.card}>
             <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 700, fontFamily: 'Cormorant Garamond, serif', color: data.confidenceSummary.overall >= 0.7 ? '#4a7c59' : data.confidenceSummary.overall >= 0.5 ? '#b8860b' : '#b44' }}>
+              <div style={{ fontSize: '2.2rem', fontWeight: 700, fontFamily: fonts.serif, color: data.confidenceSummary.overall >= 0.7 ? colors.success : data.confidenceSummary.overall >= 0.5 ? colors.warning : colors.danger }}>
                 {Math.round(data.confidenceSummary.overall * 100)}%
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#999', marginTop: 4 }}>weighted average across all verification layers</div>
+              <div style={{ fontSize: '0.8rem', color: colors.textMuted, marginTop: 4 }}>weighted average across all verification layers</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 12 }}>
               {[
@@ -42,21 +42,21 @@ export function TheScorecardTab({ data }: Props) {
                 { label: 'Verification', value: data.confidenceSummary.verification },
               ].map((item) => (
                 <div key={item.label} style={{ textAlign: 'center', padding: '8px 0' }}>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#333' }}>{Math.round(item.value * 100)}%</div>
-                  <div style={{ fontSize: '0.75rem', color: '#999' }}>{item.label}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 600, color: colors.text }}>{Math.round(item.value * 100)}%</div>
+                  <div style={{ fontSize: '0.75rem', color: colors.textMuted }}>{item.label}</div>
                 </div>
               ))}
             </div>
             {data.confidenceSummary.grounding != null && (
-              <div style={{ textAlign: 'center', padding: '8px 0', borderTop: '1px solid #eee', marginTop: 8 }}>
-                <div style={{ fontSize: '1rem', fontWeight: 600, color: '#333' }}>
+              <div style={{ textAlign: 'center', padding: '8px 0', borderTop: `1px solid ${colors.border}`, marginTop: 8 }}>
+                <div style={{ fontSize: '1rem', fontWeight: 600, color: colors.text }}>
                   {Math.round(data.confidenceSummary.grounding * 100)}% evidence grounded
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#999' }}>citations verified against source document</div>
+                <div style={{ fontSize: '0.75rem', color: colors.textMuted }}>citations verified against source document</div>
               </div>
             )}
             {data.confidenceSummary.lowConfidenceCount > 0 && (
-              <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 6, padding: '8px 12px', marginTop: 8, fontSize: '0.82rem', color: '#8d6e00' }}>
+              <div style={{ background: colors.warningBg, border: `1px solid ${colors.warning}`, borderRadius: radii.sm, padding: '8px 12px', marginTop: 8, fontSize: '0.82rem', color: colors.warning }}>
                 {data.confidenceSummary.lowConfidenceCount} finding{data.confidenceSummary.lowConfidenceCount > 1 ? 's' : ''} with confidence below 70%
               </div>
             )}

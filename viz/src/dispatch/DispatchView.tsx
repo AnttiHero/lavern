@@ -35,7 +35,7 @@ export default function DispatchView({ onBack }: Props) {
   };
 
   return (
-    <div style={styles.page}>
+    <main style={styles.page} aria-label="Voice Dispatch">
       <div style={styles.container}>
         {/* Back button */}
         <button onClick={onBack} style={styles.backBtn} aria-label="Back to dashboard">
@@ -114,7 +114,7 @@ export default function DispatchView({ onBack }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
