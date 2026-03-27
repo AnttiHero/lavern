@@ -102,34 +102,38 @@ export function usePartnerConsult(): UsePartnerConsultReturn {
       let buffer = '';
       let fullText = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if (!jsonStr) continue;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
 
-          try {
-            const event = JSON.parse(jsonStr);
-            if (event.type === 'text') {
-              fullText += event.content;
-              setStreamingText(fullText.replace(/\s*[\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE31\uFE32]\s*/g, ', '));
-            } else if (event.type === 'error') {
-              throw new Error(event.content);
+            try {
+              const event = JSON.parse(jsonStr);
+              if (event.type === 'text') {
+                fullText += event.content;
+                setStreamingText(fullText.replace(/\s*[\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE31\uFE32]\s*/g, ', '));
+              } else if (event.type === 'error') {
+                throw new Error(event.content);
+              }
+            } catch (e) {
+              // Re-throw real errors (from event.type === 'error'), but swallow
+              // JSON parse failures from incomplete SSE chunks
+              if (e instanceof SyntaxError) continue;
+              throw e;
             }
-          } catch (e) {
-            // Re-throw real errors (from event.type === 'error'), but swallow
-            // JSON parse failures from incomplete SSE chunks
-            if (e instanceof SyntaxError) continue;
-            throw e;
           }
         }
+      } finally {
+        reader.releaseLock();
       }
 
       // Commit the assistant message

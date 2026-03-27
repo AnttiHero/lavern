@@ -149,7 +149,9 @@ export class PrecedentBoard {
       f => (f.severity === 'RED' || f.severity === 'YELLOW')
         && f.confidence >= 0.7
         && Array.isArray(f.evidence) && f.evidence.length > 0
-        && f.evidence[0].length > 0,
+        && f.evidence[0].length > 0
+        && typeof f.findingType === 'string' && f.findingType.length > 0
+        && typeof f.content === 'string' && f.content.length > 0,
     );
 
     if (significant.length === 0) return 0;

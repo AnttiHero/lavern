@@ -77,6 +77,7 @@ export interface WorkingState {
 export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] = []) {
   const wsClientRef = useRef<ShemWsClient | null>(null);
   const completionFiredRef = useRef(false);
+  const sessionEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Timestamp when 'delivered' step was first detected (for assembly wait timeout). */
   const deliveredAtRef = useRef<number | null>(null);
   /** Stable ref for current sessionId (accessible inside handleEvent without deps). */
@@ -150,7 +151,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       if (sessionIdRef.current?.startsWith('demo-session-')) {
         // Demo sessions: transition immediately (no assembly to wait for)
         completionFiredRef.current = true;
-        if (onSessionEndRef.current) setTimeout(onSessionEndRef.current, 2000);
+        if (onSessionEndRef.current) sessionEndTimerRef.current = setTimeout(onSessionEndRef.current, 2000);
       } else {
         // Live sessions: don't transition yet — periodic poll will confirm
         // assembledDocument is ready before navigating to Delivery
@@ -187,7 +188,13 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     });
 
     wsClientRef.current = client;
-    return () => { client.disconnect(); };
+    return () => {
+      client.disconnect();
+      if (sessionEndTimerRef.current !== null) {
+        clearTimeout(sessionEndTimerRef.current);
+        sessionEndTimerRef.current = null;
+      }
+    };
   }, []);
 
   // ── Sync session state ────────────────────────────────────────────────
