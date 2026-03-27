@@ -9,7 +9,6 @@ import { DeliveryCard } from './DeliveryCard.js';
 
 interface Props {
   deliveries: ClawDelivery[];
-  demoMode: boolean;
 }
 
 export function DeliveriesTab({ deliveries }: Props) {

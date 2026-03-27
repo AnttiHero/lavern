@@ -195,7 +195,7 @@ export function ConversationTab({
       </div>
 
       {/* Messages */}
-      <div style={styles.messageArea}>
+      <div style={styles.messageArea} aria-live="polite" aria-label="Conversation messages">
         {messages.length === 0 && (
           <div style={styles.emptyState}>
             <div style={styles.emptyTitle}>What would you like to know?</div>

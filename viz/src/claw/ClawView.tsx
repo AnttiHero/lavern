@@ -116,7 +116,6 @@ export default function ClawView({ onBack }: Props) {
         {activeTab === 'deliveries' && (
           <DeliveriesTab
             deliveries={deliveries}
-            demoMode={demoMode}
           />
         )}
         {activeTab === 'precedents' && (

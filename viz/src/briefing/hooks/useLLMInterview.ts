@@ -150,6 +150,10 @@ export function useLLMInterview(
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Tracks whether this call handed off to a recursive retry (in which case
+    // the inner call owns the streaming lock cleanup, not this one).
+    let didRetry = false;
+
     // Timeout: 30s for finalization (non-streaming), 20s for initial SSE connection
     const timeoutMs = finalize ? 30_000 : 20_000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -277,7 +281,8 @@ export function useLLMInterview(
         await new Promise(r => setTimeout(r, (retryAttempt + 1) * 2000));
         // Guard against retry after unmount — component may have been unmounted during backoff
         if (!mountedRef.current) return;
-        // Recursive retry
+        // Recursive retry — outer finally must not reset the lock (inner owns it)
+        didRetry = true;
         await callInterview(userMessage, finalize, retryAttempt + 1);
         return;
       } else {
@@ -302,9 +307,10 @@ export function useLLMInterview(
       }
     } finally {
       clearTimeout(timeout);
-      // Only reset streaming state if this is the final call in the retry chain
-      // (not an intermediate call that already handed off to a retry)
-      if (retryAttempt >= MAX_RETRIES || !isStreamingRef.current) {
+      // Always release the streaming lock, unless this call already handed off to
+      // a recursive retry (didRetry = true). In that case, the inner call owns
+      // cleanup and will release the lock when it finishes.
+      if (!didRetry) {
         isStreamingRef.current = false;
         setIsStreaming(false);
         abortRef.current = null;

@@ -106,12 +106,12 @@ export default function DispatchView({ onBack }: Props) {
 
         {/* Command hints */}
         <div style={styles.hints}>
-          <span style={styles.hintsLabel}>Try saying:</span>
-          <div style={styles.hintChips}>
+          <span style={styles.hintsLabel} id="hints-label">Try saying:</span>
+          <ul style={styles.hintChips} role="list" aria-labelledby="hints-label">
             {['What\'s the status?', 'Any critical findings?', 'Scan now', 'Pause', 'How much have we spent?'].map(hint => (
-              <span key={hint} style={styles.hintChip}>{hint}</span>
+              <li key={hint} role="listitem" style={styles.hintChip}>{hint}</li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     </main>
@@ -260,6 +260,9 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap' as const,
     justifyContent: 'center',
     gap: 8,
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
   },
   hintChip: {
     padding: '4px 10px',
