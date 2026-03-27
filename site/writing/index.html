@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What I Learned Building a Multi-Agent Legal System — Lavern</title>
+  <meta name="description" content="Eight months building Lavern. The surprises, the failures, and the things that actually worked. On analogies, debate, and what separates a demo from a system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#FAFAF8;--surface:#fff;--text:#1a1a1a;--muted:#555;--dim:#999;
+      --accent:#E8845C;--gold:#B8860B;--green:#4a7c59;--red:#c45d3e;--blue:#2E5D9C;
+      --border:#e8e5e0;--code-bg:#f5f3f0;
+      --serif:'Cormorant Garamond',Georgia,serif;
+      --sans:'Inter',-apple-system,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.75;-webkit-font-smoothing:antialiased}
+    .container{max-width:680px;margin:0 auto;padding:80px 24px 120px}
+    .back{display:inline-block;font-size:12px;color:var(--dim);text-decoration:none;letter-spacing:0.5px;margin-bottom:56px;transition:color 0.2s}
+    .back:hover{color:var(--muted)}
+    .header{margin-bottom:64px}
+    .header-mark{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+    .header h1{font-family:var(--serif);font-size:clamp(32px,5vw,52px);font-weight:300;line-height:1.1;margin-bottom:20px}
+    .header h1 em{font-style:italic}
+    .header .deck{font-size:17px;color:var(--muted);line-height:1.7;max-width:560px}
+    .header .meta{margin-top:28px;font-size:12px;color:var(--dim);letter-spacing:0.3px}
+    hr{border:none;height:1px;background:var(--border);margin:52px 0}
+    h2{font-family:var(--serif);font-size:26px;font-weight:300;margin:52px 0 18px;color:var(--text)}
+    h2 em{font-style:italic}
+    p{font-size:16px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+    p strong{color:var(--text);font-weight:600}
+    p a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(232,132,92,0.3);transition:border-color 0.2s}
+    p a:hover{border-bottom-color:var(--accent)}
+    .section-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;margin-top:52px}
+    .callout{background:var(--code-bg);border-left:3px solid var(--gold);padding:18px 22px;border-radius:0 8px 8px 0;margin:28px 0;font-size:15px;color:var(--text);line-height:1.7}
+    .callout strong{color:var(--gold)}
+    .callout.accent{border-left-color:var(--accent)}.callout.accent strong{color:var(--accent)}
+    .pullquote{font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:300;line-height:1.4;color:var(--text);text-align:center;padding:44px 20px;margin:44px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .pullquote em{font-style:italic;color:var(--accent)}
+    .lessons{margin:32px 0}
+    .lesson{padding:22px 0;border-bottom:1px solid var(--border)}
+    .lesson:last-child{border-bottom:none}
+    .lesson-num{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:6px}
+    .lesson-title{font-family:var(--serif);font-size:20px;font-weight:400;color:var(--text);margin-bottom:10px}
+    .lesson-body{font-size:15px;color:var(--muted);line-height:1.75}
+    .lesson-body strong{color:var(--text);font-weight:600}
+    .footer{text-align:center;padding:48px 0 0;font-size:12px;color:var(--dim)}
+    .footer a{color:var(--muted);text-decoration:none;letter-spacing:1px}
+    .continue{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;margin-top:56px}
+    .continue-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+    .continue a{font-family:var(--serif);font-size:20px;font-weight:300;color:var(--text);text-decoration:none;display:block;margin-bottom:6px;transition:color 0.2s}
+    .continue a:hover{color:var(--accent)}
+    .continue-sub{font-size:13px;color:var(--dim)}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <a href="/claw/how-it-works.html" class="back">← Architecture of a Driverless Law Firm</a>
+
+    <div class="header">
+      <div class="header-mark">LAVERN — Writing</div>
+      <h1>What I Learned Building<br>a Multi-Agent <em>Legal System.</em></h1>
+      <p class="deck">Eight months of architecture, failure, and the occasional surprise. The things I wish I'd known before month one.</p>
+      <div class="meta">Helsinki, 2026</div>
+    </div>
+
+    <hr>
+
+    <!-- THE ANALOGY -->
+
+    <div class="section-label">The Starting Point</div>
+    <h2>The Analogy <em>Is the Architecture.</em></h2>
+
+    <p>Every new technology inherits old shapes. The first cars looked like carriages without horses. Early websites were printed brochures. Most legal AI tools look like a junior associate: one input, one output, waiting to be prompted. The analogy is comfortable. It's also limiting.</p>
+
+    <p>We started from a different question: what would a self-driving law firm look like? Not AI that assists a lawyer. A firm that runs without one. The analogy is ridiculous until it isn't. Once we committed to it, every architectural decision became clearer. Firms have partners, associates, and specialists. They have debates. They have institutional memory. They have a culture. So does Lavern.</p>
+
+    <p>The analogy implied the architecture. A firm dispatches agents. Agents produce findings. Findings go to a debate board. The orchestrator resolves disputes and assembles the output. The firm remembers what it learned. The client's documents stay in the building.</p>
+
+    <div class="callout accent">
+      <strong>The most important design decision you can make is starting from the right analogy.</strong> "AI as a junior associate" implies a tool you prompt. "AI as a law firm" implies a system that runs. Everything else follows from that difference.
+    </div>
+
+    <!-- WHY DEBATE WORKS -->
+
+    <div class="section-label">The Core Mechanism</div>
+    <h2>Why Debate <em>Actually Works.</em></h2>
+
+    <p>The central claim of a multi-agent system is that agents arguing with each other produces better output than a single agent. I was skeptical of this when we started. I'm not anymore.</p>
+
+    <p>The reason it works isn't magic. It's <strong>evidence requirements</strong>. When an agent can't post a finding without citing specific text, you eliminate a category of confabulation at the source. When a second agent has to marshal counter-evidence to challenge that finding, and the orchestrator has to weigh the evidence before resolving the dispute, you've created a structure that's genuinely harder to mislead than a single LLM call. The quality improvement is measurable. The audit trail is a side effect.</p>
+
+    <p>The hard part isn't building the debate. It's making agents actually listen to each other. Language models have a sycophancy problem: they're inclined to agree when challenged, regardless of whether the challenge is stronger. An agent can reverse its position not because the counter-argument was better, but because it was newer. We built structures around this — evidence weight requirements, confidence thresholds, escalation protocols — but the underlying challenge is real. <strong>Making AI agents truly argue, rather than taking turns agreeing, is still an open problem.</strong></p>
+
+    <!-- CONTEXT -->
+
+    <div class="section-label">The Hard Problem</div>
+    <h2>Law Is a <em>Context Game.</em></h2>
+
+    <p>The bottleneck in legal AI is not model quality. Current LLMs do solid legal work. The bottleneck is context.</p>
+
+    <p>A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. A termination clause that's standard in Delaware could be unenforceable in California. An indemnification cap that's fine for a $50K engagement is dangerous in a $5M one. Without context — the specific situation, the risk appetite, the jurisdiction, the deal size — analysis is generic. Generic is not useful.</p>
+
+    <p>This is why we invested heavily in the briefing layer: an LLM-powered interview that builds context before any agent touches the document. The interview adapts to document type, asks about jurisdiction and commercial intent, and follows up on what matters. That context flows through every downstream analysis. <strong>A legal AI that asks questions outperforms one that doesn't.</strong> The model is not the interesting problem. Context is the interesting problem.</p>
+
+    <div class="pullquote">The model is not the bottleneck.<br><em>Context is the bottleneck.</em></div>
+
+    <!-- SURPRISES -->
+
+    <div class="section-label">What We Didn't Expect</div>
+    <h2>Four Things That <em>Surprised Us.</em></h2>
+
+    <div class="lessons">
+
+      <div class="lesson">
+        <div class="lesson-num">01</div>
+        <div class="lesson-title">More agents don't always mean better results.</div>
+        <div class="lesson-body">There's a point of diminishing returns. A five-agent team that's well-chosen and well-orchestrated can outperform a fifteen-agent team where the agents work at cross-purposes or amplify each other's noise. The right amount of scrutiny depends on the document — and sometimes the right answer is fewer specialists, not more. This is why Lavern has workflow templates at different team sizes rather than always deploying the full bench.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-num">02</div>
+        <div class="lesson-title">Local models change the trust dynamic entirely.</div>
+        <div class="lesson-body">Running a local model on your own hardware is not just a cost optimization. It's a different value proposition. When a client's confidential documents never leave their machine, you're not asking them to trust your security practices. You're giving them a system that doesn't require trust. <strong>For legal work, where client privilege is foundational, this matters more than we initially realized.</strong> The economics are a bonus.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-num">03</div>
+        <div class="lesson-title">Feedback loops are more important than model quality.</div>
+        <div class="lesson-body">We spent a lot of time thinking about which models to use. We should have spent more time thinking about loops. A single pass through a good model produces a draft. A loop that checks the output, sends critique back to the agent, and iterates until it passes specific criteria produces a deliverable. The quality difference between one pass and three well-structured passes is larger than the quality difference between most models at the same capability tier.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-num">04</div>
+        <div class="lesson-title">The architecture scales in unexpected directions.</div>
+        <div class="lesson-body">We built Lavern for interactive document review. Clawern, the autonomous mode, emerged from asking what happened when you removed the human from the loop entirely. The same architecture, pointed at a folder, running on a 30-minute heartbeat, becomes a law firm on retainer. We didn't plan it that way. <strong>The analogy implied it.</strong> Good analogies do that — they generate architecture you didn't consciously design.</div>
+      </div>
+
+    </div>
+
+    <hr>
+
+    <!-- FEEDBACK LOOPS -->
+
+    <div class="section-label">The Most Important Lesson</div>
+    <h2>Build the <em>Loops.</em></h2>
+
+    <p>If I had to distill eight months into a single sentence: <strong>the system is defined by its feedback loops, not its capabilities.</strong></p>
+
+    <p>Every place where output is checked against specific criteria and sent back for revision — the evaluator gate that rejects weak findings, the debate board that forces evidence-backed challenges, the 10-pass verification pipeline that checks the assembled output before it reaches the user — these aren't features. They're what separates a toy demo from a production system. Most AI systems are single-pass. Lavern is a loop. That's the difference.</p>
+
+    <p>In software engineering, the Ralph pattern — where an agent reads its own past work to improve it — is well-understood. In law, the stakes for getting it wrong are higher, so the loop has to be more thorough. But the principle is identical: don't submit work and move on. Submit work, receive critique, revise, and submit again.</p>
+
+    <div class="callout">
+      <strong>A loop that checks, critiques, and iterates produces a deliverable.</strong> A single pass produces a draft. This distinction is worth more investment than almost anything else in the architecture.
+    </div>
+
+    <!-- LIMITS -->
+
+    <div class="section-label">Honesty</div>
+    <h2>Where the Analogy <em>Ends.</em></h2>
+
+    <p>The law firm analogy has been generative. It led to the soul, the debate board, the partner consultations, the retainer model. It implied an architecture we wouldn't have designed from first principles.</p>
+
+    <p>But analogies are also constraints. Real law firms have billing structures, hierarchies, and communication patterns that don't necessarily map to how AI agents should work. There are things the analogy implies that don't make sense for AI, and things AI can do that a real law firm never could — running 66 simultaneous specialists on a single document, for instance, or remembering every finding from every engagement in structured, queryable memory.</p>
+
+    <p>At some point, we'll let the analogy go and find out what the system wants to become when it's freed from inherited shapes. The first law firm built from AI-native principles, rather than AI fitted to law-firm-native ones. That's the next question.</p>
+
+    <!-- PRACTICAL -->
+
+    <div class="section-label">If You're Building This</div>
+    <h2>What I'd Tell Someone <em>Starting Tomorrow.</em></h2>
+
+    <p><strong>Start from a different analogy.</strong> Not "AI that helps lawyers" — something weirder, something that implies a different architecture. The good analogies are uncomfortable at first.</p>
+
+    <p><strong>Build the debate before you build the output.</strong> The debate is more interesting than the output, and it's what separates a demo from a system. Evidence requirements are the mechanism. Get those right first.</p>
+
+    <p><strong>Spend your first month on context injection.</strong> The briefing layer, the knowledge base, the soul — these determine what quality is possible. The model is not the interesting problem.</p>
+
+    <p><strong>Accept that some questions don't have good answers yet.</strong> Making AI agents truly collaborate — not just take turns — is an unsolved problem. Build structures around it. Be honest about what those structures can and can't do. The "What We're Still Learning" section of a technical document is not a weakness. It's the most interesting part.</p>
+
+    <hr>
+
+    <p>Lavern is <a href="https://github.com">open source.</a> The architecture, the agent prompts, the debate protocols, the precedent board, the verification pipeline — all of it. The source is available, the ideas are there to be improved on, and the analogy is there to be argued with.</p>
+
+    <p>That is the point of publishing it.</p>
+
+    <div class="continue">
+      <div class="continue-label">Continue Reading</div>
+      <a href="/claw/how-it-works.html">Architecture of a Driverless Law Firm →</a>
+      <div class="continue-sub">The full technical deep-dive. Diagrams, mechanisms, and the reasoning behind the decisions.</div>
+    </div>
+
+    <div class="footer">
+      <a href="/">LAVERN</a> &nbsp;·&nbsp; Helsinki · Paris
+    </div>
+
+  </div>
+</body>
+</html>
