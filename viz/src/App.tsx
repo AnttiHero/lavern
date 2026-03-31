@@ -198,6 +198,15 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // Demo containment — if a demo session is active, only allow demo-safe routes
+  const DEMO_SAFE: AppView[] = ['foyer', 'working', 'delivery', 'claw', 'demo', 'login'];
+  useEffect(() => {
+    const sid = sessionStorage.getItem('shem-session-id') ?? '';
+    if (sid.startsWith('demo-session') && !DEMO_SAFE.includes(view)) {
+      window.location.hash = '#/';
+    }
+  }, [view]);
+
   // ── Stripe redirect handler ─────────────────────────────────────────
   // Stripe redirects to ?billing=success or ?billing=cancelled (query params).
   // Our SPA uses hash routing, so we detect and redirect on mount.
@@ -617,6 +626,9 @@ export function App() {
   // ── Global API error handler (listens for shem:api-error events) ────
   useEffect(() => {
     const handler = (e: Event) => {
+      // Suppress all toasts in demo mode — no backend is expected
+      const sessionId = sessionStorage.getItem('shem-session-id') ?? '';
+      if (sessionId.startsWith('demo-session')) return;
       const detail = (e as CustomEvent<ApiErrorEvent>).detail;
       if (detail.type === 'auth-expired') {
         setErrorToast(detail.message);
@@ -814,7 +826,11 @@ export function App() {
           {showMark && <LavernMark />}
           <WorkingView
             onComplete={navToDelivery}
-            onBack={() => { sessionStorage.removeItem('shem-session-id'); sessionStorage.removeItem('shem-demo-case'); window.location.hash = '#/quickstart'; }}
+            onBack={() => {
+              const sid = sessionStorage.getItem('shem-session-id') ?? '';
+              sessionStorage.removeItem('shem-session-id'); sessionStorage.removeItem('shem-demo-case');
+              window.location.hash = sid.startsWith('demo-session') ? '#/' : '#/quickstart';
+            }}
             onSkip={navToDelivery}
           />
         </Suspense>
