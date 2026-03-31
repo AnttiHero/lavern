@@ -1250,7 +1250,7 @@ export function App() {
           onMyPage={() => { window.location.hash = '#/my-page'; }}
           onLogin={() => { window.location.hash = '#/login'; }}
           onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-          onDemo={() => { window.location.hash = '#/partner?demo=true'; }}
+          onDemo={() => { window.location.hash = '#/demo'; }}
         />
       </Suspense>
     </ErrorBoundary>
