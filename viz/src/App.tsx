@@ -44,6 +44,7 @@ import { CustomCursor } from './components/CustomCursor.js';
 import { TopUpDialog } from './components/TopUpDialog.js';
 
 // Lazy-load all views (separate code-split chunks)
+const DemoTourView = lazy(() => import('./demo/DemoTourView.js'));
 const LandingView = lazy(() => import('./landing/LandingView.js'));
 const LobbyView = lazy(() => import('./landing/LobbyView.js'));
 const IntakeView = lazy(() => import('./intake/IntakeView.js'));
@@ -1118,9 +1119,13 @@ export function App() {
     );
   }
 
-  // ── Demo — sequential demo entry point (no API key required) ─────────
+  // ── Demo — cinematic guided tour (no API key required) ───────────────
   if (view === 'demo') {
-    return <DemoLauncher />;
+    return (
+      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, backgroundColor: '#080808' }} />}>
+        <DemoTourView onExit={() => { window.location.hash = '#/'; }} />
+      </Suspense>
+    );
   }
 
   // ── Dispatch — Voice command interface ────────────────────────────────
@@ -1150,10 +1155,7 @@ export function App() {
               onMyPage={() => { window.location.hash = '#/my-page'; }}
               onLogin={() => { window.location.hash = '#/login'; }}
               onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-              onDemo={() => {
-                sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
-                window.location.hash = '#/working';
-              }}
+              onDemo={() => { window.location.hash = '#/demo'; }}
             />
           </Suspense>
         </ViewTransition>
@@ -1266,10 +1268,7 @@ export function App() {
           onMyPage={() => { window.location.hash = '#/my-page'; }}
           onLogin={() => { window.location.hash = '#/login'; }}
           onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-          onDemo={() => {
-            sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
-            window.location.hash = '#/working';
-          }}
+          onDemo={() => { window.location.hash = '#/demo'; }}
         />
       </Suspense>
     </ErrorBoundary>
