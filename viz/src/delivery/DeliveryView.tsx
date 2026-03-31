@@ -13,7 +13,7 @@
  * demo data when session ID starts with "demo-session-".
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useResponsive } from '../hooks/useMediaQuery.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { LavernIlluminated } from '../components/LavernIlluminated.js';
@@ -56,6 +56,15 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
   // Detect demo session
   const isDemo = data?.sessionId.startsWith('demo-session') ?? false;
+
+  // Sequential demo: after showing delivery, auto-advance to Clawern demo
+  useEffect(() => {
+    if (!isDemo || loading) return;
+    const timer = setTimeout(() => {
+      window.location.hash = '#/claw?demo=true';
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [isDemo, loading]);
 
   // Detect if viewing an archived session from My Cases
   const [isArchiveView] = useState(() => {

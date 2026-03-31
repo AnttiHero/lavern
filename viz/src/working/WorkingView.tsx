@@ -156,6 +156,13 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   const isDemo = state.sessionId?.startsWith('demo-session-') ?? false;
   const { status: billing } = useBillingStatus(!isDemo);
 
+  // Auto-approve human gates in demo mode (3s pause so viewer sees the gate)
+  useEffect(() => {
+    if (!isDemo || !state.pendingGate) return;
+    const t = setTimeout(() => handleGateDecision('approve'), 3000);
+    return () => clearTimeout(t);
+  }, [isDemo, state.pendingGate, handleGateDecision]);
+
   return (
     <div style={styles.root}>
       {isDemo && <DemoNarration step={2} />}

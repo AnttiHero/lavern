@@ -71,7 +71,7 @@ const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase' | 'demo';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -104,6 +104,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/privacy')) return 'privacy';
   if (hash.startsWith('#/landing')) return 'landing';
   if (hash.startsWith('#/showcase')) return 'showcase';
+  if (hash.startsWith('#/demo')) return 'demo';
   return 'foyer';
 }
 
@@ -170,6 +171,15 @@ function VerifyEmailHandler() {
       </div>
     </div>
   );
+}
+
+/** Sequential demo entry: sets session, redirects to working view. */
+function DemoLauncher() {
+  useEffect(() => {
+    sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
+    window.location.hash = '#/working';
+  }, []);
+  return null;
 }
 
 export function App() {
@@ -1090,6 +1100,11 @@ export function App() {
         </ViewTransition>
       </ErrorBoundary>
     );
+  }
+
+  // ── Demo — sequential demo entry point (no API key required) ─────────
+  if (view === 'demo') {
+    return <DemoLauncher />;
   }
 
   // ── Dispatch — Voice command interface ────────────────────────────────
