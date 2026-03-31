@@ -126,6 +126,13 @@
       transform:translateY(-2px);
       box-shadow:0 8px 40px rgba(0,0,0,0.5)
     }
+    .btn-demo{
+      display:inline-block;margin-top:20px;
+      font-family:var(--serif);font-size:15px;font-weight:300;font-style:italic;
+      color:var(--muted);text-decoration:none;letter-spacing:0;
+      transition:color .4s var(--ease)
+    }
+    .btn-demo:hover{color:var(--text)}
 
     .hero-scroll{
       position:absolute;bottom:36px;left:50%;transform:translateX(-50%);z-index:3;
@@ -464,7 +471,7 @@
       <div class="hero-fog-right"></div>
       <div class="hero-content">
         <h1 class="r">Excellence<br>doesn't scale.<br><em>Until now.</em></h1>
-        <a href="mailto:hello@lavern.ai?subject=Knock%20Knock&body=I%E2%80%99d%20like%20to%20see%20a%20demo." class="btn-invite r r1">Knock</a>
+        <a href="https://app.lavern.ai/#/claw?demo=true" class="btn-invite r r1">Talk is cheap</a>
       </div>
     </section>
 
@@ -528,8 +535,6 @@
       <span class="footer-mark">LAVERN</span>
       <a href="/claw/how-it-works.html" class="footer-link">The Architecture</a>
     </div>
-    <!-- arch-link is the mobile-only fixed top-right version (see .arch-link in CSS) -->
-    <div class="footer-right"><a href="#" onclick="event.preventDefault();window.location='mailto:helsinki@lavern.ai'">Helsinki</a> &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();window.location='mailto:paris@lavern.ai'">Paris</a></div>
   </footer>
 
   <script>

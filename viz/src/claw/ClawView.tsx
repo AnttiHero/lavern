@@ -5,7 +5,7 @@
  * Dark hero zone, amber accent, four tabs: Overview, Documents, Deliveries, Config.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { colors, fonts, spacing } from '../staffing/styles/tokens.js';
 import { LoadingW } from '../components/LoadingW.js';
 import { useClawData } from './hooks/useClawData.js';
@@ -28,6 +28,15 @@ export default function ClawView({ onBack }: Props) {
   const [activeTab, setActiveTab] = useState<ClawTab>('overview');
   const [demoPlaying, setDemoPlaying] = useState(false);
   const [activityLog, setActivityLog] = useState<ClawLogEntry[]>([]);
+
+  // Auto-start demo when landing via ?demo=true
+  useEffect(() => {
+    if (window.location.hash.includes('?demo=true') && !loading && status) {
+      setActivityLog([]);
+      setDemoPlaying(true);
+      setActiveTab('overview');
+    }
+  }, [loading, status]);
 
   useClawDemoSimulator({
     active: demoPlaying,
