@@ -1250,7 +1250,10 @@ export function App() {
           onMyPage={() => { window.location.hash = '#/my-page'; }}
           onLogin={() => { window.location.hash = '#/login'; }}
           onAgentDocs={() => { window.location.hash = '#/agent-docs'; }}
-          onDemo={() => { window.location.hash = '#/demo'; }}
+          onDemo={() => {
+            sessionStorage.setItem('shem-session-id', `demo-session-heartconnect-${Date.now()}`);
+            window.location.hash = '#/working';
+          }}
         />
       </Suspense>
     </ErrorBoundary>
