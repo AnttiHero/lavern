@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { AgentProfile } from '../../../../src/types/agent-profile.js';
+import type { AgentProfile } from '../../types/agent-profile.js';
 
 // ── Types ──────────────────────────────────────────────────────────────
 

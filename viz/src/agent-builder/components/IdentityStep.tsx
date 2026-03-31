@@ -10,7 +10,7 @@ import { colors, fonts, radii, categoryColor, tierColor } from '../../staffing/s
 import { ARCHETYPE_PRESETS } from '../data/archetype-presets.js';
 import { calculateOVR, ovrToCostTier } from '../hooks/useAgentBuilder.js';
 import type { BuilderState } from '../hooks/useAgentBuilder.js';
-import type { AgentCategory, SeniorityTier } from '../../../../src/types/agent-profile.js';
+import type { AgentCategory, SeniorityTier } from '../../types/agent-profile.js';
 
 interface Props {
   state: BuilderState;

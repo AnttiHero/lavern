@@ -8,7 +8,7 @@
 import { useCallback } from 'react';
 import { colors, fonts } from '../../staffing/styles/tokens.js';
 import { skillToDisplay, displayToSkill } from '../hooks/useAgentBuilder.js';
-import type { SkillRatings } from '../../../../src/types/agent-profile.js';
+import type { SkillRatings } from '../../types/agent-profile.js';
 
 interface Props {
   skill: keyof SkillRatings;

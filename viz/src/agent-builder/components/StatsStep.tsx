@@ -12,7 +12,7 @@ import { PersonalitySlider } from './PersonalitySlider.js';
 import { OverallRating } from './OverallRating.js';
 import { PracticeAreaPicker } from './PracticeAreaPicker.js';
 import type { BuilderState } from '../hooks/useAgentBuilder.js';
-import type { SkillRatings, PersonalityAxis, CostTier } from '../../../../src/types/agent-profile.js';
+import type { SkillRatings, PersonalityAxis, CostTier } from '../../types/agent-profile.js';
 
 interface Props {
   state: BuilderState;

@@ -5,7 +5,7 @@
  * starting point they can customize. Like NBA2K position templates.
  */
 
-import type { AgentCategory, SeniorityTier, SkillRatings, PersonalityAxis } from '../../../../src/types/agent-profile.js';
+import type { AgentCategory, SeniorityTier, SkillRatings, PersonalityAxis } from '../../types/agent-profile.js';
 
 export interface ArchetypePreset {
   id: string;

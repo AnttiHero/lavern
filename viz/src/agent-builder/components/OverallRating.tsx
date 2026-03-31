@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { colors, fonts, tierColor, tierBg } from '../../staffing/styles/tokens.js';
-import type { CostTier } from '../../../../src/types/agent-profile.js';
+import type { CostTier } from '../../types/agent-profile.js';
 
 interface Props {
   ovr: number;

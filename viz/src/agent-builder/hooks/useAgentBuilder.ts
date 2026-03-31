@@ -13,7 +13,7 @@ import type {
   SkillRatings,
   PersonalityAxis,
   AgentProfile,
-} from '../../../../src/types/agent-profile.js';
+} from '../../types/agent-profile.js';
 import type { ArchetypePreset } from '../data/archetype-presets.js';
 import { ARCHETYPE_PRESETS } from '../data/archetype-presets.js';
 import { buildAvatarExtra } from '../data/dicebear-variants.js';

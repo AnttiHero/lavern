@@ -7,7 +7,7 @@
 
 import { useCallback } from 'react';
 import { colors, fonts } from '../../staffing/styles/tokens.js';
-import type { PersonalityAxis } from '../../../../src/types/agent-profile.js';
+import type { PersonalityAxis } from '../../types/agent-profile.js';
 
 interface Props {
   axis: PersonalityAxis;

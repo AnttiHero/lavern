@@ -20,7 +20,7 @@ import { StatsStep } from './components/StatsStep.js';
 import { LiveCardPreview } from './components/LiveCardPreview.js';
 import { CardRevealOverlay } from './components/CardRevealOverlay.js';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
-import type { AgentProfile } from '../../../src/types/agent-profile.js';
+import type { AgentProfile } from '../types/agent-profile.js';
 
 interface Props {
   onBack: () => void;

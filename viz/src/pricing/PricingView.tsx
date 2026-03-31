@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import { LavernIlluminated } from '../components/LavernIlluminated.js';
-import type { Stripe, PaymentRequest } from '@stripe/stripe-js';
+import type { Stripe, PaymentRequest, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 interface Props {
   onBack: () => void;
@@ -396,7 +396,7 @@ export default function PricingView({ onBack }: Props) {
       });
 
       // Handle payment method from Apple Pay sheet
-      pr.on('paymentmethod', async (ev) => {
+      pr.on('paymentmethod', async (ev: PaymentRequestPaymentMethodEvent) => {
         const { error } = await stripe.confirmCardPayment(
           clientSecret,
           { payment_method: ev.paymentMethod.id },

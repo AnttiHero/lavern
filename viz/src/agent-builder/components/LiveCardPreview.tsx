@@ -11,8 +11,8 @@ import { motion } from 'motion/react';
 import { AgentCard } from '../../staffing/components/AgentCard.js';
 import { AgentCardBack } from '../../staffing/components/AgentCardBack.js';
 import { colors, fonts, radii, tierColor, tierBg } from '../../staffing/styles/tokens.js';
-import type { AgentProfile } from '../../../../src/types/agent-profile.js';
-import type { CostTier } from '../../../../src/types/agent-profile.js';
+import type { AgentProfile } from '../../types/agent-profile.js';
+import type { CostTier } from '../../types/agent-profile.js';
 
 interface Props {
   profile: AgentProfile;
