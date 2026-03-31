@@ -420,18 +420,27 @@
       .btn-invite{padding:16px 44px;font-size:10px}
       .hero::after{height:40%}
       .smoke{height:35vh}
-      .footer{padding:16px;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:transparent}
-      .footer-mark{font-size:14px;letter-spacing:6px}
+      /* Footer — single clean row, no border */
+      .footer{padding:16px 20px;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:transparent;border-top:none;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:0;max-width:none;margin:0}
+      .footer-left{flex-direction:row;align-items:center;gap:0}
+      .footer-mark{font-size:13px;letter-spacing:6px}
       .footer-right{font-size:9px;letter-spacing:2px}
+      .footer-right a{color:var(--muted);text-decoration:none}
+      /* Hide footer links — architecture link is in top-right via .arch-link */
+      .footer-link{display:none}
     }
     @media(max-width:420px){
       .logo{top:16px;left:16px;font-size:13px;letter-spacing:5px}
       .hero-content{padding:16px}
       .hero h1{font-size:clamp(40px,12vw,56px)}
       .btn-invite{padding:14px 36px;font-size:9px;letter-spacing:2px}
-      .footer{flex-direction:column;align-items:flex-start;gap:16px}
     }
 
+    /* The Architecture — desktop: hidden (it's in the footer). Mobile: top-right fixed. */
+    .arch-link{display:none}
+    @media(max-width:768px){
+      .arch-link{display:block;position:fixed;top:22px;right:20px;z-index:100;font-family:var(--sans);font-size:10px;font-weight:400;letter-spacing:2px;text-transform:uppercase;color:var(--text);text-decoration:none;mix-blend-mode:difference;opacity:.45}
+    }
     .skip-link{position:absolute;top:-100px;left:0;background:var(--accent);color:#fff;padding:12px 24px;z-index:10001;font-size:14px;text-decoration:none}
     .skip-link:focus{top:0}
     a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
@@ -444,6 +453,7 @@
   <!-- 1. Logo only — top left, nothing else -->
   <a href="#" class="logo">LAVERN</a>
   <a href="#" class="login">Log In</a>
+  <a href="/claw/how-it-works.html" class="arch-link">The Architecture</a>
 
   <main id="main">
 
@@ -516,13 +526,10 @@
   <footer class="footer">
     <div class="footer-left">
       <span class="footer-mark">LAVERN</span>
-      <a href="/claw/how-it-works.html" class="footer-link">How It Works</a>
-      <a href="/writing/" class="footer-link">Writing</a>
-      <a href="https://github.com" class="footer-link">Open Source</a>
-      <a href="/terms" class="footer-link">Terms</a>
-      <a href="/privacy" class="footer-link">Privacy</a>
+      <a href="/claw/how-it-works.html" class="footer-link">The Architecture</a>
     </div>
-    <div class="footer-right"><a href="#" onclick="event.preventDefault();window.location='mailto:helsinki@lavern.ai'" class="footer-link">Helsinki</a> &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();window.location='mailto:paris@lavern.ai'" class="footer-link">Paris</a></div>
+    <!-- arch-link is the mobile-only fixed top-right version (see .arch-link in CSS) -->
+    <div class="footer-right"><a href="#" onclick="event.preventDefault();window.location='mailto:helsinki@lavern.ai'">Helsinki</a> &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();window.location='mailto:paris@lavern.ai'">Paris</a></div>
   </footer>
 
   <script>
