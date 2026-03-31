@@ -1,10 +1,9 @@
 /**
- * FoyerView — The Lavern Lobby.
+ * FoyerView — The Lavern door.
  *
- * Dark, foggy, minimal. Same energy as the marketing site.
- * LAVERN logo top-left, Sign In top-right.
- * Center: "Watch the demo." + waitlist.
- * Logged-in users get entry buttons.
+ * Matches lavern.ai exactly: dark marble, grain, serif headline,
+ * one "Talk is cheap" button → sequential demo.
+ * Logged-in users get entry buttons instead.
  */
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
@@ -13,8 +12,6 @@ import { useMediaQuery } from '../hooks/useMediaQuery.js';
 
 const DARK = '#080808';
 const TEXT = '#FAF9F6';
-const MUTED = 'rgba(250,249,246,0.4)';
-const ACCENT = '#D49060';
 const SERIF = "'Cormorant Garamond', Georgia, serif";
 const SANS = "'Inter', -apple-system, sans-serif";
 
@@ -27,17 +24,12 @@ interface Props {
   onDemo?: () => void;
 }
 
-export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, onAgentDocs, onDemo }: Props) {
+export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, onDemo }: Props) {
   const userCtx = useContext(UserContext);
   const isLoggedIn = !!userCtx?.user;
   const isMobile = useMediaQuery('mobile');
   const [ready, setReady] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
-
-  const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 60);
@@ -46,247 +38,33 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (imgRef.current) {
-      const cx = (e.clientX / window.innerWidth - 0.5) * 6;
-      const cy = (e.clientY / window.innerHeight - 0.5) * 6;
-      imgRef.current.style.transform = `scale(1.06) translate(${cx}px, ${cy}px)`;
+      const cx = (e.clientX / window.innerWidth - 0.5) * 8;
+      const cy = (e.clientY / window.innerHeight - 0.5) * 8;
+      imgRef.current.style.transform = `scale(1.08) translate(${cx}px, ${cy}px)`;
     }
   }, []);
 
   const onMouseLeave = useCallback(() => {
-    if (imgRef.current) imgRef.current.style.transform = 'scale(1.06)';
+    if (imgRef.current) imgRef.current.style.transform = 'scale(1.08)';
   }, []);
-
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || submitting) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setDone(true);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error || 'Something went wrong.');
-      }
-    } catch {
-      setError('Unable to reach the server.');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [email, submitting]);
 
   if (!ready) {
     return <div style={{ position: 'fixed', inset: 0, backgroundColor: DARK }} />;
   }
-
-  /* ── Mobile: single-screen hero ──────────────────────────────────────── */
-
-  if (isMobile) {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100dvh',
-          overflow: 'hidden',
-          zIndex: 9999,
-          backgroundColor: DARK,
-        }}
-      >
-        {/* Background image */}
-        <img
-          src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
-          alt=""
-          role="presentation"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            filter: 'brightness(0.25) saturate(0.3)',
-            opacity: 0.7,
-            transform: 'scale(1.06)',
-            animation: 'lobbyPhotoReveal 2s ease 0s both',
-          }}
-        />
-
-        {/* Warm orb glow — large amber sphere */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: [
-              'radial-gradient(circle 40vw at 50% 36%, rgba(200,120,60,0.55) 0%, rgba(180,90,40,0.35) 30%, rgba(140,60,20,0.15) 55%, transparent 75%)',
-            ].join(', '),
-            animation: 'lobbyFadeIn 1.5s ease 0.3s both',
-          }}
-        />
-
-        {/* Edge vignette */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: 'radial-gradient(ellipse 55% 50% at 50% 40%, transparent 0%, rgba(8,8,8,0.9) 100%)',
-          }}
-        />
-
-        {/* Bottom fade to black */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '35%',
-            background: `linear-gradient(to bottom, transparent, ${DARK})`,
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Top bar — LAVERN left, Log In right */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '24px 24px',
-            zIndex: 10,
-            animation: 'lobbyFadeIn 0.8s ease 0.6s both',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: SANS,
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: 6,
-              color: TEXT,
-              textTransform: 'uppercase',
-              opacity: 0.7,
-            }}
-          >
-            LAVERN
-          </span>
-
-          {isLoggedIn ? (
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <TopLink onClick={onMyPage}>My Page</TopLink>
-              <TopLink onClick={() => { userCtx!.logout(); }}>Logout</TopLink>
-            </div>
-          ) : (
-            <TopLink onClick={onLogin ?? (() => {})}>Log In</TopLink>
-          )}
-        </div>
-
-        {/* Center — hero */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 5,
-            padding: '0 32px',
-          }}
-        >
-          <h1
-            style={{
-              fontFamily: SERIF,
-              fontSize: 42,
-              fontWeight: 300,
-              lineHeight: 1.15,
-              color: TEXT,
-              textAlign: 'center',
-              margin: 0,
-              letterSpacing: 0.5,
-              animation: 'lobbyFadeUp 1.2s ease 0.8s both',
-            }}
-          >
-            Excellence<br />
-            doesn{'\u2019'}t scale.<br />
-            <span style={{ fontStyle: 'italic' }}>Until now.</span>
-          </h1>
-
-          {/* KNOCK button */}
-          <button
-            onClick={isLoggedIn ? onQuickStart : (onLogin ?? (() => {}))}
-            style={{
-              marginTop: 48,
-              fontFamily: SANS,
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: 5,
-              textTransform: 'uppercase',
-              color: TEXT,
-              backgroundColor: 'rgba(0,0,0,0.85)',
-              border: 'none',
-              borderRadius: 100,
-              padding: '18px 56px',
-              cursor: 'pointer',
-              animation: 'lobbyFadeUp 0.8s ease 1.4s both',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-            }}
-          >
-            Speak to Us
-          </button>
-        </div>
-
-        {/* Bottom — cities */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 28,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 10,
-            animation: 'lobbyFadeIn 0.8s ease 2s both',
-          }}
-        >
-          <CityLink>Helsinki</CityLink>
-          <span style={{ fontFamily: SANS, fontSize: 9, color: MUTED, opacity: 0.3, margin: '0 8px' }}>&middot;</span>
-          <CityLink>Paris</CityLink>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Desktop: unchanged ──────────────────────────────────────────────── */
 
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        width: '100vw',
-        height: '100dvh',
         overflow: 'hidden',
         zIndex: 9999,
         backgroundColor: DARK,
       }}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
+      onMouseMove={isMobile ? undefined : onMouseMove}
+      onMouseLeave={isMobile ? undefined : onMouseLeave}
     >
-      {/* Background image — dark, desaturated, with fog */}
+      {/* Background — dark marble, subtle parallax */}
       <img
         ref={imgRef}
         src={`${import.meta.env.BASE_URL}photo-1640280882429-204f63d777e7.avif`}
@@ -300,307 +78,140 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
           objectFit: 'cover',
           objectPosition: 'center',
           willChange: 'transform',
-          transition: 'transform 0.3s ease-out',
-          filter: 'brightness(0.35) saturate(0.4)',
-          opacity: 0.7,
-          transform: 'scale(1.06)',
-          animation: 'lobbyPhotoReveal 2s ease 0s both',
+          transition: 'transform 0.4s ease-out',
+          filter: 'brightness(0.28) saturate(0.3)',
+          transform: 'scale(1.08)',
+          animation: 'foyerReveal 2.5s ease 0s both',
         }}
       />
 
-      {/* Fog — radial vignette */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse 70% 60% at 50% 45%, transparent 0%, rgba(8,8,8,0.7) 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-      {/* Top edge fade */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '30%',
-          background: `linear-gradient(to top, transparent, ${DARK})`,
-          pointerEvents: 'none',
-        }}
-      />
-      {/* Bottom edge fade */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '40%',
-          background: `linear-gradient(to bottom, transparent, ${DARK})`,
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Top vignette */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '35%',
+        background: `linear-gradient(to top, transparent, ${DARK})`,
+        pointerEvents: 'none',
+      }} />
 
-      {/* Top bar — LAVERN left, Sign In right */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '32px 40px',
-          zIndex: 10,
-          animation: 'lobbyFadeIn 0.8s ease 0.6s both',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: SERIF,
-            fontSize: 18,
-            fontWeight: 300,
-            letterSpacing: 8,
-            color: TEXT,
-            textTransform: 'uppercase',
-          }}
-        >
-          LAVERN
-        </span>
+      {/* Bottom vignette */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%',
+        background: `linear-gradient(to bottom, transparent 0%, ${DARK} 85%)`,
+        pointerEvents: 'none',
+      }} />
 
+      {/* Side fog */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, bottom: 0, width: '20%',
+        background: `linear-gradient(to right, rgba(8,8,8,0.6), transparent)`,
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: '20%',
+        background: `linear-gradient(to left, rgba(8,8,8,0.6), transparent)`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* LAVERN — top left */}
+      <div style={{
+        position: 'absolute', top: isMobile ? 28 : 36, left: isMobile ? 28 : 44,
+        zIndex: 10,
+        fontFamily: SERIF, fontSize: isMobile ? 14 : 18, fontWeight: 300,
+        letterSpacing: 8, color: TEXT, mixBlendMode: 'difference' as const,
+        animation: 'foyerFade 0.8s ease 0.4s both',
+      }}>
+        LAVERN
+      </div>
+
+      {/* Log In — top right */}
+      <div style={{
+        position: 'absolute', top: isMobile ? 28 : 36, right: isMobile ? 28 : 44,
+        zIndex: 10,
+        animation: 'foyerFade 0.8s ease 0.6s both',
+      }}>
         {isLoggedIn ? (
           <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-            <TopLink onClick={onMyPage}>My Page</TopLink>
-            <TopLink onClick={() => { userCtx!.logout(); }}>Logout</TopLink>
+            <NavLink onClick={onMyPage}>My Page</NavLink>
+            <NavLink onClick={() => userCtx!.logout()}>Logout</NavLink>
           </div>
         ) : (
-          <TopLink onClick={onLogin ?? (() => {})}>Log In</TopLink>
+          <NavLink onClick={onLogin ?? (() => {})}>Log In</NavLink>
         )}
       </div>
 
-      {/* Center content */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 5,
-          padding: '80px 24px 24px',
-        }}
-      >
-        {/* Tagline */}
-        <p
-          style={{
-            fontFamily: SERIF,
-            fontSize: 14,
-            fontWeight: 300,
-            letterSpacing: 4,
-            textTransform: 'uppercase',
-            color: TEXT,
-            opacity: 0.3,
-            marginBottom: 32,
-            animation: 'lobbyFadeIn 0.8s ease 0.8s both',
-          }}
-        >
-          The driverless law firm
-        </p>
+      {/* Center — headline + CTA */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        zIndex: 5, padding: '80px 24px 24px', textAlign: 'center',
+      }}>
+        {/* Headline */}
+        <h1 style={{
+          fontFamily: SERIF,
+          fontSize: isMobile ? 'clamp(52px, 14vw, 80px)' : 'clamp(72px, 11vw, 140px)',
+          fontWeight: 300,
+          lineHeight: 0.95,
+          letterSpacing: -2,
+          color: TEXT,
+          margin: 0,
+          marginBottom: 56,
+          textShadow: '0 4px 80px rgba(0,0,0,0.6)',
+          animation: 'foyerReveal 1.4s cubic-bezier(0.22,1,0.36,1) 0.7s both',
+        }}>
+          Excellence<br />
+          doesn&rsquo;t scale.<br />
+          <em style={{ fontStyle: 'italic' }}>Until now.</em>
+        </h1>
 
-        {/* Watch Demo */}
-        {onDemo && (
-          <WatchDemoButton onClick={onDemo} />
-        )}
-
-        {/* Waitlist — for non-logged-in users */}
-        {!isLoggedIn && (
-          <div
-            style={{
-              marginTop: 56,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              width: '100%',
-              maxWidth: 340,
-              animation: 'lobbyFadeIn 0.8s ease 1.6s both',
-            }}
-          >
-            {done ? (
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: SERIF,
-                  fontSize: 16,
-                  fontStyle: 'italic',
-                  color: ACCENT,
-                  letterSpacing: 0.5,
-                }}
-              >
-                You{'\u2019'}re on the list.
-              </p>
-            ) : (
-              <>
-                <p
-                  style={{
-                    margin: '0 0 16px',
-                    fontFamily: SERIF,
-                    fontSize: 14,
-                    fontStyle: 'italic',
-                    color: TEXT,
-                    opacity: 0.35,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Get notified when we open.
-                </p>
-
-                <form
-                  onSubmit={handleSubmit}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'stretch',
-                    width: '100%',
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 100,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <label htmlFor="foyer-waitlist-email" className="sr-only">Email address</label>
-                  <input
-                    id="foyer-waitlist-email"
-                    type="email"
-                    required
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      padding: '14px 24px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      fontFamily: SANS,
-                      fontSize: 13,
-                      color: TEXT,
-                      letterSpacing: 0.3,
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    style={{
-                      flexShrink: 0,
-                      padding: '14px 24px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderLeft: '1px solid rgba(255,255,255,0.06)',
-                      fontFamily: SANS,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: 3,
-                      textTransform: 'uppercase',
-                      color: TEXT,
-                      opacity: submitting ? 0.2 : 0.4,
-                      cursor: 'pointer',
-                      transition: 'opacity 0.3s ease',
-                    }}
-                  >
-                    {submitting ? '\u2026' : 'Join'}
-                  </button>
-                </form>
-
-                {error && (
-                  <p
-                    style={{
-                      margin: '10px 0 0',
-                      fontFamily: SANS,
-                      fontSize: 11,
-                      color: ACCENT,
-                      opacity: 0.7,
-                    }}
-                  >
-                    {error}
-                  </p>
-                )}
-              </>
-            )}
+        {/* CTA */}
+        {isLoggedIn ? (
+          <div style={{
+            display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center',
+            animation: 'foyerFade 0.8s ease 1.6s both',
+          }}>
+            <PrimaryButton onClick={onPartner}>Speak to a Partner</PrimaryButton>
+            <GhostButton onClick={onQuickStart}>Step In</GhostButton>
           </div>
-        )}
-
-        {/* Logged-in users — entry buttons */}
-        {isLoggedIn && (
-          <div
-            style={{
-              marginTop: 56,
-              display: 'flex',
-              gap: 16,
-              animation: 'lobbyFadeIn 0.8s ease 1.4s both',
-            }}
-          >
-            <EntryButton onClick={onPartner} primary>Speak to a Partner</EntryButton>
-            <EntryButton onClick={onQuickStart}>Step In</EntryButton>
+        ) : (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+            animation: 'foyerFade 0.8s ease 1.4s both',
+          }}>
+            <PrimaryButton onClick={onDemo ?? (() => {})}>Talk is cheap.</PrimaryButton>
+            <NavLink onClick={onLogin ?? (() => {})}>
+              <span style={{ fontStyle: 'italic', fontSize: 13, opacity: 0.35 }}>Already have an account?</span>
+            </NavLink>
           </div>
         )}
       </div>
 
-      {/* Bottom — cities */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 28,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          zIndex: 10,
-          animation: 'lobbyFadeIn 0.8s ease 2s both',
-        }}
-      >
-        <CityLink>Helsinki</CityLink>
-        <span style={{ fontFamily: SANS, fontSize: 9, color: MUTED, opacity: 0.3, margin: '0 8px' }}>&middot;</span>
-        <CityLink>Paris</CityLink>
+      {/* Helsinki · Paris */}
+      <div style={{
+        position: 'absolute', bottom: 28, left: 0, right: 0,
+        display: 'flex', justifyContent: 'center', gap: 10,
+        zIndex: 10,
+        animation: 'foyerFade 0.8s ease 2.2s both',
+      }}>
+        <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: TEXT, opacity: 0.18 }}>Helsinki</span>
+        <span style={{ fontFamily: SANS, fontSize: 9, color: TEXT, opacity: 0.12 }}>&middot;</span>
+        <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' as const, color: TEXT, opacity: 0.18 }}>Paris</span>
       </div>
+
+      <style>{`
+        @keyframes foyerReveal {
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes foyerFade {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────
-
-function CityLink({ children }: { children: string }) {
-  const [hovered, setHovered] = useState(false);
-  const city = children.toLowerCase();
-  return (
-    <a
-      href={`mailto:${city}@lavern.ai`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        fontFamily: SANS,
-        fontSize: 9,
-        fontWeight: 400,
-        letterSpacing: 3,
-        textTransform: 'uppercase',
-        textDecoration: 'none',
-        color: hovered ? TEXT : MUTED,
-        opacity: hovered ? 0.9 : 0.5,
-        transition: 'all 0.3s ease',
-        cursor: 'pointer',
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
-function TopLink({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function NavLink({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -608,18 +219,10 @@ function TopLink({ onClick, children }: { onClick: () => void; children: React.R
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        fontFamily: SERIF,
-        fontSize: 14,
-        fontWeight: 300,
-        fontStyle: 'italic',
-        cursor: 'pointer',
-        border: 'none',
-        backgroundColor: 'transparent',
-        color: TEXT,
-        opacity: hovered ? 0.8 : 0.45,
-        transition: 'opacity 0.4s ease',
-        padding: '4px 0',
-        letterSpacing: 0,
+        fontFamily: SERIF, fontSize: 14, fontWeight: 300, fontStyle: 'italic',
+        cursor: 'pointer', border: 'none', backgroundColor: 'transparent',
+        color: TEXT, opacity: hovered ? 0.8 : 0.45,
+        transition: 'opacity 0.4s ease', padding: '4px 0',
       }}
     >
       {children}
@@ -627,7 +230,7 @@ function TopLink({ onClick, children }: { onClick: () => void; children: React.R
   );
 }
 
-function WatchDemoButton({ onClick }: { onClick: () => void }) {
+function PrimaryButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -635,53 +238,36 @@ function WatchDemoButton({ onClick }: { onClick: () => void }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        fontFamily: SERIF,
-        fontSize: 22,
-        fontWeight: 300,
-        fontStyle: 'italic',
-        cursor: 'pointer',
-        border: 'none',
-        backgroundColor: 'transparent',
-        color: TEXT,
-        opacity: hovered ? 0.9 : 0.6,
-        transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
-        padding: '16px 0',
-        letterSpacing: 1,
-        textDecoration: hovered ? 'underline' : 'none',
-        textUnderlineOffset: 8,
-        animation: 'lobbyFadeUp 1s ease 1s both',
-      }}
-    >
-      Watch the demo.
-    </button>
-  );
-}
-
-function EntryButton({ onClick, primary, children }: { onClick: () => void; primary?: boolean; children: React.ReactNode }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        fontFamily: SANS,
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: 3,
-        textTransform: 'uppercase',
-        cursor: 'pointer',
-        border: primary ? 'none' : '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 100,
-        padding: '16px 40px',
-        transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+        fontFamily: SANS, fontSize: 11, fontWeight: 600,
+        letterSpacing: 3, textTransform: 'uppercase' as const,
+        cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 100, padding: '20px 56px',
+        backgroundColor: '#000', color: TEXT,
+        boxShadow: hovered ? '0 8px 40px rgba(0,0,0,0.5)' : '0 4px 30px rgba(0,0,0,0.4)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        backgroundColor: primary ? '#000' : 'transparent',
-        color: TEXT,
-        boxShadow: primary
-          ? (hovered ? '0 16px 48px rgba(0,0,0,0.4)' : '0 8px 24px rgba(0,0,0,0.3)')
-          : 'none',
-        opacity: primary ? 1 : (hovered ? 0.8 : 0.5),
+        transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1)',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GhostButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily: SANS, fontSize: 11, fontWeight: 600,
+        letterSpacing: 3, textTransform: 'uppercase' as const,
+        cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 100, padding: '20px 40px',
+        backgroundColor: 'transparent', color: TEXT,
+        opacity: hovered ? 0.8 : 0.5,
+        transition: 'all 0.4s ease',
       }}
     >
       {children}
