@@ -1122,9 +1122,18 @@ export function App() {
   // ── Demo — cinematic guided tour (no API key required) ───────────────
   if (view === 'demo') {
     return (
-      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, backgroundColor: '#080808' }} />}>
-        <DemoTourView onExit={() => { window.location.hash = '#/'; }} />
-      </Suspense>
+      <>
+        {cursor}
+        <Suspense fallback={<div style={{ position: 'fixed', inset: 0, backgroundColor: '#080808' }} />}>
+          <DemoTourView
+            onExit={() => { window.location.hash = '#/'; }}
+            onLaunchDemo={(caseId) => {
+              sessionStorage.setItem('shem-session-id', `demo-session-${caseId}-${Date.now()}`);
+              window.location.hash = '#/working';
+            }}
+          />
+        </Suspense>
+      </>
     );
   }
 

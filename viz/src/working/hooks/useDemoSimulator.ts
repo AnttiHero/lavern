@@ -331,9 +331,10 @@ function buildHeartConnectDemoScript(): Array<{ delayMs: number; event: ShemEven
 
   const script: Array<{ delayMs: number; event: ShemEvent }> = [];
   let delay = 300;
+  const SPEED = 0.65; // compress to ~40s
 
   function add(ms: number, event: ShemEvent) {
-    delay += ms;
+    delay += Math.round(ms * SPEED);
     script.push({ delayMs: delay, event });
   }
 

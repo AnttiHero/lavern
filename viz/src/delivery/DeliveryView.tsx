@@ -61,8 +61,9 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   useEffect(() => {
     if (!isDemo || loading) return;
     const timer = setTimeout(() => {
-      window.location.hash = '#/claw?demo=true';
-    }, 6000);
+      sessionStorage.setItem('shem-demo-resume', 'clawern');
+      window.location.hash = '#/demo';
+    }, 12000);
     return () => clearTimeout(timer);
   }, [isDemo, loading]);
 
