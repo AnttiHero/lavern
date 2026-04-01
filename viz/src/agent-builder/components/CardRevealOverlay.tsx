@@ -333,11 +333,13 @@ export function CardRevealOverlay({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
+            style={{ display: 'flex', justifyContent: 'center' }}
           >
             <button
               onClick={onSave}
               style={{
-                padding: '20px 56px',
+                display: 'inline-block',
+                padding: '18px 48px',
                 fontSize: 11,
                 fontFamily: fonts.sans,
                 fontWeight: 600,
@@ -345,9 +347,10 @@ export function CardRevealOverlay({
                 textTransform: 'uppercase',
                 color: '#080808',
                 backgroundColor: 'rgba(250,249,246,0.95)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: 'none',
                 borderRadius: 100,
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
                 boxShadow: '0 4px 30px rgba(0,0,0,0.4)',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
               }}

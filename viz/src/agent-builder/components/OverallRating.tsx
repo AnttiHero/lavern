@@ -58,42 +58,42 @@ export function OverallRating({ ovr, costTier, billingRate, animate = false }: P
     }}>
       {/* Large OVR number — serif, cinematic */}
       <div style={{
-        fontSize: 88,
+        fontSize: 104,
         fontFamily: fonts.serif,
         fontWeight: 300,
-        color: 'rgba(250,249,246,0.95)',
+        color: 'rgba(250,249,246,0.92)',
         lineHeight: 1,
-        letterSpacing: -2,
+        letterSpacing: -3,
       }}>
         {display}
       </div>
 
-      {/* OVR label */}
-      <div style={{
-        fontSize: 9,
-        fontFamily: fonts.sans,
-        fontWeight: 500,
-        color: 'rgba(250,249,246,0.35)',
-        textTransform: 'uppercase',
-        letterSpacing: 4,
-        marginTop: 6,
-      }}>
-        Overall
-      </div>
-
-      {/* Tier · billing — subtle single line */}
+      {/* OVR label + tier on same line */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        marginTop: 10,
-        color: 'rgba(250,249,246,0.4)',
-        fontSize: 11,
-        fontFamily: fonts.sans,
+        gap: 8,
+        marginTop: 8,
       }}>
-        <span style={{ color: tColor, fontWeight: 600 }}>{costTier}</span>
-        <span style={{ opacity: 0.4 }}>·</span>
-        <span>${billingRate}/hr</span>
+        <div style={{
+          fontSize: 9,
+          fontFamily: fonts.sans,
+          fontWeight: 500,
+          color: 'rgba(250,249,246,0.3)',
+          textTransform: 'uppercase',
+          letterSpacing: 4,
+        }}>
+          Overall
+        </div>
+        <span style={{ color: 'rgba(250,249,246,0.2)', fontSize: 9 }}>·</span>
+        <span style={{
+          fontSize: 10,
+          fontFamily: fonts.sans,
+          fontWeight: 600,
+          color: tColor,
+          letterSpacing: 0.5,
+          textTransform: 'capitalize',
+        }}>{costTier}</span>
       </div>
     </div>
   );
