@@ -286,7 +286,7 @@ export function CardRevealOverlay({
                 transition: 'opacity 0.2s',
               }}
             >
-              Watch the agents work →
+              Watch the agents work
             </button>
             <button
               onClick={onBuildAnother}

@@ -464,7 +464,7 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          Talk to your partner →
+          Try voice mode
         </button>
       ) : undefined}
     >
@@ -573,7 +573,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
         }}
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-        >Talk to your partner →</button>
+        >Meet the team</button>
       ) : undefined}
     >
     <div style={{
@@ -718,7 +718,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
         }}
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-        >Make it yours →</button>
+        >Make it yours</button>
       ) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1223,7 +1223,7 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
             onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
-            How Clawern works →
+            How Clawern works
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onExit(); }}
@@ -1238,7 +1238,7 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
             onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = '.65'; }}
           >
-            Start for free →
+            Start for free
           </button>
         </div>
       </div>
