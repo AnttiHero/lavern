@@ -41,33 +41,8 @@ export function CardRevealOverlay({
   const [showConfetti, setShowConfetti] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
 
-  // Play ascending reveal tone
   const playRevealSound = useCallback(() => {
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new AudioContext();
-      }
-      const ctx = audioRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      // Ascending arpeggio
-      const notes = [440, 554, 659, 880];
-      notes.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
-        const t = ctx.currentTime + i * 0.12;
-        gain.gain.setValueAtTime(0.06, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.3);
-      });
-    } catch {
-      // Audio not available
-    }
+    // Sound removed
   }, []);
 
   // Phase sequencing
@@ -226,7 +201,7 @@ export function CardRevealOverlay({
                 justifyContent: 'center',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
               }}>
-                {/* Embossed M */}
+                {/* Embossed L */}
                 <div style={{
                   fontSize: 80,
                   fontFamily: fonts.serif,
@@ -235,7 +210,7 @@ export function CardRevealOverlay({
                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                   userSelect: 'none',
                 }}>
-                  W
+                  L
                 </div>
                 {/* Texture lines */}
                 <div style={{
@@ -311,7 +286,7 @@ export function CardRevealOverlay({
                 transition: 'opacity 0.2s',
               }}
             >
-              Save to Roster
+              Watch the agents work →
             </button>
             <button
               onClick={onBuildAnother}
