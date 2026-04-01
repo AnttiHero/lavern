@@ -223,7 +223,7 @@ export function CardRevealOverlay({
                 }} />
               </div>
 
-              {/* Card front (revealed) — clickable to flip to stats */}
+              {/* Card front (revealed) — click to 3D-flip to stats */}
               <div
                 onClick={() => { if (isRevealed) setCardStatsVisible(v => !v); }}
                 style={{
@@ -233,61 +233,73 @@ export function CardRevealOverlay({
                   borderRadius: radii.lg,
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
-                  backgroundColor: colors.bgCard,
-                  border: `1px solid ${colors.border}`,
-                  overflow: 'hidden',
                   boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
                   cursor: isRevealed ? 'pointer' : 'default',
+                  // No overflow:hidden — would flatten preserve-3d children below
                 }}>
-                {/* Agent card face */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  opacity: cardStatsVisible ? 0 : 1,
-                  transform: cardStatsVisible ? 'scale(0.96)' : 'scale(1)',
-                  transition: 'opacity 0.28s ease, transform 0.28s ease',
-                  pointerEvents: cardStatsVisible ? 'none' : 'auto',
-                }}>
-                  <AgentCard profile={profile} selected={false} />
-                </div>
-                {/* Stats face */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  opacity: cardStatsVisible ? 1 : 0,
-                  transform: cardStatsVisible ? 'scale(1)' : 'scale(1.04)',
-                  transition: 'opacity 0.28s ease, transform 0.28s ease',
-                  pointerEvents: cardStatsVisible ? 'auto' : 'none',
-                  backgroundColor: colors.bgCard,
-                  padding: '28px 22px',
-                  display: 'flex', flexDirection: 'column', gap: 0,
-                }}>
-                  <div style={{ fontFamily: fonts.serif, fontSize: 18, color: colors.text, marginBottom: 6 }}>{profile.displayName}</div>
-                  <div style={{ fontFamily: fonts.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 22 }}>{profile.practiceAreas[0]}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-                    {([
-                      { l: 'Precision',  v: profile.skills.precision,  c: colors.sonnet },
-                      { l: 'Depth',      v: profile.skills.depth,      c: colors.specialist },
-                      { l: 'Risk',       v: profile.skills.risk,       c: colors.accent },
-                      { l: 'Research',   v: profile.skills.research,   c: colors.success },
-                    ] as { l: string; v: number; c: string }[]).map(s => (
-                      <div key={s.l}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <span style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.textMuted }}>{s.l}</span>
-                          <span style={{ fontFamily: fonts.serif, fontSize: 16, color: colors.text, lineHeight: 1 }}>{s.v}</span>
-                        </div>
-                        <div style={{ height: 4, borderRadius: 2, background: colors.bgInput, overflow: 'hidden' }}>
-                          <div style={{
-                            height: '100%', borderRadius: 2,
-                            background: `linear-gradient(90deg, ${s.c}, ${s.c}80)`,
-                            width: cardStatsVisible ? `${s.v}%` : '0%',
-                            transition: 'width 0.65s ease 0.18s',
-                          }} />
-                        </div>
+                {/* Independent perspective for inner stats flip */}
+                <div style={{ width: '100%', height: '100%', perspective: '700px' }}>
+                  <div style={{
+                    width: '100%', height: '100%',
+                    position: 'relative',
+                    transformStyle: 'preserve-3d',
+                    transform: cardStatsVisible ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                    transition: 'transform 0.52s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}>
+                    {/* Face A — AgentCard */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      backfaceVisibility: 'hidden',
+                      backgroundColor: colors.bgCard,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: radii.lg,
+                      overflow: 'hidden',
+                    }}>
+                      <AgentCard profile={profile} selected={false} />
+                    </div>
+
+                    {/* Face B — Stats */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)',
+                      backgroundColor: colors.bgCard,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: radii.lg,
+                      overflow: 'hidden',
+                      padding: '28px 22px',
+                      display: 'flex', flexDirection: 'column',
+                    }}>
+                      <div style={{ fontFamily: fonts.serif, fontSize: 18, color: colors.text, marginBottom: 5 }}>{profile.displayName}</div>
+                      <div style={{ fontFamily: fonts.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 24 }}>{profile.practiceAreas[0]}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 18, flex: 1 }}>
+                        {([
+                          { l: 'Precision', v: profile.skills.precision, c: colors.sonnet },
+                          { l: 'Depth',     v: profile.skills.depth,     c: colors.specialist },
+                          { l: 'Risk',      v: profile.skills.risk,      c: colors.accent },
+                          { l: 'Research',  v: profile.skills.research,  c: colors.success },
+                        ] as { l: string; v: number; c: string }[]).map(s => (
+                          <div key={s.l}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+                              <span style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.textMuted }}>{s.l}</span>
+                              <span style={{ fontFamily: fonts.serif, fontSize: 16, color: colors.text, lineHeight: 1 }}>{s.v}</span>
+                            </div>
+                            <div style={{ height: 4, borderRadius: 2, background: colors.bgInput, overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', borderRadius: 2,
+                                background: `linear-gradient(90deg, ${s.c}, ${s.c}80)`,
+                                width: cardStatsVisible ? `${s.v}%` : '0%',
+                                transition: 'width 0.65s ease 0.22s',
+                              }} />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                    <span style={{ fontFamily: fonts.sans, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: colors.textMuted }}>OVR</span>
-                    <span style={{ fontFamily: fonts.serif, fontSize: 52, color: colors.text, lineHeight: 1, fontWeight: 300 }}>{ovr}</span>
+                      <div style={{ paddingTop: 16, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: fonts.sans, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: colors.textMuted }}>OVR</span>
+                        <span style={{ fontFamily: fonts.serif, fontSize: 52, color: colors.text, lineHeight: 1, fontWeight: 300 }}>{ovr}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
