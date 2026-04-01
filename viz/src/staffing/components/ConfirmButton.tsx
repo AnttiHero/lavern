@@ -47,15 +47,15 @@ export function ConfirmButton({ disabled, confirming, teamSize, onConfirm }: Pro
       whileHover={!disabled ? { scale: 1.02 } : undefined}
       whileTap={!disabled ? { scale: 0.98 } : undefined}
       style={{
-        padding: '14px 40px',
-        borderRadius: radii.sm,
+        padding: '14px 44px',
+        borderRadius: 100,
         border: `2px solid ${disabled ? colors.border : colors.text}`,
         backgroundColor: disabled ? colors.bgPanel : colors.text,
         color: disabled ? colors.textDim : '#fff',
         fontFamily: fonts.sans,
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: 600,
-        letterSpacing: 1.5,
+        letterSpacing: 3,
         textTransform: 'uppercase' as const,
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',

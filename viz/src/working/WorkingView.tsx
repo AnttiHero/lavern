@@ -411,6 +411,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           summary={state.pendingGate.summary}
           details={state.pendingGate.details}
           sessionId={state.sessionId}
+          isDemo={isDemo}
           onDecision={handleGateDecision}
           onDismiss={dismissGate}
         />
@@ -525,15 +526,15 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.2,
   },
   deliveredBtn: {
-    padding: '8px 24px',
-    borderRadius: radii.sm,
+    padding: '14px 44px',
+    borderRadius: 100,
     border: `2px solid ${colors.text}`,
     backgroundColor: colors.text,
     color: '#fff',
     fontFamily: fonts.sans,
     fontSize: 11,
     fontWeight: 600,
-    letterSpacing: 1.2,
+    letterSpacing: 3,
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
     transition: 'background-color 0.25s ease, color 0.25s ease',

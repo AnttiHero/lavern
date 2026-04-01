@@ -14,6 +14,7 @@ interface GateDialogProps {
   summary: string;
   details: string;
   sessionId: string;
+  isDemo?: boolean;
   onDecision: (decision: 'approve' | 'reject' | 'modify', notes?: string) => void;
   onDismiss: () => void;
 }
@@ -29,6 +30,7 @@ export function GateDialog({
   summary,
   details,
   sessionId,
+  isDemo = false,
   onDecision,
   onDismiss,
 }: GateDialogProps) {
@@ -36,7 +38,16 @@ export function GateDialog({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(3);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Demo mode: count down visually (auto-approve is handled by WorkingView)
+  useEffect(() => {
+    if (!isDemo) return;
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [isDemo, countdown]);
 
   // Stable ref to avoid re-registering listener when onDismiss identity changes
   const onDismissRef = useRef(onDismiss);
@@ -150,72 +161,92 @@ export function GateDialog({
           <div style={styles.details}>{details}</div>
         </div>
 
-        {/* Notes */}
-        <div style={styles.notesSection}>
-          <label htmlFor="gate-notes-input" className="sr-only">Notes</label>
-          <input
-            id="gate-notes-input"
-            type="text"
-            placeholder="Notes (optional)..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            style={styles.notesInput}
-            disabled={submitting}
-          />
-        </div>
-
-        {/* Error */}
-        {errorMsg && (
-          <div role="alert" style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
-            {errorMsg}
+        {isDemo ? (
+          /* Demo mode: passive countdown — no user action needed */
+          <div style={styles.demoFooter}>
+            <div style={styles.demoCountdownTrack}>
+              <div
+                style={{
+                  ...styles.demoCountdownBar,
+                  width: `${(countdown / 3) * 100}%`,
+                  transition: countdown < 3 ? 'width 1s linear' : 'none',
+                }}
+              />
+            </div>
+            <span style={styles.demoCountdownLabel}>
+              {countdown > 0 ? `Reviewing automatically… ${countdown}` : 'Approved'}
+            </span>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Notes */}
+            <div style={styles.notesSection}>
+              <label htmlFor="gate-notes-input" className="sr-only">Notes</label>
+              <input
+                id="gate-notes-input"
+                type="text"
+                placeholder="Notes (optional)..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                style={styles.notesInput}
+                disabled={submitting}
+              />
+            </div>
 
-        {/* Actions */}
-        <div style={styles.actions}>
-          <button
-            onClick={() => handleDecision('reject')}
-            style={{
-              ...styles.actionBtn,
-              ...styles.rejectBtn,
-              backgroundColor: hoveredBtn === 'reject' ? colors.danger : 'transparent',
-              color: hoveredBtn === 'reject' ? '#fff' : colors.danger,
-            }}
-            onMouseEnter={() => setHoveredBtn('reject')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            disabled={submitting}
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => handleDecision('modify')}
-            style={{
-              ...styles.actionBtn,
-              ...styles.modifyBtn,
-              backgroundColor: hoveredBtn === 'modify' ? colors.warning : 'transparent',
-              color: hoveredBtn === 'modify' ? '#fff' : colors.warning,
-            }}
-            onMouseEnter={() => setHoveredBtn('modify')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            disabled={submitting}
-          >
-            Modify
-          </button>
-          <button
-            onClick={() => handleDecision('approve')}
-            style={{
-              ...styles.actionBtn,
-              ...styles.approveBtn,
-              backgroundColor: hoveredBtn === 'approve' ? colors.success : colors.text,
-              color: '#fff',
-            }}
-            onMouseEnter={() => setHoveredBtn('approve')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            disabled={submitting}
-          >
-            Approve
-          </button>
-        </div>
+            {/* Error */}
+            {errorMsg && (
+              <div role="alert" style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={styles.actions}>
+              <button
+                onClick={() => handleDecision('reject')}
+                style={{
+                  ...styles.actionBtn,
+                  ...styles.rejectBtn,
+                  backgroundColor: hoveredBtn === 'reject' ? colors.danger : 'transparent',
+                  color: hoveredBtn === 'reject' ? '#fff' : colors.danger,
+                }}
+                onMouseEnter={() => setHoveredBtn('reject')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                disabled={submitting}
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => handleDecision('modify')}
+                style={{
+                  ...styles.actionBtn,
+                  ...styles.modifyBtn,
+                  backgroundColor: hoveredBtn === 'modify' ? colors.warning : 'transparent',
+                  color: hoveredBtn === 'modify' ? '#fff' : colors.warning,
+                }}
+                onMouseEnter={() => setHoveredBtn('modify')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                disabled={submitting}
+              >
+                Modify
+              </button>
+              <button
+                onClick={() => handleDecision('approve')}
+                style={{
+                  ...styles.actionBtn,
+                  ...styles.approveBtn,
+                  backgroundColor: hoveredBtn === 'approve' ? colors.success : colors.text,
+                  color: '#fff',
+                }}
+                onMouseEnter={() => setHoveredBtn('approve')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                disabled={submitting}
+              >
+                Approve
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -361,5 +392,32 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1.5px solid ${colors.danger}`,
     backgroundColor: 'transparent',
     color: colors.danger,
+  },
+  demoFooter: {
+    padding: `${spacing.lg}px ${spacing.xl}px`,
+    borderTop: `1px solid ${colors.border}`,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 10,
+  },
+  demoCountdownTrack: {
+    height: 3,
+    borderRadius: 100,
+    backgroundColor: colors.bgPanel,
+    overflow: 'hidden',
+  },
+  demoCountdownBar: {
+    height: '100%',
+    borderRadius: 100,
+    backgroundColor: colors.accent,
+  },
+  demoCountdownLabel: {
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    letterSpacing: 1.5,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
+    textAlign: 'center' as const,
   },
 };

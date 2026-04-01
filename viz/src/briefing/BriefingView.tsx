@@ -334,7 +334,7 @@ export default function BriefingView({ onComplete, onBack, onSkip }: Props) {
               </span>
               <button
                 onClick={advanceToInterviewer}
-                className="px-6 py-3 sm:px-8 rounded-sm border-2 border-text bg-text text-white font-sans text-xs font-semibold tracking-[1.5px] uppercase cursor-pointer transition-[background-color,color,border-color] duration-250 w-full sm:w-auto text-center"
+                className="px-10 py-3.5 rounded-full border-2 border-text bg-text text-white font-sans text-[11px] font-semibold tracking-[3px] uppercase cursor-pointer transition-[background-color,color,border-color] duration-250 w-full sm:w-auto text-center"
                 onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
                 onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
               >
