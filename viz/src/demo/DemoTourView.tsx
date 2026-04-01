@@ -663,24 +663,33 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
 
 // ── Slide 3 — Assemble your team ──────────────────────────────────────────
 const TEAM = [
-  { ini: 'CB', name: 'Catherine Blackwell',  role: 'Managing Partner',     ovr: 96, cat: 'orchestrator', rec: true  },
-  { ini: 'SR', name: 'Sofia Reyes',           role: 'Privacy Counsel',      ovr: 91, cat: 'lawyer',       rec: false },
-  { ini: 'MW', name: 'Marcus Webb',            role: 'Red Teamer',           ovr: 88, cat: 'specialist',   rec: false },
-  { ini: 'JO', name: 'James Okafor',           role: 'Risk Pricer',          ovr: 87, cat: 'specialist',   rec: false },
-  { ini: 'IH', name: 'Ingrid Hansen',          role: 'Regulatory Counsel',   ovr: 89, cat: 'lawyer',       rec: false },
-  { ini: 'DM', name: 'David Marsh',            role: 'Plain Language Spec.', ovr: 84, cat: 'specialist',   rec: false },
-  { ini: 'KL', name: 'Kim Li',                 role: 'Junior Associate',     ovr: 78, cat: 'lawyer',       rec: false },
-  { ini: 'PT', name: 'Patrick Torres',         role: 'IP Specialist',        ovr: 82, cat: 'specialist',   rec: false },
-  { ini: 'EV', name: 'Elara Voss',             role: 'Contract Reviewer',    ovr: 85, cat: 'lawyer',       rec: false },
+  { ini: 'CB', name: 'Catherine Blackwell',  role: 'Managing Partner',     ovr: 96, cat: 'orchestrator', rec: true,
+    skills: [{ l: 'Leadership', v: 96 }, { l: 'Strategy', v: 93 }] },
+  { ini: 'SR', name: 'Sofia Reyes',           role: 'Privacy Counsel',      ovr: 91, cat: 'lawyer',       rec: false,
+    skills: [{ l: 'Precision', v: 91 }, { l: 'Research', v: 89 }] },
+  { ini: 'MW', name: 'Marcus Webb',            role: 'Red Teamer',           ovr: 88, cat: 'specialist',   rec: false,
+    skills: [{ l: 'Risk', v: 92 }, { l: 'Adversarial', v: 88 }] },
+  { ini: 'JO', name: 'James Okafor',           role: 'Risk Pricer',          ovr: 87, cat: 'specialist',   rec: false,
+    skills: [{ l: 'Risk', v: 94 }, { l: 'Precision', v: 84 }] },
+  { ini: 'IH', name: 'Ingrid Hansen',          role: 'Regulatory Counsel',   ovr: 89, cat: 'lawyer',       rec: false,
+    skills: [{ l: 'Research', v: 93 }, { l: 'Depth', v: 88 }] },
+  { ini: 'DM', name: 'David Marsh',            role: 'Plain Language Spec.', ovr: 84, cat: 'specialist',   rec: false,
+    skills: [{ l: 'Clarity', v: 95 }, { l: 'Creativity', v: 86 }] },
+  { ini: 'KL', name: 'Kim Li',                 role: 'Junior Associate',     ovr: 78, cat: 'lawyer',       rec: false,
+    skills: [{ l: 'Precision', v: 78 }, { l: 'Research', v: 80 }] },
+  { ini: 'PT', name: 'Patrick Torres',         role: 'IP Specialist',        ovr: 82, cat: 'specialist',   rec: false,
+    skills: [{ l: 'Research', v: 85 }, { l: 'Precision', v: 81 }] },
+  { ini: 'EV', name: 'Elara Voss',             role: 'Contract Reviewer',    ovr: 85, cat: 'lawyer',       rec: false,
+    skills: [{ l: 'Precision', v: 88 }, { l: 'Depth', v: 84 }] },
 ];
 
 const INFRA = [
-  { ini: 'QG', name: 'Quality Gate',    role: 'Evaluator',         ovr: 95, cat: 'orchestrator', rec: false },
-  { ini: 'SC', name: 'Score Keeper',    role: 'Scoring Engine',    ovr: 90, cat: 'orchestrator', rec: false },
-  { ini: 'VF', name: 'Vera Fontaine',   role: 'Verifier',          ovr: 88, cat: 'orchestrator', rec: false },
-  { ini: 'AR', name: 'Assembly Robot',  role: 'Doc Assembler',     ovr: 86, cat: 'orchestrator', rec: false },
-  { ini: 'RK', name: 'Risk Kernel',     role: 'Risk Pricing',      ovr: 89, cat: 'orchestrator', rec: false },
-  { ini: 'MM', name: 'Memory Manager',  role: 'Precedent Board',   ovr: 84, cat: 'orchestrator', rec: false },
+  { ini: 'QG', name: 'Quality Gate',    role: 'Evaluator',         ovr: 95, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
+  { ini: 'SC', name: 'Score Keeper',    role: 'Scoring Engine',    ovr: 90, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
+  { ini: 'VF', name: 'Vera Fontaine',   role: 'Verifier',          ovr: 88, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
+  { ini: 'AR', name: 'Assembly Robot',  role: 'Doc Assembler',     ovr: 86, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
+  { ini: 'RK', name: 'Risk Kernel',     role: 'Risk Pricing',      ovr: 89, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
+  { ini: 'MM', name: 'Memory Manager',  role: 'Precedent Board',   ovr: 84, cat: 'orchestrator', rec: false, skills: [] as {l:string;v:number}[] },
 ];
 
 const ALL_AGENTS = [...TEAM, ...INFRA];
@@ -701,7 +710,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
   const mounted = useMount();
   const [showCTA, setShowCTA] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 2800); // after last card flips
+    const t = setTimeout(() => setShowCTA(true), 3400); // after all cards + auto-flips complete
     return () => clearTimeout(t);
   }, []);
 
@@ -722,10 +731,13 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
       ) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Agent grid — 6 core agents, 3×2, sequential flip */}
+        {/* Agent grid — 6 core agents, 3×2. Cards clickable; 2 auto-flip to stats. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {TEAM.slice(0, 6).map((a, i) => (
-            <AgentCard key={a.ini} agent={a} delay={.1 + i * .38} />
+            <AgentCard
+              key={a.ini} agent={a} delay={.1 + i * .38}
+              autoFlip={i === 0 ? 1800 : i === 4 ? 2600 : undefined}
+            />
           ))}
         </div>
 
@@ -765,40 +777,125 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
   );
 }
 
-function AgentCard({ agent, delay }: { agent: typeof TEAM[0]; delay: number }) {
+function AgentCard({ agent, delay, autoFlip }: { agent: typeof TEAM[0]; delay: number; autoFlip?: number }) {
   const col = CAT[agent.cat] ?? MUTED;
+  // Start visible (entered), then optionally auto-flip to stats side
+  const [entered, setEntered]   = useState(false);
+  const [flipped, setFlipped]   = useState(false);
+
+  // Entrance: card appears after `delay`
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), delay * 1000);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  // Auto-flip to stats side if autoFlip ms specified
+  useEffect(() => {
+    if (!autoFlip) return;
+    const t = setTimeout(() => setFlipped(true), autoFlip);
+    return () => clearTimeout(t);
+  }, [autoFlip]);
+
   return (
-    <div style={{
-      background: WHITE,
-      border: `1px solid ${agent.rec ? ACCENT : BORDER}`,
-      borderRadius: 9, padding: '13px 11px',
-      display: 'flex', flexDirection: 'column', gap: 8,
-      boxShadow: agent.rec ? `0 0 0 2px rgba(196,93,62,.09)` : '0 1px 3px rgba(0,0,0,.04)',
-      animation: `dFlip .42s ease ${delay}s both`,
-      position: 'relative', overflow: 'hidden',
-      perspective: 800,
-    }}>
-      {agent.rec && (
-        <div style={{ position: 'absolute', top: 7, right: 7, fontFamily: SANS, fontSize: 7.5, letterSpacing: 1, textTransform: 'uppercase', color: ACCENT, fontWeight: 700 }}>
-          ★ REC
+    <div
+      onClick={(e) => { e.stopPropagation(); if (entered) setFlipped(f => !f); }}
+      style={{
+        perspective: 700,
+        opacity: entered ? 1 : 0,
+        transform: entered ? 'translateY(0) scale(1)' : 'translateY(12px) scale(.93)',
+        transition: `opacity .38s ease, transform .38s ease`,
+        cursor: entered ? 'pointer' : 'default',
+        userSelect: 'none',
+      }}
+    >
+      <div style={{
+        position: 'relative',
+        transformStyle: 'preserve-3d',
+        transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+        height: 148,
+      }}>
+        {/* Face A — dark back (shown before flip) */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backfaceVisibility: 'hidden',
+          borderRadius: 9,
+          background: 'linear-gradient(135deg, #1A1A1A 0%, #252525 50%, #1A1A1A 100%)',
+          border: `1px solid ${col}35`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: agent.rec ? `0 0 0 2px ${col}30` : '0 1px 4px rgba(0,0,0,.18)',
+        }}>
+          <div style={{
+            fontFamily: SERIF, fontSize: 48, fontWeight: 700,
+            color: `${col}22`, textShadow: '0 2px 4px rgba(0,0,0,.4)',
+          }}>L</div>
+          <div style={{
+            position: 'absolute', inset: 10,
+            border: `1px solid ${col}12`,
+            borderRadius: 6,
+          }} />
         </div>
-      )}
-      <div style={{
-        width: 40, height: 40, borderRadius: '50%', overflow: 'hidden',
-        background: `${col}10`, border: `1.5px solid ${col}25`, flexShrink: 0,
-      }}>
-        <img src={TEAM_AVATAR[agent.ini]} alt={agent.name} width={40} height={40} style={{ display: 'block' }} />
-      </div>
-      <div>
-        <div style={{ fontFamily: SANS, fontSize: 10, fontWeight: 600, color: TEXT, lineHeight: 1.25, marginBottom: 2 }}>{agent.name}</div>
-        <div style={{ fontFamily: SANS, fontSize: 9, color: MUTED, lineHeight: 1.3 }}>{agent.role}</div>
-      </div>
-      <div style={{
-        paddingTop: 8, borderTop: `1px solid ${BORDER}`,
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-      }}>
-        <span style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: MUTED }}>OVR</span>
-        <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 300, color: TEXT, lineHeight: 1 }}>{agent.ovr}</span>
+
+        {/* Face B — agent info + stats (revealed on flip) */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)',
+          borderRadius: 9,
+          background: WHITE,
+          border: `1px solid ${agent.rec ? ACCENT : BORDER}`,
+          padding: '10px 10px 8px',
+          boxShadow: agent.rec ? `0 0 0 2px rgba(196,93,62,.09)` : '0 1px 3px rgba(0,0,0,.04)',
+          display: 'flex', flexDirection: 'column', gap: 7,
+        }}>
+          {agent.rec && (
+            <div style={{ position: 'absolute', top: 6, right: 7, fontFamily: SANS, fontSize: 7, letterSpacing: 1, textTransform: 'uppercase', color: ACCENT, fontWeight: 700 }}>
+              ★ REC
+            </div>
+          )}
+          {/* Avatar + name */}
+          <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: `${col}10`, border: `1.5px solid ${col}25` }}>
+              <img src={TEAM_AVATAR[agent.ini]} alt={agent.name} width={34} height={34} style={{ display: 'block' }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 9.5, fontWeight: 600, color: TEXT, lineHeight: 1.2 }}>{agent.name.split(' ')[0]}</div>
+              <div style={{ fontFamily: SANS, fontSize: 8.5, color: MUTED }}>{agent.role}</div>
+            </div>
+          </div>
+
+          {/* Skill bars */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {agent.skills.map(s => (
+              <div key={s.l}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 8, color: MUTED }}>{s.l}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 11, color: TEXT, lineHeight: 1 }}>{s.v}</span>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: '#F0EFEB', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 2,
+                    background: `linear-gradient(90deg, ${col} 0%, ${col}80 100%)`,
+                    width: `${s.v}%`,
+                    animation: 'dBar .7s ease .1s both',
+                    // @ts-ignore
+                    '--w': `${s.v}%`,
+                  } as React.CSSProperties} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* OVR */}
+          <div style={{
+            paddingTop: 6, borderTop: `1px solid ${BORDER}`,
+            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+            marginTop: 'auto',
+          }}>
+            <span style={{ fontFamily: SANS, fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: MUTED }}>OVR</span>
+            <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 300, color: TEXT, lineHeight: 1 }}>{agent.ovr}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
