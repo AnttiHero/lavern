@@ -60,11 +60,11 @@ export function AgentCard({ profile, selected }: Props) {
     <div style={{
       width: '100%',
       height: '100%',
-      padding: '14px 14px 40px 14px', // extra bottom padding for the select button
+      padding: '14px 14px 40px 14px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 4,
+      gap: 0,
       minHeight: 0,
       overflow: 'hidden',
     }}>
@@ -74,7 +74,7 @@ export function AgentCard({ profile, selected }: Props) {
         justifyContent: 'space-between',
         width: '100%',
         alignItems: 'center',
-        marginBottom: 2,
+        marginBottom: 10,
       }}>
         <CostTierBadge tier={profile.costTier} />
         <SeniorityBadge seniority={profile.seniority} />
@@ -82,14 +82,15 @@ export function AgentCard({ profile, selected }: Props) {
 
       {/* Avatar */}
       <div style={{
-        width: 68,
-        height: 68,
+        width: 80,
+        height: 80,
         borderRadius: '50%',
         overflow: 'hidden',
         border: `2px solid ${selected ? colors.text : colors.border}`,
         backgroundColor: colors.bgPanel,
         flexShrink: 0,
         transition: 'border-color 0.2s ease',
+        marginBottom: 10,
       }}>
         {imgError ? (
           <Initials name={profile.displayName} />
@@ -97,8 +98,8 @@ export function AgentCard({ profile, selected }: Props) {
           <img
             src={avatarUrl(profile.displayName, profile.avatarExtra)}
             alt={profile.displayName}
-            width={68}
-            height={68}
+            width={80}
+            height={80}
             onError={() => setImgError(true)}
             style={{ display: 'block' }}
           />
@@ -107,13 +108,13 @@ export function AgentCard({ profile, selected }: Props) {
 
       {/* Name */}
       <div style={{
-        fontSize: 13,
-        fontFamily: fonts.sans,
-        fontWeight: 600,
+        fontSize: 14,
+        fontFamily: fonts.serif,
+        fontWeight: 500,
         color: colors.text,
         textAlign: 'center',
-        lineHeight: '16px',
-        marginTop: 2,
+        lineHeight: 1.2,
+        marginBottom: 4,
         maxWidth: '100%',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -124,66 +125,82 @@ export function AgentCard({ profile, selected }: Props) {
         {profile.displayName}
       </div>
 
-      {/* Archetype */}
+      {/* Tagline */}
       <div style={{
-        fontSize: 10,
+        fontSize: 9.5,
         fontFamily: fonts.sans,
-        fontStyle: 'italic',
-        color: catColor,
+        color: colors.textMuted,
         textAlign: 'center',
-        lineHeight: '13px',
-        maxWidth: '100%',
+        lineHeight: 1.45,
+        maxWidth: '90%',
+        marginBottom: 10,
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
       }}>
-        {profile.personality.archetype}
+        {profile.tagline}
       </div>
 
-      {/* Radar chart — slightly smaller */}
+      {/* Radar chart */}
       <div style={{ flexShrink: 0 }}>
         <SkillRadar skills={profile.skills} costTier={profile.costTier} size={120} />
       </div>
 
-      {/* Bottom info — billing rate, required badge, category */}
+      {/* Practice area tags */}
+      {profile.practiceAreas.length > 0 && (
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center',
+          marginTop: 10, width: '100%',
+        }}>
+          {profile.practiceAreas.slice(0, 2).map(area => (
+            <span key={area} style={{
+              fontSize: 8.5,
+              fontFamily: fonts.sans,
+              fontWeight: 500,
+              color: catColor,
+              backgroundColor: `${catColor}0D`,
+              border: `1px solid ${catColor}22`,
+              borderRadius: radii.pill,
+              padding: '2px 8px',
+              whiteSpace: 'nowrap',
+            }}>{area}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom info */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'baseline',
         width: '100%',
         marginTop: 'auto',
-        gap: 4,
+        paddingTop: 10,
+        borderTop: `1px solid ${colors.border}`,
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{
-            fontSize: 13,
-            fontFamily: fonts.sans,
-            fontWeight: 600,
-            color: colors.text,
-          }}>
-            ${profile.billingRateUsd.toLocaleString()}/hr
-          </span>
-          {!profile.optional && (
-            <span style={{
-              fontSize: 9,
-              fontFamily: fonts.sans,
-              fontWeight: 500,
-              color: colors.accent,
-            }}>
-              Required
-            </span>
-          )}
-        </div>
         <span style={{
-          fontSize: 10,
-          fontFamily: fonts.sans,
-          fontWeight: 500,
-          color: catColor,
-          textTransform: 'capitalize',
-          flexShrink: 0,
+          fontSize: 15,
+          fontFamily: fonts.serif,
+          fontWeight: 400,
+          color: colors.text,
         }}>
-          {profile.category}
+          ${profile.billingRateUsd.toLocaleString()}<span style={{ fontSize: 10, fontFamily: fonts.sans, color: colors.textMuted, marginLeft: 1 }}>/hr</span>
         </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {!profile.optional && (
+            <span style={{ fontSize: 8.5, fontFamily: fonts.sans, fontWeight: 600, color: colors.accent }}>Required</span>
+          )}
+          <span style={{
+            fontSize: 9,
+            fontFamily: fonts.sans,
+            fontWeight: 500,
+            color: catColor,
+            textTransform: 'capitalize',
+          }}>
+            {profile.category}
+          </span>
+        </div>
       </div>
     </div>
   );
