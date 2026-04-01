@@ -326,51 +326,41 @@ export function CardRevealOverlay({
         )}
       </AnimatePresence>
 
-      {/* Action buttons */}
+      {/* Action button — single CTA */}
       <AnimatePresence>
         {showButtons && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            style={{
-              display: 'flex',
-              gap: 12,
-            }}
           >
             <button
               onClick={onSave}
               style={{
-                padding: '12px 28px',
-                fontSize: 14,
+                padding: '20px 56px',
+                fontSize: 11,
                 fontFamily: fonts.sans,
                 fontWeight: 600,
-                color: '#fff',
-                backgroundColor: colors.text,
-                border: 'none',
-                borderRadius: radii.md,
+                letterSpacing: 3,
+                textTransform: 'uppercase',
+                color: '#080808',
+                backgroundColor: 'rgba(250,249,246,0.95)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 100,
                 cursor: 'pointer',
-                transition: 'opacity 0.2s',
+                boxShadow: '0 4px 30px rgba(0,0,0,0.4)',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 40px rgba(0,0,0,0.5)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.4)';
               }}
             >
-              Watch the agents work
-            </button>
-            <button
-              onClick={onBuildAnother}
-              style={{
-                padding: '12px 28px',
-                fontSize: 14,
-                fontFamily: fonts.sans,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.7)',
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: radii.md,
-                cursor: 'pointer',
-                transition: 'color 0.2s',
-              }}
-            >
-              Build Another
+              See the agents work
             </button>
           </motion.div>
         )}

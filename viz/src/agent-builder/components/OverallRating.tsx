@@ -54,14 +54,14 @@ export function OverallRating({ ovr, costTier, billingRate, animate = false }: P
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 4,
+      gap: 0,
     }}>
-      {/* Large OVR number */}
+      {/* Large OVR number — serif, cinematic */}
       <div style={{
-        fontSize: 56,
-        fontFamily: fonts.sans,
-        fontWeight: 800,
-        color: colors.text,
+        fontSize: 88,
+        fontFamily: fonts.serif,
+        fontWeight: 300,
+        color: 'rgba(250,249,246,0.95)',
         lineHeight: 1,
         letterSpacing: -2,
       }}>
@@ -70,43 +70,30 @@ export function OverallRating({ ovr, costTier, billingRate, animate = false }: P
 
       {/* OVR label */}
       <div style={{
-        fontSize: 10,
+        fontSize: 9,
         fontFamily: fonts.sans,
         fontWeight: 500,
-        color: colors.textMuted,
+        color: 'rgba(250,249,246,0.35)',
         textTransform: 'uppercase',
-        letterSpacing: 2,
+        letterSpacing: 4,
+        marginTop: 6,
       }}>
         Overall
       </div>
 
-      {/* Tier + billing rate */}
+      {/* Tier · billing — subtle single line */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        marginTop: 4,
+        gap: 6,
+        marginTop: 10,
+        color: 'rgba(250,249,246,0.4)',
+        fontSize: 11,
+        fontFamily: fonts.sans,
       }}>
-        <span style={{
-          fontSize: 11,
-          fontFamily: fonts.sans,
-          fontWeight: 600,
-          color: tColor,
-          backgroundColor: tBg,
-          padding: '2px 8px',
-          borderRadius: 999,
-          textTransform: 'capitalize',
-        }}>
-          {costTier}
-        </span>
-        <span style={{
-          fontSize: 12,
-          fontFamily: fonts.sans,
-          fontWeight: 600,
-          color: colors.textSecondary,
-        }}>
-          ${billingRate}/hr
-        </span>
+        <span style={{ color: tColor, fontWeight: 600 }}>{costTier}</span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>${billingRate}/hr</span>
       </div>
     </div>
   );
