@@ -710,7 +710,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
   const mounted = useMount();
   const [showCTA, setShowCTA] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 3400); // after all cards + auto-flips complete
+    const t = setTimeout(() => setShowCTA(true), 2800); // after last card enters
     return () => clearTimeout(t);
   }, []);
 
@@ -734,10 +734,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
         {/* Agent grid — 6 core agents, 3×2. Cards clickable; 2 auto-flip to stats. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {TEAM.slice(0, 6).map((a, i) => (
-            <AgentCard
-              key={a.ini} agent={a} delay={.1 + i * .38}
-              autoFlip={i === 0 ? 1800 : i === 4 ? 2600 : undefined}
-            />
+            <AgentCard key={a.ini} agent={a} delay={.1 + i * .38} />
           ))}
         </div>
 
@@ -777,66 +774,55 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
   );
 }
 
-function AgentCard({ agent, delay, autoFlip }: { agent: typeof TEAM[0]; delay: number; autoFlip?: number }) {
+function AgentCard({ agent, delay }: { agent: typeof TEAM[0]; delay: number }) {
   const col = CAT[agent.cat] ?? MUTED;
-  // Start visible (entered), then optionally auto-flip to stats side
-  const [entered, setEntered]   = useState(false);
-  const [flipped, setFlipped]   = useState(false);
-
-  // Entrance: card appears after `delay`
-  useEffect(() => {
-    const t = setTimeout(() => setEntered(true), delay * 1000);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  // Auto-flip to stats side if autoFlip ms specified
-  useEffect(() => {
-    if (!autoFlip) return;
-    const t = setTimeout(() => setFlipped(true), autoFlip);
-    return () => clearTimeout(t);
-  }, [autoFlip]);
+  const [flipped, setFlipped] = useState(false);
 
   return (
     <div
-      onClick={(e) => { e.stopPropagation(); if (entered) setFlipped(f => !f); }}
+      onClick={(e) => { e.stopPropagation(); setFlipped(f => !f); }}
       style={{
         perspective: 700,
-        opacity: entered ? 1 : 0,
-        transform: entered ? 'translateY(0) scale(1)' : 'translateY(12px) scale(.93)',
-        transition: `opacity .38s ease, transform .38s ease`,
-        cursor: entered ? 'pointer' : 'default',
+        cursor: 'pointer',
         userSelect: 'none',
+        animation: `dCard .4s ease ${delay}s both`,
       }}
     >
       <div style={{
         position: 'relative',
         transformStyle: 'preserve-3d',
         transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-        transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         height: 148,
       }}>
-        {/* Face A — dark back (shown before flip) */}
+        {/* Face A — agent info (default visible) */}
         <div style={{
           position: 'absolute', inset: 0,
           backfaceVisibility: 'hidden',
           borderRadius: 9,
-          background: 'linear-gradient(135deg, #1A1A1A 0%, #252525 50%, #1A1A1A 100%)',
-          border: `1px solid ${col}35`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: agent.rec ? `0 0 0 2px ${col}30` : '0 1px 4px rgba(0,0,0,.18)',
+          background: WHITE,
+          border: `1px solid ${agent.rec ? ACCENT : BORDER}`,
+          padding: '11px 11px 9px',
+          boxShadow: agent.rec ? `0 0 0 2px rgba(196,93,62,.09)` : '0 1px 3px rgba(0,0,0,.04)',
+          display: 'flex', flexDirection: 'column', gap: 8,
         }}>
-          <div style={{
-            fontFamily: SERIF, fontSize: 48, fontWeight: 700,
-            color: `${col}22`, textShadow: '0 2px 4px rgba(0,0,0,.4)',
-          }}>L</div>
-          <div style={{
-            position: 'absolute', inset: 10,
-            border: `1px solid ${col}12`,
-            borderRadius: 6,
-          }} />
+          {agent.rec && (
+            <div style={{ position: 'absolute', top: 7, right: 8, fontFamily: SANS, fontSize: 7, letterSpacing: 1, textTransform: 'uppercase', color: ACCENT, fontWeight: 700 }}>★ REC</div>
+          )}
+          <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', background: `${col}10`, border: `1.5px solid ${col}25` }}>
+            <img src={TEAM_AVATAR[agent.ini]} alt={agent.name} width={38} height={38} style={{ display: 'block' }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: SANS, fontSize: 10, fontWeight: 600, color: TEXT, lineHeight: 1.25, marginBottom: 2 }}>{agent.name}</div>
+            <div style={{ fontFamily: SANS, fontSize: 9, color: MUTED }}>{agent.role}</div>
+          </div>
+          <div style={{ paddingTop: 7, borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 'auto' }}>
+            <span style={{ fontFamily: SANS, fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: MUTED }}>OVR</span>
+            <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 300, color: TEXT, lineHeight: 1 }}>{agent.ovr}</span>
+          </div>
         </div>
 
-        {/* Face B — agent info + stats (revealed on flip) */}
+        {/* Face B — skill stats (revealed on click) */}
         <div style={{
           position: 'absolute', inset: 0,
           backfaceVisibility: 'hidden',
@@ -844,56 +830,32 @@ function AgentCard({ agent, delay, autoFlip }: { agent: typeof TEAM[0]; delay: n
           borderRadius: 9,
           background: WHITE,
           border: `1px solid ${agent.rec ? ACCENT : BORDER}`,
-          padding: '10px 10px 8px',
+          padding: '11px 11px 9px',
           boxShadow: agent.rec ? `0 0 0 2px rgba(196,93,62,.09)` : '0 1px 3px rgba(0,0,0,.04)',
-          display: 'flex', flexDirection: 'column', gap: 7,
+          display: 'flex', flexDirection: 'column', gap: 6,
         }}>
-          {agent.rec && (
-            <div style={{ position: 'absolute', top: 6, right: 7, fontFamily: SANS, fontSize: 7, letterSpacing: 1, textTransform: 'uppercase', color: ACCENT, fontWeight: 700 }}>
-              ★ REC
-            </div>
-          )}
-          {/* Avatar + name */}
-          <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: `${col}10`, border: `1.5px solid ${col}25` }}>
-              <img src={TEAM_AVATAR[agent.ini]} alt={agent.name} width={34} height={34} style={{ display: 'block' }} />
-            </div>
-            <div>
-              <div style={{ fontFamily: SANS, fontSize: 9.5, fontWeight: 600, color: TEXT, lineHeight: 1.2 }}>{agent.name.split(' ')[0]}</div>
-              <div style={{ fontFamily: SANS, fontSize: 8.5, color: MUTED }}>{agent.role}</div>
-            </div>
-          </div>
-
-          {/* Skill bars */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ fontFamily: SANS, fontSize: 9, fontWeight: 600, color: TEXT, marginBottom: 2 }}>{agent.name.split(' ')[0]}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
             {agent.skills.map(s => (
               <div key={s.l}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontFamily: SANS, fontSize: 8, color: MUTED }}>{s.l}</span>
-                  <span style={{ fontFamily: SERIF, fontSize: 11, color: TEXT, lineHeight: 1 }}>{s.v}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 8.5, color: MUTED }}>{s.l}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 13, color: TEXT, lineHeight: 1 }}>{s.v}</span>
                 </div>
                 <div style={{ height: 3, borderRadius: 2, background: '#F0EFEB', overflow: 'hidden' }}>
                   <div style={{
                     height: '100%', borderRadius: 2,
-                    background: `linear-gradient(90deg, ${col} 0%, ${col}80 100%)`,
-                    width: `${s.v}%`,
-                    animation: 'dBar .7s ease .1s both',
-                    // @ts-ignore
-                    '--w': `${s.v}%`,
-                  } as React.CSSProperties} />
+                    background: `linear-gradient(90deg, ${col}, ${col}80)`,
+                    width: flipped ? `${s.v}%` : '0%',
+                    transition: 'width .6s ease .15s',
+                  }} />
                 </div>
               </div>
             ))}
           </div>
-
-          {/* OVR */}
-          <div style={{
-            paddingTop: 6, borderTop: `1px solid ${BORDER}`,
-            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-            marginTop: 'auto',
-          }}>
+          <div style={{ paddingTop: 7, borderTop: `1px solid ${BORDER}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: SANS, fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: MUTED }}>OVR</span>
-            <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 300, color: TEXT, lineHeight: 1 }}>{agent.ovr}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 300, color: TEXT, lineHeight: 1 }}>{agent.ovr}</span>
           </div>
         </div>
       </div>
