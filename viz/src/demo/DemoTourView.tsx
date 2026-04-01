@@ -464,7 +464,7 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          Assemble the team →
+          Talk to your partner →
         </button>
       ) : undefined}
     >
@@ -573,7 +573,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
         }}
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-        >Assemble the team →</button>
+        >Talk to your partner →</button>
       ) : undefined}
     >
     <div style={{
