@@ -57,15 +57,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   // Detect demo session
   const isDemo = data?.sessionId.startsWith('demo-session') ?? false;
 
-  // Sequential demo: after showing delivery, auto-advance to Clawern demo
-  useEffect(() => {
-    if (!isDemo || loading) return;
-    const timer = setTimeout(() => {
-      sessionStorage.setItem('shem-demo-resume', 'clawern');
-      window.location.hash = '#/demo';
-    }, 12000);
-    return () => clearTimeout(timer);
-  }, [isDemo, loading]);
+  // Demo: no auto-advance — user clicks "See Clawern →" in the footer
 
   // Detect if viewing an archived session from My Cases
   const [isArchiveView] = useState(() => {
@@ -171,7 +163,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
               onClick={() => {
                 sessionStorage.removeItem('shem-session-id');
                 sessionStorage.removeItem('shem-demo-case');
-                window.location.hash = '#/partner?demo=true';
+                window.location.hash = '#/demo';
               }}
               style={styles.secondaryBtn}
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
@@ -181,15 +173,14 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             </button>
             <button
               onClick={() => {
-                sessionStorage.removeItem('shem-session-id');
-                sessionStorage.removeItem('shem-demo-case');
-                window.location.hash = '#/';
+                sessionStorage.setItem('shem-demo-resume', 'clawern');
+                window.location.hash = '#/demo';
               }}
               style={styles.continueBtn}
               onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
             >
-              Back to Lavern
+              See Clawern {'\u2192'}
             </button>
           </>
         ) : (

@@ -149,9 +149,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       setCurrentStep('delivered');
 
       if (sessionIdRef.current?.startsWith('demo-session-')) {
-        // Demo sessions: transition immediately (no assembly to wait for)
-        completionFiredRef.current = true;
-        if (onSessionEndRef.current) sessionEndTimerRef.current = setTimeout(onSessionEndRef.current, 2000);
+        // Demo sessions: just show the delivered state — user clicks "View Results" to proceed
       } else {
         // Live sessions: don't transition yet — periodic poll will confirm
         // assembledDocument is ready before navigating to Delivery

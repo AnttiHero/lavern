@@ -168,7 +168,7 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
         {slide === 1 && <S1Partner isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
         {slide === 2 && <S2Voice isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
         {slide === 3 && <S3Team isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
-        {slide === 4 && <S4Builder isMobile={isMobile} onLaunch={() => advance(true)} />}
+        {slide === 4 && <S4Builder isMobile={isMobile} caseId={selectedCase} onLaunch={() => advance(true)} />}
         {slide === 5 && <S5Clawern isMobile={isMobile} caseId={selectedCase} onExit={onExit} />}
       </div>
 
@@ -914,57 +914,136 @@ function AgentCard({ agent, delay }: { agent: typeof TEAM[0]; delay: number }) {
 }
 
 // ── Slide 3 — Craft your own agents ──────────────────────────────────────
-const SKILLS = [
-  { label: 'Precision',  val: 97, col: '#2E7D9C' },
-  { label: 'Depth',      val: 93, col: '#7B5EA7' },
-  { label: 'Creativity', val: 71, col: '#B8860B' },
-  { label: 'Risk',       val: 88, col: ACCENT },
-];
-
 const BUILDER_STEPS = ['Identity', 'Face', 'Stats'] as const;
 type BuilderStep = typeof BUILDER_STEPS[number];
 
-// ── Demo agent profile — "The Surgeon" ────────────────────────────────────
-const DEMO_SURGEON_PROFILE: AgentProfile = {
-  role: 'contract-reviewer',
-  displayName: 'The Surgeon',
-  tagline: 'Methodical. Cuts through ambiguity. Never skips a clause.',
-  category: 'lawyer',
-  seniority: 'partner',
-  costTier: 'sonnet',
-  billingRateUsd: 380,
-  skills: {
-    precision: 94, creativity: 72, speed: 85, depth: 97,
-    negotiation: 88, communication: 76, research: 91, risk: 93,
-  },
-  personality: {
-    archetype: 'The Surgeon',
-    traits: {
-      'conservative-vs-creative': 2,
-      'thorough-vs-fast': 2,
-      'risk-averse-vs-tolerant': 2,
-      'formal-vs-approachable': 3,
-      'adversarial-vs-collaborative': 4,
+// ── Case-specific agent builder data ─────────────────────────────────────
+const CASE_S4: Record<CaseId, {
+  name: string;
+  specialisation: string;
+  archetype: string;
+  workStyle: string;
+  ovr: number;
+  skills: { label: string; val: number; col: string }[];
+  profile: AgentProfile;
+}> = {
+  heartconnect: {
+    name: 'The Gatekeeper',
+    specialisation: 'Consumer Privacy',
+    archetype: 'The Gatekeeper',
+    workStyle: 'Relentless on consent flows. Finds the gap regulators find first.',
+    ovr: 92,
+    skills: [
+      { label: 'Precision',  val: 96, col: '#2E7D9C' },
+      { label: 'Risk',       val: 94, col: ACCENT },
+      { label: 'Depth',      val: 91, col: '#7B5EA7' },
+      { label: 'Creativity', val: 65, col: '#B8860B' },
+    ],
+    profile: {
+      role: 'privacy-counsel',
+      displayName: 'The Gatekeeper',
+      tagline: 'Relentless on consent flows. Finds the gap regulators find first.',
+      category: 'lawyer',
+      seniority: 'partner',
+      costTier: 'sonnet',
+      billingRateUsd: 360,
+      skills: { precision: 96, creativity: 65, speed: 82, depth: 91, negotiation: 79, communication: 84, research: 93, risk: 94 },
+      personality: {
+        archetype: 'The Gatekeeper',
+        traits: { 'conservative-vs-creative': 2, 'thorough-vs-fast': 2, 'risk-averse-vs-tolerant': 1, 'formal-vs-approachable': 3, 'adversarial-vs-collaborative': 4 },
+        workStyle: 'Relentless on consent flows. Finds the gap regulators find first.',
+      },
+      practiceAreas: ['Consumer Privacy', 'GDPR Compliance'],
+      strengths: ['Consent architecture', 'Regulatory gap analysis', 'DSA/GDPR overlap'],
+      limitations: ['Less suited for commercial contract disputes'],
+      optional: true,
+      defaultSelected: false,
+      avatarSeed: 'The Gatekeeper',
     },
-    workStyle: 'Methodical. Cuts through ambiguity. Never skips a clause.',
   },
-  practiceAreas: ['Contract Review', 'Risk Assessment'],
-  strengths: ['Precision analysis', 'Risk identification', 'Clause-by-clause review'],
-  limitations: ['Less suited for high-level strategy'],
-  optional: true,
-  defaultSelected: false,
-  avatarSeed: 'The Surgeon',
+  medivault: {
+    name: 'The Hawk',
+    specialisation: 'Regulatory Compliance',
+    archetype: 'The Hawk',
+    workStyle: 'Calibrated to regulatory standards. No gap escapes the checklist.',
+    ovr: 93,
+    skills: [
+      { label: 'Precision',  val: 98, col: '#2E7D9C' },
+      { label: 'Depth',      val: 95, col: '#7B5EA7' },
+      { label: 'Risk',       val: 91, col: ACCENT },
+      { label: 'Creativity', val: 58, col: '#B8860B' },
+    ],
+    profile: {
+      role: 'compliance-officer',
+      displayName: 'The Hawk',
+      tagline: 'Calibrated to regulatory standards. No gap escapes the checklist.',
+      category: 'lawyer',
+      seniority: 'partner',
+      costTier: 'sonnet',
+      billingRateUsd: 395,
+      skills: { precision: 98, creativity: 58, speed: 78, depth: 95, negotiation: 72, communication: 80, research: 96, risk: 91 },
+      personality: {
+        archetype: 'The Hawk',
+        traits: { 'conservative-vs-creative': 1, 'thorough-vs-fast': 1, 'risk-averse-vs-tolerant': 1, 'formal-vs-approachable': 2, 'adversarial-vs-collaborative': 4 },
+        workStyle: 'Calibrated to regulatory standards. No gap escapes the checklist.',
+      },
+      practiceAreas: ['HIPAA Compliance', 'Cross-border Data Transfers'],
+      strengths: ['HIPAA gap analysis', 'GDPR Art. 46 structuring', 'Investor due diligence readiness'],
+      limitations: ['Less suited for creative drafting'],
+      optional: true,
+      defaultSelected: false,
+      avatarSeed: 'The Hawk',
+    },
+  },
+  cloudmsa: {
+    name: 'The Surgeon',
+    specialisation: 'Contract Review',
+    archetype: 'The Surgeon',
+    workStyle: 'Methodical. Cuts through ambiguity. Never skips a clause.',
+    ovr: 94,
+    skills: [
+      { label: 'Precision',  val: 97, col: '#2E7D9C' },
+      { label: 'Depth',      val: 93, col: '#7B5EA7' },
+      { label: 'Creativity', val: 71, col: '#B8860B' },
+      { label: 'Risk',       val: 88, col: ACCENT },
+    ],
+    profile: {
+      role: 'contract-reviewer',
+      displayName: 'The Surgeon',
+      tagline: 'Methodical. Cuts through ambiguity. Never skips a clause.',
+      category: 'lawyer',
+      seniority: 'partner',
+      costTier: 'sonnet',
+      billingRateUsd: 380,
+      skills: { precision: 94, creativity: 72, speed: 85, depth: 97, negotiation: 88, communication: 76, research: 91, risk: 93 },
+      personality: {
+        archetype: 'The Surgeon',
+        traits: { 'conservative-vs-creative': 2, 'thorough-vs-fast': 2, 'risk-averse-vs-tolerant': 2, 'formal-vs-approachable': 3, 'adversarial-vs-collaborative': 4 },
+        workStyle: 'Methodical. Cuts through ambiguity. Never skips a clause.',
+      },
+      practiceAreas: ['Contract Review', 'Risk Assessment'],
+      strengths: ['Precision analysis', 'Risk identification', 'Clause-by-clause review'],
+      limitations: ['Less suited for high-level strategy'],
+      optional: true,
+      defaultSelected: false,
+      avatarSeed: 'The Surgeon',
+    },
+  },
 };
 
-function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => void }) {
+function S4Builder({ isMobile, caseId, onLaunch }: { isMobile: boolean; caseId: CaseId; onLaunch: () => void }) {
+  const agent = CASE_S4[caseId];
   const [animStep, setAnimStep] = useState(0);
   const [builderStep, setBuilderStep] = useState<BuilderStep>('Stats');
   const [showReveal, setShowReveal] = useState(false);
 
   useEffect(() => {
+    setAnimStep(0);
+    setBuilderStep('Stats');
+    setShowReveal(false);
     const t = setTimeout(() => setAnimStep(1), 800);
     return () => clearTimeout(t);
-  }, []);
+  }, [caseId]);
 
   const forgeAgent = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -975,10 +1054,10 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
     <>
     {showReveal && (
       <CardRevealOverlay
-        profile={DEMO_SURGEON_PROFILE}
-        ovr={94}
+        profile={agent.profile}
+        ovr={agent.ovr}
         costTier="sonnet"
-        billingRate={380}
+        billingRate={agent.profile.billingRateUsd}
         onSave={onLaunch}
         onBuildAnother={() => setShowReveal(false)}
         onClose={() => setShowReveal(false)}
@@ -1037,11 +1116,11 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, animation: 'dUp .3s ease both' }}>
               <div>
                 <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 6, fontWeight: 600 }}>Agent Name</div>
-                <div style={{ fontFamily: SANS, fontSize: 13, color: TEXT, background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px' }}>The Surgeon</div>
+                <div style={{ fontFamily: SANS, fontSize: 13, color: TEXT, background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px' }}>{agent.name}</div>
               </div>
               <div>
                 <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 6, fontWeight: 600 }}>Specialisation</div>
-                <div style={{ fontFamily: SANS, fontSize: 13, color: TEXT, background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px' }}>Contract Review</div>
+                <div style={{ fontFamily: SANS, fontSize: 13, color: TEXT, background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px' }}>{agent.specialisation}</div>
               </div>
               <div>
                 <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 6, fontWeight: 600 }}>Archetype</div>
@@ -1049,9 +1128,9 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
                   {['The Gatekeeper', 'The Surgeon', 'The Diplomat', 'The Hawk'].map(a => (
                     <div key={a} style={{
                       fontFamily: SANS, fontSize: 10, padding: '5px 10px',
-                      borderRadius: 20, border: `1px solid ${a === 'The Surgeon' ? ACCENT : BORDER}`,
-                      background: a === 'The Surgeon' ? 'rgba(196,93,62,.06)' : '#F5F4F0',
-                      color: a === 'The Surgeon' ? ACCENT : MUTED, cursor: 'pointer',
+                      borderRadius: 20, border: `1px solid ${a === agent.archetype ? ACCENT : BORDER}`,
+                      background: a === agent.archetype ? 'rgba(196,93,62,.06)' : '#F5F4F0',
+                      color: a === agent.archetype ? ACCENT : MUTED, cursor: 'pointer',
                     }}>{a}</div>
                   ))}
                 </div>
@@ -1059,7 +1138,7 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
               <div>
                 <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 6, fontWeight: 600 }}>Work Style</div>
                 <div style={{ fontFamily: SANS, fontSize: 11, color: MUTED, background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', lineHeight: 1.6 }}>
-                  Methodical. Cuts through ambiguity. Never skips a clause.
+                  {agent.workStyle}
                 </div>
               </div>
             </div>
@@ -1071,11 +1150,11 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
               <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 2, fontWeight: 600 }}>Avatar</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', background: 'rgba(196,93,62,.07)', border: '2px solid rgba(196,93,62,.25)', flexShrink: 0 }}>
-                  <img src={av('The Surgeon', 100)} alt="The Surgeon" width={72} height={72} style={{ display: 'block' }} />
+                  <img src={av(agent.name, 100)} alt={agent.name} width={72} height={72} style={{ display: 'block' }} />
                 </div>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 16, color: TEXT, marginBottom: 3 }}>The Surgeon</div>
-                  <div style={{ fontFamily: SANS, fontSize: 10, color: MUTED, marginBottom: 8 }}>Seed: surgeon-v1</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 16, color: TEXT, marginBottom: 3 }}>{agent.name}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 10, color: MUTED, marginBottom: 8 }}>Seed: {agent.name.toLowerCase().replace(/\s+/g, '-')}-v1</div>
                   <button style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', padding: '6px 14px', borderRadius: 20, background: '#F5F4F0', border: `1px solid ${BORDER}`, color: MUTED, cursor: 'pointer' }}>
                     ↻ Randomise
                   </button>
@@ -1103,7 +1182,7 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             <>
               <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 14, fontWeight: 600 }}>Skill Ratings</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-                {SKILLS.map((s, i) => (
+                {agent.skills.map((s, i) => (
                   <div key={s.label} style={{ animation: `dUp .35s ease ${.4 + i * .08}s both` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontFamily: SANS, fontSize: 12, color: TEXT }}>{s.label}</span>
@@ -1137,15 +1216,15 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             animation: 'dIn .6s ease .5s both',
           }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', background: 'rgba(196,93,62,.08)', border: '2px solid rgba(196,93,62,.3)' }}>
-              <img src={av('The Surgeon', 100)} alt="The Surgeon" width={72} height={72} style={{ display: 'block' }} />
+              <img src={av(agent.name, 100)} alt={agent.name} width={72} height={72} style={{ display: 'block' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: SERIF, fontSize: 19, color: TEXT, fontWeight: 400, marginBottom: 3 }}>The Surgeon</div>
-              <div style={{ fontFamily: SANS, fontSize: 9, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase' }}>Contract Review</div>
+              <div style={{ fontFamily: SERIF, fontSize: 19, color: TEXT, fontWeight: 400, marginBottom: 3 }}>{agent.name}</div>
+              <div style={{ fontFamily: SANS, fontSize: 9, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase' }}>{agent.specialisation}</div>
             </div>
             <div style={{ width: '100%', paddingTop: 14, borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
               <div style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 4 }}>OVR</div>
-              <div style={{ fontFamily: SERIF, fontSize: 52, color: TEXT, lineHeight: 1, fontWeight: 300 }}>94</div>
+              <div style={{ fontFamily: SERIF, fontSize: 52, color: TEXT, lineHeight: 1, fontWeight: 300 }}>{agent.ovr}</div>
             </div>
           </div>
         )}
