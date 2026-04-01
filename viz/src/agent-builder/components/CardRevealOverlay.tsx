@@ -101,7 +101,7 @@ export function CardRevealOverlay({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 24,
+        gap: 36,
         backdropFilter: 'blur(12px)',
       }}
       onClick={showButtons ? undefined : undefined}
@@ -333,12 +333,13 @@ export function CardRevealOverlay({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            style={{ display: 'flex', justifyContent: 'center' }}
+            style={{ display: 'flex', justifyContent: 'center', width: '100%' }}
           >
             <button
               onClick={onSave}
               style={{
-                display: 'inline-block',
+                display: 'block',
+                width: 'fit-content',
                 padding: '18px 48px',
                 fontSize: 11,
                 fontFamily: fonts.sans,

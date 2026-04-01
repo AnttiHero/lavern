@@ -58,12 +58,12 @@ export function OverallRating({ ovr, costTier, billingRate, animate = false }: P
     }}>
       {/* Large OVR number — serif, cinematic */}
       <div style={{
-        fontSize: 104,
+        fontSize: 72,
         fontFamily: fonts.serif,
         fontWeight: 300,
         color: 'rgba(250,249,246,0.92)',
         lineHeight: 1,
-        letterSpacing: -3,
+        letterSpacing: -2,
       }}>
         {display}
       </div>
@@ -73,7 +73,7 @@ export function OverallRating({ ovr, costTier, billingRate, animate = false }: P
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        marginTop: 8,
+        marginTop: 10,
       }}>
         <div style={{
           fontSize: 9,
