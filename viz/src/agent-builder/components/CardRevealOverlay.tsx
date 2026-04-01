@@ -39,7 +39,9 @@ export function CardRevealOverlay({
   const [phase, setPhase] = useState<Phase>('entering');
   const [showFlash, setShowFlash] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [cardStatsVisible, setCardStatsVisible] = useState(false);
   const audioRef = useRef<AudioContext | null>(null);
+  const isRevealed = phase === 'revealed' || phase === 'complete';
 
   const playRevealSound = useCallback(() => {
     // Sound removed
@@ -221,20 +223,73 @@ export function CardRevealOverlay({
                 }} />
               </div>
 
-              {/* Card front (revealed) — note transform rotateY(180deg) */}
-              <div style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                borderRadius: radii.lg,
-                backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)',
-                backgroundColor: colors.bgCard,
-                border: `1px solid ${colors.border}`,
-                overflow: 'hidden',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-              }}>
-                <AgentCard profile={profile} selected={false} />
+              {/* Card front (revealed) — clickable to flip to stats */}
+              <div
+                onClick={() => { if (isRevealed) setCardStatsVisible(v => !v); }}
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: radii.lg,
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  backgroundColor: colors.bgCard,
+                  border: `1px solid ${colors.border}`,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                  cursor: isRevealed ? 'pointer' : 'default',
+                }}>
+                {/* Agent card face */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  opacity: cardStatsVisible ? 0 : 1,
+                  transform: cardStatsVisible ? 'scale(0.96)' : 'scale(1)',
+                  transition: 'opacity 0.28s ease, transform 0.28s ease',
+                  pointerEvents: cardStatsVisible ? 'none' : 'auto',
+                }}>
+                  <AgentCard profile={profile} selected={false} />
+                </div>
+                {/* Stats face */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  opacity: cardStatsVisible ? 1 : 0,
+                  transform: cardStatsVisible ? 'scale(1)' : 'scale(1.04)',
+                  transition: 'opacity 0.28s ease, transform 0.28s ease',
+                  pointerEvents: cardStatsVisible ? 'auto' : 'none',
+                  backgroundColor: colors.bgCard,
+                  padding: '28px 22px',
+                  display: 'flex', flexDirection: 'column', gap: 0,
+                }}>
+                  <div style={{ fontFamily: fonts.serif, fontSize: 18, color: colors.text, marginBottom: 6 }}>{profile.displayName}</div>
+                  <div style={{ fontFamily: fonts.sans, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 22 }}>{profile.practiceAreas[0]}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
+                    {([
+                      { l: 'Precision',  v: profile.skills.precision,  c: colors.sonnet },
+                      { l: 'Depth',      v: profile.skills.depth,      c: colors.specialist },
+                      { l: 'Risk',       v: profile.skills.risk,       c: colors.accent },
+                      { l: 'Research',   v: profile.skills.research,   c: colors.success },
+                    ] as { l: string; v: number; c: string }[]).map(s => (
+                      <div key={s.l}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.textMuted }}>{s.l}</span>
+                          <span style={{ fontFamily: fonts.serif, fontSize: 16, color: colors.text, lineHeight: 1 }}>{s.v}</span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 2, background: colors.bgInput, overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%', borderRadius: 2,
+                            background: `linear-gradient(90deg, ${s.c}, ${s.c}80)`,
+                            width: cardStatsVisible ? `${s.v}%` : '0%',
+                            transition: 'width 0.65s ease 0.18s',
+                          }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <span style={{ fontFamily: fonts.sans, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: colors.textMuted }}>OVR</span>
+                    <span style={{ fontFamily: fonts.serif, fontSize: 52, color: colors.text, lineHeight: 1, fontWeight: 300 }}>{ovr}</span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>

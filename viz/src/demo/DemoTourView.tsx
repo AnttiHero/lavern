@@ -956,7 +956,7 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(250,249,246,.12)';
           }}
         >
-          Forge Agent
+          See the agents work
         </button>
       }
     >
@@ -1080,29 +1080,23 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
         {/* Live card preview */}
         {!isMobile && (
           <div style={{
-            background: 'rgba(196,93,62,.04)', border: '1.5px solid rgba(196,93,62,.18)',
-            borderRadius: 10, padding: '18px 14px',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+            background: WHITE, border: `1px solid ${BORDER}`,
+            borderRadius: 10, padding: '20px 16px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+            boxShadow: '0 8px 32px rgba(0,0,0,.18)',
             animation: 'dIn .6s ease .5s both',
           }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', background: 'rgba(196,93,62,.07)', border: '1.5px solid rgba(196,93,62,.25)' }}>
-              <img src={av('The Surgeon', 80)} alt="The Surgeon" width={56} height={56} style={{ display: 'block' }} />
+            <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', background: 'rgba(196,93,62,.08)', border: '2px solid rgba(196,93,62,.3)' }}>
+              <img src={av('The Surgeon', 100)} alt="The Surgeon" width={72} height={72} style={{ display: 'block' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: SERIF, fontSize: 17, color: TEXT, fontWeight: 400, marginBottom: 3 }}>The Surgeon</div>
+              <div style={{ fontFamily: SERIF, fontSize: 19, color: TEXT, fontWeight: 400, marginBottom: 3 }}>The Surgeon</div>
               <div style={{ fontFamily: SANS, fontSize: 9, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase' }}>Contract Review</div>
             </div>
-            <div style={{ width: '100%', paddingTop: 12, borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
-              <div style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 3 }}>OVR</div>
-              <div style={{ fontFamily: SERIF, fontSize: 46, color: TEXT, lineHeight: 1, fontWeight: 300 }}>94</div>
+            <div style={{ width: '100%', paddingTop: 14, borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
+              <div style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 4 }}>OVR</div>
+              <div style={{ fontFamily: SERIF, fontSize: 52, color: TEXT, lineHeight: 1, fontWeight: 300 }}>94</div>
             </div>
-            <button
-              onClick={forgeAgent}
-              style={{
-                width: '100%', padding: '9px', background: ACCENT, border: 'none',
-                borderRadius: 7, color: CREAM, fontFamily: SANS, fontSize: 9,
-                letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer',
-              }}>Forge Agent</button>
           </div>
         )}
       </div>
