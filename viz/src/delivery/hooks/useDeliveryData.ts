@@ -647,10 +647,10 @@ function buildDemoData(sessionId: string): DeliveryData {
   if (sessionId.includes('heartconnect')) {
     return buildHeartConnectDemoData(sessionId);
   }
-  if (sessionId.includes('healthprivacy')) {
+  if (sessionId.includes('medivault') || sessionId.includes('healthprivacy')) {
     return buildHealthPrivacyDemoData(sessionId);
   }
-  if (sessionId.includes('devcontract')) {
+  if (sessionId.includes('cloudmsa') || sessionId.includes('devcontract')) {
     return buildDevContractDemoData(sessionId);
   }
 
@@ -923,8 +923,17 @@ function buildHeartConnectDemoData(sessionId: string): DeliveryData {
 
 const HEARTCONNECT_TOS_DOCUMENT = `# HeartConnect Terms of Service
 
-**DRAFT \u2014 For Client Review**
-*Effective Date: [Effective Date]*
+**DRAFT \u2014 For Client Review**  \u00b7  *Plain-language redesign by Lavern*
+*Effective Date: [Effective Date]*  \u00b7  *Readability: Grade 7.8 (was 16.8)*
+
+---
+
+> **TL;DR \u2014 What you actually need to know:**
+> - You must be **18 or older** to use HeartConnect.
+> - Your subscription **auto-renews** \u2014 cancel any time in Settings before renewal.
+> - EU users: you have a **14-day withdrawal right** and don\u2019t have to arbitrate.
+> - We do **not** conduct background checks on users. Stay safe out there.
+> - We don\u2019t sell your data. Your content is yours.
 
 ---
 
@@ -1443,136 +1452,401 @@ function buildHealthPrivacyDemoData(sessionId: string): DeliveryData {
 
 const MEDIVAULT_PRIVACY_DOCUMENT = `# MediVault Privacy Policy
 
-**DRAFT \u2014 For Client Review**
-*Effective Date: [Effective Date]*
+**DRAFT \u2014 For Client Review**  \u00b7  *Compliance redesign by Lavern*
+*Effective Date: [Effective Date]*  \u00b7  *Jurisdiction: United States + European Union*
+
+---
+
+| Regulatory Framework | Status | Primary Contact |
+|---|---|---|
+| HIPAA / HITECH | \u2705 Compliant | HIPAA Privacy Officer |
+| GDPR (EU/UK) | \u2705 Compliant | Data Protection Officer (Berlin) |
+| CCPA / CPRA (California) | \u2705 Compliant | privacy@medivault.com |
+| State Medical Records Laws | \u2705 Mapped | See Section 11 |
+
+> **For Series B due diligence:** This policy discloses our de-identification methodology (HIPAA Safe Harbor, 45 CFR \u00a7\u00a0164.514), cross-border transfer mechanism (Standard Contractual Clauses + AES-256 supplementary measures), and dual-track breach notification process. Sections 5, 7, 10, and 13 are written specifically for investor review.
 
 ---
 
 ## Table of Contents
 
-1. Introduction
-2. Information We Collect
-3. How We Use Your Information
-4. Protected Health Information (PHI)
-5. Data De-identification
-6. How We Share Your Information
-7. International Data Transfers
-8. Data Retention
-9. Data Security
-10. Breach Notification
-11. Your Rights
-12. Children's Privacy
-13. Changes to This Policy
-14. Contact Us
+1. Introduction and Scope
+2. Who We Are \u2014 Data Controller and DPO
+3. Information We Collect
+4. Legal Basis for Processing (GDPR)
+5. Protected Health Information (PHI) and HIPAA
+6. Data De-identification Methodology
+7. How We Use Your Information
+8. Cookies and Tracking Technologies
+9. How We Share Your Information
+10. International Data Transfers
+11. Data Retention Schedule
+12. Data Security
+13. Breach Notification
+14. Your Privacy Rights
+15. California Residents (CCPA/CPRA)
+16. Children\u2019s Privacy
+17. Changes to This Policy
+18. Contact Us
 
 ---
 
-## 1. Introduction
+## 1. Introduction and Scope
 
-MediVault, Inc. ("MediVault," "we," "us," or "our") provides a health technology platform that helps medical providers manage patient records securely. This Privacy Policy explains how we collect, use, store, and protect your personal information, including Protected Health Information (PHI) as defined by the Health Insurance Portability and Accountability Act (HIPAA).
+MediVault, Inc. (\u201CMediVault,\u201D \u201Cwe,\u201D \u201Cus,\u201D or \u201Cour\u201D) provides a cloud-based health technology platform that enables medical providers to securely store, access, and manage patient records. This Privacy Policy (\u201CPolicy\u201D) applies to all information we collect through the MediVault platform, website, APIs, and related services (collectively, the \u201CPlatform\u201D).
 
-We operate in the United States and the European Union. This policy addresses our obligations under both HIPAA and the General Data Protection Regulation (GDPR).
+MediVault operates in the United States (primary headquarters) and the European Union (engineering and EU client operations in Berlin, Germany). This Policy is designed to meet our obligations under:
 
-## 2. Information We Collect
+- The **Health Insurance Portability and Accountability Act (HIPAA)** and the HITECH Act
+- The EU/UK **General Data Protection Regulation (GDPR)**
+- The **California Consumer Privacy Act (CCPA)** as amended by the CPRA
+- Applicable state medical records laws
 
-We collect information in three categories:
+Where requirements conflict, we apply the more protective standard.
 
-**Information you provide:** Name, email, professional credentials (for providers), patient demographics, medical records, insurance information, and account credentials.
+## 2. Who We Are \u2014 Data Controller and DPO
 
-**Information generated by the platform:** Access logs, usage analytics, device information, IP addresses, and audit trails required by HIPAA.
-
-**Information from third parties:** Electronic health records from integrated systems, insurance verification data, and identity verification results.
-
-## 3. How We Use Your Information
-
-We use your information to:
-
-- Provide and maintain the MediVault platform
-- Process and store patient records securely
-- Generate analytics and insights (using de-identified data only)
-- Comply with legal and regulatory requirements
-- Communicate with you about your account and our services
-- Improve our platform and develop new features
-
-## 4. Protected Health Information (PHI)
-
-MediVault processes Protected Health Information as defined by HIPAA. PHI includes any individually identifiable health information that relates to a patient's past, present, or future health condition, treatment, or payment for healthcare.
-
-**Business Associate Agreements.** When we process PHI on behalf of healthcare providers, we do so under Business Associate Agreements (BAAs) that define our obligations and permitted uses of PHI.
-
-**Minimum Necessary Standard.** We apply the HIPAA minimum necessary standard to all PHI access. Our systems are designed so that each user can access only the PHI required for their specific role and task.
-
-**Your HIPAA Rights.** If you are a patient whose PHI is stored on MediVault, you have the right to: access your health records, request amendments to your records, receive an accounting of disclosures, request restrictions on certain uses, and receive confidential communications.
-
-## 5. Data De-identification
-
-MediVault uses the HIPAA Safe Harbor method to de-identify health data for analytics purposes. Under this method, we remove all 18 categories of identifiers specified in 45 CFR 164.514(b)(2).
-
-De-identified data is not subject to HIPAA restrictions and may be used for platform improvement, research, and aggregate analytics. We do not attempt to re-identify de-identified data.
-
-We conduct periodic re-identification risk assessments to ensure our de-identification processes remain effective as data volumes and linkage risks evolve.
-
-## 6. How We Share Your Information
-
-We do not sell your personal information or PHI.
-
-We may share your information with: service providers under BAAs or data processing agreements, healthcare providers for treatment purposes, as required by law, and for public health activities as permitted by HIPAA.
-
-## 7. International Data Transfers
-
-MediVault operates in the United States and the European Union. Patient data may be transferred between these jurisdictions.
-
-**US to EU transfers** are governed by Standard Contractual Clauses (SCCs) approved by the European Commission, supplemented by the following technical measures: AES-256 encryption at rest, TLS 1.3 encryption in transit, pseudonymization of patient identifiers before transfer, and access controls limiting data access to authorized personnel.
-
-**EU to US transfers** follow the same protections. Our Berlin engineering team processes data under GDPR requirements, and all cross-border data flows are documented in our Records of Processing Activities.
-
-## 8. Data Retention
-
-We retain different categories of data for different periods:
-
-- **Account data:** Retained while your account is active, deleted within 30 days of account closure
-- **Patient medical records:** Retained in accordance with applicable state medical records retention laws (typically 7-10 years from last treatment)
-- **HIPAA-required records:** Retained for a minimum of 6 years as required by the HIPAA Privacy Rule
-- **Audit logs:** Retained for 6 years per HIPAA requirements
-- **De-identified analytics data:** Retained indefinitely (not subject to deletion requests as it cannot be linked to individuals)
-
-## 9. Data Security
-
-We implement administrative, technical, and physical safeguards as required by the HIPAA Security Rule, including: encryption at rest and in transit, multi-factor authentication, role-based access controls, regular security risk assessments, employee training, and incident response procedures.
-
-## 10. Breach Notification
-
-In the event of a data breach, we follow a dual-track notification process:
-
-**GDPR Track (72 hours):** If a breach is discovered by any team member (including our Berlin engineering team), we notify the relevant EU supervisory authority within 72 hours of awareness. Affected individuals are notified without undue delay if the breach poses a high risk to their rights.
-
-**HIPAA Track (60 days):** We notify affected individuals within 60 days of discovery. Breaches affecting 500 or more individuals are also reported to the HHS Secretary and prominent media outlets.
-
-**Internal Escalation:** Any breach discovery triggers immediate internal notification across all teams within 24 hours, ensuring both GDPR and HIPAA notification tracks are activated in parallel.
-
-## 11. Your Rights
-
-**Under GDPR** (EU residents): Right of access, rectification, erasure, restriction of processing, data portability, and objection. Contact our Data Protection Officer at [EMAIL].
-
-**Under HIPAA** (patients): Right to access, amend, accounting of disclosures, restriction requests, confidential communications, and breach notification.
-
-**Under CCPA** (California residents): Right to know, delete, opt-out of sale (we do not sell data), and non-discrimination.
-
-## 12. Children's Privacy
-
-MediVault does not knowingly collect personal information from children under 13. Patient records for minors are managed by their healthcare providers under applicable parental consent requirements.
-
-## 13. Changes to This Policy
-
-We may update this policy from time to time. Material changes will be communicated at least 30 days before they take effect. Continued use of MediVault after changes constitutes acceptance.
-
-## 14. Contact Us
-
-**MediVault, Inc.**
-Email: [EMAIL]
-Data Protection Officer: [EMAIL]
+**U.S. Operations**
+MediVault, Inc.
+[Mailing Address]
 HIPAA Privacy Officer: [EMAIL]
+HIPAA Security Officer: [EMAIL]
+
+**EU Operations**
+MediVault GmbH (Berlin)
+[EU Mailing Address]
+Data Protection Officer (DPO): [EMAIL]
+EU Representative: MediVault GmbH acts as our EU representative for GDPR purposes.
+
+Under GDPR, MediVault Inc. and MediVault GmbH are joint controllers for the purposes of cross-border data processing between our US and EU operations. The joint controller arrangement is documented in our Records of Processing Activities and is available upon request.
+
+## 3. Information We Collect
+
+We collect three categories of information:
+
+### 3.1 Information You Provide
+
+**For healthcare providers and administrators:**
+- Full name, professional credentials, and National Provider Identifier (NPI)
+- Email address, phone number, and mailing address
+- Organization name, address, and Tax ID / EIN
+- Payment and billing information
+- Account credentials
+
+**For patients (where applicable):**
+- Name, date of birth, and contact information
+- Medical record numbers and insurance identifiers
+- Clinical notes, diagnoses, medications, and treatment plans
+- Billing and insurance information
+
+### 3.2 Information Generated by the Platform
+
+- Access logs: who accessed which records, when, and from which IP address (required by HIPAA)
+- Audit trails: all create, read, update, and delete operations on patient records
+- Device and session data: browser type, operating system, and session identifiers
+- Usage analytics: feature usage patterns (de-identified and aggregated)
+
+### 3.3 Information from Third Parties
+
+- Electronic Health Records (EHR) imported from integrated systems via HL7 FHIR APIs
+- Insurance eligibility and claims data from clearinghouses
+- Identity verification results from third-party providers
+- Laboratory results from integrated lab information systems
+
+## 4. Legal Basis for Processing (GDPR)
+
+For EU residents, we process personal data on the following legal bases under GDPR Articles 6 and 9:
+
+| Processing Activity | Legal Basis |
+|---|---|
+| Providing the Platform to providers | Article 6(1)(b) \u2014 Performance of a contract |
+| Processing patient PHI for treatment | Article 9(2)(h) \u2014 Healthcare provision |
+| Security monitoring and audit logging | Article 6(1)(c) \u2014 Legal obligation (GDPR Art. 32; HIPAA) |
+| Platform improvement analytics | Article 6(1)(f) \u2014 Legitimate interests (using de-identified data only) |
+| Marketing communications | Article 6(1)(a) \u2014 Consent (opt-in only) |
+| Compliance with legal obligations | Article 6(1)(c) \u2014 Legal obligation |
+| Research and public health | Article 9(2)(j) \u2014 Research / public health (de-identified data only) |
+
+Where we rely on legitimate interests, you may object to this processing at any time (see Section 14).
+
+## 5. Protected Health Information (PHI) and HIPAA
+
+### 5.1 What Is PHI
+
+Under HIPAA, \u201CProtected Health Information\u201D (PHI) means any individually identifiable health information we create, receive, maintain, or transmit in electronic, paper, or oral form. PHI includes names, dates, geographic data, phone numbers, account numbers, biometric identifiers, medical record numbers, and health or treatment information linked to a specific individual.
+
+### 5.2 Business Associate Agreements
+
+MediVault is a Business Associate under HIPAA. When we process PHI on behalf of a Covered Entity (a healthcare provider or health plan), we do so under a **Business Associate Agreement (BAA)**. The BAA governs:
+
+- Permitted uses and disclosures of PHI
+- Our obligation to implement HIPAA-required safeguards
+- Our obligation to report breaches and security incidents
+- Requirements on our subcontractors who access PHI
+
+We will not process PHI for a Covered Entity without a fully executed BAA in place.
+
+### 5.3 Minimum Necessary Standard
+
+We apply HIPAA\u2019s minimum necessary standard to all PHI access. Our role-based access control system enforces this: each user account is configured with the minimum permissions required for their specific job function. Access to PHI is logged and reviewed quarterly.
+
+### 5.4 Patient Rights Under HIPAA
+
+If you are a patient whose PHI is stored on MediVault, you have the following rights, exercisable through the healthcare provider who is your Covered Entity:
+
+- **Right to Access:** Receive a copy of your health records, typically within 30 days.
+- **Right to Amend:** Request corrections to inaccurate or incomplete records.
+- **Right to Accounting of Disclosures:** Request a list of who we have disclosed your PHI to, other than for treatment, payment, or healthcare operations.
+- **Right to Request Restrictions:** Ask your provider to limit how they use or disclose your PHI.
+- **Right to Confidential Communications:** Request that your provider communicate with you in a specific way or at a specific location.
+- **Right to Breach Notification:** Be informed if your PHI is involved in a reportable breach.
+
+## 6. Data De-identification Methodology
+
+MediVault de-identifies patient data for platform analytics, performance improvement, and research. We use the **HIPAA Safe Harbor method** (45 CFR \u00a7 164.514(b)(2)), which requires removal of all 18 categories of identifiers specified by HHS, including:
+
+Names \u2014 Geographic subdivisions smaller than state \u2014 Dates (except year) \u2014 Phone numbers \u2014 Fax numbers \u2014 Email addresses \u2014 Social Security numbers \u2014 Medical record numbers \u2014 Health plan beneficiary numbers \u2014 Account numbers \u2014 Certificate/license numbers \u2014 VINs \u2014 IP addresses \u2014 Device identifiers \u2014 Web URLs \u2014 Biometric identifiers \u2014 Full-face photographs \u2014 Any unique identifying number or code
+
+Once de-identified, data is no longer PHI and is not subject to HIPAA restrictions. We use de-identified data for:
+
+- Platform performance monitoring and improvement
+- Aggregate benchmarking reports provided to providers
+- Clinical research (shared under data use agreements only)
+
+**Re-identification prohibition.** MediVault does not attempt to re-identify de-identified data, and our agreements with research partners include explicit re-identification prohibitions.
+
+**Periodic risk assessments.** We conduct annual re-identification risk assessments to verify that our de-identification processes remain effective as the size and composition of our data corpus changes.
+
+## 7. How We Use Your Information
+
+We use the information we collect for the following purposes:
+
+**Platform operations:** Providing, maintaining, and improving the MediVault platform, including processing and storing patient records, managing user accounts, and enabling integrations.
+
+**Security and compliance:** Maintaining HIPAA-required audit logs, detecting unauthorized access, responding to security incidents, and meeting our legal obligations.
+
+**Analytics and improvement:** Using de-identified and aggregated data to understand how the platform is used, identify bugs and performance issues, and develop new features.
+
+**Communications:** Sending administrative messages (account notices, security alerts, policy updates) and, with consent, marketing communications.
+
+**Legal purposes:** Responding to legal process, enforcing our agreements, and protecting our rights and the rights of users.
+
+We do not use PHI to market products or services to patients. We do not sell PHI or personal data.
+
+## 8. Cookies and Tracking Technologies
+
+The MediVault platform uses the following types of cookies and tracking technologies:
+
+| Type | Purpose | Storage Period |
+|---|---|---|
+| Session cookies | Authentication and session management | Session only |
+| Security cookies | CSRF protection, bot detection | 24 hours |
+| Preference cookies | UI settings, language preferences | 12 months |
+| Analytics cookies | De-identified usage analytics | 13 months |
+
+We do not use advertising cookies or behavioral tracking cookies.
+
+**EU users:** We obtain consent for non-essential cookies via our cookie consent mechanism. You may withdraw consent at any time through our cookie settings page.
+
+**All users:** You can control cookies through your browser settings. Disabling session and security cookies will prevent you from logging into the platform.
+
+## 9. How We Share Your Information
+
+**We do not sell your personal information or PHI.** We do not share PHI with advertisers, data brokers, or non-healthcare third parties.
+
+We may share your information in the following circumstances:
+
+### 9.1 Healthcare Operations
+
+We share PHI with other healthcare providers for treatment purposes, and with health plans for payment purposes, as permitted by HIPAA without additional consent.
+
+### 9.2 Service Providers
+
+We share data with service providers who help us operate the platform. All service providers with access to PHI are required to execute BAAs. All service providers with access to EU personal data are required to execute Data Processing Agreements and Standard Contractual Clauses where applicable.
+
+Our key service providers include: cloud infrastructure (US-based, HIPAA-compliant), email delivery, payment processing, identity verification, and customer support software. A complete list of service providers with access to personal data is available on request.
+
+### 9.3 Legal Obligations
+
+We may disclose information as required by applicable law, court order, subpoena, or government request. We will notify you of any such request to the extent legally permitted.
+
+### 9.4 Public Health and Safety
+
+HIPAA permits us to disclose PHI without authorization for public health activities (e.g., disease surveillance), required reports to government authorities (e.g., mandated reporting of abuse), and to avert a serious threat to health or safety.
+
+### 9.5 Business Transfers
+
+If MediVault is acquired, merged, or undergoes a change of control, your information may be transferred to the successor entity. We will notify you before your information becomes subject to a materially different privacy policy.
+
+## 10. International Data Transfers
+
+MediVault transfers personal data between the United States and the European Union. The legal mechanisms governing these transfers are:
+
+**EU \u2192 US transfers:** Governed by Standard Contractual Clauses (SCCs) as approved by the European Commission (Decision 2021/914). We have implemented the following supplementary technical measures:
+- AES-256 encryption at rest for all PHI and personal data
+- TLS 1.3 encryption for all data in transit
+- Pseudonymization of patient identifiers before transfer wherever clinically feasible
+- Role-based access controls limiting US-side access to authorized personnel with documented need
+- Data access logs reviewed by our EU Data Protection Officer quarterly
+
+**US \u2192 EU transfers:** Data flows from US operations to our Berlin engineering team are governed by the same SCC framework and supplementary measures. Our Berlin team processes data solely for platform development, security, and EU client support purposes.
+
+All cross-border data flows are documented in our **Records of Processing Activities (RoPA)**, maintained pursuant to GDPR Article 30. A summary of the RoPA is available to EU data subjects on request.
+
+## 11. Data Retention Schedule
+
+We retain different categories of data for different periods, based on legal requirements and operational necessity:
+
+| Data Category | Retention Period | Basis |
+|---|---|---|
+| Account data (providers/admins) | Duration of account + 90 days post-closure | Contractual |
+| Patient medical records | Per applicable state law (typically 7\u201310 years from last treatment; 10 years for pediatric records until the patient reaches 21) | State medical records laws |
+| HIPAA Privacy Rule records | 6 years from creation, or 6 years from date last in effect | 45 CFR \u00a7 164.530(j) |
+| HIPAA Security Rule records | 6 years from creation | 45 CFR \u00a7 164.316(b) |
+| Audit logs | 6 years | HIPAA + GDPR Art. 5(2) |
+| Security incident records | 6 years | HIPAA |
+| BAAs | Duration of relationship + 6 years | HIPAA |
+| EU personal data | See corresponding category above, subject to shorter GDPR retention where applicable | GDPR Art. 5(1)(e) |
+| De-identified analytics data | Indefinite (not subject to deletion requests) | Not PHI; not personal data |
+| Marketing consent records | Duration of consent + 3 years | GDPR accountability |
+
+When data reaches the end of its retention period, we delete it using NIST SP 800-88 media sanitization guidelines.
+
+## 12. Data Security
+
+We implement administrative, technical, and physical safeguards as required by the HIPAA Security Rule (45 CFR Part 164, Subpart C) and GDPR Article 32. Our security program includes:
+
+**Encryption:** AES-256 encryption at rest for all PHI and personal data. TLS 1.3 for all data in transit. Encrypted backups stored in geographically separate facilities.
+
+**Access controls:** Multi-factor authentication required for all user accounts. Role-based access controls (RBAC) enforcing minimum necessary access. Privileged access management for administrative functions. Access reviews conducted quarterly.
+
+**Monitoring and audit:** Real-time security monitoring with automated alerts. HIPAA-required audit logs for all PHI access and modification. Annual third-party penetration testing. Quarterly vulnerability scans. SOC 2 Type II audit conducted annually.
+
+**Physical security:** Data stored in HIPAA-compliant, SOC 2-certified data centers with physical access controls, environmental controls, and 24/7 monitoring.
+
+**Workforce:** Annual HIPAA training for all staff with access to PHI. Background checks for employees and contractors with PHI access. Confidentiality agreements for all workforce members.
+
+**Incident response:** Written incident response plan tested annually. Dedicated security response team. Documented breach assessment procedures.
+
+No security system is impenetrable. If you believe your account has been compromised, contact us immediately at [EMAIL].
+
+## 13. Breach Notification
+
+MediVault operates a dual-track breach notification process designed for our US-EU operational structure.
+
+### 13.1 Internal Escalation (All Breaches)
+
+Any potential breach or security incident, regardless of where discovered, must be reported to our Security Response Team within **24 hours** of discovery. The Security Response Team immediately notifies both the HIPAA Security Officer and the EU Data Protection Officer, activating parallel assessment tracks.
+
+### 13.2 GDPR Track (EU Personal Data)
+
+If a breach involves EU residents\u2019 personal data:
+
+- We notify the relevant EU supervisory authority **within 72 hours** of becoming aware of the breach (GDPR Article 33).
+- We notify affected EU individuals **without undue delay** if the breach is likely to result in a high risk to their rights and freedoms (GDPR Article 34).
+- The notification will include: the nature of the breach, categories and approximate number of affected individuals, contact details of the DPO, likely consequences, and measures taken or proposed.
+
+If we cannot complete the full investigation within 72 hours, we provide an initial notification with a commitment to supplement it.
+
+### 13.3 HIPAA Track (PHI)
+
+If a breach involves unsecured PHI:
+
+- We notify **affected individuals within 60 days** of discovery of the breach (45 CFR \u00a7 164.404).
+- For breaches affecting **500 or more individuals** in a state or jurisdiction, we also notify **prominent media outlets** in that state/jurisdiction within 60 days.
+- All reportable breaches are submitted to the **HHS Secretary** (via the HHS Breach Reporting Portal) no later than 60 days after discovery. Breaches affecting fewer than 500 individuals are reported annually.
+- The HIPAA breach notice will include: what happened, the types of information involved, steps individuals can take to protect themselves, what we are doing to investigate and address the breach, and contact information.
+
+### 13.4 Breach Assessment
+
+We treat all potential breaches with full seriousness. Our breach risk assessment follows the four-factor test under HIPAA: nature and extent of PHI involved, who accessed or could have accessed it, whether the PHI was actually acquired or viewed, and extent to which risk has been mitigated.
+
+## 14. Your Privacy Rights
+
+The rights available to you depend on where you live and which law applies to your data.
+
+### 14.1 Rights Under GDPR (EU Residents)
+
+If you are located in the European Union, you have the following rights under GDPR:
+
+**Right of Access (Article 15).** You have the right to obtain confirmation of whether we process your personal data, and if so, a copy of that data along with information about how it is processed.
+
+**Right to Rectification (Article 16).** You have the right to have inaccurate personal data corrected without undue delay.
+
+**Right to Erasure (\u201CRight to be Forgotten\u201D) (Article 17).** You have the right to request deletion of your personal data where: it is no longer necessary for the purposes for which it was collected; you withdraw consent and there is no other legal basis; you object to processing based on legitimate interests and there are no overriding legitimate grounds; the data has been unlawfully processed; or deletion is required by law. This right does not apply where we are required to retain data by HIPAA or other legal obligations.
+
+**Right to Restriction of Processing (Article 18).** You have the right to request that we restrict how we use your data in certain circumstances.
+
+**Right to Data Portability (Article 20).** You have the right to receive your personal data in a structured, commonly used, machine-readable format, and to transmit that data to another controller where technically feasible.
+
+**Right to Object (Article 21).** You have the right to object to processing based on legitimate interests. You also have an unconditional right to object to processing for direct marketing purposes.
+
+**Rights Related to Automated Decision-Making (Article 22).** You have the right not to be subject to decisions based solely on automated processing that significantly affect you. MediVault does not make significant automated decisions about individuals without human review.
+
+**Right to Lodge a Complaint.** You have the right to lodge a complaint with your local supervisory authority. A list of EU supervisory authorities is available at https://edpb.europa.eu/about-edpb/board/members.
+
+To exercise your GDPR rights, contact our DPO at [EMAIL]. We will respond within one month (extendable by two months for complex requests).
+
+### 14.2 Rights Under HIPAA (Patients)
+
+See Section 5.4 for a full description of HIPAA patient rights. To exercise these rights, contact the healthcare provider who is your Covered Entity. MediVault can assist providers in facilitating these requests.
+
+### 14.3 Marketing Opt-Out (All Users)
+
+You may opt out of marketing communications at any time by clicking \u201Cunsubscribe\u201D in any marketing email, or by contacting us at [EMAIL]. Opting out of marketing does not affect administrative or service-related communications.
+
+## 15. California Residents (CCPA/CPRA)
+
+If you are a California resident, you have the following rights under the California Consumer Privacy Act (as amended by the CPRA):
+
+**Right to Know.** You have the right to request information about the categories and specific pieces of personal information we collect, the sources from which we collect it, the business or commercial purpose for collecting it, and the categories of third parties we share it with.
+
+**Right to Delete.** You have the right to request deletion of personal information we have collected, subject to certain exceptions (including our legal retention obligations under HIPAA).
+
+**Right to Correct.** You have the right to request correction of inaccurate personal information.
+
+**Right to Opt Out of Sale or Sharing.** We do not sell personal information, and we do not share personal information for cross-context behavioral advertising. No opt-out is needed, but you can confirm this by contacting us at [EMAIL].
+
+**Right to Limit Use of Sensitive Personal Information.** We use sensitive personal information (including health information) only for the purposes necessary to provide our services. We do not use it for any secondary purposes that would trigger CPRA opt-out rights.
+
+**Non-Discrimination.** We will not discriminate against you for exercising your CCPA/CPRA rights.
+
+To exercise these rights, contact us at [EMAIL] or call [PHONE NUMBER]. We will verify your identity before processing requests. We will respond within 45 days (extendable by an additional 45 days where reasonably necessary).
+
+## 16. Children\u2019s Privacy
+
+MediVault does not knowingly collect personal information from children under 13 through direct sign-up. Our platform is designed for use by licensed healthcare providers, not by patients directly.
+
+Patient records for minors are managed by healthcare providers as Covered Entities under HIPAA. Parental or guardian consent for minor patients is the responsibility of the Covered Entity. MediVault processes PHI for minor patients solely as a Business Associate under the provider\u2019s direction.
+
+If you believe we have inadvertently collected personal information from a child under 13 outside of the healthcare context, please contact us at [EMAIL] and we will delete it promptly.
+
+## 17. Changes to This Policy
+
+We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors.
+
+**Material changes** (changes that significantly affect how we process your personal data or that affect your rights) will be communicated to you at least **30 days** before they take effect, via email and/or prominent notice on the Platform.
+
+**For EU residents:** Where a material change affects processing based on consent, we will request fresh consent before the change takes effect.
+
+The updated Policy will be posted at [LINK]. The \u201CLast Updated\u201D date at the top of this Policy indicates when it was last revised. Your continued use of the Platform after the effective date of a change constitutes your acceptance of the updated Policy.
+
+## 18. Contact Us
+
+If you have questions about this Privacy Policy, our privacy practices, or your rights, please contact us:
+
+**HIPAA Privacy Officer**
+MediVault, Inc.
+Email: [EMAIL]
+Phone: [PHONE NUMBER]
 Mailing Address: [Mailing Address]
+
+**Data Protection Officer (GDPR)**
+MediVault GmbH (Berlin)
+Email: [EMAIL]
+Mailing Address: [EU Mailing Address]
+
+**For EU residents:** You may also contact us in the language of your EU member state. Responses will be provided in the language of your request where feasible.
 
 ---
 
@@ -1581,7 +1855,7 @@ Mailing Address: [Mailing Address]
 ---
 
 *Prepared by Lavern \u2014 Multi-Agent Legal Design System*
-*This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
+*This document was produced with AI assistance and reviewed by multi-agent verification. It does not constitute legal advice. For HIPAA compliance, EU regulatory filings, or any matter involving binding legal obligations, please verify with qualified legal professionals.*
 `;
 
 // ── CodeCraft Developer Agreement Demo Data ──────────────────────────────
@@ -1740,8 +2014,36 @@ function buildDevContractDemoData(sessionId: string): DeliveryData {
 
 const CODECRAFT_AGREEMENT_DOCUMENT = `# CodeCraft Developer Services Agreement
 
-**DRAFT \u2014 For Client Review**
+**DRAFT \u2014 For Client Review**  \u00b7  *IP and classification risk remediation by Lavern*
 *Effective Date: [Effective Date]*
+
+---
+
+**PARTIES**
+
+This Agreement is entered into by and between:
+
+**CodeCraft, Inc.**, a Delaware corporation, with its principal place of business at [Address] (\u201CCompany\u201D); and
+
+**[Contractor Name]**, [an individual / a [State] [entity type]], with its principal place of business at [Address] (\u201CContractor\u201D).
+
+---
+
+**RECITALS**
+
+WHEREAS, the Company desires to engage the Contractor to provide software development services; and
+
+WHEREAS, the Contractor desires to provide such services as an independent contractor on the terms and conditions set forth herein;
+
+NOW, THEREFORE, in consideration of the mutual covenants and agreements set forth below, and for other good and valuable consideration, the parties agree as follows:
+
+---
+
+> **Key changes from previous draft:**
+> - IP assignment narrowed to \u201CDeliverable Work Product\u201D \u2014 contractor retains pre-existing IP, open-source contributions, and personal projects.
+> - Exclusivity requirement removed; fixed hours removed \u2014 reduces misclassification risk under California ABC test.
+> - Notice period balanced: 14 days each way (was 7 company / 30 contractor).
+> - Liability tiered: 2\u00d7 general cap, 3\u00d7 for IP/confidentiality, uncapped for fraud.
 
 ---
 
@@ -1749,156 +2051,294 @@ const CODECRAFT_AGREEMENT_DOCUMENT = `# CodeCraft Developer Services Agreement
 
 1. Engagement and Scope
 2. Independent Contractor Relationship
-3. Deliverables and Milestones
+3. Deliverables, Acceptance, and Quality Standards
 4. Compensation and Payment
 5. Intellectual Property
 6. Pre-existing IP Schedule
-7. Confidentiality
-8. Termination and Transition
-9. Liability and Indemnification
-10. Representations and Warranties
-11. General Provisions
+7. Confidentiality and Security
+8. Non-Solicitation
+9. Termination and Transition
+10. Liability and Indemnification
+11. Dispute Resolution
+12. Representations and Warranties
+13. General Provisions
 
 ---
 
 ## 1. Engagement and Scope
 
-This Developer Services Agreement ("Agreement") is entered into by CodeCraft, Inc. ("Company") and the individual or entity identified in the attached Statement of Work ("Contractor").
+This Developer Services Agreement (\u201CAgreement\u201D) is entered into by CodeCraft, Inc., a Delaware corporation (\u201CCompany\u201D), and the individual or entity identified in the attached Statement of Work (\u201CContractor\u201D).
 
-The Contractor will provide software development services as described in each Statement of Work ("SOW") attached to this Agreement. Each SOW will specify: the scope of work, deliverables, milestones, timeline, and compensation.
+The Contractor will provide software development services as described in each Statement of Work (\u201CSOW\u201D) issued under this Agreement. Each SOW forms a part of this Agreement and will specify: the scope of work, deliverables, milestone schedule, acceptance criteria, and compensation.
+
+This Agreement governs all engagements between the parties from its Effective Date unless and until superseded by a fully executed replacement agreement. In the event of conflict between the terms of this Agreement and an SOW, the SOW controls for the subject matter of that SOW only.
 
 ## 2. Independent Contractor Relationship
 
-The Contractor is an independent contractor, not an employee, agent, or partner of the Company. The Contractor:
+The Contractor is an independent contractor. The Contractor is not an employee, agent, joint venturer, or partner of the Company. This Agreement does not create an employment relationship.
 
-- **Controls their own schedule.** The Contractor determines when, where, and how to perform the work, provided that deliverables are completed by agreed milestones.
-- **May work for others.** The Contractor is free to provide services to other clients during the engagement, provided there is no conflict of interest.
-- **Uses their own tools.** The Contractor may use their own development environment, hardware, and software. Company-provided tools are available but optional.
-- **Is responsible for their own taxes.** The Contractor is solely responsible for all income taxes, self-employment taxes, and other tax obligations.
+### 2.1 Indicators of Independent Contractor Status
 
-Nothing in this Agreement creates an employment relationship. The Company does not provide employee benefits (health insurance, retirement, paid leave) to the Contractor.
+The following provisions are included to support an accurate classification under applicable law, including the California ABC test, IRS common law factors, and applicable federal and state misclassification standards. The parties intend these provisions to reflect the genuine nature of their relationship.
 
-## 3. Deliverables and Milestones
+- **Schedule flexibility.** The Contractor determines when, where, and how to perform work, subject only to agreed milestone deadlines. The Company does not set or track work hours.
+- **No exclusivity.** The Contractor is free to provide services to other clients concurrently with this engagement, provided there is no actual conflict of interest (see Section 7.3).
+- **Own tools and environment.** The Contractor may use their own development hardware, software, and environment. Company-provided access credentials and systems are available for project purposes but their use is not mandatory.
+- **Tax responsibility.** The Contractor is solely responsible for all federal, state, and local income taxes, self-employment taxes, and other tax obligations arising from compensation paid under this Agreement. The Company will issue Form 1099-NEC for annual payments of $600 or more.
 
-The Contractor will deliver software and related materials as specified in each SOW. All deliverables must:
+### 2.2 No Benefits
 
-- Be original work or properly licensed
-- Conform to the specifications in the SOW
-- Pass code review by the Company's engineering team
-- Include documentation as specified in the SOW
+The Company does not provide the Contractor with employee benefits, including health insurance, retirement benefits, paid time off, stock options, or expense reimbursement except as explicitly agreed in an SOW.
+
+### 2.3 Contractor Acknowledgment
+
+The Contractor acknowledges that: (a) they have the right to enter into this Agreement; (b) this Agreement does not conflict with any other contract or obligation by which the Contractor is bound; and (c) they are not currently subject to any non-compete agreement that would restrict their performance of services for the Company.
+
+## 3. Deliverables, Acceptance, and Quality Standards
+
+### 3.1 Deliverables
+
+The Contractor will deliver software code, documentation, designs, and other materials as specified in each SOW (\u201CDeliverables\u201D). All Deliverables must:
+
+- Conform to the specifications, acceptance criteria, and technical standards set out in the applicable SOW
+- Pass automated test suites as specified in the SOW (minimum code coverage as specified)
+- Pass code review by the Company\u2019s engineering team (typically within 5 business days of submission)
+- Be free of known critical and high-severity security vulnerabilities at the time of delivery
+- Include documentation as specified in the SOW (inline code documentation, README updates, API documentation where applicable)
+
+### 3.2 Acceptance Process
+
+Upon submission of a Deliverable, the Company will review and either:
+- **Accept** the Deliverable (triggering the applicable milestone payment), or
+- **Reject** with written notice specifying the deficiencies
+
+The Contractor will have **10 business days** to cure deficiencies in a rejected Deliverable. If a Deliverable fails a second review, the parties will meet within 5 business days to agree on a remediation plan.
+
+The Company will not unreasonably withhold or delay acceptance of a Deliverable that substantially conforms to the SOW specifications.
+
+### 3.3 Warranty Period
+
+Following acceptance, the Contractor warrants each Deliverable against material defects in workmanship for **60 days** (the \u201CWarranty Period\u201D). If a material defect is discovered during the Warranty Period, the Contractor will correct it at no additional charge within a reasonable time. This warranty does not cover defects caused by modifications made by the Company after acceptance.
 
 ## 4. Compensation and Payment
 
-The Company will pay the Contractor as specified in each SOW. Unless otherwise stated:
+### 4.1 Rates and Milestones
 
-- Payment is due within 30 days of milestone acceptance
-- The Contractor will submit invoices upon milestone completion
-- Late payments accrue interest at 1.5% per month
+Compensation for each engagement is set out in the applicable SOW. Compensation may be structured as a fixed fee per milestone, an hourly rate, or a combination.
+
+### 4.2 Invoicing and Payment Terms
+
+The Contractor will submit invoices upon completion and acceptance of each milestone. Payment is due **within 30 calendar days** of the Company\u2019s receipt of a conforming invoice. Invoices must specify: the SOW reference, the milestone or period covered, the amount due, and payment instructions.
+
+### 4.3 Late Payment
+
+Undisputed amounts not paid within 30 days accrue interest at the lesser of **1.5% per month** (18% per annum) or the maximum rate permitted by applicable law, calculated from the due date until the date of payment.
+
+### 4.4 Disputed Invoices
+
+If the Company disputes any portion of an invoice, it will notify the Contractor in writing within 15 days of receipt, specifying the disputed amount and the basis for the dispute. The Company will pay undisputed amounts by the original due date. The parties will use good faith efforts to resolve any dispute within 30 days.
+
+### 4.5 Expenses
+
+The Company will reimburse pre-approved expenses only. The Contractor must obtain written approval before incurring any reimbursable expense and must submit receipts with each invoice.
 
 ## 5. Intellectual Property
 
-### Deliverable Work Product
+### 5.1 Definitions
 
-"Deliverable Work Product" means code, documentation, designs, and other materials that: (a) are created by the Contractor specifically for the Company under this Agreement, AND (b) are committed to the Company's code repositories or delivered as part of a milestone.
+\u201CDeliverable Work Product\u201D means all code, documentation, designs, inventions, works of authorship, and other materials that: (a) are created by the Contractor specifically for the Company in the performance of services under this Agreement, AND (b) are either delivered to the Company as a milestone Deliverable or committed to the Company\u2019s code repositories for the purpose of Company projects.
 
-To the extent any Deliverable Work Product qualifies as "work made for hire" under 17 USC 101, it is hereby designated as such. To the extent any Deliverable Work Product does not qualify as work made for hire, the Contractor hereby irrevocably assigns to the Company all right, title, and interest in and to such Deliverable Work Product, including all intellectual property rights.
+\u201CPre-existing IP\u201D means intellectual property that the Contractor owned or controlled before the Effective Date of this Agreement, or that is developed by the Contractor independently of this Agreement without use of the Company\u2019s Confidential Information, resources, or equipment.
 
-### What the Contractor Keeps
+### 5.2 Assignment of Deliverable Work Product
+
+To the extent any Deliverable Work Product qualifies as a \u201Cwork made for hire\u201D under 17 U.S.C. \u00a7 101, it is hereby designated as such, with the Company as the author. To the extent any Deliverable Work Product does not qualify as a work made for hire (including because independent contractors\u2019 software generally does not under 17 U.S.C. \u00a7 101), the Contractor hereby irrevocably assigns to the Company all right, title, and interest in and to such Deliverable Work Product, including all copyright, patent, trade secret, and other intellectual property rights, worldwide, in perpetuity.
+
+The Contractor agrees to execute any documents and take any actions reasonably requested by the Company to perfect, record, or enforce the Company\u2019s ownership of assigned intellectual property.
+
+### 5.3 Retained Contractor Rights
 
 The Contractor retains all right, title, and interest in:
 
-- **Pre-existing IP:** All intellectual property owned by the Contractor before the engagement or developed independently outside the scope of this Agreement, as identified in the Pre-existing IP Schedule (Section 6).
-- **General knowledge and skills:** Programming techniques, methodologies, and general know-how.
-- **Open-source contributions:** Any contributions the Contractor makes to open-source projects, even if using skills developed during the engagement.
-- **Personal projects:** Software developed on the Contractor's own time, using the Contractor's own equipment, that does not relate to the Company's business.
+- **Pre-existing IP**, as identified in the Pre-existing IP Schedule (Section 6) and updated as required
+- **General programming knowledge**, methodologies, algorithms, techniques, and know-how of general applicability (not specific to the Company\u2019s products or confidential information)
+- **Open-source contributions** to projects listed in the Pre-existing IP Schedule, even if developed using skills or knowledge gained during the engagement
+- **Personal projects** developed on the Contractor\u2019s own time, using the Contractor\u2019s own resources, that are not related to the Company\u2019s business and do not incorporate Confidential Information
 
-### License to Pre-existing IP
+### 5.4 License to Pre-existing IP
 
-If the Contractor incorporates any Pre-existing IP into Deliverable Work Product, the Contractor grants the Company a perpetual, non-exclusive, royalty-free, worldwide license to use, modify, and distribute such Pre-existing IP solely as part of the Deliverable Work Product.
+If the Contractor incorporates any Pre-existing IP into Deliverable Work Product, the Contractor hereby grants the Company a **perpetual, irrevocable, non-exclusive, royalty-free, worldwide license** to use, copy, modify, distribute, and sublicense such Pre-existing IP solely as incorporated in the Deliverable Work Product.
+
+### 5.5 Moral Rights Waiver
+
+To the extent permitted by applicable law, the Contractor waives any moral rights in Deliverable Work Product in favor of the Company and its successors.
 
 ## 6. Pre-existing IP Schedule
 
-Before beginning work, the Contractor must complete this schedule listing any pre-existing intellectual property that may be incorporated into Deliverable Work Product:
+The Contractor must complete and deliver this schedule before beginning work under any SOW. The schedule must list any pre-existing intellectual property (owned or licensed by the Contractor) that may be incorporated into or relied upon in delivering work under this Agreement.
 
-| Item | Description | License Type | Relevant SOW |
-|------|-------------|-------------|-------------|
-| [Name] | [Brief description] | [Open source / Proprietary / Other] | [SOW reference] |
+**Pre-existing Proprietary IP:**
 
-**Open-Source Contributions:** The Contractor may continue contributing to the following open-source projects during the engagement:
+| Item | Brief Description | Owner | Permitted Use in Deliverables |
+|------|------------------|-------|------------------------------|
+| [Item name] | [Brief description] | [Contractor / Third Party] | [Describe permitted use] |
 
-| Project | License | Contribution Scope |
-|---------|---------|-------------------|
-| [Project name] | [License] | [Description] |
+**Open-Source Projects (Continuing Contributions):**
 
-The Contractor must update this schedule promptly if additional Pre-existing IP is incorporated into any Deliverable Work Product.
+| Project Name | License (SPDX identifier) | Contribution Scope |
+|---|---|---|
+| [Project name] | [e.g., MIT, Apache-2.0] | [General contributions / Feature X only] |
 
-## 7. Confidentiality
+The Contractor must update this schedule promptly if additional Pre-existing IP is incorporated into any Deliverable. The Company\u2019s written approval is required before incorporating any Pre-existing IP that is subject to a copyleft license (GPL, AGPL, LGPL, or similar) into Deliverable Work Product intended for proprietary distribution.
 
-The Contractor agrees to maintain the confidentiality of all non-public information disclosed by the Company. Confidential information does not include information that is publicly available, independently developed, or rightfully obtained from third parties.
+## 7. Confidentiality and Security
 
-Confidentiality obligations survive termination of this Agreement for 3 years.
+### 7.1 Confidential Information
 
-## 8. Termination and Transition
+\u201CConfidential Information\u201D means any non-public information disclosed by the Company to the Contractor in connection with this Agreement, including source code, product roadmaps, customer data, business plans, financial information, and the terms of this Agreement.
 
-### Notice Period
+Confidential Information does not include information that: (a) is or becomes publicly available without the Contractor\u2019s breach; (b) the Contractor independently developed without use of Confidential Information; (c) the Contractor received from a third party without restriction; or (d) was known to the Contractor before disclosure, as evidenced by written records.
 
-Either party may terminate this Agreement with 14 calendar days' written notice.
+### 7.2 Obligations
 
-### Code Handover Period
+The Contractor will: (a) use Confidential Information only for purposes of performing services under this Agreement; (b) protect Confidential Information using at least the same care as the Contractor uses for their own confidential information, and no less than reasonable care; (c) not disclose Confidential Information to third parties without prior written consent; and (d) promptly notify the Company of any unauthorized disclosure or suspected breach.
 
-Upon notice of termination, the following transition process applies:
+These obligations survive termination of this Agreement for **3 years** for general Confidential Information, and indefinitely for trade secrets under applicable trade secret law.
 
-1. **Days 1-5:** Contractor completes or documents all work in progress. All open pull requests must be completed, reviewed, and merged or closed.
-2. **Days 6-10:** Contractor participates in code review sessions and knowledge transfer.
-3. **Days 11-14:** Credential rotation, access revocation, and final documentation delivery.
+### 7.3 Conflict of Interest
 
-### Termination for Cause
+The Contractor will promptly disclose to the Company any circumstances that could reasonably be perceived as a conflict of interest with the Company\u2019s business. The Contractor will not use Confidential Information to benefit a competitor of the Company.
 
-Either party may terminate immediately for material breach that remains uncured after 10 days' written notice specifying the breach.
+### 7.4 Security Obligations
 
-### Payment on Termination
+The Contractor will: (a) store and access Confidential Information only on password-protected, encrypted devices; (b) not store Confidential Information on personal cloud storage services without prior written approval; (c) notify the Company within 48 hours of any lost or stolen device that contained Confidential Information; and (d) return or certify the destruction of all Confidential Information upon termination.
 
-The Company will pay for all completed milestones and, on a pro-rata basis, for work completed toward the next milestone as of the termination date.
+## 8. Non-Solicitation
 
-## 9. Liability and Indemnification
+During the term of this Agreement and for **12 months** after its termination, the Contractor will not directly solicit for employment any employee of the Company who the Contractor had material interactions with during the engagement.
 
-### General Liability Cap
+This provision does not restrict: (a) general solicitation not targeted at Company employees (e.g., public job postings); or (b) responding to an unsolicited approach from a Company employee.
 
-Each party's total aggregate liability under this Agreement is limited to two times (2x) the total compensation specified in all active SOWs.
+The parties acknowledge that this non-solicitation obligation is narrowly tailored to protect legitimate business interests and does not restrict the Contractor\u2019s ability to perform services for other companies, including competitors of the Company.
 
-### Super-Cap Carve-outs
+## 9. Termination and Transition
 
-The general liability cap does not apply to:
+### 9.1 Termination for Convenience
 
-- Breach of intellectual property obligations (Section 5): liability capped at three times (3x) total contract value
-- Breach of confidentiality obligations (Section 7): liability capped at three times (3x) total contract value
-- Intentional misconduct or fraud: unlimited liability
-- Indemnification for third-party IP infringement claims: unlimited liability
+Either party may terminate this Agreement or any active SOW with **14 calendar days\u2019 written notice**.
 
-### Mutual Indemnification
+### 9.2 Termination for Cause
 
-Each party will indemnify the other against third-party claims arising from the indemnifying party's breach of this Agreement, negligence, or willful misconduct.
+Either party may terminate this Agreement or any active SOW immediately upon written notice if the other party: (a) commits a material breach that remains uncured after **10 business days\u2019** written notice specifying the breach in reasonable detail; (b) becomes insolvent, makes an assignment for the benefit of creditors, or is subject to insolvency proceedings; or (c) commits fraud or willful misconduct.
 
-## 10. Representations and Warranties
+### 9.3 Code Handover Protocol
 
-The Contractor represents and warrants that:
+Upon notice of termination (for any reason), the following transition process applies to each active SOW:
 
-- They have the right to enter into this Agreement
-- Deliverable Work Product will be original or properly licensed
-- Deliverable Work Product will not infringe any third party's intellectual property rights
-- They will comply with all applicable laws
+**Days 1\u20135 (Work Completion):**
+- The Contractor documents all work in progress with sufficient detail for a replacement developer to continue.
+- All open pull requests are completed, reviewed, and either merged or closed with documentation of the reason for closure.
+- No new code is introduced that increases handover complexity without written approval.
 
-## 11. General Provisions
+**Days 6\u201310 (Knowledge Transfer):**
+- The Contractor participates in up to 5 hours of knowledge transfer sessions per active SOW, at mutually agreed times.
+- The Contractor documents non-obvious design decisions, known issues, and technical debt.
 
-**Governing Law.** This Agreement is governed by the laws of [State], without regard to conflicts of law principles.
+**Days 11\u201314 (Access Revocation):**
+- All Company-issued credentials, access tokens, and system access are rotated and revoked.
+- The Contractor delivers a final documentation package as specified in the applicable SOW.
+- The Contractor certifies in writing that all Confidential Information has been deleted from the Contractor\u2019s devices.
 
-**Entire Agreement.** This Agreement and its SOWs constitute the entire agreement between the parties.
+### 9.4 Payment on Termination
 
-**Amendments.** Changes must be in writing and signed by both parties.
+On termination, the Company will pay: (a) all completed and accepted milestone payments not yet paid; and (b) a pro-rata portion of the next uncompleted milestone payment, calculated based on documented, accepted work completed through the termination date. No payment will be made for uncompleted work that does not meet the acceptance criteria in Section 3.
 
-**Severability.** Invalid provisions will be modified to the minimum extent necessary.
+### 9.5 Survival
 
-**Notices.** All notices must be in writing and sent to the addresses specified in the SOW.
+Sections 5 (Intellectual Property), 6 (Pre-existing IP Schedule), 7 (Confidentiality), 8 (Non-Solicitation), 9.4 (Payment on Termination), 10 (Liability), 12 (Representations and Warranties), and 13 (General Provisions) survive termination or expiration of this Agreement.
+
+## 10. Liability and Indemnification
+
+### 10.1 General Liability Cap
+
+Each party\u2019s total aggregate liability to the other for all claims arising under or related to this Agreement is limited to **two times (2\u00d7) the total compensation** paid or payable under all active SOWs in the 12-month period preceding the claim.
+
+### 10.2 Super-Cap Carve-outs
+
+The general cap in Section 10.1 does not apply to the following categories of liability, which are subject to higher caps or are uncapped:
+
+| Category | Cap |
+|---|---|
+| Breach of IP obligations (Section 5) | 3\u00d7 total contract value |
+| Breach of confidentiality (Section 7) | 3\u00d7 total contract value |
+| Intentional misconduct or fraud | Uncapped |
+| Third-party IP infringement indemnification | Uncapped |
+
+### 10.3 Exclusion of Consequential Damages
+
+Neither party is liable to the other for indirect, incidental, special, consequential, exemplary, or punitive damages, including lost profits, loss of data, or loss of goodwill, even if advised of the possibility of such damages. This exclusion does not apply to damages arising from fraud, willful misconduct, or breach of confidentiality obligations.
+
+### 10.4 Indemnification
+
+Each party (\u201CIndemnifying Party\u201D) will defend, indemnify, and hold harmless the other party (\u201CIndemnified Party\u201D) from and against any third-party claims, damages, losses, and expenses (including reasonable attorneys\u2019 fees) arising from: (a) the Indemnifying Party\u2019s breach of this Agreement; (b) the Indemnifying Party\u2019s gross negligence or willful misconduct; or (c) in the case of the Contractor, any claim that Deliverable Work Product infringes a third party\u2019s intellectual property rights.
+
+The Indemnified Party will: (i) promptly notify the Indemnifying Party of any claim; (ii) give the Indemnifying Party sole control of the defense and settlement; and (iii) cooperate reasonably in the defense. The Indemnifying Party will not settle any claim that imposes liability or obligation on the Indemnified Party without prior written consent.
+
+## 11. Dispute Resolution
+
+### 11.1 Informal Resolution
+
+Before initiating any formal dispute process, the parties agree to make a good faith effort to resolve any dispute through direct negotiation. Either party may initiate this process by sending written notice describing the dispute. The parties will meet (in person, by phone, or by video) within 15 business days.
+
+### 11.2 Mediation
+
+If informal resolution fails within 30 days, either party may escalate to non-binding mediation administered by JAMS (or a mutually agreed mediator). Each party bears its own costs; JAMS fees are split equally. Mediation is a prerequisite to arbitration except for injunctive relief.
+
+### 11.3 Arbitration
+
+Any dispute not resolved by mediation will be finally resolved by binding arbitration under JAMS Comprehensive Arbitration Rules. The arbitration will be: (a) conducted by a single arbitrator unless the amount in controversy exceeds $500,000, in which case a three-arbitrator panel; (b) held in [City, State] or by videoconference; (c) conducted in English; and (d) subject to confidentiality obligations on both parties.
+
+The arbitrator may award any remedy available in court. Judgment on the award may be entered in any court of competent jurisdiction.
+
+### 11.4 Exception \u2014 Injunctive Relief
+
+Either party may seek emergency injunctive or other equitable relief from a court of competent jurisdiction to prevent irreparable harm pending resolution of a dispute, without waiving the right to arbitration.
+
+### 11.5 Class Action Waiver
+
+All disputes will be resolved on an individual basis. Neither party may bring claims as a plaintiff or class member in any class, consolidated, or representative action.
+
+## 12. Representations and Warranties
+
+Each party represents and warrants to the other that: (a) it has full power and authority to enter into and perform this Agreement; (b) this Agreement does not conflict with any other agreement by which it is bound; and (c) it will comply with all applicable laws in performing its obligations.
+
+The Contractor additionally represents and warrants that:
+- All Deliverable Work Product is and will be original work by the Contractor or properly licensed third-party materials identified in Section 6;
+- Deliverable Work Product will not infringe any third party\u2019s copyright, patent, trademark, or trade secret rights;
+- Deliverable Work Product will not contain any malicious code, undisclosed back doors, or tracking mechanisms;
+- The Contractor is not subject to any restrictive covenant (non-compete, IP assignment, or similar) that would conflict with this Agreement.
+
+EXCEPT AS EXPRESSLY STATED IN THIS AGREEMENT, NEITHER PARTY MAKES ANY WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+## 13. General Provisions
+
+**Governing Law.** This Agreement is governed by the laws of the State of [State], without regard to conflict of laws principles. The parties consent to the exclusive jurisdiction of the state and federal courts located in [County, State] for any court proceedings permitted under this Agreement.
+
+**Entire Agreement.** This Agreement and its SOWs constitute the entire agreement between the parties regarding their subject matter and supersede all prior agreements, representations, and understandings.
+
+**Amendments.** This Agreement may only be amended by a written instrument signed by authorized representatives of both parties.
+
+**Severability.** If any provision is found unenforceable, it will be modified to the minimum extent necessary to make it enforceable. The remaining provisions remain in full force.
+
+**No Waiver.** A party\u2019s failure to enforce any right does not constitute a waiver of that right.
+
+**Notices.** All notices must be in writing and delivered by email (with read receipt or written confirmation) or overnight courier to the addresses specified in the applicable SOW.
+
+**Force Majeure.** Neither party is liable for delays caused by circumstances beyond its reasonable control, provided the affected party gives prompt notice and uses reasonable efforts to resume performance.
+
+**Assignment.** The Contractor may not assign this Agreement or any rights under it without prior written consent. The Company may assign this Agreement in connection with a merger, acquisition, or sale of substantially all assets, with notice to the Contractor.
+
+**Counterparts.** This Agreement may be executed in counterparts, including electronic counterparts, each of which is an original and together constitute a single instrument.
 
 ---
 
@@ -1907,5 +2347,5 @@ The Contractor represents and warrants that:
 ---
 
 *Prepared by Lavern \u2014 Multi-Agent Legal Design System*
-*This document was produced with AI assistance. It does not constitute legal advice. Always verify with qualified legal professionals.*
+*This document was produced with AI assistance and reviewed by multi-agent verification. It does not constitute legal advice. For matters involving IP ownership, worker classification, or any binding contractual obligation, please verify with qualified legal professionals.*
 `;

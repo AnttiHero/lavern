@@ -1,8 +1,8 @@
 /**
- * LoadingW — Animated Lavern "W" loading indicator.
+ * LoadingW — Animated Lavern "L" loading indicator.
  *
- * A pulsating serif "W" with a breathing glow. Used as the loading
- * state across all views. The W scales gently and its opacity
+ * A pulsating serif "L" with a breathing glow. Used as the loading
+ * state across all views. The L scales gently and its opacity
  * breathes — alive, not spinning.
  */
 
@@ -27,7 +27,7 @@ export function LoadingW({ text, size = 64 }: LoadingWProps) {
       backgroundColor: '#FAF9F6',
       gap: 16,
     }}>
-      {/* The W */}
+      {/* The L */}
       <div style={{
         fontFamily: fonts.serif,
         fontSize: size,
@@ -37,7 +37,7 @@ export function LoadingW({ text, size = 64 }: LoadingWProps) {
         userSelect: 'none',
         animation: 'lavernLoadBreath 2.4s ease-in-out infinite',
       }}>
-        W
+        L
       </div>
 
       {/* Optional label */}

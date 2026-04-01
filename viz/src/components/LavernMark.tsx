@@ -1,7 +1,7 @@
 /**
- * LavernMark — The Lavern "W" logo.
+ * LavernMark — The Lavern "L" mark.
  *
- * A single serif "W" rendered in Cormorant Garamond.
+ * A single serif "L" rendered in Cormorant Garamond.
  * Appears in the upper-left corner of every page.
  * Clicking navigates home (landing page).
  */
@@ -62,7 +62,7 @@ export function LavernMark({ size = 28, onClick, hideCursor }: LavernMarkProps) 
       }}
       aria-label="Lavern — Home"
     >
-      W
+      L
     </button>
   );
 }

@@ -366,6 +366,7 @@ const sty: Record<string, React.CSSProperties> = {
   },
   table: {
     width: '100%',
+    minWidth: 'max-content' as const,
     borderCollapse: 'collapse' as const,
     fontSize: 12,
     fontFamily: fonts.sans,

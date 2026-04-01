@@ -1202,9 +1202,9 @@ export function useDemoSimulator({ sessionId, teamRoles, onEvent }: DemoSimulato
     let script: Array<{ delayMs: number; event: ShemEvent }>;
     if (sessionId.includes('heartconnect')) {
       script = buildHeartConnectDemoScript();
-    } else if (sessionId.includes('healthprivacy')) {
+    } else if (sessionId.includes('medivault') || sessionId.includes('healthprivacy')) {
       script = buildHealthPrivacyDemoScript();
-    } else if (sessionId.includes('devcontract')) {
+    } else if (sessionId.includes('cloudmsa') || sessionId.includes('devcontract')) {
       script = buildDevContractDemoScript();
     } else {
       script = buildDemoScript(teamRoles);

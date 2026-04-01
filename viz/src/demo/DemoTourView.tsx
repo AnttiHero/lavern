@@ -580,41 +580,91 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
     }}>
-      {/* Avatar */}
+      {/* Mic + Avatar row */}
       <div style={{
-        position: 'relative', marginBottom: 20,
+        display: 'flex', alignItems: 'center', gap: isMobile ? 28 : 40,
+        marginBottom: 20,
         animation: 'dUp .5s ease .05s both',
       }}>
-        {/* Pulse rings */}
-        {phase >= 1 && phase < 4 && [1, 2].map(i => (
-          <div key={i} style={{
-            position: 'absolute', inset: -i * 14,
-            borderRadius: '50%',
-            border: '1px solid rgba(250,249,246,.12)',
-            animation: `dPulse ${1.4 + i * 0.3}s ease ${i * 0.2}s infinite`,
-          }} />
-        ))}
-        <div style={{
-          width: 96, height: 96, borderRadius: '50%',
-          overflow: 'hidden', background: 'rgba(250,249,246,.06)',
-          border: '1.5px solid rgba(250,249,246,.14)',
-          boxShadow: phase >= 1 ? '0 0 40px rgba(250,249,246,.08)' : 'none',
-          transition: 'box-shadow .5s ease',
-        }}>
-          <img src={av('Catherine Blackwell', 120)} alt="Catherine Blackwell" width={96} height={96} style={{ display: 'block' }} />
+        {/* Big microphone */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Pulse rings on mic when active */}
+          {phase >= 1 && phase < 4 && [1, 2].map(i => (
+            <div key={i} style={{
+              position: 'absolute',
+              width: 96 + i * 32, height: 96 + i * 32,
+              borderRadius: '50%',
+              border: `1px solid rgba(250,249,246,${0.1 - i * 0.03})`,
+              animation: `dPulse ${1.4 + i * 0.3}s ease ${i * 0.2}s infinite`,
+              pointerEvents: 'none',
+            }} />
+          ))}
+          <div style={{
+            width: 96, height: 96, borderRadius: '50%',
+            background: phase >= 1 && phase < 4 ? 'rgba(250,249,246,.1)' : 'rgba(250,249,246,.04)',
+            border: `1.5px solid rgba(250,249,246,${phase >= 1 ? '.22' : '.1'})`,
+            boxShadow: phase >= 1 && phase < 4 ? '0 0 60px rgba(250,249,246,.14)' : 'none',
+            transition: 'all .6s ease',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="34" height="48" viewBox="0 0 34 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="9" y="2" width="16" height="26" rx="8"
+                stroke={`rgba(250,249,246,${phase >= 1 ? '0.9' : '0.45'})`}
+                strokeWidth="2"
+                fill={phase >= 1 && phase < 4 ? 'rgba(250,249,246,0.08)' : 'none'}
+                style={{ transition: 'all .5s ease' }}
+              />
+              <path d="M3 22 Q3 36 17 36 Q31 36 31 22"
+                stroke={`rgba(250,249,246,${phase >= 1 ? '0.7' : '0.3'})`}
+                strokeWidth="2" fill="none" strokeLinecap="round"
+                style={{ transition: 'all .5s ease' }}
+              />
+              <line x1="17" y1="36" x2="17" y2="44"
+                stroke={`rgba(250,249,246,${phase >= 1 ? '0.7' : '0.3'})`}
+                strokeWidth="2" strokeLinecap="round"
+                style={{ transition: 'all .5s ease' }}
+              />
+              <line x1="10" y1="44" x2="24" y2="44"
+                stroke={`rgba(250,249,246,${phase >= 1 ? '0.7' : '0.3'})`}
+                strokeWidth="2" strokeLinecap="round"
+                style={{ transition: 'all .5s ease' }}
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Avatar */}
+        <div style={{ position: 'relative' }}>
+          {phase >= 1 && phase < 4 && [1, 2].map(i => (
+            <div key={i} style={{
+              position: 'absolute', inset: -i * 14,
+              borderRadius: '50%',
+              border: '1px solid rgba(250,249,246,.1)',
+              animation: `dPulse ${1.5 + i * 0.3}s ease ${i * 0.25}s infinite`,
+            }} />
+          ))}
+          <div style={{
+            width: 96, height: 96, borderRadius: '50%',
+            overflow: 'hidden', background: 'rgba(250,249,246,.06)',
+            border: '1.5px solid rgba(250,249,246,.14)',
+            boxShadow: phase >= 1 ? '0 0 40px rgba(250,249,246,.08)' : 'none',
+            transition: 'box-shadow .5s ease',
+          }}>
+            <img src={av('Catherine Blackwell', 120)} alt="Catherine Blackwell" width={96} height={96} style={{ display: 'block' }} />
+          </div>
         </div>
       </div>
 
       <div style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: CREAM, letterSpacing: 1, marginBottom: 4, animation: 'dUp .5s ease .15s both' }}>
         Catherine Blackwell
       </div>
-      <div style={{ fontFamily: SANS, fontSize: 10, color: 'rgba(250,249,246,.35)', letterSpacing: .5, marginBottom: 36, animation: 'dUp .5s ease .2s both' }}>
+      <div style={{ fontFamily: SANS, fontSize: 10, color: 'rgba(250,249,246,.35)', letterSpacing: .5, marginBottom: 32, animation: 'dUp .5s ease .2s both' }}>
         Managing Partner
       </div>
 
       {/* Waveform */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 3, height: 36, marginBottom: 32,
+        display: 'flex', alignItems: 'center', gap: 3, height: 36, marginBottom: 28,
         animation: 'dIn .4s ease .3s both',
       }}>
         {BARS.map((h, i) => (
@@ -956,7 +1006,7 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(250,249,246,.12)';
           }}
         >
-          See the agents work
+          Create your own agents
         </button>
       }
     >
@@ -1105,194 +1155,280 @@ function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
   );
 }
 
-// ── Slide 4 — Clawern Reveal ──────────────────────────────────────────────
+// ── Slide 5 — Clawern Reveal ──────────────────────────────────────────────
 const TERM_LINES: Record<CaseId, { delay: number; text: string; col: string }[]> = {
   heartconnect: [
-    { delay: 600,  text: '⚙  Daemon started  ·  PID 42847', col: 'rgba(250,249,246,.7)' },
-    { delay: 1500, text: '📁  Watching ~/Documents/Contracts/', col: 'rgba(250,249,246,.7)' },
-    { delay: 2400, text: '📄  heartconnect-tos-v3.pdf detected', col: 'rgba(250,249,246,.7)' },
-    { delay: 3400, text: '🤖  Dispatching 5 agents…', col: 'rgba(250,249,246,.7)' },
-    { delay: 4500, text: '⚠️  CRITICAL: GDPR consent bundling — Section 4.1', col: '#FF6B6B' },
-    { delay: 5200, text: '⚖️  Debate resolved  ·  0.94 confidence', col: '#74C0FC' },
-    { delay: 6000, text: '✅  Delivered  ·  $4.20  ·  3 findings', col: '#69DB7C' },
-    { delay: 7000, text: '💡  Precedent learned: "GDPR Consent Bundling"', col: 'rgba(250,249,246,.45)' },
+    { delay: 400,  text: '⚙  Daemon started  ·  PID 42847  ·  11:02 PM', col: 'rgba(250,249,246,.55)' },
+    { delay: 1100, text: '📁  Watching  ~/Documents/Contracts/', col: 'rgba(250,249,246,.55)' },
+    { delay: 1900, text: '📄  heartconnect-tos-v3.pdf  ·  218 KB  ·  queued', col: 'rgba(250,249,246,.7)' },
+    { delay: 2700, text: '🤖  Privacy Counsel, Red Teamer, Regulatory +2 dispatched', col: 'rgba(250,249,246,.55)' },
+    { delay: 3800, text: '⚠️  RED  GDPR Art. 7 — consent bundled with ToS acceptance', col: '#FF6B6B' },
+    { delay: 4600, text: '⚠️  RED  Age verification — self-certification insufficient', col: '#FF6B6B' },
+    { delay: 5300, text: '⚖️  2 debates resolved  ·  avg confidence 0.94', col: '#74C0FC' },
+    { delay: 6100, text: '✅  Delivered  ·  $4.20  ·  3 findings  ·  11:54 PM', col: '#69DB7C' },
+    { delay: 7000, text: '📱  Telegram sent  →  "3 critical issues found in HeartConnect ToS"', col: 'rgba(250,249,246,.38)' },
+    { delay: 7900, text: '💾  Precedent indexed  "GDPR Consent Bundling"', col: 'rgba(250,249,246,.28)' },
   ],
   medivault: [
-    { delay: 600,  text: '⚙  Daemon started  ·  PID 38291', col: 'rgba(250,249,246,.7)' },
-    { delay: 1500, text: '📁  Watching ~/Documents/Legal/', col: 'rgba(250,249,246,.7)' },
-    { delay: 2400, text: '📄  medivault-privacy-policy.pdf detected', col: 'rgba(250,249,246,.7)' },
-    { delay: 3400, text: '🤖  Dispatching 5 agents…', col: 'rgba(250,249,246,.7)' },
-    { delay: 4500, text: '⚠️  CRITICAL: HIPAA §164.308 — third-party gap', col: '#FF6B6B' },
-    { delay: 5200, text: '⚖️  Debate resolved  ·  0.96 confidence', col: '#74C0FC' },
-    { delay: 6000, text: '✅  Delivered  ·  $3.80  ·  3 findings', col: '#69DB7C' },
-    { delay: 7000, text: '💡  Precedent learned: "HIPAA Third-Party Risk"', col: 'rgba(250,249,246,.45)' },
+    { delay: 400,  text: '⚙  Daemon started  ·  PID 38291  ·  11:14 PM', col: 'rgba(250,249,246,.55)' },
+    { delay: 1100, text: '📁  Watching  ~/Documents/Legal/', col: 'rgba(250,249,246,.55)' },
+    { delay: 1900, text: '📄  medivault-privacy-policy-v2.pdf  ·  94 KB  ·  queued', col: 'rgba(250,249,246,.7)' },
+    { delay: 2700, text: '🤖  Privacy Counsel, Compliance Officer, HIPAA Specialist +3 dispatched', col: 'rgba(250,249,246,.55)' },
+    { delay: 3800, text: '⚠️  RED  HIPAA §164.308 — third-party safeguard agreement missing', col: '#FF6B6B' },
+    { delay: 4600, text: '⚠️  RED  GDPR cross-border transfers — SCC basis undocumented', col: '#FF6B6B' },
+    { delay: 5300, text: '⚖️  2 debates resolved  ·  avg confidence 0.95', col: '#74C0FC' },
+    { delay: 6100, text: '✅  Delivered  ·  $3.80  ·  4 findings  ·  12:01 AM', col: '#69DB7C' },
+    { delay: 7000, text: '📱  Telegram sent  →  "HIPAA gap + GDPR transfer risk in MediVault"', col: 'rgba(250,249,246,.38)' },
+    { delay: 7900, text: '💾  Precedent indexed  "HIPAA Third-Party Risk"', col: 'rgba(250,249,246,.28)' },
   ],
   cloudmsa: [
-    { delay: 600,  text: '⚙  Daemon started  ·  PID 42847', col: 'rgba(250,249,246,.7)' },
-    { delay: 1500, text: '📁  Watching ~/Documents/Contracts/', col: 'rgba(250,249,246,.7)' },
-    { delay: 2400, text: '📄  cloud-services-msa.pdf detected', col: 'rgba(250,249,246,.7)' },
-    { delay: 3400, text: '🤖  Dispatching 4 agents…', col: 'rgba(250,249,246,.7)' },
-    { delay: 4500, text: '⚠️  CRITICAL: Unlimited liability — Section 8.2', col: '#FF6B6B' },
-    { delay: 5200, text: '⚖️  Debate resolved  ·  0.91 confidence', col: '#74C0FC' },
-    { delay: 6000, text: '✅  Delivered  ·  $3.40  ·  2 critical findings', col: '#69DB7C' },
-    { delay: 7000, text: '💡  Precedent learned: "Unlimited Indemnification"', col: 'rgba(250,249,246,.45)' },
+    { delay: 400,  text: '⚙  Daemon started  ·  PID 51204  ·  11:31 PM', col: 'rgba(250,249,246,.55)' },
+    { delay: 1100, text: '📁  Watching  ~/Documents/Contracts/', col: 'rgba(250,249,246,.55)' },
+    { delay: 1900, text: '📄  cloud-services-msa-draft.pdf  ·  312 KB  ·  queued', col: 'rgba(250,249,246,.7)' },
+    { delay: 2700, text: '🤖  Contract Reviewer, Red Teamer, IP Counsel +1 dispatched', col: 'rgba(250,249,246,.55)' },
+    { delay: 3800, text: '⚠️  RED  Unlimited liability — Section 8.2  (sign Friday — flag now)', col: '#FF6B6B' },
+    { delay: 4600, text: '⚠️  YELLOW  Indemnity scope ambiguous — counterparty could read broadly', col: '#FEBC2E' },
+    { delay: 5300, text: '⚖️  1 debate resolved  ·  confidence 0.91', col: '#74C0FC' },
+    { delay: 6100, text: '✅  Delivered  ·  $3.40  ·  2 critical findings  ·  12:08 AM', col: '#69DB7C' },
+    { delay: 7000, text: '📱  Telegram sent  →  "Unlimited liability in CloudMSA — do NOT sign yet"', col: 'rgba(250,249,246,.38)' },
+    { delay: 7900, text: '💾  Precedent indexed  "Unlimited Indemnification"', col: 'rgba(250,249,246,.28)' },
   ],
 };
+
+const CLAW_BUDGET: Record<CaseId, { cost: string; hours: string; pct: string }> = {
+  heartconnect: { cost: '$4.20', hours: '4.6h / 50h', pct: '9.2%' },
+  medivault:    { cost: '$3.80', hours: '3.8h / 50h', pct: '7.6%' },
+  cloudmsa:     { cost: '$3.40', hours: '3.4h / 50h', pct: '6.8%' },
+};
+
+const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E")`;
 
 function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: CaseId; onExit: () => void }) {
   const c = CASE_CONTENT[caseId];
   const termLines = TERM_LINES[caseId];
-  const [lines, setLines] = useState<number[]>([]);
+  const budget = CLAW_BUDGET[caseId];
+  const [visibleLines, setVisibleLines] = useState<number[]>([]);
+  const [showNotification, setShowNotification] = useState(false);
   const [showCTA, setShowCTA] = useState(false);
 
   useEffect(() => {
-    const ts = termLines.map((l, i) => setTimeout(() => setLines(v => [...v, i]), l.delay));
-    const ctaT = setTimeout(() => setShowCTA(true), 8200);
-    return () => [...ts, ctaT].forEach(clearTimeout);
-  }, []);
+    const ts = termLines.map((l, i) =>
+      setTimeout(() => setVisibleLines(v => [...v, i]), l.delay)
+    );
+    const notifT = setTimeout(() => setShowNotification(true), 6400);
+    const ctaT   = setTimeout(() => setShowCTA(true), 8400);
+    return () => [...ts, notifT, ctaT].forEach(clearTimeout);
+  }, [caseId]);
 
+  const terminalPanel = (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, animation: 'dUp .6s ease .5s both' }}>
+      {/* Terminal window */}
+      <div style={{
+        background: 'rgba(0,0,0,.72)', border: '1px solid rgba(255,255,255,.1)',
+        borderRadius: 12, padding: '14px 18px',
+        fontFamily: MONO, fontSize: isMobile ? 10.5 : 12,
+        backdropFilter: 'blur(8px)',
+      }}>
+        {/* macOS title bar */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+          {['#FF5F57','#FEBC2E','#28C840'].map(col => (
+            <div key={col} style={{ width: 10, height: 10, borderRadius: '50%', background: col, opacity: .8 }} />
+          ))}
+          <span style={{ marginLeft: 8, fontSize: 10, color: 'rgba(255,255,255,.22)', letterSpacing: 1 }}>lavern claw — live</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 5, alignItems: 'center', fontFamily: SANS, fontSize: 9, color: '#69DB7C' }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#69DB7C', display: 'inline-block', animation: 'dPulse 1.5s ease infinite' }} />
+            Running
+          </div>
+        </div>
+
+        {/* Log lines */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, minHeight: isMobile ? 80 : 120 }}>
+          {termLines.map((l, i) =>
+            visibleLines.includes(i) ? (
+              <div key={i} style={{ color: l.col, animation: 'dTermLine .2s ease both', lineHeight: 1.55, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {l.text}
+              </div>
+            ) : null
+          )}
+        </div>
+
+        {/* Budget gauge */}
+        <div style={{
+          marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.06)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          opacity: visibleLines.length >= 4 ? 1 : 0,
+          transition: 'opacity .6s ease',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: SANS }}>Monthly budget</span>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ width: 120, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.07)' }}>
+                <div style={{
+                  height: '100%',
+                  borderRadius: 2,
+                  background: 'linear-gradient(90deg, #69DB7C, #40C057)',
+                  width: visibleLines.length >= 8 ? budget.pct : '0%',
+                  transition: 'width 1s ease .3s',
+                }} />
+              </div>
+              <span style={{ fontSize: 10, color: 'rgba(250,249,246,.4)', fontFamily: SANS }}>{budget.hours}</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: SERIF, fontSize: 20, color: '#69DB7C', lineHeight: 1 }}>{budget.cost}</div>
+            <div style={{ fontFamily: SANS, fontSize: 9, color: 'rgba(250,249,246,.28)', letterSpacing: 1 }}>this document</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Telegram notification card */}
+      <div style={{
+        background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)',
+        borderRadius: 12, padding: '12px 16px',
+        display: 'flex', alignItems: 'flex-start', gap: 12,
+        opacity: showNotification ? 1 : 0,
+        transform: showNotification ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity .5s ease, transform .5s ease',
+        backdropFilter: 'blur(8px)',
+      }}>
+        <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>📱</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: SANS, fontSize: 10, fontWeight: 600, color: 'rgba(250,249,246,.6)', letterSpacing: 0.5, marginBottom: 4 }}>
+            Clawern → Telegram  ·  {caseId === 'heartconnect' ? '11:54 PM' : caseId === 'medivault' ? '12:01 AM' : '12:08 AM'}
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.85)', lineHeight: 1.45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {caseId === 'heartconnect' && '"3 critical issues in HeartConnect ToS — GDPR, age verification, transparency"'}
+            {caseId === 'medivault'    && '"HIPAA third-party gap + undocumented GDPR transfer basis in MediVault"'}
+            {caseId === 'cloudmsa'     && '"Unlimited liability in CloudMSA Section 8.2 — do NOT sign until reviewed"'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── Mobile ─────────────────────────────────────────────────────── */
+  if (isMobile) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%', backgroundImage: GRAIN_SVG, opacity: 0.5, animation: 'dGrain 0.5s steps(1) infinite', pointerEvents: 'none', zIndex: 2 }} />
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, overflowY: 'auto', padding: '68px 22px 80px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Narration */}
+          <div style={{ animation: 'dUp .5s ease .1s both' }}>
+            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12, animation: 'dCrab 3s ease infinite' }}>🦀</div>
+            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,52px)', fontWeight: 300, lineHeight: 1.0, letterSpacing: -1.5, color: CREAM, margin: '0 0 14px', animation: 'dReveal .8s ease .3s both' }}>
+              While you<br />sleep.
+            </h2>
+            <p style={{ fontFamily: SANS, fontSize: 14, color: 'rgba(250,249,246,.45)', lineHeight: 1.65, margin: '0 0 20px', animation: 'dIn .6s ease .5s both' }}>
+              Clawern monitors your folders overnight. Drop a contract at 11pm — findings, diffs, and a Telegram message by morning.
+            </p>
+            <div style={{
+              opacity: showCTA ? 1 : 0,
+              transform: showCTA ? 'translateY(0)' : 'translateY(10px)',
+              transition: 'opacity .5s ease, transform .5s ease',
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
+                style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', padding: '16px 32px', borderRadius: 100, background: CREAM, color: BG, border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(250,249,246,.15)' }}
+              >How Clawern works</button>
+              <button onClick={(e) => { e.stopPropagation(); onExit(); }}
+                style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', padding: '14px 32px', borderRadius: 100, background: 'transparent', color: CREAM, border: '1px solid rgba(250,249,246,.18)', cursor: 'pointer', opacity: .65 }}
+              >Start for free</button>
+            </div>
+          </div>
+          {terminalPanel}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Desktop — two-column Shell-style ───────────────────────────── */
   return (
     <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
-      {/* Grain overlay */}
-      <div style={{
-        position: 'absolute', inset: '-50%',
-        width: '200%', height: '200%',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.45'/%3E%3C/svg%3E")`,
-        opacity: 0.55,
-        animation: 'dGrain 0.5s steps(1) infinite',
-        pointerEvents: 'none', zIndex: 2,
-      }} />
+      {/* Grain */}
+      <div style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%', backgroundImage: GRAIN_SVG, opacity: 0.48, animation: 'dGrain 0.5s steps(1) infinite', pointerEvents: 'none', zIndex: 2 }} />
+      {/* Edge vignettes */}
+      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '25%', background: 'linear-gradient(to right, rgba(5,5,5,.6), transparent)', pointerEvents: 'none', zIndex: 3 }} />
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '20%', background: 'linear-gradient(to left, rgba(5,5,5,.4), transparent)', pointerEvents: 'none', zIndex: 3 }} />
 
-      {/* Vignette */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.7) 100%)',
-        pointerEvents: 'none', zIndex: 3,
-      }} />
+      {/* Two-column layout */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'grid', gridTemplateColumns: '42fr 58fr' }}>
 
-      {/* Content */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 10,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: isMobile ? '56px 22px 56px' : '64px 48px 64px',
-        gap: 0, overflowY: 'auto',
-      }}>
-        {/* Headline */}
-        <div style={{ textAlign: 'center', marginBottom: isMobile ? 18 : 28 }}>
-          <div style={{
-            fontSize: isMobile ? 60 : 88, lineHeight: 1,
-            animation: 'dCrab 3s ease infinite, dIn .8s ease .2s both',
-            display: 'inline-block', marginBottom: 14,
-          }}>🦀</div>
+        {/* Left — narration */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px 40px 80px 72px' }}>
+          <div style={{ fontSize: 30, lineHeight: 1, marginBottom: 18, animation: 'dCrab 3s ease infinite, dIn .6s ease .1s both', display: 'inline-block' }}>🦀</div>
           <h2 style={{
             fontFamily: SERIF,
-            fontSize: isMobile ? 'clamp(36px,8vw,48px)' : 'clamp(48px,5.5vw,78px)',
-            fontWeight: 300, lineHeight: 1.0, letterSpacing: -1.5,
-            color: CREAM, margin: '0 0 12px',
-            animation: 'dReveal .8s ease .4s both',
-          }}>While you sleep.</h2>
+            fontSize: 'clamp(52px,5.5vw,80px)',
+            fontWeight: 300, lineHeight: 0.97, letterSpacing: -2,
+            color: CREAM, margin: '0 0 22px',
+            animation: 'dReveal .9s ease .25s both',
+            textShadow: '0 2px 30px rgba(0,0,0,.8)',
+          }}>
+            While you<br />sleep.
+          </h2>
           <p style={{
-            fontFamily: SANS, fontSize: isMobile ? 13 : 16,
-            color: 'rgba(250,249,246,.4)',
-            maxWidth: 480, margin: '0 auto',
-            lineHeight: 1.55,
-            animation: 'dIn .6s ease .7s both',
+            fontFamily: SANS, fontSize: 15,
+            color: 'rgba(250,249,246,.42)',
+            maxWidth: 300, margin: '0 0 12px',
+            lineHeight: 1.7,
+            animation: 'dIn .7s ease .45s both',
           }}>
-            Clawern watches your folders overnight. Drop a contract in at 11pm.
-            By morning — findings, diffs, and a Telegram message. Tonight it delivered: <em>{c.deliverable}</em>.
+            Clawern monitors your folders. Drop a contract at 11pm — findings, diffs, and a Telegram by morning.
           </p>
-        </div>
-
-        {/* Terminal */}
-        <div style={{
-          width: '100%', maxWidth: 560,
-          background: 'rgba(0,0,0,.65)', border: '1px solid rgba(255,255,255,.09)',
-          borderRadius: 12, padding: '14px 18px',
-          fontFamily: MONO, fontSize: isMobile ? 11 : 12,
-          marginBottom: 20,
-          animation: 'dUp .5s ease .5s both',
-        }}>
-          {/* Title bar */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-            {['#FF5F57', '#FEBC2E', '#28C840'].map(c => (
-              <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: .75 }} />
-            ))}
-            <span style={{ marginLeft: 8, fontSize: 10, color: 'rgba(255,255,255,.2)', letterSpacing: 1 }}>lavern claw — live</span>
-            <div style={{
-              marginLeft: 'auto', display: 'flex', gap: 5, alignItems: 'center',
-              fontFamily: SANS, fontSize: 9, color: '#69DB7C',
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#69DB7C', display: 'inline-block', animation: 'dPulse 1.5s ease infinite' }} />
-              Running
-            </div>
-          </div>
-
-          {/* Log */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minHeight: 100 }}>
-            {termLines.map((l, i) =>
-              lines.includes(i) ? (
-                <div key={i} style={{ color: l.col, animation: 'dTermLine .22s ease both', lineHeight: 1.5 }}>
-                  {l.text}
-                </div>
-              ) : null
-            )}
-          </div>
-
-          {/* Budget gauge */}
-          <div style={{
-            marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.06)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            opacity: lines.length >= 4 ? 1 : 0,
-            transition: 'opacity .5s ease',
+          <p style={{
+            fontFamily: SANS, fontSize: 12,
+            color: 'rgba(250,249,246,.28)',
+            fontStyle: 'italic',
+            margin: '0 0 36px',
+            lineHeight: 1.6,
+            maxWidth: 300,
+            opacity: showNotification ? 1 : 0,
+            transition: 'opacity .6s ease',
           }}>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.28)', letterSpacing: 1 }}>Budget</span>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <div style={{ width: 90, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.08)' }}>
-                <div style={{ height: '100%', width: '9.2%', borderRadius: 2, background: '#69DB7C' }} />
-              </div>
-              <span style={{ fontSize: 10, color: 'rgba(250,249,246,.4)' }}>4.6h / 50h</span>
-            </div>
+            Tonight: <span style={{ color: 'rgba(250,249,246,.55)', fontStyle: 'normal' }}>{c.deliverable}</span>
+          </p>
+
+          {/* CTA buttons */}
+          <div style={{
+            opacity: showCTA ? 1 : 0,
+            transform: showCTA ? 'translateY(0)' : 'translateY(14px)',
+            transition: 'opacity .5s ease, transform .5s ease',
+            display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 260,
+          }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
+              style={{
+                fontFamily: SANS, fontSize: 11, fontWeight: 600,
+                letterSpacing: 3, textTransform: 'uppercase',
+                padding: '18px 36px', borderRadius: 100,
+                background: CREAM, color: BG, border: 'none', cursor: 'pointer',
+                boxShadow: '0 4px 30px rgba(250,249,246,.18)',
+                transition: 'transform .22s ease, box-shadow .22s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(250,249,246,.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 30px rgba(250,249,246,.18)'; }}
+            >How Clawern works</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onExit(); }}
+              style={{
+                fontFamily: SANS, fontSize: 11, fontWeight: 600,
+                letterSpacing: 3, textTransform: 'uppercase',
+                padding: '16px 36px', borderRadius: 100,
+                background: 'transparent', color: CREAM,
+                border: '1px solid rgba(250,249,246,.2)',
+                cursor: 'pointer', opacity: .6, transition: 'opacity .2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '.6'; }}
+            >Start for free</button>
           </div>
         </div>
 
-        {/* CTAs */}
-        <div style={{
-          display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center',
-          opacity: showCTA ? 1 : 0,
-          transform: showCTA ? 'translateY(0)' : 'translateY(16px)',
-          transition: 'opacity .5s ease, transform .5s ease',
-        }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html', '_blank'); }}
-            style={{
-              fontFamily: SANS, fontSize: 11, fontWeight: 600,
-              letterSpacing: 3, textTransform: 'uppercase',
-              padding: '16px 44px', borderRadius: 100,
-              background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-              transition: 'transform .22s ease, box-shadow .22s ease',
-              boxShadow: '0 4px 24px rgba(250,249,246,.14)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-          >
-            How Clawern works
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onExit(); }}
-            style={{
-              fontFamily: SANS, fontSize: 11, fontWeight: 600,
-              letterSpacing: 3, textTransform: 'uppercase',
-              padding: '16px 36px', borderRadius: 100,
-              background: 'transparent', color: CREAM,
-              border: '1px solid rgba(250,249,246,.18)',
-              cursor: 'pointer', opacity: .65, transition: 'opacity .2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = '.65'; }}
-          >
-            Start for free
-          </button>
+        {/* Right — terminal */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 72px 80px 24px' }}>
+          <div style={{ width: '100%', maxWidth: 500 }}>
+            {terminalPanel}
+          </div>
         </div>
       </div>
     </div>
