@@ -178,9 +178,6 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
             animation: 'foyerFade 0.8s ease 1.4s both',
           }}>
             <PrimaryButton onClick={onDemo ?? (() => {})}>Talk is cheap.</PrimaryButton>
-            <NavLink onClick={onLogin ?? (() => {})}>
-              <span style={{ fontStyle: 'italic', fontSize: 13, opacity: 0.35 }}>Already have an account?</span>
-            </NavLink>
           </div>
         )}
       </div>

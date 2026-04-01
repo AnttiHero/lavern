@@ -18,6 +18,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
+import { CardRevealOverlay } from '../agent-builder/components/CardRevealOverlay.js';
+import type { AgentProfile } from '../types/agent-profile.js';
 
 // ── DiceBear avatar URL ────────────────────────────────────────────────────
 function av(seed: string, size = 80): string {
@@ -44,9 +46,9 @@ const CAT: Record<string, string> = {
 };
 
 // ── Slide durations (ms). 0 = wait for user interaction. ──────────────────
-// 0=case(click), 1=partner(auto after memo), 2=team, 3=builder(CTA), 4=clawern(post-delivery)
-const DURATIONS = [0, 0, 8000, 0, 0];
-const TOTAL = 5;
+// 0=case(click), 1=partner(CTA), 2=voice(CTA), 3=team(CTA), 4=builder(CTA), 5=clawern(post-delivery)
+const DURATIONS = [0, 0, 0, 0, 0, 0];
+const TOTAL = 6;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export type CaseId = 'heartconnect' | 'medivault' | 'cloudmsa';
@@ -67,12 +69,12 @@ function useMount() {
 export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
   const isMobile = useMediaQuery('mobile');
 
-  // Detect resume from delivery view (shem-demo-resume → skip to slide 4 = Clawern)
+  // Detect resume from delivery view (shem-demo-resume → skip to slide 5 = Clawern)
   const initialSlide = (() => {
     const resume = sessionStorage.getItem('shem-demo-resume');
     if (resume === 'clawern') {
       sessionStorage.removeItem('shem-demo-resume');
-      return 4;
+      return 5;
     }
     return 0;
   })();
@@ -99,8 +101,8 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
           setVisible(true);
           return prev; // stay on last slide (Clawern)
         }
-        // After slide 3 (builder) → launch real demo; slide 4 = Clawern shown post-delivery
-        if (next === 4) {
+        // After slide 4 (builder) → launch real demo; slide 5 = Clawern shown post-delivery
+        if (next === 5) {
           onLaunchDemo(selectedCase);
           advancingRef.current = false;
           setVisible(true);
@@ -125,7 +127,7 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
   // Keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'ArrowRight' || e.key === ' ') && slide > 0 && slide < 4) {
+      if ((e.key === 'ArrowRight' || e.key === ' ') && slide > 0 && slide < 5) {
         e.preventDefault();
         advance(true);
       }
@@ -163,15 +165,16 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
         transition: 'opacity 0.3s ease, transform 0.3s ease',
       }}>
         {slide === 0 && <S0Case isMobile={isMobile} selected={selectedCase} onPick={pickCase} onContinue={() => advance(true)} />}
-        {slide === 1 && <S1Partner isMobile={isMobile} onContinue={() => advance(true)} />}
-        {slide === 2 && <S2Team isMobile={isMobile} />}
-        {slide === 3 && <S3Builder isMobile={isMobile} onLaunch={() => advance(true)} />}
-        {slide === 4 && <S4Clawern isMobile={isMobile} onExit={onExit} />}
+        {slide === 1 && <S1Partner isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 2 && <S2Voice isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 3 && <S3Team isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 4 && <S4Builder isMobile={isMobile} onLaunch={() => advance(true)} />}
+        {slide === 5 && <S5Clawern isMobile={isMobile} caseId={selectedCase} onExit={onExit} />}
       </div>
 
-      {/* Dots + progress — only on slides 0-3 */}
-      {slide < 4 && (
-        <BottomBar slide={slide} total={4} goTo={goTo} progKey={progKey} duration={DURATIONS[slide]} isMobile={isMobile} />
+      {/* Dots + progress — only on slides 0-4 */}
+      {slide < 5 && (
+        <BottomBar slide={slide} total={5} goTo={goTo} progKey={progKey} duration={DURATIONS[slide]} isMobile={isMobile} />
       )}
 
       <style>{`
@@ -206,9 +209,9 @@ function TopBar({ isMobile, slide, onExit }: { isMobile: boolean; slide: number;
         LAVERN
       </span>
       <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-        {slide > 0 && slide < 4 && (
+        {slide > 0 && slide < 5 && (
           <span style={{ fontFamily: SANS, fontSize: 10, color: CREAM, opacity: 0.25, letterSpacing: 1 }}>
-            {slide} / 3
+            {slide} / 4
           </span>
         )}
         <button onClick={onExit} style={{
@@ -259,24 +262,33 @@ function BottomBar({ slide, total, goTo, progKey, duration, isMobile }: {
 
 // ── Shell — left narration + right mockup ─────────────────────────────────
 function Shell({
-  isMobile, headline, sub, children, footer,
+  isMobile, headline, sub, children, footer, light,
 }: {
   isMobile: boolean;
   headline: React.ReactNode;
   sub: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  light?: boolean;
 }) {
+  const headlineColor   = light ? TEXT : CREAM;
+  const headlineShadow  = light ? 'none' : '0 2px 24px rgba(0,0,0,.9), 0 0 60px rgba(0,0,0,.5)';
+  const subColor        = light ? 'rgba(26,26,26,.60)' : CREAM;
+  const subOpacity      = light ? 1 : 0.88;
+  const dividerColor    = light ? 'rgba(26,26,26,0.07)' : 'rgba(255,255,255,0.04)';
+  const bgOverlay       = light ? CREAM : 'transparent';
+
   if (isMobile) {
     return (
       <div style={{
         position: 'absolute', inset: 0, overflowY: 'auto',
         display: 'flex', flexDirection: 'column',
         padding: '68px 22px 80px', gap: 0,
+        background: bgOverlay,
       }}>
         <div style={{ marginBottom: 22, animation: 'dUp .5s ease .05s both' }}>
-          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(36px,10vw,52px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -1, color: CREAM, margin: '0 0 12px' }}>{headline}</h2>
-          <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.42)', margin: 0, lineHeight: 1.6, animation: 'dIn .5s ease .25s both' }}>{sub}</p>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,56px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -1, color: headlineColor, margin: '0 0 14px', textShadow: headlineShadow }}>{headline}</h2>
+          <p style={{ fontFamily: SANS, fontSize: 16, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, animation: 'dIn .5s ease .25s both' }}>{sub}</p>
           {footer && <div style={{ marginTop: 22 }}>{footer}</div>}
         </div>
         <div style={{ animation: 'dUp .5s ease .4s both', flex: 1 }}>{children}</div>
@@ -284,16 +296,16 @@ function Shell({
     );
   }
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '40fr 60fr' }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '40fr 60fr', background: bgOverlay }}>
       {/* Left */}
       <div style={{
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         padding: '96px 44px 96px 64px',
-        borderRight: '1px solid rgba(255,255,255,0.04)',
+        borderRight: `1px solid ${dividerColor}`,
         animation: 'dUp .5s ease .05s both',
       }}>
-        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(42px,4.2vw,68px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -1.5, color: CREAM, margin: '0 0 16px' }}>{headline}</h2>
-        <p style={{ fontFamily: SANS, fontSize: 15, color: 'rgba(250,249,246,.42)', margin: 0, lineHeight: 1.65, maxWidth: 330, animation: 'dIn .5s ease .2s both' }}>{sub}</p>
+        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(52px,5.2vw,84px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -2, color: headlineColor, margin: '0 0 20px', textShadow: headlineShadow }}>{headline}</h2>
+        <p style={{ fontFamily: SANS, fontSize: 17, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, maxWidth: 340, animation: 'dIn .5s ease .2s both' }}>{sub}</p>
         {footer && <div style={{ marginTop: 36, animation: 'dIn .4s ease .35s both' }}>{footer}</div>}
       </div>
       {/* Right */}
@@ -307,6 +319,57 @@ function Shell({
     </div>
   );
 }
+
+// ── Case-specific content ─────────────────────────────────────────────────
+const CASE_CONTENT: Record<CaseId, {
+  userMsg: string;
+  partnerReply: string;
+  memo: { sev: 'RED' | 'YELLOW'; text: string }[];
+  voiceUser: string;
+  voiceReply: string;
+  teamTags: string[];
+  deliverable: string;
+}> = {
+  heartconnect: {
+    userMsg:      'HeartConnect — dating platform. Need Terms of Service reviewed before EU launch next month.',
+    partnerReply: "I'm flagging two pressure points immediately: GDPR consent bundling in your sign-up flow, and age verification gaps under the Digital Services Act. Give me a moment.",
+    memo: [
+      { sev: 'RED',    text: 'GDPR Art. 7 — consent bundled with acceptance' },
+      { sev: 'RED',    text: 'DSA Art. 28 — age verification gap' },
+      { sev: 'YELLOW', text: 'Algorithmic transparency — Section 7' },
+    ],
+    voiceUser:  '"HeartConnect. Terms of Service review. EU launch in 30 days."',
+    voiceReply: '"Terms of Service. Tight schedule. We are on it."',
+    teamTags:   ['GDPR', 'DSA', 'Consumer ToS'],
+    deliverable: 'Redesigned Terms of Service + compliance report',
+  },
+  medivault: {
+    userMsg:      'MediVault — health data app. Privacy policy needs review before Series B investor due diligence next week.',
+    partnerReply: "Two critical issues right away: HIPAA data handling gaps in your third-party sharing clause, and cross-border transfer restrictions under GDPR Article 46.",
+    memo: [
+      { sev: 'RED',    text: 'HIPAA §164.308 — third-party data handling' },
+      { sev: 'RED',    text: 'GDPR Art. 46 — cross-border transfer gap' },
+      { sev: 'YELLOW', text: 'Data retention — no deletion schedule defined' },
+    ],
+    voiceUser:  '"MediVault. Privacy policy. Series B due diligence next week."',
+    voiceReply: '"Privacy policy. Investor deadline. We are on it."',
+    teamTags:   ['HIPAA', 'GDPR', 'Privacy Policy'],
+    deliverable: 'Revised Privacy Policy + investor-ready compliance summary',
+  },
+  cloudmsa: {
+    userMsg:      'Cloud MSA — software services agreement. Unlimited liability clause needs attention before we sign on Friday.',
+    partnerReply: "The unlimited liability clause is the immediate show-stopper. There's also an ambiguous indemnity provision in Section 12 that could expose you significantly.",
+    memo: [
+      { sev: 'RED',    text: 'Section 8 — unlimited liability, no cap defined' },
+      { sev: 'RED',    text: 'Section 12 — indemnity scope ambiguous' },
+      { sev: 'YELLOW', text: 'SLA termination rights — cure period unclear' },
+    ],
+    voiceUser:  '"Cloud MSA. Unlimited liability clause. Need to sign Friday."',
+    voiceReply: '"Liability clause. Friday deadline. We are on it."',
+    teamTags:   ['Liability', 'SLA', 'Indemnity'],
+    deliverable: 'Redlined MSA + negotiation briefing',
+  },
+};
 
 // ── Slide 0 — Choose the case ─────────────────────────────────────────────
 const CASES = [
@@ -322,9 +385,9 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
 }) {
   const [hov, setHov] = useState<CaseId | null>(null);
   return (
-    <Shell isMobile={isMobile}
+    <Shell isMobile={isMobile} light
       headline={<>Choose<br />your matter.</>}
-      sub="Select a case. In Lavern, you can drop any document."
+      sub="A driverless law firm. 66 specialist agents, no billable hours. Pick a case and see it work."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {CASES.map((c, i) => {
@@ -337,17 +400,21 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
               onMouseEnter={() => setHov(c.id)} onMouseLeave={() => setHov(null)}
               style={{
                 background: WHITE,
-                border: `1.5px solid ${sel ? ACCENT : h ? '#C5C3BD' : BORDER}`,
+                border: `1.5px solid ${sel ? TEXT : h ? '#C5C3BD' : BORDER}`,
                 borderRadius: 10, padding: '15px 18px', cursor: 'pointer',
-                transition: 'all .17s ease',
-                boxShadow: sel ? `0 0 0 3px rgba(196,93,62,.1), 0 3px 14px rgba(0,0,0,.08)` : h ? '0 4px 18px rgba(0,0,0,.07)' : '0 1px 3px rgba(0,0,0,.04)',
-                transform: h && !sel ? 'translateY(-1px)' : 'none',
+                transition: 'all .2s ease',
+                boxShadow: sel
+                  ? '0 24px 64px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.14)'
+                  : h
+                  ? '0 12px 32px rgba(0,0,0,.14), 0 3px 10px rgba(0,0,0,.08)'
+                  : '0 1px 3px rgba(0,0,0,.06)',
+                transform: sel ? 'translateY(-3px)' : h ? 'translateY(-1px)' : 'none',
                 animation: `dCard .4s ease ${.35 + i * .09}s both`,
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                 <span style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 400, color: TEXT }}>{c.name}</span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
-                  {sel && <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: ACCENT, fontWeight: 700 }}>SELECTED ✓</span>}
+                  {sel && <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: TEXT, fontWeight: 700 }}>SELECTED ✓</span>}
                   <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4, background: '#F5F4F0', border: `1px solid ${BORDER}`, color: MUTED }}>{c.badge}</span>
                 </div>
               </div>
@@ -356,13 +423,6 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
                 {c.tags.map(t => (
                   <span key={t} style={{ fontFamily: SANS, fontSize: 9, letterSpacing: .5, padding: '2px 7px', background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 3, color: MUTED }}>{t}</span>
                 ))}
-                <span style={{
-                  fontFamily: SANS, fontSize: 9, letterSpacing: .5, marginLeft: 'auto',
-                  padding: '2px 7px',
-                  background: c.risk === 'CRITICAL' ? 'rgba(196,93,62,.07)' : 'rgba(184,134,11,.07)',
-                  border: `1px solid ${c.risk === 'CRITICAL' ? 'rgba(196,93,62,.2)' : 'rgba(184,134,11,.2)'}`,
-                  borderRadius: 3, color: c.risk === 'CRITICAL' ? ACCENT : '#B8860B', fontWeight: 600,
-                }}>{c.risk} RISK</span>
               </div>
             </div>
           );
@@ -373,7 +433,8 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
 }
 
 // ── Slide 1 — Talk to a partner ───────────────────────────────────────────
-function S1Partner({ isMobile, onContinue }: { isMobile: boolean; onContinue: () => void }) {
+function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: CaseId; onContinue: () => void }) {
+  const c = CASE_CONTENT[caseId];
   const [phase, setPhase] = useState(0);
   useEffect(() => {
     const ts = [
@@ -387,8 +448,8 @@ function S1Partner({ isMobile, onContinue }: { isMobile: boolean; onContinue: ()
 
   return (
     <Shell isMobile={isMobile}
-      headline={<>Meet your<br />partner.</>}
-      sub="She listens, asks the right questions, and builds the team."
+      headline={<>Talk to<br />a partner.</>}
+      sub="Lavern listens, asks the right questions, and assembles the team."
       footer={phase >= 4 ? (
         <button
           onClick={(e) => { e.stopPropagation(); onContinue(); }}
@@ -423,7 +484,7 @@ function S1Partner({ isMobile, onContinue }: { isMobile: boolean; onContinue: ()
         </div>
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 220 }}>
           {phase >= 1 && (
-            <ChatBubble align="right" text="HeartConnect — dating platform. Need Terms of Service reviewed before EU launch next month." />
+            <ChatBubble align="right" text={c.userMsg} />
           )}
           {phase === 2 && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -436,17 +497,13 @@ function S1Partner({ isMobile, onContinue }: { isMobile: boolean; onContinue: ()
             </div>
           )}
           {phase >= 3 && (
-            <ChatBubble align="left" avatar="Catherine Blackwell" text="I'm flagging two pressure points immediately: GDPR consent bundling in your sign-up flow, and age verification gaps under the Digital Services Act. Give me a moment." />
+            <ChatBubble align="left" avatar="Catherine Blackwell" text={c.partnerReply} />
           )}
           {phase >= 4 && (
             <div style={{ animation: 'dBubble .3s ease both' }}>
               <div style={{ background: '#F5F4F0', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 10, fontWeight: 600 }}>Briefing memo · 3 issues flagged</div>
-                {[
-                  { sev: 'RED',    text: 'GDPR Art. 7 — consent bundled with acceptance' },
-                  { sev: 'RED',    text: 'DSA Art. 28 — age verification gap' },
-                  { sev: 'YELLOW', text: 'Algorithmic transparency — Section 7' },
-                ].map((item, i) => (
+                <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 10, fontWeight: 600 }}>Briefing memo · {c.memo.length} issues flagged</div>
+                {c.memo.map((item, i) => (
                   <div key={i} style={{ display: 'flex', gap: 9, padding: '6px 0', borderTop: i > 0 ? `1px solid ${BORDER}` : 'none', animation: `dIn .3s ease ${i * .12}s both` }}>
                     <span style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 700, color: item.sev === 'RED' ? ACCENT : '#B8860B', flexShrink: 0, marginTop: 2 }}>{item.sev}</span>
                     <span style={{ fontFamily: SANS, fontSize: 12, color: TEXT, lineHeight: 1.5 }}>{item.text}</span>
@@ -487,7 +544,124 @@ function ChatBubble({ align, avatar, text }: { align: 'left' | 'right'; avatar?:
   );
 }
 
-// ── Slide 2 — Assemble your team ──────────────────────────────────────────
+// ── Slide 2 — Voice mode ──────────────────────────────────────────────────
+function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: CaseId; onContinue: () => void }) {
+  const c = CASE_CONTENT[caseId];
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const ts = [
+      setTimeout(() => setPhase(1), 800),   // user starts speaking
+      setTimeout(() => setPhase(2), 2200),  // words appear
+      setTimeout(() => setPhase(3), 4200),  // Lavern responds
+      setTimeout(() => setPhase(4), 6200),  // response words appear
+    ];
+    return () => ts.forEach(clearTimeout);
+  }, []);
+
+  const BARS = [0.4, 0.7, 1, 0.6, 0.85, 0.5, 0.9, 0.65, 0.75, 0.45, 0.8, 0.55];
+
+  return (
+    <Shell isMobile={isMobile}
+      headline={<>Lavern<br />listens.</>}
+      sub="Press spacebar and talk to the agents. Plain language. No forms."
+      footer={phase >= 4 ? (
+        <button onClick={(e) => { e.stopPropagation(); onContinue(); }} style={{
+          fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
+          textTransform: 'uppercase', padding: '17px 48px', borderRadius: 100,
+          background: CREAM, color: BG, border: 'none', cursor: 'pointer',
+          transition: 'transform .22s ease', animation: 'dUp .4s ease both',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >Assemble the team →</button>
+      ) : undefined}
+    >
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* Avatar */}
+      <div style={{
+        position: 'relative', marginBottom: 20,
+        animation: 'dUp .5s ease .05s both',
+      }}>
+        {/* Pulse rings */}
+        {phase >= 1 && phase < 4 && [1, 2].map(i => (
+          <div key={i} style={{
+            position: 'absolute', inset: -i * 14,
+            borderRadius: '50%',
+            border: '1px solid rgba(250,249,246,.12)',
+            animation: `dPulse ${1.4 + i * 0.3}s ease ${i * 0.2}s infinite`,
+          }} />
+        ))}
+        <div style={{
+          width: 96, height: 96, borderRadius: '50%',
+          overflow: 'hidden', background: 'rgba(250,249,246,.06)',
+          border: '1.5px solid rgba(250,249,246,.14)',
+          boxShadow: phase >= 1 ? '0 0 40px rgba(250,249,246,.08)' : 'none',
+          transition: 'box-shadow .5s ease',
+        }}>
+          <img src={av('Catherine Blackwell', 120)} alt="Catherine Blackwell" width={96} height={96} style={{ display: 'block' }} />
+        </div>
+      </div>
+
+      <div style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: CREAM, letterSpacing: 1, marginBottom: 4, animation: 'dUp .5s ease .15s both' }}>
+        Catherine Blackwell
+      </div>
+      <div style={{ fontFamily: SANS, fontSize: 10, color: 'rgba(250,249,246,.35)', letterSpacing: .5, marginBottom: 36, animation: 'dUp .5s ease .2s both' }}>
+        Managing Partner
+      </div>
+
+      {/* Waveform */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 3, height: 36, marginBottom: 32,
+        animation: 'dIn .4s ease .3s both',
+      }}>
+        {BARS.map((h, i) => (
+          <div key={i} style={{
+            width: 3, borderRadius: 2,
+            background: phase >= 1 && phase < 4 ? 'rgba(250,249,246,.7)' : 'rgba(250,249,246,.18)',
+            height: phase >= 1 && phase < 4 ? `${h * 32}px` : '4px',
+            transition: 'height .3s ease, background .3s ease',
+            animation: phase >= 1 && phase < 4 ? `dPulse ${0.8 + (i % 4) * 0.15}s ease ${i * 0.06}s infinite` : 'none',
+          }} />
+        ))}
+      </div>
+
+      {/* Transcript lines */}
+      <div style={{
+        textAlign: 'center', maxWidth: 460,
+        display: 'flex', flexDirection: 'column', gap: 12,
+        minHeight: 80,
+      }}>
+        {phase >= 2 && (
+          <div style={{ animation: 'dBubble .4s ease both' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.3)', marginBottom: 8 }}>You</div>
+            <p style={{ fontFamily: SERIF, fontSize: isMobile ? 17 : 20, fontWeight: 300, color: CREAM, lineHeight: 1.4, margin: 0 }}>
+              {c.voiceUser}
+            </p>
+          </div>
+        )}
+        {phase >= 4 && (
+          <div style={{ animation: 'dBubble .4s ease both', marginTop: 16 }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.3)', marginBottom: 8 }}>Lavern</div>
+            <p style={{ fontFamily: SERIF, fontSize: isMobile ? 17 : 20, fontWeight: 300, color: 'rgba(250,249,246,.75)', fontStyle: 'italic', lineHeight: 1.4, margin: 0 }}>
+              {c.voiceReply}
+            </p>
+          </div>
+        )}
+        {phase < 2 && (
+          <div style={{ animation: 'dPulse 2s ease infinite' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(250,249,246,.25)' }}>Listening</div>
+          </div>
+        )}
+      </div>
+    </div>
+    </Shell>
+  );
+}
+
+// ── Slide 3 — Assemble your team ──────────────────────────────────────────
 const TEAM = [
   { ini: 'CB', name: 'Catherine Blackwell',  role: 'Managing Partner',     ovr: 96, cat: 'orchestrator', rec: true  },
   { ini: 'SR', name: 'Sofia Reyes',           role: 'Privacy Counsel',      ovr: 91, cat: 'lawyer',       rec: false },
@@ -522,39 +696,36 @@ const TAB_AGENTS: Record<string, typeof TEAM> = {
   'Infrastructure':  INFRA,
 };
 
-function S2Team({ isMobile }: { isMobile: boolean }) {
-  const [activeTab, setActiveTab] = useState('Lawyers');
-  const tabs = ['Lawyers', 'Specialists', 'Infrastructure'];
+function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: CaseId; onContinue: () => void }) {
+  const c = CASE_CONTENT[caseId];
   const mounted = useMount();
-  const visibleAgents = TAB_AGENTS[activeTab] ?? [];
+  const [showCTA, setShowCTA] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowCTA(true), 2800); // after last card flips
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <Shell isMobile={isMobile}
-      headline={<>Sixty-six<br />specialists.</>}
-      sub="Partners, red teamers, privacy counsel, risk pricers. You assemble the bench."
+      headline={<>Assemble<br />your team.</>}
+      sub="Partners, red teamers, privacy counsel, risk pricers. 66 specialists on the bench."
+      footer={showCTA ? (
+        <button onClick={(e) => { e.stopPropagation(); onContinue(); }} style={{
+          fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
+          textTransform: 'uppercase', padding: '17px 48px', borderRadius: 100,
+          background: CREAM, color: BG, border: 'none', cursor: 'pointer',
+          transition: 'transform .22s ease', animation: 'dUp .4s ease both',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >Make it yours →</button>
+      ) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Category tabs */}
-        <div style={{
-          display: 'flex', gap: 6,
-          background: WHITE, border: `1px solid ${BORDER}`,
-          borderRadius: 8, padding: '4px', animation: 'dIn .4s ease .3s both',
-        }}>
-          {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)} style={{
-              fontFamily: SANS, fontSize: 11, fontWeight: 500,
-              padding: '6px 14px', borderRadius: 6,
-              background: activeTab === t ? TEXT : 'transparent',
-              color: activeTab === t ? CREAM : MUTED,
-              border: 'none', cursor: 'pointer', transition: 'all .18s ease', flex: 1,
-            }}>{t}</button>
-          ))}
-        </div>
-
-        {/* Agent grid */}
+        {/* Agent grid — 6 core agents, 3×2, sequential flip */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-          {visibleAgents.map((a, i) => (
-            <AgentCard key={a.ini} agent={a} delay={.08 + i * .06} />
+          {TEAM.slice(0, 6).map((a, i) => (
+            <AgentCard key={a.ini} agent={a} delay={.1 + i * .38} />
           ))}
         </div>
 
@@ -644,22 +815,72 @@ const SKILLS = [
 const BUILDER_STEPS = ['Identity', 'Face', 'Stats'] as const;
 type BuilderStep = typeof BUILDER_STEPS[number];
 
-function S3Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => void }) {
+// ── Demo agent profile — "The Surgeon" ────────────────────────────────────
+const DEMO_SURGEON_PROFILE: AgentProfile = {
+  role: 'contract-reviewer',
+  displayName: 'The Surgeon',
+  tagline: 'Methodical. Cuts through ambiguity. Never skips a clause.',
+  category: 'lawyer',
+  seniority: 'partner',
+  costTier: 'sonnet',
+  billingRateUsd: 380,
+  skills: {
+    precision: 94, creativity: 72, speed: 85, depth: 97,
+    negotiation: 88, communication: 76, research: 91, risk: 93,
+  },
+  personality: {
+    archetype: 'The Surgeon',
+    traits: {
+      'conservative-vs-creative': 2,
+      'thorough-vs-fast': 2,
+      'risk-averse-vs-tolerant': 2,
+      'formal-vs-approachable': 3,
+      'adversarial-vs-collaborative': 4,
+    },
+    workStyle: 'Methodical. Cuts through ambiguity. Never skips a clause.',
+  },
+  practiceAreas: ['Contract Review', 'Risk Assessment'],
+  strengths: ['Precision analysis', 'Risk identification', 'Clause-by-clause review'],
+  limitations: ['Less suited for high-level strategy'],
+  optional: true,
+  defaultSelected: false,
+  avatarSeed: 'The Surgeon',
+};
+
+function S4Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => void }) {
   const [animStep, setAnimStep] = useState(0);
   const [builderStep, setBuilderStep] = useState<BuilderStep>('Stats');
+  const [showReveal, setShowReveal] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setAnimStep(1), 800);
     return () => clearTimeout(t);
   }, []);
 
+  const forgeAgent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowReveal(true);
+  };
+
   return (
+    <>
+    {showReveal && (
+      <CardRevealOverlay
+        profile={DEMO_SURGEON_PROFILE}
+        ovr={94}
+        costTier="sonnet"
+        billingRate={380}
+        onSave={onLaunch}
+        onBuildAnother={() => setShowReveal(false)}
+        onClose={() => setShowReveal(false)}
+      />
+    )}
     <Shell isMobile={isMobile}
       headline={<>Make it<br />yours.</>}
       sub="66 agents in the roster. Not enough? Forge your own. Set the rules."
       footer={
         <button
-          onClick={(e) => { e.stopPropagation(); onLaunch(); }}
+          onClick={forgeAgent}
           style={{
             fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase',
             padding: '17px 48px', borderRadius: 100,
@@ -676,7 +897,7 @@ function S3Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(250,249,246,.12)';
           }}
         >
-          See the agents work →
+          Forge Agent
         </button>
       }
     >
@@ -816,36 +1037,63 @@ function S3Builder({ isMobile, onLaunch }: { isMobile: boolean; onLaunch: () => 
               <div style={{ fontFamily: SANS, fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: MUTED, marginBottom: 3 }}>OVR</div>
               <div style={{ fontFamily: SERIF, fontSize: 46, color: TEXT, lineHeight: 1, fontWeight: 300 }}>94</div>
             </div>
-            <button style={{
-              width: '100%', padding: '9px', background: ACCENT, border: 'none',
-              borderRadius: 7, color: CREAM, fontFamily: SANS, fontSize: 9,
-              letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer',
-            }}>Forge Agent</button>
+            <button
+              onClick={forgeAgent}
+              style={{
+                width: '100%', padding: '9px', background: ACCENT, border: 'none',
+                borderRadius: 7, color: CREAM, fontFamily: SANS, fontSize: 9,
+                letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer',
+              }}>Forge Agent</button>
           </div>
         )}
       </div>
     </Shell>
+    </>
   );
 }
 
 // ── Slide 4 — Clawern Reveal ──────────────────────────────────────────────
-const TERM_LINES = [
-  { delay: 600,  text: '⚙  Daemon started  ·  PID 42847', col: 'rgba(250,249,246,.7)' },
-  { delay: 1500, text: '📁  Watching ~/Documents/Contracts/', col: 'rgba(250,249,246,.7)' },
-  { delay: 2400, text: '📄  cloud-services-msa.pdf detected', col: 'rgba(250,249,246,.7)' },
-  { delay: 3400, text: '🤖  Dispatching 4 agents…', col: 'rgba(250,249,246,.7)' },
-  { delay: 4500, text: '⚠️  CRITICAL: Unlimited liability — Section 8.2', col: '#FF6B6B' },
-  { delay: 5200, text: '⚖️  Debate resolved  ·  0.91 confidence', col: '#74C0FC' },
-  { delay: 6000, text: '✅  Delivered  ·  $3.40  ·  2 critical findings', col: '#69DB7C' },
-  { delay: 7000, text: '💡  Precedent learned: "Unlimited Indemnification"', col: 'rgba(250,249,246,.45)' },
-];
+const TERM_LINES: Record<CaseId, { delay: number; text: string; col: string }[]> = {
+  heartconnect: [
+    { delay: 600,  text: '⚙  Daemon started  ·  PID 42847', col: 'rgba(250,249,246,.7)' },
+    { delay: 1500, text: '📁  Watching ~/Documents/Contracts/', col: 'rgba(250,249,246,.7)' },
+    { delay: 2400, text: '📄  heartconnect-tos-v3.pdf detected', col: 'rgba(250,249,246,.7)' },
+    { delay: 3400, text: '🤖  Dispatching 5 agents…', col: 'rgba(250,249,246,.7)' },
+    { delay: 4500, text: '⚠️  CRITICAL: GDPR consent bundling — Section 4.1', col: '#FF6B6B' },
+    { delay: 5200, text: '⚖️  Debate resolved  ·  0.94 confidence', col: '#74C0FC' },
+    { delay: 6000, text: '✅  Delivered  ·  $4.20  ·  3 findings', col: '#69DB7C' },
+    { delay: 7000, text: '💡  Precedent learned: "GDPR Consent Bundling"', col: 'rgba(250,249,246,.45)' },
+  ],
+  medivault: [
+    { delay: 600,  text: '⚙  Daemon started  ·  PID 38291', col: 'rgba(250,249,246,.7)' },
+    { delay: 1500, text: '📁  Watching ~/Documents/Legal/', col: 'rgba(250,249,246,.7)' },
+    { delay: 2400, text: '📄  medivault-privacy-policy.pdf detected', col: 'rgba(250,249,246,.7)' },
+    { delay: 3400, text: '🤖  Dispatching 5 agents…', col: 'rgba(250,249,246,.7)' },
+    { delay: 4500, text: '⚠️  CRITICAL: HIPAA §164.308 — third-party gap', col: '#FF6B6B' },
+    { delay: 5200, text: '⚖️  Debate resolved  ·  0.96 confidence', col: '#74C0FC' },
+    { delay: 6000, text: '✅  Delivered  ·  $3.80  ·  3 findings', col: '#69DB7C' },
+    { delay: 7000, text: '💡  Precedent learned: "HIPAA Third-Party Risk"', col: 'rgba(250,249,246,.45)' },
+  ],
+  cloudmsa: [
+    { delay: 600,  text: '⚙  Daemon started  ·  PID 42847', col: 'rgba(250,249,246,.7)' },
+    { delay: 1500, text: '📁  Watching ~/Documents/Contracts/', col: 'rgba(250,249,246,.7)' },
+    { delay: 2400, text: '📄  cloud-services-msa.pdf detected', col: 'rgba(250,249,246,.7)' },
+    { delay: 3400, text: '🤖  Dispatching 4 agents…', col: 'rgba(250,249,246,.7)' },
+    { delay: 4500, text: '⚠️  CRITICAL: Unlimited liability — Section 8.2', col: '#FF6B6B' },
+    { delay: 5200, text: '⚖️  Debate resolved  ·  0.91 confidence', col: '#74C0FC' },
+    { delay: 6000, text: '✅  Delivered  ·  $3.40  ·  2 critical findings', col: '#69DB7C' },
+    { delay: 7000, text: '💡  Precedent learned: "Unlimited Indemnification"', col: 'rgba(250,249,246,.45)' },
+  ],
+};
 
-function S4Clawern({ isMobile, onExit }: { isMobile: boolean; onExit: () => void }) {
+function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: CaseId; onExit: () => void }) {
+  const c = CASE_CONTENT[caseId];
+  const termLines = TERM_LINES[caseId];
   const [lines, setLines] = useState<number[]>([]);
   const [showCTA, setShowCTA] = useState(false);
 
   useEffect(() => {
-    const ts = TERM_LINES.map((l, i) => setTimeout(() => setLines(v => [...v, i]), l.delay));
+    const ts = termLines.map((l, i) => setTimeout(() => setLines(v => [...v, i]), l.delay));
     const ctaT = setTimeout(() => setShowCTA(true), 8200);
     return () => [...ts, ctaT].forEach(clearTimeout);
   }, []);
@@ -899,7 +1147,7 @@ function S4Clawern({ isMobile, onExit }: { isMobile: boolean; onExit: () => void
             animation: 'dIn .6s ease .7s both',
           }}>
             Clawern watches your folders overnight. Drop a contract in at 11pm.
-            By morning — findings, diffs, and a Telegram message.
+            By morning — findings, diffs, and a Telegram message. Tonight it delivered: <em>{c.deliverable}</em>.
           </p>
         </div>
 
@@ -929,7 +1177,7 @@ function S4Clawern({ isMobile, onExit }: { isMobile: boolean; onExit: () => void
 
           {/* Log */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minHeight: 100 }}>
-            {TERM_LINES.map((l, i) =>
+            {termLines.map((l, i) =>
               lines.includes(i) ? (
                 <div key={i} style={{ color: l.col, animation: 'dTermLine .22s ease both', lineHeight: 1.5 }}>
                   {l.text}
