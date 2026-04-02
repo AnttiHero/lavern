@@ -289,32 +289,32 @@ function Shell({
         <div style={{ marginBottom: 22, animation: 'dUp .5s ease .05s both' }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,56px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -1, color: headlineColor, margin: '0 0 14px', textShadow: headlineShadow }}>{headline}</h2>
           <p style={{ fontFamily: SANS, fontSize: 16, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, animation: 'dIn .5s ease .25s both' }}>{sub}</p>
-          {footer && <div style={{ marginTop: 22 }}>{footer}</div>}
+          {footer && <div style={{ marginTop: 16 }}>{footer}</div>}
         </div>
         <div style={{ animation: 'dUp .5s ease .4s both', flex: 1 }}>{children}</div>
       </div>
     );
   }
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '40fr 60fr', background: bgOverlay }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '38fr 62fr', background: bgOverlay }}>
       {/* Left */}
       <div style={{
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '96px 44px 96px 64px',
+        padding: '80px 28px 80px 56px',
         borderRight: `1px solid ${dividerColor}`,
         animation: 'dUp .5s ease .05s both',
       }}>
         <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(52px,5.2vw,84px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -2, color: headlineColor, margin: '0 0 20px', textShadow: headlineShadow }}>{headline}</h2>
         <p style={{ fontFamily: SANS, fontSize: 17, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, maxWidth: 340, animation: 'dIn .5s ease .2s both' }}>{sub}</p>
-        {footer && <div style={{ marginTop: 36, animation: 'dIn .4s ease .35s both' }}>{footer}</div>}
+        {footer && <div style={{ marginTop: 24, animation: 'dIn .4s ease .35s both' }}>{footer}</div>}
       </div>
       {/* Right */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '80px 52px 80px 36px',
+        padding: '60px 48px 60px 28px',
         animation: 'dUp .5s ease .18s both',
       }}>
-        <div style={{ width: '100%', maxWidth: 540 }}>{children}</div>
+        <div style={{ width: '100%', maxWidth: 560 }}>{children}</div>
       </div>
     </div>
   );
