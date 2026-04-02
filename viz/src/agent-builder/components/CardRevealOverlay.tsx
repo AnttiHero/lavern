@@ -101,7 +101,8 @@ export function CardRevealOverlay({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 36,
+        gap: 20,
+        paddingBottom: 80,
         backdropFilter: 'blur(12px)',
       }}
       onClick={showButtons ? undefined : undefined}

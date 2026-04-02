@@ -686,7 +686,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
       }}>
         {phase >= 2 && (
           <div style={{ animation: 'dBubble .4s ease both' }}>
-            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.3)', marginBottom: 8 }}>You</div>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.65)', marginBottom: 8 }}>You</div>
             <p style={{ fontFamily: SERIF, fontSize: isMobile ? 17 : 20, fontWeight: 300, color: CREAM, lineHeight: 1.4, margin: 0 }}>
               {c.voiceUser}
             </p>
@@ -694,7 +694,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
         )}
         {phase >= 4 && (
           <div style={{ animation: 'dBubble .4s ease both', marginTop: 16 }}>
-            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.3)', marginBottom: 8 }}>Lavern</div>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(250,249,246,.65)', marginBottom: 8 }}>Lavern</div>
             <p style={{ fontFamily: SERIF, fontSize: isMobile ? 17 : 20, fontWeight: 300, color: 'rgba(250,249,246,.75)', fontStyle: 'italic', lineHeight: 1.4, margin: 0 }}>
               {c.voiceReply}
             </p>
