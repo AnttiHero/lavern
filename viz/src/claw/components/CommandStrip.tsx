@@ -2,7 +2,8 @@
  * CommandStrip — Persistent control bar: scan trigger + pause/resume + last scan + budget compact.
  */
 
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 /** EU sovereign blue — same as ProviderToggle / ConfigTab. */
 const EU_COLOR = '#2E5D9C';
@@ -56,12 +57,12 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, paused, onTog
       <div style={styles.right}>
         <span style={styles.budgetCompact}>
           <span style={{
-            color: budget.exhausted ? colors.danger : colors.textSecondary,
+            color: budget.exhausted ? CLAW.danger : CLAW.textSecondary,
             fontWeight: budget.exhausted ? 600 : 400,
           }}>
             ${budget.spentUsd.toFixed(2)}
           </span>
-          <span style={{ color: colors.textDim }}> / ${budget.totalUsd.toFixed(2)}</span>
+          <span style={{ color: CLAW.textDim }}> / ${budget.totalUsd.toFixed(2)}</span>
         </span>
 
         {demoMode && onWatchDemo && (
@@ -75,13 +76,13 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, paused, onTog
             }}
             onMouseEnter={e => {
               if (demoPlaying) return;
-              e.currentTarget.style.backgroundColor = '#B8860B';
-              e.currentTarget.style.color = '#fff';
+              e.currentTarget.style.backgroundColor = CLAW.amber;
+              e.currentTarget.style.color = '#080808';
             }}
             onMouseLeave={e => {
               if (demoPlaying) return;
               e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#B8860B';
+              e.currentTarget.style.color = CLAW.amber;
             }}
           >
             {demoPlaying ? 'Playing\u2026' : 'Watch Demo'}
@@ -120,13 +121,13 @@ export function CommandStrip({ lastScan, scanning, budget, onScan, paused, onTog
           }}
           onMouseEnter={e => {
             if (scanning || demoMode || paused) return;
-            e.currentTarget.style.backgroundColor = '#B8860B';
-            e.currentTarget.style.color = '#fff';
+            e.currentTarget.style.backgroundColor = CLAW.amber;
+            e.currentTarget.style.color = '#080808';
           }}
           onMouseLeave={e => {
             if (scanning || demoMode || paused) return;
             e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#B8860B';
+            e.currentTarget.style.color = CLAW.amber;
           }}
         >
           {scanning ? 'Scanning...' : 'Scan Now'}
@@ -142,8 +143,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: `${spacing.sm}px ${spacing.lg}px`,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     marginBottom: spacing.md,
     flexWrap: 'wrap' as const,
@@ -152,7 +153,7 @@ const styles: Record<string, React.CSSProperties> = {
   scanTime: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   right: {
     display: 'flex',
@@ -163,6 +164,7 @@ const styles: Record<string, React.CSSProperties> = {
   budgetCompact: {
     fontSize: 12,
     fontFamily: fonts.mono,
+    color: CLAW.textSecondary,
   },
   ethicalBadge: {
     fontSize: 9,
@@ -191,9 +193,9 @@ const styles: Record<string, React.CSSProperties> = {
   scanBtn: {
     padding: '5px 14px',
     borderRadius: radii.sm,
-    border: '1.5px solid #B8860B',
+    border: `1.5px solid ${CLAW.amber}`,
     backgroundColor: 'transparent',
-    color: '#B8860B',
+    color: CLAW.amber,
     fontFamily: fonts.sans,
     fontSize: 10,
     fontWeight: 600,

@@ -3,7 +3,8 @@
  * "What has the night shift produced?"
  */
 
-import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawDelivery } from '../hooks/useClawData.js';
 import { DeliveryCard } from './DeliveryCard.js';
 
@@ -39,7 +40,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     fontFamily: fonts.serif,
     fontStyle: 'italic' as const,
-    color: colors.textDim,
+    color: CLAW.textMuted,
     padding: `${spacing.xxl}px`,
     textAlign: 'center' as const,
   },

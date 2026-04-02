@@ -3,7 +3,8 @@
  * "What is the night shift watching?"
  */
 
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawProfile } from '../hooks/useClawData.js';
 
 /** EU sovereign blue — same as ProviderToggle. */
@@ -38,9 +39,9 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, 
       {/* Ethical Mode — prominent, top of config */}
       <div style={{
         ...styles.card,
-        borderColor: ethicalMode ? EU_COLOR : colors.border,
+        borderColor: ethicalMode ? EU_COLOR : CLAW.border,
         borderWidth: ethicalMode ? 2 : 1,
-        backgroundColor: ethicalMode ? EU_BG : colors.bgCard,
+        backgroundColor: ethicalMode ? EU_BG : CLAW.surface,
       }}>
         <div style={styles.ethicalHeader}>
           <div style={styles.ethicalLeft}>
@@ -49,14 +50,14 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, 
               <div style={{
                 ...styles.cardTitle,
                 marginBottom: 2,
-                color: ethicalMode ? EU_COLOR : colors.text,
+                color: ethicalMode ? EU_COLOR : CLAW.text,
               }}>
                 Maximum Ethical Mode
               </div>
               <div style={{
                 fontSize: 12,
                 fontFamily: fonts.sans,
-                color: ethicalMode ? EU_COLOR : colors.textMuted,
+                color: ethicalMode ? EU_COLOR : CLAW.textMuted,
               }}>
                 One setting. Maximum protection.
               </div>
@@ -67,8 +68,8 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, 
             style={{
               ...styles.ethicalToggle,
               backgroundColor: ethicalMode ? EU_COLOR : 'transparent',
-              color: ethicalMode ? '#fff' : colors.textSecondary,
-              borderColor: ethicalMode ? EU_COLOR : colors.border,
+              color: ethicalMode ? '#fff' : CLAW.textSecondary,
+              borderColor: ethicalMode ? EU_COLOR : CLAW.border,
             }}
             onMouseEnter={e => {
               if (!ethicalMode) {
@@ -78,8 +79,8 @@ export function ConfigTab({ profile, watchPaths, budget, demoMode, ethicalMode, 
             }}
             onMouseLeave={e => {
               if (!ethicalMode) {
-                e.currentTarget.style.borderColor = colors.border;
-                e.currentTarget.style.color = colors.textSecondary;
+                e.currentTarget.style.borderColor = CLAW.border;
+                e.currentTarget.style.color = CLAW.textSecondary;
               }
             }}
           >
@@ -186,8 +187,8 @@ function Field({ label, value }: { label: string; value: string }) {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
     transition: 'border-color 0.2s ease, background-color 0.2s ease',
@@ -195,8 +196,8 @@ const styles: Record<string, React.CSSProperties> = {
   cardTitle: {
     fontFamily: fonts.serif,
     fontSize: 16,
-    fontWeight: 600,
-    color: colors.text,
+    fontWeight: 300,
+    color: CLAW.text,
     marginBottom: spacing.md,
   },
   ethicalHeader: {
@@ -218,7 +219,7 @@ const styles: Record<string, React.CSSProperties> = {
   ethicalToggle: {
     padding: '6px 18px',
     borderRadius: radii.sm,
-    border: `1.5px solid ${colors.border}`,
+    border: `1.5px solid ${CLAW.border}`,
     fontFamily: fonts.sans,
     fontSize: 11,
     fontWeight: 700,
@@ -237,7 +238,7 @@ const styles: Record<string, React.CSSProperties> = {
   ethicalBullet: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
     display: 'flex',
     alignItems: 'center',
     gap: 8,
@@ -276,12 +277,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   fieldValue: {
     fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.text,
+    color: CLAW.text,
   },
   concernsRow: {
     display: 'flex',
@@ -290,16 +291,16 @@ const styles: Record<string, React.CSSProperties> = {
     gap: spacing.xs,
     marginTop: spacing.md,
     paddingTop: spacing.md,
-    borderTop: `1px solid ${colors.border}`,
+    borderTop: `1px solid ${CLAW.border}`,
   },
   concernPill: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
-    backgroundColor: colors.bgPanel,
+    color: CLAW.textSecondary,
+    backgroundColor: CLAW.input,
     padding: '2px 10px',
     borderRadius: radii.pill,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${CLAW.border}`,
   },
   pathList: {
     listStyle: 'none',
@@ -311,10 +312,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: spacing.sm,
     padding: '8px 0',
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${CLAW.border}`,
     fontSize: 13,
     fontFamily: fonts.mono,
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
   },
   folderIcon: {
     fontSize: 14,
@@ -323,7 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
   emptyText: {
     fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    color: CLAW.textDim,
     fontStyle: 'italic' as const,
   },
 };

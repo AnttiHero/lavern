@@ -4,7 +4,8 @@
  */
 
 import { useState } from 'react';
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawDocument } from '../hooks/useClawData.js';
 import { StatusBadge } from './StatusBadge.js';
 import { FindingsBadges } from './FindingsBadges.js';
@@ -84,9 +85,9 @@ export function DocumentsTab({ documents, demoMode }: Props) {
             onClick={() => setFilter(f.key)}
             style={{
               ...styles.filterPill,
-              backgroundColor: filter === f.key ? colors.text : 'transparent',
-              color: filter === f.key ? '#fff' : colors.textMuted,
-              borderColor: filter === f.key ? colors.text : colors.border,
+              backgroundColor: filter === f.key ? CLAW.accent : 'transparent',
+              color: filter === f.key ? '#080808' : CLAW.textMuted,
+              borderColor: filter === f.key ? CLAW.accent : CLAW.border,
             }}
           >
             {f.label}
@@ -226,8 +227,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tableWrap: {
     overflowX: 'auto' as const,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
   },
   table: {
@@ -235,33 +236,36 @@ const styles: Record<string, React.CSSProperties> = {
     borderCollapse: 'collapse' as const,
     fontSize: 13,
     fontFamily: fonts.sans,
+    color: CLAW.textSecondary,
   },
   th: {
     textAlign: 'left' as const,
     padding: '10px 12px',
-    borderBottom: `2px solid ${colors.border}`,
+    borderBottom: `2px solid ${CLAW.border}`,
     fontSize: 10,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.06em',
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontWeight: 600,
     fontFamily: fonts.sans,
   },
   td: {
     padding: '10px 12px',
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${CLAW.border}`,
     verticalAlign: 'top' as const,
+    color: CLAW.textSecondary,
   },
   flaggedRow: {
-    backgroundColor: 'rgba(196, 93, 62, 0.03)',
+    backgroundColor: CLAW.dangerBg,
   },
   errorRow: {
-    backgroundColor: 'rgba(196, 93, 62, 0.02)',
+    backgroundColor: 'rgba(196, 93, 62, 0.04)',
   },
   docName: {
     fontWeight: 500,
     fontFamily: fonts.mono,
     fontSize: 12,
+    color: CLAW.text,
   },
   lockIcon: {
     fontSize: 12,
@@ -272,14 +276,14 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: radii.pill,
     fontSize: 10,
     fontWeight: 700,
-    backgroundColor: 'rgba(46, 125, 156, 0.08)',
-    color: '#2E7D9C',
+    backgroundColor: 'rgba(46, 125, 156, 0.12)',
+    color: '#5BA3C9',
   },
   inlineError: {
     marginTop: 6,
     padding: '6px 8px',
-    backgroundColor: 'rgba(196, 93, 62, 0.05)',
-    borderLeft: '2px solid rgba(196, 93, 62, 0.3)',
+    backgroundColor: CLAW.dangerBg,
+    borderLeft: `2px solid ${CLAW.dangerBorder}`,
     borderRadius: '0 4px 4px 0',
     display: 'flex',
     alignItems: 'flex-start',
@@ -289,7 +293,7 @@ const styles: Record<string, React.CSSProperties> = {
   inlineErrorText: {
     fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.danger,
+    color: CLAW.danger,
     lineHeight: 1.4,
     flex: 1,
     minWidth: 0,
@@ -299,7 +303,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontSize: 10,
     fontFamily: fonts.sans,
     cursor: 'pointer',
@@ -309,9 +313,9 @@ const styles: Record<string, React.CSSProperties> = {
   retryOneBtn: {
     padding: '2px 10px',
     borderRadius: radii.sm,
-    border: `1px solid rgba(196, 93, 62, 0.3)`,
+    border: `1px solid ${CLAW.dangerBorder}`,
     backgroundColor: 'transparent',
-    color: colors.danger,
+    color: CLAW.danger,
     fontSize: 10,
     fontWeight: 600,
     fontFamily: fonts.sans,
@@ -323,7 +327,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     fontFamily: fonts.serif,
     fontStyle: 'italic' as const,
-    color: colors.textDim,
+    color: CLAW.textMuted,
     padding: `${spacing.xl}px`,
     textAlign: 'center' as const,
   },
@@ -336,9 +340,9 @@ const styles: Record<string, React.CSSProperties> = {
   retryBtn: {
     padding: '5px 14px',
     borderRadius: radii.sm,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${CLAW.border}`,
     backgroundColor: 'transparent',
-    color: colors.text,
+    color: CLAW.text,
     fontSize: 11,
     fontWeight: 600,
     fontFamily: fonts.sans,
@@ -348,7 +352,7 @@ const styles: Record<string, React.CSSProperties> = {
   retryMsg: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontStyle: 'italic' as const,
   },
 };

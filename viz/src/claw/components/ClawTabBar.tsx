@@ -2,7 +2,8 @@
  * ClawTabBar — Tab navigation with amber underline.
  */
 
-import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 export type ClawTab = 'overview' | 'documents' | 'deliveries' | 'precedents' | 'config';
 
@@ -38,15 +39,15 @@ export function ClawTabBar({ activeTab, onTabChange, documentCount, deliveryCoun
             onClick={() => onTabChange(tab.id)}
             aria-current={isActive ? 'page' : undefined}
             style={{ ...styles.tab, ...(isActive ? styles.tabActive : {}) }}
-            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = colors.text; }}
-            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = colors.textMuted; }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = CLAW.text; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = CLAW.textMuted; }}
           >
             {tab.label}
             {count > 0 && (
               <span style={{
                 ...styles.badge,
-                backgroundColor: isActive ? 'rgba(184, 134, 11, 0.12)' : colors.bgPanel,
-                color: isActive ? '#B8860B' : colors.textDim,
+                backgroundColor: isActive ? CLAW.accentBg : CLAW.surface,
+                color: isActive ? CLAW.accent : CLAW.textDim,
               }}>
                 {count}
               </span>
@@ -62,7 +63,7 @@ const styles: Record<string, React.CSSProperties> = {
   bar: {
     display: 'flex',
     gap: 2,
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${CLAW.border}`,
     marginBottom: spacing.xl,
     overflowX: 'auto' as const,
   },
@@ -74,20 +75,20 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderBottom: '2px solid transparent',
     backgroundColor: 'transparent',
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontFamily: fonts.sans,
     fontSize: 13,
     fontWeight: 500,
     cursor: 'pointer',
     marginBottom: -1,
-    transition: 'color 0.25s ease, border-bottom-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'color 0.25s ease, border-bottom-color 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
     whiteSpace: 'nowrap' as const,
     flexShrink: 0,
   },
   tabActive: {
-    color: colors.text,
+    color: CLAW.text,
     fontWeight: 600,
-    borderBottom: '2px solid #B8860B',
+    borderBottom: `2px solid ${CLAW.accent}`,
   },
   badge: {
     fontSize: 10,

@@ -3,6 +3,7 @@
  */
 
 import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import { DaemonPulse } from './DaemonPulse.js';
 
 interface Props {
@@ -61,7 +62,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.md,
     position: 'relative',
     overflow: 'hidden',
-    borderBottom: '1px solid rgba(196, 93, 62, 0.2)',
+    borderBottom: `1px solid ${CLAW.accentBorder}`,
   },
   topRow: {
     display: 'flex',
@@ -103,7 +104,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 220,
     height: 220,
     borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(196, 93, 62, 0.15) 0%, transparent 70%)',
+    background: `radial-gradient(circle, rgba(232, 132, 92, 0.2) 0%, transparent 70%)`,
     filter: 'blur(60px)',
     opacity: 0.1,
     top: -40,

@@ -2,19 +2,20 @@
  * StatusBadge — Document status pill with semantic colors.
  */
 
-import { colors, radii } from '../../staffing/styles/tokens.js';
+import { radii } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 const BADGE_COLORS: Record<string, { bg: string; fg: string }> = {
-  reviewed:   { bg: 'rgba(74, 124, 80, 0.08)', fg: colors.success },
-  flagged:    { bg: 'rgba(196, 93, 62, 0.1)', fg: colors.danger },
-  new:        { bg: 'rgba(46, 125, 156, 0.08)', fg: '#2E7D9C' },
-  queued:     { bg: 'rgba(46, 125, 156, 0.08)', fg: '#2E7D9C' },
-  processing: { bg: 'rgba(184, 134, 11, 0.08)', fg: '#B8860B' },
-  stale:      { bg: 'rgba(184, 134, 11, 0.08)', fg: '#B8860B' },
-  error:      { bg: 'rgba(196, 93, 62, 0.1)', fg: colors.danger },
-  completed:  { bg: 'rgba(74, 124, 80, 0.08)', fg: colors.success },
-  failed:     { bg: 'rgba(196, 93, 62, 0.1)', fg: colors.danger },
-  partial:    { bg: 'rgba(184, 134, 11, 0.08)', fg: '#B8860B' },
+  reviewed:   { bg: 'rgba(92, 158, 110, 0.12)', fg: CLAW.success },
+  flagged:    { bg: CLAW.dangerBg, fg: CLAW.danger },
+  new:        { bg: 'rgba(91, 163, 201, 0.1)', fg: '#5BA3C9' },
+  queued:     { bg: 'rgba(91, 163, 201, 0.1)', fg: '#5BA3C9' },
+  processing: { bg: CLAW.amberBg, fg: CLAW.amber },
+  stale:      { bg: CLAW.amberBg, fg: CLAW.amber },
+  error:      { bg: CLAW.dangerBg, fg: CLAW.danger },
+  completed:  { bg: 'rgba(92, 158, 110, 0.12)', fg: CLAW.success },
+  failed:     { bg: CLAW.dangerBg, fg: CLAW.danger },
+  partial:    { bg: CLAW.amberBg, fg: CLAW.amber },
 };
 
 interface Props {
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export function StatusBadge({ status }: Props) {
-  const c = BADGE_COLORS[status] ?? { bg: colors.bgPanel, fg: colors.textMuted };
+  const c = BADGE_COLORS[status] ?? { bg: CLAW.surface, fg: CLAW.textMuted };
   return (
     <span style={{
       display: 'inline-block',

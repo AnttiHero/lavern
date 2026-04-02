@@ -4,7 +4,8 @@
  */
 
 import { useState } from 'react';
-import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawPrecedent, ClawPrecedentSummary } from '../hooks/useClawData.js';
 
 interface Props {
@@ -24,9 +25,9 @@ function timeAgo(iso: string): string {
 }
 
 function effectivenessColor(score: number): string {
-  if (score >= 0.6) return '#4a7c59';
-  if (score >= 0.3) return '#B8860B';
-  return colors.textDim;
+  if (score >= 0.6) return CLAW.success;
+  if (score >= 0.3) return CLAW.amber;
+  return CLAW.textDim;
 }
 
 export function PrecedentsTab({ precedents, summary, demoMode }: Props) {
@@ -59,7 +60,7 @@ export function PrecedentsTab({ precedents, summary, demoMode }: Props) {
           </div>
           {summary.deprecated > 0 && (
             <div style={styles.summaryStats}>
-              <span style={{ ...styles.statValue, color: colors.textDim }}>{summary.deprecated}</span>
+              <span style={{ ...styles.statValue, color: CLAW.textDim }}>{summary.deprecated}</span>
               <span style={styles.statLabel}>deprecated</span>
             </div>
           )}
@@ -135,7 +136,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: spacing.lg,
     padding: `${spacing.md}px ${spacing.lg}px`,
-    backgroundColor: colors.bgPanel,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: 8,
     marginBottom: spacing.md,
     flexWrap: 'wrap' as const,
@@ -147,14 +149,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 700,
-    fontFamily: fonts.sans,
-    color: colors.text,
+    fontWeight: 300,
+    fontFamily: fonts.serif,
+    color: CLAW.text,
   },
   statLabel: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
   },
@@ -167,8 +169,8 @@ const styles: Record<string, React.CSSProperties> = {
   patternTag: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: '#B8860B',
-    backgroundColor: 'rgba(184, 134, 11, 0.08)',
+    color: CLAW.amber,
+    backgroundColor: CLAW.amberBg,
     padding: '2px 8px',
     borderRadius: 999,
   },
@@ -180,9 +182,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 14px',
     fontSize: 13,
     fontFamily: fonts.sans,
-    backgroundColor: colors.bgPanel,
-    color: colors.text,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.input,
+    color: CLAW.text,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: 6,
     outline: 'none',
     boxSizing: 'border-box' as const,
@@ -194,9 +196,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   card: {
     padding: spacing.lg,
-    backgroundColor: colors.bgPanel,
+    backgroundColor: CLAW.surface,
     borderRadius: 8,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${CLAW.border}`,
   },
   cardHeader: {
     display: 'flex',
@@ -206,20 +208,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   patternName: {
     fontSize: 15,
-    fontWeight: 600,
+    fontWeight: 400,
     fontFamily: fonts.serif,
-    color: colors.text,
+    color: CLAW.text,
   },
   timesUsed: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: '#B8860B',
+    color: CLAW.amber,
     fontWeight: 600,
   },
   description: {
     fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
+    color: CLAW.textSecondary,
     lineHeight: 1.5,
     margin: '0 0 8px 0',
     display: '-webkit-box',
@@ -229,8 +231,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   evidenceBox: {
     padding: '6px 10px',
-    backgroundColor: 'rgba(184, 134, 11, 0.04)',
-    borderLeft: '2px solid rgba(184, 134, 11, 0.3)',
+    backgroundColor: CLAW.amberBg,
+    borderLeft: `2px solid ${CLAW.amberBorder}`,
     borderRadius: '0 4px 4px 0',
     marginBottom: 8,
   },
@@ -238,7 +240,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'block',
     fontSize: 10,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    color: CLAW.textDim,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
     marginBottom: 2,
@@ -247,7 +249,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontFamily: fonts.sans,
     fontStyle: 'italic' as const,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     lineHeight: 1.4,
   },
   metaRow: {
@@ -259,17 +261,17 @@ const styles: Record<string, React.CSSProperties> = {
   metaItem: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   metaDot: {
     fontSize: 11,
-    color: colors.border,
+    color: CLAW.border,
   },
   empty: {
     fontSize: 14,
     fontFamily: fonts.serif,
     fontStyle: 'italic' as const,
-    color: colors.textDim,
+    color: CLAW.textMuted,
     padding: `${spacing.xxl}px`,
     textAlign: 'center' as const,
   },

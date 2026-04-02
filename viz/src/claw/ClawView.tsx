@@ -6,7 +6,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { colors, fonts, spacing } from '../staffing/styles/tokens.js';
+import { fonts, spacing } from '../staffing/styles/tokens.js';
+import { CLAW } from './theme.js';
 import { LoadingW } from '../components/LoadingW.js';
 import { useClawData } from './hooks/useClawData.js';
 import { useClawDemoSimulator, type ClawLogEntry } from './hooks/useClawDemoSimulator.js';
@@ -50,6 +51,8 @@ export default function ClawView({ onBack }: Props) {
   if (loading) {
     return (
       <div style={styles.page}>
+        <div style={styles.grain} />
+        <div style={styles.fog} />
         <div style={styles.loadingWrap}>
           <LoadingW />
         </div>
@@ -60,6 +63,8 @@ export default function ClawView({ onBack }: Props) {
   if (!status) {
     return (
       <div style={styles.page}>
+        <div style={styles.grain} />
+        <div style={styles.fog} />
         <div style={styles.container}>
           <button onClick={onBack} style={styles.plainBackBtn}>{'\u2190'} Back</button>
           <div style={styles.errorBox}>
@@ -72,6 +77,10 @@ export default function ClawView({ onBack }: Props) {
 
   return (
     <div style={styles.page}>
+      {/* Film grain overlay — matches lavern.ai/claw */}
+      <div style={styles.grain} />
+      {/* Fog vignette */}
+      <div style={styles.fog} />
       <div style={styles.container}>
         {/* Dark hero header */}
         <ClawHeader
@@ -158,38 +167,62 @@ export default function ClawView({ onBack }: Props) {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    backgroundColor: colors.bg,
+    backgroundColor: CLAW.bg,
     paddingTop: spacing.xxxl,
     paddingBottom: 80,
+    position: 'relative',
+    isolation: 'isolate',
+  },
+  // Film grain overlay — SVG feTurbulence, 0.65 opacity, subtle animation
+  grain: {
+    position: 'fixed',
+    inset: 0,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.65'/%3E%3C/svg%3E")`,
+    opacity: 0.18,
+    pointerEvents: 'none',
+    zIndex: 1,
+    mixBlendMode: 'overlay',
+  },
+  // Radial fog vignette
+  fog: {
+    position: 'fixed',
+    inset: 0,
+    background: 'radial-gradient(ellipse at 50% 0%, rgba(232,132,92,0.04) 0%, transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.5) 0%, transparent 70%)',
+    pointerEvents: 'none',
+    zIndex: 1,
   },
   container: {
     maxWidth: 960,
     margin: '0 auto',
     padding: `0 ${spacing.xl}px`,
+    position: 'relative',
+    zIndex: 2,
   },
   loadingWrap: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '60vh',
+    position: 'relative',
+    zIndex: 2,
   },
   plainBackBtn: {
     padding: '6px 14px',
     fontSize: 13,
     fontFamily: fonts.sans,
-    backgroundColor: colors.bgPanel,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: 4,
     cursor: 'pointer',
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
     marginBottom: spacing.lg,
   },
   errorBox: {
     padding: spacing.lg,
-    backgroundColor: 'rgba(196, 93, 62, 0.06)',
-    border: '1px solid rgba(196, 93, 62, 0.2)',
+    backgroundColor: CLAW.dangerBg,
+    border: `1px solid ${CLAW.dangerBorder}`,
     borderRadius: 8,
-    color: colors.danger,
+    color: CLAW.danger,
     fontSize: 14,
     fontFamily: fonts.sans,
     lineHeight: 1.6,
@@ -197,18 +230,19 @@ const styles: Record<string, React.CSSProperties> = {
   code: {
     fontFamily: fonts.mono,
     fontSize: 13,
-    backgroundColor: 'rgba(196, 93, 62, 0.08)',
+    backgroundColor: CLAW.dangerBg,
+    color: CLAW.danger,
     padding: '1px 6px',
     borderRadius: 3,
   },
   footer: {
     textAlign: 'center' as const,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: fonts.serif,
     fontStyle: 'italic' as const,
-    color: colors.textDim,
+    color: CLAW.textMuted,
     marginTop: spacing.xxl,
     paddingTop: spacing.xl,
-    opacity: 0.5,
+    letterSpacing: 0.3,
   },
 };

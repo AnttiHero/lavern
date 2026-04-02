@@ -3,7 +3,8 @@
  * Green dot with amber glow when running, grey when stopped.
  */
 
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 interface Props {
   running: boolean;
@@ -13,7 +14,7 @@ interface Props {
 }
 
 export function DaemonPulse({ running, installed, pid, inverted }: Props) {
-  const textColor = inverted ? 'rgba(250, 249, 246, 0.6)' : colors.textSecondary;
+  const textColor = inverted ? CLAW.textSecondary : CLAW.textSecondary;
 
   const label = running
     ? `Running${pid ? ` · PID ${pid}` : ''}`
@@ -27,16 +28,16 @@ export function DaemonPulse({ running, installed, pid, inverted }: Props) {
       alignItems: 'center',
       gap: 8,
       padding: '6px 14px',
-      backgroundColor: inverted ? 'rgba(250, 249, 246, 0.06)' : colors.bgPanel,
+      backgroundColor: CLAW.surface,
       borderRadius: radii.pill,
-      border: `1px solid ${inverted ? 'rgba(250, 249, 246, 0.1)' : colors.border}`,
+      border: `1px solid ${CLAW.border}`,
     }}>
       <span style={{
         display: 'inline-block',
         width: 8,
         height: 8,
         borderRadius: '50%',
-        backgroundColor: running ? colors.success : colors.textMuted,
+        backgroundColor: running ? CLAW.success : CLAW.textMuted,
         animation: running ? 'clawDaemonPulse 2s ease-in-out infinite' : 'none',
         flexShrink: 0,
       }} />

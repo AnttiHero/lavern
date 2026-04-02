@@ -2,18 +2,19 @@
  * FindingsBadges — Inline critical/major/minor badge row.
  */
 
-import { colors, radii } from '../../staffing/styles/tokens.js';
+import { radii } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 interface Props {
   findings: { critical: number; major: number; minor: number } | null;
 }
 
 export function FindingsBadges({ findings }: Props) {
-  if (!findings) return <span style={{ color: colors.textDim }}>{'\u2014'}</span>;
+  if (!findings) return <span style={{ color: CLAW.textDim }}>{'\u2014'}</span>;
 
   const { critical, major, minor } = findings;
   if (critical === 0 && major === 0 && minor === 0) {
-    return <span style={{ color: colors.textDim, fontSize: 11 }}>Clean</span>;
+    return <span style={{ color: CLAW.success, fontSize: 11 }}>Clean</span>;
   }
 
   return (
@@ -34,7 +35,7 @@ const base: React.CSSProperties = {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  critical: { ...base, backgroundColor: 'rgba(196, 93, 62, 0.12)', color: colors.danger },
-  major: { ...base, backgroundColor: 'rgba(184, 134, 11, 0.1)', color: '#B8860B' },
-  minor: { ...base, backgroundColor: colors.bgPanel, color: colors.textMuted },
+  critical: { ...base, backgroundColor: CLAW.dangerBg, color: CLAW.danger },
+  major: { ...base, backgroundColor: CLAW.amberBg, color: CLAW.amber },
+  minor: { ...base, backgroundColor: CLAW.surface, color: CLAW.textMuted },
 };

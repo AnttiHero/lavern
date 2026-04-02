@@ -2,7 +2,8 @@
  * BudgetGauge — Budget progress bar with color transitions.
  */
 
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 
 interface Props {
   spent: number;
@@ -13,7 +14,7 @@ interface Props {
 export function BudgetGauge({ spent, total, exhausted }: Props) {
   const pct = total > 0 ? (spent / total) * 100 : 0;
   const remaining = total - spent;
-  const barColor = exhausted ? colors.danger : pct > 80 ? '#B8860B' : colors.success;
+  const barColor = exhausted ? CLAW.danger : pct > 80 ? CLAW.amber : CLAW.success;
 
   return (
     <div style={styles.container}>
@@ -32,7 +33,7 @@ export function BudgetGauge({ spent, total, exhausted }: Props) {
       </div>
       <div style={styles.footer}>
         <span>${remaining.toFixed(2)} remaining</span>
-        {exhausted && <span style={{ color: colors.danger, fontWeight: 600 }}>Budget exhausted</span>}
+        {exhausted && <span style={{ color: CLAW.danger, fontWeight: 600 }}>Budget exhausted</span>}
       </div>
     </div>
   );
@@ -40,8 +41,8 @@ export function BudgetGauge({ spent, total, exhausted }: Props) {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
   },
@@ -54,17 +55,17 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontFamily: fonts.serif,
     fontSize: 16,
-    fontWeight: 600,
-    color: colors.text,
+    fontWeight: 300,
+    color: CLAW.text,
   },
   amount: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
     fontFamily: fonts.mono,
   },
   track: {
     height: 8,
-    backgroundColor: colors.bgPanel,
+    backgroundColor: CLAW.input,
     borderRadius: radii.pill,
     overflow: 'hidden',
   },
@@ -77,7 +78,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: 12,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontFamily: fonts.sans,
     marginTop: 6,
   },

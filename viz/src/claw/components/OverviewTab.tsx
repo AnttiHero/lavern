@@ -4,7 +4,8 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawStatus, ClawDocument, ClawDelivery } from '../hooks/useClawData.js';
 import type { ClawLogEntry } from '../hooks/useClawDemoSimulator.js';
 import { BudgetGauge } from './BudgetGauge.js';
@@ -60,11 +61,11 @@ function formatTime(iso: string): string {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  review: colors.success,
-  flagged: colors.danger,
-  error: colors.danger,
-  delivery: '#B8860B',
-  scan: colors.textDim,
+  review: CLAW.success,
+  flagged: CLAW.danger,
+  error: CLAW.danger,
+  delivery: CLAW.amber,
+  scan: CLAW.textDim,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -112,35 +113,35 @@ function LiveActivityFeed({ entries }: { entries: ClawLogEntry[] }) {
                 {entry.agent && <span style={styles.liveAgent}>{entry.agent}</span>}
                 <span style={{
                   ...styles.liveMessage,
-                  ...(entry.severity === 'critical' ? { color: colors.danger, fontWeight: 600 } : {}),
-                  ...(entry.severity === 'major' ? { color: colors.warning, fontWeight: 600 } : {}),
-                  ...(entry.debatePhase === 'resolution' ? { color: colors.success, fontWeight: 600 } : {}),
+                  ...(entry.severity === 'critical' ? { color: CLAW.danger, fontWeight: 600 } : {}),
+                  ...(entry.severity === 'major' ? { color: CLAW.warning, fontWeight: 600 } : {}),
+                  ...(entry.debatePhase === 'resolution' ? { color: CLAW.success, fontWeight: 600 } : {}),
                 }}>{entry.message}</span>
                 {entry.severity && (
                   <span style={{
                     display: 'inline-block',
                     width: 8, height: 8, borderRadius: '50%', marginLeft: 6,
-                    background: entry.severity === 'critical' ? colors.danger : entry.severity === 'major' ? colors.warning : colors.success,
+                    background: entry.severity === 'critical' ? CLAW.danger : entry.severity === 'major' ? CLAW.warning : CLAW.success,
                   }} />
                 )}
               </div>
               {entry.detail && (
                 <div style={{
                   ...styles.liveDetail,
-                  ...(entry.debatePhase ? { fontStyle: 'italic', paddingLeft: 12, borderLeft: `2px solid ${colors.border}` } : {}),
+                  ...(entry.debatePhase ? { fontStyle: 'italic', paddingLeft: 12, borderLeft: `2px solid ${CLAW.border}` } : {}),
                 }}>{entry.detail}</div>
               )}
               {entry.evidence && (
                 <div style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 11,
-                  color: colors.textMuted,
-                  background: colors.bgPanel,
+                  color: CLAW.textMuted,
+                  background: CLAW.panel,
                   padding: '6px 10px',
                   borderRadius: 6,
                   marginTop: 4,
                   lineHeight: 1.5,
-                  borderLeft: `3px solid ${entry.severity === 'critical' ? colors.danger : entry.severity === 'major' ? colors.warning : colors.border}`,
+                  borderLeft: `3px solid ${entry.severity === 'critical' ? CLAW.danger : entry.severity === 'major' ? CLAW.warning : CLAW.border}`,
                 }}>
                   {entry.evidence}
                 </div>
@@ -148,8 +149,8 @@ function LiveActivityFeed({ entries }: { entries: ClawLogEntry[] }) {
               {entry.type === 'precedent' && (
                 <div style={{
                   fontSize: 11,
-                  color: colors.success,
-                  background: colors.successBg,
+                  color: CLAW.success,
+                  background: CLAW.successBg,
                   padding: '4px 8px',
                   borderRadius: 4,
                   marginTop: 4,
@@ -205,10 +206,10 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
       {/* Stats grid */}
       <div className="claw-stats-grid">
         <StatCard label="Documents" value={status.documents.total} />
-        <StatCard label="Reviewed" value={status.documents.reviewed} color={colors.success} />
-        <StatCard label="Flagged" value={status.documents.flagged} color={colors.danger} />
+        <StatCard label="Reviewed" value={status.documents.reviewed} color={CLAW.success} />
+        <StatCard label="Flagged" value={status.documents.flagged} color={CLAW.danger} />
         <StatCard label="Pending" value={status.documents.pending} color="#B8860B" />
-        <StatCard label="Errors" value={status.documents.errors} color={status.documents.errors > 0 ? colors.danger : colors.textMuted} />
+        <StatCard label="Errors" value={status.documents.errors} color={status.documents.errors > 0 ? CLAW.danger : CLAW.textMuted} />
         <StatCard label="Sessions" value={status.sessions.completed} />
       </div>
 
@@ -281,7 +282,7 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
           <div style={styles.sectionLabel}>Portfolio Intelligence</div>
           <div style={styles.portfolioGrid}>
             <div style={styles.portfolioStat}>
-              <span style={{ ...styles.portfolioValue, color: colors.danger }}>{status.portfolio.findings.critical}</span>
+              <span style={{ ...styles.portfolioValue, color: CLAW.danger }}>{status.portfolio.findings.critical}</span>
               <span style={styles.portfolioLabel}>critical</span>
             </div>
             <div style={styles.portfolioStat}>
@@ -289,7 +290,7 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
               <span style={styles.portfolioLabel}>major</span>
             </div>
             <div style={styles.portfolioStat}>
-              <span style={{ ...styles.portfolioValue, color: colors.textMuted }}>{status.portfolio.findings.minor}</span>
+              <span style={{ ...styles.portfolioValue, color: CLAW.textMuted }}>{status.portfolio.findings.minor}</span>
               <span style={styles.portfolioLabel}>minor</span>
             </div>
             <div style={styles.portfolioStat}>
@@ -323,11 +324,11 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
             {activity.map((entry, i) => (
               <div key={i} style={styles.timelineEntry}>
                 <div style={styles.timelineDotWrap}>
-                  <div style={{ ...styles.timelineDot, backgroundColor: TYPE_COLORS[entry.type] ?? colors.textDim }} />
+                  <div style={{ ...styles.timelineDot, backgroundColor: TYPE_COLORS[entry.type] ?? CLAW.textDim }} />
                   {i < activity.length - 1 && <div style={styles.timelineLine} />}
                 </div>
                 <div style={styles.timelineContent}>
-                  <span style={{ ...styles.timelineType, color: TYPE_COLORS[entry.type] ?? colors.textDim }}>
+                  <span style={{ ...styles.timelineType, color: TYPE_COLORS[entry.type] ?? CLAW.textDim }}>
                     {TYPE_LABELS[entry.type] ?? entry.type}
                   </span>
                   <span style={styles.timelineLabel}>{entry.label}</span>
@@ -345,7 +346,7 @@ export function OverviewTab({ status, documents, deliveries, demoMode, activityL
 function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
     <div style={styles.statCard}>
-      <div style={{ ...styles.statValue, color: color ?? colors.text }}>{value}</div>
+      <div style={{ ...styles.statValue, color: color ?? CLAW.text }}>{value}</div>
       <div style={styles.statLabel}>{label}</div>
     </div>
   );
@@ -357,20 +358,21 @@ const styles: Record<string, React.CSSProperties> = {
   // statsGrid styles handled by .claw-stats-grid className for responsive breakpoints
   statsGrid: {},
   statCard: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.md,
     textAlign: 'center' as const,
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 700,
+    fontWeight: 300,
     fontFamily: fonts.serif,
+    color: CLAW.text,
   },
   statLabel: {
     fontSize: 10,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     fontFamily: fonts.sans,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.06em',
@@ -383,8 +385,8 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.lg,
   },
   modelCard: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.md,
     textAlign: 'center' as const,
@@ -394,13 +396,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 2,
   },
   modelIcon: { fontSize: 20, marginBottom: 2 },
-  modelCount: { fontSize: 28, fontWeight: 700, fontFamily: fonts.serif },
-  modelLabel: { fontSize: 13, fontWeight: 600, color: colors.text, fontFamily: fonts.sans },
-  modelSublabel: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.sans },
+  modelCount: { fontSize: 28, fontWeight: 300, fontFamily: fonts.serif, color: CLAW.text },
+  modelLabel: { fontSize: 13, fontWeight: 600, color: CLAW.text, fontFamily: fonts.sans },
+  modelSublabel: { fontSize: 11, color: CLAW.textMuted, fontFamily: fonts.sans },
 
   liveSection: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -415,7 +417,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: colors.success,
+    backgroundColor: CLAW.success,
     animation: 'clawPulse 1.5s ease-in-out infinite',
     flexShrink: 0,
   },
@@ -432,7 +434,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     padding: '8px 10px',
     borderRadius: 6,
-    backgroundColor: 'rgba(0,0,0,0.02)',
+    backgroundColor: 'rgba(250,249,246,0.02)',
   },
   liveIcon: {
     fontSize: 14,
@@ -453,17 +455,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     fontFamily: fonts.sans,
-    color: colors.text,
+    color: CLAW.text,
   },
   liveMessage: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
   },
   liveDetail: {
     fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.textDim,
+    color: CLAW.textDim,
     marginTop: 2,
     lineHeight: 1.4,
   },
@@ -471,14 +473,14 @@ const styles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    backgroundColor: '#B8860B',
+    backgroundColor: CLAW.amber,
     animation: 'clawPulse 1s ease-in-out infinite',
     flexShrink: 0,
     marginTop: 7,
   },
   activitySection: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     padding: spacing.lg,
   },
@@ -488,7 +490,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
-    color: colors.textDim,
+    color: CLAW.textDim,
     marginBottom: spacing.md,
   },
   timeline: {
@@ -517,7 +519,7 @@ const styles: Record<string, React.CSSProperties> = {
   timelineLine: {
     width: 1,
     flex: 1,
-    backgroundColor: colors.border,
+    backgroundColor: CLAW.border,
     marginTop: 4,
   },
   timelineContent: {
@@ -537,17 +539,17 @@ const styles: Record<string, React.CSSProperties> = {
   timelineLabel: {
     fontSize: 13,
     fontFamily: fonts.mono,
-    color: colors.textSecondary,
+    color: CLAW.textSecondary,
   },
   timelineTime: {
     fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   forecastBanner: {
     padding: `${spacing.md}px ${spacing.lg}px`,
-    backgroundColor: 'rgba(184, 134, 11, 0.06)',
-    border: '1px solid rgba(184, 134, 11, 0.15)',
+    backgroundColor: CLAW.amberBg,
+    border: `1px solid ${CLAW.amberBorder}`,
     borderRadius: radii.md,
     marginBottom: spacing.lg,
   },
@@ -561,24 +563,24 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 18,
     fontWeight: 700,
     fontFamily: fonts.sans,
-    color: '#B8860B',
+    color: CLAW.amber,
   },
   forecastLabel: {
     fontSize: 13,
     fontFamily: fonts.sans,
-    color: colors.text,
+    color: CLAW.text,
   },
   forecastCost: {
     fontSize: 13,
     fontWeight: 600,
     fontFamily: fonts.mono,
-    color: '#B8860B',
+    color: CLAW.amber,
     marginLeft: 'auto',
   },
   forecastFree: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.success,
+    color: CLAW.success,
     fontWeight: 600,
     marginLeft: 'auto',
   },
@@ -590,12 +592,12 @@ const styles: Record<string, React.CSSProperties> = {
   forecastMetaItem: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   portfolioCard: {
     padding: `${spacing.lg}px`,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderRadius: radii.md,
     marginBottom: spacing.lg,
   },
@@ -613,12 +615,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 22,
     fontWeight: 700,
     fontFamily: fonts.mono,
-    color: colors.text,
+    color: CLAW.text,
   },
   portfolioLabel: {
     fontSize: 9,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.06em',
   },
@@ -632,13 +634,13 @@ const styles: Record<string, React.CSSProperties> = {
   portfolioCriticalLabel: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: colors.danger,
+    color: CLAW.danger,
     fontWeight: 600,
   },
   portfolioCriticalDoc: {
     fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
   },
   portfolioPatterns: {
     display: 'flex',
@@ -648,8 +650,8 @@ const styles: Record<string, React.CSSProperties> = {
   portfolioPatternTag: {
     fontSize: 10,
     fontFamily: fonts.sans,
-    color: '#B8860B',
-    backgroundColor: 'rgba(184, 134, 11, 0.06)',
+    color: CLAW.amber,
+    backgroundColor: CLAW.amberBg,
     padding: '2px 8px',
     borderRadius: 999,
   },

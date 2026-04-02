@@ -2,7 +2,8 @@
  * DeliveryCard — Single delivery bundle display.
  */
 
-import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { CLAW } from '../theme.js';
 import type { ClawDelivery } from '../hooks/useClawData.js';
 import { StatusBadge } from './StatusBadge.js';
 import { FindingsBadges } from './FindingsBadges.js';
@@ -33,9 +34,9 @@ export function DeliveryCard({ delivery }: Props) {
   return (
     <div style={{
       ...styles.card,
-      borderLeftColor: delivery.status === 'failed' ? colors.danger
-        : delivery.status === 'partial' ? '#B8860B'
-        : colors.success,
+      borderLeftColor: delivery.status === 'failed' ? CLAW.danger
+        : delivery.status === 'partial' ? CLAW.amber
+        : CLAW.success,
     }}>
       <div style={styles.topRow}>
         <div style={styles.nameWrap}>
@@ -72,8 +73,8 @@ export function DeliveryCard({ delivery }: Props) {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
+    backgroundColor: CLAW.surface,
+    border: `1px solid ${CLAW.border}`,
     borderLeft: '3px solid',
     borderRadius: radii.md,
     padding: spacing.lg,
@@ -99,7 +100,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontFamily: fonts.mono,
     fontWeight: 500,
-    color: colors.text,
+    color: CLAW.text,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
@@ -107,7 +108,7 @@ const styles: Record<string, React.CSSProperties> = {
   type: {
     fontSize: 12,
     fontFamily: fonts.sans,
-    color: colors.textMuted,
+    color: CLAW.textMuted,
     marginBottom: spacing.sm,
   },
   metaRow: {
@@ -123,21 +124,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
-    color: '#B8860B',
-    backgroundColor: 'rgba(184, 134, 11, 0.08)',
+    color: CLAW.amber,
+    backgroundColor: CLAW.amberBg,
     padding: '2px 8px',
     borderRadius: radii.pill,
-    border: '1px solid rgba(184, 134, 11, 0.15)',
+    border: `1px solid ${CLAW.amberBorder}`,
   },
   meta: {
     fontSize: 12,
     fontFamily: fonts.mono,
-    color: colors.textDim,
+    color: CLAW.textDim,
   },
   timestamp: {
     fontSize: 11,
     fontFamily: fonts.mono,
-    color: colors.textDim,
+    color: CLAW.textDim,
     marginTop: 4,
   },
   diffRow: {
@@ -150,18 +151,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
     fontFamily: fonts.mono,
-    color: colors.success,
+    color: CLAW.success,
   },
   diffResolved: {
     fontSize: 11,
     fontWeight: 600,
     fontFamily: fonts.mono,
-    color: colors.danger,
+    color: CLAW.danger,
   },
   diffChanged: {
     fontSize: 11,
     fontWeight: 600,
     fontFamily: fonts.mono,
-    color: '#B8860B',
+    color: CLAW.amber,
   },
 };
