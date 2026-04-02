@@ -400,15 +400,15 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
         />
       </div>
 
-      {/* Secondary row: Other formats */}
+      {/* Secondary row: Other formats — disabled, available in live sessions */}
       <div style={styles.secondaryRow}>
         <DownloadCard
           icon={'#'}
           title="Markdown"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : 'Raw markdown source'}
+          description="Raw markdown source"
           format=".md"
           onClick={() => handleDownload('md')}
-          disabled={!deliverableValid && !isDemo}
+          disabled
         />
         <DownloadCard
           icon={'{ }'}
@@ -416,14 +416,15 @@ export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
           description="Findings & debates"
           format=".json"
           onClick={() => handleDownload('json')}
+          disabled
         />
         <DownloadCard
           icon={'\u2139\uFE0F'}
           title="Executive Brief"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : 'One-page summary'}
+          description="One-page summary"
           format=".md"
           onClick={() => handleDownload('summary')}
-          disabled={!deliverableValid && !isDemo}
+          disabled
         />
       </div>
     </div>
@@ -464,7 +465,7 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
       <div style={styles.cardTitle}>{title}</div>
       <div style={styles.cardDesc}>{clicked ? 'Downloading\u2026' : description}</div>
       <div style={styles.cardFormat}>{format}</div>
-      {disabled && <div style={styles.cardNote}>Live session only</div>}
+      {disabled && <div style={styles.cardNote}>Coming soon</div>}
     </button>
   );
 }
