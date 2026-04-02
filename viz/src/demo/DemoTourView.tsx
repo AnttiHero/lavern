@@ -45,6 +45,42 @@ const CAT: Record<string, string> = {
   specialist:   '#7B5EA7',
 };
 
+// ── Pill button shared styles ─────────────────────────────────────────────
+const PILL_STYLE = {
+  fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
+  textTransform: 'uppercase' as const, borderRadius: 100, border: 'none', cursor: 'pointer',
+  background: `linear-gradient(170deg, #FFFEF9 0%, #EDE9DF 100%)`,
+  color: BG,
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(250,249,246,.2)',
+  transition: 'transform .22s ease, box-shadow .22s ease',
+};
+const PILL_GHOST_STYLE = {
+  fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
+  textTransform: 'uppercase' as const, borderRadius: 100, cursor: 'pointer',
+  background: 'transparent', color: CREAM,
+  border: '1.5px solid rgba(250,249,246,.28)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)',
+  transition: 'transform .22s ease, background .22s ease, border-color .22s ease',
+};
+function pillEnter(e: React.MouseEvent<HTMLButtonElement>) {
+  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+  e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.4), 0 16px 48px rgba(250,249,246,.28)';
+}
+function pillLeave(e: React.MouseEvent<HTMLButtonElement>) {
+  e.currentTarget.style.transform = '';
+  e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.4), 0 8px 32px rgba(250,249,246,.2)';
+}
+function ghostEnter(e: React.MouseEvent<HTMLButtonElement>) {
+  e.currentTarget.style.transform = 'translateY(-1px)';
+  e.currentTarget.style.backgroundColor = 'rgba(250,249,246,.08)';
+  e.currentTarget.style.borderColor = 'rgba(250,249,246,.5)';
+}
+function ghostLeave(e: React.MouseEvent<HTMLButtonElement>) {
+  e.currentTarget.style.transform = '';
+  e.currentTarget.style.backgroundColor = 'transparent';
+  e.currentTarget.style.borderColor = 'rgba(250,249,246,.28)';
+}
+
 // ── Slide durations (ms). 0 = wait for user interaction. ──────────────────
 // 0=case(click), 1=partner(CTA), 2=voice(CTA), 3=team(CTA), 4=builder(CTA), 5=clawern(post-delivery)
 const DURATIONS = [0, 0, 0, 0, 0, 0];
@@ -296,25 +332,24 @@ function Shell({
     );
   }
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '38fr 62fr', background: bgOverlay }}>
-      {/* Left */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '80px 28px 80px 56px',
-        borderRight: `1px solid ${dividerColor}`,
-        animation: 'dUp .5s ease .05s both',
-      }}>
-        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(52px,5.2vw,84px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -2, color: headlineColor, margin: '0 0 20px', textShadow: headlineShadow }}>{headline}</h2>
-        <p style={{ fontFamily: SANS, fontSize: 17, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, maxWidth: 340, animation: 'dIn .5s ease .2s both' }}>{sub}</p>
-        {footer && <div style={{ marginTop: 24, animation: 'dIn .4s ease .35s both' }}>{footer}</div>}
-      </div>
-      {/* Right */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '60px 48px 60px 28px',
-        animation: 'dUp .5s ease .18s both',
-      }}>
-        <div style={{ width: '100%', maxWidth: 560 }}>{children}</div>
+    <div style={{ position: 'absolute', inset: 0, background: bgOverlay, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 64, padding: '0 60px', width: '100%', maxWidth: 1160 }}>
+        {/* Left */}
+        <div style={{
+          flex: '0 0 340px',
+          display: 'flex', flexDirection: 'column',
+          borderRight: `1px solid ${dividerColor}`,
+          paddingRight: 48,
+          animation: 'dUp .5s ease .05s both',
+        }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(44px,4.4vw,72px)', fontWeight: 300, lineHeight: 1.02, letterSpacing: -2, color: headlineColor, margin: '0 0 20px', textShadow: headlineShadow }}>{headline}</h2>
+          <p style={{ fontFamily: SANS, fontSize: 16, fontWeight: 500, color: subColor, opacity: subOpacity, margin: 0, lineHeight: 1.6, animation: 'dIn .5s ease .2s both' }}>{sub}</p>
+          {footer && <div style={{ marginTop: 24, animation: 'dIn .4s ease .35s both' }}>{footer}</div>}
+        </div>
+        {/* Right */}
+        <div style={{ flex: '1 1 0', minWidth: 0, animation: 'dUp .5s ease .18s both' }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -453,16 +488,9 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
       footer={phase >= 4 ? (
         <button
           onClick={(e) => { e.stopPropagation(); onContinue(); }}
-          style={{
-            fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
-            textTransform: 'uppercase', padding: '17px 48px', borderRadius: 100,
-            background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(250,249,246,.12)',
-            transition: 'transform .22s ease',
-            animation: 'dUp .4s ease both',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
+          onMouseEnter={pillEnter}
+          onMouseLeave={pillLeave}
         >
           Try voice mode
         </button>
@@ -565,14 +593,10 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
       headline={<>Lavern<br />listens.</>}
       sub="Press spacebar and talk to the agents. Plain language. No forms."
       footer={phase >= 4 ? (
-        <button onClick={(e) => { e.stopPropagation(); onContinue(); }} style={{
-          fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
-          textTransform: 'uppercase', padding: '17px 48px', borderRadius: 100,
-          background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-          transition: 'transform .22s ease', animation: 'dUp .4s ease both',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
+          style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
+          onMouseEnter={pillEnter}
+          onMouseLeave={pillLeave}
         >Meet the team</button>
       ) : undefined}
     >
@@ -769,14 +793,10 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
       headline={<>Assemble<br />your team.</>}
       sub="Partners, red teamers, privacy counsel, risk pricers. 66 specialists on the bench."
       footer={showCTA ? (
-        <button onClick={(e) => { e.stopPropagation(); onContinue(); }} style={{
-          fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3,
-          textTransform: 'uppercase', padding: '17px 48px', borderRadius: 100,
-          background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-          transition: 'transform .22s ease', animation: 'dUp .4s ease both',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
+          style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
+          onMouseEnter={pillEnter}
+          onMouseLeave={pillLeave}
         >Make it yours</button>
       ) : undefined}
     >
@@ -1069,21 +1089,9 @@ function S4Builder({ isMobile, caseId, onLaunch }: { isMobile: boolean; caseId: 
       footer={
         <button
           onClick={forgeAgent}
-          style={{
-            fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase',
-            padding: '17px 48px', borderRadius: 100,
-            background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-            transition: 'transform .22s ease, box-shadow .22s ease',
-            boxShadow: '0 4px 20px rgba(250,249,246,.12)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'scale(1.03)';
-            e.currentTarget.style.boxShadow = '0 8px 32px rgba(250,249,246,.2)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 4px 20px rgba(250,249,246,.12)';
-          }}
+          style={{ ...PILL_STYLE, padding: '17px 48px' }}
+          onMouseEnter={pillEnter}
+          onMouseLeave={pillLeave}
         >
           Create your own agents
         </button>
@@ -1407,10 +1415,12 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
               <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-                style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', padding: '16px 32px', borderRadius: 100, background: CREAM, color: BG, border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(250,249,246,.15)' }}
+                style={{ ...PILL_STYLE, padding: '16px 32px' }}
+                onMouseEnter={pillEnter} onMouseLeave={pillLeave}
               >How Clawern works</button>
               <button onClick={(e) => { e.stopPropagation(); onExit(); }}
-                style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase', padding: '14px 32px', borderRadius: 100, background: 'transparent', color: CREAM, border: '1px solid rgba(250,249,246,.18)', cursor: 'pointer', opacity: .65 }}
+                style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }}
+                onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}
               >Start for free</button>
             </div>
           </div>
@@ -1476,29 +1486,16 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
           }}>
             <button
               onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-              style={{
-                fontFamily: SANS, fontSize: 11, fontWeight: 600,
-                letterSpacing: 3, textTransform: 'uppercase',
-                padding: '18px 36px', borderRadius: 100,
-                background: CREAM, color: BG, border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 30px rgba(250,249,246,.18)',
-                transition: 'transform .22s ease, box-shadow .22s ease',
+              style={{ ...PILL_STYLE, padding: '18px 36px',
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(250,249,246,.25)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 30px rgba(250,249,246,.18)'; }}
+              onMouseEnter={pillEnter}
+              onMouseLeave={pillLeave}
             >How Clawern works</button>
             <button
               onClick={(e) => { e.stopPropagation(); onExit(); }}
-              style={{
-                fontFamily: SANS, fontSize: 11, fontWeight: 600,
-                letterSpacing: 3, textTransform: 'uppercase',
-                padding: '16px 36px', borderRadius: 100,
-                background: 'transparent', color: CREAM,
-                border: '1px solid rgba(250,249,246,.2)',
-                cursor: 'pointer', opacity: .6, transition: 'opacity .2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '.6'; }}
+              style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
+              onMouseEnter={ghostEnter}
+              onMouseLeave={ghostLeave}
             >Start for free</button>
           </div>
         </div>

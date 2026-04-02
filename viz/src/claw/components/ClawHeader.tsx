@@ -18,10 +18,16 @@ interface Props {
 export function ClawHeader({ company, jurisdiction, industry, daemon, demoMode, onBack }: Props) {
   return (
     <div style={styles.container}>
-      {/* Ambient gradient blobs — atmospheric depth */}
-      <div style={styles.blob1} />
-      <div style={styles.blob2} />
-      <div style={styles.blob3} />
+      {/* Crab photo — full bleed, desaturated, mysterious */}
+      <img
+        src="/crab.jpg"
+        alt=""
+        role="presentation"
+        style={styles.crabImg}
+      />
+      {/* Fog overlays */}
+      <div style={styles.fogTop} />
+      <div style={styles.fogBottom} />
 
       <div style={styles.topRow}>
         <button
@@ -99,43 +105,29 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'rgba(250, 249, 246, 0.35)',
     margin: 0,
   },
-  blob1: {
+  crabImg: {
     position: 'absolute' as const,
-    width: 220,
-    height: 220,
-    borderRadius: '50%',
-    background: `radial-gradient(circle, rgba(232, 132, 92, 0.2) 0%, transparent 70%)`,
-    filter: 'blur(60px)',
-    opacity: 0.1,
-    top: -40,
-    left: '15%',
-    animation: 'clawAmbientDrift1 20s ease-in-out infinite',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover' as const,
+    objectPosition: 'center 40%',
+    filter: 'brightness(0.38) contrast(1.1) saturate(0.6)',
     pointerEvents: 'none' as const,
   },
-  blob2: {
+  fogTop: {
     position: 'absolute' as const,
-    width: 180,
-    height: 180,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(184, 134, 11, 0.12) 0%, transparent 70%)',
-    filter: 'blur(60px)',
-    opacity: 0.1,
-    top: -20,
-    right: '20%',
-    animation: 'clawAmbientDrift2 27s ease-in-out infinite',
+    inset: 0,
+    background: 'linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 50%, rgba(8,8,8,0.72) 100%)',
     pointerEvents: 'none' as const,
   },
-  blob3: {
+  fogBottom: {
     position: 'absolute' as const,
-    width: 160,
-    height: 160,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(123, 94, 167, 0.1) 0%, transparent 70%)',
-    filter: 'blur(60px)',
-    opacity: 0.08,
-    bottom: -30,
-    left: '45%',
-    animation: 'clawAmbientDrift3 34s ease-in-out infinite',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    background: 'linear-gradient(to top, #080808 0%, transparent 100%)',
     pointerEvents: 'none' as const,
   },
   demoBanner: {

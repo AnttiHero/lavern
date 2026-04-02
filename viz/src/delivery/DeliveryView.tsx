@@ -143,16 +143,16 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             <button
               onClick={() => { window.location.hash = '#/working'; }}
               style={styles.secondaryBtn}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.transform = 'translateY(-2px)'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.5)'; }}
             >
               View Agent Work
             </button>
             <button
               onClick={() => { window.location.hash = '#/my-cases'; }}
               style={styles.continueBtn}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.transform = 'translateY(-2px) scale(1.02)'; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.4), 0 14px 40px rgba(0,0,0,0.25)'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.35), 0 8px 28px rgba(0,0,0,0.18)'; }}
             >
               {'\u2190'} Back to Cases
             </button>
@@ -166,8 +166,8 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
                 window.location.hash = '#/demo';
               }}
               style={styles.secondaryBtn}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.transform = 'translateY(-2px)'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.5)'; }}
             >
               Try Another Case
             </button>
@@ -177,8 +177,8 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
                 window.location.hash = '#/demo';
               }}
               style={styles.continueBtn}
-              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
-              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.transform = 'translateY(-2px) scale(1.02)'; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.4), 0 14px 40px rgba(0,0,0,0.25)'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.35), 0 8px 28px rgba(0,0,0,0.18)'; }}
             >
               See Clawern {'\u2192'}
             </button>
@@ -233,7 +233,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footer: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: spacing.md,
     paddingTop: spacing.xxxl,
     paddingBottom: spacing.xxxxl,
@@ -244,32 +244,34 @@ const styles: Record<string, React.CSSProperties> = {
     paddingBottom: spacing.xl,
   },
   secondaryBtn: {
-    padding: '12px 36px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
+    padding: '15px 40px',
+    borderRadius: 100,
+    border: `1.5px solid ${colors.text}`,
     backgroundColor: 'transparent',
     color: colors.text,
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+    transition: 'background-color 0.22s ease, color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
   },
   continueBtn: {
-    padding: '12px 36px',
-    borderRadius: radii.sm,
-    border: `2px solid ${colors.text}`,
-    backgroundColor: colors.text,
+    padding: '15px 40px',
+    borderRadius: 100,
+    border: 'none',
+    background: `linear-gradient(170deg, ${colors.text} 0%, #0d0d0d 100%)`,
     color: '#fff',
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     textTransform: 'uppercase' as const,
     cursor: 'pointer',
-    transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
+    transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.35), 0 8px 28px rgba(0,0,0,0.18)',
   },
   demoConversationNotice: {
     textAlign: 'center' as const,
