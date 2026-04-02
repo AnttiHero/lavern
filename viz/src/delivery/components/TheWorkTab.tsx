@@ -170,8 +170,10 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         </div>
       )}
 
-      {/* ── Derivative Document Generation ────────────────────────── */}
-      <DerivativesPanel data={data} assemblyStatus={assemblyStatus} />
+      {/* ── Derivative Document Generation — hidden in demo ──────── */}
+      {!data.sessionId.startsWith('demo-session') && (
+        <DerivativesPanel data={data} assemblyStatus={assemblyStatus} />
+      )}
     </div>
   );
 }
