@@ -239,9 +239,9 @@ function TopBar({ isMobile, slide, onExit }: { isMobile: boolean; slide: number;
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: isMobile ? '20px 24px' : '26px 48px',
-      background: 'linear-gradient(to bottom, rgba(8,8,8,0.85) 0%, transparent 100%)',
+      background: (isMobile && slide === 0) ? 'none' : 'linear-gradient(to bottom, rgba(8,8,8,0.85) 0%, transparent 100%)',
     }}>
-      <span style={{ fontFamily: SERIF, fontSize: isMobile ? 13 : 15, fontWeight: 300, letterSpacing: 7, color: CREAM, opacity: 0.55 }}>
+      <span style={{ fontFamily: SERIF, fontSize: isMobile ? 13 : 15, fontWeight: 300, letterSpacing: 7, color: isMobile && slide === 0 ? '#1A1A1A' : CREAM, opacity: 0.55 }}>
         LAVERN
       </span>
       <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
@@ -252,7 +252,7 @@ function TopBar({ isMobile, slide, onExit }: { isMobile: boolean; slide: number;
         )}
         <button onClick={onExit} style={{
           fontFamily: SANS, fontSize: 10, fontWeight: 500, letterSpacing: 2.5, textTransform: 'uppercase',
-          color: CREAM, opacity: 0.25, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          color: (isMobile && slide === 0) ? '#1A1A1A' : CREAM, opacity: 0.25, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           transition: 'opacity .2s',
         }}
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
@@ -268,10 +268,11 @@ function BottomBar({ slide, total, goTo, progKey, duration, isMobile }: {
   slide: number; total: number; goTo: (i: number) => void;
   progKey: number; duration: number; isMobile: boolean;
 }) {
+  const isLight = isMobile && slide === 0;
   return (
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 40,
-      background: 'linear-gradient(to top, rgba(8,8,8,0.8) 0%, transparent 100%)',
+      background: isLight ? 'none' : 'linear-gradient(to top, rgba(8,8,8,0.8) 0%, transparent 100%)',
       paddingBottom: isMobile ? 16 : 20,
     }}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingBottom: 14 }}>
@@ -279,7 +280,9 @@ function BottomBar({ slide, total, goTo, progKey, duration, isMobile }: {
           <button key={i} onClick={() => goTo(i)} style={{
             width: i === slide ? 24 : 6, height: 6, borderRadius: 3, border: 'none', padding: 0,
             cursor: 'pointer',
-            background: i === slide ? CREAM : 'rgba(250,249,246,0.2)',
+            background: i === slide
+              ? (isLight ? 'rgba(26,26,26,0.5)' : CREAM)
+              : (isLight ? 'rgba(26,26,26,0.15)' : 'rgba(250,249,246,0.2)'),
             transition: 'all .3s ease',
           }} />
         ))}

@@ -12,6 +12,7 @@ import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { SimpleMarkdown } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { useResponsive } from '../../hooks/useMediaQuery.js';
 
 interface Props {
   data: DeliveryData;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
+  const { isMobile } = useResponsive();
   const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
   // Only show assembly failure after polling has definitively ended (timeout/error).
   // While still polling, the assembler may still be working — don't flash the error.
@@ -81,7 +83,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
 
       {/* ── Key changes — transformation cards ────────────────── */}
-      {data.keyChanges.length > 0 && (
+      {!isMobile && data.keyChanges.length > 0 && (
         <div style={styles.section}>
           <div style={styles.sectionHeader}>
             <div style={styles.sectionTitle}>Key Findings</div>

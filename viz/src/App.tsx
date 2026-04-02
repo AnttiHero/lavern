@@ -852,7 +852,10 @@ export function App() {
             {showMark && <LavernMark />}
             <DeliveryView
               onContinue={handleDeliveryDone}
-              onBack={() => { window.location.hash = '#/quickstart'; }}
+              onBack={() => {
+                const sid = sessionStorage.getItem('shem-session-id') ?? '';
+                window.location.hash = sid.startsWith('demo-session') ? '#/demo' : '#/quickstart';
+              }}
               onSkip={() => { window.location.hash = '#/billing'; }}
             />
           </Suspense>

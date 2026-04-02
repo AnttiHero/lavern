@@ -23,6 +23,10 @@ const RING_COLOR = 'rgba(255, 255, 255, 0.6)';
 const TRAIL_COLOR = 'rgba(255, 255, 255, 0.12)';
 
 export function CustomCursor() {
+  // Don't render on touch devices
+  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+    return null;
+  }
   const dotRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: -100, y: -100 });
