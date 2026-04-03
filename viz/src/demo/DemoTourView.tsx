@@ -1296,14 +1296,14 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   const termLines = TERM_LINES[caseId];
   const budget = CLAW_BUDGET[caseId];
   const [visibleLines, setVisibleLines] = useState<number[]>([]);
-  const [showSteps, setShowSteps] = useState(false);
-  const [showCTA, setShowCTA]     = useState(false);
+  const [showSteps, setShowSteps] = useState(isMobile);
+  const [showCTA, setShowCTA]     = useState(isMobile);
   const allLinesVisible = visibleLines.length >= termLines.length;
 
   useEffect(() => {
     setVisibleLines([]);
-    setShowSteps(false);
-    setShowCTA(false);
+    setShowSteps(isMobile);
+    setShowCTA(isMobile);
     const lastDelay = termLines[termLines.length - 1].delay;
     const ts    = termLines.map((l, i) => setTimeout(() => setVisibleLines(v => [...v, i]), l.delay));
     const sT    = setTimeout(() => setShowSteps(true), 500);
