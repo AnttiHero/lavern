@@ -800,7 +800,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
           onMouseEnter={pillEnter}
           onMouseLeave={pillLeave}
-        >See the agents work on your case →</button>
+        >Customise your agents →</button>
       ) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1625,25 +1625,17 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
   const card1 = (
     <div style={{
       flex: 1, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)',
-      borderRadius: 16, padding: isMobile ? '28px 24px' : '36px 32px',
+      borderRadius: 16, padding: isMobile ? '28px 24px' : '32px 32px',
       opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? 'none' : 'translateY(20px)',
       transition: 'opacity .6s ease .1s, transform .6s ease .1s',
     }}>
-      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: ACCENT, marginBottom: 20 }}>Option 01</div>
-      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 20 }}>
+      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: ACCENT, marginBottom: 16 }}>Option 01</div>
+      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 24 }}>
         The billable<br />hour.
       </div>
-      <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.68)', lineHeight: 1.75, margin: '0 0 28px' }}>
-        Like all law firms, we swear by the billable hour. Only that ours is $1. That is not much.
-      </p>
-      <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 22, marginBottom: 22 }}>
-        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>A lawyer charges</div>
-        <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.30)', fontWeight: 300, marginBottom: 16 }}>€200 – €500 / hour</div>
-        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>Lavern charges</div>
-        <div style={{ fontFamily: SERIF, fontSize: 28, color: '#69DB7C', fontWeight: 300, letterSpacing: -0.5 }}>$1 / hour</div>
-      </div>
+      <div style={{ fontFamily: SERIF, fontSize: 40, color: '#69DB7C', fontWeight: 300, letterSpacing: -1, marginBottom: 12 }}>$1 / hour</div>
       <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.6 }}>
-        You buy credits. A typical document review runs $3–5.
+        A typical document review runs $3–5.
       </div>
     </div>
   );
@@ -1651,23 +1643,17 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
   const card2 = (
     <div style={{
       flex: 1, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)',
-      borderRadius: 16, padding: isMobile ? '28px 24px' : '36px 32px',
+      borderRadius: 16, padding: isMobile ? '28px 24px' : '32px 32px',
       opacity: phase >= 2 ? 1 : 0, transform: phase >= 2 ? 'none' : 'translateY(20px)',
       transition: 'opacity .6s ease .2s, transform .6s ease .2s',
     }}>
-      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(116,192,252,.7)', marginBottom: 20 }}>Option 02</div>
-      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 20 }}>
+      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(116,192,252,.7)', marginBottom: 16 }}>Option 02</div>
+      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 24 }}>
         The retainer.
       </div>
-      <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.68)', lineHeight: 1.75, margin: '0 0 28px' }}>
-        The autopilot works with local models. It is like a law firm on retainer — always on, always watching.
-      </p>
-      <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 22, marginBottom: 22 }}>
-        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>Processing cost</div>
-        <div style={{ fontFamily: SERIF, fontSize: 28, color: CREAM, fontWeight: 300, letterSpacing: -0.5, marginBottom: 16 }}>$0</div>
-        <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.6 }}>
-          Except the electricity for your Mac Mini.
-        </div>
+      <div style={{ fontFamily: SERIF, fontSize: 40, color: CREAM, fontWeight: 300, letterSpacing: -1, marginBottom: 12 }}>$0</div>
+      <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.6 }}>
+        Local models. Except the electricity for your Mac Mini.
       </div>
     </div>
   );
@@ -1676,10 +1662,20 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
     <div style={{
       opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? 'none' : 'translateY(10px)',
       transition: 'opacity .5s ease, transform .5s ease',
-      display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row',
+      display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', justifyContent: 'center',
     }}>
-      <button onClick={onExit} style={{ ...PILL_STYLE, padding: '18px 36px', flex: isMobile ? undefined : '0 0 auto' }}
-        onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Start for free →</button>
+      <button
+        onClick={() => { window.location.hash = '#/demo'; window.location.reload(); }}
+        style={{ ...PILL_STYLE, padding: '16px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,.28)', color: 'rgba(250,249,246,.72)', flex: isMobile ? undefined : '0 0 auto' }}
+        onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Try another case</button>
+      <button
+        onClick={() => window.open('mailto:hello@lavern.ai?subject=Knock%20Knock', '_blank')}
+        style={{ ...PILL_STYLE, padding: '16px 28px', flex: isMobile ? undefined : '0 0 auto' }}
+        onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Contact us</button>
+      <button
+        onClick={() => window.open('https://lavern.ai/claw/how-it-works.html', '_blank')}
+        style={{ ...PILL_STYLE, padding: '16px 28px', flex: isMobile ? undefined : '0 0 auto' }}
+        onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Go deeper →</button>
     </div>
   );
 

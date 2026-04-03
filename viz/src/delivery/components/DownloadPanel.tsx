@@ -270,13 +270,50 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
       if (format === 'md') {
         triggerBlobDownload(output, `${docSlug}.md`, 'text/markdown');
       } else if (format === 'docx' || format === 'pdf') {
-        // Wrap markdown in basic HTML so Word/browsers can open it nicely
+        const styleCSS: Record<DocStyle, string> = {
+          traditional: `
+            body{font-family:'Times New Roman',Times,serif;max-width:680px;margin:48px auto;line-height:1.5;color:#1a1a1a;font-size:12pt}
+            h1{font-family:'Times New Roman',Times,serif;font-size:16pt;font-weight:bold;text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:8px;margin-bottom:24px;counter-reset:section}
+            h2{font-family:'Times New Roman',Times,serif;font-size:13pt;font-weight:bold;margin-top:28px;counter-increment:section}
+            h2::before{content:counter(section) '. '}
+            h3{font-family:'Times New Roman',Times,serif;font-size:12pt;font-weight:bold;font-style:italic}
+            p{margin:0 0 12px;text-align:justify}
+            ul,ol{padding-left:28px;margin:0 0 12px}
+            blockquote{border-left:3px solid #1a1a1a;margin:16px 0;padding:8px 16px;font-style:italic}
+            hr{border:none;border-top:1px solid #1a1a1a;margin:24px 0}
+          `,
+          elegant: `
+            @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap');
+            body{font-family:'Inter',Helvetica,sans-serif;max-width:720px;margin:56px auto;line-height:1.8;color:#2c2118;font-size:14px;font-weight:300;background:#faf8f5}
+            h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:300;color:#b85c38;line-height:1.1;margin-bottom:32px;border:none}
+            h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:300;color:#2c2118;margin-top:40px;border-bottom:1px solid rgba(44,33,24,.12);padding-bottom:8px}
+            h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;font-style:italic;color:#b85c38}
+            p{margin:0 0 16px}
+            ul,ol{padding-left:24px;margin:0 0 16px}
+            blockquote{border-left:2px solid #b85c38;margin:24px 0;padding:12px 20px;font-style:italic;color:#6b5744}
+            hr{border:none;border-top:1px solid rgba(44,33,24,.15);margin:32px 0}
+            strong{font-weight:500}
+          `,
+          accessible: `
+            body{font-family:Verdana,Geneva,sans-serif;max-width:740px;margin:40px auto;line-height:1.8;color:#111;font-size:16px;background:#fff}
+            h1{font-size:28px;font-weight:700;color:#000;margin-bottom:24px;letter-spacing:0.12px}
+            h2{font-size:22px;font-weight:700;color:#000;margin-top:36px;border-bottom:3px solid #005fcc;padding-bottom:6px}
+            h3{font-size:18px;font-weight:700;color:#000}
+            p{margin:0 0 16px}
+            a{color:#005fcc;text-decoration:underline}
+            ul,ol{padding-left:28px;margin:0 0 16px}
+            li{margin-bottom:6px}
+            blockquote{background:#f0f4ff;border-left:4px solid #005fcc;margin:20px 0;padding:12px 20px}
+            hr{border:none;border-top:2px solid #ccc;margin:28px 0}
+            strong{font-weight:700}
+          `,
+        };
         const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${escapeHtml(data.documentTitle)}</title>
-<style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#1a1a1a}h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif}h1{border-bottom:1px solid #ddd;padding-bottom:8px}h2{margin-top:32px}ul,ol{padding-left:24px}</style>
+<html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(data.documentTitle)}</title>
+<style>${styleCSS[selectedStyle]}</style>
 </head><body>${markdownToHtml(output)}</body></html>`;
         const ext = format === 'docx' ? 'doc' : 'html';
-        triggerBlobDownload(html, `${docSlug}.${ext}`, 'text/html');
+        triggerBlobDownload(html, `${docSlug}-${selectedStyle}.${ext}`, 'text/html');
       } else if (format === 'json') {
         const jsonData = {
           sessionId: data.sessionId,
@@ -383,7 +420,7 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
       )}
 
       {/* Download button */}
-      <div>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
         <DownloadButton
           label="Download"
           sub={isDemo ? `.doc · ${selectedStyle}` : `.docx · ${selectedStyle}`}
@@ -555,8 +592,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: 4,
-    padding: '14px 20px',
+    gap: 6,
+    padding: '20px 56px',
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.lg,
@@ -564,6 +601,7 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'opacity 0.15s ease',
     textAlign: 'center' as const,
     color: colors.text,
+    minWidth: 240,
   },
   dlBtnPrimary: {
     backgroundColor: colors.text,
@@ -575,10 +613,11 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'not-allowed',
   },
   dlBtnLabel: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: 600,
     fontFamily: fonts.sans,
     color: 'inherit',
+    letterSpacing: 0.5,
   },
   dlBtnSub: {
     fontSize: 10,
