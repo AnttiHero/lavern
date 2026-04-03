@@ -1519,15 +1519,27 @@ const INTRO_AGENTS = [
   'Leon Müller', 'Priya Nair', 'Kai Tanaka', 'Zara Okonkwo',
 ];
 
+const INTRO_BUBBLES = [
+  { idx: 2, text: 'GDPR Art. 7 — consent is bundled.', color: '#F4845F', delay: 1400 },
+  { idx: 5, text: 'Confirmed. Non-compliant.', color: '#69DB7C', delay: 2200 },
+  { idx: 7, text: 'Flagging 3 liability gaps.', color: '#FAB005', delay: 3000 },
+];
+
 function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () => void }) {
+  const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
   const [showCTA, setShowCTA] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 900);
-    return () => clearTimeout(t);
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    INTRO_BUBBLES.forEach((b, i) => {
+      ts.push(setTimeout(() => setVisibleBubbles(prev => [...prev, i]), b.delay));
+    });
+    ts.push(setTimeout(() => setShowCTA(true), 1000));
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   const avatarCount = isMobile ? 6 : 8;
-  const avatarSize  = isMobile ? 38 : 44;
+  const avatarSize  = isMobile ? 40 : 48;
 
   return (
     <div style={{ position: 'absolute', inset: 0, backgroundColor: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1537,65 +1549,96 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
         maxWidth: isMobile ? '100%' : 680,
       }}>
 
-        {/* Agent faces */}
-        <div style={{ display: 'flex', marginBottom: 36, animation: 'dIn .7s ease .05s both' }}>
-          {INTRO_AGENTS.slice(0, avatarCount).map((seed, i) => (
-            <img
-              key={seed}
-              src={av(seed, avatarSize * 2)}
-              alt=""
-              role="presentation"
-              style={{
-                width: avatarSize, height: avatarSize,
-                borderRadius: '50%',
-                border: '2px solid rgba(8,8,8,1)',
-                marginLeft: i === 0 ? 0 : -(avatarSize * 0.28),
-                background: 'rgba(255,255,255,.06)',
-                filter: 'saturate(0.5) brightness(0.85)',
-                boxShadow: '0 2px 8px rgba(0,0,0,.5)',
-              }}
-            />
-          ))}
+        {/* Agent faces + debate bubbles */}
+        <div style={{ position: 'relative', marginBottom: 40, animation: 'dIn .5s ease .05s both' }}>
+          {/* Bubbles float above avatars — stacked vertically, right-side anchor */}
           <div style={{
-            width: avatarSize, height: avatarSize, borderRadius: '50%',
-            border: '2px solid rgba(8,8,8,1)',
-            marginLeft: -(avatarSize * 0.28),
-            background: 'rgba(255,255,255,.06)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: SANS, fontSize: 9, color: 'rgba(250,249,246,.4)', letterSpacing: 0.5,
-          }}>+58</div>
+            position: 'absolute',
+            bottom: avatarSize + 8,
+            right: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: 5,
+            pointerEvents: 'none',
+          }}>
+            {INTRO_BUBBLES.map((b, i) => (
+              <div key={i} style={{
+                opacity: visibleBubbles.includes(i) ? 1 : 0,
+                transform: visibleBubbles.includes(i) ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'opacity .4s ease, transform .4s ease',
+                whiteSpace: 'nowrap',
+              }}>
+                <div style={{
+                  background: 'rgba(16,16,16,0.97)',
+                  border: `1px solid ${b.color}44`,
+                  borderLeft: `2px solid ${b.color}`,
+                  borderRadius: 6,
+                  padding: '5px 10px',
+                  fontFamily: SANS,
+                  fontSize: 10,
+                  color: b.color,
+                  letterSpacing: 0.2,
+                  boxShadow: `0 4px 16px rgba(0,0,0,.6)`,
+                }}>{b.text}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Avatar row */}
+          <div style={{ display: 'flex' }}>
+            {INTRO_AGENTS.slice(0, avatarCount).map((seed, i) => (
+              <img
+                key={seed}
+                src={av(seed, avatarSize * 2)}
+                alt=""
+                role="presentation"
+                style={{
+                  width: avatarSize, height: avatarSize,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(8,8,8,1)',
+                  marginLeft: i === 0 ? 0 : -(avatarSize * 0.28),
+                  background: 'rgba(255,255,255,.06)',
+                  filter: 'saturate(0.6) brightness(0.9)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,.6)',
+                  opacity: 0,
+                  animation: `dIn .4s ease ${i * 80}ms both`,
+                }}
+              />
+            ))}
+            <div style={{
+              width: avatarSize, height: avatarSize, borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,.08)',
+              marginLeft: -(avatarSize * 0.28),
+              background: 'rgba(255,255,255,.05)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: SANS, fontSize: 9, color: 'rgba(250,249,246,.35)', letterSpacing: 0.5,
+              opacity: 0,
+              animation: `dIn .4s ease ${avatarCount * 80}ms both`,
+            }}>+58</div>
+          </div>
         </div>
 
         {/* Headline */}
         <h1 style={{
           fontFamily: SERIF,
-          fontSize: isMobile ? 'clamp(48px,12vw,64px)' : 'clamp(72px,6.5vw,100px)',
-          fontWeight: 300, lineHeight: 0.94, letterSpacing: -2.5,
+          fontSize: isMobile ? 'clamp(36px,9vw,52px)' : 'clamp(52px,4.5vw,72px)',
+          fontWeight: 300, lineHeight: 1.0, letterSpacing: -2,
           color: CREAM, margin: '0 0 24px',
-          animation: 'dReveal .9s ease .15s both',
+          animation: 'dReveal .9s ease .3s both',
         }}>
-          A driverless<br />law firm.
+          Software masquerading<br />as a law firm.
         </h1>
 
         {/* Sub */}
         <p style={{
           fontFamily: SANS, fontSize: isMobile ? 14 : 15,
-          color: 'rgba(250,249,246,.4)', lineHeight: 1.75,
-          margin: '0 0 14px', maxWidth: 520,
-          animation: 'dIn .7s ease .35s both',
-        }}>
-          Software masquerading as a law firm. Upload any contract — 66 specialist agents review it, debate the findings, and deliver a risk report in minutes. You buy the outcome, not the tool.
-        </p>
-        <p style={{
-          fontFamily: SANS, fontSize: 13,
-          color: 'rgba(250,249,246,.24)', lineHeight: 1.65,
-          margin: '0 0 40px', maxWidth: 520,
+          color: 'rgba(250,249,246,.72)', lineHeight: 1.8,
+          margin: '0 0 36px', maxWidth: 480,
           animation: 'dIn .7s ease .5s both',
         }}>
-          NDA, lease, employment contract, privacy policy, MSA. Ask in plain language or upload the file.
-          Lawyers bill by the billable hour. So do we —{' '}
-          <strong style={{ fontFamily: SERIF, fontSize: 17, color: '#69DB7C', fontWeight: 400 }}>at $1</strong>
-          {' '}instead of $200. No subscription, no retainer.
+          A law firm that works for you. Just this time, the workers are agents.{' '}
+          Use it once, or let it run — and it will work while you sleep.
         </p>
 
         {/* CTA */}
