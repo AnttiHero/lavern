@@ -13,7 +13,6 @@ import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { SimpleMarkdown, type DocStyle } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
-import { useResponsive } from '../../hooks/useMediaQuery.js';
 
 interface Props {
   data: DeliveryData;
@@ -22,7 +21,6 @@ interface Props {
 }
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
-  const { isMobile } = useResponsive();
   const [docStyle, setDocStyle] = useState<DocStyle>('elegant');
   const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
   // Only show assembly failure after polling has definitively ended (timeout/error).
@@ -97,58 +95,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       />
 
 
-      {/* ── Dimension scores — refined horizontal bars ─────────── */}
-      {data.dimensions.length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <div style={styles.sectionTitle}>Quality Dimensions</div>
-            <div style={styles.sectionCount}>1 {'\u2013'} 5 scale</div>
-          </div>
-
-          <div style={styles.dimensionsCard}>
-            {data.dimensions.map((dim, i) => (
-              <div
-                key={i}
-                style={{
-                  ...styles.dimensionRow,
-                  borderBottom: i < data.dimensions.length - 1
-                    ? `1px solid ${colors.bgPanel}`
-                    : 'none',
-                }}
-              >
-                <div style={styles.dimensionLabel}>{dim.dimension}</div>
-                <div style={styles.barOuter}>
-                  <div style={styles.barRow}>
-                    <div style={styles.barTrack}>
-                      <div style={{
-                        ...styles.barBefore,
-                        width: `${(dim.before / 5) * 100}%`,
-                      }} />
-                    </div>
-                    <div style={styles.barTrack}>
-                      <div style={{
-                        ...styles.barAfter,
-                        width: `${(dim.after / 5) * 100}%`,
-                      }} />
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.scoreGroup}>
-                  <span style={styles.scoreBefore}>{dim.before.toFixed(1)}</span>
-                  <span style={styles.scoreArrow}>{'\u2192'}</span>
-                  <span style={styles.scoreAfter}>{dim.after.toFixed(1)}</span>
-                </div>
-                <div style={{
-                  ...styles.deltaTag,
-                  ...(dim.delta < 0 ? { color: colors.danger, backgroundColor: 'rgba(196, 93, 62, 0.06)' } : {}),
-                }}>{dim.delta >= 0 ? '+' : ''}{dim.delta.toFixed(1)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Derivative Document Generation — hidden in demo ──────── */}
+      {/* ── Derivatives — live sessions only ────────────────────── */}
       {!data.sessionId.startsWith('demo-session') && (
         <DerivativesPanel data={data} assemblyStatus={assemblyStatus} />
       )}

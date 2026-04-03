@@ -382,64 +382,29 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
         </div>
       )}
 
-      {/* Primary row: DOCX and PDF */}
-      <div style={styles.primaryRow}>
-        <DownloadCard
-          icon={'\uD83D\uDCC4'}
-          title="Word Document"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : isDemo ? 'Opens in Word' : 'Professional .docx format'}
-          format={isDemo ? '.doc' : '.docx'}
+      {/* Download buttons */}
+      <div style={styles.downloadRow}>
+        <DownloadButton
+          label={isDemo ? 'Download as Word' : 'Download as Word'}
+          sub={isDemo ? `.doc · ${selectedStyle}` : `.docx · ${selectedStyle}`}
           primary
           onClick={() => handleDownload('docx')}
           disabled={!isDemo && !deliverableValid}
         />
-        <DownloadCard
-          icon={'\uD83D\uDCC3'}
-          title="PDF"
-          description={!deliverableValid && !isDemo ? 'Not yet available' : isDemo ? 'Print from browser' : 'Print-ready document'}
-          format={isDemo ? '.html' : '.pdf'}
-          primary
+        <DownloadButton
+          label="Download as PDF"
+          sub={isDemo ? `.html · print-ready` : `.pdf · print-ready`}
           onClick={() => handleDownload('pdf')}
           disabled={!isDemo && !deliverableValid}
-        />
-      </div>
-
-      {/* Secondary row: Other formats — disabled, available in live sessions */}
-      <div style={styles.secondaryRow}>
-        <DownloadCard
-          icon={'#'}
-          title="Markdown"
-          description="Raw markdown source"
-          format=".md"
-          onClick={() => handleDownload('md')}
-          disabled
-        />
-        <DownloadCard
-          icon={'{ }'}
-          title="Structured Data"
-          description="Findings & debates"
-          format=".json"
-          onClick={() => handleDownload('json')}
-          disabled
-        />
-        <DownloadCard
-          icon={'\u2139\uFE0F'}
-          title="Executive Brief"
-          description="One-page summary"
-          format=".md"
-          onClick={() => handleDownload('summary')}
-          disabled
         />
       </div>
     </div>
   );
 }
 
-function DownloadCard({ icon, title, description, format, primary, disabled, onClick }: {
-  icon: string;
-  title: string;
-  description: string;
-  format: string;
+function DownloadButton({ label, sub, primary, disabled, onClick }: {
+  label: string;
+  sub: string;
   primary?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -447,7 +412,7 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
   const [clicked, setClicked] = useState(false);
 
   const handleClick = () => {
-    if (clicked) return; // debounce — prevent double download
+    if (clicked || disabled) return;
     onClick();
     setClicked(true);
     setTimeout(() => setClicked(false), 2000);
@@ -458,18 +423,15 @@ function DownloadCard({ icon, title, description, format, primary, disabled, onC
       onClick={handleClick}
       disabled={disabled}
       style={{
-        ...styles.card,
-        ...(primary ? styles.cardPrimary : {}),
-        ...(disabled ? styles.cardDisabled : {}),
+        ...styles.dlBtn,
+        ...(primary ? styles.dlBtnPrimary : {}),
+        ...(disabled ? styles.dlBtnDisabled : {}),
       }}
-      onMouseEnter={e => { if (!disabled) { e.currentTarget.style.borderColor = colors.borderHover; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; } }}
-      onMouseLeave={e => { if (!disabled) { e.currentTarget.style.borderColor = primary ? colors.accent : colors.border; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.opacity = '0.82'; }}
+      onMouseLeave={e => { if (!disabled) e.currentTarget.style.opacity = '1'; }}
     >
-      <div style={styles.cardIcon}>{icon}</div>
-      <div style={styles.cardTitle}>{title}</div>
-      <div style={styles.cardDesc}>{clicked ? 'Downloading\u2026' : description}</div>
-      <div style={styles.cardFormat}>{format}</div>
-      {disabled && <div style={styles.cardNote}>Coming soon</div>}
+      <span style={styles.dlBtnLabel}>{clicked ? 'Downloading\u2026' : label}</span>
+      <span style={styles.dlBtnSub}>{sub}</span>
     </button>
   );
 }
@@ -589,70 +551,46 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
   },
 
-  // Download cards
-  primaryRow: {
+  // Download buttons
+  downloadRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: '1fr 1fr',
     gap: spacing.md,
-    marginBottom: spacing.md,
   },
-  secondaryRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: spacing.sm,
-  },
-  card: {
+  dlBtn: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: spacing.xs,
-    padding: `${spacing.lg}px ${spacing.md}px`,
+    gap: 4,
+    padding: '14px 20px',
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.lg,
     cursor: 'pointer',
-    transition: 'border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
+    transition: 'opacity 0.15s ease',
     textAlign: 'center' as const,
+    color: colors.text,
   },
-  cardPrimary: {
-    border: `2px solid ${colors.accent}`,
-    padding: `${spacing.xl}px ${spacing.lg}px`,
+  dlBtnPrimary: {
+    backgroundColor: colors.text,
+    border: `1px solid ${colors.text}`,
+    color: colors.bg,
   },
-  cardDisabled: {
-    opacity: 0.5,
+  dlBtnDisabled: {
+    opacity: 0.4,
     cursor: 'not-allowed',
   },
-  cardIcon: {
-    fontSize: 22,
-    marginBottom: 2,
-  },
-  cardTitle: {
+  dlBtnLabel: {
     fontSize: 13,
     fontWeight: 600,
     fontFamily: fonts.sans,
-    color: colors.text,
+    color: 'inherit',
   },
-  cardDesc: {
-    fontSize: 11,
-    fontFamily: fonts.sans,
-    color: colors.textMuted,
-    lineHeight: 1.4,
-  },
-  cardFormat: {
+  dlBtnSub: {
     fontSize: 10,
     fontFamily: fonts.mono,
-    color: colors.textDim,
-    backgroundColor: colors.bgPanel,
-    padding: '2px 8px',
-    borderRadius: radii.sm,
-    marginTop: 2,
-  },
-  cardNote: {
-    fontSize: 9,
-    fontFamily: fonts.sans,
-    color: colors.textDim,
-    fontStyle: 'italic' as const,
-    marginTop: 2,
+    color: 'inherit',
+    opacity: 0.55,
   },
 
   // Save to folder
