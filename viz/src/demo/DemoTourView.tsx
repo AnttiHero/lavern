@@ -1433,78 +1433,80 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   /* ── Desktop ─────────────────────────────────────────────────────── */
   return (
     <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
-      {/* Mac Mini photo — right 55%, full height */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '55%', zIndex: 1, overflow: 'hidden' }}>
-        <img
-          src="/mac-mini-dark.jpg"
-          alt=""
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', opacity: 0.65 }}
-        />
-        {/* Dark gradient from left — blends photo into dark background */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #050505 0%, rgba(5,5,5,.7) 30%, rgba(5,5,5,.15) 70%, rgba(5,5,5,.25) 100%)' }} />
-        {/* Bottom fade */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: 'linear-gradient(to top, #050505, transparent)' }} />
-      </div>
 
-      {/* Terminal — bottom-right, floating over photo */}
-      <div style={{ position: 'absolute', bottom: 48, right: 48, width: 380, zIndex: 20 }}>
-        {terminalEl}
-      </div>
+      {/* Mac Mini — subtle atmospheric background */}
+      <img
+        src="/mac-mini-dark.jpg"
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.13, zIndex: 0 }}
+      />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 65% 40%, rgba(5,5,5,0) 10%, #050505 68%)', zIndex: 1 }} />
 
-      {/* Left — headline + steps + CTAs */}
-      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '52%', zIndex: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px 48px 80px 72px' }}>
-
-        <h2 style={{
-          fontFamily: SERIF,
-          fontSize: 'clamp(52px,5.2vw,76px)',
-          fontWeight: 300, lineHeight: 0.95, letterSpacing: -2,
-          color: CREAM, margin: '0 0 32px',
-          animation: 'dReveal .9s ease .1s both',
-          textShadow: '0 2px 40px rgba(0,0,0,.9)',
-        }}>
-          While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
-        </h2>
-
-        {/* Three steps */}
+      {/* Two-column grid, centered */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 10,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '60px 80px',
+      }}>
         <div style={{
-          display: 'flex', flexDirection: 'column', gap: 22,
-          opacity: showSteps ? 1 : 0,
-          transform: showSteps ? 'none' : 'translateY(14px)',
-          transition: 'opacity .6s ease .2s, transform .6s ease .2s',
-          marginBottom: 36,
+          width: '100%', maxWidth: 1080,
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          gap: 72, alignItems: 'center',
         }}>
-          {STEPS.map((s, i) => (
-            <div key={s.n} style={{
-              display: 'flex', gap: 18, alignItems: 'flex-start',
-              opacity: showSteps ? 1 : 0,
-              animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
+
+          {/* Left: headline + steps + CTAs */}
+          <div>
+            <h2 style={{
+              fontFamily: SERIF,
+              fontSize: 'clamp(44px,4.5vw,68px)',
+              fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5,
+              color: CREAM, margin: '0 0 40px',
+              animation: 'dReveal .9s ease .1s both',
             }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.2)', lineHeight: 1.7, flexShrink: 0, letterSpacing: 1, marginTop: 1 }}>{s.n}</span>
-              <div>
-                <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 4 }}>{s.title}</div>
-                <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.65, maxWidth: 320 }}>{s.body}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+              While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
+            </h2>
 
-        {/* CTAs */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 260,
-          opacity: showCTA ? 1 : 0,
-          transform: showCTA ? 'none' : 'translateY(14px)',
-          transition: 'opacity .5s ease, transform .5s ease',
-        }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); onNext(); }}
-            style={{ ...PILL_STYLE, padding: '18px 36px' }}
-            onMouseEnter={pillEnter} onMouseLeave={pillLeave}
-          >What does it cost? →</button>
-          <button
-            onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-            style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
-            onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}
-          >How it works</button>
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 28,
+              opacity: showSteps ? 1 : 0,
+              transform: showSteps ? 'none' : 'translateY(14px)',
+              transition: 'opacity .6s ease, transform .6s ease',
+              marginBottom: 40,
+            }}>
+              {STEPS.map((s, i) => (
+                <div key={s.n} style={{
+                  display: 'flex', gap: 20, alignItems: 'flex-start',
+                  animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
+                }}>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.18)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                  <div>
+                    <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 5 }}>{s.title}</div>
+                    <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.40)', lineHeight: 1.7 }}>{s.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 240,
+              opacity: showCTA ? 1 : 0,
+              transform: showCTA ? 'none' : 'translateY(10px)',
+              transition: 'opacity .5s ease, transform .5s ease',
+            }}>
+              <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ ...PILL_STYLE, padding: '16px 32px' }} onMouseEnter={pillEnter} onMouseLeave={pillLeave}>What does it cost? →</button>
+              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }} style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }} onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>How it works</button>
+            </div>
+          </div>
+
+          {/* Right: terminal */}
+          <div style={{
+            opacity: showTerminal ? 1 : 0,
+            transform: showTerminal ? 'none' : 'translateY(20px)',
+            transition: 'opacity .7s ease, transform .7s ease',
+          }}>
+            {terminalEl}
+          </div>
+
         </div>
       </div>
     </div>
