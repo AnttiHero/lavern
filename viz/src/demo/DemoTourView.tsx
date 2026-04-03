@@ -1519,23 +1519,12 @@ const INTRO_AGENTS = [
   'Leon Müller', 'Priya Nair', 'Kai Tanaka', 'Zara Okonkwo',
 ];
 
-const INTRO_BUBBLES = [
-  { idx: 2, text: 'GDPR Art. 7 — consent is bundled.', color: '#F4845F', delay: 1400 },
-  { idx: 5, text: 'Confirmed. Non-compliant.', color: '#69DB7C', delay: 2200 },
-  { idx: 7, text: 'Flagging 3 liability gaps.', color: '#FAB005', delay: 3000 },
-];
-
 function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () => void }) {
-  const [visibleBubbles, setVisibleBubbles] = useState<number[]>([]);
   const [showCTA, setShowCTA] = useState(false);
 
   useEffect(() => {
-    const ts: ReturnType<typeof setTimeout>[] = [];
-    INTRO_BUBBLES.forEach((b, i) => {
-      ts.push(setTimeout(() => setVisibleBubbles(prev => [...prev, i]), b.delay));
-    });
-    ts.push(setTimeout(() => setShowCTA(true), 1000));
-    return () => ts.forEach(clearTimeout);
+    const t = setTimeout(() => setShowCTA(true), 1000);
+    return () => clearTimeout(t);
   }, []);
 
   const avatarCount = isMobile ? 6 : 8;
@@ -1549,43 +1538,8 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
         maxWidth: isMobile ? '100%' : 680,
       }}>
 
-        {/* Agent faces + debate bubbles */}
-        <div style={{ position: 'relative', marginBottom: 40, animation: 'dIn .5s ease .05s both' }}>
-          {/* Bubbles float above avatars — stacked vertically, right-side anchor */}
-          <div style={{
-            position: 'absolute',
-            bottom: avatarSize + 8,
-            right: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: 5,
-            pointerEvents: 'none',
-          }}>
-            {INTRO_BUBBLES.map((b, i) => (
-              <div key={i} style={{
-                opacity: visibleBubbles.includes(i) ? 1 : 0,
-                transform: visibleBubbles.includes(i) ? 'translateY(0)' : 'translateY(8px)',
-                transition: 'opacity .4s ease, transform .4s ease',
-                whiteSpace: 'nowrap',
-              }}>
-                <div style={{
-                  background: 'rgba(16,16,16,0.97)',
-                  border: `1px solid ${b.color}44`,
-                  borderLeft: `2px solid ${b.color}`,
-                  borderRadius: 6,
-                  padding: '5px 10px',
-                  fontFamily: SANS,
-                  fontSize: 10,
-                  color: b.color,
-                  letterSpacing: 0.2,
-                  boxShadow: `0 4px 16px rgba(0,0,0,.6)`,
-                }}>{b.text}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Avatar row */}
+        {/* Agent faces */}
+        <div style={{ marginBottom: 40, animation: 'dIn .5s ease .05s both' }}>
           <div style={{ display: 'flex' }}>
             {INTRO_AGENTS.slice(0, avatarCount).map((seed, i) => (
               <img
