@@ -1400,37 +1400,37 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   /* ── Mobile ─────────────────────────────────────────────────────── */
   if (isMobile) {
     return (
-      <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
-        {/* Mac Mini photo strip at top */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '30%', overflow: 'hidden', zIndex: 1 }}>
-          <img src="/mac-mini-dark.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%', opacity: 0.55 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,5,5,0) 20%, #050505 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505' }}>
+        {/* Mac Mini photo — top 40%, fades into dark */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', overflow: 'hidden', zIndex: 1 }}>
+          <img src="/mac-mini-dark.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 35%', opacity: 0.75 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,5,5,0) 30%, #050505 100%)' }} />
         </div>
-        <div style={{ position: 'absolute', inset: 0, zIndex: 10, overflowY: 'auto', padding: '28% 22px 80px' }}>
-          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(38px,10vw,52px)', fontWeight: 300, lineHeight: 0.97, letterSpacing: -1.5, color: CREAM, margin: '0 0 28px', animation: 'dReveal .8s ease .2s both' }}>
-            While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
-          </h2>
-          {/* Steps */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24, opacity: showSteps ? 1 : 0, transform: showSteps ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
-            {STEPS.map(s => (
-              <div key={s.n} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.38)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
-                <div>
-                  <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 3 }}>{s.title}</div>
-                  <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.72)', lineHeight: 1.6 }}>{s.body}</div>
+
+        {/* Content — sits below photo, no scroll needed */}
+        <div style={{ position: 'absolute', top: '36%', left: 0, right: 0, bottom: 0, zIndex: 10, padding: '0 24px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,11vw,56px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5, color: CREAM, margin: '0 0 28px', animation: 'dReveal .8s ease .2s both' }}>
+              While you <em style={{ fontStyle: 'italic' }}>sleep.</em>
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, opacity: showSteps ? 1 : 0, transform: showSteps ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
+              {STEPS.map(s => (
+                <div key={s.n} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.38)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                  <div>
+                    <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 3 }}>{s.title}</div>
+                    <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.72)', lineHeight: 1.6 }}>{s.body}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          {terminalEl}
-          <div style={{ marginTop: 20 }}>
-            <button
-              onClick={(e) => { if (!showCTA) return; e.stopPropagation(); onNext(); }}
-              style={{ ...PILL_STYLE, padding: '16px 32px', opacity: showCTA ? 1 : 0.3, transition: 'opacity .6s ease', pointerEvents: showCTA ? 'auto' : 'none' }}
-              onMouseEnter={showCTA ? pillEnter : undefined}
-              onMouseLeave={showCTA ? pillLeave : undefined}
-            >What does it cost? →</button>
-          </div>
+          <button
+            onClick={(e) => { if (!showCTA) return; e.stopPropagation(); onNext(); }}
+            style={{ ...PILL_STYLE, padding: '18px 32px', opacity: showCTA ? 1 : 0.3, transition: 'opacity .6s ease', pointerEvents: showCTA ? 'auto' : 'none' }}
+            onMouseEnter={showCTA ? pillEnter : undefined}
+            onMouseLeave={showCTA ? pillLeave : undefined}
+          >What does it cost? →</button>
         </div>
       </div>
     );
