@@ -425,7 +425,7 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
   return (
     <Shell isMobile={isMobile} light
       headline={<>Choose<br />your matter.</>}
-      sub="A driverless law firm. 66 specialist agents, one billable hour at a time. Pick a case and see it work."
+      sub="A law firm on autopilot. 66 specialist agents, one billable hour at a time. Except our billable hours cost 1000x less than in a human law firm. Pick a case and see it work."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {CASES.map((c, i) => {
