@@ -10,7 +10,7 @@ import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
-import { SimpleMarkdown } from './SimpleMarkdown.js';
+import { SimpleMarkdown, type DocTheme } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 import { useResponsive } from '../../hooks/useMediaQuery.js';
 
@@ -20,22 +20,22 @@ interface Props {
   onRetryAssembly?: () => void;
 }
 
-/** Infer a document type label + accent color from the document title. */
-function inferDocType(title: string): { label: string; color: string } {
+/** Infer a document type label + accent color + renderer theme from the document title. */
+function inferDocType(title: string): { label: string; color: string; theme: DocTheme } {
   const t = title.toLowerCase();
   if (t.includes('privacy') || t.includes('gdpr') || t.includes('data protection'))
-    return { label: 'Privacy Policy', color: '#7B6FD4' };
+    return { label: 'Privacy Policy', color: '#7B6FD4', theme: 'privacy' };
   if (t.includes('terms') || t.includes('tos') || t.includes('terms of service'))
-    return { label: 'Terms of Service', color: '#5B9BD5' };
+    return { label: 'Terms of Service', color: '#5B9BD5', theme: 'tos' };
   if (t.includes('nda') || t.includes('non-disclosure') || t.includes('confidential'))
-    return { label: 'Confidentiality Agreement', color: '#D4916F' };
-  if (t.includes('msa') || t.includes('master service') || t.includes('software agreement'))
-    return { label: 'Service Agreement', color: '#5BAD8F' };
+    return { label: 'Confidentiality Agreement', color: '#D4916F', theme: 'nda' };
+  if (t.includes('msa') || t.includes('master service') || t.includes('software agreement') || t.includes('developer services'))
+    return { label: 'Service Agreement', color: '#5BAD8F', theme: 'msa' };
   if (t.includes('lease') || t.includes('rental'))
-    return { label: 'Lease Agreement', color: '#B5844A' };
+    return { label: 'Lease Agreement', color: '#B5844A', theme: 'lease' };
   if (t.includes('employment') || t.includes('contractor'))
-    return { label: 'Employment Contract', color: '#7BAD5B' };
-  return { label: 'Legal Document', color: colors.accent };
+    return { label: 'Employment Contract', color: '#7BAD5B', theme: 'employment' };
+  return { label: 'Legal Document', color: colors.accent, theme: 'default' };
 }
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
@@ -83,10 +83,13 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
             <div style={styles.sectionCount}>{data.finalOutput.length.toLocaleString()} chars</div>
           </div>
           <div style={styles.previewCard}>
-            <SimpleMarkdown content={
-              data.finalOutput.substring(0, 5000) +
-              (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
-            } />
+            <SimpleMarkdown
+              theme={docType.theme}
+              content={
+                data.finalOutput.substring(0, 5000) +
+                (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
+              }
+            />
           </div>
         </div>
       )}

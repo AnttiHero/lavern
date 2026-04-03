@@ -4,12 +4,92 @@
  * Handles: headings (h1-h6), bold/italic/code, bullet & numbered lists,
  * blockquotes, tables, horizontal rules, paragraphs.
  * No external dependencies — just React + inline styles.
+ *
+ * Accepts an optional `theme` for per-document-type visual signatures.
  */
 
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
+export type DocTheme = 'tos' | 'privacy' | 'nda' | 'msa' | 'employment' | 'lease' | 'default';
+
+/** Per-theme visual signatures */
+const THEMES: Record<DocTheme, {
+  accent: string;
+  h1Family: string;
+  h1Weight: number;
+  h1LetterSpacing: number;
+  h2Style: 'bordered' | 'plain' | 'caps';
+  blockquoteStyle: 'left-bar' | 'filled' | 'italic-only';
+  listMarker: string;
+}> = {
+  tos: {
+    accent: '#5B9BD5',
+    h1Family: fonts.serif,
+    h1Weight: 300,
+    h1LetterSpacing: -0.5,
+    h2Style: 'bordered',
+    blockquoteStyle: 'left-bar',
+    listMarker: '→',
+  },
+  privacy: {
+    accent: '#7B6FD4',
+    h1Family: fonts.sans,
+    h1Weight: 600,
+    h1LetterSpacing: -0.5,
+    h2Style: 'caps',
+    blockquoteStyle: 'filled',
+    listMarker: '◆',
+  },
+  nda: {
+    accent: '#D4916F',
+    h1Family: fonts.serif,
+    h1Weight: 400,
+    h1LetterSpacing: 0,
+    h2Style: 'plain',
+    blockquoteStyle: 'italic-only',
+    listMarker: '—',
+  },
+  msa: {
+    accent: '#5BAD8F',
+    h1Family: fonts.sans,
+    h1Weight: 500,
+    h1LetterSpacing: -0.5,
+    h2Style: 'bordered',
+    blockquoteStyle: 'left-bar',
+    listMarker: '▸',
+  },
+  employment: {
+    accent: '#7BAD5B',
+    h1Family: fonts.serif,
+    h1Weight: 300,
+    h1LetterSpacing: -0.5,
+    h2Style: 'caps',
+    blockquoteStyle: 'filled',
+    listMarker: '•',
+  },
+  lease: {
+    accent: '#B5844A',
+    h1Family: fonts.serif,
+    h1Weight: 400,
+    h1LetterSpacing: 0,
+    h2Style: 'plain',
+    blockquoteStyle: 'left-bar',
+    listMarker: '§',
+  },
+  default: {
+    accent: colors.accent,
+    h1Family: fonts.serif,
+    h1Weight: 300,
+    h1LetterSpacing: -0.5,
+    h2Style: 'plain',
+    blockquoteStyle: 'left-bar',
+    listMarker: '•',
+  },
+};
+
 interface Props {
   content: string;
+  theme?: DocTheme;
 }
 
 /** Render inline formatting: **bold**, *italic*, `code` */
@@ -99,7 +179,8 @@ function isBulletLine(line: string): boolean {
   return /^[-*+]\s/.test(line);
 }
 
-export function SimpleMarkdown({ content }: Props) {
+export function SimpleMarkdown({ content, theme = 'default' }: Props) {
+  const t = THEMES[theme];
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -112,12 +193,35 @@ export function SimpleMarkdown({ content }: Props) {
     if (headingMatch) {
       const level = headingMatch[1].length;
       const text = headingMatch[2];
-      const styleKey = level <= 3 ? `h${level}` : 'h4';
-      elements.push(
-        <div key={i} style={sty[styleKey] as React.CSSProperties}>
-          {renderInline(text)}
-        </div>
-      );
+      if (level === 1) {
+        elements.push(
+          <div key={i} style={{
+            ...sty.h1,
+            fontFamily: t.h1Family,
+            fontWeight: t.h1Weight,
+            letterSpacing: t.h1LetterSpacing,
+            borderBottom: `2px solid ${t.accent}`,
+            paddingBottom: 10,
+            marginBottom: spacing.md,
+          } as React.CSSProperties}>
+            {renderInline(text)}
+          </div>
+        );
+      } else if (level === 2) {
+        const h2Style: React.CSSProperties = t.h2Style === 'bordered'
+          ? { ...sty.h2, borderLeft: `3px solid ${t.accent}`, paddingLeft: 10, color: t.accent }
+          : t.h2Style === 'caps'
+          ? { ...sty.h2, textTransform: 'uppercase', fontSize: 11, letterSpacing: 2, color: t.accent }
+          : { ...sty.h2 };
+        elements.push(<div key={i} style={h2Style}>{renderInline(text)}</div>);
+      } else {
+        const styleKey = level <= 3 ? `h${level}` : 'h4';
+        elements.push(
+          <div key={i} style={sty[styleKey] as React.CSSProperties}>
+            {renderInline(text)}
+          </div>
+        );
+      }
       i++;
       continue;
     }
@@ -158,8 +262,13 @@ export function SimpleMarkdown({ content }: Props) {
         quoteLines.push(lines[i].trim().replace(/^>\s*/, ''));
         i++;
       }
+      const bqStyle: React.CSSProperties = t.blockquoteStyle === 'filled'
+        ? { ...sty.blockquote, borderLeft: `none`, backgroundColor: `${t.accent}11`, borderRadius: 4, padding: '10px 14px', color: colors.textSecondary }
+        : t.blockquoteStyle === 'italic-only'
+        ? { ...sty.blockquote, borderLeft: 'none', paddingLeft: 0, fontStyle: 'italic', color: colors.textMuted }
+        : { ...sty.blockquote, borderLeft: `3px solid ${t.accent}` };
       elements.push(
-        <blockquote key={`bq-${i}`} style={sty.blockquote}>
+        <blockquote key={`bq-${i}`} style={bqStyle}>
           {renderInline(quoteLines.join(' '))}
         </blockquote>
       );
@@ -185,9 +294,12 @@ export function SimpleMarkdown({ content }: Props) {
         i++;
       }
       elements.push(
-        <ul key={`ul-${i}`} style={sty.ul}>
+        <ul key={`ul-${i}`} style={{ ...sty.ul, listStyle: 'none', paddingLeft: 0 }}>
           {items.map((item, j) => (
-            <li key={j} style={sty.li}>{renderInline(item)}</li>
+            <li key={j} style={{ ...sty.li, display: 'flex', gap: 10, alignItems: 'baseline' }}>
+              <span style={{ color: t.accent, fontSize: 11, flexShrink: 0, marginTop: 1 }}>{t.listMarker}</span>
+              <span>{renderInline(item)}</span>
+            </li>
           ))}
         </ul>
       );
