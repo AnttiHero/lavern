@@ -1523,62 +1523,23 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
   const [showCTA, setShowCTA] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowCTA(true), 800);
+    const t = setTimeout(() => setShowCTA(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
   const avatarCount = isMobile ? 6 : 8;
-  const avatarSize  = isMobile ? 36 : 42;
+  const avatarSize  = isMobile ? 40 : 48;
 
   return (
     <div style={{ position: 'absolute', inset: 0, backgroundColor: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
         padding: isMobile ? '0 28px' : '0',
-        maxWidth: isMobile ? '100%' : 700,
+        maxWidth: isMobile ? '100%' : 680,
       }}>
 
-        {/* Headline — massive, editorial */}
-        <h1 style={{
-          fontFamily: SERIF,
-          fontSize: isMobile ? 'clamp(52px,13vw,72px)' : 'clamp(72px,7vw,108px)',
-          fontWeight: 300, lineHeight: 0.95, letterSpacing: -3,
-          color: CREAM, margin: '0 0 32px',
-          animation: 'dReveal .9s ease .05s both',
-        }}>
-          Software<br />
-          <em style={{ fontStyle: 'italic', color: 'rgba(250,249,246,.5)' }}>masquerading</em><br />
-          as a law firm.
-        </h1>
-
-        {/* Divider */}
-        <div style={{
-          width: 40, height: 1, backgroundColor: ACCENT, opacity: 0.5,
-          marginBottom: 28, animation: 'dIn .6s ease .4s both',
-        }} />
-
-        {/* Body — sentence-by-sentence */}
-        <div style={{ animation: 'dIn .7s ease .5s both' }}>
-          <p style={{
-            fontFamily: SANS, fontSize: isMobile ? 14 : 16,
-            color: 'rgba(250,249,246,.75)', lineHeight: 1.7,
-            margin: '0 0 16px', maxWidth: 460,
-          }}>
-            A law firm that works for you. Just this time, the workers are agents.
-          </p>
-          <p style={{
-            fontFamily: SANS, fontSize: isMobile ? 13 : 14,
-            color: 'rgba(250,249,246,.38)', lineHeight: 1.7,
-            margin: '0 0 40px', maxWidth: 420,
-          }}>
-            Use it once, or let it run. It will work while you sleep.{' '}
-            It is a law firm on{' '}
-            <span style={{ color: ACCENT, opacity: 0.85 }}>autopilot.</span>
-          </p>
-        </div>
-
         {/* Agent faces */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40, animation: 'dIn .6s ease .65s both' }}>
+        <div style={{ marginBottom: 40, animation: 'dIn .5s ease .05s both' }}>
           <div style={{ display: 'flex' }}>
             {INTRO_AGENTS.slice(0, avatarCount).map((seed, i) => (
               <img
@@ -1590,23 +1551,49 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
                   width: avatarSize, height: avatarSize,
                   borderRadius: '50%',
                   border: '2px solid rgba(8,8,8,1)',
-                  marginLeft: i === 0 ? 0 : -(avatarSize * 0.3),
-                  filter: 'saturate(0.5) brightness(0.85)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,.5)',
+                  marginLeft: i === 0 ? 0 : -(avatarSize * 0.28),
+                  background: 'rgba(255,255,255,.06)',
+                  filter: 'saturate(0.6) brightness(0.9)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,.6)',
+                  opacity: 0,
+                  animation: `dIn .4s ease ${i * 80}ms both`,
                 }}
               />
             ))}
             <div style={{
               width: avatarSize, height: avatarSize, borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,.1)',
-              marginLeft: -(avatarSize * 0.3),
-              background: 'rgba(255,255,255,.04)',
+              border: '2px solid rgba(255,255,255,.08)',
+              marginLeft: -(avatarSize * 0.28),
+              background: 'rgba(255,255,255,.05)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: SANS, fontSize: 8, color: 'rgba(250,249,246,.3)', letterSpacing: 0.3,
+              fontFamily: SANS, fontSize: 9, color: 'rgba(250,249,246,.35)', letterSpacing: 0.5,
+              opacity: 0,
+              animation: `dIn .4s ease ${avatarCount * 80}ms both`,
             }}>+58</div>
           </div>
-          <span style={{ fontFamily: SANS, fontSize: 10, color: 'rgba(250,249,246,.2)', letterSpacing: 1.5, textTransform: 'uppercase' as const }}>66 agents</span>
         </div>
+
+        {/* Headline */}
+        <h1 style={{
+          fontFamily: SERIF,
+          fontSize: isMobile ? 'clamp(36px,9vw,52px)' : 'clamp(52px,4.5vw,72px)',
+          fontWeight: 300, lineHeight: 1.0, letterSpacing: -2,
+          color: CREAM, margin: '0 0 24px',
+          animation: 'dReveal .9s ease .3s both',
+        }}>
+          Software masquerading<br />as a law firm.
+        </h1>
+
+        {/* Sub */}
+        <p style={{
+          fontFamily: SANS, fontSize: isMobile ? 14 : 15,
+          color: 'rgba(250,249,246,.72)', lineHeight: 1.8,
+          margin: '0 0 36px', maxWidth: 480,
+          animation: 'dIn .7s ease .5s both',
+        }}>
+          A law firm that works for you. Just this time, the workers are agents.<br /><br />
+          Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.
+        </p>
 
         {/* CTA */}
         <div style={{
@@ -1615,7 +1602,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           transition: 'opacity .5s ease, transform .5s ease',
         }}>
           <button onClick={onContinue}
-            style={{ ...PILL_STYLE, padding: isMobile ? '18px 36px' : '20px 48px', fontSize: 11 }}
+            style={{ ...PILL_STYLE, padding: isMobile ? '18px 36px' : '20px 44px', fontSize: 11 }}
             onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
             Choose your matter →
           </button>
