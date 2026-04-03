@@ -20,9 +20,28 @@ interface Props {
   onRetryAssembly?: () => void;
 }
 
+/** Infer a document type label + accent color from the document title. */
+function inferDocType(title: string): { label: string; color: string } {
+  const t = title.toLowerCase();
+  if (t.includes('privacy') || t.includes('gdpr') || t.includes('data protection'))
+    return { label: 'Privacy Policy', color: '#7B6FD4' };
+  if (t.includes('terms') || t.includes('tos') || t.includes('terms of service'))
+    return { label: 'Terms of Service', color: '#5B9BD5' };
+  if (t.includes('nda') || t.includes('non-disclosure') || t.includes('confidential'))
+    return { label: 'Confidentiality Agreement', color: '#D4916F' };
+  if (t.includes('msa') || t.includes('master service') || t.includes('software agreement'))
+    return { label: 'Service Agreement', color: '#5BAD8F' };
+  if (t.includes('lease') || t.includes('rental'))
+    return { label: 'Lease Agreement', color: '#B5844A' };
+  if (t.includes('employment') || t.includes('contractor'))
+    return { label: 'Employment Contract', color: '#7BAD5B' };
+  return { label: 'Legal Document', color: colors.accent };
+}
+
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
   const { isMobile } = useResponsive();
   const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
+  const docType = inferDocType(data.documentTitle);
   // Only show assembly failure after polling has definitively ended (timeout/error).
   // While still polling, the assembler may still be working — don't flash the error.
   const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error';
@@ -31,9 +50,9 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
     <div>
       {/* ── Hero title ──────────────────────────────────────────── */}
       <div style={styles.heroSection}>
-        <div style={styles.heroOverline}>Delivered Work Product</div>
+        <div style={{ ...styles.heroOverline, color: docType.color }}>{docType.label}</div>
         <h2 style={styles.heroTitle}>{data.documentTitle}</h2>
-        <div style={styles.heroDivider} />
+        <div style={{ ...styles.heroDivider, backgroundColor: docType.color }} />
       </div>
 
       {/* ── Assembly failure notice ────────────────────────────── */}
@@ -82,44 +101,6 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       {/* ── Downloads — below the content ───────────────────────── */}
       <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
 
-      {/* ── Key changes — transformation cards ────────────────── */}
-      {!isMobile && data.keyChanges.length > 0 && (
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <div style={styles.sectionTitle}>Key Findings</div>
-            <div style={styles.sectionCount}>{data.keyChanges.length} items</div>
-          </div>
-
-          <div style={styles.changesList}>
-            {data.keyChanges.map((change, i) => (
-              <div key={i} style={styles.changeCard}>
-                <div style={styles.changeNumber}>
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-                <div style={styles.changeContent}>
-                  <div style={styles.changeTitle}>{change.title}</div>
-                  <div style={styles.changeColumns}>
-                    <div style={styles.changeBefore}>
-                      <div style={styles.changeColumnLabel}>
-                        <span style={styles.changeDotBefore} />
-                        Evidence
-                      </div>
-                      <div style={styles.changeColumnText}>{change.before}</div>
-                    </div>
-                    <div style={styles.changeAfter}>
-                      <div style={styles.changeColumnLabel}>
-                        <span style={styles.changeDotAfter} />
-                        Finding
-                      </div>
-                      <div style={styles.changeColumnText}>{change.after}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Dimension scores — refined horizontal bars ─────────── */}
       {data.dimensions.length > 0 && (

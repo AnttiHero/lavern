@@ -110,11 +110,6 @@ export function TheScorecardTab({ data }: Props) {
         <StatCard label="Status" value={data.status} />
         <StatCard label="Events" value={String(data.eventCount)} />
         <StatCard
-          label="Cost"
-          value={`$${data.cost.accumulated.toFixed(2)}`}
-          detail={`of $${data.cost.budget.toFixed(2)} budget`}
-        />
-        <StatCard
           label="Verification"
           value={`${data.verification.passed}/${data.verification.resultsCount}`}
           detail={data.verification.failed === 0 ? 'all passed' : `${data.verification.failed} failed`}
@@ -168,38 +163,6 @@ export function TheScorecardTab({ data }: Props) {
         </div>
       </div>
 
-      {/* Cost efficiency */}
-      <div style={styles.section}>
-        <div style={styles.sectionTitle}>Cost</div>
-        <div style={styles.card}>
-          <div style={styles.costGrid}>
-            <div style={styles.costItem}>
-              <span style={styles.costLabel}>Spent</span>
-              <span style={styles.costValue}>${data.cost.accumulated.toFixed(2)}</span>
-            </div>
-            <div style={styles.costItem}>
-              <span style={styles.costLabel}>Budget</span>
-              <span style={styles.costValue}>${data.cost.budget.toFixed(2)}</span>
-            </div>
-            <div style={styles.costItem}>
-              <span style={styles.costLabel}>Remaining</span>
-              <span style={{
-                ...styles.costValue,
-                color: data.cost.remaining >= 0 ? colors.success : colors.danger,
-              }}>
-                ${data.cost.remaining.toFixed(2)}
-              </span>
-            </div>
-          </div>
-          <div style={styles.rateBarTrack}>
-            <div style={{
-              ...styles.rateBarFill,
-              width: `${Math.min(100, budgetUsed)}%`,
-              backgroundColor: budgetUsed > 90 ? colors.danger : budgetUsed > 70 ? colors.warning : colors.success,
-            }} />
-          </div>
-        </div>
-      </div>
 
       {/* Agent performance */}
       {data.agentPerformance.length > 0 && (
