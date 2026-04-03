@@ -1593,7 +1593,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
         }}>
           It is like your favorite law firm that works for you. Just this time, the specialists are agents. And the office is in a Mac Mini.<br /><br />
           Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.<br /><br />
-          The firm is called Lavern.
+          The firm is called <strong style={{ color: CREAM, fontWeight: 600 }}>Lavern.</strong>
         </p>
 
         {/* CTA */}
