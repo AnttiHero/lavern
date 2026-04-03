@@ -66,6 +66,9 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
             <div style={styles.sectionCount}>{data.finalOutput.length.toLocaleString()} chars</div>
           </div>
           <div style={styles.previewCard}>
+            {data.sessionId.startsWith('demo-session') && (
+              <div style={styles.mockBanner}>MOCK DOCUMENT</div>
+            )}
             <SimpleMarkdown
               docStyle={docStyle}
               content={
@@ -282,6 +285,19 @@ const styles: Record<string, React.CSSProperties> = {
     padding: spacing.xl,
     maxHeight: 600,
     overflow: 'auto' as const,
+  },
+  mockBanner: {
+    display: 'inline-block',
+    fontSize: 9,
+    fontWeight: 700,
+    fontFamily: fonts.sans,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    color: colors.textDim,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 2,
+    padding: '3px 8px',
+    marginBottom: 20,
   },
   // previewText removed — replaced by SimpleMarkdown renderer
 
