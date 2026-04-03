@@ -424,8 +424,8 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
   const [hov, setHov] = useState<CaseId | null>(null);
   return (
     <Shell isMobile={isMobile} light
-      headline={<>Choose<br />your matter.</>}
-      sub={<>A law firm on autopilot. 66 specialist agents, one billable hour at a time. Except our billable hours cost 1000x less than in a human law firm.<br /><br />Pick a case and see it work.</>}
+      headline={<>It actually<br />does <em style={{fontStyle:'italic'}}>stuff.</em></>}
+      sub={<>Pick a case.</>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {CASES.map((c, i) => {
@@ -486,7 +486,7 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
 
   return (
     <Shell isMobile={isMobile}
-      headline={<>Talk to<br />a partner.</>}
+      headline={<>Talk to<br />a <em style={{fontStyle:'italic'}}>partner.</em></>}
       sub="Lavern listens, asks the right questions, and assembles the team."
       footer={phase >= 4 ? (
         <button
@@ -593,7 +593,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
 
   return (
     <Shell isMobile={isMobile}
-      headline={<>Lavern<br />listens.</>}
+      headline={<>Lavern<br /><em style={{fontStyle:'italic'}}>listens.</em></>}
       sub="Press spacebar and talk to the agents. Plain language. No forms."
       footer={phase >= 4 ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
@@ -793,7 +793,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
 
   return (
     <Shell isMobile={isMobile}
-      headline={<>Assemble<br />your team.</>}
+      headline={<>Assemble<br />your <em style={{fontStyle:'italic'}}>team.</em></>}
       sub="Partners, red teamers, privacy counsel, risk pricers. 66 specialists on the bench."
       footer={showCTA ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
@@ -1087,7 +1087,7 @@ function S4Builder({ isMobile, caseId, onLaunch }: { isMobile: boolean; caseId: 
       />
     )}
     <Shell isMobile={isMobile}
-      headline={<>Make it<br />yours.</>}
+      headline={<>Make it<br /><em style={{fontStyle:'italic'}}>yours.</em></>}
       sub="66 agents in the roster. Not enough? Forge your own. Set the rules."
       footer={
         <button
