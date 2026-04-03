@@ -11,13 +11,15 @@ import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { getCoworkState, setCoworkStatus } from '../../cowork/coworkStore.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
+type DocStyle = 'traditional' | 'elegant' | 'accessible';
+
 interface Props {
   data: DeliveryData;
   assemblyStatus: AssemblyStatus;
   onRetry?: () => void;
+  selectedStyle?: DocStyle;
+  onStyleChange?: (style: DocStyle) => void;
 }
-
-type DocStyle = 'traditional' | 'elegant' | 'accessible';
 
 const STYLE_OPTIONS: { id: DocStyle; label: string; desc: string }[] = [
   { id: 'traditional', label: 'Traditional', desc: 'Classic law-firm' },
@@ -146,9 +148,11 @@ function generateClientSummary(data: DeliveryData): string {
   return lines.join('\n');
 }
 
-export function DownloadPanel({ data, assemblyStatus, onRetry }: Props) {
+export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: controlledStyle, onStyleChange }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
-  const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
+  const [internalStyle, setInternalStyle] = useState<DocStyle>('elegant');
+  const selectedStyle = controlledStyle ?? internalStyle;
+  const setSelectedStyle = (s: DocStyle) => { setInternalStyle(s); onStyleChange?.(s); };
   const [saveStatus, setSaveStatus] = useState<'idle' | 'writing' | 'done' | 'error'>('idle');
 
   // Assembly status drives download availability

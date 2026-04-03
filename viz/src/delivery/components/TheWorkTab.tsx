@@ -6,11 +6,12 @@
  * and download panel for work product export.
  */
 
+import { useState } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
-import { SimpleMarkdown, type DocTheme } from './SimpleMarkdown.js';
+import { SimpleMarkdown, type DocStyle } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 import { useResponsive } from '../../hooks/useMediaQuery.js';
 
@@ -20,28 +21,10 @@ interface Props {
   onRetryAssembly?: () => void;
 }
 
-/** Infer a document type label + accent color + renderer theme from the document title. */
-function inferDocType(title: string): { label: string; color: string; theme: DocTheme } {
-  const t = title.toLowerCase();
-  if (t.includes('privacy') || t.includes('gdpr') || t.includes('data protection'))
-    return { label: 'Privacy Policy', color: '#7B6FD4', theme: 'privacy' };
-  if (t.includes('terms') || t.includes('tos') || t.includes('terms of service'))
-    return { label: 'Terms of Service', color: '#5B9BD5', theme: 'tos' };
-  if (t.includes('nda') || t.includes('non-disclosure') || t.includes('confidential'))
-    return { label: 'Confidentiality Agreement', color: '#D4916F', theme: 'nda' };
-  if (t.includes('msa') || t.includes('master service') || t.includes('software agreement') || t.includes('developer services'))
-    return { label: 'Service Agreement', color: '#5BAD8F', theme: 'msa' };
-  if (t.includes('lease') || t.includes('rental'))
-    return { label: 'Lease Agreement', color: '#B5844A', theme: 'lease' };
-  if (t.includes('employment') || t.includes('contractor'))
-    return { label: 'Employment Contract', color: '#7BAD5B', theme: 'employment' };
-  return { label: 'Legal Document', color: colors.accent, theme: 'default' };
-}
-
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
   const { isMobile } = useResponsive();
+  const [docStyle, setDocStyle] = useState<DocStyle>('elegant');
   const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
-  const docType = inferDocType(data.documentTitle);
   // Only show assembly failure after polling has definitively ended (timeout/error).
   // While still polling, the assembler may still be working — don't flash the error.
   const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error';
@@ -50,9 +33,9 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
     <div>
       {/* ── Hero title ──────────────────────────────────────────── */}
       <div style={styles.heroSection}>
-        <div style={{ ...styles.heroOverline, color: docType.color }}>{docType.label}</div>
+        <div style={styles.heroOverline}>Delivered Work Product</div>
         <h2 style={styles.heroTitle}>{data.documentTitle}</h2>
-        <div style={{ ...styles.heroDivider, backgroundColor: docType.color }} />
+        <div style={styles.heroDivider} />
       </div>
 
       {/* ── Assembly failure notice ────────────────────────────── */}
@@ -84,7 +67,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
           </div>
           <div style={styles.previewCard}>
             <SimpleMarkdown
-              theme={docType.theme}
+              docStyle={docStyle}
               content={
                 data.finalOutput.substring(0, 5000) +
                 (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
@@ -102,7 +85,13 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       </div>
 
       {/* ── Downloads — below the content ───────────────────────── */}
-      <DownloadPanel data={data} assemblyStatus={assemblyStatus} onRetry={onRetryAssembly} />
+      <DownloadPanel
+        data={data}
+        assemblyStatus={assemblyStatus}
+        onRetry={onRetryAssembly}
+        selectedStyle={docStyle}
+        onStyleChange={setDocStyle}
+      />
 
 
       {/* ── Dimension scores — refined horizontal bars ─────────── */}
