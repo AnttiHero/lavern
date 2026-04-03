@@ -1611,63 +1611,75 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
 }
 
 // ── Slide 7 — Pricing ─────────────────────────────────────────────────────
-const PRICING_TIERS = [
-  {
-    name: 'Quick Counsel',
-    range: '0.4 – 0.8 hrs',
-    desc: 'A focused legal question. A fast, specific answer from the right specialists.',
-    agents: '2 – 4 agents',
-    col: 'rgba(116,192,252,.7)',
-  },
-  {
-    name: 'Full Review',
-    range: '0.8 – 1.6 hrs',
-    desc: 'Complete document review with agent debate, multiple specialist passes, and confidence scoring.',
-    agents: '8 – 14 agents',
-    col: 'rgba(196,93,62,.8)',
-  },
-  {
-    name: 'Deep Bench',
-    range: '1.6 – 3.2 hrs',
-    desc: 'All relevant specialists engaged. Red team challenge. Maximum depth and confidence.',
-    agents: '20 – 30 agents',
-    col: 'rgba(105,219,124,.75)',
-  },
-];
-
 function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void }) {
   const [phase, setPhase] = useState(0);
   useEffect(() => {
     const ts = [
-      setTimeout(() => setPhase(1), 350),
-      setTimeout(() => setPhase(2), 750),
-      setTimeout(() => setPhase(3), 1150),
-      setTimeout(() => setPhase(4), 1550),
+      setTimeout(() => setPhase(1), 300),
+      setTimeout(() => setPhase(2), 700),
+      setTimeout(() => setPhase(3), 1100),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
 
-  const tierCard = (tier: typeof PRICING_TIERS[0], i: number) => (
-    <div key={i} style={{
-      background: 'rgba(255,255,255,.035)',
-      border: '1px solid rgba(255,255,255,.07)',
-      borderRadius: 12, padding: '18px 22px',
-      opacity: phase > i ? 1 : 0,
-      transform: phase > i ? 'translateY(0)' : 'translateY(20px)',
-      transition: 'opacity .5s ease, transform .5s ease',
+  const card1 = (
+    <div style={{
+      flex: 1, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)',
+      borderRadius: 16, padding: isMobile ? '28px 24px' : '36px 32px',
+      opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? 'none' : 'translateY(20px)',
+      transition: 'opacity .6s ease .1s, transform .6s ease .1s',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div>
-          <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: tier.col, marginBottom: 5 }}>{tier.name}</div>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontWeight: 300, color: CREAM, lineHeight: 1 }}>{tier.range}</div>
-        </div>
-        <div style={{
-          fontFamily: MONO, fontSize: 9, color: 'rgba(250,249,246,.25)',
-          background: 'rgba(255,255,255,.05)', borderRadius: 6, padding: '4px 8px',
-          border: '1px solid rgba(255,255,255,.06)', flexShrink: 0, marginLeft: 12, marginTop: 2,
-        }}>{tier.agents}</div>
+      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: ACCENT, marginBottom: 20 }}>Option 01</div>
+      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 20 }}>
+        The billable<br />hour.
       </div>
-      <p style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.65, margin: 0 }}>{tier.desc}</p>
+      <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.68)', lineHeight: 1.75, margin: '0 0 28px' }}>
+        Like all law firms, we swear by the billable hour. Only that ours is $1. That is not much.
+      </p>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 22, marginBottom: 22 }}>
+        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>A lawyer charges</div>
+        <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.30)', fontWeight: 300, marginBottom: 16 }}>€200 – €500 / hour</div>
+        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>Lavern charges</div>
+        <div style={{ fontFamily: SERIF, fontSize: 28, color: '#69DB7C', fontWeight: 300, letterSpacing: -0.5 }}>$1 / hour</div>
+      </div>
+      <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.6 }}>
+        You buy credits. A typical document review runs $3–5.
+      </div>
+    </div>
+  );
+
+  const card2 = (
+    <div style={{
+      flex: 1, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)',
+      borderRadius: 16, padding: isMobile ? '28px 24px' : '36px 32px',
+      opacity: phase >= 2 ? 1 : 0, transform: phase >= 2 ? 'none' : 'translateY(20px)',
+      transition: 'opacity .6s ease .2s, transform .6s ease .2s',
+    }}>
+      <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(116,192,252,.7)', marginBottom: 20 }}>Option 02</div>
+      <div style={{ fontFamily: SERIF, fontSize: isMobile ? 32 : 42, fontWeight: 300, color: CREAM, lineHeight: 0.95, letterSpacing: -1, marginBottom: 20 }}>
+        The retainer.
+      </div>
+      <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.68)', lineHeight: 1.75, margin: '0 0 28px' }}>
+        The autopilot works with local models. It is like a law firm on retainer — always on, always watching.
+      </p>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 22, marginBottom: 22 }}>
+        <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.28)', marginBottom: 6 }}>Processing cost</div>
+        <div style={{ fontFamily: SERIF, fontSize: 28, color: CREAM, fontWeight: 300, letterSpacing: -0.5, marginBottom: 16 }}>$0</div>
+        <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.6 }}>
+          Except the electricity for your Mac Mini.
+        </div>
+      </div>
+    </div>
+  );
+
+  const ctaRow = (
+    <div style={{
+      opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? 'none' : 'translateY(10px)',
+      transition: 'opacity .5s ease, transform .5s ease',
+      display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row',
+    }}>
+      <button onClick={onExit} style={{ ...PILL_STYLE, padding: '18px 36px', flex: isMobile ? undefined : '0 0 auto' }}
+        onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Start for free →</button>
     </div>
   );
 
@@ -1675,24 +1687,13 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
   if (isMobile) {
     return (
       <div style={{ position: 'absolute', inset: 0, background: '#090706', overflowY: 'auto' }}>
-        <div style={{ padding: '72px 24px 100px', display: 'flex', flexDirection: 'column', gap: 22 }}>
-          <div style={{ animation: 'dReveal .9s ease .1s both' }}>
-            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 16 }}>Pricing</div>
-            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,52px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5, color: CREAM, margin: '0 0 16px' }}>
-              What does<br />this cost?
-            </h2>
-            <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.7, margin: 0 }}>
-              Lawyers charge €200–500 per billable hour. Lavern charges $1. Same unit. 200–500× cheaper.
-            </p>
-          </div>
-          {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
-          <div style={{ opacity: phase >= 4 ? 1 : 0, transition: 'opacity .5s ease', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={onExit} style={{ ...PILL_STYLE, padding: '18px 36px', width: '100%' }}
-              onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Start for free →</button>
-            <button onClick={() => { window.location.hash = '#/billing'; onExit(); }}
-              style={{ ...PILL_GHOST_STYLE, padding: '16px 36px', width: '100%' }}
-              onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>See full pricing</button>
-          </div>
+        <div style={{ padding: '60px 22px 80px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,52px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5, color: CREAM, margin: '0 0 4px', animation: 'dReveal .9s ease .1s both' }}>
+            What does<br />this cost?
+          </h2>
+          {card1}
+          {card2}
+          {ctaRow}
         </div>
       </div>
     );
@@ -1701,83 +1702,34 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
   /* ── Desktop ─────────────────────────────────────────────────── */
   return (
     <div style={{ position: 'absolute', inset: 0, background: '#090706', overflow: 'hidden' }}>
-      {/* Warm amber ambient */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 20% 60%, rgba(196,93,62,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 40%, rgba(105,219,124,.03) 0%, transparent 50%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 15% 70%, rgba(196,93,62,.05) 0%, transparent 50%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 85% 30%, rgba(116,192,252,.04) 0%, transparent 50%)', pointerEvents: 'none' }} />
 
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 72, padding: '0 80px', width: '100%', maxWidth: 1200 }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 80px' }}>
+        <div style={{ width: '100%', maxWidth: 1040 }}>
 
-          {/* Left: Statement */}
-          <div style={{ flex: '0 0 340px', paddingRight: 56, borderRight: '1px solid rgba(255,255,255,.055)' }}>
-            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 22, animation: 'dIn .6s ease .1s both' }}>
-              Pricing
-            </div>
+          {/* Headline + subhead */}
+          <div style={{ marginBottom: 40 }}>
             <h2 style={{
-              fontFamily: SERIF,
-              fontSize: 'clamp(52px,4.6vw,70px)',
+              fontFamily: SERIF, fontSize: 'clamp(48px,4.8vw,68px)',
               fontWeight: 300, lineHeight: 0.93, letterSpacing: -2,
-              color: CREAM, margin: '0 0 26px',
-              animation: 'dReveal .9s ease .2s both',
+              color: CREAM, margin: '0 0 14px',
+              animation: 'dReveal .9s ease .1s both',
             }}>
-              What does<br />this cost?
+              What does this cost?
             </h2>
-            <p style={{ fontFamily: SANS, fontSize: 13.5, color: 'rgba(250,249,246,.38)', lineHeight: 1.75, margin: '0 0 22px', maxWidth: 300, animation: 'dIn .7s ease .38s both' }}>
-              Lavern charges by the engagement. Not by the hour. Not by the month.
+            <p style={{ fontFamily: SANS, fontSize: 14, color: 'rgba(250,249,246,.42)', lineHeight: 1.6, margin: 0, animation: 'dIn .7s ease .3s both' }}>
+              Two ways to work with Lavern.
             </p>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 20, marginBottom: 28, animation: 'dIn .7s ease .5s both' }}>
-              <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.28)', lineHeight: 1.8 }}>
-                A lawyer bills:
-                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500 / billable hour</div>
-                Lavern bills:
-                <div style={{ fontFamily: SERIF, fontSize: 26, color: '#69DB7C', margin: '6px 0 0', fontWeight: 300, letterSpacing: -0.5 }}>$1 / billable hour</div>
-              </div>
-            </div>
-
-            {/* CTAs */}
-            <div style={{
-              opacity: phase >= 4 ? 1 : 0,
-              transform: phase >= 4 ? 'translateY(0)' : 'translateY(12px)',
-              transition: 'opacity .5s ease, transform .5s ease',
-              display: 'flex', flexDirection: 'column', gap: 12,
-            }}>
-              <button onClick={onExit}
-                style={{ ...PILL_STYLE, padding: '18px 36px' }}
-                onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
-                Start for free →
-              </button>
-              <button
-                onClick={() => { window.location.hash = '#/billing'; onExit(); }}
-                style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
-                onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>
-                See full pricing
-              </button>
-            </div>
           </div>
 
-          {/* Right: Tier cards */}
-          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 4 }}>
-            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, color: 'rgba(250,249,246,.18)', textTransform: 'uppercase', marginBottom: 2, animation: 'dIn .6s ease .3s both' }}>
-              Per-engagement pricing
-            </div>
-            {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
-
-            {/* Comparison footnote */}
-            <div style={{
-              marginTop: 6, padding: '14px 20px',
-              background: 'rgba(105,219,124,.04)',
-              border: '1px solid rgba(105,219,124,.1)',
-              borderRadius: 10,
-              opacity: phase >= 4 ? 1 : 0,
-              transition: 'opacity .6s ease .3s',
-            }}>
-              <p style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.3)', lineHeight: 1.65, margin: 0 }}>
-                Credits never expire. No seat limits. No minimum commitment.
-                Works on any document — NDA, lease, employment contract, MSA, privacy policy.
-              </p>
-            </div>
+          {/* Two cards side by side */}
+          <div style={{ display: 'flex', gap: 24, marginBottom: 36 }}>
+            {card1}
+            {card2}
           </div>
 
+          {ctaRow}
         </div>
       </div>
     </div>
