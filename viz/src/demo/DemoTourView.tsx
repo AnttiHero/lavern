@@ -1592,7 +1592,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           animation: 'dIn .7s ease .5s both',
         }}>
           A law firm that works for you. Just this time, the workers are agents.<br /><br />
-          Use it once, or let it run. It will work while you sleep.
+          Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.
         </p>
 
         {/* CTA */}
