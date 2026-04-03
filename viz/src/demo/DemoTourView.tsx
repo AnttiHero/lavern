@@ -1581,7 +1581,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           color: CREAM, margin: '0 0 24px',
           animation: 'dReveal .9s ease .3s both',
         }}>
-          Software masquerading<br />as a law firm.
+          Software <em style={{ fontStyle: 'italic' }}>masquerading</em><br />as a law firm.
         </h1>
 
         {/* Sub */}
