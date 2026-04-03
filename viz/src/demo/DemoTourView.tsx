@@ -425,7 +425,7 @@ function S0Case({ isMobile, selected, onPick, onContinue: _onContinue }: {
   return (
     <Shell isMobile={isMobile} light
       headline={<>Choose<br />your matter.</>}
-      sub="A driverless law firm. 66 specialist agents, no billable hours. Pick a case and see it work."
+      sub="A driverless law firm. 66 specialist agents, one billable hour at a time. Pick a case and see it work."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {CASES.map((c, i) => {
@@ -1592,9 +1592,10 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           margin: '0 0 40px', maxWidth: 520,
           animation: 'dIn .7s ease .5s both',
         }}>
-          NDA, lease, employment contract, privacy policy, MSA. Ask in plain language or upload the file.{' '}
-          <strong style={{ fontFamily: SERIF, fontSize: 17, color: '#69DB7C', fontWeight: 400 }}>$1</strong>
-          {' '}per billable hour. No subscription, no retainer.
+          NDA, lease, employment contract, privacy policy, MSA. Ask in plain language or upload the file.
+          Lawyers bill by the billable hour. So do we —{' '}
+          <strong style={{ fontFamily: SERIF, fontSize: 17, color: '#69DB7C', fontWeight: 400 }}>at $1</strong>
+          {' '}instead of $200. No subscription, no retainer.
         </p>
 
         {/* CTA */}
@@ -1687,7 +1688,7 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
               What does<br />this cost?
             </h2>
             <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.7, margin: 0 }}>
-              A lawyer in Helsinki charges €200–500 per hour. Lavern charges $1 per billable hour.
+              Lawyers charge €200–500 per billable hour. Lavern charges $1. Same unit. 200–500× cheaper.
             </p>
           </div>
           {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
@@ -1732,8 +1733,8 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
             </p>
             <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 20, marginBottom: 28, animation: 'dIn .7s ease .5s both' }}>
               <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.28)', lineHeight: 1.8 }}>
-                A lawyer in Helsinki bills:
-                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500 / hr</div>
+                A lawyer bills:
+                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500 / billable hour</div>
                 Lavern bills:
                 <div style={{ fontFamily: SERIF, fontSize: 26, color: '#69DB7C', margin: '6px 0 0', fontWeight: 300, letterSpacing: -0.5 }}>$1 / billable hour</div>
               </div>
