@@ -487,7 +487,7 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
   return (
     <Shell isMobile={isMobile}
       headline={<>Talk to<br />a <em style={{fontStyle:'italic'}}>partner.</em></>}
-      sub="Lavern listens, asks the right questions, and assembles the team."
+      sub={<>Lavern listens, asks the right questions, and assembles the team.<br /><br />Agents grounding the answers and tirelessly checking the quality.</>}
       footer={phase >= 4 ? (
         <button
           onClick={(e) => { e.stopPropagation(); onContinue(); }}
@@ -594,7 +594,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
   return (
     <Shell isMobile={isMobile}
       headline={<>Lavern<br /><em style={{fontStyle:'italic'}}>listens.</em></>}
-      sub="Press spacebar and talk to the agents. Plain language. No forms."
+      sub="Press spacebar and talk to the agents. Plain language. No forms. Just say what you need."
       footer={phase >= 4 ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
