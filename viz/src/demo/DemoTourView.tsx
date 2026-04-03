@@ -227,7 +227,7 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
         @keyframes dBubble{ from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         @keyframes dPulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
         @keyframes dDot  { 0%,80%,100%{transform:scale(0);} 40%{transform:scale(1);} }
-        @keyframes dGrain{ 0%{transform:translate(0,0);} 10%{transform:translate(-2%,-3%);} 20%{transform:translate(3%,2%);} 30%{transform:translate(-1%,4%);} 40%{transform:translate(4%,-2%);} 50%{transform:translate(-3%,1%);} 60%{transform:translate(2%,3%);} 70%{transform:translate(-4%,-1%);} 80%{transform:translate(3%,-3%);} 90%{transform:translate(-2%,2%);} 100%{transform:translate(0,0);} }
+
         @keyframes dFlip{ from{opacity:0;transform:rotateY(80deg) scale(.9);} to{opacity:1;transform:rotateY(0) scale(1);} }
         @keyframes dCrab{ 0%{transform:scale(1) rotate(-2deg);} 50%{transform:scale(1.06) rotate(2deg);} 100%{transform:scale(1) rotate(-2deg);} }
         @keyframes dTermLine{ from{opacity:0;transform:translateX(-8px);} to{opacity:1;transform:translateX(0);} }
@@ -1291,105 +1291,104 @@ const CLAW_BUDGET: Record<CaseId, { cost: string; hours: string; pct: string }> 
   cloudmsa:     { cost: '$3.40', hours: '3.4h / 50h', pct: '6.8%' },
 };
 
-const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E")`;
 
 function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; caseId: CaseId; onExit: () => void; onNext: () => void }) {
-  const c = CASE_CONTENT[caseId];
   const termLines = TERM_LINES[caseId];
   const budget = CLAW_BUDGET[caseId];
   const [visibleLines, setVisibleLines] = useState<number[]>([]);
-  const [showNotification, setShowNotification] = useState(false);
-  const [showCTA, setShowCTA] = useState(false);
+  const [showSteps, setShowSteps]       = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [showCTA, setShowCTA]           = useState(false);
 
   useEffect(() => {
     const ts = termLines.map((l, i) =>
       setTimeout(() => setVisibleLines(v => [...v, i]), l.delay)
     );
-    const notifT = setTimeout(() => setShowNotification(true), 6400);
-    const ctaT   = setTimeout(() => setShowCTA(true), 8400);
-    return () => [...ts, notifT, ctaT].forEach(clearTimeout);
+    const stepsT    = setTimeout(() => setShowSteps(true),    500);
+    const terminalT = setTimeout(() => setShowTerminal(true), 1200);
+    const ctaT      = setTimeout(() => setShowCTA(true),      8400);
+    return () => [...ts, stepsT, terminalT, ctaT].forEach(clearTimeout);
   }, [caseId]);
 
-  const terminalPanel = (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, animation: 'dUp .6s ease .5s both' }}>
-      {/* Terminal window */}
-      <div style={{
-        background: 'rgba(0,0,0,.72)', border: '1px solid rgba(255,255,255,.1)',
-        borderRadius: 12, padding: '14px 18px',
-        fontFamily: MONO, fontSize: isMobile ? 10.5 : 12,
-        backdropFilter: 'blur(8px)',
-      }}>
-        {/* macOS title bar */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-          {['#FF5F57','#FEBC2E','#28C840'].map(col => (
-            <div key={col} style={{ width: 10, height: 10, borderRadius: '50%', background: col, opacity: .8 }} />
-          ))}
-          <span style={{ marginLeft: 8, fontSize: 10, color: 'rgba(255,255,255,.22)', letterSpacing: 1 }}>lavern claw — live</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 5, alignItems: 'center', fontFamily: SANS, fontSize: 9, color: '#69DB7C' }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#69DB7C', display: 'inline-block', animation: 'dPulse 1.5s ease infinite' }} />
-            Running
-          </div>
-        </div>
+  const STEPS = [
+    { n: '01', title: 'Point it at a folder. Once.', body: 'Set a watch path. Clawern runs as a background daemon — on your Mac Mini, always on.' },
+    { n: '02', title: 'A contract lands. Agents dispatch.', body: 'No click. No prompt. Relevant specialists are selected automatically and work through the document.' },
+    { n: '03', title: 'Wake up to findings.', body: 'A full review delivered to your folder. A Telegram message on your phone. While you were asleep.' },
+  ];
 
-        {/* Log lines */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, minHeight: isMobile ? 80 : 120 }}>
-          {termLines.map((l, i) =>
-            visibleLines.includes(i) ? (
-              <div key={i} style={{ color: l.col, animation: 'dTermLine .2s ease both', lineHeight: 1.55, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {l.text}
-              </div>
-            ) : null
-          )}
-        </div>
+  const telegramMsg = caseId === 'heartconnect'
+    ? '"3 critical issues in HeartConnect ToS — GDPR, age verification, transparency"'
+    : caseId === 'medivault'
+    ? '"HIPAA third-party gap + undocumented GDPR transfer basis in MediVault"'
+    : '"Unlimited liability in CloudMSA Section 8.2 — do NOT sign until reviewed"';
 
-        {/* Budget gauge */}
-        <div style={{
-          marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.06)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          opacity: visibleLines.length >= 4 ? 1 : 0,
-          transition: 'opacity .6s ease',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: SANS }}>Monthly budget</span>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <div style={{ width: 120, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.07)' }}>
-                <div style={{
-                  height: '100%',
-                  borderRadius: 2,
-                  background: 'linear-gradient(90deg, #69DB7C, #40C057)',
-                  width: visibleLines.length >= 8 ? budget.pct : '0%',
-                  transition: 'width 1s ease .3s',
-                }} />
-              </div>
-              <span style={{ fontSize: 10, color: 'rgba(250,249,246,.4)', fontFamily: SANS }}>{budget.hours}</span>
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: SERIF, fontSize: 20, color: '#69DB7C', lineHeight: 1 }}>{budget.cost}</div>
-            <div style={{ fontFamily: SANS, fontSize: 9, color: 'rgba(250,249,246,.28)', letterSpacing: 1 }}>this document</div>
-          </div>
+  const terminalEl = (
+    <div style={{
+      background: 'rgba(0,0,0,.75)', border: '1px solid rgba(255,255,255,.1)',
+      borderRadius: 10, padding: '12px 16px',
+      fontFamily: MONO, fontSize: 11,
+      backdropFilter: 'blur(12px)',
+      opacity: showTerminal ? 1 : 0,
+      transform: showTerminal ? 'translateY(0)' : 'translateY(12px)',
+      transition: 'opacity .6s ease, transform .6s ease',
+    }}>
+      {/* macOS dots */}
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+        {['#FF5F57','#FEBC2E','#28C840'].map(col => (
+          <div key={col} style={{ width: 9, height: 9, borderRadius: '50%', background: col, opacity: .75 }} />
+        ))}
+        <span style={{ marginLeft: 8, fontSize: 9, color: 'rgba(255,255,255,.2)', letterSpacing: 1 }}>lavern claw</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', fontFamily: SANS, fontSize: 9, color: '#69DB7C' }}>
+          <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#69DB7C', display: 'inline-block', animation: 'dPulse 1.5s ease infinite' }} />
+          Running
         </div>
       </div>
 
-      {/* Telegram notification card */}
+      {/* Log lines */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minHeight: isMobile ? 72 : 100 }}>
+        {termLines.map((l, i) =>
+          visibleLines.includes(i) ? (
+            <div key={i} style={{ color: l.col, animation: 'dTermLine .2s ease both', lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: isMobile ? 10 : 11 }}>
+              {l.text}
+            </div>
+          ) : null
+        )}
+      </div>
+
+      {/* Budget */}
       <div style={{
-        background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)',
-        borderRadius: 12, padding: '12px 16px',
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-        opacity: showNotification ? 1 : 0,
-        transform: showNotification ? 'translateY(0)' : 'translateY(8px)',
-        transition: 'opacity .5s ease, transform .5s ease',
-        backdropFilter: 'blur(8px)',
+        marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        opacity: visibleLines.length >= 4 ? 1 : 0, transition: 'opacity .6s ease',
       }}>
-        <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>📱</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: SANS, fontSize: 10, fontWeight: 600, color: 'rgba(250,249,246,.6)', letterSpacing: 0.5, marginBottom: 4 }}>
-            Clawern → Telegram  ·  {caseId === 'heartconnect' ? '11:54 PM' : caseId === 'medivault' ? '12:01 AM' : '12:08 AM'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 8, color: 'rgba(255,255,255,.22)', letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: SANS }}>Monthly budget</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ width: 100, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.07)' }}>
+              <div style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #69DB7C, #40C057)', width: visibleLines.length >= 8 ? budget.pct : '0%', transition: 'width 1s ease .3s' }} />
+            </div>
+            <span style={{ fontSize: 9, color: 'rgba(250,249,246,.35)', fontFamily: SANS }}>{budget.hours}</span>
           </div>
-          <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.85)', lineHeight: 1.45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {caseId === 'heartconnect' && '"3 critical issues in HeartConnect ToS — GDPR, age verification, transparency"'}
-            {caseId === 'medivault'    && '"HIPAA third-party gap + undocumented GDPR transfer basis in MediVault"'}
-            {caseId === 'cloudmsa'     && '"Unlimited liability in CloudMSA Section 8.2 — do NOT sign until reviewed"'}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontFamily: SERIF, fontSize: 18, color: '#69DB7C', lineHeight: 1 }}>{budget.cost}</div>
+          <div style={{ fontFamily: SANS, fontSize: 8, color: 'rgba(250,249,246,.25)', letterSpacing: 1 }}>this document</div>
+        </div>
+      </div>
+
+      {/* Telegram */}
+      <div style={{
+        marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)',
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        opacity: visibleLines.length >= 9 ? 1 : 0, transition: 'opacity .6s ease',
+      }}>
+        <span style={{ fontSize: 16 }}>📱</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: SANS, fontSize: 9, fontWeight: 600, color: 'rgba(250,249,246,.45)', letterSpacing: 0.4, marginBottom: 3 }}>
+            Telegram · {caseId === 'heartconnect' ? '11:54 PM' : caseId === 'medivault' ? '12:01 AM' : '12:08 AM'}
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.8)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {telegramMsg}
           </div>
         </div>
       </div>
@@ -1400,113 +1399,112 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   if (isMobile) {
     return (
       <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%', backgroundImage: GRAIN_SVG, opacity: 0.5, animation: 'dGrain 0.5s steps(1) infinite', pointerEvents: 'none', zIndex: 2 }} />
-        <div style={{ position: 'absolute', inset: 0, zIndex: 10, overflowY: 'auto', padding: '68px 22px 80px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* Narration */}
-          <div style={{ animation: 'dUp .5s ease .1s both' }}>
-            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12, animation: 'dCrab 3s ease infinite' }}>🦀</div>
-            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,52px)', fontWeight: 300, lineHeight: 1.0, letterSpacing: -1.5, color: CREAM, margin: '0 0 14px', animation: 'dReveal .8s ease .3s both' }}>
-              While you<br />sleep.
-            </h2>
-            <p style={{ fontFamily: SANS, fontSize: 14, color: 'rgba(250,249,246,.45)', lineHeight: 1.65, margin: '0 0 20px', animation: 'dIn .6s ease .5s both' }}>
-              Clawern monitors your folders overnight. Drop a contract at 11pm — findings, diffs, and a Telegram message by morning.
-            </p>
-            <div style={{
-              opacity: showCTA ? 1 : 0,
-              transform: showCTA ? 'translateY(0)' : 'translateY(10px)',
-              transition: 'opacity .5s ease, transform .5s ease',
-              display: 'flex', flexDirection: 'column', gap: 10,
-            }}>
-              <button onClick={(e) => { e.stopPropagation(); onNext(); }}
-                style={{ ...PILL_STYLE, padding: '16px 32px' }}
-                onMouseEnter={pillEnter} onMouseLeave={pillLeave}
-              >What does it cost? →</button>
-              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-                style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }}
-                onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}
-              >How Clawern works</button>
-            </div>
+        {/* Mac Mini photo strip at top */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '30%', overflow: 'hidden', zIndex: 1 }}>
+          <img src="/mac-mini-dark.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%', opacity: 0.55 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,5,5,0) 20%, #050505 100%)' }} />
+        </div>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, overflowY: 'auto', padding: '28% 22px 80px' }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(38px,10vw,52px)', fontWeight: 300, lineHeight: 0.97, letterSpacing: -1.5, color: CREAM, margin: '0 0 28px', animation: 'dReveal .8s ease .2s both' }}>
+            While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
+          </h2>
+          {/* Steps */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24, opacity: showSteps ? 1 : 0, transform: showSteps ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
+            {STEPS.map(s => (
+              <div key={s.n} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.25)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                <div>
+                  <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 3 }}>{s.title}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.42)', lineHeight: 1.6 }}>{s.body}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          {terminalPanel}
+          {terminalEl}
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, opacity: showCTA ? 1 : 0, transform: showCTA ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
+            <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ ...PILL_STYLE, padding: '16px 32px' }} onMouseEnter={pillEnter} onMouseLeave={pillLeave}>What does it cost? →</button>
+            <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }} style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }} onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>How it works</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  /* ── Desktop — two-column Shell-style ───────────────────────────── */
+  /* ── Desktop ─────────────────────────────────────────────────────── */
   return (
     <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
-      {/* Grain */}
-      <div style={{ position: 'absolute', inset: '-50%', width: '200%', height: '200%', backgroundImage: GRAIN_SVG, opacity: 0.48, animation: 'dGrain 0.5s steps(1) infinite', pointerEvents: 'none', zIndex: 2 }} />
-      {/* Edge vignettes */}
-      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '25%', background: 'linear-gradient(to right, rgba(5,5,5,.6), transparent)', pointerEvents: 'none', zIndex: 3 }} />
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '20%', background: 'linear-gradient(to left, rgba(5,5,5,.4), transparent)', pointerEvents: 'none', zIndex: 3 }} />
+      {/* Mac Mini photo — right 55%, full height */}
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '55%', zIndex: 1, overflow: 'hidden' }}>
+        <img
+          src="/mac-mini-dark.jpg"
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', opacity: 0.65 }}
+        />
+        {/* Dark gradient from left — blends photo into dark background */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #050505 0%, rgba(5,5,5,.7) 30%, rgba(5,5,5,.15) 70%, rgba(5,5,5,.25) 100%)' }} />
+        {/* Bottom fade */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: 'linear-gradient(to top, #050505, transparent)' }} />
+      </div>
 
-      {/* Two-column layout */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'grid', gridTemplateColumns: '42fr 58fr' }}>
+      {/* Terminal — bottom-right, floating over photo */}
+      <div style={{ position: 'absolute', bottom: 48, right: 48, width: 380, zIndex: 20 }}>
+        {terminalEl}
+      </div>
 
-        {/* Left — narration */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px 40px 80px 72px' }}>
-          <div style={{ fontSize: 30, lineHeight: 1, marginBottom: 18, animation: 'dCrab 3s ease infinite, dIn .6s ease .1s both', display: 'inline-block' }}>🦀</div>
-          <h2 style={{
-            fontFamily: SERIF,
-            fontSize: 'clamp(52px,5.5vw,80px)',
-            fontWeight: 300, lineHeight: 0.97, letterSpacing: -2,
-            color: CREAM, margin: '0 0 22px',
-            animation: 'dReveal .9s ease .25s both',
-            textShadow: '0 2px 30px rgba(0,0,0,.8)',
-          }}>
-            While you<br />sleep.
-          </h2>
-          <p style={{
-            fontFamily: SANS, fontSize: 15,
-            color: 'rgba(250,249,246,.42)',
-            maxWidth: 300, margin: '0 0 12px',
-            lineHeight: 1.7,
-            animation: 'dIn .7s ease .45s both',
-          }}>
-            Clawern monitors your folders. Drop a contract at 11pm — findings, diffs, and a Telegram by morning.
-          </p>
-          <p style={{
-            fontFamily: SANS, fontSize: 12,
-            color: 'rgba(250,249,246,.28)',
-            fontStyle: 'italic',
-            margin: '0 0 36px',
-            lineHeight: 1.6,
-            maxWidth: 300,
-            opacity: showNotification ? 1 : 0,
-            transition: 'opacity .6s ease',
-          }}>
-            Tonight: <span style={{ color: 'rgba(250,249,246,.55)', fontStyle: 'normal' }}>{c.deliverable}</span>
-          </p>
+      {/* Left — headline + steps + CTAs */}
+      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '52%', zIndex: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px 48px 80px 72px' }}>
 
-          {/* CTA buttons */}
-          <div style={{
-            opacity: showCTA ? 1 : 0,
-            transform: showCTA ? 'translateY(0)' : 'translateY(14px)',
-            transition: 'opacity .5s ease, transform .5s ease',
-            display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 260,
-          }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); onNext(); }}
-              style={{ ...PILL_STYLE, padding: '18px 36px' }}
-              onMouseEnter={pillEnter}
-              onMouseLeave={pillLeave}
-            >What does it cost? →</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-              style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
-              onMouseEnter={ghostEnter}
-              onMouseLeave={ghostLeave}
-            >How Clawern works</button>
-          </div>
+        <h2 style={{
+          fontFamily: SERIF,
+          fontSize: 'clamp(52px,5.2vw,76px)',
+          fontWeight: 300, lineHeight: 0.95, letterSpacing: -2,
+          color: CREAM, margin: '0 0 32px',
+          animation: 'dReveal .9s ease .1s both',
+          textShadow: '0 2px 40px rgba(0,0,0,.9)',
+        }}>
+          While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
+        </h2>
+
+        {/* Three steps */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 22,
+          opacity: showSteps ? 1 : 0,
+          transform: showSteps ? 'none' : 'translateY(14px)',
+          transition: 'opacity .6s ease .2s, transform .6s ease .2s',
+          marginBottom: 36,
+        }}>
+          {STEPS.map((s, i) => (
+            <div key={s.n} style={{
+              display: 'flex', gap: 18, alignItems: 'flex-start',
+              opacity: showSteps ? 1 : 0,
+              animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
+            }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.2)', lineHeight: 1.7, flexShrink: 0, letterSpacing: 1, marginTop: 1 }}>{s.n}</span>
+              <div>
+                <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 4 }}>{s.title}</div>
+                <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.65, maxWidth: 320 }}>{s.body}</div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Right — terminal */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 72px 80px 24px' }}>
-          <div style={{ width: '100%', maxWidth: 500 }}>
-            {terminalPanel}
-          </div>
+        {/* CTAs */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 260,
+          opacity: showCTA ? 1 : 0,
+          transform: showCTA ? 'none' : 'translateY(14px)',
+          transition: 'opacity .5s ease, transform .5s ease',
+        }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onNext(); }}
+            style={{ ...PILL_STYLE, padding: '18px 36px' }}
+            onMouseEnter={pillEnter} onMouseLeave={pillLeave}
+          >What does it cost? →</button>
+          <button
+            onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
+            style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
+            onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}
+          >How it works</button>
         </div>
       </div>
     </div>
