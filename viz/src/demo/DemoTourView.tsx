@@ -1296,18 +1296,19 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   const termLines = TERM_LINES[caseId];
   const budget = CLAW_BUDGET[caseId];
   const [visibleLines, setVisibleLines] = useState<number[]>([]);
-  const [showSteps, setShowSteps]       = useState(false);
-  const [showTerminal, setShowTerminal] = useState(false);
-  const [showCTA, setShowCTA]           = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
+  const [showCTA, setShowCTA]     = useState(false);
+  const allLinesVisible = visibleLines.length >= termLines.length;
 
   useEffect(() => {
-    const ts = termLines.map((l, i) =>
-      setTimeout(() => setVisibleLines(v => [...v, i]), l.delay)
-    );
-    const stepsT    = setTimeout(() => setShowSteps(true),    500);
-    const terminalT = setTimeout(() => setShowTerminal(true), 1200);
-    const ctaT      = setTimeout(() => setShowCTA(true),      8400);
-    return () => [...ts, stepsT, terminalT, ctaT].forEach(clearTimeout);
+    setVisibleLines([]);
+    setShowSteps(false);
+    setShowCTA(false);
+    const lastDelay = termLines[termLines.length - 1].delay;
+    const ts    = termLines.map((l, i) => setTimeout(() => setVisibleLines(v => [...v, i]), l.delay));
+    const sT    = setTimeout(() => setShowSteps(true), 500);
+    const ctaT  = setTimeout(() => setShowCTA(true), lastDelay + 600);
+    return () => [...ts, sT, ctaT].forEach(clearTimeout);
   }, [caseId]);
 
   const STEPS = [
@@ -1328,9 +1329,6 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
       borderRadius: 10, padding: '12px 16px',
       fontFamily: MONO, fontSize: 11,
       backdropFilter: 'blur(12px)',
-      opacity: showTerminal ? 1 : 0,
-      transform: showTerminal ? 'translateY(0)' : 'translateY(12px)',
-      transition: 'opacity .6s ease, transform .6s ease',
     }}>
       {/* macOS dots */}
       <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
@@ -1348,10 +1346,14 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minHeight: isMobile ? 72 : 100 }}>
         {termLines.map((l, i) =>
           visibleLines.includes(i) ? (
-            <div key={i} style={{ color: l.col, animation: 'dTermLine .2s ease both', lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: isMobile ? 10 : 11 }}>
+            <div key={i} style={{ color: l.col, animation: 'dTermLine .25s ease both', lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: isMobile ? 10 : 11 }}>
               {l.text}
             </div>
           ) : null
+        )}
+        {/* Blinking cursor while lines are still coming */}
+        {!allLinesVisible && visibleLines.length > 0 && (
+          <div style={{ color: 'rgba(255,255,255,.45)', lineHeight: 1.5, fontSize: isMobile ? 10 : 11, animation: 'dPulse .9s ease infinite' }}>▋</div>
         )}
       </div>
 
@@ -1421,9 +1423,13 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
             ))}
           </div>
           {terminalEl}
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, opacity: showCTA ? 1 : 0, transform: showCTA ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
-            <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ ...PILL_STYLE, padding: '16px 32px' }} onMouseEnter={pillEnter} onMouseLeave={pillLeave}>What does it cost? →</button>
-            <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }} style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }} onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>How it works</button>
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={(e) => { if (!showCTA) return; e.stopPropagation(); onNext(); }}
+              style={{ ...PILL_STYLE, padding: '16px 32px', opacity: showCTA ? 1 : 0.3, transition: 'opacity .6s ease', pointerEvents: showCTA ? 'auto' : 'none' }}
+              onMouseEnter={showCTA ? pillEnter : undefined}
+              onMouseLeave={showCTA ? pillLeave : undefined}
+            >What does it cost? →</button>
           </div>
         </div>
       </div>
@@ -1483,26 +1489,19 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
               </div>
             ))}
 
-            {/* CTAs below steps */}
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 240, paddingTop: 12,
-              opacity: showCTA ? 1 : 0,
-              transform: showCTA ? 'none' : 'translateY(10px)',
-              transition: 'opacity .5s ease, transform .5s ease',
-            }}>
-              <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ ...PILL_STYLE, padding: '16px 32px' }} onMouseEnter={pillEnter} onMouseLeave={pillLeave}>What does it cost? →</button>
-              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }} style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }} onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>How it works</button>
+            {/* CTA — dims in immediately, activates when terminal done */}
+            <div style={{ paddingTop: 12, maxWidth: 240 }}>
+              <button
+                onClick={(e) => { if (!showCTA) return; e.stopPropagation(); onNext(); }}
+                style={{ ...PILL_STYLE, padding: '16px 32px', opacity: showCTA ? 1 : 0.3, transition: 'opacity .6s ease', pointerEvents: showCTA ? 'auto' : 'none' }}
+                onMouseEnter={showCTA ? pillEnter : undefined}
+                onMouseLeave={showCTA ? pillLeave : undefined}
+              >What does it cost? →</button>
             </div>
           </div>
 
           {/* Terminal */}
-          <div style={{
-            opacity: showTerminal ? 1 : 0,
-            transform: showTerminal ? 'none' : 'translateY(20px)',
-            transition: 'opacity .7s ease, transform .7s ease',
-          }}>
-            {terminalEl}
-          </div>
+          <div>{terminalEl}</div>
 
         </div>
       </div>
