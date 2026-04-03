@@ -382,19 +382,13 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
         </div>
       )}
 
-      {/* Download buttons */}
-      <div style={styles.downloadRow}>
+      {/* Download button */}
+      <div>
         <DownloadButton
-          label={isDemo ? 'Download as Word' : 'Download as Word'}
+          label="Download"
           sub={isDemo ? `.doc · ${selectedStyle}` : `.docx · ${selectedStyle}`}
           primary
           onClick={() => handleDownload('docx')}
-          disabled={!isDemo && !deliverableValid}
-        />
-        <DownloadButton
-          label="Download as PDF"
-          sub={isDemo ? `.html · print-ready` : `.pdf · print-ready`}
-          onClick={() => handleDownload('pdf')}
           disabled={!isDemo && !deliverableValid}
         />
       </div>
