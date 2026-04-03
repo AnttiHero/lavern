@@ -1591,7 +1591,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           margin: '0 0 36px', maxWidth: 480,
           animation: 'dIn .7s ease .5s both',
         }}>
-          A law firm that works for you. Just this time, the workers are agents.<br /><br />
+          A law firm that works for you. Just this time, the workers are agents. And the office is in Mac Mini.<br /><br />
           Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.
         </p>
 
