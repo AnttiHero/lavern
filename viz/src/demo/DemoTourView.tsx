@@ -1581,21 +1581,20 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
         <p style={{
           fontFamily: SANS, fontSize: isMobile ? 14 : 15,
           color: 'rgba(250,249,246,.4)', lineHeight: 1.75,
-          margin: '0 0 10px', maxWidth: 460,
+          margin: '0 0 14px', maxWidth: 520,
           animation: 'dIn .7s ease .35s both',
         }}>
-          Upload a contract — or just ask a question in plain language. 66 specialist agents review it, debate the findings, and deliver a risk report and redlined draft. Minutes, not days.
+          Software masquerading as a law firm. Upload any contract — 66 specialist agents review it, debate the findings, and deliver a risk report in minutes. You buy the outcome, not the tool.
         </p>
         <p style={{
           fontFamily: SANS, fontSize: 13,
-          color: 'rgba(250,249,246,.24)', lineHeight: 1.55,
-          margin: '0 0 40px',
+          color: 'rgba(250,249,246,.24)', lineHeight: 1.65,
+          margin: '0 0 40px', maxWidth: 520,
           animation: 'dIn .7s ease .5s both',
         }}>
-          Works on any document — NDA, lease, employment contract, privacy policy, MSA.{' '}
-          From{' '}
-          <strong style={{ fontFamily: SERIF, fontSize: 18, color: '#69DB7C', fontWeight: 400 }}>€0.40</strong>
-          {' '}per engagement.
+          NDA, lease, employment contract, privacy policy, MSA. Ask in plain language or upload the file.{' '}
+          <strong style={{ fontFamily: SERIF, fontSize: 17, color: '#69DB7C', fontWeight: 400 }}>$1</strong>
+          {' '}per billable hour. No subscription, no retainer.
         </p>
 
         {/* CTA */}
@@ -1620,21 +1619,21 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
 const PRICING_TIERS = [
   {
     name: 'Quick Counsel',
-    range: '€0.40 – €0.80',
+    range: '0.4 – 0.8 hrs',
     desc: 'A focused legal question. A fast, specific answer from the right specialists.',
     agents: '2 – 4 agents',
     col: 'rgba(116,192,252,.7)',
   },
   {
     name: 'Full Review',
-    range: '€0.80 – €1.60',
+    range: '0.8 – 1.6 hrs',
     desc: 'Complete document review with agent debate, multiple specialist passes, and confidence scoring.',
     agents: '8 – 14 agents',
     col: 'rgba(196,93,62,.8)',
   },
   {
     name: 'Deep Bench',
-    range: '€1.60 – €3.20',
+    range: '1.6 – 3.2 hrs',
     desc: 'All relevant specialists engaged. Red team challenge. Maximum depth and confidence.',
     agents: '20 – 30 agents',
     col: 'rgba(105,219,124,.75)',
@@ -1688,7 +1687,7 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
               What does<br />this cost?
             </h2>
             <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.7, margin: 0 }}>
-              A 30-minute consultation with a lawyer in Helsinki costs €200–500. Lavern reviews the same document for under €2.
+              A lawyer in Helsinki charges €200–500 per hour. Lavern charges $1 per billable hour.
             </p>
           </div>
           {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
@@ -1733,10 +1732,10 @@ function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void 
             </p>
             <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 20, marginBottom: 28, animation: 'dIn .7s ease .5s both' }}>
               <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.28)', lineHeight: 1.8 }}>
-                A 30-minute consultation with a lawyer in Helsinki:
-                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500</div>
-                Lavern reviews the same document:
-                <div style={{ fontFamily: SERIF, fontSize: 26, color: '#69DB7C', margin: '6px 0 0', fontWeight: 300, letterSpacing: -0.5 }}>€0.40 – €3.20</div>
+                A lawyer in Helsinki bills:
+                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500 / hr</div>
+                Lavern bills:
+                <div style={{ fontFamily: SERIF, fontSize: 26, color: '#69DB7C', margin: '6px 0 0', fontWeight: 300, letterSpacing: -0.5 }}>$1 / billable hour</div>
               </div>
             </div>
 
