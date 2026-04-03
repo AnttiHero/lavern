@@ -1311,9 +1311,9 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   }, [caseId]);
 
   const STEPS = [
-    { n: '01', title: 'Point it at a folder. Once.', body: 'Set a watch path. Clawern runs as a background daemon — on your Mac Mini, always on.' },
-    { n: '02', title: 'A contract lands. Agents dispatch.', body: 'No click. No prompt. Relevant specialists are selected automatically and work through the document.' },
-    { n: '03', title: 'Wake up to findings.', body: 'A full review delivered to your folder. A Telegram message on your phone. While you were asleep.' },
+    { n: '01', title: 'It lives on your computer.', body: 'Your law firm on your Mac Mini, always on. It does stuff for you, delivered to your folder.' },
+    { n: '02', title: 'Heartbeat of 30 minutes.', body: 'The firm works while you sleep. You get a message if something interesting happens. Wake up to findings.' },
+    { n: '03', title: 'Local models combined with the newest models.', body: 'Local models keep your data safe and make it possible to keep the AI always on. Combine with the newest models when you need more horsepower.' },
   ];
 
   const telegramMsg = caseId === 'heartconnect'
