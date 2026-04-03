@@ -1,17 +1,20 @@
 /**
  * DemoTourView — Cinematic tech demo. ~60-90 seconds.
  *
- * Slides (custom):
- *   0. Choose the case         (interactive — click to pick)
- *   1. Talk to a partner       (auto-playing conversation)
- *   2. Assemble your team      (high-fidelity team grid)
- *   3. Craft your own agents   (agent builder recreation)
- *   4. Clawern reveal          (cinematic — wild — the finale)
+ * Slides:
+ *   0. Intro / explainer       (NEW — what, how, cost)
+ *   1. Choose the case         (interactive — click to pick)
+ *   2. Talk to a partner       (auto-playing conversation)
+ *   3. Voice mode              (spacebar → talk to agents)
+ *   4. Assemble your team      (high-fidelity team grid)
+ *   5. Craft your own agents   (agent builder recreation)
+ *   6. Clawern reveal          (cinematic — wild)
+ *   7. Pricing                 (NEW — what does it cost)
  *
- * Between slides 3 and 4:
+ * Between slides 5 and 6:
  *   → real WorkingView (demo session set via onLaunchDemo)
- *   → real DeliveryView (auto-advances and sets shem-demo-resume=true)
- *   → DemoTourView resumes at slide 4 (Clawern)
+ *   → real DeliveryView (auto-advances and sets shem-demo-resume=clawern)
+ *   → DemoTourView resumes at slide 6 (Clawern)
  *
  * Total auto-advance: ~41s. Total with clicks: ~60-90s.
  */
@@ -82,9 +85,9 @@ function ghostLeave(e: React.MouseEvent<HTMLButtonElement>) {
 }
 
 // ── Slide durations (ms). 0 = wait for user interaction. ──────────────────
-// 0=case(click), 1=partner(CTA), 2=voice(CTA), 3=team(CTA), 4=builder(CTA), 5=clawern(post-delivery)
-const DURATIONS = [0, 0, 0, 0, 0, 0];
-const TOTAL = 6;
+// 0=intro(CTA), 1=case(click), 2=partner(CTA), 3=voice(CTA), 4=team(CTA), 5=builder(CTA), 6=clawern(post-delivery), 7=pricing(CTA)
+const DURATIONS = [0, 0, 0, 0, 0, 0, 0, 0];
+const TOTAL = 8;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export type CaseId = 'heartconnect' | 'medivault' | 'cloudmsa';
@@ -105,12 +108,12 @@ function useMount() {
 export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
   const isMobile = useMediaQuery('mobile');
 
-  // Detect resume from delivery view (shem-demo-resume → skip to slide 5 = Clawern)
+  // Detect resume from delivery view (shem-demo-resume → skip to slide 6 = Clawern)
   const initialSlide = (() => {
     const resume = sessionStorage.getItem('shem-demo-resume');
     if (resume === 'clawern') {
       sessionStorage.removeItem('shem-demo-resume');
-      return 5;
+      return 6;
     }
     return 0;
   })();
@@ -137,8 +140,8 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
           setVisible(true);
           return prev; // stay on last slide (Clawern)
         }
-        // After slide 4 (builder) → launch real demo; slide 5 = Clawern shown post-delivery
-        if (next === 5) {
+        // After slide 5 (builder) → launch real demo; slide 6 = Clawern shown post-delivery
+        if (next === 6) {
           onLaunchDemo(selectedCase);
           advancingRef.current = false;
           setVisible(true);
@@ -163,7 +166,7 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
   // Keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'ArrowRight' || e.key === ' ') && slide > 0 && slide < 5) {
+      if ((e.key === 'ArrowRight' || e.key === ' ') && slide !== 1 && slide < 7) {
         e.preventDefault();
         advance(true);
       }
@@ -200,17 +203,19 @@ export default function DemoTourView({ onExit, onLaunchDemo }: Props) {
         transform: visible ? 'translateY(0)' : 'translateY(10px)',
         transition: 'opacity 0.3s ease, transform 0.3s ease',
       }}>
-        {slide === 0 && <S0Case isMobile={isMobile} selected={selectedCase} onPick={pickCase} onContinue={() => advance(true)} />}
-        {slide === 1 && <S1Partner isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
-        {slide === 2 && <S2Voice isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
-        {slide === 3 && <S3Team isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
-        {slide === 4 && <S4Builder isMobile={isMobile} caseId={selectedCase} onLaunch={() => advance(true)} />}
-        {slide === 5 && <S5Clawern isMobile={isMobile} caseId={selectedCase} onExit={onExit} />}
+        {slide === 0 && <SIntro isMobile={isMobile} onContinue={() => advance(true)} />}
+        {slide === 1 && <S0Case isMobile={isMobile} selected={selectedCase} onPick={pickCase} onContinue={() => advance(true)} />}
+        {slide === 2 && <S1Partner isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 3 && <S2Voice isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 4 && <S3Team isMobile={isMobile} caseId={selectedCase} onContinue={() => advance(true)} />}
+        {slide === 5 && <S4Builder isMobile={isMobile} caseId={selectedCase} onLaunch={() => advance(true)} />}
+        {slide === 6 && <S5Clawern isMobile={isMobile} caseId={selectedCase} onExit={onExit} onNext={() => advance(true)} />}
+        {slide === 7 && <SPricing isMobile={isMobile} onExit={onExit} />}
       </div>
 
-      {/* Dots + progress — only on slides 0-4 */}
-      {slide < 5 && (
-        <BottomBar slide={slide} total={5} goTo={goTo} progKey={progKey} duration={DURATIONS[slide]} isMobile={isMobile} />
+      {/* Dots + progress — only on slides 0-5 */}
+      {slide < 6 && (
+        <BottomBar slide={slide} total={6} goTo={goTo} progKey={progKey} duration={DURATIONS[slide]} isMobile={isMobile} />
       )}
 
       <style>{`
@@ -245,11 +250,6 @@ function TopBar({ isMobile, slide, onExit }: { isMobile: boolean; slide: number;
         LAVERN
       </span>
       <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-        {slide > 0 && slide < 5 && (
-          <span style={{ fontFamily: SANS, fontSize: 10, color: CREAM, opacity: 0.25, letterSpacing: 1 }}>
-            {slide} / 4
-          </span>
-        )}
         <button onClick={onExit} style={{
           fontFamily: SANS, fontSize: 10, fontWeight: 500, letterSpacing: 2.5, textTransform: 'uppercase',
           color: (isMobile && slide === 0) ? '#1A1A1A' : CREAM, opacity: 0.25, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -1293,7 +1293,7 @@ const CLAW_BUDGET: Record<CaseId, { cost: string; hours: string; pct: string }> 
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E")`;
 
-function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: CaseId; onExit: () => void }) {
+function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; caseId: CaseId; onExit: () => void; onNext: () => void }) {
   const c = CASE_CONTENT[caseId];
   const termLines = TERM_LINES[caseId];
   const budget = CLAW_BUDGET[caseId];
@@ -1417,14 +1417,14 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
               transition: 'opacity .5s ease, transform .5s ease',
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
+              <button onClick={(e) => { e.stopPropagation(); onNext(); }}
                 style={{ ...PILL_STYLE, padding: '16px 32px' }}
                 onMouseEnter={pillEnter} onMouseLeave={pillLeave}
-              >How Clawern works</button>
-              <button onClick={(e) => { e.stopPropagation(); onExit(); }}
+              >What does it cost? →</button>
+              <button onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
                 style={{ ...PILL_GHOST_STYLE, padding: '14px 32px' }}
                 onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}
-              >Start for free</button>
+              >How Clawern works</button>
             </div>
           </div>
           {terminalPanel}
@@ -1488,18 +1488,17 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
             display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 260,
           }}>
             <button
-              onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
-              style={{ ...PILL_STYLE, padding: '18px 36px',
-              }}
+              onClick={(e) => { e.stopPropagation(); onNext(); }}
+              style={{ ...PILL_STYLE, padding: '18px 36px' }}
               onMouseEnter={pillEnter}
               onMouseLeave={pillLeave}
-            >How Clawern works</button>
+            >What does it cost? →</button>
             <button
-              onClick={(e) => { e.stopPropagation(); onExit(); }}
+              onClick={(e) => { e.stopPropagation(); window.open('https://lavern.ai/claw/how-it-works.html','_blank'); }}
               style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
               onMouseEnter={ghostEnter}
               onMouseLeave={ghostLeave}
-            >Start for free</button>
+            >How Clawern works</button>
           </div>
         </div>
 
@@ -1508,6 +1507,405 @@ function S5Clawern({ isMobile, caseId, onExit }: { isMobile: boolean; caseId: Ca
           <div style={{ width: '100%', maxWidth: 500 }}>
             {terminalPanel}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Slide 0 — Intro / Explainer ──────────────────────────────────────────
+interface IntroStep { icon: string; text: string; col?: string }
+interface IntroCardData {
+  label: string; doc: string; cost: string; time: string;
+  steps: IntroStep[];
+}
+
+const INTRO_CARDS: IntroCardData[] = [
+  {
+    label: 'Contract Review',
+    doc: 'NDA · HeartConnect Inc. · 2 pages',
+    cost: '€0.41', time: '2 min 14 s',
+    steps: [
+      { icon: '💬', text: '"Flag any GDPR issues before we sign"' },
+      { icon: '🤖', text: '8 agents — GDPR, Privacy, Contract Reviewer', col: 'rgba(250,249,246,.55)' },
+      { icon: '⚠️', text: 'Critical: Age verification gap — GDPR Art. 8', col: '#FF6B6B' },
+      { icon: '✅', text: 'Redlined draft delivered', col: '#69DB7C' },
+    ],
+  },
+  {
+    label: 'Lease Analysis',
+    doc: 'Commercial Lease · 28 pages',
+    cost: '€0.78', time: '4 min 02 s',
+    steps: [
+      { icon: '🎙', text: '"Can I sublet half the office space?"' },
+      { icon: '🤖', text: '12 agents in parallel — real-time debate', col: 'rgba(250,249,246,.55)' },
+      { icon: '⚠️', text: 'Sublet capped at 50% — clause §4.3', col: '#FEBC2E' },
+      { icon: '✅', text: 'Plain-language brief + redline delivered', col: '#69DB7C' },
+    ],
+  },
+  {
+    label: 'Employment Terms',
+    doc: 'Software Engineer Contract · Finland',
+    cost: '€0.55', time: '3 min 30 s',
+    steps: [
+      { icon: '💬', text: '"Is my non-compete clause enforceable?"' },
+      { icon: '🤖', text: '6 agents — Employment, IP, Jurisdiction', col: 'rgba(250,249,246,.55)' },
+      { icon: '⚠️', text: '24-month NCA likely excessive under Finnish law', col: '#FEBC2E' },
+      { icon: '✅', text: '3 negotiating positions drafted', col: '#69DB7C' },
+    ],
+  },
+];
+
+function IntroProofCard({ card, visible, stagger }: { card: IntroCardData; visible: boolean; stagger: number }) {
+  const [step, setStep] = useState(-1);
+  useEffect(() => {
+    if (!visible) return;
+    const ts = card.steps.map((_, i) => setTimeout(() => setStep(i), i * 380));
+    return () => ts.forEach(clearTimeout);
+  }, [visible, card.steps]);
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,.035)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12, padding: '14px 18px',
+      backdropFilter: 'blur(4px)',
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(18px)',
+      transition: `opacity .55s ease ${stagger}ms, transform .55s ease ${stagger}ms`,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 4 }}>{card.label}</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.35)', lineHeight: 1.3 }}>{card.doc}</div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+          <div style={{ fontFamily: SERIF, fontSize: 19, color: '#69DB7C', lineHeight: 1, fontWeight: 400 }}>{card.cost}</div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(250,249,246,.25)', marginTop: 2 }}>{card.time}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {card.steps.map((s, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 9, alignItems: 'flex-start',
+            opacity: step >= i ? 1 : 0.08,
+            transform: step >= i ? 'translateX(0)' : 'translateX(-6px)',
+            transition: 'opacity .3s ease, transform .3s ease',
+          }}>
+            <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1, lineHeight: 1.5 }}>{s.icon}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.55, color: s.col ?? 'rgba(250,249,246,.7)' }}>
+              {s.text}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () => void }) {
+  const [cardsVisible, setCardsVisible] = useState(false);
+  const [ctaVisible, setCtaVisible] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setCardsVisible(true), 550);
+    const t2 = setTimeout(() => setCtaVisible(true), 3000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  /* ── Mobile ──────────────────────────────────────────────────── */
+  if (isMobile) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: BG, overflowY: 'auto' }}>
+        <div style={{ padding: '72px 24px 100px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+          {/* Headline */}
+          <div style={{ animation: 'dUp .5s ease .1s both' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 16 }}>Lavern · v0.14</div>
+            <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(46px,12vw,60px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5, color: CREAM, margin: '0 0 18px' }}>
+              A driverless<br />law firm.
+            </h1>
+            <p style={{ fontFamily: SANS, fontSize: 14, color: 'rgba(250,249,246,.42)', lineHeight: 1.7, margin: '0 0 12px' }}>
+              66 specialist agents. Built like a real law firm — partners, red teamers, privacy counsel, risk pricers. Works like one too.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.28)', lineHeight: 1.55, margin: 0 }}>
+              From <strong style={{ fontFamily: SERIF, fontSize: 17, color: '#69DB7C', fontWeight: 400 }}>€0.40</strong> per engagement. No subscription. No hourly billing.
+            </p>
+          </div>
+
+          {/* Cards — show first two on mobile */}
+          <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, color: 'rgba(250,249,246,.2)', textTransform: 'uppercase' }}>
+            Three cases — start to finish
+          </div>
+          {INTRO_CARDS.slice(0, 2).map((card, i) => (
+            <IntroProofCard key={i} card={card} visible={cardsVisible} stagger={i * 300} />
+          ))}
+
+          {/* CTA */}
+          <div style={{ opacity: ctaVisible ? 1 : 0, transform: ctaVisible ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity .5s ease, transform .5s ease' }}>
+            <button onClick={onContinue} style={{ ...PILL_STYLE, padding: '18px 36px', width: '100%' }}
+              onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
+              Choose your matter →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Desktop ─────────────────────────────────────────────────── */
+  return (
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: BG, overflow: 'hidden' }}>
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 28% 55%, rgba(196,93,62,.05) 0%, transparent 55%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 75% 45%, rgba(105,219,124,.03) 0%, transparent 50%)', pointerEvents: 'none' }} />
+
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 72, padding: '0 80px', width: '100%', maxWidth: 1200 }}>
+
+          {/* Left: Statement */}
+          <div style={{ flex: '0 0 320px', paddingRight: 56, borderRight: '1px solid rgba(255,255,255,.055)' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 22, animation: 'dIn .6s ease .1s both' }}>
+              Lavern · v0.14
+            </div>
+            <h1 style={{
+              fontFamily: SERIF,
+              fontSize: 'clamp(52px,4.6vw,70px)',
+              fontWeight: 300, lineHeight: 0.93, letterSpacing: -2,
+              color: CREAM, margin: '0 0 26px',
+              animation: 'dReveal .9s ease .2s both',
+            }}>
+              A driverless<br />law firm.
+            </h1>
+            <p style={{ fontFamily: SANS, fontSize: 13.5, color: 'rgba(250,249,246,.4)', lineHeight: 1.75, margin: '0 0 22px', maxWidth: 290, animation: 'dIn .7s ease .38s both' }}>
+              66 specialist agents. Built like a real law firm — partners, red teamers, privacy counsel, risk pricers. Works like one too.
+            </p>
+
+            {/* Agent roster list */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 16, marginBottom: 22, animation: 'dIn .7s ease .5s both' }}>
+              {[
+                'Partners & Orchestrators',
+                'Contract Reviewers',
+                'Red Teamers',
+                'Privacy & GDPR Counsel',
+                'IP & Tech Specialists',
+                'Risk Pricers',
+                '+ 60 more specialists',
+              ].map((label, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: SANS, fontSize: 11, color: i === 6 ? 'rgba(250,249,246,.2)' : 'rgba(250,249,246,.3)', lineHeight: 1.9 }}>
+                  <span style={{ width: 3, height: 3, borderRadius: '50%', background: i === 6 ? 'rgba(250,249,246,.12)' : 'rgba(250,249,246,.18)', flexShrink: 0 }} />
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Price */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 16, marginBottom: 30, animation: 'dIn .7s ease .6s both' }}>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.3)', lineHeight: 1.6 }}>
+                From{' '}
+                <strong style={{ fontFamily: SERIF, fontSize: 20, color: '#69DB7C', fontWeight: 400, verticalAlign: 'baseline' }}>€0.40</strong>
+                {' '}per engagement.<br />
+                <em>No subscription. No hourly billing.</em>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div style={{
+              opacity: ctaVisible ? 1 : 0,
+              transform: ctaVisible ? 'translateY(0)' : 'translateY(12px)',
+              transition: 'opacity .5s ease, transform .5s ease',
+            }}>
+              <button onClick={onContinue}
+                style={{ ...PILL_STYLE, padding: '18px 36px' }}
+                onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
+                Choose your matter →
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Proof cards */}
+          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 4 }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, color: 'rgba(250,249,246,.18)', textTransform: 'uppercase', marginBottom: 2, animation: 'dIn .6s ease .3s both' }}>
+              Three cases — start to finish
+            </div>
+            {INTRO_CARDS.map((card, i) => (
+              <IntroProofCard key={i} card={card} visible={cardsVisible} stagger={i * 280} />
+            ))}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Slide 7 — Pricing ─────────────────────────────────────────────────────
+const PRICING_TIERS = [
+  {
+    name: 'Quick Counsel',
+    range: '€0.40 – €0.80',
+    desc: 'A focused legal question. A fast, specific answer from the right specialists.',
+    agents: '2 – 4 agents',
+    col: 'rgba(116,192,252,.7)',
+  },
+  {
+    name: 'Full Review',
+    range: '€0.80 – €1.60',
+    desc: 'Complete document review with agent debate, multiple specialist passes, and confidence scoring.',
+    agents: '8 – 14 agents',
+    col: 'rgba(196,93,62,.8)',
+  },
+  {
+    name: 'Deep Bench',
+    range: '€1.60 – €3.20',
+    desc: 'All relevant specialists engaged. Red team challenge. Maximum depth and confidence.',
+    agents: '20 – 30 agents',
+    col: 'rgba(105,219,124,.75)',
+  },
+];
+
+function SPricing({ isMobile, onExit }: { isMobile: boolean; onExit: () => void }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const ts = [
+      setTimeout(() => setPhase(1), 350),
+      setTimeout(() => setPhase(2), 750),
+      setTimeout(() => setPhase(3), 1150),
+      setTimeout(() => setPhase(4), 1550),
+    ];
+    return () => ts.forEach(clearTimeout);
+  }, []);
+
+  const tierCard = (tier: typeof PRICING_TIERS[0], i: number) => (
+    <div key={i} style={{
+      background: 'rgba(255,255,255,.035)',
+      border: '1px solid rgba(255,255,255,.07)',
+      borderRadius: 12, padding: '18px 22px',
+      opacity: phase > i ? 1 : 0,
+      transform: phase > i ? 'translateY(0)' : 'translateY(20px)',
+      transition: 'opacity .5s ease, transform .5s ease',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: tier.col, marginBottom: 5 }}>{tier.name}</div>
+          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontWeight: 300, color: CREAM, lineHeight: 1 }}>{tier.range}</div>
+        </div>
+        <div style={{
+          fontFamily: MONO, fontSize: 9, color: 'rgba(250,249,246,.25)',
+          background: 'rgba(255,255,255,.05)', borderRadius: 6, padding: '4px 8px',
+          border: '1px solid rgba(255,255,255,.06)', flexShrink: 0, marginLeft: 12, marginTop: 2,
+        }}>{tier.agents}</div>
+      </div>
+      <p style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.38)', lineHeight: 1.65, margin: 0 }}>{tier.desc}</p>
+    </div>
+  );
+
+  /* ── Mobile ──────────────────────────────────────────────────── */
+  if (isMobile) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, background: '#090706', overflowY: 'auto' }}>
+        <div style={{ padding: '72px 24px 100px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <div style={{ animation: 'dReveal .9s ease .1s both' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 16 }}>Pricing</div>
+            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(40px,10vw,52px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5, color: CREAM, margin: '0 0 16px' }}>
+              What does<br />this cost?
+            </h2>
+            <p style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.38)', lineHeight: 1.7, margin: 0 }}>
+              A 30-minute consultation with a lawyer in Helsinki costs €200–500. Lavern reviews the same document for under €2.
+            </p>
+          </div>
+          {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
+          <div style={{ opacity: phase >= 4 ? 1 : 0, transition: 'opacity .5s ease', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button onClick={onExit} style={{ ...PILL_STYLE, padding: '18px 36px', width: '100%' }}
+              onMouseEnter={pillEnter} onMouseLeave={pillLeave}>Start for free →</button>
+            <button onClick={() => { window.location.hash = '#/billing'; onExit(); }}
+              style={{ ...PILL_GHOST_STYLE, padding: '16px 36px', width: '100%' }}
+              onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>See full pricing</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Desktop ─────────────────────────────────────────────────── */
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: '#090706', overflow: 'hidden' }}>
+      {/* Warm amber ambient */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 20% 60%, rgba(196,93,62,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 40%, rgba(105,219,124,.03) 0%, transparent 50%)', pointerEvents: 'none' }} />
+
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 72, padding: '0 80px', width: '100%', maxWidth: 1200 }}>
+
+          {/* Left: Statement */}
+          <div style={{ flex: '0 0 340px', paddingRight: 56, borderRight: '1px solid rgba(255,255,255,.055)' }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 22, animation: 'dIn .6s ease .1s both' }}>
+              Pricing
+            </div>
+            <h2 style={{
+              fontFamily: SERIF,
+              fontSize: 'clamp(52px,4.6vw,70px)',
+              fontWeight: 300, lineHeight: 0.93, letterSpacing: -2,
+              color: CREAM, margin: '0 0 26px',
+              animation: 'dReveal .9s ease .2s both',
+            }}>
+              What does<br />this cost?
+            </h2>
+            <p style={{ fontFamily: SANS, fontSize: 13.5, color: 'rgba(250,249,246,.38)', lineHeight: 1.75, margin: '0 0 22px', maxWidth: 300, animation: 'dIn .7s ease .38s both' }}>
+              Lavern charges by the engagement. Not by the hour. Not by the month.
+            </p>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,.055)', paddingTop: 20, marginBottom: 28, animation: 'dIn .7s ease .5s both' }}>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.28)', lineHeight: 1.8 }}>
+                A 30-minute consultation with a lawyer in Helsinki:
+                <div style={{ fontFamily: SERIF, fontSize: 22, color: 'rgba(250,249,246,.35)', margin: '6px 0 12px', fontWeight: 300 }}>€200 – €500</div>
+                Lavern reviews the same document:
+                <div style={{ fontFamily: SERIF, fontSize: 26, color: '#69DB7C', margin: '6px 0 0', fontWeight: 300, letterSpacing: -0.5 }}>€0.40 – €3.20</div>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div style={{
+              opacity: phase >= 4 ? 1 : 0,
+              transform: phase >= 4 ? 'translateY(0)' : 'translateY(12px)',
+              transition: 'opacity .5s ease, transform .5s ease',
+              display: 'flex', flexDirection: 'column', gap: 12,
+            }}>
+              <button onClick={onExit}
+                style={{ ...PILL_STYLE, padding: '18px 36px' }}
+                onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
+                Start for free →
+              </button>
+              <button
+                onClick={() => { window.location.hash = '#/billing'; onExit(); }}
+                style={{ ...PILL_GHOST_STYLE, padding: '16px 36px' }}
+                onMouseEnter={ghostEnter} onMouseLeave={ghostLeave}>
+                See full pricing
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Tier cards */}
+          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 4 }}>
+            <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: 3, color: 'rgba(250,249,246,.18)', textTransform: 'uppercase', marginBottom: 2, animation: 'dIn .6s ease .3s both' }}>
+              Per-engagement pricing
+            </div>
+            {PRICING_TIERS.map((tier, i) => tierCard(tier, i))}
+
+            {/* Comparison footnote */}
+            <div style={{
+              marginTop: 6, padding: '14px 20px',
+              background: 'rgba(105,219,124,.04)',
+              border: '1px solid rgba(105,219,124,.1)',
+              borderRadius: 10,
+              opacity: phase >= 4 ? 1 : 0,
+              transition: 'opacity .6s ease .3s',
+            }}>
+              <p style={{ fontFamily: SANS, fontSize: 11, color: 'rgba(250,249,246,.3)', lineHeight: 1.65, margin: 0 }}>
+                Credits never expire. No seat limits. No minimum commitment.
+                Works on any document — NDA, lease, employment contract, MSA, privacy policy.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
