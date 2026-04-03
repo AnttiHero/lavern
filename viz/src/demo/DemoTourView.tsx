@@ -1412,10 +1412,10 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24, opacity: showSteps ? 1 : 0, transform: showSteps ? 'none' : 'translateY(10px)', transition: 'opacity .5s ease, transform .5s ease' }}>
             {STEPS.map(s => (
               <div key={s.n} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.25)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(250,249,246,.38)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
                 <div>
                   <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 3 }}>{s.title}</div>
-                  <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.42)', lineHeight: 1.6 }}>{s.body}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 12, color: 'rgba(250,249,246,.72)', lineHeight: 1.6 }}>{s.body}</div>
                 </div>
               </div>
             ))}
@@ -1475,10 +1475,10 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
                 display: 'flex', gap: 20, alignItems: 'flex-start',
                 animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
               }}>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.18)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.38)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
                 <div>
                   <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 5 }}>{s.title}</div>
-                  <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.40)', lineHeight: 1.7 }}>{s.body}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.72)', lineHeight: 1.7 }}>{s.body}</div>
                 </div>
               </div>
             ))}
