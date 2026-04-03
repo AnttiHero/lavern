@@ -180,7 +180,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
               onMouseEnter={e => { const b = e.currentTarget; b.style.transform = 'translateY(-2px) scale(1.02)'; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.4), 0 14px 40px rgba(0,0,0,0.25)'; }}
               onMouseLeave={e => { const b = e.currentTarget; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.35), 0 8px 28px rgba(0,0,0,0.18)'; }}
             >
-              See Clawern {'\u2192'}
+              See how the autopilot works {'\u2192'}
             </button>
           </>
         ) : (
