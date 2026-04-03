@@ -1604,7 +1604,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           <button onClick={onContinue}
             style={{ ...PILL_STYLE, padding: isMobile ? '18px 36px' : '20px 44px', fontSize: 11 }}
             onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
-            Choose your matter →
+            See it in action →
           </button>
         </div>
 
