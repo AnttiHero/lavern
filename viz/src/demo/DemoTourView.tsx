@@ -1088,7 +1088,7 @@ function S4Builder({ isMobile, caseId, onLaunch }: { isMobile: boolean; caseId: 
     )}
     <Shell isMobile={isMobile}
       headline={<>Make it<br /><em style={{fontStyle:'italic'}}>yours.</em></>}
-      sub="66 agents in the roster. Not enough? Forge your own. Set the rules."
+      sub="66 agents in the roster. Not enough? Forge your own. Set the rules. Make your own team of experts."
       footer={
         <button
           onClick={forgeAgent}
