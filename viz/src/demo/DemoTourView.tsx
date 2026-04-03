@@ -1592,7 +1592,8 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           animation: 'dIn .7s ease .5s both',
         }}>
           It is like your favorite law firm that works for you. Just this time, the specialists are agents. And the office is in a Mac Mini.<br /><br />
-          Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.
+          Use it once, or let it run. It will work while you sleep. It is a law firm on autopilot.<br /><br />
+          The firm is called Lavern.
         </p>
 
         {/* CTA */}
@@ -1604,7 +1605,7 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           <button onClick={onContinue}
             style={{ ...PILL_STYLE, padding: isMobile ? '18px 36px' : '20px 44px', fontSize: 11 }}
             onMouseEnter={pillEnter} onMouseLeave={pillLeave}>
-            See it in action →
+            See Lavern in action →
           </button>
         </div>
 
