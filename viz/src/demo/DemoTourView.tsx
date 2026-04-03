@@ -1591,8 +1591,8 @@ function SIntro({ isMobile, onContinue }: { isMobile: boolean; onContinue: () =>
           margin: '0 0 36px', maxWidth: 480,
           animation: 'dIn .7s ease .5s both',
         }}>
-          A law firm that works for you. Just this time, the workers are agents.{' '}
-          Use it once, or let it run — and it will work while you sleep.
+          A law firm that works for you. Just this time, the workers are agents.<br /><br />
+          Use it once, or let it run. It will work while you sleep.
         </p>
 
         {/* CTA */}
