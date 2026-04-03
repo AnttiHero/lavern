@@ -1432,63 +1432,60 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
 
   /* ── Desktop ─────────────────────────────────────────────────────── */
   return (
-    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, backgroundColor: '#050505', overflowY: 'auto', overflowX: 'hidden' }}>
 
-      {/* Mac Mini — subtle atmospheric background */}
-      <img
-        src="/mac-mini-dark.jpg"
-        alt=""
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.13, zIndex: 0 }}
-      />
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 65% 40%, rgba(5,5,5,0) 10%, #050505 68%)', zIndex: 1 }} />
+      {/* ── Hero photo — top 42% of screen ── */}
+      <div style={{ position: 'relative', width: '100%', height: '42vh', overflow: 'hidden', flexShrink: 0 }}>
+        <img
+          src="/mac-mini-dark.jpg"
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 35%', opacity: 0.85 }}
+        />
+        {/* Fade out at bottom */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(to top, #050505, transparent)' }} />
+        {/* Headline overlaid bottom-left of photo */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 80px 32px', zIndex: 10 }}>
+          <h2 style={{
+            fontFamily: SERIF,
+            fontSize: 'clamp(48px,5vw,72px)',
+            fontWeight: 300, lineHeight: 0.95, letterSpacing: -2,
+            color: CREAM, margin: 0,
+            animation: 'dReveal .9s ease .1s both',
+          }}>
+            While you <em style={{ fontStyle: 'italic' }}>sleep.</em>
+          </h2>
+        </div>
+      </div>
 
-      {/* Two-column grid, centered */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 10,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '60px 80px',
-      }}>
-        <div style={{
-          width: '100%', maxWidth: 1080,
-          display: 'grid', gridTemplateColumns: '1fr 1fr',
-          gap: 72, alignItems: 'center',
-        }}>
+      {/* ── Content below photo ── */}
+      <div style={{ padding: '40px 80px 80px', maxWidth: 1080, margin: '0 auto' }}>
 
-          {/* Left: headline + steps + CTAs */}
-          <div>
-            <h2 style={{
-              fontFamily: SERIF,
-              fontSize: 'clamp(44px,4.5vw,68px)',
-              fontWeight: 300, lineHeight: 0.95, letterSpacing: -1.5,
-              color: CREAM, margin: '0 0 40px',
-              animation: 'dReveal .9s ease .1s both',
-            }}>
-              While you<br /><em style={{ fontStyle: 'italic' }}>sleep.</em>
-            </h2>
+        {/* Steps + terminal side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'start' }}>
 
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: 28,
-              opacity: showSteps ? 1 : 0,
-              transform: showSteps ? 'none' : 'translateY(14px)',
-              transition: 'opacity .6s ease, transform .6s ease',
-              marginBottom: 40,
-            }}>
-              {STEPS.map((s, i) => (
-                <div key={s.n} style={{
-                  display: 'flex', gap: 20, alignItems: 'flex-start',
-                  animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
-                }}>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.18)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
-                  <div>
-                    <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 5 }}>{s.title}</div>
-                    <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.40)', lineHeight: 1.7 }}>{s.body}</div>
-                  </div>
+          {/* Steps */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 28,
+            opacity: showSteps ? 1 : 0,
+            transform: showSteps ? 'none' : 'translateY(14px)',
+            transition: 'opacity .6s ease, transform .6s ease',
+          }}>
+            {STEPS.map((s, i) => (
+              <div key={s.n} style={{
+                display: 'flex', gap: 20, alignItems: 'flex-start',
+                animation: showSteps ? `dUp .5s ease ${i * 0.12 + 0.1}s both` : undefined,
+              }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(250,249,246,.18)', lineHeight: 1.8, flexShrink: 0, letterSpacing: 1 }}>{s.n}</span>
+                <div>
+                  <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: CREAM, lineHeight: 1.3, marginBottom: 5 }}>{s.title}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 13, color: 'rgba(250,249,246,.40)', lineHeight: 1.7 }}>{s.body}</div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
+            {/* CTAs below steps */}
             <div style={{
-              display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 240,
+              display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 240, paddingTop: 12,
               opacity: showCTA ? 1 : 0,
               transform: showCTA ? 'none' : 'translateY(10px)',
               transition: 'opacity .5s ease, transform .5s ease',
@@ -1498,7 +1495,7 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
             </div>
           </div>
 
-          {/* Right: terminal */}
+          {/* Terminal */}
           <div style={{
             opacity: showTerminal ? 1 : 0,
             transform: showTerminal ? 'none' : 'translateY(20px)',
