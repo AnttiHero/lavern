@@ -794,7 +794,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
   return (
     <Shell isMobile={isMobile}
       headline={<>Assemble<br />your <em style={{fontStyle:'italic'}}>team.</em></>}
-      sub="Partners, red teamers, privacy counsel, risk pricers. 66 specialists on the bench."
+      sub={<>Partners, red teamers, privacy counsel, risk pricers. Not only lawyers.<br /><br />66 specialists on the bench.</>}
       footer={showCTA ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
