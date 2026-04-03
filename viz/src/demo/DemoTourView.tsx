@@ -800,7 +800,7 @@ function S3Team({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: C
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
           onMouseEnter={pillEnter}
           onMouseLeave={pillLeave}
-        >Make it yours</button>
+        >See the agents work on your case →</button>
       ) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
