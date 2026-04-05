@@ -241,8 +241,7 @@ function PrimaryButton({ onClick, children }: { onClick: () => void; children: R
         borderRadius: 100, padding: '20px 56px',
         backgroundColor: '#000', color: TEXT,
         boxShadow: hovered ? '0 8px 40px rgba(0,0,0,0.5)' : '0 4px 30px rgba(0,0,0,0.4)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
-        transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1)',
+        transition: 'box-shadow 0.5s cubic-bezier(0.16,1,0.3,1)',
       }}
     >
       {children}
