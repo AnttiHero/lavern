@@ -594,7 +594,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
   return (
     <Shell isMobile={isMobile}
       headline={<>Lavern<br /><em style={{fontStyle:'italic'}}>listens.</em></>}
-      sub="Press spacebar and talk to the agents. Plain language. No forms. Just say what you need."
+      sub="Just talk to the agents. Plain language. No forms. Just say what you need."
       footer={phase >= 4 ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
