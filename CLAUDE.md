@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.14.0, a multi-agent legal design system that transforms
+You are part of Lavern v0.14.1, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -185,7 +185,27 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 
 ## Version History
 
-### v0.14.0 (Current) — Clawern: Law Firm in Your Mac Mini
+### v0.14.1 (Current) — Voice Mode: Speak to the Firm
+
+**Voice Input — Three Phases:**
+- **Phase 1 — Intake (Briefing):** Mic toggle in `ConversationalChat` enables voice-driven interviews. `useVoiceInput` (Deepgram + Web Speech fallback) fills the input field on `finalTranscript`; auto-submits after 1.5s silence. Auto-restarts listening when interviewer finishes responding (stable primitive deps prevent per-chunk re-fires). Toggle in header; keyboard Send still works as fallback.
+- **Phase 2 — Interrupt (Working):** Floating mic FAB in `WorkingView` (position above PacMan button). On click: listens, injects transcript into the session activity feed via `POST /api/sessions/:id/inject`. New endpoint emits `tool_used` event into the session event bus so the message appears as a speech bubble in the feed. 1000-char cap.
+- **Phase 3 — Post-case (Delivery):** Mic button beside the "Ask the Team" input in `ConversationTab`. Same pattern: listen → `sendTextRef` auto-sends via stable ref, skipping stale-closure issues.
+
+**Reused Infrastructure (no changes):**
+- `viz/src/partner/hooks/useVoiceInput.ts` — Deepgram STT via `/api/voice/stt` WebSocket + Web Speech API fallback. Used as-is in all three phases.
+- `viz/src/partner/hooks/useVoiceOutput.ts` — ElevenLabs TTS. Available for future question read-back.
+- `viz/src/partner/components/VoiceOrb.tsx` — Audio-reactive orb. Available for future full-voice mode.
+
+**Bug Sweep:**
+- All three components destructure `useVoiceInput()` return values (individual stable callbacks) instead of holding a reference to the returned object. Removed `voice` object from all `useCallback`/`useEffect` deps — was causing effects to re-run on every render.
+- Removed stray `voice.isListening` reference in `WorkingView.tsx` JSX.
+- Zero `tsc --noEmit` errors on both frontend and backend.
+
+**New API:**
+- `POST /api/sessions/:id/inject` — accepts `{ message: string }` (max 1000 chars), emits `tool_used` event into session bus, returns `{ success: true, sessionId }`.
+
+### v0.14.0 — Clawern: Law Firm in Your Mac Mini
 
 **Real-time Dashboard:**
 - WebSocket push via ClawEventBus (9 event types, late-join replay)

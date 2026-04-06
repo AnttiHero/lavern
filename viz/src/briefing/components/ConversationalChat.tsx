@@ -11,6 +11,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { InterviewMessage } from '../hooks/useLLMInterview.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
+import { useVoiceInput } from '../../partner/hooks/useVoiceInput.js';
 
 // ── Component ─────────────────────────────────────────────────────────
 
@@ -38,8 +39,18 @@ export function ConversationalChat({
   interviewerName,
 }: Props) {
   const [input, setInput] = useState('');
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sendTextRef = useRef<((text: string) => Promise<void>) | null>(null);
+  const {
+    isSupported: voiceSupported,
+    isListening: voiceListening,
+    finalTranscript: voiceFinalTranscript,
+    startListening: voiceStart,
+    stopListening: voiceStop,
+    clearTranscript: voiceClear,
+  } = useVoiceInput();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -53,12 +64,54 @@ export function ConversationalChat({
     }
   }, [isStreaming]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
+  const handleSend = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isStreaming) return;
-    setInput('');
+    if (!overrideText) setInput('');
     await onSendAnswer(text);
   }, [input, isStreaming, onSendAnswer]);
+
+  // Keep a stable ref to handleSend so voice effects don't re-create on every input change
+  useEffect(() => {
+    sendTextRef.current = (text: string) => handleSend(text);
+  }, [handleSend]);
+
+  // Voice: fill input + auto-send 1.5s after final transcript arrives
+  useEffect(() => {
+    if (!voiceFinalTranscript || !voiceEnabled) return;
+    const text = voiceFinalTranscript.trim();
+    if (!text) return;
+    setInput(text);
+    const timer = setTimeout(() => {
+      sendTextRef.current?.(text);
+      voiceClear();
+      setInput('');
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [voiceFinalTranscript, voiceEnabled, voiceClear]);
+
+  // Voice: restart listening after the assistant finishes responding
+  // Only fires when isStreaming transitions (false) or voiceEnabled toggles — not on every message chunk
+  const lastMsgRole = messages[messages.length - 1]?.role;
+  const lastMsgHasContent = !!(messages[messages.length - 1]?.content);
+  useEffect(() => {
+    if (!voiceEnabled || isStreaming || voiceListening) return;
+    if (lastMsgRole === 'assistant' && lastMsgHasContent) {
+      voiceStart();
+    }
+  }, [voiceEnabled, isStreaming, voiceListening, lastMsgRole, lastMsgHasContent, voiceStart]);
+
+  const handleVoiceToggle = useCallback(() => {
+    if (!voiceEnabled) {
+      setVoiceEnabled(true);
+      voiceStart();
+    } else {
+      setVoiceEnabled(false);
+      voiceStop();
+      voiceClear();
+      setInput('');
+    }
+  }, [voiceEnabled, voiceStart, voiceStop, voiceClear]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -167,16 +220,41 @@ export function ConversationalChat({
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             enterKeyHint="send"
-            placeholder={isStreaming ? `${interviewerName ?? 'Interviewer'} is typing\u2026` : 'Type your answer\u2026'}
+            placeholder={
+              isStreaming
+                ? `${interviewerName ?? 'Interviewer'} is typing\u2026`
+                : voiceEnabled && voiceListening
+                  ? 'Listening\u2026'
+                  : 'Type your answer\u2026'
+            }
             disabled={isStreaming}
             rows={2}
             style={{
               ...styles.textarea,
               opacity: isStreaming ? 0.5 : 1,
+              borderColor: voiceListening ? 'rgba(180,60,40,0.5)' : undefined,
             }}
           />
+          {voiceSupported && (
+            <button
+              onClick={handleVoiceToggle}
+              title={voiceEnabled ? 'Turn off voice mode' : 'Turn on voice mode'}
+              style={{
+                ...styles.micBtn,
+                backgroundColor: voiceEnabled ? (voiceListening ? 'rgba(180,60,40,0.12)' : 'rgba(26,26,26,0.06)') : 'transparent',
+                borderColor: voiceEnabled ? (voiceListening ? 'rgba(180,60,40,0.4)' : colors.border) : colors.border,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={voiceListening ? '#b43c28' : voiceEnabled ? colors.text : colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M19 10a7 7 0 0 1-14 0"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+                <line x1="8" y1="22" x2="16" y2="22"/>
+              </svg>
+            </button>
+          )}
           <button
-            onClick={handleSend}
+            onClick={() => void handleSend()}
             disabled={isStreaming || !input.trim()}
             style={{
               ...styles.sendBtn,
@@ -343,6 +421,19 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'opacity 0.15s ease',
     whiteSpace: 'nowrap' as const,
+  },
+  micBtn: {
+    width: 40,
+    height: 40,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease, border-color 0.2s ease',
   },
 
   // Footer

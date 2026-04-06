@@ -9,7 +9,7 @@
  * Layout: WorkingHeader → SlimHeartbeatBand → (ChecklistSidebar | ConversationFeed)
  */
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkingState } from './hooks/useWorkingState.js';
 import { useTeamRoster } from './hooks/useTeamRoster.js';
 import { useReassuranceInjector } from './hooks/useReassuranceInjector.js';
@@ -27,6 +27,7 @@ import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 import { injectWorkingKeyframes } from './styles/animations.js';
 import { DemoNarration } from '../components/DemoNarration.js';
 import { useBillingStatus } from '../my-page/hooks/useBillingStatus.js';
+import { useVoiceInput } from '../partner/hooks/useVoiceInput.js';
 
 const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
 
@@ -141,6 +142,66 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   const [showPacMan, setShowPacMan] = useState(false);
   const { isMobile, isTablet } = useResponsive();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ── Voice inject ──────────────────────────────────────────────────────
+  const [micOpen, setMicOpen] = useState(false);
+  const [injectStatus, setInjectStatus] = useState<'idle' | 'injecting' | 'done'>('idle');
+  const {
+    isSupported: voiceSupported,
+    isListening: voiceListening,
+    finalTranscript: voiceFinalTranscript,
+    startListening: voiceStart,
+    stopListening: voiceStop,
+    clearTranscript: voiceClear,
+  } = useVoiceInput();
+  const injectDoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMicToggle = useCallback(() => {
+    if (micOpen) {
+      setMicOpen(false);
+      voiceStop();
+      voiceClear();
+      setInjectStatus('idle');
+    } else {
+      setMicOpen(true);
+      setInjectStatus('idle');
+      voiceClear();
+      voiceStart();
+    }
+  }, [micOpen, voiceStart, voiceStop, voiceClear]);
+
+  // When voice captures a transcript, inject it into the session
+  useEffect(() => {
+    if (!voiceFinalTranscript || !micOpen || injectStatus !== 'idle') return;
+    const message = voiceFinalTranscript.trim();
+    if (!message || !state.sessionId) return;
+
+    setInjectStatus('injecting');
+    voiceStop();
+
+    fetch(`/api/sessions/${state.sessionId}/inject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ message }),
+    }).then(() => {
+      setInjectStatus('done');
+      voiceClear();
+      injectDoneTimerRef.current = setTimeout(() => {
+        setMicOpen(false);
+        setInjectStatus('idle');
+      }, 1800);
+    }).catch(() => {
+      setInjectStatus('idle');
+      voiceClear();
+    });
+  }, [voiceFinalTranscript, micOpen, injectStatus, state.sessionId, voiceStop, voiceClear]);
+
+  useEffect(() => {
+    return () => {
+      if (injectDoneTimerRef.current) clearTimeout(injectDoneTimerRef.current);
+    };
+  }, []);
 
   // Check if verification pipeline events are present
   const hasVerificationEvents = useMemo(() =>
@@ -417,6 +478,49 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         />
       )}
 
+      {/* Voice inject FAB — only shown during an active session */}
+      {state.sessionId && voiceSupported && (
+        <>
+          {micOpen && (
+            <div style={styles.voiceOverlay}>
+              {injectStatus === 'idle' && voiceListening && (
+                <>
+                  <div style={styles.voiceListeningDot} />
+                  <span style={styles.voiceLabel}>Listening…</span>
+                </>
+              )}
+              {injectStatus === 'idle' && !voiceListening && (
+                <span style={styles.voiceLabel}>Tap mic to listen</span>
+              )}
+              {injectStatus === 'injecting' && (
+                <span style={styles.voiceLabel}>Sending…</span>
+              )}
+              {injectStatus === 'done' && (
+                <span style={{ ...styles.voiceLabel, color: colors.accent }}>Sent ✓</span>
+              )}
+            </div>
+          )}
+          <button
+            onClick={handleMicToggle}
+            style={{
+              ...styles.micFab,
+              bottom: spacing.md + 44,
+              backgroundColor: micOpen ? 'rgba(180,60,40,0.1)' : 'transparent',
+              borderColor: micOpen ? 'rgba(180,60,40,0.35)' : 'transparent',
+            }}
+            title={micOpen ? 'Stop voice input' : 'Speak to the agents'}
+            aria-label={micOpen ? 'Stop voice input' : 'Speak to the agents'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={micOpen ? '#b43c28' : colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M19 10a7 7 0 0 1-14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          </button>
+        </>
+      )}
+
       {/* Pac-Man trigger */}
       <button
         onClick={() => setShowPacMan(true)}
@@ -555,6 +659,51 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.35,
     transition: 'opacity 0.3s ease, border-color 0.3s ease',
     zIndex: 100,
+  },
+  micFab: {
+    position: 'absolute' as const,
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: `1px solid transparent`,
+    borderRadius: '50%',
+    cursor: 'pointer',
+    opacity: 0.7,
+    transition: 'background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease',
+    zIndex: 100,
+  },
+  voiceOverlay: {
+    position: 'absolute' as const,
+    bottom: spacing.md + 88,
+    right: spacing.md,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    padding: '6px 12px',
+    zIndex: 100,
+    pointerEvents: 'none' as const,
+  },
+  voiceListeningDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#b43c28',
+    animation: 'activeThinkingPulse 1.2s ease-in-out infinite',
+    flexShrink: 0,
+  },
+  voiceLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors.textSecondary,
+    letterSpacing: 0.2,
+    whiteSpace: 'nowrap' as const,
   },
   expiredOverlay: {
     position: 'absolute',
