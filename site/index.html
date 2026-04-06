@@ -425,6 +425,7 @@
       .hero{min-height:calc(100vh + 1px);min-height:calc(100dvh + 1px);max-height:calc(100vh + 1px);max-height:calc(100dvh + 1px);overflow:hidden}
       .hero-img{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 1px);height:calc(100dvh + 1px);object-fit:cover}
       .btn-invite{padding:16px 44px;font-size:10px}
+      .btn-invite:hover{transform:none}
       .hero::after{height:40%}
       .smoke{height:35vh}
       /* Footer — single clean row, no border */
@@ -613,20 +614,22 @@
       },{passive:true});
     }
 
-    // Magnetic buttons — pull towards cursor on hover
-    document.querySelectorAll('.btn-invite, .login, .footer-link').forEach(btn=>{
-      btn.addEventListener('mousemove',e=>{
-        const r=btn.getBoundingClientRect();
-        const x=e.clientX-r.left-r.width/2;
-        const y=e.clientY-r.top-r.height/2;
-        btn.style.transform=`translate(${x*0.3}px,${y*0.3}px)`;
-        btn.style.transition='transform 0.15s ease-out';
+    // Magnetic buttons — pull towards cursor on hover (fine pointer / desktop only)
+    if(matchMedia('(pointer:fine)').matches){
+      document.querySelectorAll('.btn-invite, .login, .footer-link').forEach(btn=>{
+        btn.addEventListener('mousemove',e=>{
+          const r=btn.getBoundingClientRect();
+          const x=e.clientX-r.left-r.width/2;
+          const y=e.clientY-r.top-r.height/2;
+          btn.style.transform=`translate(${x*0.3}px,${y*0.3}px)`;
+          btn.style.transition='transform 0.15s ease-out';
+        });
+        btn.addEventListener('mouseleave',()=>{
+          btn.style.transform='translate(0,0)';
+          btn.style.transition='transform 0.5s var(--ease)';
+        });
       });
-      btn.addEventListener('mouseleave',()=>{
-        btn.style.transform='translate(0,0)';
-        btn.style.transition='transform 0.5s var(--ease)';
-      });
-    });
+    }
 
     // Custom cursor (desktop only — fine pointer)
     if(matchMedia('(pointer:fine)').matches){
