@@ -13,6 +13,7 @@
  * POST   /api/sessions/:id/conversation — Ask the team (SSE streaming Q&A)
  * GET    /api/sessions/:id/events       — WebSocket event stream
  * POST   /api/sessions/:id/gate         — Submit gate decision
+ * POST   /api/sessions/:id/inject       — Inject user voice/context message into feed
  * DELETE /api/sessions/:id              — Cancel session
  */
 
@@ -1265,6 +1266,35 @@ ${buildFullContext(session)}`;
       gateType: pendingGate.gateType,
       sessionId: id,
     });
+  });
+
+  // ── POST /api/sessions/:id/inject — Voice/user context injection ────
+  fastify.post('/api/sessions/:id/inject', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    const body = request.body as { message?: string } | undefined;
+    const message = (body?.message ?? '').trim();
+    if (!message) {
+      return reply.status(400).send({ error: 'message is required' });
+    }
+    if (message.length > 1000) {
+      return reply.status(400).send({ error: 'message too long (max 1000 characters)' });
+    }
+
+    // Emit as a tool_used event so it surfaces in the activity feed
+    session.events.emitEvent({
+      type: 'tool_used',
+      tool: `\u{1F4AC} You: ${message}`,
+      agent: 'user',
+      timestamp: new Date().toISOString(),
+    });
+
+    return reply.send({ success: true, sessionId: id });
   });
 
   // ── POST /api/sessions/:id/pause — Circuit breaker pause ────────────

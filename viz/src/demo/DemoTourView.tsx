@@ -594,7 +594,7 @@ function S2Voice({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId: 
   return (
     <Shell isMobile={isMobile}
       headline={<>Lavern<br /><em style={{fontStyle:'italic'}}>listens.</em></>}
-      sub="Press spacebar and talk to the agents. Plain language. No forms. Just say what you need."
+      sub="Just talk to the agents. Plain language. No forms. Just say what you need."
       footer={phase >= 4 ? (
         <button onClick={(e) => { e.stopPropagation(); onContinue(); }}
           style={{ ...PILL_STYLE, padding: '17px 48px', animation: 'dUp .4s ease both' }}
@@ -1296,14 +1296,14 @@ function S5Clawern({ isMobile, caseId, onExit, onNext }: { isMobile: boolean; ca
   const termLines = TERM_LINES[caseId];
   const budget = CLAW_BUDGET[caseId];
   const [visibleLines, setVisibleLines] = useState<number[]>([]);
-  const [showSteps, setShowSteps] = useState(false);
-  const [showCTA, setShowCTA]     = useState(false);
+  const [showSteps, setShowSteps] = useState(isMobile);
+  const [showCTA, setShowCTA]     = useState(isMobile);
   const allLinesVisible = visibleLines.length >= termLines.length;
 
   useEffect(() => {
     setVisibleLines([]);
-    setShowSteps(false);
-    setShowCTA(false);
+    setShowSteps(isMobile);
+    setShowCTA(isMobile);
     const lastDelay = termLines[termLines.length - 1].delay;
     const ts    = termLines.map((l, i) => setTimeout(() => setVisibleLines(v => [...v, i]), l.delay));
     const sT    = setTimeout(() => setShowSteps(true), 500);

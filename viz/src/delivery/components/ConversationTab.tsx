@@ -10,8 +10,9 @@
  * State is lifted to DeliveryView so conversation persists across tab switches.
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { colors, fonts, spacing, radii } from '../../staffing/styles/tokens.js';
+import { useVoiceInput } from '../../partner/hooks/useVoiceInput.js';
 
 export interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -37,6 +38,16 @@ export function ConversationTab({
   // Stable ref for messages to avoid recreating sendMessage on every streaming chunk
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const {
+    isSupported: voiceSupported,
+    isListening: voiceListening,
+    finalTranscript: voiceFinalTranscript,
+    startListening: voiceStart,
+    stopListening: voiceStop,
+    clearTranscript: voiceClear,
+  } = useVoiceInput();
+  const [micActive, setMicActive] = useState(false);
+  const sendTextRef = useRef<((text: string) => void) | null>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -48,15 +59,15 @@ export function ConversationTab({
     return () => { abortRef.current?.abort(); };
   }, []);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || streaming) return;
 
     const userMessage: ConversationMessage = { role: 'user', content: text };
     const history = [...messagesRef.current];
 
     setMessages(prev => [...prev, userMessage]);
-    setInput(''); // Clear immediately for responsiveness — restored on error below
+    if (!overrideText) setInput(''); // Clear immediately for responsiveness — restored on error below
     setStreaming(true);
 
     // Add empty assistant message that we'll stream into
@@ -177,9 +188,38 @@ export function ConversationTab({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      void sendMessage();
     }
   }, [sendMessage]);
+
+  // Keep stable ref to sendMessage for voice effect (must be after sendMessage declaration)
+  useEffect(() => {
+    sendTextRef.current = (text: string) => { void sendMessage(text); };
+  }, [sendMessage]);
+
+  // Voice: when finalTranscript arrives, clear input and auto-send
+  useEffect(() => {
+    if (!voiceFinalTranscript || !micActive) return;
+    const text = voiceFinalTranscript.trim();
+    if (!text) return;
+    setInput('');
+    setMicActive(false);
+    voiceStop();
+    voiceClear();
+    sendTextRef.current?.(text);
+  }, [voiceFinalTranscript, micActive, voiceStop, voiceClear]);
+
+  const handleMicToggle = useCallback(() => {
+    if (micActive) {
+      setMicActive(false);
+      voiceStop();
+      voiceClear();
+    } else {
+      setMicActive(true);
+      voiceClear();
+      voiceStart();
+    }
+  }, [micActive, voiceStart, voiceStop, voiceClear]);
 
   return (
     <div style={styles.container}>
@@ -243,18 +283,41 @@ export function ConversationTab({
           ref={inputRef}
           type="text"
           aria-label="Ask a question about the analysis"
-          placeholder="Ask a question about the analysis..."
+          placeholder={micActive && voiceListening ? 'Listening\u2026' : 'Ask a question about the analysis\u2026'}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          style={styles.input}
+          style={{
+            ...styles.input,
+            borderColor: voiceListening ? 'rgba(180,60,40,0.4)' : undefined,
+          }}
           disabled={streaming}
           autoFocus
           onFocus={e => { e.currentTarget.style.borderColor = colors.accent; }}
           onBlur={e => { e.currentTarget.style.borderColor = colors.border; }}
         />
+        {voiceSupported && (
+          <button
+            onClick={handleMicToggle}
+            disabled={streaming}
+            title={micActive ? 'Stop listening' : 'Ask by voice'}
+            style={{
+              ...styles.micBtn,
+              backgroundColor: micActive ? (voiceListening ? 'rgba(180,60,40,0.1)' : 'rgba(26,26,26,0.04)') : 'transparent',
+              borderColor: micActive ? 'rgba(180,60,40,0.35)' : colors.border,
+              opacity: streaming ? 0.3 : 1,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={voiceListening ? '#b43c28' : colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M19 10a7 7 0 0 1-14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          </button>
+        )}
         <button
-          onClick={sendMessage}
+          onClick={() => void sendMessage()}
           disabled={streaming || input.trim().length === 0}
           style={{
             ...styles.sendBtn,
@@ -424,5 +487,18 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'opacity 0.2s ease',
     flexShrink: 0,
+  },
+  micBtn: {
+    width: 42,
+    height: 42,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    border: `1.5px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease, border-color 0.2s ease',
   },
 };
