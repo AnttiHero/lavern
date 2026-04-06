@@ -203,6 +203,9 @@ export default function FoyerView({ onPartner, onQuickStart, onMyPage, onLogin, 
           from { opacity: 0; }
           to   { opacity: 1; }
         }
+        .foyer-primary-btn:hover {
+          box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+        }
       `}</style>
     </div>
   );
@@ -228,19 +231,17 @@ function NavLink({ onClick, children }: { onClick: () => void; children: React.R
 }
 
 function PrimaryButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="foyer-primary-btn"
       style={{
         fontFamily: SANS, fontSize: 11, fontWeight: 600,
         letterSpacing: 3, textTransform: 'uppercase' as const,
         cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)',
         borderRadius: 100, padding: '20px 56px',
         backgroundColor: '#000', color: TEXT,
-        boxShadow: hovered ? '0 8px 40px rgba(0,0,0,0.5)' : '0 4px 30px rgba(0,0,0,0.4)',
+        boxShadow: '0 4px 30px rgba(0,0,0,0.4)',
         transition: 'box-shadow 0.5s cubic-bezier(0.16,1,0.3,1)',
       }}
     >
