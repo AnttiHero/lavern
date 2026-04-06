@@ -495,7 +495,7 @@ function S1Partner({ isMobile, caseId, onContinue }: { isMobile: boolean; caseId
           onMouseEnter={pillEnter}
           onMouseLeave={pillLeave}
         >
-          Try voice mode
+          Voice mode →
         </button>
       ) : undefined}
     >
