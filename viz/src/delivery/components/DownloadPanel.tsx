@@ -95,7 +95,7 @@ function markdownToHtml(md: string): string {
     if (trimmed === '---') { closePara(); closeList(); out.push('<hr>'); continue; }
 
     // Blockquote
-    const bq = line.match(/^&gt; (.+)$/);
+    const bq = line.match(/^> (.+)$/);
     if (bq) { closePara(); closeList(); out.push(`<blockquote><p>${applyInline(bq[1])}</p></blockquote>`); continue; }
 
     // Unordered list items
