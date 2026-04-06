@@ -650,7 +650,10 @@ function buildDemoData(sessionId: string): DeliveryData {
   if (sessionId.includes('medivault') || sessionId.includes('healthprivacy')) {
     return buildHealthPrivacyDemoData(sessionId);
   }
-  if (sessionId.includes('cloudmsa') || sessionId.includes('devcontract')) {
+  if (sessionId.includes('cloudmsa')) {
+    return buildCloudMSADemoData(sessionId);
+  }
+  if (sessionId.includes('devcontract')) {
     return buildDevContractDemoData(sessionId);
   }
 
@@ -1856,6 +1859,312 @@ Mailing Address: [EU Mailing Address]
 
 *Prepared by Lavern \u2014 Multi-Agent Legal Design System*
 *This document was produced with AI assistance and reviewed by multi-agent verification. It does not constitute legal advice. For HIPAA compliance, EU regulatory filings, or any matter involving binding legal obligations, please verify with qualified legal professionals.*
+`;
+
+// ── Cloud MSA Demo Data ───────────────────────────────────────────────────
+
+function buildCloudMSADemoData(sessionId: string): DeliveryData {
+  return {
+    sessionId,
+    status: 'Complete',
+
+    documentTitle: 'Cloud MSA \u2014 Negotiation Briefing',
+    executiveSummary:
+      'A negotiation briefing and set of redlined clauses has been prepared for a Cloud Master Services Agreement. ' +
+      'The unlimited liability clause in \u00a78.3 is a show-stopper \u2014 the agreement as drafted would expose the client to consequential damages with no ceiling. ' +
+      'The indemnification clause in \u00a712 uses \u201Carising in connection with\u201D language broad enough to shift the vendor\u2019s own product liability to the client. ' +
+      'The SLA termination right has no cure period, creating a hair-trigger termination mechanism that vendors will not accept and courts may not enforce. ' +
+      'All three issues are standard commercial negotiating points. Friday signing is achievable if redlines are sent today. Cost: $5.14 of $10.00 budget.',
+
+    keyChanges: [
+      {
+        title: '\u26D4 Liability \u2014 Unlimited Exposure',
+        before: 'Section 8.3 contained no limitation of liability. Either party could be held liable for all damages \u2014 including consequential, indirect, and punitive damages \u2014 with no ceiling.',
+        after: 'Mutual exclusion of consequential damages. Aggregate liability capped at 12 months\u2019 fees. Carve-outs for IP indemnity, death/personal injury, fraud, and confidentiality breach \u2014 matching market standard.',
+      },
+      {
+        title: '\u26D4 Indemnity \u2014 Overbroad Trigger',
+        before: 'Section 12 required client to indemnify vendor for any third-party claim \u201Carising in connection with\u201D client\u2019s use of the service. This language is broad enough to cover claims arising from the vendor\u2019s own product defects.',
+        after: 'Client indemnity narrowed to: (a) wilful misconduct or gross negligence; (b) breach of data use restrictions; (c) uploaded content infringing third-party IP. Vendor indemnity added for IP infringement by the service itself. Bilateral structure now mirrors market standard.',
+      },
+      {
+        title: '\u26A0\uFE0F SLA \u2014 No Cure Period',
+        before: 'Section 14.2 allowed termination for cause after any single month below the uptime SLA target. No cure period, no minimum failure threshold. Hair-trigger termination right that vendors will resist at contract review.',
+        after: 'Termination right now requires three consecutive months below target, or four in any rolling 12-month period. 30-day written cure notice required before terminating. Service credit schedule added for failures that don\u2019t reach the termination threshold.',
+      },
+    ],
+
+    dimensions: [
+      { dimension: 'Liability Protection', before: 0.5, after: 4.2, delta: 3.7 },
+      { dimension: 'Indemnity Balance', before: 0.8, after: 4.0, delta: 3.2 },
+      { dimension: 'SLA Enforceability', before: 1.5, after: 3.8, delta: 2.3 },
+      { dimension: 'Negotiation Readiness', before: 1.0, after: 4.3, delta: 3.3 },
+      { dimension: 'Market Alignment', before: 1.2, after: 4.1, delta: 2.9 },
+    ],
+
+    finalOutput: CLOUDMSA_NEGOTIATION_DOCUMENT,
+
+    debateResolutions: [
+      {
+        topic: 'Liability cap amount \u2014 12 months vs. 24 months',
+        resolution: '12-month cap adopted as opening position; 24 months designated as concession. Market standard survey confirmed 12 months is the median for SaaS agreements of this value. 24 months offered as fallback preserves negotiating room without materially increasing risk.',
+        winningPosition: 'Commercial Counsel\u2019s 12-month opening position prevailed over Risk Assessor\u2019s preference for 24 months. The Risk Assessor\u2019s argument was valid but tactically weaker \u2014 opening at 24 months signals willingness to accept higher exposure.',
+        evidenceWeight: 'Bonterms Cloud Services Agreement (2023 benchmark), LegalSifter commercial contract dataset (n=1,240): 12-month cap in 68% of SaaS agreements, 24-month in 19%, unlimited in 13%.',
+        escalationNeeded: false,
+        confidence: 0.91,
+      },
+      {
+        topic: 'Indemnity trigger language \u2014 \u201Carising in connection with\u201D vs. enumerated triggers',
+        resolution: 'Enumerated triggers adopted. \u201CArising in connection with\u201D replaced with specific list: wilful misconduct, data use breach, uploaded IP infringement. Bilateral structure added so vendor also indemnifies client for service IP claims.',
+        winningPosition: 'Liability Specialist\u2019s enumerated-triggers approach prevailed over Contract Specialist\u2019s argument that \u201Carising in connection with\u201D is industry standard. Both positions were legally valid; the decision turned on risk allocation preference for a buyer-side client.',
+        evidenceWeight: 'Three appellate decisions cited where \u201Carising in connection with\u201D was applied to shift vendor product-defect liability to customer. Buyer-side risk allocation is the appropriate default for this engagement.',
+        escalationNeeded: false,
+        confidence: 0.93,
+      },
+    ],
+
+    gateDecisions: [
+      { gateType: 'ethics critical', decision: 'approve', summary: 'Two RED findings (unlimited liability, overbroad indemnity) and one HIGH finding (SLA cure period) approved for redline. Client must be informed that signing without these changes is not recommended.' },
+      { gateType: 'final delivery', decision: 'approve', summary: 'Negotiation briefing and redlined clauses verified. Liability cap analysis, indemnity restructure, and SLA cure period all validated against market benchmarks.' },
+    ],
+
+    verificationChecks: [
+      { type: 'liability-analysis', passed: true, label: 'Liability Cap Market Benchmark', score: 0.91 },
+      { type: 'indemnity-structure', passed: true, label: 'Indemnity Bilateral Structure', score: 0.93 },
+      { type: 'sla-enforceability', passed: true, label: 'SLA Enforceability', score: 0.88 },
+      { type: 'legal-accuracy', passed: true, label: 'Legal Accuracy', score: 0.94 },
+    ],
+
+    narrative: [
+      {
+        phase: 'Analysis',
+        heading: 'Five specialists review a cloud MSA under Friday deadline',
+        body: 'The engagement opened with a Friday signing deadline and three red flags identified within the first pass. Commercial Counsel spotted the unlimited liability clause immediately: Section 8.3 contained no cap whatsoever, exposing the client to unlimited consequential damages. Liability Specialist flagged the indemnity language in Section 12 \u2014 \u201Carising in connection with\u201D is one of the broadest possible triggers, and three appellate decisions were on file where the same language shifted vendor product-defect liability to the customer. The Contract Specialist noted the SLA clause had no cure period, creating a theoretical hair-trigger termination right that would likely produce resistance from the vendor rather than acceptance.',
+        agents: ['Commercial Counsel', 'Liability Specialist', 'Contract Specialist', 'Risk Assessor', 'Synthesis Editor'],
+      },
+      {
+        phase: 'Debate',
+        heading: 'The cap amount debate \u2014 12 months or 24?',
+        body: 'The first debate turned on strategy, not law. Risk Assessor argued for a 24-month liability cap as the opening position: start higher, leave room to negotiate down to 12. Commercial Counsel countered that opening at 24 months signals willingness to accept above-market exposure \u2014 the vendor\u2019s lawyers would read it as inexperience. Market data supported Commercial Counsel: 68% of comparable SaaS agreements use a 12-month cap. The debate resolved in favor of the 12-month opening, with 24 months designated as the concession if the vendor pushes back. A tactical choice, not a legal one.',
+        agents: ['Commercial Counsel', 'Risk Assessor'],
+        highlight: 'This debate illustrates the difference between legal risk and negotiation strategy. The agents worked through both dimensions rather than treating them as the same question.',
+      },
+      {
+        phase: 'Ethics Gate',
+        heading: 'Signing advisory',
+        body: 'The ethics gate was triggered by the unlimited liability finding. The system flagged that delivering a work product without an explicit client advisory \u2014 \u201Cdo not sign this as written\u201D \u2014 would be inconsistent with the firm\u2019s duty of candor. The negotiation briefing was structured accordingly: the bottom-line recommendation appears in a call-out box before any analysis, not buried in a section.',
+        agents: [],
+        highlight: 'The brief leads with the recommendation, not the analysis. Clients under time pressure need to know what to do before they read why.',
+      },
+      {
+        phase: 'Drafting',
+        heading: 'Redlining three clauses in parallel',
+        body: 'Liability Specialist drafted the Section 8 replacement, inserting the mutual consequential damages exclusion and the 12-month aggregate cap with standard carve-outs. Contract Specialist restructured Section 12 into bilateral form: vendor indemnifies client for service IP claims; client indemnifies vendor for the three enumerated triggers only. The SLA clause was the most technically involved \u2014 the cure period, the three-consecutive-month threshold, the four-in-twelve alternative, and the service credit schedule all needed to interlock cleanly.',
+        agents: ['Liability Specialist', 'Contract Specialist'],
+      },
+      {
+        phase: 'Verification',
+        heading: 'Market benchmark and legal accuracy checks',
+        body: 'Four verification checks ran: liability cap market benchmark (12-month cap confirmed as market standard for this contract value band), indemnity bilateral structure (confirmed symmetrical, no hidden one-sidedness in the carve-outs), SLA enforceability (cure period and threshold verified against case law on termination-for-cause requirements), and overall legal accuracy. All four passed.',
+        agents: [],
+      },
+      {
+        phase: 'Delivery',
+        heading: 'Ready to send',
+        body: 'The negotiation briefing leads with the bottom-line recommendation and framing language the client can use with the vendor. The redlined clauses follow in Part II. The signing checklist closes with four steps the client should complete before Friday. All work product is ready for client review and, if appropriate, independent counsel sign-off.',
+        agents: [],
+      },
+    ],
+
+    debate: { findingsCount: 6, challengesCount: 2, resolutionsCount: 2, unresolvedCount: 0 },
+    verification: {
+      resultsCount: 4,
+      passed: 4,
+      failed: 0,
+      confidence: 0.92,
+      breakdown: [
+        { type: 'self', passed: true, confidence: 0.91, label: 'Liability Benchmark' },
+        { type: 'cross', passed: true, confidence: 0.93, label: 'Indemnity Structure' },
+        { type: 'score', passed: true, confidence: 0.94, label: 'Legal Accuracy' },
+      ],
+    },
+    cost: { accumulated: 5.14, budget: 10.00, remaining: 4.86 },
+    agentPerformance: [
+      { name: 'Commercial Counsel', role: 'commercial-counsel', findingsPosted: 2, challengesSurvived: 1, avgConfidence: 0.91 },
+      { name: 'Liability Specialist', role: 'liability-specialist', findingsPosted: 2, challengesSurvived: 0, avgConfidence: 0.93 },
+      { name: 'Contract Specialist', role: 'contract-specialist', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.88 },
+      { name: 'Risk Assessor', role: 'risk-assessor', findingsPosted: 1, challengesSurvived: 0, avgConfidence: 0.89 },
+      { name: 'Synthesis Editor', role: 'synthesis-editor', findingsPosted: 0, challengesSurvived: 0, avgConfidence: 0 },
+    ],
+    eventCount: 52,
+
+    limitations: {
+      flaggedForHumanReview: [
+        'Governing law and jurisdiction clause not reviewed \u2014 verify against client\u2019s entity structure',
+        'Data processing addendum (DPA) not in scope \u2014 review separately before signing',
+        'Payment and renewal terms not reviewed in this engagement',
+      ],
+      confidenceIntervals: '',
+      disclaimer: 'This briefing was produced by an AI system with multi-agent verification. It does not constitute legal advice. For a commercial agreement of this significance, we recommend independent counsel review before signing.',
+    },
+
+    nextSteps: [
+      { label: 'Send redlines today', description: 'Email the three redlined clauses to the vendor\u2019s counsel with the suggested cover language from the briefing. The vendor needs time to review before Friday.', kind: 'action' },
+      { label: 'Do not accept \u201Cfix it in an amendment\u201D', description: 'If the vendor suggests deferring the liability cap or indemnity fix to a side letter or amendment, decline. Amendment obligations are frequently not fulfilled. Core commercial terms must be in the base agreement.', kind: 'watchout' },
+      { label: 'Confirm SLA measurement methodology', description: 'Before signing, confirm how uptime is measured (vendor-reported vs. independent monitoring), what counts as scheduled maintenance, and how disputes about SLA calculations are resolved.', kind: 'action' },
+      { label: 'Review the data processing addendum', description: 'The DPA was not in scope for this engagement. If the service processes personal data, the DPA must be reviewed for GDPR and CCPA compliance before signing.', kind: 'watchout' },
+      { label: 'Schedule post-signing review', description: 'Set a calendar reminder to review SLA performance at the 90-day mark. If the vendor misses the uptime target in the first month, document it immediately \u2014 you\u2019ll need the record if the three-consecutive-month threshold is ever reached.', kind: 'schedule' },
+    ],
+  };
+}
+
+// ── Cloud MSA Negotiation Document ────────────────────────────────────────
+
+const CLOUDMSA_NEGOTIATION_DOCUMENT = `# Cloud MSA \u2014 Negotiation Briefing
+
+**DRAFT \u2014 For Client Review**  \u00b7  *Commercial contract review by Lavern*
+*Prepared: [Date]*  \u00b7  *Signing deadline: Friday*  \u00b7  *Priority: Critical*
+
+---
+
+| Issue | Section | Severity | Status |
+|-------|---------|----------|--------|
+| Unlimited liability \u2014 no cap defined | \u00a78.3 | **CRITICAL** | Redlined |
+| Indemnity scope \u2014 overbroad trigger | \u00a712 | **CRITICAL** | Redlined |
+| SLA termination \u2014 no cure period | \u00a714.2 | **HIGH** | Redlined |
+
+> **Bottom line:** Do not sign \u00a78.3 or \u00a712 as written. The unlimited liability exposure in \u00a78.3 is a show-stopper \u2014 the vendor could hold you liable for consequential damages with no ceiling. Section 12 uses \u201Carising in connection with\u201D language broad enough to shift the vendor\u2019s own product liability to you. Both are standard negotiating points that well-counseled buyers raise routinely. Friday is achievable if you send the redlines today.
+
+---
+
+## Part I \u2014 Negotiation Brief
+
+### 1. Recommended Opening Position
+
+Send the vendor all three redlines simultaneously. Frame them as standard commercial positions, not as objections to the deal. The framing matters: buyers who raise these points routinely get them accepted, especially when they signal they are otherwise ready to sign.
+
+**Suggested cover language:**
+> \u201CWe\u2019re ready to move forward. Three commercial points to resolve first. These are standard buyer positions and we\u2019re happy to discuss alternatives that work for both sides.\u201D
+
+### 2. Issue-by-Issue Analysis
+
+#### Issue 1: \u00a78.3 \u2014 Unlimited Liability
+
+**What the clause says (paraphrased):** Each party is liable for all damages arising from breach of this agreement, with no limitation.
+
+**Why this is a show-stopper:** A SaaS vendor serving many customers is a prime target for consequential damage claims \u2014 data loss, business interruption, downstream customer losses. Without a cap, a single incident could expose you to liability that dwarfs the value of the contract. More importantly, the lack of a cap makes this agreement difficult to insure: cyber liability and E&O policies routinely exclude uncapped indemnity obligations.
+
+**Our position:** A mutual liability cap at 12 months of fees paid in the preceding 12 months. This is the market standard \u2014 present in 68% of comparable SaaS agreements. If the vendor pushes back, offer 24 months as a concession.
+
+**Carve-outs we accept (on both sides):** Death or personal injury; fraud or wilful misconduct; breach of confidentiality; IP infringement indemnity obligations.
+
+#### Issue 2: \u00a712 \u2014 Indemnification Scope
+
+**What the clause says (paraphrased):** You will defend, indemnify, and hold harmless the vendor from any third-party claim \u201Carising in connection with\u201D your use of the service.
+
+**Why this is dangerous:** Three appellate decisions are on file where identical language was applied to shift vendor product-defect liability to the customer. The plaintiff only needed to show a causal connection between the customer\u2019s use and their injury \u2014 the vendor\u2019s underlying product failure was treated as irrelevant to the indemnity obligation. You cannot accept this.
+
+**Our position:** Narrow the trigger to three specific situations: (a) your wilful misconduct or gross negligence; (b) your breach of the data use restrictions; (c) content you upload that infringes a third party\u2019s IP. Add a vendor indemnity for IP infringement by the service itself. This bilateral structure is standard.
+
+#### Issue 3: \u00a714.2 \u2014 SLA Termination Rights
+
+**What the clause says (paraphrased):** If the vendor fails to meet monthly uptime targets, you may terminate with notice.
+
+**What\u2019s missing:** No cure period. No minimum failure threshold. As drafted, a single month below target \u2014 even by 0.1% \u2014 technically triggers termination. Vendors will resist this at review and may walk away from a deal over it, even though the underlying issue is easy to fix.
+
+**Our position:** Three consecutive months below the SLA target (or four in any rolling 12-month period) triggers a 30-day written cure notice. If the vendor achieves the uptime target during the cure period, the termination right for that period is waived. Service credits apply for failures that don\u2019t meet the termination threshold.
+
+---
+
+## Part II \u2014 Redlined Clauses
+
+The following are our proposed replacement clauses.
+
+### Section 8 \u2014 Limitation of Liability [REVISED]
+
+**8.1 Mutual Exclusion of Consequential Damages**
+
+Neither party shall be liable to the other for any indirect, incidental, special, exemplary, punitive, or consequential damages, including loss of revenue, loss of profits, loss of business, loss of data, or loss of goodwill, arising out of or related to this Agreement, even if such party has been advised of the possibility of such damages.
+
+**8.2 Aggregate Liability Cap**
+
+The aggregate liability of each party to the other for any and all claims arising out of or related to this Agreement shall not exceed the total fees paid or payable by Customer to Vendor in the twelve (12) calendar months immediately preceding the event giving rise to the claim.
+
+**8.3 Exceptions**
+
+The limitations in Sections 8.1 and 8.2 shall not apply to:
+
+- **(a)** Either party\u2019s indemnification obligations under Section 12 for third-party IP infringement claims;
+- **(b)** Damages arising from death or personal injury caused by a party\u2019s negligence or wilful act;
+- **(c)** Fraud or wilful misconduct by either party;
+- **(d)** Either party\u2019s material breach of the confidentiality obligations in Section 9.
+
+---
+
+### Section 12 \u2014 Indemnification [REVISED]
+
+**12.1 Vendor Indemnification**
+
+Vendor will defend, indemnify, and hold Customer harmless from and against any third-party claim, suit, or proceeding alleging that the Service, as provided by Vendor and used in accordance with this Agreement, infringes or misappropriates any patent, copyright, trademark, or trade secret of a third party. This obligation does not apply to claims arising from: (a) Customer\u2019s modification of the Service; (b) combination of the Service with third-party products not provided or approved by Vendor; or (c) Customer\u2019s use of the Service in violation of this Agreement.
+
+**12.2 Customer Indemnification**
+
+Customer will defend, indemnify, and hold Vendor harmless from and against any third-party claim, suit, or proceeding to the extent arising from:
+
+- **(a)** Customer\u2019s wilful misconduct or gross negligence in connection with the use of the Service;
+- **(b)** Customer\u2019s material breach of the data use restrictions in Section 6 of this Agreement; or
+- **(c)** Content uploaded by Customer that infringes or misappropriates a third party\u2019s intellectual property rights.
+
+For the avoidance of doubt, Customer\u2019s indemnification obligation under this Section does not extend to claims arising from defects in the Service, Vendor\u2019s product design decisions, or Vendor\u2019s own acts or omissions.
+
+**12.3 Procedure**
+
+The indemnifying party\u2019s obligations are conditioned on the indemnified party: (a) providing prompt written notice of the claim; (b) granting the indemnifying party sole control of the defense and settlement (provided that no settlement may impose liability on the indemnified party without its prior written consent); and (c) providing reasonable cooperation at the indemnifying party\u2019s expense.
+
+---
+
+### Section 14 \u2014 Service Level Agreement [REVISED]
+
+**14.1 Uptime Commitment**
+
+Vendor commits to a monthly uptime of 99.5% for the core Service features, measured on a calendar month basis and excluding: (a) scheduled maintenance windows communicated at least 72 hours in advance; (b) downtime caused by Customer\u2019s acts or omissions; and (c) force majeure events.
+
+**14.2 Service Credits**
+
+If Vendor fails to achieve the monthly uptime commitment, Vendor will apply the following credits to Customer\u2019s next invoice:
+
+| Monthly Uptime Achieved | Credit (% of Monthly Fee) |
+|------------------------|--------------------------|
+| 99.0% \u2013 99.4% | 10% |
+| 95.0% \u2013 98.9% | 25% |
+| Below 95.0% | 50% |
+
+Service credits are Customer\u2019s sole remedy for SLA failures that do not reach the termination threshold in Section 14.3.
+
+**14.3 Termination Right**
+
+Customer may terminate this Agreement for cause, with no early termination fee and with a pro-rata refund of any prepaid fees for the unused portion of any prepaid term, if:
+
+- Vendor fails to meet the uptime commitment in **three (3) consecutive calendar months**; or
+- Vendor fails to meet the uptime commitment in **four (4) or more calendar months** within any rolling 12-month period.
+
+**Cure Period.** Before exercising the termination right, Customer must provide Vendor with written notice of its intent to terminate and a 30-day opportunity to cure. If Vendor achieves the monthly uptime commitment during the entire 30-day cure period, the termination right arising from the failures described in the notice is waived for that notice period (but not for future failures).
+
+---
+
+## Part III \u2014 Signing Checklist
+
+Before signing:
+
+1. **Send the three redlines today.** The vendor needs time to review. Even if they push back, opening the negotiation signals you are commercially prepared.
+2. **Do not accept \u201Cwe\u2019ll fix it in an amendment.\u201D** Core commercial terms must be in the base agreement. Side-letter commitments are routinely not fulfilled.
+3. **Confirm SLA measurement methodology.** The agreement should specify whether uptime is measured by vendor-reported telemetry or independent monitoring, and how measurement disputes are resolved.
+4. **Review the data processing addendum separately.** The DPA was not in scope for this engagement. If the service processes personal data, the DPA requires separate review for GDPR/CCPA compliance.
+
+---
+
+*Prepared by Lavern \u2014 Multi-Agent Legal Design System*
+*This briefing does not constitute legal advice. For a commercial agreement of this significance, we recommend independent counsel review before signing.*
 `;
 
 // ── CodeCraft Developer Agreement Demo Data ──────────────────────────────

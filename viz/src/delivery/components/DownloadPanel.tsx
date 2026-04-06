@@ -33,12 +33,23 @@ function markdownToHtml(md: string): string {
   const out: string[] = [];
   let inParagraph = false;
   let listType: 'ul' | 'ol' | null = null;
+  let tableRows: string[][] = [];
 
   const closeList = () => {
     if (listType) { out.push(`</${listType}>`); listType = null; }
   };
   const closePara = () => {
     if (inParagraph) { out.push('</p>'); inParagraph = false; }
+  };
+  const flushTable = () => {
+    if (tableRows.length === 0) return;
+    const [header, ...body] = tableRows;
+    const thead = (header ?? []).map(c => `<th>${applyInline(c)}</th>`).join('');
+    const tbody = body.map(row =>
+      `<tr>${row.map(c => `<td>${applyInline(c)}</td>`).join('')}</tr>`
+    ).join('');
+    out.push(`<table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`);
+    tableRows = [];
   };
 
   for (const raw of lines) {
@@ -48,12 +59,31 @@ function markdownToHtml(md: string): string {
 
     // Blank line — close open blocks
     if (line.trim() === '') {
+      flushTable();
       closeList();
       closePara();
       continue;
     }
 
+    // Table rows — detect before other patterns
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      closePara();
+      closeList();
+      const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+      // Skip separator rows (---|--- pattern)
+      if (!cells.every(c => /^[-: ]+$/.test(c))) {
+        tableRows.push(cells);
+      }
+      continue;
+    }
+
+    // Flush table if we left table territory
+    if (tableRows.length > 0) flushTable();
+
     // Headings
+    const h4 = line.match(/^#### (.+)$/);
+    if (h4) { closePara(); closeList(); out.push(`<h4>${applyInline(h4[1])}</h4>`); continue; }
     const h3 = line.match(/^### (.+)$/);
     if (h3) { closePara(); closeList(); out.push(`<h3>${applyInline(h3[1])}</h3>`); continue; }
     const h2 = line.match(/^## (.+)$/);
@@ -62,7 +92,11 @@ function markdownToHtml(md: string): string {
     if (h1) { closePara(); closeList(); out.push(`<h1>${applyInline(h1[1])}</h1>`); continue; }
 
     // Horizontal rule
-    if (line.trim() === '---') { closePara(); closeList(); out.push('<hr>'); continue; }
+    if (trimmed === '---') { closePara(); closeList(); out.push('<hr>'); continue; }
+
+    // Blockquote
+    const bq = line.match(/^&gt; (.+)$/);
+    if (bq) { closePara(); closeList(); out.push(`<blockquote><p>${applyInline(bq[1])}</p></blockquote>`); continue; }
 
     // Unordered list items
     const ul = line.match(/^[-*] (.+)$/);
@@ -88,6 +122,7 @@ function markdownToHtml(md: string): string {
     out.push(applyInline(line));
   }
 
+  flushTable();
   closeList();
   closePara();
   return out.join('\n');
@@ -277,10 +312,15 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             h2{font-family:'Times New Roman',Times,serif;font-size:13pt;font-weight:bold;margin-top:28px;counter-increment:section}
             h2::before{content:counter(section) '. '}
             h3{font-family:'Times New Roman',Times,serif;font-size:12pt;font-weight:bold;font-style:italic}
+            h4{font-family:'Times New Roman',Times,serif;font-size:11pt;font-weight:bold}
             p{margin:0 0 12px;text-align:justify}
             ul,ol{padding-left:28px;margin:0 0 12px}
             blockquote{border-left:3px solid #1a1a1a;margin:16px 0;padding:8px 16px;font-style:italic}
             hr{border:none;border-top:1px solid #1a1a1a;margin:24px 0}
+            table{width:100%;border-collapse:collapse;margin:16px 0;font-size:11pt}
+            th{background:#1a1a1a;color:#fff;padding:7px 10px;text-align:left;font-weight:bold;font-family:'Times New Roman',Times,serif}
+            td{padding:7px 10px;border:1px solid #ccc;vertical-align:top}
+            tr:nth-child(even) td{background:#f5f5f5}
           `,
           elegant: `
             @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap');
@@ -288,17 +328,23 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:300;color:#b85c38;line-height:1.1;margin-bottom:32px;border:none}
             h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:300;color:#2c2118;margin-top:40px;border-bottom:1px solid rgba(44,33,24,.12);padding-bottom:8px}
             h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;font-style:italic;color:#b85c38}
+            h4{font-family:'Inter',Helvetica,sans-serif;font-size:13px;font-weight:500;color:#2c2118;margin-top:24px}
             p{margin:0 0 16px}
             ul,ol{padding-left:24px;margin:0 0 16px}
             blockquote{border-left:2px solid #b85c38;margin:24px 0;padding:12px 20px;font-style:italic;color:#6b5744}
             hr{border:none;border-top:1px solid rgba(44,33,24,.15);margin:32px 0}
             strong{font-weight:500}
+            table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13px}
+            th{background:rgba(184,92,56,0.09);color:#2c2118;padding:9px 14px;text-align:left;font-weight:500;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;border-bottom:2px solid rgba(184,92,56,0.3)}
+            td{padding:9px 14px;border-bottom:1px solid rgba(44,33,24,.1);vertical-align:top}
+            tr:last-child td{border-bottom:none}
           `,
           accessible: `
             body{font-family:Verdana,Geneva,sans-serif;max-width:740px;margin:40px auto;line-height:1.8;color:#111;font-size:16px;background:#fff}
             h1{font-size:28px;font-weight:700;color:#000;margin-bottom:24px;letter-spacing:0.12px}
             h2{font-size:22px;font-weight:700;color:#000;margin-top:36px;border-bottom:3px solid #005fcc;padding-bottom:6px}
             h3{font-size:18px;font-weight:700;color:#000}
+            h4{font-size:16px;font-weight:700;color:#000}
             p{margin:0 0 16px}
             a{color:#005fcc;text-decoration:underline}
             ul,ol{padding-left:28px;margin:0 0 16px}
@@ -306,6 +352,10 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             blockquote{background:#f0f4ff;border-left:4px solid #005fcc;margin:20px 0;padding:12px 20px}
             hr{border:none;border-top:2px solid #ccc;margin:28px 0}
             strong{font-weight:700}
+            table{width:100%;border-collapse:collapse;margin:20px 0;font-size:15px}
+            th{background:#005fcc;color:#fff;padding:9px 14px;text-align:left;font-weight:700;border:2px solid #003d80}
+            td{padding:9px 14px;border:1px solid #ccc;vertical-align:top}
+            tr:nth-child(even) td{background:#f0f4ff}
           `,
         };
         const html = `<!DOCTYPE html>
