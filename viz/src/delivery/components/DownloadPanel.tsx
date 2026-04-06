@@ -317,9 +317,9 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             ul,ol{padding-left:28px;margin:0 0 12px}
             blockquote{border-left:3px solid #1a1a1a;margin:16px 0;padding:8px 16px;font-style:italic}
             hr{border:none;border-top:1px solid #1a1a1a;margin:24px 0}
-            table{width:100%;border-collapse:collapse;margin:16px 0;font-size:11pt}
-            th{background:#1a1a1a;color:#fff;padding:7px 10px;text-align:left;font-weight:bold;font-family:'Times New Roman',Times,serif}
-            td{padding:7px 10px;border:1px solid #ccc;vertical-align:top}
+            table{width:100%;border-collapse:collapse;border-spacing:0;margin:16px 0;font-size:11pt;line-height:1.4}
+            th{background:#1a1a1a;color:#fff;padding:6px 10px;text-align:left;font-weight:bold;font-family:'Times New Roman',Times,serif;line-height:1.4}
+            td{padding:6px 10px;border:1px solid #ccc;vertical-align:top;line-height:1.4}
             tr:nth-child(even) td{background:#f5f5f5}
           `,
           elegant: `
@@ -334,9 +334,9 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             blockquote{border-left:2px solid #b85c38;margin:24px 0;padding:12px 20px;font-style:italic;color:#6b5744}
             hr{border:none;border-top:1px solid rgba(44,33,24,.15);margin:32px 0}
             strong{font-weight:500}
-            table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13px}
-            th{background:rgba(184,92,56,0.09);color:#2c2118;padding:9px 14px;text-align:left;font-weight:500;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;border-bottom:2px solid rgba(184,92,56,0.3)}
-            td{padding:9px 14px;border-bottom:1px solid rgba(44,33,24,.1);vertical-align:top}
+            table{width:100%;border-collapse:collapse;border-spacing:0;margin:24px 0;font-size:13px;line-height:1.4}
+            th{background:#f5ede8;color:#2c2118;padding:7px 12px;text-align:left;font-weight:500;font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;border-bottom:2px solid #c4795a;line-height:1.4}
+            td{padding:7px 12px;border-bottom:1px solid #ddd0c8;vertical-align:top;line-height:1.4}
             tr:last-child td{border-bottom:none}
           `,
           accessible: `
@@ -352,9 +352,9 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
             blockquote{background:#f0f4ff;border-left:4px solid #005fcc;margin:20px 0;padding:12px 20px}
             hr{border:none;border-top:2px solid #ccc;margin:28px 0}
             strong{font-weight:700}
-            table{width:100%;border-collapse:collapse;margin:20px 0;font-size:15px}
-            th{background:#005fcc;color:#fff;padding:9px 14px;text-align:left;font-weight:700;border:2px solid #003d80}
-            td{padding:9px 14px;border:1px solid #ccc;vertical-align:top}
+            table{width:100%;border-collapse:collapse;border-spacing:0;margin:20px 0;font-size:15px;line-height:1.4}
+            th{background:#005fcc;color:#fff;padding:7px 14px;text-align:left;font-weight:700;border:2px solid #003d80;line-height:1.4}
+            td{padding:7px 14px;border:1px solid #ccc;vertical-align:top;line-height:1.4}
             tr:nth-child(even) td{background:#f0f4ff}
           `,
         };
