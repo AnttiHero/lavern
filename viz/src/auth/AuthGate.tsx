@@ -52,7 +52,10 @@ export function AuthGate({ children }: Props) {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
     setUser(null);
-    window.location.hash = '';
+    // Don't redirect away from auth-free routes
+    if (!window.location.hash.startsWith('#/claw-live')) {
+      window.location.hash = '';
+    }
   }, []);
 
   // Brief loading flash while checking cookie (API mode only)

@@ -62,6 +62,7 @@ const LoginView = lazy(() => import('./auth/LoginView.js'));
 const ResetPasswordView = lazy(() => import('./auth/ResetPasswordView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
 const ClawView = lazy(() => import('./claw/ClawView.js'));
+const ClawLiveView = lazy(() => import('./claw/ClawLiveView.js'));
 const DispatchView = lazy(() => import('./dispatch/DispatchView.js'));
 const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 const PricingView = lazy(() => import('./pricing/PricingView.js'));
@@ -72,7 +73,7 @@ const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase' | 'demo';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'claw-live' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase' | 'demo';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -96,6 +97,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/my-page')) return 'my-page';
   if (hash.startsWith('#/agent-docs')) return 'agent-docs';
   if (hash.startsWith('#/dispatch')) return 'dispatch';
+  if (hash.startsWith('#/claw-live')) return 'claw-live';
   if (hash.startsWith('#/claw')) return 'claw';
   if (hash.startsWith('#/archive')) return 'archive';
   if (hash.startsWith('#/pricing')) return 'pricing';
@@ -200,7 +202,7 @@ export function App() {
   }, []);
 
   // Demo containment — if a demo session is active, only allow demo-safe routes
-  const DEMO_SAFE: AppView[] = ['foyer', 'working', 'delivery', 'claw', 'demo', 'login'];
+  const DEMO_SAFE: AppView[] = ['foyer', 'working', 'delivery', 'claw', 'claw-live', 'demo', 'login'];
   useEffect(() => {
     const sid = sessionStorage.getItem('shem-session-id') ?? '';
     if (sid.startsWith('demo-session') && !DEMO_SAFE.includes(view)) {
@@ -627,9 +629,10 @@ export function App() {
   // ── Global API error handler (listens for shem:api-error events) ────
   useEffect(() => {
     const handler = (e: Event) => {
-      // Suppress all toasts in demo mode — no backend is expected
+      // Suppress all toasts in demo mode or claw-live — no backend is expected
       const sessionId = sessionStorage.getItem('shem-session-id') ?? '';
       if (sessionId.startsWith('demo-session')) return;
+      if (window.location.hash.startsWith('#/claw-live')) return;
       const detail = (e as CustomEvent<ApiErrorEvent>).detail;
       if (detail.type === 'auth-expired') {
         setErrorToast(detail.message);
@@ -1104,6 +1107,14 @@ export function App() {
   }
 
   // ── Claw Mode — remote monitoring dashboard ─────────────────────────
+  if (view === 'claw-live') {
+    return (
+      <Suspense fallback={<ViewFallback text="Loading Clawern Live..." />}>
+        <ClawLiveView />
+      </Suspense>
+    );
+  }
+
   if (view === 'claw') {
     return (
       <ErrorBoundary>
