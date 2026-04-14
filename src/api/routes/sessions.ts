@@ -48,6 +48,8 @@ import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
+import { hydrateSessionFromArchive, type HydratedSession } from '../../session/hydrate-from-archive.js';
+import type { SessionState } from '../../session/session-state.js';
 import { createLogger } from '../../utils/logger.js';
 import { createMassActionGuard } from '../middleware/mass-action-guard.js';
 
@@ -74,6 +76,24 @@ function checkSessionOwnership(
   // No authenticated user — deny
   if (!requestUserId) return false;
   return requestUserId === session.userId;
+}
+
+/**
+ * Get a session for post-delivery operations (derivatives, conversation,
+ * download). Returns the live in-memory session if available; otherwise
+ * falls back to a read-only hydrated session from the archive.
+ *
+ * Returns `null` when no record exists anywhere.
+ */
+function getSessionOrHydrate(
+  sessionManager: SessionManager,
+  id: string,
+): SessionState | HydratedSession | null {
+  const live = sessionManager.getSession(id);
+  if (live) return live;
+  const archived = getArchivedSessionById(id);
+  if (!archived) return null;
+  return hydrateSessionFromArchive(archived);
 }
 
 export function registerSessionRoutes(
@@ -667,23 +687,11 @@ export function registerSessionRoutes(
 
   fastify.get('/api/sessions/:id/download', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const session = sessionManager.getSession(id);
+    // Session ID is a capability token; downloads work from the archive after
+    // eviction/restart. All formats (md, docx, pdf, json) work on either path.
+    const session = getSessionOrHydrate(sessionManager, id);
 
-    // If not in memory, try archive
-    if (!session || !checkSessionOwnership(request, session)) {
-      const archived = getArchivedSessionById(id);
-      if (archived && archived.assembled_document) {
-        const reqQuery = request.query as { format?: string; style?: string };
-        const format = reqQuery.format ?? 'md';
-        const deliverable = archived.assembled_document;
-        const title = archived.title ?? 'Work Product';
-        if (format === 'md') {
-          reply.header('Content-Type', 'text/markdown; charset=utf-8');
-          reply.header('Content-Disposition', `attachment; filename="${title.replace(/[^a-z0-9]/gi, '-')}.md"`);
-          return reply.send(deliverable);
-        }
-        // For other formats fall through to 404 — only md supported from archive
-      }
+    if (!session) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -883,11 +891,23 @@ export function registerSessionRoutes(
 
   fastify.post('/api/sessions/:id/reassemble', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const session = sessionManager.getSession(id);
+    const liveSession = sessionManager.getSession(id);
 
-    if (!session || !checkSessionOwnership(request, session)) {
-      return reply.status(404).send({ error: `Session not found: ${id}` });
+    // If session is not in memory, check the archive. If it already has a
+    // valid assembled document there, return success. Otherwise we can't
+    // reassemble a session that's no longer live.
+    if (!liveSession) {
+      const archived = getArchivedSessionById(id);
+      if (!archived) return reply.status(404).send({ error: `Session not found: ${id}` });
+      if (archived.assembled_document && validateDeliverable(archived.assembled_document).valid) {
+        return reply.send({ success: true, hasDocument: true, message: 'Document already assembled (from archive).' });
+      }
+      return reply.status(409).send({
+        error: 'This session is no longer in memory and does not have a completed deliverable to reassemble. Please start a new session.',
+      });
     }
+
+    const session = liveSession;
 
     // Guard: already have a valid assembled document
     if (session.assembledDocument && validateDeliverable(session.assembledDocument).valid) {
@@ -926,9 +946,11 @@ export function registerSessionRoutes(
 
   fastify.post('/api/sessions/:id/derivatives', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const session = sessionManager.getSession(id);
+    // Session ID is a capability token — post-delivery endpoints work from
+    // the archive if the session has been evicted or the server restarted.
+    const session = getSessionOrHydrate(sessionManager, id);
 
-    if (!session || !checkSessionOwnership(request, session)) {
+    if (!session) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -954,8 +976,10 @@ export function registerSessionRoutes(
     }
 
     try {
-      // Assemble context from session state
-      const context = derivativeType.buildContext(session);
+      // Assemble context from session state. HydratedSession is structurally
+      // compatible with the read-only fields buildContext uses (verified in
+      // hydrate-from-archive.ts — see tests).
+      const context = derivativeType.buildContext(session as SessionState);
 
       // Call Claude API via Agent SDK (single-turn, no tools)
       const result = sdkQuery({
@@ -1058,9 +1082,10 @@ export function registerSessionRoutes(
 
   fastify.post('/api/sessions/:id/conversation', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const session = sessionManager.getSession(id);
+    // Works from archive if evicted/restarted.
+    const session = getSessionOrHydrate(sessionManager, id);
 
-    if (!session || !checkSessionOwnership(request, session)) {
+    if (!session) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -1121,7 +1146,7 @@ Answer the user's questions thoroughly, referencing specific findings, resolutio
 
 Be direct, specific, and cite evidence from the analysis. If the user asks about something not covered in the analysis, say so clearly.
 
-${buildFullContext(session)}`;
+${buildFullContext(session as SessionState)}`;
 
     // Build prompt from conversation history + new message
     const historyBlock = history

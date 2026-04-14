@@ -39,6 +39,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompts.js';
 import { validateDeliverable } from './validate-deliverable.js';
+import { extractCounselDocument } from './extract-counsel.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
 import { ensureApiKey } from '../utils/ensure-api-key.js';
@@ -63,7 +64,8 @@ const QUALITY_GATE_MODEL = 'claude-sonnet-4-5-20250929';
 /** Maximum number of assembly attempts before giving up.
  *  5 attempts allows for both structural retries (escalating prompts) AND
  *  transient API errors (429/500/529) without exhausting too quickly. */
-const MAX_ASSEMBLY_ATTEMPTS = 5;
+const MAX_ASSEMBLY_ATTEMPTS = 3;
+const MAX_CONSECUTIVE_SAME_REASON = 2;
 
 /** Addendum for attempt 2: stronger instructions after first failure. */
 const RETRY_ADDENDUM_2 = `
@@ -257,10 +259,53 @@ export async function assembleDocument(
   logger.info('DOCUMENT ASSEMBLY — Producing final deliverable...');
   logger.info('─'.repeat(60));
 
+  // ── Counsel fast-path: deterministic extraction (zero LLM calls) ──
+  //
+  // For counsel workflows, the specialist has already drafted the complete
+  // deliverable in session.finalOutput. Running a second Claude call to
+  // "extract" it is wasteful and prone to retry stalls. Try to extract it
+  // directly; fall back to the LLM loop only if extraction fails.
+  if (requestType === 'counsel_extraction' && session.finalOutput) {
+    const extracted = extractCounselDocument(session.finalOutput);
+    if (extracted) {
+      const validation = validateDeliverable(extracted);
+      if (validation.valid) {
+        logger.info('Counsel extraction (deterministic) succeeded — skipping LLM assembly', {
+          chars: extracted.length,
+        });
+        emitAssemblyComplete(session, 0);
+        return extracted;
+      }
+      // Extracted content exists but failed validation — if it's substantial,
+      // accept it anyway rather than pay for an LLM retry loop.
+      if (extracted.length > 5000) {
+        logger.warn('Counsel extraction produced substantial content but failed structural validation — accepting with warning', {
+          chars: extracted.length,
+          reason: validation.reason,
+        });
+        session.events.emitEvent({
+          type: 'error',
+          message: 'Document assembly completed with warnings. Please review carefully.',
+          source: 'document-assembler',
+          timestamp: eventTimestamp(),
+        });
+        emitAssemblyComplete(session, 0);
+        return extracted;
+      }
+      logger.info('Counsel extraction produced thin content — falling back to LLM assembly', {
+        chars: extracted.length,
+      });
+    } else {
+      logger.info('Counsel extraction heuristics did not find a document — falling back to LLM assembly');
+    }
+  }
+
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
   let bestAttempt = ''; // Track the best output even if it failed validation
   let gateFailureCount = 0; // Track consecutive quality gate API failures
+  let lastStructuralReason: string | null = null;
+  let consecutiveSameReason = 0;
   ensureApiKey(); // Load from .env if not in process.env
   const client = new Anthropic();
 
@@ -328,6 +373,24 @@ export async function assembleDocument(
         const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
         logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
         logger.warn('Rejected output preview', { preview });
+
+        // Early-exit: if the same structural reason has been hit repeatedly, the
+        // LLM is generating stable-but-rejected output. More retries won't help;
+        // skip to the best-attempt fallback below.
+        if (reason === lastStructuralReason) {
+          consecutiveSameReason++;
+          if (consecutiveSameReason >= MAX_CONSECUTIVE_SAME_REASON) {
+            logger.warn('Assembly aborting retry loop — same structural rejection reason repeated', {
+              reason,
+              consecutive: consecutiveSameReason,
+              attempt,
+            });
+            break;
+          }
+        } else {
+          lastStructuralReason = reason;
+          consecutiveSameReason = 1;
+        }
 
         if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
           logger.info('Retrying with escalated instructions', { nextAttempt: attempt + 1 });
