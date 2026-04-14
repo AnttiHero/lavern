@@ -287,8 +287,9 @@ describe('countEmptySections', () => {
     expect(countEmptySections(doc)).toBe(0);
   });
 
-  it('counts title heading as empty when it has no body', () => {
-    expect(countEmptySections(makeValidDoc())).toBe(1);
+  it('treats title heading with sub-heading children as a container (not empty)', () => {
+    // Fixed: # Title followed by ## Section is a container, not empty.
+    expect(countEmptySections(makeValidDoc())).toBe(0);
   });
 
   it('detects heading followed by heading', () => {
@@ -301,10 +302,11 @@ describe('countEmptySections', () => {
     expect(countEmptySections(doc)).toBe(1);
   });
 
-  it('detects multiple empty sections', () => {
-    // # Title is also empty (no content before ## E1), so 4 empty total
+  it('detects multiple empty same-level sections', () => {
+    // # Title has ## children (container, not empty).
+    // ## E1, ## E2, ## E3 each followed by same-level ## = 3 empty.
     const doc = '# Title\n## E1\n## E2\n## E3\n## Has Content\n\nText.';
-    expect(countEmptySections(doc)).toBe(4);
+    expect(countEmptySections(doc)).toBe(3);
   });
 
   it('counts blank-line-then-content as non-empty', () => {
@@ -312,9 +314,10 @@ describe('countEmptySections', () => {
     expect(countEmptySections(doc)).toBe(0);
   });
 
-  it('skips horizontal rules as non-content', () => {
+  it('skips horizontal rules — title with hr then deeper heading is a container', () => {
+    // # Title → --- (skipped) → ## Next. ## is deeper than #, so # is a container.
     const doc = '# Title\n---\n## Next\n\nContent.';
-    expect(countEmptySections(doc)).toBe(1);
+    expect(countEmptySections(doc)).toBe(0);
   });
 });
 

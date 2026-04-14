@@ -153,13 +153,20 @@ export function countEmptySections(text: string): number {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!/^#{1,6}\s/.test(line)) continue;
+    const headingMatch = line.match(/^(#{1,6})\s/);
+    if (!headingMatch) continue;
+    const currentLevel = headingMatch[1].length;
 
+    // A parent heading followed by deeper sub-headings is a container, not empty.
     let hasContent = false;
     for (let j = i + 1; j < lines.length; j++) {
       const nextLine = lines[j].trim();
       if (!nextLine || nextLine === '---' || nextLine === '***') continue;
-      if (/^#{1,6}\s/.test(nextLine)) break;
+      const nextHeadingMatch = nextLine.match(/^(#{1,6})\s/);
+      if (nextHeadingMatch) {
+        if (nextHeadingMatch[1].length > currentLevel) hasContent = true;
+        break;
+      }
       hasContent = true;
       break;
     }

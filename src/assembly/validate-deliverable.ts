@@ -210,17 +210,29 @@ export function countEmptySections(text: string): number {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     // Check if this line is a heading
-    if (!/^#{1,6}\s/.test(line)) continue;
+    const headingMatch = line.match(/^(#{1,6})\s/);
+    if (!headingMatch) continue;
+    const currentLevel = headingMatch[1].length;
 
-    // Look ahead for content before the next heading or EOF
+    // Look ahead for content before the next SAME-OR-HIGHER-LEVEL heading or EOF.
+    // A parent heading (## X) followed by deeper sub-headings (### X.1) is a
+    // container, not empty — well-structured legal docs use this pattern heavily.
     let hasContent = false;
     for (let j = i + 1; j < lines.length; j++) {
       const nextLine = lines[j].trim();
       // Skip blank lines and horizontal rules
       if (!nextLine || nextLine === '---' || nextLine === '***') continue;
-      // If we hit another heading, this section is empty
-      if (/^#{1,6}\s/.test(nextLine)) break;
-      // Found substantive content
+      const nextHeadingMatch = nextLine.match(/^(#{1,6})\s/);
+      if (nextHeadingMatch) {
+        const nextLevel = nextHeadingMatch[1].length;
+        // A deeper heading = this section has sub-structure (not empty)
+        if (nextLevel > currentLevel) {
+          hasContent = true;
+        }
+        // Either way, stop scanning at the next heading of any level
+        break;
+      }
+      // Found substantive non-heading content
       hasContent = true;
       break;
     }
