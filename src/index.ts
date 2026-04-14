@@ -26,6 +26,28 @@
  *   --workflow <id>            Force a specific workflow template
  */
 
+// ── Load .env before anything else so env vars are available at module init ──
+import * as _fs from 'node:fs';
+import * as _path from 'node:path';
+{
+  const envFile = _path.resolve(process.cwd(), '.env');
+  if (_fs.existsSync(envFile)) {
+    const lines = _fs.readFileSync(envFile, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eq = trimmed.indexOf('=');
+      if (eq < 1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let val = trimmed.slice(eq + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (!process.env[key]) process.env[key] = val;
+    }
+  }
+}
+
 import { runTheShem } from './orchestrator.js';
 import { dispatch } from './dispatch.js';
 import type { DocumentContext, Moment, Audience, Jurisdiction, LegalRequest } from './types/index.js';

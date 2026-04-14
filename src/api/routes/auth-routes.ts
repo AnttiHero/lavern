@@ -150,6 +150,11 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
       },
     },
   }, async (request, reply) => {
+    // Signup gate — set LAVERN_SIGNUP_DISABLED=true to block new registrations
+    if (process.env.LAVERN_SIGNUP_DISABLED === 'true') {
+      return reply.status(503).send({ error: 'We are not accepting new accounts at this time. Join the waitlist at lavern.ai.' });
+    }
+
     const body = validateBody(SignupSchema, request, reply);
     if (!body) return;
 

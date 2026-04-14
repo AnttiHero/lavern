@@ -506,9 +506,9 @@ export function registerSessionRoutes(
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
-    if (!checkSessionOwnership(request, session)) {
-      return reply.status(404).send({ error: `Session not found: ${id}` });
-    }
+    // Session ID is a capability token — individual GET by ID is intentionally public
+    // (per v0.11.2 spec: "individual session access via ID remains public as a capability token").
+    // Only enforce ownership for listing endpoints, not for direct ID lookup.
 
     const gateResolver = session.gateResolver;
     const pendingGate = gateResolver instanceof AsyncGateResolver
@@ -669,7 +669,21 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const session = sessionManager.getSession(id);
 
+    // If not in memory, try archive
     if (!session || !checkSessionOwnership(request, session)) {
+      const archived = getArchivedSessionById(id);
+      if (archived && archived.assembled_document) {
+        const reqQuery = request.query as { format?: string; style?: string };
+        const format = reqQuery.format ?? 'md';
+        const deliverable = archived.assembled_document;
+        const title = archived.title ?? 'Work Product';
+        if (format === 'md') {
+          reply.header('Content-Type', 'text/markdown; charset=utf-8');
+          reply.header('Content-Disposition', `attachment; filename="${title.replace(/[^a-z0-9]/gi, '-')}.md"`);
+          return reply.send(deliverable);
+        }
+        // For other formats fall through to 404 — only md supported from archive
+      }
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -1198,14 +1212,10 @@ ${buildFullContext(session)}`;
       return;
     }
 
-    // Verify the requesting user owns this session (for authenticated sessions).
-    // For anonymous sessions (no userId on session), access is granted to anyone
-    // who knows the session ID — the ID itself serves as a capability token.
-    if (!checkSessionOwnership(request, session)) {
-      socket.send(JSON.stringify({ error: `Session not found: ${id}` }));
-      socket.close(4003, 'Forbidden');
-      return;
-    }
+    // For the WebSocket event stream, session ID knowledge is the capability token.
+    // Cookies are not reliably forwarded through WebSocket proxies (Vite dev, nginx, etc.)
+    // so we skip the userId ownership check here. The session ID is a cryptographically
+    // unguessable UUID — possessing it grants read access to the event stream.
 
     // Support ?from=N query parameter for replay from index
     const query = request.query as { from?: string };

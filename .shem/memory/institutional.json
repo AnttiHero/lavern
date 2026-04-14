@@ -5,7 +5,7 @@
     "content": "Dating platform ToS requires special attention to: (1) Auto-renewal point-of-sale disclosure beyond ToS text (CA ARL, FTC), (2) No-background-checks disclaimer at multiple UI touchpoints, (3) GDPR Art. 9 explicit consent for sensitive data (sexual orientation), (4) Biometric data provisions if facial recognition used (BIPA), (5) PAGA carve-out in arbitration if CA employees, (6) Section 230 safe harbor with CSAM reporting obligations. Evaluator gate on haiku had MCP tool access limitations - use sonnet for evaluator or provide findings directly in prompt.",
     "source": "HeartConnect ToS drafting session",
     "addedAt": "2026-03-04T08:37:13.425Z",
-    "usageCount": 11,
+    "usageCount": 12,
     "effectiveness": 0.5,
     "usedInSessions": [],
     "outcomes": []
@@ -27,7 +27,7 @@
     "content": "Dating platform ToS requires GDPR Article 9 analysis — sexual orientation, religion, and ethnicity are special category data inferred from dating preferences. This is a consistent RED finding for any dating/matching platform serving EU users.",
     "source": "HeartConnect ToS review session",
     "addedAt": "2026-03-05T13:17:20.054Z",
-    "usageCount": 3,
+    "usageCount": 4,
     "effectiveness": 0.5,
     "usedInSessions": [],
     "outcomes": []

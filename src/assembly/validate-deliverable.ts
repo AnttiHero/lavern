@@ -119,21 +119,22 @@ export function processTextRatio(text: string): number {
  * Returns the number of placeholder occurrences found.
  */
 export function countPlaceholders(text: string): number {
-  // Specific known placeholders
+  // Only flag genuine assembly failures — NOT legitimate legal template fields.
+  // Template fields like [Company Name], [Effective Date], [Insert Date] are
+  // EXPECTED in drafted contracts, ToS, and policies. Only flag:
+  //   - Explicit filler signals: [PLACEHOLDER], [TBD], [TODO], [PENDING], [DRAFT]
+  //   - Structural stubs: [SECTION ...], [Analysis goes here], [To be filled/added]
   const knownPlaceholders = [
-    /\[Insert [^\]]+\]/gi,
     /\[To be (filled|completed|added|determined)[^\]]*\]/gi,
     /\[PLACEHOLDER[^\]]*\]/gi,
     /\[TBD[^\]]*\]/gi,
     /\[TODO[^\]]*\]/gi,
-    /\[Current Date\]/gi,
-    /\[Effective Date\]/gi,
-    /\[Your Name\]/gi,
-    /\[Client Name\]/gi,
-    /\[Company Name\]/gi,
     /\[PENDING[^\]]*\]/gi,
     /\[DRAFT[^\]]*\]/gi,
     /\[SECTION [^\]]*\]/gi,
+    /\[Analysis goes here[^\]]*\]/gi,
+    /\[Content here[^\]]*\]/gi,
+    /\[Add (content|analysis|text)[^\]]*\]/gi,
   ];
 
   let count = 0;

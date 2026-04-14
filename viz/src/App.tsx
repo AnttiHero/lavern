@@ -210,6 +210,16 @@ export function App() {
     }
   }, [view]);
 
+  // If the user is authenticated, clear any lingering demo session
+  useEffect(() => {
+    if (!userCtx?.user) return;
+    const sid = sessionStorage.getItem('shem-session-id') ?? '';
+    if (sid.startsWith('demo-session')) {
+      sessionStorage.removeItem('shem-session-id');
+      sessionStorage.removeItem('shem-demo-case');
+    }
+  }, [userCtx?.user]);
+
   // ── Stripe redirect handler ─────────────────────────────────────────
   // Stripe redirects to ?billing=success or ?billing=cancelled (query params).
   // Our SPA uses hash routing, so we detect and redirect on mount.

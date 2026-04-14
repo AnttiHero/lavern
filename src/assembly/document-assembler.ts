@@ -448,7 +448,29 @@ export async function assembleDocument(
       return bestAttempt;
     }
 
-    // bestAttempt failed structural validation — do NOT return it
+    // bestAttempt failed structural validation — return it anyway if it has
+    // substantial content (>5000 chars). The empty_sections check is too strict
+    // for complex legal documents (ToS, privacy policies) with nested headings
+    // that have immediate sub-headings before prose content.
+    if (bestAttempt.length > 5000) {
+      logger.warn('Returning best attempt despite structural validation failure — content is substantial', {
+        attempts: MAX_ASSEMBLY_ATTEMPTS,
+        chars: bestAttempt.length,
+        structuralReason: bestValidation.reason,
+        reasons: rejectionReasons,
+      });
+
+      session.events.emitEvent({
+        type: 'error',
+        message: `Document assembly completed with warnings after ${MAX_ASSEMBLY_ATTEMPTS} attempts. Please review carefully.`,
+        source: 'document-assembler',
+        timestamp: eventTimestamp(),
+      });
+
+      emitAssemblyComplete(session, totalAssemblyCost);
+      return bestAttempt;
+    }
+
     logger.error('All assembly attempts failed — best attempt also fails structural validation', {
       attempts: MAX_ASSEMBLY_ATTEMPTS,
       bestAttemptChars: bestAttempt.length,

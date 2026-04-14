@@ -210,8 +210,9 @@ describe('countPlaceholders', () => {
     expect(countPlaceholders('The effective date is January 1, 2025.')).toBe(0);
   });
 
-  it('detects [Insert ...] patterns', () => {
-    expect(countPlaceholders('[Insert Date] and [Insert Company Name]')).toBe(2);
+  it('does NOT flag legit template fields like [Insert ...] or [Company Name]', () => {
+    // Legit template fields in drafted contracts — should not be flagged as failures
+    expect(countPlaceholders('[Insert Date] and [Company Name] and [Effective Date]')).toBe(0);
   });
 
   it('detects [TBD] and [TODO]', () => {
@@ -241,7 +242,7 @@ describe('countPlaceholders', () => {
   });
 
   it('is case-insensitive for known patterns', () => {
-    expect(countPlaceholders('[insert date] [tbd]')).toBe(2);
+    expect(countPlaceholders('[placeholder] [tbd]')).toBe(2);
   });
 });
 
@@ -416,7 +417,7 @@ describe('validateDeliverable', () => {
   });
 
   it('rejects document with 5+ placeholders', () => {
-    const placeholders = '[TBD] [TODO] [PLACEHOLDER] [Insert Date] [PENDING REVIEW]';
+    const placeholders = '[TBD] [TODO] [PLACEHOLDER] [PENDING REVIEW] [DRAFT] [SECTION X]';
     const doc = `# Title\n\n## Section 1\n\n${placeholders}\n\n${'Content. '.repeat(50)}\n\n## Section 2\n\n${'More content. '.repeat(50)}\n\n## Section 3\n\n${'Even more content. '.repeat(50)}`;
     const result = validateDeliverable(doc);
     expect(result.valid).toBe(false);

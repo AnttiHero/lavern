@@ -45,6 +45,9 @@ export function AuthGate({ children }: Props) {
 
   const login = useCallback((u: AuthUser) => {
     setUser(u);
+    // Clear any demo session so real API calls are used going forward
+    sessionStorage.removeItem('shem-session-id');
+    sessionStorage.removeItem('shem-demo-case');
   }, []);
 
   const logout = useCallback(async () => {

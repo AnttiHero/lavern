@@ -166,6 +166,13 @@ export class SessionManager {
       });
     }
 
+    // If assembly is running, don't evict — reset the activity timer instead
+    // so the session stays alive until assembly completes.
+    if (entry.session.isAssembling) {
+      entry.lastActivityAt = Date.now();
+      return;
+    }
+
     // Archive before removing listeners so work product is preserved (guard against double archival)
     if (!entry.archived) {
       entry.archived = true;

@@ -319,6 +319,9 @@ export class SessionState {
    *  memo) — separate from finalOutput which retains the process log for audit. */
   public assembledDocument = '';
 
+  /** True while document assembly is running. Prevents TTL eviction from aborting assembly. */
+  public isAssembling = false;
+
   /** Tiered output — tracks what's available at each quality level.
    *  Tier 1: Full deliverable (assembly passed all gates)
    *  Tier 2: Best-effort deliverable (assembly passed structural but not quality gate)

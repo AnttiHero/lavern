@@ -28,6 +28,7 @@ import { eventTimestamp } from '../events/event-bus.js';
 import { streamMessages } from '../utils/stream-messages.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { assembleDocument } from '../assembly/document-assembler.js';
+import { preArchiveSessionRow, updateArchivedDocument } from '../db/database.js';
 import { config } from '../config.js';
 import { runMistralWorkflow } from '../providers/mistral-executor.js';
 import { existsSync, readFileSync } from 'fs';
@@ -295,6 +296,17 @@ export async function runGenericWorkflow(
   session.outputTier = 3;
   session.outputTierReason = 'Analysis complete, assembling deliverable';
 
+  // Pre-archive the session row NOW (before assembly begins) so the delivery view
+  // can find the session even if the server restarts during the multi-minute assembly.
+  // Billing still happens at session_end — this just writes the row.
+  try {
+    const preArchiveUserId = session.userId ?? session.clientIdentity?.id ?? null;
+    preArchiveSessionRow(session, preArchiveUserId);
+  } catch (preArchiveErr) {
+    logger.warn('Pre-archive failed (non-fatal)', { error: preArchiveErr });
+  }
+  session.isAssembling = true;
+
   try {
     session.assembledDocument = await assembleDocument(session, request);
 
@@ -325,6 +337,15 @@ export async function runGenericWorkflow(
       source: 'document-assembler',
       timestamp: eventTimestamp(),
     });
+  } finally {
+    session.isAssembling = false;
+    // Update the pre-archived row with the assembled document (if any) and final cost.
+    // This runs even if assembly failed — it updates cost and marks row as completed.
+    try {
+      updateArchivedDocument(session.id, session.assembledDocument, session.accumulatedCost);
+    } catch (updateErr) {
+      logger.warn('Archive document update failed (non-fatal)', { error: updateErr });
+    }
   }
 
   // NOW emit session_end — assembly is complete, deliverable is ready

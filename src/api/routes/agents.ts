@@ -14,6 +14,79 @@ import type { FastifyInstance } from 'fastify';
 import { agentProfiles, teamPresets } from '../../agents/profiles.js';
 import { workflowRegistry } from '../../workflows/registry.js';
 import { INTENSITY_PROFILES, type IntensityLevel } from '../../types/engagement.js';
+import { config } from '../../config.js';
+import { createLogger } from '../../utils/logger.js';
+
+const logger = createLogger('AGENTS');
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+
+const CLONE_SYSTEM_PROMPT = `You are a legal talent analyst. Given a person's professional profile text, extract their details and map them to an AI agent configuration for a legal AI platform.
+
+Return ONLY valid JSON with this exact structure (no markdown, no explanation):
+{
+  "displayName": "First Last",
+  "tagline": "Short punchy description of their legal specialty (max 60 chars)",
+  "category": "lawyer" | "specialist" | "infrastructure" | "orchestrator",
+  "seniority": "associate" | "senior-associate" | "partner" | "specialist" | "counsel",
+  "archetype": "A dramatic archetype name like 'The Rainmaker' or 'The Tactician'",
+  "workStyle": "First-person description of how they work (max 150 chars)",
+  "practiceAreas": ["Area 1", "Area 2"],
+  "strengths": ["Strength 1", "Strength 2"],
+  "limitations": ["Limitation 1"],
+  "skills": {
+    "precision": 1-10,
+    "creativity": 1-10,
+    "speed": 1-10,
+    "depth": 1-10,
+    "negotiation": 1-10,
+    "communication": 1-10,
+    "research": 1-10,
+    "risk": 1-10
+  },
+  "personality": {
+    "conservative-vs-creative": 1-10,
+    "thorough-vs-fast": 1-10,
+    "risk-averse-vs-tolerant": 1-10,
+    "formal-vs-approachable": 1-10,
+    "adversarial-vs-collaborative": 1-10
+  }
+}
+
+Calibration notes:
+- category: 'lawyer' for attorneys/solicitors/barristers, 'specialist' for non-lawyer experts (finance, tech, IP), 'orchestrator' for senior partners who manage teams
+- seniority: infer from years of experience and title
+- skills: calibrate against top legal professionals (10 = world-class)
+- personality axes are 1=left side, 10=right side
+- If the text is not a professional profile, still do your best with whatever information is present`;
+
+async function callAnthropicForClone(profileText: string): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('API key not configured');
+
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: config.routerModel,
+      max_tokens: 1024,
+      system: CLONE_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: `Here is the profile text:\n\n${profileText}` }],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Anthropic API error (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json() as { content: Array<{ type: string; text?: string }> };
+  const textBlock = data.content.find(b => b.type === 'text');
+  return textBlock?.text ?? '';
+}
 
 export function registerAgentRoutes(fastify: FastifyInstance): void {
 
@@ -248,5 +321,44 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
         } : { role, required: false };
       }),
     });
+  });
+
+  // ── POST /api/agents/clone — Clone an agent from profile text ────────
+  //
+  // Accepts any free-form text (LinkedIn about, CV, bio) and returns
+  // a fully-populated agent builder state ready for the wizard.
+
+  fastify.post('/api/agents/clone', async (request, reply) => {
+    const { profileText } = request.body as { profileText?: string };
+
+    if (!profileText || typeof profileText !== 'string') {
+      return reply.status(400).send({ error: 'profileText is required' });
+    }
+
+    const trimmed = profileText.trim();
+    if (trimmed.length < 20) {
+      return reply.status(400).send({ error: 'Profile text too short — paste more content' });
+    }
+    if (trimmed.length > 6000) {
+      return reply.status(400).send({ error: 'Profile text too long — limit 6000 characters' });
+    }
+
+    try {
+      const raw = await callAnthropicForClone(trimmed);
+
+      // Strip markdown code fences if the model added them
+      const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      const parsed = JSON.parse(clean);
+
+      // Validate required fields are present
+      if (!parsed.displayName || !parsed.skills || !parsed.personality) {
+        throw new Error('Incomplete response from model');
+      }
+
+      return reply.send(parsed);
+    } catch (err) {
+      logger.error('Clone failed', { error: err });
+      return reply.status(500).send({ error: 'Failed to generate agent from profile' });
+    }
   });
 }

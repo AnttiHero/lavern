@@ -734,6 +734,73 @@ export function archiveSession(session: SessionState, userId: string | null): vo
   })();
 }
 
+/**
+ * Write the archive row immediately (before assembly), so the delivery view
+ * can find the session even if the server restarts during assembly.
+ * No billing — billing still happens in archiveSession() at session_end.
+ */
+export function preArchiveSessionRow(session: SessionState, userId: string | null): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
+
+  const summaryJson = JSON.stringify({
+    debate: {
+      findingsCount: session.debate.findings.length,
+      challengesCount: session.debate.challenges.length,
+      resolutionsCount: session.debate.resolutions.length,
+    },
+    topFindings: session.debate.findings.slice(0, 10).map(f => ({
+      severity: f.severity,
+      content: f.content,
+      agent: f.agentRole,
+    })),
+  });
+
+  db.prepare(`
+    INSERT OR IGNORE INTO session_archive
+    (id, user_id, title, status, workflow_id, team_roles, findings_count,
+     resolutions_count, cost_usd, budget_usd, final_output, assembled_document,
+     summary_json, created_at, completed_at, duration_ms)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    session.id,
+    userId,
+    session.matterRecord?.title ?? 'Untitled Analysis',
+    'assembling',
+    session.workflowTemplateId ?? null,
+    JSON.stringify(session.selectedTeam),
+    session.debate.findings.length,
+    session.debate.resolutions.length,
+    session.accumulatedCost,
+    session.budgetUsd,
+    session.finalOutput || null,
+    null, // assembled_document not ready yet
+    summaryJson,
+    startedAt ?? now,
+    null, // not completed yet
+    null,
+  );
+}
+
+/**
+ * After assembly completes, update the archive row with the assembled document
+ * and final cost. Called from executor.ts after assembleDocument() returns.
+ */
+export function updateArchivedDocument(
+  sessionId: string,
+  assembledDocument: string,
+  finalCostUsd: number,
+): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(`
+    UPDATE session_archive
+    SET assembled_document = ?, cost_usd = ?, status = 'completed', completed_at = COALESCE(completed_at, ?)
+    WHERE id = ?
+  `).run(assembledDocument || null, finalCostUsd, now, sessionId);
+}
+
 export function getSessionArchive(userId: string, limit = 50): ArchivedSession[] {
   return getDb().prepare(`
     SELECT * FROM session_archive WHERE user_id = ?
