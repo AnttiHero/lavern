@@ -100,67 +100,28 @@ export function ConversationTab({
         return;
       }
 
-      // Read SSE stream
-      const reader = res.body?.getReader();
-      if (!reader) {
+      // Backend returns JSON { content: "..." } now (was SSE). Simpler and more
+      // reliable than the old reply.hijack() + raw write pattern.
+      const data = await res.json().catch(() => null) as { content?: string; error?: string } | null;
+      const answer = data?.content ?? '';
+      if (answer) {
+        setMessages(prev => {
+          const updated = [...prev];
+          if (updated.length === 0) return updated;
+          updated[updated.length - 1] = { role: 'assistant', content: answer };
+          return updated;
+        });
+      } else {
         setMessages(prev => {
           const updated = [...prev];
           if (updated.length > 0) {
-            updated[updated.length - 1] = { role: 'assistant', content: 'No response received from the server.' };
+            updated[updated.length - 1] = {
+              role: 'assistant',
+              content: data?.error ? `Error: ${data.error}` : 'No response received from the server.',
+            };
           }
           return updated;
         });
-        setInput(text);
-        setStreaming(false);
-        return;
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          // Parse SSE lines
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? ''; // Keep incomplete line in buffer
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const jsonStr = line.slice(6);
-            try {
-              const event = JSON.parse(jsonStr) as { type: string; content?: string };
-
-              if (event.type === 'text' && event.content) {
-                setMessages(prev => {
-                  const updated = [...prev];
-                  if (updated.length === 0) return updated;
-                  const last = updated[updated.length - 1];
-                  updated[updated.length - 1] = { ...last, content: last.content + event.content };
-                  return updated;
-                });
-              }
-
-              if (event.type === 'error' && event.content) {
-                setMessages(prev => {
-                  const updated = [...prev];
-                  if (updated.length === 0) return updated;
-                  const last = updated[updated.length - 1];
-                  updated[updated.length - 1] = { ...last, content: last.content + `\n\nError: ${event.content}` };
-                  return updated;
-                });
-              }
-            } catch {
-              // Skip malformed JSON
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
       }
     } catch (err) {
       // Don't update state if aborted (component unmounting)

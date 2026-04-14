@@ -33,7 +33,8 @@ import {
   type GateDecisionBody,
   type DerivativeBody,
 } from '../middleware/validation.js';
-import { query as sdkQuery } from '@anthropic-ai/claude-agent-sdk';
+import Anthropic from '@anthropic-ai/sdk';
+import { ensureApiKey } from '../../utils/ensure-api-key.js';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
@@ -981,36 +982,21 @@ export function registerSessionRoutes(
       // hydrate-from-archive.ts — see tests).
       const context = derivativeType.buildContext(session as SessionState);
 
-      // Call Claude API via Agent SDK (single-turn, no tools)
-      const result = sdkQuery({
-        prompt: context,
-        options: {
-          systemPrompt: derivativeType.systemPrompt,
-          model: 'claude-sonnet-4-5-20250929',
-          maxTurns: 1,
-        },
-      });
+      // Call Claude API directly (single-turn, no tools).
+      // Uses Anthropic SDK not Agent SDK — derivatives need a fast single
+      // prose generation, not a full agent loop with tool catalog.
+      ensureApiKey();
+      const client = new Anthropic();
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 8192,
+        system: derivativeType.systemPrompt,
+        messages: [{ role: 'user', content: context }],
+      }, { timeout: 120_000 });
 
-      // Consume the async generator to collect generated text
       let generatedContent = '';
-
-      for await (const message of result) {
-        if (!('type' in message)) continue;
-
-        if (message.type === 'assistant' && message.message?.content) {
-          for (const block of message.message.content) {
-            if ('text' in block) {
-              generatedContent += block.text;
-            }
-          }
-        }
-
-        if (message.type === 'result') {
-          if ('subtype' in message && message.subtype !== 'success') {
-            const errors = (message as Record<string, unknown>).errors;
-            throw new Error(`Generation failed (${message.subtype}): ${JSON.stringify(errors)}`);
-          }
-        }
+      for (const block of response.content) {
+        if (block.type === 'text') generatedContent += block.text;
       }
 
       if (!generatedContent) {
@@ -1157,65 +1143,36 @@ ${buildFullContext(session as SessionState)}`;
       ? `${historyBlock}\n\nUser: ${body.message.trim()}`
       : body.message.trim();
 
-    // Track client disconnect to stop streaming
-    let clientDisconnected = false;
-    request.raw.on('close', () => { clientDisconnected = true; });
-
     try {
-      // Hijack the reply so Fastify doesn't try to send its own response
-      reply.hijack();
-      // Set up SSE response
-      reply.raw.writeHead(200, {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      });
+      // Use Anthropic SDK directly. Non-streaming JSON response for reliability
+      // — the reply.hijack() + raw SSE write pattern was dropping bytes in this
+      // environment. Frontend reads { content } from the JSON.
+      ensureApiKey();
+      const client = new Anthropic();
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+      }, { timeout: 120_000 });
 
-      const result = sdkQuery({
-        prompt,
-        options: {
-          systemPrompt,
-          model: 'claude-sonnet-4-5-20250929',
-          maxTurns: 1,
-        },
-      });
-
-      for await (const message of result) {
-        if (clientDisconnected) break;
-        if (!('type' in message)) continue;
-
-        if (message.type === 'assistant' && message.message?.content) {
-          for (const block of message.message.content) {
-            if ('text' in block) {
-              reply.raw.write(`data: ${JSON.stringify({ type: 'text', content: block.text })}\n\n`);
-            }
-          }
-        }
-
-        if (message.type === 'result') {
-          if ('subtype' in message && message.subtype !== 'success') {
-            const errors = (message as Record<string, unknown>).errors;
-            reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: `Generation failed (${message.subtype}): ${JSON.stringify(errors)}` })}\n\n`);
-          }
-        }
+      let answer = '';
+      for (const block of response.content) {
+        if (block.type === 'text') answer += block.text;
       }
 
-      if (!clientDisconnected) {
-        reply.raw.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-      }
-      reply.raw.end();
+      logger.info('Conversation answered', { sessionId: id, chars: answer.length, stopReason: response.stop_reason });
+
+      return reply.send({
+        content: answer,
+        stopReason: response.stop_reason,
+      });
     } catch (err) {
-      logger.error('Conversation failed', { sessionId: id, error: err });
-      // If headers haven't been sent yet, send a normal error
-      if (!reply.raw.headersSent) {
-        return reply.status(500).send({
-          error: 'Conversation failed',
-          details: err instanceof Error ? err.message : String(err),
-        });
-      }
-      // If streaming already started, send error as SSE
-      reply.raw.write(`data: ${JSON.stringify({ type: 'error', content: err instanceof Error ? err.message : String(err) })}\n\n`);
-      reply.raw.end();
+      logger.error('Conversation failed', { sessionId: id, error: err instanceof Error ? err.message : String(err) });
+      return reply.status(500).send({
+        error: 'Conversation failed',
+        details: err instanceof Error ? err.message : String(err),
+      });
     }
   });
 
