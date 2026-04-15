@@ -20,7 +20,6 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import * as crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
 import Fastify from 'fastify';
@@ -60,6 +59,7 @@ import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { registerGoogleAuthRoutes } from './routes/google-auth.js';
 import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives } from '../db/database.js';
 import { config } from '../config.js';
+import { captureError, isSentryEnabled } from '../utils/sentry.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('SERVER');
@@ -562,42 +562,17 @@ export async function startApiServer(port: number): Promise<void> {
   }
 
   // ── Error Monitoring (Sentry-compatible) ────────────────────────────
-  // If SENTRY_DSN is set, captures unhandled errors via Sentry HTTP API.
-  // No SDK dependency — uses fetch() directly.
-  const sentryDsn = process.env.SENTRY_DSN;
-  let captureError: ((err: Error, context?: Record<string, unknown>) => void) | null = null;
-
-  if (sentryDsn) {
-    const dsnMatch = sentryDsn.match(/^https:\/\/([^@]+)@([^/]+)\/(\d+)$/);
-    if (dsnMatch) {
-      const [, publicKey, host, projectId] = dsnMatch;
-      const sentryUrl = `https://${host}/api/${projectId}/store/?sentry_key=${publicKey}&sentry_version=7`;
-      captureError = (err: Error, extra?: Record<string, unknown>) => {
-        try {
-          const payload = JSON.stringify({
-            event_id: crypto.randomUUID().replace(/-/g, ''),
-            timestamp: new Date().toISOString(),
-            platform: 'node',
-            level: 'error',
-            server_name: 'lavern-api',
-            release: `lavern@${config.version}`,
-            exception: { values: [{ type: err.name, value: err.message, stacktrace: {
-              frames: (err.stack ?? '').split('\n').slice(1, 10).map(l => ({ filename: l.trim() })),
-            }}] },
-            extra,
-          });
-          fetch(sentryUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' } })
-            .catch(sentryErr => logger.error('sentry_send_failed', sentryErr));
-        } catch (sentryErr) { console.error('[SENTRY] Error building Sentry payload:', sentryErr); }
-      };
-      console.log('[SENTRY] Error monitoring enabled');
-    }
+  // Centralized in src/utils/sentry.ts so other modules can import captureError
+  // directly (e.g. assembly, dispatch, session archive) rather than threading
+  // it through closure scope.
+  if (isSentryEnabled()) {
+    console.log('[SENTRY] Error monitoring enabled');
   }
 
   // Fastify error handler — captures 5xx errors to Sentry
   fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
     const statusCode = error.statusCode ?? 500;
-    if (captureError && statusCode >= 500) {
+    if (statusCode >= 500) {
       captureError(error, { url: request.url, method: request.method });
     }
     reply.status(statusCode).send({
@@ -617,7 +592,7 @@ export async function startApiServer(port: number): Promise<void> {
 
   process.on('uncaughtException', (err) => {
     console.error('[FATAL] Uncaught exception:', err);
-    if (captureError) captureError(err, { type: 'uncaughtException' });
+    captureError(err, { type: 'uncaughtException' });
 
     // Exit on truly unrecoverable errors
     if (err.message?.includes('EADDRINUSE') || err.message?.includes('ENOMEM')) {
@@ -636,7 +611,7 @@ export async function startApiServer(port: number): Promise<void> {
 
   process.on('unhandledRejection', (reason, _promise) => {
     console.error('[WARN] Unhandled promise rejection:', reason);
-    if (captureError && reason instanceof Error) captureError(reason, { type: 'unhandledRejection' });
+    if (reason instanceof Error) captureError(reason, { type: 'unhandledRejection' });
     // Don't crash — log and continue. Most unhandled rejections come from
     // fire-and-forget dispatch() or assembly calls that already have their
     // own error handling. This is a safety net.

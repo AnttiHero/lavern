@@ -46,6 +46,7 @@ import { ensureApiKey } from '../utils/ensure-api-key.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
 import { createLogger } from '../utils/logger.js';
+import { captureError } from '../utils/sentry.js';
 
 const logger = createLogger('ASSEMBLY');
 
@@ -265,7 +266,10 @@ export async function assembleDocument(
   // deliverable in session.finalOutput. Running a second Claude call to
   // "extract" it is wasteful and prone to retry stalls. Try to extract it
   // directly; fall back to the LLM loop only if extraction fails.
-  if (requestType === 'counsel_extraction' && session.finalOutput) {
+  // Kill switch: set LAVERN_COUNSEL_FAST_PATH=0 to force the LLM loop if the
+  // deterministic extractor ever misbehaves in production.
+  const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
+  if (counselFastPathEnabled && requestType === 'counsel_extraction' && session.finalOutput) {
     const extracted = extractCounselDocument(session.finalOutput);
     if (extracted) {
       const validation = validateDeliverable(extracted);
@@ -548,6 +552,14 @@ export async function assembleDocument(
   } else {
     logger.error('All assembly attempts failed with no output', { attempts: MAX_ASSEMBLY_ATTEMPTS });
   }
+
+  // Route assembly blow-ups to Sentry so we notice rising failure rates in prod.
+  captureError(new Error('Document assembly failed after all attempts'), {
+    attempts: MAX_ASSEMBLY_ATTEMPTS,
+    reasons: rejectionReasons.slice(0, 5),
+    workflowTemplateId: session.workflowTemplateId,
+    sessionId: session.id,
+  });
 
   session.events.emitEvent({
     type: 'error',

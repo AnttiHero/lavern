@@ -26,6 +26,13 @@
  *   --workflow <id>            Force a specific workflow template
  */
 
+// ── Raise libuv threadpool ceiling BEFORE any crypto/fs/dns call enters it ──
+// Default is 4 threads. `crypto.scrypt` (password hashing) uses the pool, and
+// under a signup surge 4 slots serialize sign-ups behind each other. Bumping
+// to 16 gives ample headroom for 1500+ lawyers. MUST be set before any other
+// import triggers pool work.
+process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? '16';
+
 // ── Load .env before anything else so env vars are available at module init ──
 import * as _fs from 'node:fs';
 import * as _path from 'node:path';
