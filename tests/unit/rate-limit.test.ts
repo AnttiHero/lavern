@@ -45,7 +45,7 @@ import {
 
 describe('Rate limit config', () => {
   it('has sensible defaults', () => {
-    expect(PER_USER_MAX).toBe(30);
+    expect(PER_USER_MAX).toBe(120);
     expect(PER_USER_WINDOW_MS).toBe(60000);
     expect(MAX_CONCURRENT_SESSIONS).toBe(5);
   });
