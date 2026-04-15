@@ -50,6 +50,18 @@ export async function runGenericWorkflow(
   // ── Provider Branch — Mistral parallel execution path ──────────────
   // v18: Per-session provider override (options > session > global config)
   const provider = options.provider ?? session.provider ?? config.provider;
+
+  // Managed Agents path (Anthropic beta, scaffold only). The executor is not
+  // yet implemented — reject early with a clear message so callers can fall
+  // back or surface the error. Remove this guard once Stage 2 of the managed
+  // agents migration lands (see docs/managed-agents-migration.md).
+  if (provider === 'managed') {
+    throw new Error(
+      'Managed Agents provider is scaffolded but not yet wired. ' +
+      'Set provider to "anthropic" or "mistral" for now.'
+    );
+  }
+
   if (provider === 'mistral') {
     try {
       return await runMistralWorkflow(request, template, classification, session, options);

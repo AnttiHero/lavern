@@ -56,8 +56,8 @@ const SessionOptionsSchema = z.object({
   yoloMode: z.boolean().optional(),
   /** Enable 10-pass verification pipeline before delivery (default: true for review/full-bench). */
   verification: z.boolean().optional(),
-  /** v18: LLM provider — per-session override. 'anthropic' (default) or 'mistral' (EU sovereign). */
-  provider: z.enum(['anthropic', 'mistral']).optional(),
+  /** v18: LLM provider — per-session override. 'anthropic' (default), 'mistral' (EU sovereign), or 'managed' (Anthropic Managed Agents beta; scaffold only, execution path not yet wired). */
+  provider: z.enum(['anthropic', 'mistral', 'managed']).optional(),
 }).strict().optional();
 
 // ── Context Schema ────────────────────────────────────────────────────────

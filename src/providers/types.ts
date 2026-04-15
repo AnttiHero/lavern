@@ -1,15 +1,18 @@
 /**
  * Provider Types — LLM provider abstraction for EU-sovereign deployments.
  *
- * Lavern supports two LLM providers:
+ * Lavern supports three LLM providers:
  * - `anthropic` — Claude via the Anthropic SDK + Agent SDK (default)
  * - `mistral` — Mistral AI via OpenAI-compatible API (EU-sovereign)
+ * - `managed` — Anthropic Managed Agents beta (durable server-hosted sessions).
+ *   Scaffolded only; execution path is not wired yet. See
+ *   `docs/managed-agents-migration.md` and `src/providers/managed-agents/`.
  *
- * Set `LAVERN_PROVIDER=mistral` to switch the entire engine.
- * The Claude path remains completely untouched when using Anthropic.
+ * Set `LAVERN_PROVIDER=<name>` to switch the default provider globally,
+ * or pass `provider` per-session via the API.
  */
 
-export type LLMProvider = 'anthropic' | 'mistral';
+export type LLMProvider = 'anthropic' | 'mistral' | 'managed';
 
 export interface MistralConfig {
   apiKey: string;

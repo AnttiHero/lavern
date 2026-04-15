@@ -39,7 +39,7 @@ export const config = {
   dbPath: process.env.SHEM_DB_PATH ?? './data/lavern.db',
 
   // ── Provider ──────────────────────────────────────────────────────────
-  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral',
+  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'managed',
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-6',

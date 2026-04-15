@@ -43,7 +43,7 @@ export interface SchemOptions {
   /** Optional gate resolver override (for API/testing). */
   gateResolver?: GateResolver;
   /** v18: LLM provider override for this session. Overrides global LAVERN_PROVIDER. */
-  provider?: 'anthropic' | 'mistral';
+  provider?: 'anthropic' | 'mistral' | 'managed';
 }
 
 export async function runTheShem(

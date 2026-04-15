@@ -52,7 +52,7 @@ export interface RouterOptions {
   /** Model to use for LLM routing (default: claude-sonnet-4-5-20250929) */
   model?: string;
   /** v18: Per-session provider override. */
-  provider?: 'anthropic' | 'mistral';
+  provider?: 'anthropic' | 'mistral' | 'managed';
 }
 
 /**
