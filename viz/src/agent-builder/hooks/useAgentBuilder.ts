@@ -273,7 +273,7 @@ export function useAgentBuilder() {
    * Apply the output of POST /api/agents/clone to the builder state.
    * Shape matches the JSON schema the clone endpoint returns.
    */
-  const loadFromCloneData = useCallback((data: {
+  type CloneData = {
     displayName?: string;
     tagline?: string;
     category?: AgentCategory;
@@ -285,41 +285,84 @@ export function useAgentBuilder() {
     limitations?: string[];
     skills?: Partial<SkillRatings>;
     personality?: Partial<Record<PersonalityAxis, number>>;
-  }) => {
-    setState(prev => ({
-      ...prev,
-      displayName: data.displayName?.trim() || prev.displayName,
-      tagline: data.tagline?.trim() || prev.tagline,
-      category: data.category ?? prev.category,
-      seniority: data.seniority ?? prev.seniority,
-      archetype: data.archetype?.trim() || prev.archetype,
-      avatarSeed: (data.displayName?.trim() || prev.avatarSeed),
-      avatarFeatures: {},
-      skills: {
-        precision: data.skills?.precision ?? prev.skills.precision,
-        creativity: data.skills?.creativity ?? prev.skills.creativity,
-        speed: data.skills?.speed ?? prev.skills.speed,
-        depth: data.skills?.depth ?? prev.skills.depth,
-        negotiation: data.skills?.negotiation ?? prev.skills.negotiation,
-        communication: data.skills?.communication ?? prev.skills.communication,
-        research: data.skills?.research ?? prev.skills.research,
-        risk: data.skills?.risk ?? prev.skills.risk,
-      },
-      personality: {
-        'conservative-vs-creative': data.personality?.['conservative-vs-creative'] ?? prev.personality['conservative-vs-creative'],
-        'thorough-vs-fast': data.personality?.['thorough-vs-fast'] ?? prev.personality['thorough-vs-fast'],
-        'risk-averse-vs-tolerant': data.personality?.['risk-averse-vs-tolerant'] ?? prev.personality['risk-averse-vs-tolerant'],
-        'formal-vs-approachable': data.personality?.['formal-vs-approachable'] ?? prev.personality['formal-vs-approachable'],
-        'adversarial-vs-collaborative': data.personality?.['adversarial-vs-collaborative'] ?? prev.personality['adversarial-vs-collaborative'],
-      },
-      workStyle: data.workStyle?.trim() || prev.workStyle,
-      practiceAreas: Array.isArray(data.practiceAreas) ? [...data.practiceAreas] : prev.practiceAreas,
-      strengths: Array.isArray(data.strengths) ? [...data.strengths] : prev.strengths,
-      limitations: Array.isArray(data.limitations) ? [...data.limitations] : prev.limitations,
-      presetId: null,
-    }));
+  };
+
+  const mergeCloneData = useCallback((data: CloneData, prev: BuilderState): BuilderState => ({
+    ...prev,
+    displayName: data.displayName?.trim() || prev.displayName,
+    tagline: data.tagline?.trim() || prev.tagline,
+    category: data.category ?? prev.category,
+    seniority: data.seniority ?? prev.seniority,
+    archetype: data.archetype?.trim() || prev.archetype,
+    avatarSeed: (data.displayName?.trim() || prev.avatarSeed),
+    avatarFeatures: {},
+    skills: {
+      precision: data.skills?.precision ?? prev.skills.precision,
+      creativity: data.skills?.creativity ?? prev.skills.creativity,
+      speed: data.skills?.speed ?? prev.skills.speed,
+      depth: data.skills?.depth ?? prev.skills.depth,
+      negotiation: data.skills?.negotiation ?? prev.skills.negotiation,
+      communication: data.skills?.communication ?? prev.skills.communication,
+      research: data.skills?.research ?? prev.skills.research,
+      risk: data.skills?.risk ?? prev.skills.risk,
+    },
+    personality: {
+      'conservative-vs-creative': data.personality?.['conservative-vs-creative'] ?? prev.personality['conservative-vs-creative'],
+      'thorough-vs-fast': data.personality?.['thorough-vs-fast'] ?? prev.personality['thorough-vs-fast'],
+      'risk-averse-vs-tolerant': data.personality?.['risk-averse-vs-tolerant'] ?? prev.personality['risk-averse-vs-tolerant'],
+      'formal-vs-approachable': data.personality?.['formal-vs-approachable'] ?? prev.personality['formal-vs-approachable'],
+      'adversarial-vs-collaborative': data.personality?.['adversarial-vs-collaborative'] ?? prev.personality['adversarial-vs-collaborative'],
+    },
+    workStyle: data.workStyle?.trim() || prev.workStyle,
+    practiceAreas: Array.isArray(data.practiceAreas) ? [...data.practiceAreas] : prev.practiceAreas,
+    strengths: Array.isArray(data.strengths) ? [...data.strengths] : prev.strengths,
+    limitations: Array.isArray(data.limitations) ? [...data.limitations] : prev.limitations,
+    presetId: null,
+  }), []);
+
+  const loadFromCloneData = useCallback((data: CloneData) => {
+    setState(prev => mergeCloneData(data, prev));
     setStep(1);
-  }, []);
+  }, [mergeCloneData]);
+
+  /**
+   * Synchronously build a complete profile + derived values from clone API
+   * response. Used by the "reveal-first" clone flow — we can't wait for
+   * React state to flush before pushing the reveal overlay.
+   */
+  const buildProfileFromCloneData = useCallback((data: CloneData): {
+    profile: AgentProfile;
+    ovr: number;
+    costTier: CostTier;
+    billingRate: number;
+  } => {
+    const merged = mergeCloneData(data, state);
+    const mergedOvr = calculateOVR(merged.skills);
+    const mergedTier = ovrToCostTier(mergedOvr);
+    const mergedRate = tierToBillingRate(mergedTier);
+    const profile: AgentProfile = {
+      role: '',
+      displayName: merged.displayName.trim(),
+      tagline: merged.tagline.trim() || `Custom ${merged.category}`,
+      category: merged.category,
+      seniority: merged.seniority,
+      costTier: mergedTier,
+      billingRateUsd: mergedRate,
+      skills: { ...merged.skills },
+      personality: {
+        archetype: merged.archetype.trim() || 'Custom Agent',
+        traits: { ...merged.personality },
+        workStyle: merged.workStyle.trim(),
+      },
+      practiceAreas: merged.practiceAreas,
+      strengths: merged.strengths.filter(s => s.trim()),
+      limitations: merged.limitations.filter(l => l.trim()),
+      optional: true,
+      defaultSelected: false,
+      avatarSeed: merged.avatarSeed.trim() || undefined,
+    };
+    return { profile, ovr: mergedOvr, costTier: mergedTier, billingRate: mergedRate };
+  }, [state, mergeCloneData]);
 
   // ── Reset ───────────────────────────────────────────────────────────
 
@@ -351,6 +394,7 @@ export function useAgentBuilder() {
     buildProfile,
     loadFromProfile,
     loadFromCloneData,
+    buildProfileFromCloneData,
     reset,
   };
 }

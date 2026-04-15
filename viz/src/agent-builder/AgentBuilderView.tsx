@@ -35,6 +35,15 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
 
   const [showReveal, setShowReveal] = useState(false);
   const [revealProfile, setRevealProfile] = useState<AgentProfile | null>(null);
+  // Tracks whether the reveal was entered from the clone shortcut (so we can
+  // offer a "Customise" button that returns the user to the wizard).
+  const [revealFromClone, setRevealFromClone] = useState(false);
+  // OVR / tier / rate snapshot for the reveal — computed at open time so
+  // we don't depend on builder state having flushed (especially important
+  // for the reveal-first clone flow).
+  const [revealOvr, setRevealOvr] = useState<number | null>(null);
+  const [revealTier, setRevealTier] = useState<AgentProfile['costTier'] | null>(null);
+  const [revealRate, setRevealRate] = useState<number | null>(null);
   const isEditing = !!editAgentId;
   // Hub is the default entry point for new agents. Edit mode skips straight
   // to the wizard. "Build from scratch" or "Clone" from the hub also switches
@@ -60,9 +69,27 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
 
   const handleCloneComplete = useCallback((data: Parameters<typeof builder.loadFromCloneData>[0]) => {
     builder.loadFromCloneData(data);
-    setMode('wizard');
+    // Jump straight to the card reveal — it's the payoff moment. The user
+    // can save as-is or hit "Customise" to drop into the 3-step wizard.
+    const { profile, ovr, costTier, billingRate } = builder.buildProfileFromCloneData(data);
+    setRevealProfile(profile);
+    setRevealOvr(ovr);
+    setRevealTier(costTier);
+    setRevealRate(billingRate);
+    setRevealFromClone(true);
+    setShowReveal(true);
     play('confirm');
   }, [builder, play]);
+
+  const handleCustomiseFromReveal = useCallback(() => {
+    // From the reveal: close and drop the user into the wizard with the
+    // already-loaded state. Clear reveal state so a later Forge doesn't
+    // carry the clone flag over.
+    setShowReveal(false);
+    setRevealFromClone(false);
+    setMode('wizard');
+    play('flip');
+  }, [play]);
 
   // Build a preview profile for the live card
   const previewProfile = useMemo(() => builder.buildProfile(), [builder]);
@@ -74,6 +101,10 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
       // Step 3 → Forge! Show the reveal
       const profile = builder.buildProfile();
       setRevealProfile(profile);
+      setRevealOvr(builder.ovr);
+      setRevealTier(builder.costTier);
+      setRevealRate(builder.billingRate);
+      setRevealFromClone(false);
       setShowReveal(true);
       play('confirm');
     } else {
@@ -159,9 +190,30 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
   const nextLabel = builder.step === 3 ? (isEditing ? 'Update Agent' : 'Forge Agent') : 'Next';
   const nextDisabled = builder.step === 3 ? !builder.isValid : (builder.step === 1 && !builder.isValid);
 
+  // Reveal overlay element — rendered in both hub and wizard modes so the
+  // clone-straight-to-reveal flow works from the hub.
+  const revealEl = (
+    <AnimatePresence>
+      {showReveal && revealProfile && (
+        <CardRevealOverlay
+          profile={revealProfile}
+          ovr={revealOvr ?? builder.ovr}
+          costTier={revealTier ?? builder.costTier}
+          billingRate={revealRate ?? builder.billingRate}
+          onSave={handleSave}
+          onBuildAnother={handleBuildAnother}
+          onClose={handleCloseReveal}
+          onCustomise={revealFromClone ? handleCustomiseFromReveal : undefined}
+          saveLabel={revealFromClone ? 'Save agent' : undefined}
+        />
+      )}
+    </AnimatePresence>
+  );
+
   // Show hub first for new-agent creation; edit mode and after-selection go to wizard
   if (mode === 'hub' && !isEditing) {
     return (
+      <>
       <div style={{
         width: '100%',
         minHeight: '100vh',
@@ -208,6 +260,8 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
           onCloneComplete={handleCloneComplete}
         />
       </div>
+      {revealEl}
+      </>
     );
   }
 
@@ -353,20 +407,7 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
         </div>
       </div>
 
-      {/* Reveal overlay */}
-      <AnimatePresence>
-        {showReveal && revealProfile && (
-          <CardRevealOverlay
-            profile={revealProfile}
-            ovr={builder.ovr}
-            costTier={builder.costTier}
-            billingRate={builder.billingRate}
-            onSave={handleSave}
-            onBuildAnother={handleBuildAnother}
-            onClose={handleCloseReveal}
-          />
-        )}
-      </AnimatePresence>
+      {revealEl}
     </>
   );
 }

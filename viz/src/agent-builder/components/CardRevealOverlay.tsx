@@ -28,13 +28,19 @@ interface Props {
   onSave: () => void;
   onBuildAnother: () => void;
   onClose: () => void;
+  /** Optional "Customise" secondary CTA. Shown when set — used by the
+   *  Clone flow where users land on the reveal first and may want to
+   *  tweak the agent before saving. */
+  onCustomise?: () => void;
+  /** Override primary button label. */
+  saveLabel?: string;
 }
 
 type Phase = 'entering' | 'faceDown' | 'glowing' | 'flipping' | 'revealed' | 'complete';
 
 export function CardRevealOverlay({
   profile, ovr, costTier, billingRate,
-  onSave, onBuildAnother, onClose,
+  onSave, onBuildAnother, onClose, onCustomise, saveLabel,
 }: Props) {
   const [phase, setPhase] = useState<Phase>('entering');
   const [showFlash, setShowFlash] = useState(false);
@@ -334,8 +340,40 @@ export function CardRevealOverlay({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            style={{ display: 'flex', justifyContent: 'center', width: '100%' }}
+            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, width: '100%', flexWrap: 'wrap' }}
           >
+            {onCustomise && (
+              <button
+                onClick={onCustomise}
+                style={{
+                  display: 'block',
+                  width: 'fit-content',
+                  padding: '18px 36px',
+                  fontSize: 11,
+                  fontFamily: fonts.sans,
+                  fontWeight: 600,
+                  letterSpacing: 3,
+                  textTransform: 'uppercase',
+                  color: 'rgba(250,249,246,0.95)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid rgba(250,249,246,0.45)',
+                  borderRadius: 100,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'background-color 0.2s ease, border-color 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = 'rgba(250,249,246,0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(250,249,246,0.85)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(250,249,246,0.45)';
+                }}
+              >
+                Customise
+              </button>
+            )}
             <button
               onClick={onSave}
               style={{
@@ -365,7 +403,7 @@ export function CardRevealOverlay({
                 e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.4)';
               }}
             >
-              See the agents work
+              {saveLabel ?? 'See the agents work'}
             </button>
           </motion.div>
         )}
