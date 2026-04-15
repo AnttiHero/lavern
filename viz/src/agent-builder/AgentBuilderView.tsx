@@ -19,6 +19,7 @@ import { FaceBuilderStep } from './components/FaceBuilderStep.js';
 import { StatsStep } from './components/StatsStep.js';
 import { LiveCardPreview } from './components/LiveCardPreview.js';
 import { CardRevealOverlay } from './components/CardRevealOverlay.js';
+import { AgentBuilderHub } from './components/AgentBuilderHub.js';
 import { colors, fonts, radii } from '../staffing/styles/tokens.js';
 import type { AgentProfile } from '../types/agent-profile.js';
 
@@ -35,6 +36,10 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
   const [showReveal, setShowReveal] = useState(false);
   const [revealProfile, setRevealProfile] = useState<AgentProfile | null>(null);
   const isEditing = !!editAgentId;
+  // Hub is the default entry point for new agents. Edit mode skips straight
+  // to the wizard. "Build from scratch" or "Clone" from the hub also switches
+  // us into wizard view.
+  const [mode, setMode] = useState<'hub' | 'wizard'>(isEditing ? 'wizard' : 'hub');
 
   // Pre-fill builder from saved agent when editing
   useEffect(() => {
@@ -44,6 +49,20 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
       builder.loadFromProfile(agent.profile);
     }
   }, [editAgentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Hub handlers ───────────────────────────────────────────────────────
+
+  const handleBuildFromScratch = useCallback(() => {
+    builder.reset();
+    setMode('wizard');
+    play('flip');
+  }, [builder, play]);
+
+  const handleCloneComplete = useCallback((data: Parameters<typeof builder.loadFromCloneData>[0]) => {
+    builder.loadFromCloneData(data);
+    setMode('wizard');
+    play('confirm');
+  }, [builder, play]);
 
   // Build a preview profile for the live card
   const previewProfile = useMemo(() => builder.buildProfile(), [builder]);
@@ -139,6 +158,58 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
 
   const nextLabel = builder.step === 3 ? (isEditing ? 'Update Agent' : 'Forge Agent') : 'Next';
   const nextDisabled = builder.step === 3 ? !builder.isValid : (builder.step === 1 && !builder.isValid);
+
+  // Show hub first for new-agent creation; edit mode and after-selection go to wizard
+  if (mode === 'hub' && !isEditing) {
+    return (
+      <div style={{
+        width: '100%',
+        minHeight: '100vh',
+        backgroundColor: colors.bg,
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 32px',
+          borderBottom: `1px solid ${colors.border}`,
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              fontSize: 13,
+              fontFamily: fonts.sans,
+              color: colors.textMuted,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {'\u2190'} Back
+          </button>
+          <div style={{
+            fontSize: 15,
+            fontFamily: fonts.serif,
+            fontWeight: 600,
+            color: colors.text,
+            letterSpacing: 1,
+          }}>
+            Agent Builder
+          </div>
+          <div style={{ width: 60 }} />
+        </div>
+        <AgentBuilderHub
+          onBuildFromScratch={handleBuildFromScratch}
+          onCloneComplete={handleCloneComplete}
+        />
+      </div>
+    );
+  }
 
   return (
     <>

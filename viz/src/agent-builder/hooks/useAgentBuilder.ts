@@ -267,6 +267,60 @@ export function useAgentBuilder() {
     setStep(1);
   }, []);
 
+  // ── Load from clone API response ────────────────────────────────────
+
+  /**
+   * Apply the output of POST /api/agents/clone to the builder state.
+   * Shape matches the JSON schema the clone endpoint returns.
+   */
+  const loadFromCloneData = useCallback((data: {
+    displayName?: string;
+    tagline?: string;
+    category?: AgentCategory;
+    seniority?: SeniorityTier;
+    archetype?: string;
+    workStyle?: string;
+    practiceAreas?: string[];
+    strengths?: string[];
+    limitations?: string[];
+    skills?: Partial<SkillRatings>;
+    personality?: Partial<Record<PersonalityAxis, number>>;
+  }) => {
+    setState(prev => ({
+      ...prev,
+      displayName: data.displayName?.trim() || prev.displayName,
+      tagline: data.tagline?.trim() || prev.tagline,
+      category: data.category ?? prev.category,
+      seniority: data.seniority ?? prev.seniority,
+      archetype: data.archetype?.trim() || prev.archetype,
+      avatarSeed: (data.displayName?.trim() || prev.avatarSeed),
+      avatarFeatures: {},
+      skills: {
+        precision: data.skills?.precision ?? prev.skills.precision,
+        creativity: data.skills?.creativity ?? prev.skills.creativity,
+        speed: data.skills?.speed ?? prev.skills.speed,
+        depth: data.skills?.depth ?? prev.skills.depth,
+        negotiation: data.skills?.negotiation ?? prev.skills.negotiation,
+        communication: data.skills?.communication ?? prev.skills.communication,
+        research: data.skills?.research ?? prev.skills.research,
+        risk: data.skills?.risk ?? prev.skills.risk,
+      },
+      personality: {
+        'conservative-vs-creative': data.personality?.['conservative-vs-creative'] ?? prev.personality['conservative-vs-creative'],
+        'thorough-vs-fast': data.personality?.['thorough-vs-fast'] ?? prev.personality['thorough-vs-fast'],
+        'risk-averse-vs-tolerant': data.personality?.['risk-averse-vs-tolerant'] ?? prev.personality['risk-averse-vs-tolerant'],
+        'formal-vs-approachable': data.personality?.['formal-vs-approachable'] ?? prev.personality['formal-vs-approachable'],
+        'adversarial-vs-collaborative': data.personality?.['adversarial-vs-collaborative'] ?? prev.personality['adversarial-vs-collaborative'],
+      },
+      workStyle: data.workStyle?.trim() || prev.workStyle,
+      practiceAreas: Array.isArray(data.practiceAreas) ? [...data.practiceAreas] : prev.practiceAreas,
+      strengths: Array.isArray(data.strengths) ? [...data.strengths] : prev.strengths,
+      limitations: Array.isArray(data.limitations) ? [...data.limitations] : prev.limitations,
+      presetId: null,
+    }));
+    setStep(1);
+  }, []);
+
   // ── Reset ───────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -296,6 +350,7 @@ export function useAgentBuilder() {
     goToStep,
     buildProfile,
     loadFromProfile,
+    loadFromCloneData,
     reset,
   };
 }
