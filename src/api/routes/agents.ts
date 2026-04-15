@@ -328,7 +328,12 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
   // Accepts any free-form text (LinkedIn about, CV, bio) and returns
   // a fully-populated agent builder state ready for the wizard.
 
-  fastify.post('/api/agents/clone', async (request, reply) => {
+  fastify.post('/api/agents/clone', {
+    // Each clone call makes an expensive Claude API request — cap it tight per
+    // user/IP so one bad actor can't drain budget. 5/min is plenty for a human
+    // pasting a profile into the builder.
+    config: { rateLimit: { max: 5, timeWindow: 60_000 } },
+  }, async (request, reply) => {
     const { profileText } = request.body as { profileText?: string };
 
     if (!profileText || typeof profileText !== 'string') {
@@ -350,9 +355,31 @@ export function registerAgentRoutes(fastify: FastifyInstance): void {
       const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
       const parsed = JSON.parse(clean);
 
-      // Validate required fields are present
-      if (!parsed.displayName || !parsed.skills || !parsed.personality) {
-        throw new Error('Incomplete response from model');
+      // Validate structural shape — guards against malformed LLM output passing
+      // through to the frontend builder and causing downstream crashes.
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Model returned non-object');
+      }
+      if (typeof parsed.displayName !== 'string' || parsed.displayName.trim().length === 0) {
+        throw new Error('Missing displayName');
+      }
+      if (!parsed.skills || typeof parsed.skills !== 'object' || Array.isArray(parsed.skills)) {
+        throw new Error('Missing or malformed skills object');
+      }
+      if (!parsed.personality || typeof parsed.personality !== 'object' || Array.isArray(parsed.personality)) {
+        throw new Error('Missing or malformed personality object');
+      }
+      // Verify at least the core personality axes are present (spot-check —
+      // the builder can fall back to defaults for missing ones, but an empty
+      // object indicates the model went off-spec).
+      const requiredAxes = [
+        'conservative-vs-creative',
+        'thorough-vs-fast',
+        'risk-averse-vs-tolerant',
+      ];
+      const axesPresent = requiredAxes.filter(k => typeof parsed.personality[k] === 'number').length;
+      if (axesPresent === 0) {
+        throw new Error('Personality has no recognized axes');
       }
 
       return reply.send(parsed);

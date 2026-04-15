@@ -24,6 +24,7 @@ import {
   setUserPlan,
   setUserStripeCustomer,
   recordBillingEvent,
+  isStripeEventProcessed,
   getUserMonthlyUsage,
   getUserBillableHours,
   creditBillableHours,
@@ -278,6 +279,14 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
         return reply.status(400).send({ error: 'Raw body not available for signature verification' });
       }
       const event = stripe.webhooks.constructEvent(rawBody, sig, config.stripe.webhookSecret);
+
+      // Idempotency — Stripe retries on transient failures. Without this check
+      // a retry storm could send duplicate receipt emails even though the credit
+      // grant itself is reference-id idempotent.
+      if (isStripeEventProcessed(event.id)) {
+        log.info('stripe_webhook_duplicate_ignored', { eventId: event.id, type: event.type });
+        return reply.send({ received: true, duplicate: true });
+      }
 
       switch (event.type) {
         case 'checkout.session.completed': {

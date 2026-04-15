@@ -19,10 +19,32 @@ export async function parsePdf(
 ): Promise<ParsedDocument> {
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
 
-  // Get text content (concatenated across all pages)
-  const textResult = await parser.getText();
-  const fullText = textResult.text;
-  const pageCount = textResult.total;
+  // Get text content (concatenated across all pages). Classify error modes
+  // so users get an actionable message rather than a generic "parse failed."
+  let fullText: string;
+  let pageCount: number;
+  try {
+    const textResult = await parser.getText();
+    fullText = textResult.text;
+    pageCount = textResult.total;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await parser.destroy().catch(() => { /* ignore cleanup errors on failure path */ });
+
+    // pdf.js / pdf-parse surface password-protected PDFs with error names like
+    // "PasswordException" or messages mentioning "password" / "encrypted".
+    if (/password|encrypt/i.test(msg) || /PasswordException/.test(msg)) {
+      throw new Error(
+        `PDF is password-protected: "${filename}". Please remove the password and try again.`,
+      );
+    }
+    if (/InvalidPDFException|Invalid PDF structure|bad PDF header/i.test(msg)) {
+      throw new Error(
+        `PDF is corrupted or invalid: "${filename}". Try re-exporting the file.`,
+      );
+    }
+    throw new Error(`Failed to parse PDF "${filename}": ${msg}`);
+  }
 
   // Clean up
   await parser.destroy();

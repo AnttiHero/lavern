@@ -1045,6 +1045,19 @@ export function getUserPlan(userId: string): { plan: string; plan_expires_at: st
     .get(userId) as { plan: string; plan_expires_at: string | null; stripe_customer_id: string | null } | undefined;
 }
 
+/**
+ * Check whether a Stripe event has already been processed.
+ * Used for webhook idempotency — Stripe retries deliveries aggressively on
+ * transient errors, and without this guard we'd send duplicate receipt
+ * emails (creditBillableHours is already reference-id idempotent).
+ */
+export function isStripeEventProcessed(eventId: string): boolean {
+  const row = getDb()
+    .prepare(`SELECT 1 FROM billing_events WHERE stripe_session_id = ? LIMIT 1`)
+    .get(eventId) as { 1: number } | undefined;
+  return !!row;
+}
+
 /** Record a billing event. */
 export function recordBillingEvent(event: {
   id: string;
