@@ -11,8 +11,128 @@
  */
 
 import { useRef, useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { colors, fonts, spacing, radii } from '../../staffing/styles/tokens.js';
 import { useVoiceInput } from '../../partner/hooks/useVoiceInput.js';
+
+// ── Minimal markdown renderer ──────────────────────────────────────────
+// Ask the Team responses include **bold**, *italic*, `code`, headings,
+// and bullet lists. Render them as React nodes instead of dumping raw
+// markdown into a <div>.
+
+function renderInline(text: string, keyPrefix: string): ReactNode[] {
+  // Process **bold**, *italic*, `code` — in that order, non-overlapping.
+  // Tokenize into segments so we don't double-process.
+  const nodes: ReactNode[] = [];
+  const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      nodes.push(text.slice(lastIdx, match.index));
+    }
+    const key = `${keyPrefix}-${i++}`;
+    if (match[2] !== undefined) {
+      nodes.push(<strong key={key}>{match[2]}</strong>);
+    } else if (match[3] !== undefined) {
+      nodes.push(<em key={key}>{match[3]}</em>);
+    } else if (match[4] !== undefined) {
+      nodes.push(<code key={key} style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.92em', backgroundColor: 'rgba(0,0,0,0.05)', padding: '1px 4px', borderRadius: 3 }}>{match[4]}</code>);
+    }
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) nodes.push(text.slice(lastIdx));
+  return nodes;
+}
+
+function renderMarkdown(src: string): ReactNode {
+  const lines = src.split('\n');
+  const blocks: ReactNode[] = [];
+  let i = 0;
+  let paraBuf: string[] = [];
+  let listBuf: string[] = [];
+
+  const flushPara = () => {
+    if (paraBuf.length) {
+      const text = paraBuf.join(' ');
+      blocks.push(
+        <p key={`p-${blocks.length}`} style={{ margin: '0 0 8px 0' }}>
+          {renderInline(text, `p-${blocks.length}`)}
+        </p>,
+      );
+      paraBuf = [];
+    }
+  };
+  const flushList = () => {
+    if (listBuf.length) {
+      const items = listBuf;
+      blocks.push(
+        <ul key={`ul-${blocks.length}`} style={{ margin: '0 0 8px 0', paddingLeft: 20 }}>
+          {items.map((it, k) => (
+            <li key={k} style={{ marginBottom: 2 }}>{renderInline(it, `li-${blocks.length}-${k}`)}</li>
+          ))}
+        </ul>,
+      );
+      listBuf = [];
+    }
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (trimmed === '') {
+      flushPara();
+      flushList();
+      i++;
+      continue;
+    }
+
+    const heading = trimmed.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) {
+      flushPara();
+      flushList();
+      const level = heading[1].length;
+      const content = heading[2];
+      const size = level <= 2 ? 15 : level === 3 ? 14 : 13;
+      blocks.push(
+        <div
+          key={`h-${blocks.length}`}
+          style={{ fontWeight: 600, fontSize: size, margin: '10px 0 6px 0', lineHeight: 1.35 }}
+        >
+          {renderInline(content, `h-${blocks.length}`)}
+        </div>,
+      );
+      i++;
+      continue;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.*)$/);
+    if (bullet) {
+      flushPara();
+      listBuf.push(bullet[1]);
+      i++;
+      continue;
+    }
+
+    const numbered = trimmed.match(/^\d+\.\s+(.*)$/);
+    if (numbered) {
+      flushPara();
+      listBuf.push(numbered[1]);
+      i++;
+      continue;
+    }
+
+    flushList();
+    paraBuf.push(trimmed);
+    i++;
+  }
+  flushPara();
+  flushList();
+
+  return <>{blocks}</>;
+}
 
 export interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -229,6 +349,8 @@ export function ConversationTab({
             <div style={msg.role === 'user' ? styles.userBubble : styles.assistantBubble}>
               {msg.role === 'assistant' && msg.content === '' && streaming ? (
                 <span style={styles.thinking}>Thinking<span style={styles.thinkingDots}>...</span></span>
+              ) : msg.role === 'assistant' ? (
+                <div style={styles.messageText}>{renderMarkdown(msg.content)}</div>
               ) : (
                 <div style={styles.messageText}>{msg.content}</div>
               )}
