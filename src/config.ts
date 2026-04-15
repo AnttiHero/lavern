@@ -76,6 +76,10 @@ export const config = {
   rateLimitAuthSignupMax: safeInt(process.env.SHEM_RATE_LIMIT_AUTH_SIGNUP_MAX, 3),
   /** Auth rate limit window in ms (default: 60 000 = 1 minute) */
   rateLimitAuthWindowMs: safeInt(process.env.SHEM_RATE_LIMIT_AUTH_WINDOW_MS, 60_000),
+  /** Shared secret that, when presented in the `X-Load-Test-Bypass` header,
+   *  skips all rate limits for the request. Empty string = disabled (prod default).
+   *  Set only on the machine running `scripts/load-test.ts`. 32+ chars recommended. */
+  loadTestBypassKey: process.env.LAVERN_LOAD_TEST_BYPASS_KEY ?? '',
 
   // ── Payment (x402 — USDC on Base) ───────────────────────────────────
   x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
@@ -258,6 +262,14 @@ export function validateProductionConfig(): void {
   if (!process.env.ANTHROPIC_API_KEY && config.provider === 'anthropic') {
     fatal.push('ANTHROPIC_API_KEY is not set — all agent workflows will fail');
   }
+  // Provider/key pairing: if an EU-sovereign or managed provider is selected
+  // as the global default, its credentials must exist or every request fails.
+  if (config.provider === 'mistral' && !config.mistral.apiKey) {
+    fatal.push('LAVERN_PROVIDER=mistral but MISTRAL_API_KEY is not set');
+  }
+  if (config.provider === 'managed' && !process.env.ANTHROPIC_API_KEY) {
+    fatal.push('LAVERN_PROVIDER=managed but ANTHROPIC_API_KEY is not set');
+  }
 
   // ── Important but not fatal — degraded email functionality ──
   if (!process.env.RESEND_API_KEY) {
@@ -282,11 +294,17 @@ export function validateProductionConfig(): void {
   if (config.stripe.successUrl.includes('localhost')) {
     warnings.push('STRIPE_SUCCESS_URL still points to localhost — set to production URL');
   }
+  if (config.stripe.cancelUrl.includes('localhost')) {
+    warnings.push('STRIPE_CANCEL_URL still points to localhost — set to production URL');
+  }
   if (config.email.appUrl.includes('localhost')) {
     warnings.push('LAVERN_APP_URL still points to localhost — set to production URL');
   }
   if (config.baseUrl.includes('localhost')) {
     warnings.push('SHEM_BASE_URL still points to localhost — set to production URL');
+  }
+  if (config.google.clientId && config.google.redirectUri.includes('localhost')) {
+    warnings.push('GOOGLE_OAUTH_REDIRECT_URI still points to localhost — set to production URL');
   }
 
   // ── Fatal: exit immediately ──

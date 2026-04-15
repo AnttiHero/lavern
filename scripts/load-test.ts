@@ -1,19 +1,40 @@
 #!/usr/bin/env tsx
 /**
- * Lavern Load Test — simulates 50 concurrent users through the full lifecycle.
+ * Lavern Load Test — simulates N concurrent users through the full lifecycle.
  *
  * Usage:
- *   npx tsx scripts/load-test.ts [base_url] [--users N] [--mock]
+ *   npx tsx scripts/load-test.ts [base_url] [--users N] [--bypass-key KEY]
  *
  * Options:
- *   base_url   Server URL (default: http://localhost:3000)
- *   --users N  Number of concurrent users (default: 50)
- *   --mock     Use mock sessions that skip real LLM calls (default: true)
+ *   base_url            Server URL (default: http://localhost:3000)
+ *   --users N           Number of concurrent users (default: 50)
+ *   --bypass-key KEY    Shared secret sent in `X-Load-Test-Bypass` header;
+ *                       must match `LAVERN_LOAD_TEST_BYPASS_KEY` on the
+ *                       server. Without this, signup (3/min/IP) and the
+ *                       global limiter (100/min/IP) will throttle runs
+ *                       above ~50 users from a single host.
+ *
+ * ─ Scaling to 1500 users ─
+ *
+ * The script is tuned for small smoke runs by default; driving 1500
+ * concurrent users from one box needs matching server tuning:
+ *
+ *   LAVERN_LOAD_TEST_BYPASS_KEY=<32+ chars>  # unlocks rate limits when header matches
+ *   SHEM_MAX_SESSIONS=2000                   # lift the 100-session ceiling
+ *   SHEM_SESSION_TTL_MS=3600000              # faster eviction of abandoned sessions
+ *   NODE_OPTIONS=--max-old-space-size=4096   # give the server headroom
+ *
+ * Then invoke:
+ *   npx tsx scripts/load-test.ts http://localhost:3000 --users 1500 --bypass-key $KEY
+ *
+ * Auth is batched (50 users per tick when bypass is on; 10 otherwise so signup
+ * rate-limit doesn't shed the run). Session creation is batched to 25 / tick
+ * under bypass. Peak RSS, throughput, and an ETA are reported per phase.
  *
  * What it tests:
  *   1. Auth: signup + login for N users concurrently
  *   2. Sessions: create N sessions and open WebSocket event streams
- *   3. Polling: GET status for all sessions every 2s
+ *   3. Polling: GET status for all sessions every 3s
  *   4. Gates: approve any gates that open
  *   5. Teardown: cancel all sessions, verify cleanup
  *   6. Metrics: p50/p95 latencies, error counts, peak memory, WS health
@@ -28,6 +49,22 @@ const USER_COUNT = (() => {
   const idx = process.argv.indexOf('--users');
   return idx !== -1 ? parseInt(process.argv[idx + 1], 10) : 50;
 })();
+const BYPASS_KEY = (() => {
+  const idx = process.argv.indexOf('--bypass-key');
+  return idx !== -1 ? process.argv[idx + 1] : '';
+})();
+
+/** Default headers attached to every request. Empty when no bypass is set,
+ *  so production runs against a locked-down server still work (at small N). */
+const COMMON_HEADERS: Record<string, string> = BYPASS_KEY
+  ? { 'X-Load-Test-Bypass': BYPASS_KEY }
+  : {};
+
+/** Auth batch sizing — 50/tick with bypass (rate limits disabled), 10/tick
+ *  otherwise so we stay under the 60/min global cap. */
+const AUTH_BATCH = BYPASS_KEY ? 50 : 10;
+/** Session creation batch — wider under bypass; tighter without. */
+const SESSION_BATCH = BYPASS_KEY ? 25 : 5;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -117,7 +154,7 @@ async function authPhase(user: UserContext): Promise<void> {
     `${BASE}/api/auth/signup`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS },
       body: JSON.stringify({
         email: user.email,
         password: user.password,
@@ -139,7 +176,7 @@ async function authPhase(user: UserContext): Promise<void> {
       `${BASE}/api/auth/login`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS },
         body: JSON.stringify({ email: user.email, password: user.password }),
       },
     );
@@ -170,6 +207,7 @@ async function createSession(user: UserContext): Promise<void> {
       headers: {
         'Content-Type': 'application/json',
         Cookie: `lavern_token=${user.cookie}`,
+        ...COMMON_HEADERS,
       },
       body: JSON.stringify({
         request: {
@@ -251,7 +289,7 @@ async function pollSession(user: UserContext): Promise<string | null> {
     'poll_status',
     `${BASE}/api/sessions/${user.sessionId}`,
     {
-      headers: { Cookie: `lavern_token=${user.cookie}` },
+      headers: { Cookie: `lavern_token=${user.cookie}`, ...COMMON_HEADERS },
     },
   );
   user.timings.push(timing);
@@ -284,6 +322,7 @@ async function approveGate(user: UserContext): Promise<void> {
       headers: {
         'Content-Type': 'application/json',
         Cookie: `lavern_token=${user.cookie}`,
+        ...COMMON_HEADERS,
       },
       body: JSON.stringify({ decision: 'approve', notes: 'load test auto-approve' }),
     },
@@ -313,6 +352,7 @@ async function cancelSession(user: UserContext): Promise<void> {
       headers: {
         'Content-Type': 'application/json',
         Cookie: `lavern_token=${user.cookie}`,
+        ...COMMON_HEADERS,
       },
       body: JSON.stringify({ reason: 'load test cleanup' }),
     },
@@ -345,6 +385,7 @@ async function deleteAccount(user: UserContext): Promise<void> {
       headers: {
         Cookie: `lavern_token=${user.cookie}`,
         'X-Confirm-Delete': 'permanently-delete-my-account',
+        ...COMMON_HEADERS,
       },
     },
   );
@@ -387,7 +428,12 @@ async function run(): Promise<void> {
   console.log(`║  Lavern Load Test                                ║`);
   console.log(`║  Target: ${BASE.padEnd(40)}║`);
   console.log(`║  Users:  ${String(USER_COUNT).padEnd(40)}║`);
+  console.log(`║  Bypass: ${(BYPASS_KEY ? 'enabled' : 'disabled').padEnd(40)}║`);
   console.log(`╚══════════════════════════════════════════════════╝\n`);
+  if (USER_COUNT >= 500 && !BYPASS_KEY) {
+    console.warn('  ⚠ --bypass-key not set. Rate limits will throttle runs above ~50 users.');
+    console.warn('    Set LAVERN_LOAD_TEST_BYPASS_KEY on the server and pass --bypass-key here.\n');
+  }
 
   // ---- Health check ----
   console.log('Phase 0: Health check');
@@ -433,16 +479,22 @@ async function run(): Promise<void> {
   };
 
   // ---- Phase 1: Auth (batched to avoid rate limits) ----
-  console.log(`Phase 1: Authenticating ${USER_COUNT} users`);
-  const AUTH_BATCH = 10;
+  console.log(`Phase 1: Authenticating ${USER_COUNT} users (batch=${AUTH_BATCH})`);
+  const authStart = Date.now();
   for (let i = 0; i < users.length; i += AUTH_BATCH) {
     const batch = users.slice(i, i + AUTH_BATCH);
     await Promise.all(batch.map((u) => authPhase(u)));
     const authed = users.filter((u) => u.cookie).length;
-    process.stdout.write(`  ${authed}/${USER_COUNT} authenticated\r`);
+    metrics.peakRssMb = Math.max(metrics.peakRssMb, rss());
+    const elapsed = Date.now() - authStart;
+    const rate = authed / (elapsed / 1000);
+    const eta = rate > 0 ? Math.max(0, (USER_COUNT - authed) / rate) : 0;
+    process.stdout.write(
+      `  ${authed}/${USER_COUNT} authed · ${rate.toFixed(1)}/s · ETA ${fmtMs(eta * 1000)} · RSS ${rss()}MB    \r`,
+    );
   }
   const authedCount = users.filter((u) => u.cookie).length;
-  console.log(`  ✓ ${authedCount}/${USER_COUNT} authenticated\n`);
+  console.log(`  ✓ ${authedCount}/${USER_COUNT} authenticated in ${fmtMs(Date.now() - authStart)}    \n`);
 
   if (authedCount === 0) {
     console.error('  ✗ No users authenticated. Check server logs.');
@@ -450,17 +502,23 @@ async function run(): Promise<void> {
   }
 
   // ---- Phase 2: Create sessions (batched) ----
-  console.log(`Phase 2: Creating ${authedCount} sessions`);
-  const SESSION_BATCH = 5;
+  console.log(`Phase 2: Creating ${authedCount} sessions (batch=${SESSION_BATCH})`);
+  const sessStart = Date.now();
   const authedUsers = users.filter((u) => u.cookie);
   for (let i = 0; i < authedUsers.length; i += SESSION_BATCH) {
     const batch = authedUsers.slice(i, i + SESSION_BATCH);
     await Promise.all(batch.map((u) => createSession(u)));
     const created = users.filter((u) => u.sessionId).length;
-    process.stdout.write(`  ${created}/${authedCount} sessions created\r`);
+    metrics.peakRssMb = Math.max(metrics.peakRssMb, rss());
+    const elapsed = Date.now() - sessStart;
+    const rate = created / (elapsed / 1000);
+    const eta = rate > 0 ? Math.max(0, (authedCount - created) / rate) : 0;
+    process.stdout.write(
+      `  ${created}/${authedCount} sessions · ${rate.toFixed(1)}/s · ETA ${fmtMs(eta * 1000)} · RSS ${rss()}MB    \r`,
+    );
   }
   const sessionCount = users.filter((u) => u.sessionId).length;
-  console.log(`  ✓ ${sessionCount}/${authedCount} sessions created\n`);
+  console.log(`  ✓ ${sessionCount}/${authedCount} sessions created in ${fmtMs(Date.now() - sessStart)}    \n`);
 
   // ---- Phase 3: Connect WebSockets ----
   console.log(`Phase 3: Connecting ${sessionCount} WebSockets`);

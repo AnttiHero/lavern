@@ -34,6 +34,7 @@ import { config } from '../../config.js';
 import { canStartSession } from './billing.js';
 import { holdBillableHours } from '../../db/database.js';
 import { createLogger } from '../../utils/logger.js';
+import { captureError } from '../../utils/sentry.js';
 import { createMassActionGuard } from '../middleware/mass-action-guard.js';
 
 const logger = createLogger('ENGAGE');
@@ -597,14 +598,21 @@ export function registerEngageRoutes(
         await postWebhookWithRetry(callbackUrl, response);
       }).catch(async (err) => {
         logger.error('Session failed', { sessionId: session.id, error: err });
+        // A dispatch failure is already user-visible (the engagement won't
+        // deliver) but the CAUSE is only in our logs. Page Sentry so a
+        // regression in the orchestrator doesn't silently degrade every
+        // agent-mode client at once.
+        captureError(err, { sessionId: session.id, phase: 'engage_dispatch' });
         // Attempt to notify the callback of failure (with retry)
         const errorResponse = buildEngageResponse(session, 'failed', startTime);
-        await postWebhookWithRetry(callbackUrl, errorResponse).catch(() => {
+        await postWebhookWithRetry(callbackUrl, errorResponse).catch((deliveryErr) => {
           logger.error('Could not deliver failure notification', { sessionId: session.id });
+          captureError(deliveryErr, { sessionId: session.id, phase: 'engage_failure_callback', callbackUrl });
         });
       }).catch((err) => {
         // Safety net: prevent unhandled rejection if the error handler itself throws
         logger.error('Unhandled error in webhook dispatch chain', { sessionId: session.id, error: err });
+        captureError(err, { sessionId: session.id, phase: 'engage_chain_safety_net' });
       });
 
       const accepted: EngageAcceptedResponse = {

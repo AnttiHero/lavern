@@ -23,6 +23,7 @@ import type { ClawManifest, ClawConfig } from './types.js';
 import type { InferenceResult } from './inference.js';
 import type { LocalAnalysisResult } from './local-analysis.js';
 import { createLogger } from '../utils/logger.js';
+import { captureError } from '../utils/sentry.js';
 
 const logger = createLogger('CLAW-DELIVERY');
 import { extractLocalFindings } from './local-analysis.js';
@@ -122,6 +123,12 @@ export class ClawDelivery {
         manifest.outputs.docx = 'deliverable.docx';
       } catch (err) {
         logger.warn('DOCX conversion failed', { error: err });
+        // The markdown deliverable still ships, but a Claw client who asked
+        // for DOCX gets an incomplete bundle with no in-flow error. Report
+        // so we spot systemic conversion regressions (e.g., pandoc missing,
+        // upstream docx lib bug) instead of discovering them document by
+        // document.
+        captureError(err, { phase: 'claw_docx_conversion', sessionId });
       }
     }
 
@@ -133,6 +140,7 @@ export class ClawDelivery {
         manifest.outputs.html = 'deliverable.html';
       } catch (err) {
         logger.warn('HTML conversion failed', { error: err });
+        captureError(err, { phase: 'claw_html_conversion', sessionId });
       }
     }
 

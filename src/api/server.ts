@@ -22,6 +22,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
+import { timingSafeEqual } from 'node:crypto';
 import Fastify from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
@@ -52,6 +53,7 @@ import { registerChallengeRoutes } from './routes/challenge.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { maybeRegisterRemoteBridge } from '../mcp/remote-bridge/index.js';
 import { registerReferralRoutes } from './routes/referral.js';
 import { registerTemplateRoutes } from './routes/templates.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
@@ -102,10 +104,36 @@ export async function startApiServer(port: number): Promise<void> {
     limits: { fileSize: config.maxUploadBytes },
   });
 
-  // Rate limiting — global default + stricter limit on session creation
+  // Rate limiting — global default + stricter limit on session creation.
+  //
+  // `allowList` honors a shared-secret bypass for load testing. When
+  // LAVERN_LOAD_TEST_BYPASS_KEY is set AND the request carries a matching
+  // `X-Load-Test-Bypass` header, the limit is skipped — this is required to
+  // drive 1500 simulated users from a single IP without signup (3/min/IP) or
+  // the global (100/min/IP) throttle blocking the run. The per-route auth
+  // limits configured in auth-routes.ts also inherit this allow list, so one
+  // toggle unblocks signup/login at scale.
+  //
+  // Compared in constant time to avoid exposing the secret via timing. Empty
+  // key disables the bypass entirely — production never presents the header
+  // to a server missing the env.
+  const loadTestKey = config.loadTestBypassKey;
+  const loadTestKeyBuf = loadTestKey ? Buffer.from(loadTestKey, 'utf8') : null;
   await fastify.register(fastifyRateLimit, {
     max: config.rateLimitMax,
     timeWindow: config.rateLimitWindowMs,
+    allowList: (req) => {
+      if (!loadTestKeyBuf) return false;
+      const presented = req.headers['x-load-test-bypass'];
+      if (typeof presented !== 'string' || presented.length === 0) return false;
+      const presentedBuf = Buffer.from(presented, 'utf8');
+      if (presentedBuf.length !== loadTestKeyBuf.length) return false;
+      try {
+        return timingSafeEqual(presentedBuf, loadTestKeyBuf);
+      } catch {
+        return false;
+      }
+    },
   });
 
   // ── Raw body capture for Stripe webhook ──────────────────────────────
@@ -241,6 +269,10 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /api/waitlist/list',
     // Admin endpoints verify X-Admin-Key internally; bypass user auth.
     'GET /api/admin/spend-status',
+    'GET /api/admin/user-spend',
+    // Remote MCP bridge authenticates via its own shared-secret Bearer header
+    // + X-Lavern-Session-Id; it must bypass the global cookie/Bearer middleware.
+    'POST /api/mcp/bridge',
     // Frontend static files (prefix match — trailing /)
     '/dashboard/',
   ];
@@ -545,6 +577,9 @@ export async function startApiServer(port: number): Promise<void> {
   registerWaitlistRoutes(fastify);
   // Admin observability endpoints (X-Admin-Key gated)
   registerAdminRoutes(fastify);
+  // Remote MCP bridge — Managed Agents integration (Stage 1: scaffolded, off
+  // unless both LAVERN_MANAGED_AGENTS_BRIDGE=1 and the shared secret are set).
+  maybeRegisterRemoteBridge(fastify, sessionManager);
   registerReferralRoutes(fastify);
   registerTemplateRoutes(fastify);
 

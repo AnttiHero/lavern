@@ -8,8 +8,35 @@
 
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { captureError } from '../utils/sentry.js';
 
 const logger = createLogger('EMAIL');
+
+/** Retry schedule for transient Resend failures (ms).
+ *  Total worst-case wall time: ~6.5s before we give up.
+ *  Password reset / verification emails are time-critical, so we can't wait longer. */
+const RETRY_DELAYS_MS = [500, 1500, 4500] as const;
+
+/** HTTP status codes that are worth retrying. Everything else (400, 401, 403,
+ *  422 invalid-recipient etc.) is a permanent failure — retrying won't help. */
+const TRANSIENT_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+
+function isTransientError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const anyErr = err as Record<string, unknown>;
+  const status = typeof anyErr.statusCode === 'number' ? anyErr.statusCode
+    : typeof anyErr.status === 'number' ? anyErr.status
+    : undefined;
+  if (status !== undefined) return TRANSIENT_STATUS.has(status);
+  // Network-level errors from undici/fetch bubble up as TypeError or have a `code`.
+  const code = typeof anyErr.code === 'string' ? anyErr.code : '';
+  if (['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN', 'UND_ERR_SOCKET'].includes(code)) {
+    return true;
+  }
+  // Resend SDK sometimes surfaces { name: 'rate_limit_exceeded' }
+  const name = typeof anyErr.name === 'string' ? anyErr.name : '';
+  return name.includes('rate_limit') || name.includes('timeout');
+}
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -74,24 +101,65 @@ async function send(payload: EmailPayload): Promise<boolean> {
     return true; // Graceful — don't break the flow
   }
 
-  try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(apiKey);
+  const { Resend } = await import('resend');
+  const resend = new Resend(apiKey);
 
-    await resend.emails.send({
-      from: config.email.from,
-      to: payload.to,
-      subject: payload.subject,
-      html: payload.html,
-      ...(payload.text ? { text: payload.text } : {}),
-    });
+  let lastErr: unknown = null;
+  const maxAttempts = RETRY_DELAYS_MS.length + 1; // 1 initial + N retries
 
-    logger.info('email_sent', { subject: payload.subject, to: payload.to });
-    return true;
-  } catch (err) {
-    logger.error('email_send_failed', err);
-    return false;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await resend.emails.send({
+        from: config.email.from,
+        to: payload.to,
+        subject: payload.subject,
+        html: payload.html,
+        ...(payload.text ? { text: payload.text } : {}),
+      });
+
+      // Resend SDK returns { data, error } — a non-throwing error must still
+      // be treated as a failure so we don't silently drop verification emails.
+      const apiErr = (result as { error?: unknown })?.error;
+      if (apiErr) {
+        lastErr = apiErr;
+        if (attempt < maxAttempts && isTransientError(apiErr)) {
+          logger.warn('email_transient_error', { attempt, maxAttempts, error: apiErr });
+          await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
+          continue;
+        }
+        break;
+      }
+
+      if (attempt > 1) {
+        logger.info('email_sent_after_retry', { subject: payload.subject, to: payload.to, attempts: attempt });
+      } else {
+        logger.info('email_sent', { subject: payload.subject, to: payload.to });
+      }
+      return true;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts && isTransientError(err)) {
+        logger.warn('email_transient_error', { attempt, maxAttempts, error: err });
+        await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
+        continue;
+      }
+      break;
+    }
   }
+
+  // All attempts exhausted (or permanent error) — route to Sentry so we notice
+  // rising delivery failure rates. Password reset / verification failures are
+  // particularly critical: users are locked out with no recourse.
+  logger.error('email_send_failed', {
+    to: payload.to,
+    subject: payload.subject,
+    error: lastErr,
+  });
+  captureError(
+    lastErr instanceof Error ? lastErr : new Error(`Email send failed: ${String(lastErr)}`),
+    { to: payload.to, subject: payload.subject },
+  );
+  return false;
 }
 
 // ── Templates ────────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import * as crypto from 'node:crypto';
 import { z } from 'zod';
 import { config } from '../../config.js';
 import { createLogger } from '../../utils/logger.js';
+import { captureError } from '../../utils/sentry.js';
 import { parseCookieToken } from '../middleware/auth.js';
 import {
   getUserByToken,
@@ -421,6 +422,12 @@ export function registerBillingRoutes(fastify: FastifyInstance): void {
       return reply.send({ received: true });
     } catch (err) {
       log.error('Webhook verification failed', err);
+      // Sentry: a persistent stream of failures here means our webhook-signing
+      // secret drifted from Stripe's, or the raw-body capture hook is broken —
+      // both stall pack purchases + subscription upgrades silently. Stripe will
+      // retry for up to 3 days, so we'd rather get paged on the first one than
+      // find out from a support ticket.
+      captureError(err, { route: '/api/billing/webhook', phase: 'signature_verification' });
       return reply.status(400).send({ error: 'Webhook verification failed' });
     }
   });

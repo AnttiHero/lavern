@@ -17,6 +17,7 @@ import type { GateResolver } from '../gates/gate-resolver.js';
 import { archiveSession, releaseHold } from '../db/database.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { captureError } from '../utils/sentry.js';
 
 const log = createLogger('SESSION');
 
@@ -77,6 +78,12 @@ export class SessionManager {
         archiveSession(session, userId);
       } catch (err) {
         log.error(`[SESSION] Failed to archive session ${session.id}:`, err);
+        // Report to Sentry: archive failure means the completed session's
+        // findings/assembly/debate are lost, and any billable-hours hold is
+        // stuck. Both are data-loss / billing-integrity events that ops must
+        // see. The session_end listener can't release the hold (no guarantee
+        // a session_end path holds one), so we surface loudly instead.
+        captureError(err, { sessionId: session.id, phase: 'session_end_archive' });
       }
     });
 
@@ -105,9 +112,14 @@ export class SessionManager {
           archiveSession(entry.session, userId);
         } catch (err) {
           log.error(`[SESSION] Failed to archive destroyed session ${id}:`, err);
+          captureError(err, { sessionId: id, phase: 'destroy_archive' });
           // Safety net: if archive transaction rolled back, the hold is still locked.
           // Release it to prevent the user's billable hours from being permanently frozen.
-          try { releaseHold(id); } catch { /* best effort */ }
+          try { releaseHold(id); } catch (releaseErr) {
+            // A failure here is worse than the archive miss: the user's
+            // balance is now frozen. Report so ops can unlock manually.
+            captureError(releaseErr, { sessionId: id, phase: 'destroy_release_hold' });
+          }
         }
       }
       // Halt running agents
@@ -181,9 +193,12 @@ export class SessionManager {
         archiveSession(entry.session, userId);
       } catch (err) {
         log.error(`[SESSION] Failed to archive evicted session ${id}:`, err);
+        captureError(err, { sessionId: id, phase: 'evict_archive', reason });
         // Safety net: if archive transaction rolled back, the hold is still locked.
         // Release it to prevent the user's billable hours from being permanently frozen.
-        try { releaseHold(id); } catch { /* best effort */ }
+        try { releaseHold(id); } catch (releaseErr) {
+          captureError(releaseErr, { sessionId: id, phase: 'evict_release_hold' });
+        }
       }
     }
     // Halt any running agents

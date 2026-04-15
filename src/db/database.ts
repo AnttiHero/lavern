@@ -843,6 +843,53 @@ export function getRecentArchivedSessions(limit = 10): ArchivedSession[] {
   `).all(limit) as ArchivedSession[];
 }
 
+// ── Admin: Per-User Spend Aggregation ───────────────────────────────────
+
+export interface UserSpendRow {
+  userId: string | null;
+  email: string | null;
+  sessions: number;
+  totalUsd: number;
+  avgUsd: number;
+  maxUsd: number;
+  lastSessionAt: string | null;
+}
+
+/**
+ * Aggregate session spend by user within a UTC date range.
+ *
+ * - `sinceIso` / `untilIso` are inclusive ISO-8601 timestamps filtered against
+ *   `session_archive.completed_at`. The daily spend tracker uses
+ *   `completed_at` as the canonical "when the money was spent" field because
+ *   cost is finalized at archive time, not at session creation.
+ * - Anonymous sessions (user_id IS NULL) are bucketed into a single row
+ *   with userId=null. That's useful for spotting unauth API traffic spikes.
+ * - Ordered by totalUsd desc so the noisiest spenders surface first — the
+ *   primary operational question when a trajectory alert fires.
+ */
+export function getUserSpendBreakdown(
+  sinceIso: string,
+  untilIso: string,
+  limit = 50,
+): UserSpendRow[] {
+  return getDb().prepare(`
+    SELECT
+      sa.user_id AS userId,
+      u.email AS email,
+      COUNT(*) AS sessions,
+      COALESCE(SUM(sa.cost_usd), 0) AS totalUsd,
+      COALESCE(AVG(sa.cost_usd), 0) AS avgUsd,
+      COALESCE(MAX(sa.cost_usd), 0) AS maxUsd,
+      MAX(sa.completed_at) AS lastSessionAt
+    FROM session_archive sa
+    LEFT JOIN users u ON u.id = sa.user_id
+    WHERE sa.completed_at >= ? AND sa.completed_at <= ?
+    GROUP BY sa.user_id
+    ORDER BY totalUsd DESC
+    LIMIT ?
+  `).all(sinceIso, untilIso, limit) as UserSpendRow[];
+}
+
 // ── Archive Retention ────────────────────────────────────────────────────
 
 /**

@@ -35,6 +35,7 @@ import { clawEventBus } from './events.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import type { ClawProfile, ClawJob, ClawConfig } from './types.js';
 import { createLogger } from '../utils/logger.js';
+import { captureError } from '../utils/sentry.js';
 
 const logger = createLogger('CLAW-PROCESSOR');
 
@@ -382,6 +383,7 @@ export async function processDocument(
         }
       } catch (diffErr) {
         logger.warn('Change detection failed (non-fatal)', { sessionId, error: diffErr });
+        captureError(diffErr, { sessionId, phase: 'claw_change_detection' });
       }
     }
 
@@ -402,6 +404,7 @@ export async function processDocument(
         }
       } catch (indexErr) {
         logger.warn('Precedent indexing failed (non-fatal)', { sessionId, error: indexErr });
+        captureError(indexErr, { sessionId, phase: 'claw_precedent_indexing' });
       }
     }
 
