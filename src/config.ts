@@ -160,8 +160,11 @@ export const config = {
   defaultBudgetUsd: safeFloat(process.env.SHEM_DEFAULT_BUDGET, 5.0),
   routerBudgetUsd: 0.01,
   /** Platform-wide daily spend cap in USD. When reached, new sessions are rejected
-   *  (in-flight sessions finish normally). Resets at midnight UTC. Default: $50. */
-  dailySpendCapUsd: safeFloat(process.env.LAVERN_DAILY_SPEND_CAP_USD, 50.0),
+   *  (in-flight sessions finish normally). Resets at midnight UTC. Tracker is
+   *  real-time: recordSpend() is called on every session cost update, persisted
+   *  to SQLite, and hydrated on startup so the fuse survives restarts. Set to 0
+   *  to disable. Default: $500 — a realistic envelope for 1500+ test users. */
+  dailySpendCapUsd: safeFloat(process.env.LAVERN_DAILY_SPEND_CAP_USD, 500.0),
   /** Webhook URL to notify the owner when daily spend reaches 80% of cap. */
   ownerAlertWebhook: process.env.LAVERN_OWNER_WEBHOOK ?? '',
 

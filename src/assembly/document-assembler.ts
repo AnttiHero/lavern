@@ -370,9 +370,14 @@ export async function assembleDocument(
         const reason = validation.reason ?? 'unknown';
         rejectionReasons.push(`structural: ${reason}`);
 
-        const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
+        // NEVER log the rejected output contents — it often contains verbatim
+        // client document text (contracts, PII). Gate behind LAVERN_LOG_PREVIEWS=1
+        // for local debugging only; never in production.
         logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
-        logger.warn('Rejected output preview', { preview });
+        if (process.env.LAVERN_LOG_PREVIEWS === '1') {
+          const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
+          logger.warn('Rejected output preview (debug only)', { preview });
+        }
 
         // Early-exit: if the same structural reason has been hit repeatedly, the
         // LLM is generating stable-but-rejected output. More retries won't help;

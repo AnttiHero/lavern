@@ -16,7 +16,6 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
-import { recordSpend } from '../utils/spend-tracker.js';
 import type { SessionState } from '../session/session-state.js';
 
 const logger = createLogger('DB');
@@ -338,6 +337,16 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_bh_created ON billable_hours(created_at);
     CREATE INDEX IF NOT EXISTS idx_bh_reference ON billable_hours(reference_id);
     CREATE INDEX IF NOT EXISTS idx_billing_events_stripe ON billing_events(stripe_session_id);
+
+    -- v0.14.2: Global daily Anthropic spend counter (circuit breaker).
+    -- Aggregates spend across ALL users/sessions for a given UTC date,
+    -- incremented on every session.updateCost() call. When total exceeds
+    -- LAVERN_DAILY_ANTHROPIC_CAP_USD, new session creation is denied.
+    CREATE TABLE IF NOT EXISTS daily_spend (
+      date_utc   TEXT PRIMARY KEY,
+      total_usd  REAL NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   // v26 migration: Referral system columns
@@ -674,10 +683,9 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     const alreadyArchived = db.prepare(`SELECT 1 FROM session_archive WHERE id = ?`).get(session.id);
     if (alreadyArchived) return;
 
-    // Track platform-wide daily spend (for global spend cap)
-    if (session.accumulatedCost > 0) {
-      recordSpend(session.accumulatedCost);
-    }
+    // NOTE: Daily spend tracking happens in real time via session.updateCost()
+    // (which calls recordSpend() with each delta). Do NOT record again here —
+    // that would double-count and falsely trip the circuit breaker.
 
     // v25: Release hold before debiting actual cost (hold was placed at session start)
     releaseHold(session.id);
@@ -1043,6 +1051,49 @@ export function setUserPlan(userId: string, plan: string, expiresAt?: string): v
 export function getUserPlan(userId: string): { plan: string; plan_expires_at: string | null; stripe_customer_id: string | null } | undefined {
   return getDb().prepare(`SELECT plan, plan_expires_at, stripe_customer_id FROM users WHERE id = ?`)
     .get(userId) as { plan: string; plan_expires_at: string | null; stripe_customer_id: string | null } | undefined;
+}
+
+// ── Daily Anthropic spend counter (circuit breaker) ────────────────────
+//
+// Tracks global LLM spend across all users/sessions for a UTC date. Used by
+// the budget circuit breaker to refuse new session creation once a daily
+// cap is exceeded — the "don't let a bug burn the Anthropic account" fuse.
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+/** Atomically add to today's global spend counter and return the new total. */
+export function incrementDailySpend(amountUsd: number): number {
+  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+    return getDailySpend();
+  }
+  const d = getDb();
+  const date = todayUtc();
+  const now = new Date().toISOString();
+
+  // Upsert then read back — atomic within SQLite's serialized access.
+  const tx = d.transaction(() => {
+    d.prepare(`
+      INSERT INTO daily_spend (date_utc, total_usd, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(date_utc) DO UPDATE SET
+        total_usd = total_usd + excluded.total_usd,
+        updated_at = excluded.updated_at
+    `).run(date, amountUsd, now);
+    const row = d.prepare(`SELECT total_usd FROM daily_spend WHERE date_utc = ?`)
+      .get(date) as { total_usd: number } | undefined;
+    return row?.total_usd ?? 0;
+  });
+  return tx();
+}
+
+/** Read today's global spend total. Returns 0 if no row for today. */
+export function getDailySpend(): number {
+  const row = getDb()
+    .prepare(`SELECT total_usd FROM daily_spend WHERE date_utc = ?`)
+    .get(todayUtc()) as { total_usd: number } | undefined;
+  return row?.total_usd ?? 0;
 }
 
 /**

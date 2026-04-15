@@ -15,6 +15,7 @@
 
 import { config } from '../config.js';
 import { createLogger } from './logger.js';
+import { getDailySpend, incrementDailySpend } from '../db/database.js';
 
 const logger = createLogger('SPEND');
 
@@ -23,12 +24,35 @@ const logger = createLogger('SPEND');
 let currentDate = todayUtc();
 let dailyTotal = 0;
 let alertSent = false;
+let hydrated = false;
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
+/** Lazily hydrate the in-memory counter from SQLite on first use.
+ *  Survives server restarts — a fresh process picks up today's total from disk
+ *  so a bug that spent $400 before a crash doesn't get a fresh $500 budget. */
+function hydrateFromDb(): void {
+  if (hydrated) return;
+  hydrated = true;
+  try {
+    const persisted = getDailySpend();
+    if (persisted > 0) {
+      dailyTotal = persisted;
+      logger.info('Daily spend hydrated from DB', { date: currentDate, total: dailyTotal.toFixed(2) });
+      // If we're already past the alert threshold, don't re-fire on startup.
+      if (dailyTotal >= config.dailySpendCapUsd * 0.8) {
+        alertSent = true;
+      }
+    }
+  } catch (err) {
+    logger.warn('Daily spend hydrate failed', { error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 function resetIfNewDay(): void {
+  hydrateFromDb();
   const today = todayUtc();
   if (today !== currentDate) {
     logger.info('Daily spend reset', { previousDate: currentDate, previousTotal: dailyTotal.toFixed(2) });
@@ -46,7 +70,15 @@ function resetIfNewDay(): void {
  */
 export function recordSpend(costUsd: number): void {
   resetIfNewDay();
+  if (!Number.isFinite(costUsd) || costUsd <= 0) return;
   dailyTotal += costUsd;
+
+  // Persist to DB so the counter survives restarts. Must not block or throw.
+  try {
+    incrementDailySpend(costUsd);
+  } catch (err) {
+    logger.warn('Daily spend persist failed', { error: err instanceof Error ? err.message : String(err) });
+  }
 
   logger.info('Spend recorded', {
     cost: costUsd.toFixed(3),

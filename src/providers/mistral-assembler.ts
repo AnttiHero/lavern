@@ -209,9 +209,12 @@ export async function assembleMistralDocument(
         const reason = validation.reason ?? 'unknown';
         rejectionReasons.push(`structural: ${reason}`);
 
-        const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
+        // Don't log rejected output contents — see document-assembler.ts for rationale.
         logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
-        logger.warn('Rejected output preview', { preview });
+        if (process.env.LAVERN_LOG_PREVIEWS === '1') {
+          const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
+          logger.warn('Rejected output preview (debug only)', { preview });
+        }
 
         if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
           session.events.emitEvent({

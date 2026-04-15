@@ -15,6 +15,7 @@ import * as crypto from 'node:crypto';
 import { ShemEventBus } from '../events/event-bus.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { recordSpend } from '../utils/spend-tracker.js';
 import type { GateResolver } from '../gates/gate-resolver.js';
 
 const logger = createLogger('SESSION');
@@ -230,6 +231,7 @@ export class SessionState {
    * will only see non-zero values after the first query finishes.
    */
   updateCost(cost: number): void {
+    const delta = cost - this.accumulatedCost;
     this.accumulatedCost = cost;
     this.events.emitEvent({
       type: 'cost_update',
@@ -237,6 +239,18 @@ export class SessionState {
       budgetUsd: this.budgetUsd,
       timestamp: new Date().toISOString(),
     });
+    // Feed the global daily-spend tracker IN REAL TIME — the circuit
+    // breaker must fire even when a session loops without ever archiving.
+    // Non-blocking: any error here must not disrupt the running session.
+    if (delta > 0) {
+      try {
+        recordSpend(delta);
+      } catch (err) {
+        logger.warn('daily_spend_record_failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   }
 
   // ── Human Gate Enforcer State ──

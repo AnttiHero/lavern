@@ -21,6 +21,7 @@ import { HeartbeatBand } from './components/HeartbeatBand.js';
 import { ProgressSidebar } from './components/ProgressSidebar.js';
 import { InsightFeed } from './components/InsightFeed.js';
 import { SessionOverlay } from './components/SessionOverlay.js';
+import { StuckStateRescue } from './components/StuckStateRescue.js';
 import { GateDialog } from '../components/GateDialog.js';
 import { VerificationFeed } from '../verification/VerificationFeed.js';
 import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
@@ -138,6 +139,52 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
 
   const showSessionOverlay =
     !state.sessionId && state.connectionStatus === 'disconnected';
+
+  // ── Stuck-state rescue ────────────────────────────────────────────────
+  //
+  // If no new events have arrived in IDLE_THRESHOLD_MS AND the session is
+  // not already delivered / gated / expired, surface a rescue card with
+  // explicit "keep waiting" / "stop and try again" actions.
+  //
+  // This covers the three real stall modes we see in the wild:
+  //   1. Document assembly stalls (long single LLM call, no intermediate events)
+  //   2. Individual agent hangs (a tool call never returns)
+  //   3. Upstream Claude API slowdowns
+  const IDLE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  const [stuckDismissedAt, setStuckDismissedAt] = useState<string | null>(null);
+  const [stuckTick, setStuckTick] = useState(0);
+  // Re-evaluate staleness once per minute so the card surfaces even when no
+  // events arrive (the only event that would otherwise trigger re-render).
+  useEffect(() => {
+    const t = setInterval(() => setStuckTick(v => v + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const idleMinutes = useMemo(() => {
+    // Suppress until we have a live session
+    if (!state.sessionId) return 0;
+    // No rescue during gates (the user IS the blocker) or terminal states
+    if (state.pendingGate) return 0;
+    if (state.currentStep === 'delivered' || state.currentStep === 'complete') return 0;
+    if (state.sessionExpired || state.sessionFailed) return 0;
+    // No events yet — use session open time from the first connection signal.
+    // lastEventTimestamp is null until first event; treat as "not stuck yet".
+    if (!state.lastEventTimestamp) return 0;
+    const last = new Date(state.lastEventTimestamp).getTime();
+    if (!Number.isFinite(last)) return 0;
+    const idleMs = Date.now() - last;
+    if (idleMs < IDLE_THRESHOLD_MS) return 0;
+    // Respect user dismissal — don't re-surface until a NEW event arrives
+    // (which changes lastEventTimestamp past the dismissal timestamp).
+    if (stuckDismissedAt && state.lastEventTimestamp <= stuckDismissedAt) return 0;
+    return Math.floor(idleMs / 60_000);
+    // stuckTick forces re-evaluation on the interval above
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.sessionId, state.pendingGate, state.currentStep, state.sessionExpired,
+      state.sessionFailed, state.lastEventTimestamp, stuckDismissedAt, stuckTick]);
+  const showStuckRescue = idleMinutes > 0;
+  const handleStuckDismiss = useCallback(() => {
+    setStuckDismissedAt(state.lastEventTimestamp);
+  }, [state.lastEventTimestamp]);
 
   const [showPacMan, setShowPacMan] = useState(false);
   const { isMobile, isTablet } = useResponsive();
@@ -423,6 +470,15 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
             <div style={{ overflow: 'auto', flex: '0 0 auto', maxHeight: '50vh' }}>
               <VerificationFeed streamCards={state.streamCards} />
             </div>
+          )}
+
+          {showStuckRescue && (
+            <StuckStateRescue
+              idleMinutes={idleMinutes}
+              onDismiss={handleStuckDismiss}
+              onHalt={handleHalt}
+              halting={halting}
+            />
           )}
 
           <InsightFeed
