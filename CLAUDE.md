@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.14.1, a multi-agent legal design system that transforms
+You are part of Lavern v0.14.2, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -39,6 +39,7 @@ with qualified legal professionals.
 - `src/agents/` — 66 agent prompts (59 specialists + 7 orchestrators), 59 agent definitions
 - `src/agents/profiles.ts` — 63-agent profile registry (skill ratings, personality, DiceBear avatars)
 - `src/mcp/tools/` — 19 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs)
+- `src/mcp/remote-bridge/` — JSON-RPC 2.0 HTTP bridge exposing 12 Counsel tools for Anthropic Managed Agents; shared-secret auth, per-session dispatch, Zod arg validation (gated by `LAVERN_MANAGED_AGENTS_BRIDGE=1`)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
 - `src/orchestrator.ts` — Core orchestration loop (dispatch agents, manage turns)
@@ -185,7 +186,43 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 
 ## Version History
 
-### v0.14.1 (Current) — Voice Mode: Speak to the Firm
+### v0.14.2 (Current) — Remote MCP Bridge, Ops Observability, 1500-User Load Test Readiness
+
+**Remote MCP Bridge (Stages 1 + 2 dispatcher landed):**
+- New `src/mcp/remote-bridge/` module exposes 12 Counsel tools over JSON-RPC 2.0 so the Anthropic Managed Agents runtime can treat Lavern as a remote MCP server. Methods: `initialize`, `tools/list`, `tools/call`, `notifications/initialized`.
+- Session-scoped dispatcher (`dispatcher.ts`) reflects the in-process tool registry via the same 5 factories (`createWorkflowTools`, `createMemoryTools`, `createKnowledgeBaseTools`, `createHandoffTools`, `createFeedbackLoopTools`). No tool logic duplicated.
+- Zod `safeParse` on every call returns `invalid_args` cleanly instead of uncaught handler exceptions. Discriminated outcome (`ok | not_allowed | not_found | invalid_args | handler_error`) maps 1:1 to JSON-RPC error codes (-32001…-32004).
+- `tools/list` emits real JSON Schemas via `z.toJSONSchema()` so generic MCP clients can build request bodies without a hand-written schema lookup.
+- Auth: Bearer secret (timing-safe compare against `LAVERN_MANAGED_AGENTS_BRIDGE_SECRET`, ≥32 chars or bridge refuses to register) + `X-Lavern-Session-Id` header. Archived sessions (no live event bus) are rejected.
+- Defense in depth: allowlist enforced at both the JSON-RPC server layer AND the dispatcher — a bug in either alone cannot open the surface.
+- Gated behind `LAVERN_MANAGED_AGENTS_BRIDGE=1`; production default is off.
+- See `docs/managed-agents-migration.md` for staged rollout status. Stage 2 executor (the half that *calls* the bridge) is still pending on Managed Agents beta access.
+
+**Per-User Spend Observability:**
+- `getUserSpendBreakdown(sinceIso, untilIso, limit)` in `src/db/database.ts` — SQL aggregate over `session_archive LEFT JOIN users` with per-user total / avg / max / session count / last-session timestamp.
+- `GET /api/admin/user-spend` (X-Admin-Key gated) — default window: today 00:00 UTC → now (matches spend-tracker reset boundary). ISO validation + limit clamping [1, 500]. Anonymous sessions bucketed under `userId: null`.
+
+**1500-User Load Test Readiness:**
+- New env `LAVERN_LOAD_TEST_BYPASS_KEY` + `X-Load-Test-Bypass` header — timing-safe shared-secret bypass of both global (100/min/IP) and per-route auth rate limits (signup 3/min, login 5/min). Required to drive 1500+ simulated users from one host without throttle-sheds.
+- `scripts/load-test.ts` auto-scales batch sizes under bypass (auth 50/tick, sessions 25/tick; without: 10/5). Adds per-phase ETA, throughput, and RSS sampling. Warns if `--users ≥ 500` without bypass key.
+- Script header documents the three server env overrides needed for a 1500-user run: `LAVERN_LOAD_TEST_BYPASS_KEY`, `SHEM_MAX_SESSIONS=2000`, `SHEM_SESSION_TTL_MS=3600000`, plus `NODE_OPTIONS=--max-old-space-size=4096` for headroom.
+
+**Sentry Coverage Sweep on Silent-Failure Paths:**
+- `src/session/session-manager.ts` × 3 — session_end archive, destroy archive + releaseHold fallback, evict archive + releaseHold fallback. Archive failures mean data loss + frozen billable hours — now every one reaches Sentry with `sessionId` + `phase` tags.
+- `src/api/routes/billing.ts` — Stripe webhook signature verification catch. Persistent failures mean pack purchases + subscription upgrades silently stall.
+- `src/api/routes/engage.ts` × 3 — engage dispatch chain, failure-callback delivery, chain safety net. Keeps agent-mode integrations visible when they break.
+- `src/claw/delivery.ts` × 2 — DOCX + HTML conversion failures (delivery "succeeds" but bundle is incomplete).
+- `src/claw/processor.ts` × 2 — change detection + precedent indexing failures (persistent-state corruption).
+
+**Email Retry + Sentry:**
+- `src/email/send.ts` — transient Resend failures (408/429/500/502/503/504 or network) retry 3× with 500 ms / 1.5 s / 4.5 s backoff. Permanent failures reach Sentry with `to` + `subject` context.
+
+**Production Config Guards:**
+- `validateProductionConfig()` now treats `LAVERN_PROVIDER=mistral` without `MISTRAL_API_KEY` and `LAVERN_PROVIDER=managed` without `ANTHROPIC_API_KEY` as fatal. Localhost defaults for `STRIPE_CANCEL_URL` and `GOOGLE_OAUTH_REDIRECT_URI` warn loudly.
+
+**Test Coverage:** 1507 → 1556 tests (24 new across 3 files: `mcp-bridge.test.ts`, `mcp-bridge-dispatcher.test.ts`, `user-spend-breakdown.test.ts`). Clean `tsc --noEmit` on backend + `viz/`.
+
+### v0.14.1 — Voice Mode: Speak to the Firm
 
 **Voice Input — Three Phases:**
 - **Phase 1 — Intake (Briefing):** Mic toggle in `ConversationalChat` enables voice-driven interviews. `useVoiceInput` (Deepgram + Web Speech fallback) fills the input field on `finalTranscript`; auto-submits after 1.5s silence. Auto-restarts listening when interviewer finishes responding (stable primitive deps prevent per-chunk re-fires). Toggle in header; keyboard Send still works as fallback.

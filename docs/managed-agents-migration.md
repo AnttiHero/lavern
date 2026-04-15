@@ -1,7 +1,9 @@
 # Managed Agents Migration Plan
 
-**Status:** Stage 0 landed (provider scaffolding). Waiting on multi-agent preview
-access from Anthropic before Stages 1+ can cover anything beyond counsel.
+**Status:** Stage 0 landed (provider scaffolding). Stage 1 + Stage 2 dispatcher
+landed (MCP bridge serving the 12 Counsel tools live over JSON-RPC). Waiting
+on multi-agent preview access from Anthropic before Stage 2 executor can be
+wired end-to-end, and before Stage 7 (full workflow set) becomes reachable.
 
 **Scope:** Adopt Anthropic Managed Agents (beta: `managed-agents-2026-04-01`)
 as the execution substrate for all Lavern workflows currently backed by the
@@ -56,19 +58,47 @@ Three lanes after migration:
 - Zod schema accepts `'managed'` in `validation.ts`
 - Executor guard throws clear error if `provider === 'managed'`
 
-### Stage 1 — Remote MCP bridge
+### Stage 1 — Remote MCP bridge ✅ (landed)
 
 Expose in-process MCP tools (`src/mcp/tools/`) over HTTP so Managed-hosted
 agents can call them. Co-located with the API server; single-process deploy.
 
-- `src/mcp/remote-bridge/server.ts` — JSON-RPC over HTTP sub-router mounted on the API.
-- `src/mcp/remote-bridge/session-auth.ts` — shared-secret auth for Managed → bridge; session ID injected as tool arg.
-- `src/mcp/remote-bridge/tool-allowlist.ts` — per-agent allowlist (counsel = 12 tools; full set for multiagent).
-- `src/mcp/remote-bridge/index.ts` — wires into API, gated by `LAVERN_MANAGED_AGENTS_BRIDGE=1`.
+- `src/mcp/remote-bridge/server.ts` — JSON-RPC 2.0 over HTTP. Methods:
+  `initialize`, `tools/list`, `tools/call`, `notifications/initialized`.
+  Advertises protocol version `2025-06-18` (pinned by Managed Agents beta
+  header `managed-agents-2026-04-01`).
+- `src/mcp/remote-bridge/session-auth.ts` — Bearer secret (timing-safe
+  compare) + `X-Lavern-Session-Id` header. Secret env:
+  `LAVERN_MANAGED_AGENTS_BRIDGE_SECRET` (≥32 chars required or bridge
+  refuses to register). Rejects archived sessions (no live event bus).
+- `src/mcp/remote-bridge/tool-allowlist.ts` — 12 Counsel tools: workflow
+  state (5), memory read-only (3), knowledge base (3), `query_anti_patterns`.
+  Surface deliberately narrow until Stage 7 expands it.
+- `src/mcp/remote-bridge/dispatcher.ts` — session-scoped registry built
+  per-request from the same 5 factories that back the in-process MCP
+  server (`createWorkflowTools`, `createMemoryTools`,
+  `createKnowledgeBaseTools`, `createHandoffTools`, `createFeedbackLoopTools`).
+  Zod `safeParse` on every call; discriminated outcome
+  (`ok | not_allowed | not_found | invalid_args | handler_error`) maps
+  cleanly to JSON-RPC error codes (-32001…-32004).
+  `buildCounselToolsListing` emits real JSON Schemas via
+  `z.toJSONSchema(z.object(shape))` — Managed Agents runtime builds
+  request bodies without a hand-written schema lookup.
+- `src/mcp/remote-bridge/index.ts` — wires into Fastify, gated by
+  `LAVERN_MANAGED_AGENTS_BRIDGE=1` + valid secret.
 
-Critical: bridge re-uses the same MCP tool factories (`createWorkflowTools`, etc.) — no tool logic is re-implemented. Just a network shim.
+Critical: bridge re-uses the same MCP tool factories — no tool logic is
+re-implemented. Just a network shim + Zod gate + allowlist.
+
+**Coverage:** 19 unit tests (`tests/unit/mcp-bridge.test.ts`,
+`tests/unit/mcp-bridge-dispatcher.test.ts`) cover allowlist, auth,
+registry completeness, dispatch outcomes, and end-to-end live dispatch
+of `get_current_step` against a fake SessionState.
 
 ### Stage 2 — Counsel executor
+
+**Dispatcher half landed** (see Stage 1 — `dispatcher.ts` + tests).
+Remaining work — the executor that *calls* the bridge from our side:
 
 - Implement `runManagedAgentsWorkflow` end-to-end for counsel only.
 - Build system prompt identically to `src/workflows/executor.ts` (soul + personality + orchestrator), with `Task` stripped.
