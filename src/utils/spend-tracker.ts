@@ -23,8 +23,12 @@ const logger = createLogger('SPEND');
 
 let currentDate = todayUtc();
 let dailyTotal = 0;
-let alertSent = false;
 let hydrated = false;
+
+/** Trajectory alert thresholds as fractions of the daily cap. Fire once per day, once per threshold. */
+const ALERT_THRESHOLDS = [0.5, 0.75, 0.9] as const;
+type AlertThreshold = (typeof ALERT_THRESHOLDS)[number];
+const alertsFired = new Set<AlertThreshold>();
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -41,9 +45,10 @@ function hydrateFromDb(): void {
     if (persisted > 0) {
       dailyTotal = persisted;
       logger.info('Daily spend hydrated from DB', { date: currentDate, total: dailyTotal.toFixed(2) });
-      // If we're already past the alert threshold, don't re-fire on startup.
-      if (dailyTotal >= config.dailySpendCapUsd * 0.8) {
-        alertSent = true;
+      // Mark any thresholds already crossed as already-fired so we don't
+      // re-alert on restart for ground we've covered.
+      for (const t of ALERT_THRESHOLDS) {
+        if (dailyTotal >= config.dailySpendCapUsd * t) alertsFired.add(t);
       }
     }
   } catch (err) {
@@ -58,7 +63,7 @@ function resetIfNewDay(): void {
     logger.info('Daily spend reset', { previousDate: currentDate, previousTotal: dailyTotal.toFixed(2) });
     currentDate = today;
     dailyTotal = 0;
-    alertSent = false;
+    alertsFired.clear();
   }
 }
 
@@ -87,10 +92,14 @@ export function recordSpend(costUsd: number): void {
     pct: ((dailyTotal / config.dailySpendCapUsd) * 100).toFixed(0) + '%',
   });
 
-  // Owner alert at 80% threshold
-  if (!alertSent && dailyTotal >= config.dailySpendCapUsd * 0.8) {
-    alertSent = true;
-    fireOwnerAlert('daily_spend_warning', {
+  // Trajectory alerts: fire once per threshold per day (50%, 75%, 90%).
+  // Lets an operator see spend accelerating before it hits the cap.
+  for (const t of ALERT_THRESHOLDS) {
+    if (alertsFired.has(t)) continue;
+    if (dailyTotal < config.dailySpendCapUsd * t) continue;
+    alertsFired.add(t);
+    fireOwnerAlert('daily_spend_trajectory', {
+      threshold: Math.round(t * 100) + '%',
       dailyTotal: dailyTotal.toFixed(2),
       cap: config.dailySpendCapUsd,
       pct: ((dailyTotal / config.dailySpendCapUsd) * 100).toFixed(0) + '%',
@@ -145,14 +154,23 @@ export function getDailySpendStats(): {
   capUsd: number;
   pct: number;
   capReached: boolean;
+  thresholdsFired: string[];
+  nextThresholdPct: number | null;
+  remainingUsd: number;
 } {
   resetIfNewDay();
+  const pct = config.dailySpendCapUsd > 0 ? (dailyTotal / config.dailySpendCapUsd) * 100 : 0;
+  const fired = Array.from(alertsFired).map((t) => `${Math.round(t * 100)}%`).sort();
+  const nextThreshold = ALERT_THRESHOLDS.find((t) => !alertsFired.has(t)) ?? null;
   return {
     date: currentDate,
     totalUsd: dailyTotal,
     capUsd: config.dailySpendCapUsd,
-    pct: config.dailySpendCapUsd > 0 ? (dailyTotal / config.dailySpendCapUsd) * 100 : 0,
+    pct,
     capReached: dailyTotal >= config.dailySpendCapUsd,
+    thresholdsFired: fired,
+    nextThresholdPct: nextThreshold !== null ? Math.round(nextThreshold * 100) : null,
+    remainingUsd: Math.max(0, config.dailySpendCapUsd - dailyTotal),
   };
 }
 
@@ -184,5 +202,5 @@ async function fireOwnerAlert(event: string, data: Record<string, unknown>): Pro
 export function _resetForTesting(): void {
   currentDate = todayUtc();
   dailyTotal = 0;
-  alertSent = false;
+  alertsFired.clear();
 }

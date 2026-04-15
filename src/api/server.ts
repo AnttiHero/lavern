@@ -51,6 +51,7 @@ import { registerClawRoutes } from './routes/claw.js';
 import { registerChallengeRoutes } from './routes/challenge.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerWaitlistRoutes } from './routes/waitlist.js';
+import { registerAdminRoutes } from './routes/admin.js';
 import { registerReferralRoutes } from './routes/referral.js';
 import { registerTemplateRoutes } from './routes/templates.js';
 import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './middleware/auth.js';
@@ -238,6 +239,8 @@ export async function startApiServer(port: number): Promise<void> {
     'GET /api/waitlist/status',
     'POST /api/waitlist/invite',
     'GET /api/waitlist/list',
+    // Admin endpoints verify X-Admin-Key internally; bypass user auth.
+    'GET /api/admin/spend-status',
     // Frontend static files (prefix match — trailing /)
     '/dashboard/',
   ];
@@ -540,6 +543,8 @@ export async function startApiServer(port: number): Promise<void> {
   registerBillingRoutes(fastify);
   // v22: Waitlist — join, status, admin invite & listing
   registerWaitlistRoutes(fastify);
+  // Admin observability endpoints (X-Admin-Key gated)
+  registerAdminRoutes(fastify);
   registerReferralRoutes(fastify);
   registerTemplateRoutes(fastify);
 
