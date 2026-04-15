@@ -256,7 +256,7 @@ export function CardRevealOverlay({
                       borderRadius: radii.lg,
                       overflow: 'hidden',
                     }}>
-                      <AgentCard profile={profile} selected={false} />
+                      <AgentCard profile={profile} selected={false} hideSeniorityBadge />
                     </div>
 
                     {/* Face B — Stats */}

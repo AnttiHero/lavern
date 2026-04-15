@@ -72,7 +72,7 @@ export function LiveCardPreview({ profile, ovr, costTier }: Props) {
             ...faceBase,
             backfaceVisibility: 'hidden',
           }}>
-            <AgentCard profile={profile} selected={false} />
+            <AgentCard profile={profile} selected={false} hideSeniorityBadge />
 
             {/* OVR badge overlay */}
             <div style={{

@@ -18,6 +18,9 @@ import type { AgentProfile } from '../hooks/useAgentProfiles.js';
 interface Props {
   profile: AgentProfile;
   selected: boolean;
+  /** Hide the seniority badge in the top-right corner. Used by LiveCardPreview
+   *  where an OVR badge sits in that slot instead. */
+  hideSeniorityBadge?: boolean;
 }
 
 function avatarUrl(seed: string, extra?: string): string {
@@ -52,7 +55,7 @@ function Initials({ name }: { name: string }) {
   );
 }
 
-export function AgentCard({ profile, selected }: Props) {
+export function AgentCard({ profile, selected, hideSeniorityBadge }: Props) {
   const [imgError, setImgError] = useState(false);
   const catColor = categoryColor(profile.category);
 
@@ -77,7 +80,7 @@ export function AgentCard({ profile, selected }: Props) {
         marginBottom: 10,
       }}>
         <CostTierBadge tier={profile.costTier} />
-        <SeniorityBadge seniority={profile.seniority} />
+        {hideSeniorityBadge ? <span /> : <SeniorityBadge seniority={profile.seniority} />}
       </div>
 
       {/* Avatar */}
