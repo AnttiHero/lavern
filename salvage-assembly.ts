@@ -81,7 +81,7 @@ async function run() {
   console.log(`Context: ${assemblyContext.length} chars, ${findings.length} findings`);
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-6',
+    model: 'claude-opus-4-7',
     max_tokens: 16384,
     system: systemPrompt,
     messages: [{ role: 'user', content: assemblyContext }],

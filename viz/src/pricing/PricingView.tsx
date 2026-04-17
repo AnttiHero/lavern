@@ -644,7 +644,7 @@ export default function PricingView({ onBack }: Props) {
           <div style={sty.rateGrid}>
             <RateCard
               title="Partner"
-              model="Claude Opus 4.6"
+              model="Claude Opus 4.7"
               tier="Senior"
               hoursPerEngagement={'~3h'}
               costPerHour={'$0.30 per engagement'}
@@ -652,7 +652,7 @@ export default function PricingView({ onBack }: Props) {
             />
             <RateCard
               title="Associate"
-              model="Claude Sonnet 4.5"
+              model="Claude Sonnet 4.7"
               tier="Specialist"
               hoursPerEngagement={'~1h'}
               costPerHour={'$0.10 per engagement'}

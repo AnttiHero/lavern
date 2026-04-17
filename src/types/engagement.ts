@@ -117,7 +117,7 @@ export function defaultBudgetForIntensity(level: IntensityLevel): number {
  * quick → low    (fast, cheap, fewer tokens)
  * standard → medium (balanced)
  * thorough → high   (deep reasoning, default Claude behavior)
- * maximal → max    (white-shoe effort — no token limits, Opus 4.6 only)
+ * maximal → max    (white-shoe effort — no token limits, Opus 4.7 only)
  */
 export function effortForIntensity(level: IntensityLevel): EffortLevel {
   return INTENSITY_PROFILES[level].effort;

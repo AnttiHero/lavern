@@ -42,8 +42,8 @@ export const config = {
   provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'managed',
 
   // ── Models ─────────────────────────────────────────────────────────────
-  defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-6',
-  routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-5-20250929',
+  defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-7',
+  routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-7',
 
   // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────
   mistral: {
@@ -211,7 +211,7 @@ export const config = {
     localModel: process.env.LAVERN_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
     localAnalysisModel: process.env.LAVERN_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
     /** Model for Claw document processing (default: Sonnet for batch cost efficiency) */
-    model: process.env.LAVERN_CLAW_MODEL ?? 'claude-sonnet-4-5-20250929',
+    model: process.env.LAVERN_CLAW_MODEL ?? 'claude-sonnet-4-7',
     // Heartbeat — periodic check-in (v17)
     heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
     heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
@@ -245,7 +245,7 @@ export const config = {
   archiveRetentionDays: safeInt(process.env.SHEM_ARCHIVE_RETENTION_DAYS, 180),
 
   // ── Version ────────────────────────────────────────────────────────────
-  version: '0.14.2',
+  version: '0.14.3',
 } as const;
 
 // ── Production Startup Validation ──────────────────────────────────────

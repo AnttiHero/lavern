@@ -144,7 +144,7 @@ export async function analyzeBriefing(
 ): Promise<BriefingAnalyzeResponse> {
   const userPrompt = buildUserPrompt(req);
   const model = (config as Record<string, unknown>).briefingModel as string | undefined
-    ?? 'claude-haiku-3-5-20250929';
+    ?? 'claude-sonnet-4-7';
 
   const result = query({
     prompt: userPrompt,

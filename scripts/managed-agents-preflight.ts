@@ -53,7 +53,7 @@ async function createAgent(apiKey: string): Promise<string> {
     headers: headers(apiKey),
     body: JSON.stringify({
       name: 'lavern-preflight',
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-7',
       system_prompt: 'You are a test agent. Respond concisely.',
       tools: [],
     }),

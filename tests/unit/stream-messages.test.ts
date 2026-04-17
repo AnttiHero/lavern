@@ -9,10 +9,15 @@ import { describe, it, expect } from 'vitest';
 import { PRICING } from '../../src/utils/stream-messages.js';
 
 describe('PRICING table', () => {
-  it('has entries for all Claude models', () => {
+  it('has entries for all current Claude models (4.7 generation)', () => {
+    expect(PRICING['claude-opus-4-7']).toBeDefined();
+    expect(PRICING['claude-sonnet-4-7']).toBeDefined();
+    expect(PRICING['claude-haiku-3-5-20250929']).toBeDefined();
+  });
+
+  it('has legacy entries for in-flight sessions + archived cost records', () => {
     expect(PRICING['claude-opus-4-6']).toBeDefined();
     expect(PRICING['claude-sonnet-4-5-20250929']).toBeDefined();
-    expect(PRICING['claude-haiku-3-5-20250929']).toBeDefined();
   });
 
   it('has entries for Mistral models', () => {
@@ -31,14 +36,14 @@ describe('PRICING table', () => {
   });
 
   it('Opus is more expensive than Sonnet', () => {
-    const opus = PRICING['claude-opus-4-6'];
-    const sonnet = PRICING['claude-sonnet-4-5-20250929'];
+    const opus = PRICING['claude-opus-4-7'];
+    const sonnet = PRICING['claude-sonnet-4-7'];
     expect(opus.input).toBeGreaterThan(sonnet.input);
     expect(opus.output).toBeGreaterThan(sonnet.output);
   });
 
   it('Sonnet is more expensive than Haiku', () => {
-    const sonnet = PRICING['claude-sonnet-4-5-20250929'];
+    const sonnet = PRICING['claude-sonnet-4-7'];
     const haiku = PRICING['claude-haiku-3-5-20250929'];
     expect(sonnet.input).toBeGreaterThan(haiku.input);
     expect(sonnet.output).toBeGreaterThan(haiku.output);
@@ -53,8 +58,8 @@ describe('PRICING table', () => {
 
   it('all prices are per million tokens', () => {
     // Sanity check: Opus output should be $75/M tokens
-    expect(PRICING['claude-opus-4-6'].output).toBe(75.0);
+    expect(PRICING['claude-opus-4-7'].output).toBe(75.0);
     // Sonnet input should be $3/M tokens
-    expect(PRICING['claude-sonnet-4-5-20250929'].input).toBe(3.0);
+    expect(PRICING['claude-sonnet-4-7'].input).toBe(3.0);
   });
 });

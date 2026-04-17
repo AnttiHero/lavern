@@ -2,7 +2,7 @@
 
 ## System Identity
 
-You are part of Lavern v0.14.2, a multi-agent legal design system that transforms
+You are part of Lavern v0.14.3, a multi-agent legal design system that transforms
 legal documents through collaborative AI analysis and human-centered design.
 Lavern is the world's first driverless law firm.
 
@@ -186,7 +186,28 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 
 ## Version History
 
-### v0.14.2 (Current) — Remote MCP Bridge, Ops Observability, 1500-User Load Test Readiness
+### v0.14.3 (Current) — Claude 4.7 Generation Upgrade
+
+**Model bump to the 4.7 generation across the stack:**
+- Primary orchestration: `claude-opus-4-6` → `claude-opus-4-7`
+- Router + claw per-doc processing: `claude-sonnet-4-5-20250929` → `claude-sonnet-4-7`
+- Briefing analyzer: `claude-haiku-3-5-20250929` → `claude-sonnet-4-7` (quality upgrade — intake analysis shapes the entire engagement)
+
+**Quality upgrades on user-facing call sites** (Sonnet → Opus 4.7):
+- Quality gate (validates assembled documents before delivery)
+- Session derivatives (`POST /api/sessions/:id/derivatives`) — "Generate More" outputs
+- Session conversation (`POST /api/sessions/:id/conversation`) — "Ask the Team" replies
+- Challenge (`POST /api/challenge/compare`) — blind document comparison
+
+**Pricing table (`src/utils/stream-messages.ts`, `src/assembly/document-assembler.ts`):**
+- New keys added for `claude-opus-4-7` and `claude-sonnet-4-7` (same $/M rates as prior generation)
+- Legacy keys kept for in-flight sessions and archived cost records — no backfill needed
+
+**Test fixtures updated:** `stream-messages.test.ts`, `session-manager.test.ts`, `rate-limit.test.ts`, `api-routes.test.ts`, `api-validation.test.ts` all reference the new canonical IDs.
+
+**Touched:** 16 files across `src/`, `scripts/`, `viz/`, `tests/`, `.env.example`, `scripts/env.production.template`, `salvage-assembly.ts`.
+
+### v0.14.2 — Remote MCP Bridge, Ops Observability, 1500-User Load Test Readiness
 
 **Remote MCP Bridge (Stages 1 + 2 dispatcher landed):**
 - New `src/mcp/remote-bridge/` module exposes 12 Counsel tools over JSON-RPC 2.0 so the Anthropic Managed Agents runtime can treat Lavern as a remote MCP server. Methods: `initialize`, `tools/list`, `tools/call`, `notifications/initialized`.

@@ -47,7 +47,7 @@ describe('API Validation', () => {
           documentPath: '/path/to/doc.pdf',
           options: {
             budget: 10.0,
-            model: 'claude-opus-4-6',
+            model: 'claude-opus-4-7',
             maxTurns: 50,
           },
         });

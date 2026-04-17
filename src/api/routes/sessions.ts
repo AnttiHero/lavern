@@ -988,7 +988,7 @@ export function registerSessionRoutes(
       ensureApiKey();
       const client = new Anthropic();
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-opus-4-7',
         max_tokens: 8192,
         system: derivativeType.systemPrompt,
         messages: [{ role: 'user', content: context }],
@@ -1150,7 +1150,7 @@ ${buildFullContext(session as SessionState)}`;
       ensureApiKey();
       const client = new Anthropic();
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-opus-4-7',
         max_tokens: 4096,
         system: systemPrompt,
         messages: [{ role: 'user', content: prompt }],

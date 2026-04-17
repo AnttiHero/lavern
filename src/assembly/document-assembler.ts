@@ -52,15 +52,19 @@ const logger = createLogger('ASSEMBLY');
 
 // ── Token Pricing ────────────────────────────────────────────────────────
 const PRICING: Record<string, { input: number; output: number }> = {
+  'claude-opus-4-7': { input: 15.0, output: 75.0 },
+  'claude-sonnet-4-7': { input: 3.0, output: 15.0 },
+  'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
+  // Legacy keys (kept for in-flight sessions + archived cost records)
   'claude-opus-4-6': { input: 15.0, output: 75.0 },
   'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
-  'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
 };
 
 /**
- * Model used for the quality gate. Uses Sonnet for reliable semantic evaluation.
+ * Model used for the quality gate. Opus 4.7 — user-facing output quality
+ * matters more than the incremental cost of a single gate evaluation.
  */
-const QUALITY_GATE_MODEL = 'claude-sonnet-4-5-20250929';
+const QUALITY_GATE_MODEL = 'claude-opus-4-7';
 
 /** Maximum number of assembly attempts before giving up.
  *  5 attempts allows for both structural retries (escalating prompts) AND
@@ -189,7 +193,7 @@ FAIL: [one sentence explaining why this document is not good enough]`;
     responseText = responseText.trim();
 
     // Calculate cost
-    const pricing = PRICING[QUALITY_GATE_MODEL] ?? PRICING['claude-haiku-3-5-20250929'];
+    const pricing = PRICING[QUALITY_GATE_MODEL] ?? PRICING['claude-opus-4-7'];
     const inputTokens = response.usage?.input_tokens ?? 0;
     const outputTokens = response.usage?.output_tokens ?? 0;
     const gateCost = (inputTokens * pricing.input / 1_000_000) +
@@ -351,7 +355,7 @@ export async function assembleDocument(
       }
 
       // Calculate cost
-      const pricing = PRICING[model] ?? PRICING['claude-opus-4-6'];
+      const pricing = PRICING[model] ?? PRICING['claude-opus-4-7'];
       const inputTokens = response.usage?.input_tokens ?? 0;
       const outputTokens = response.usage?.output_tokens ?? 0;
       const attemptCost = (inputTokens * pricing.input / 1_000_000) +
