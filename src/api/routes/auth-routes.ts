@@ -103,7 +103,14 @@ const ChangePasswordSchema = z.object({
 const COOKIE_NAME = 'lavern_token';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
-const SECURE_FLAG = process.env.NODE_ENV === 'development' ? '' : '; Secure';
+// Secure flag must be omitted on plain HTTP (localhost dev). Check both
+// NODE_ENV and the base URL — NODE_ENV is often unset in local runs, and
+// the cookie is silently dropped by every browser if Secure is set over HTTP.
+const isLocalDev =
+  process.env.NODE_ENV === 'development' ||
+  config.baseUrl.startsWith('http://localhost') ||
+  config.baseUrl.startsWith('http://127.0.0.1');
+const SECURE_FLAG = isLocalDev ? '' : '; Secure';
 
 function setAuthCookie(reply: FastifyReply, token: string): void {
   const cookie = `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${SECURE_FLAG}`;

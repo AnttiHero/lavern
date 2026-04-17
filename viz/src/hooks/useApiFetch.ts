@@ -57,6 +57,15 @@ async function interceptResponse(res: Response, url: string): Promise<void> {
   if (!url.startsWith('/api/')) return;
 
   if (res.status === 401) {
+    // Skip ALL auth-related endpoints — a 401 here means "not logged in",
+    // not "session expired". AuthGate handles this silently.
+    if (url.startsWith('/api/auth/')) return;
+    // Only show "expired" if the user was actually logged in. If there's
+    // no evidence of a prior session, this is just an unauthenticated
+    // visit hitting a protected endpoint — not an expiration event.
+    const hadSession = document.cookie.includes('lavern_token') ||
+      sessionStorage.getItem('shem-session-id') !== null;
+    if (!hadSession) return;
     dispatchApiError('auth-expired', 'Your session has expired. Please sign in again.', 401);
     return;
   }
