@@ -22,7 +22,7 @@ const logger = createLogger('STREAM');
 export const PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic / Claude — current (4.7 generation)
   'claude-opus-4-7':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
-  'claude-sonnet-4-7':          { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
+  'claude-sonnet-4-5':          { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
   'claude-opus-4-6':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },

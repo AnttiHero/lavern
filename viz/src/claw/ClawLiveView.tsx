@@ -104,7 +104,7 @@ function buildScript(): Step[] {
   // Boot
   add(0,   set => set(() => ({ ...INIT })));
   add(500, set => set(s => log(s, { type: 'system', icon: '⬡', message: 'LAVERN · CLAW daemon initialised', detail: 'PID 58241 · watch path ~/Documents/Lavern · budget $5.00' })));
-  add(500, set => set(s => log(s, { type: 'system', icon: '◈', message: 'Anthropic API connected', detail: 'claude-sonnet-4-7 · latency 82ms' })));
+  add(500, set => set(s => log(s, { type: 'system', icon: '◈', message: 'Anthropic API connected', detail: 'claude-sonnet-4-5 · latency 82ms' })));
   add(400, set => set(s => log(s, { type: 'system', icon: '✓', message: 'Precedent board loaded', detail: '24 institutional patterns · last updated 2h ago' })));
 
   // Doc 1 — Venture NDA

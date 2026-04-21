@@ -30,7 +30,7 @@ export interface DispatchOptions extends SchemOptions {
   forceWorkflow?: string;
   /** Use LLM-based routing (default: true). Set to false for deterministic-only. */
   useLlmRouter?: boolean;
-  /** Model to use for LLM routing (default: claude-sonnet-4-7) */
+  /** Model to use for LLM routing (default: claude-sonnet-4-5) */
   routerModel?: string;
   /** v8: Skip pre-engagement workflow (for backward compat or when matter already exists) */
   skipPreEngagement?: boolean;

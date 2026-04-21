@@ -53,7 +53,7 @@ const logger = createLogger('ASSEMBLY');
 // ── Token Pricing ────────────────────────────────────────────────────────
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-opus-4-7': { input: 15.0, output: 75.0 },
-  'claude-sonnet-4-7': { input: 3.0, output: 15.0 },
+  'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
   'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
   'claude-opus-4-6': { input: 15.0, output: 75.0 },

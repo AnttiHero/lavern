@@ -43,7 +43,7 @@ export const config = {
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-7',
-  routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-7',
+  routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-5',
 
   // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────
   mistral: {
@@ -211,7 +211,7 @@ export const config = {
     localModel: process.env.LAVERN_LOCAL_MODEL ?? '',       // e.g., 'llama3.1:8b'
     localAnalysisModel: process.env.LAVERN_LOCAL_ANALYSIS_MODEL ?? '', // e.g., 'llama3.1:70b'
     /** Model for Claw document processing (default: Sonnet for batch cost efficiency) */
-    model: process.env.LAVERN_CLAW_MODEL ?? 'claude-sonnet-4-7',
+    model: process.env.LAVERN_CLAW_MODEL ?? 'claude-sonnet-4-5',
     // Heartbeat — periodic check-in (v17)
     heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
     heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),

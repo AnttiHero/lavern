@@ -186,12 +186,12 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 
 ## Version History
 
-### v0.14.3 (Current) — Claude 4.7 Generation Upgrade
+### v0.14.3 (Current) — Claude Opus 4.7 Upgrade + Quality Bumps
 
-**Model bump to the 4.7 generation across the stack:**
+**Opus bumped to the 4.7 generation** (Sonnet 4.7 is not yet released — Sonnet stays at 4.5):
 - Primary orchestration: `claude-opus-4-6` → `claude-opus-4-7`
-- Router + claw per-doc processing: `claude-sonnet-4-5-20250929` → `claude-sonnet-4-7`
-- Briefing analyzer: `claude-haiku-3-5-20250929` → `claude-sonnet-4-7` (quality upgrade — intake analysis shapes the entire engagement)
+- Router + claw per-doc processing: `claude-sonnet-4-5-20250929` → `claude-sonnet-4-5` (short-form alias of the same model)
+- Briefing analyzer: `claude-haiku-3-5-20250929` → `claude-sonnet-4-5` (quality upgrade — intake analysis shapes the entire engagement)
 
 **Quality upgrades on user-facing call sites** (Sonnet → Opus 4.7):
 - Quality gate (validates assembled documents before delivery)
@@ -200,12 +200,12 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - Challenge (`POST /api/challenge/compare`) — blind document comparison
 
 **Pricing table (`src/utils/stream-messages.ts`, `src/assembly/document-assembler.ts`):**
-- New keys added for `claude-opus-4-7` and `claude-sonnet-4-7` (same $/M rates as prior generation)
-- Legacy keys kept for in-flight sessions and archived cost records — no backfill needed
+- New keys added for `claude-opus-4-7` and `claude-sonnet-4-5` (same $/M rates as prior generation)
+- Legacy keys (`claude-opus-4-6`, `claude-sonnet-4-5-20250929`) kept for in-flight sessions and archived cost records
+
+**Postmortem note:** an earlier attempt shipped `claude-sonnet-4-7` across the stack, which Anthropic returns `not_found_error` for — that model does not exist. Verified with a live probe against Anthropic's API (`claude-opus-4-7` ✓, `claude-sonnet-4-7` ✗, `claude-sonnet-4-5` ✓) before re-shipping. Lesson: always probe new identifiers with a live API call before burning engineering time on rollout.
 
 **Test fixtures updated:** `stream-messages.test.ts`, `session-manager.test.ts`, `rate-limit.test.ts`, `api-routes.test.ts`, `api-validation.test.ts` all reference the new canonical IDs.
-
-**Touched:** 16 files across `src/`, `scripts/`, `viz/`, `tests/`, `.env.example`, `scripts/env.production.template`, `salvage-assembly.ts`.
 
 ### v0.14.2 — Remote MCP Bridge, Ops Observability, 1500-User Load Test Readiness
 
