@@ -47,7 +47,7 @@ export function FlippableCard({ profile, selected, onToggle, onFlipSound, onSele
     <motion.div
       style={{
         width: 220,
-        height: 380,
+        height: 460,
         perspective: 1000,
         cursor: 'pointer',
       }}

@@ -35,21 +35,24 @@ export function AgentCardBack({ profile }: Props) {
         letterSpacing: 1,
         textAlign: 'center',
         textTransform: 'uppercase',
+        flexShrink: 0,
       }}>
         Personality
       </div>
 
       {/* Personality bars */}
-      {Object.keys(traits).length > 0 ? (
-        <PersonalityBars traits={traits} />
-      ) : (
-        <div style={{ fontSize: 11, color: colors.textDim, textAlign: 'center' }}>
-          No trait data
-        </div>
-      )}
+      <div style={{ flexShrink: 0 }}>
+        {Object.keys(traits).length > 0 ? (
+          <PersonalityBars traits={traits} />
+        ) : (
+          <div style={{ fontSize: 11, color: colors.textDim, textAlign: 'center' }}>
+            No trait data
+          </div>
+        )}
+      </div>
 
       {/* Practice Areas */}
-      <div>
+      <div style={{ flexShrink: 0 }}>
         <div style={{
           fontSize: 10,
           fontFamily: fonts.sans,
@@ -78,7 +81,7 @@ export function AgentCardBack({ profile }: Props) {
       </div>
 
       {/* Strengths */}
-      <div style={{ overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0 }}>
         <div style={{
           fontSize: 10,
           fontFamily: fonts.sans,
@@ -93,10 +96,12 @@ export function AgentCardBack({ profile }: Props) {
             fontSize: 10,
             fontFamily: fonts.sans,
             color: colors.textSecondary,
-            lineHeight: '14px',
+            lineHeight: 1.35,
+            marginBottom: 2,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}>
             {'\u2713'} {s}
           </div>
@@ -104,7 +109,7 @@ export function AgentCardBack({ profile }: Props) {
       </div>
 
       {/* Limitations */}
-      <div style={{ overflow: 'hidden' }}>
+      <div style={{ flexShrink: 0 }}>
         <div style={{
           fontSize: 10,
           fontFamily: fonts.sans,
@@ -119,84 +124,32 @@ export function AgentCardBack({ profile }: Props) {
             fontSize: 10,
             fontFamily: fonts.sans,
             color: colors.textMuted,
-            lineHeight: '14px',
+            lineHeight: 1.35,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}>
             {'\u26A0'} {l}
           </div>
         ))}
       </div>
 
-      {/* Critical Rules */}
-      {profile.criticalRules && profile.criticalRules.length > 0 && (
-        <div style={{ overflow: 'hidden' }}>
-          <div style={{
-            fontSize: 10,
-            fontFamily: fonts.sans,
-            fontWeight: 500,
-            color: colors.danger,
-            marginBottom: 3,
-          }}>
-            Critical Rules
-          </div>
-          {profile.criticalRules.slice(0, 2).map(r => (
-            <div key={r} style={{
-              fontSize: 9,
-              fontFamily: fonts.sans,
-              color: colors.textMuted,
-              lineHeight: '13px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {'\u26D4'} {r}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Success Metrics */}
-      {profile.successMetrics && profile.successMetrics.length > 0 && (
-        <div style={{ overflow: 'hidden' }}>
-          <div style={{
-            fontSize: 10,
-            fontFamily: fonts.sans,
-            fontWeight: 500,
-            color: colors.success,
-            marginBottom: 3,
-          }}>
-            Success Metrics
-          </div>
-          {profile.successMetrics.slice(0, 2).map(m => (
-            <div key={m} style={{
-              fontSize: 9,
-              fontFamily: fonts.sans,
-              color: colors.textMuted,
-              lineHeight: '13px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {'\u2713'} {m}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Work style (truncated) */}
+      {/* Work style (quote, bottom-anchored) */}
       <div style={{
         fontSize: 10,
         fontFamily: fonts.sans,
         fontStyle: 'italic',
         color: colors.textDim,
-        lineHeight: '14px',
+        lineHeight: 1.4,
         marginTop: 'auto',
-        overflow: 'hidden',
+        paddingTop: 8,
+        borderTop: `1px solid ${colors.border}`,
         display: '-webkit-box',
-        WebkitLineClamp: 2,
+        WebkitLineClamp: 3,
         WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        flexShrink: 0,
       }}>
         &ldquo;{profile.personality.workStyle}&rdquo;
       </div>

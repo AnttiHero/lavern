@@ -124,13 +124,14 @@ export function AgentCard({ profile, selected, hideSeniorityBadge }: Props) {
         display: '-webkit-box',
         WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
+        flexShrink: 0,
       }}>
         {profile.displayName}
       </div>
 
       {/* Tagline */}
       <div style={{
-        fontSize: 9.5,
+        fontSize: 10,
         fontFamily: fonts.sans,
         color: colors.textMuted,
         textAlign: 'center',
@@ -141,6 +142,7 @@ export function AgentCard({ profile, selected, hideSeniorityBadge }: Props) {
         WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
+        flexShrink: 0,
       }}>
         {profile.tagline}
       </div>
