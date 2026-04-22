@@ -295,7 +295,7 @@ export function CardRevealOverlay({
                               <div style={{
                                 height: '100%', borderRadius: 2,
                                 background: `linear-gradient(90deg, ${s.c}, ${s.c}80)`,
-                                width: cardStatsVisible ? `${s.v}%` : '0%',
+                                width: cardStatsVisible ? `${s.v * 10}%` : '0%',
                                 transition: 'width 0.65s ease 0.22s',
                               }} />
                             </div>
