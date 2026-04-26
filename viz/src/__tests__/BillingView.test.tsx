@@ -15,7 +15,7 @@ describe('BillingView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('MARBLE')).toBeInTheDocument();
+      expect(screen.getByText('LAVERN')).toBeInTheDocument();
     });
 
     expect(screen.getByText('INVOICE')).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('BillingView', () => {
 
     // Should still render (buildBillingData uses fallbacks)
     await waitFor(() => {
-      expect(screen.getByText('MARBLE')).toBeInTheDocument();
+      expect(screen.getByText('LAVERN')).toBeInTheDocument();
     });
   });
 

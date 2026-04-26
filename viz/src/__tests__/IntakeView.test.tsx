@@ -24,7 +24,7 @@ describe('IntakeView', () => {
       <IntakeView onComplete={noop} onSkip={noop} onBack={noop} />
     );
 
-    expect(screen.getByText('MARBLE')).toBeInTheDocument();
+    expect(screen.getByText('LAVERN')).toBeInTheDocument();
   });
 
   it('shows description for both modes', () => {

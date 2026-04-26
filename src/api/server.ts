@@ -38,6 +38,7 @@ import { registerMatterRoutes } from './routes/matters.js';
 import { registerAgentRoutes } from './routes/agents.js';
 import { registerWorkflowRoutes } from './routes/workflows.js';
 import { registerBriefingRoutes } from './routes/briefing.js';
+import { registerAgentBuilderRoutes } from './routes/agent-builder.js';
 import { registerPartnerRoutes } from './routes/partner.js';
 import { registerVoiceRoutes } from './routes/voice.js';
 import { registerEngageRoutes } from './routes/engage.js';
@@ -551,6 +552,7 @@ export async function startApiServer(port: number): Promise<void> {
   registerWorkflowRoutes(fastify);
   // v10: LLM-powered briefing analysis
   registerBriefingRoutes(fastify);
+  registerAgentBuilderRoutes(fastify);
   // v11: Partner consultation (conversational intake)
   registerPartnerRoutes(fastify);
   registerVoiceRoutes(fastify);
@@ -698,8 +700,8 @@ export async function startApiServer(port: number): Promise<void> {
     const dashboardAvailable = fs.existsSync(frontendDir);
     console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║                     THE SHEM API SERVER                      ║
-║              "We know what's written in the Golem's mouth"   ║
+║                       LAVERN API SERVER                      ║
+║                The agentic legal architecture                ║
 ╚══════════════════════════════════════════════════════════════╝
 
   HTTP:      http://localhost:${port}

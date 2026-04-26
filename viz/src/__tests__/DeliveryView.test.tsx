@@ -19,7 +19,7 @@ describe('DeliveryView', () => {
     );
 
     // Header should show
-    expect(screen.getByText('MARBLE')).toBeInTheDocument();
+    expect(screen.getByText('LAVERN')).toBeInTheDocument();
     expect(screen.getByText(/Delivery/)).toBeInTheDocument();
 
     // Demo data should load (useDeliveryData returns demo data for demo-session-*)

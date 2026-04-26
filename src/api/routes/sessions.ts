@@ -66,6 +66,31 @@ function safeJsonParse<T>(json: string | null | undefined, fallback: T): T {
   try { return JSON.parse(json) as T; } catch { return fallback; }
 }
 
+/**
+ * Build a Lavern-branded download filename from a session ID.
+ *
+ * The internal session ID format `shem-<timestamp>-<hex>` was leaking into
+ * downloaded deliverable filenames (e.g. `shem-1777230605-7bf...-workproduct.docx`).
+ * That's an internal codename — no client should ever see it. This produces
+ * names like `Lavern-WorkProduct-2026-04-26-7bf52068.docx`.
+ *
+ * @param sessionId  The full internal session ID (e.g. `shem-1777230605765-7bf...`)
+ * @param suffix     File suffix, with extension. e.g. `docx` or `summary.md`
+ */
+function lavernFilename(sessionId: string, suffix: string): string {
+  // Pull the last 8 hex chars of the id for uniqueness; fall back to full id
+  const hexMatch = sessionId.match(/[a-f0-9]{8,}$/i);
+  const shortId = hexMatch ? hexMatch[0].slice(-8) : sessionId.replace(/^shem-/i, '').slice(0, 8);
+  const today = new Date().toISOString().slice(0, 10);
+  // Suffix may be a bare extension ("docx") or a dotted name ("summary.md")
+  const tail = suffix.includes('.') ? suffix : suffix.toLowerCase();
+  // Title-case the leading "WorkProduct" tag for bare-extension calls
+  const isBareExt = !suffix.includes('.');
+  const tag = isBareExt ? 'WorkProduct' : '';
+  const parts = ['Lavern', tag, today, shortId].filter(Boolean);
+  return `${parts.join('-')}.${tail}`.replace('..', '.');
+}
+
 /** Check if the requesting user owns the session (or session has no owner). */
 function checkSessionOwnership(
   request: unknown,
@@ -751,7 +776,7 @@ export function registerSessionRoutes(
     }
 
     if (format === 'md') {
-      const filename = `${id}-workproduct.md`;
+      const filename = `${lavernFilename(id, 'md')}`;
       return reply
         .header('Content-Type', 'text/markdown; charset=utf-8')
         .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -761,7 +786,7 @@ export function registerSessionRoutes(
     if (format === 'docx') {
       try {
         const docxBuffer = await convertToDocx(deliverable, title, style, soulBranding);
-        const filename = `${id}-workproduct.docx`;
+        const filename = `${lavernFilename(id, 'docx')}`;
         return reply
           .header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
           .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -776,14 +801,14 @@ export function registerSessionRoutes(
       try {
         const { buffer, isRealPdf } = await convertToPdf(deliverable, title, style, soulBranding);
         if (isRealPdf) {
-          const filename = `${id}-workproduct.pdf`;
+          const filename = `${lavernFilename(id, 'pdf')}`;
           return reply
             .header('Content-Type', 'application/pdf')
             .header('Content-Disposition', `attachment; filename="${filename}"`)
             .send(buffer);
         } else {
           // Puppeteer unavailable — serve styled HTML as fallback
-          const filename = `${id}-workproduct.html`;
+          const filename = `${lavernFilename(id, 'html')}`;
           return reply
             .header('Content-Type', 'text/html; charset=utf-8')
             .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -820,7 +845,7 @@ export function registerSessionRoutes(
           budget: session.budgetUsd,
         },
       };
-      const filename = `${id}-data.json`;
+      const filename = `${lavernFilename(id, 'data.json')}`;
       return reply
         .header('Content-Type', 'application/json; charset=utf-8')
         .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -890,7 +915,7 @@ export function registerSessionRoutes(
 
       lines.push('---', '', '*This summary was generated from AI-assisted analysis. For matters involving regulatory filings, litigation, or binding contractual obligations, independent counsel verification is recommended.*', '');
 
-      const filename = `${id}-summary.md`;
+      const filename = `${lavernFilename(id, 'summary.md')}`;
       return reply
         .header('Content-Type', 'text/markdown; charset=utf-8')
         .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -900,7 +925,7 @@ export function registerSessionRoutes(
     // v15: Raw format — the original process log (for debugging/audit)
     if (format === 'raw') {
       const content = session.finalOutput || '# No process output\n\nNo orchestrator output was captured.';
-      const filename = `${id}-processlog.md`;
+      const filename = `${lavernFilename(id, 'processlog.md')}`;
       return reply
         .header('Content-Type', 'text/markdown; charset=utf-8')
         .header('Content-Disposition', `attachment; filename="${filename}"`)
@@ -1045,7 +1070,7 @@ export function registerSessionRoutes(
         const docxBuffer = await convertToDocx(generatedContent, derivativeType.title, style, derivBranding);
         const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
         reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.docx"`);
+        reply.header('Content-Disposition', `attachment; filename="${lavernFilename(id, `${safeTitle}.docx`)}"`);
         return reply.send(Buffer.from(docxBuffer));
       }
 
@@ -1053,7 +1078,7 @@ export function registerSessionRoutes(
         const html = convertToHtml(generatedContent, derivativeType.title, style, derivBranding);
         const safeTitle = derivativeType.title.replace(/[^a-zA-Z0-9-_]/g, '-');
         reply.header('Content-Type', 'text/html; charset=utf-8');
-        reply.header('Content-Disposition', `attachment; filename="${id}-${safeTitle}.html"`);
+        reply.header('Content-Disposition', `attachment; filename="${lavernFilename(id, `${safeTitle}.html`)}"`);
         return reply.send(html);
       }
 

@@ -969,7 +969,7 @@ export async function convertToDocx(markdown: string, title: string, style?: Doc
                 new TextRun({
                   text: (branding?.firmName
                     ? (profile.id === 'traditional' ? branding.firmName.toUpperCase() : branding.firmName)
-                    : 'MARBLE'),
+                    : 'LAVERN'),
                   font: profile.bodyFont,
                   size: profile.tinySize,
                   color: profile.inkDim,

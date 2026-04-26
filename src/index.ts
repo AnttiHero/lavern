@@ -303,11 +303,11 @@ async function main(): Promise<void> {
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     console.log(`
 \u2554${'═'.repeat(62)}\u2557
-\u2551                        THE SHEM v6                           \u2551
-\u2551              "We know what's written in the Golem's mouth"   \u2551
+\u2551                          LAVERN v0.14.5                      \u2551
 \u2551                                                              \u2551
 \u2551         The world's first driverless law firm.               \u2551
 \u2551         Multi-agent legal design system.                     \u2551
+\u2551                                                              \u2551
 \u255a${'═'.repeat(62)}\u255d
 
 Usage:
