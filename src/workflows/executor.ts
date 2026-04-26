@@ -173,6 +173,71 @@ export async function runGenericWorkflow(
     }
   }
 
+  // v0.14.5: Inject document context into every subagent's system prompt.
+  // When the orchestrator dispatches a Task to a specialist, the SDK uses the
+  // agent definition's static `prompt`. Without this injection, specialists
+  // had no access to uploaded documents (their tools were unreliable, and the
+  // doc text never reached their context). Specialists then either refused
+  // to analyse or produced doc-blind commentary.
+  //
+  // We clone each agent definition and append a UPLOADED DOCUMENTS block
+  // identical to the orchestrator's, plus the same "quote clauses verbatim"
+  // instruction. This is per-session (mutates filteredAgents only).
+  if (session.documents.length > 0) {
+    const PER_DOC_BUDGET = 60_000;        // tighter than orchestrator (subagents are focused)
+    const TOTAL_BUDGET   = 150_000;
+    const docBlockParts: string[] = [];
+    let remaining = TOTAL_BUDGET;
+    docBlockParts.push('\n══════════════════════════════════════════════════════════════');
+    docBlockParts.push('UPLOADED DOCUMENTS — full text included for direct reading');
+    docBlockParts.push('══════════════════════════════════════════════════════════════');
+    docBlockParts.push(`${session.documents.length} document(s) available. Read them directly. Quote clause numbers and verbatim text in your findings.\n`);
+    for (let i = 0; i < session.documents.length; i++) {
+      const doc = session.documents[i];
+      const docBudget = Math.min(PER_DOC_BUDGET, remaining);
+      if (docBudget <= 0) {
+        docBlockParts.push(`### Document ${i + 1}: ${doc.name} — [skipped: budget exceeded; use \`read_document_section\` tool]\n`);
+        continue;
+      }
+      const headings = doc.sections.slice(0, 8).map(s => s.heading).join(', ');
+      docBlockParts.push(`### Document ${i + 1}: ${doc.name}`);
+      docBlockParts.push(`   ${doc.pageCount} pages · ${doc.wordCount.toLocaleString()} words${headings ? ` · sections: ${headings}` : ''}`);
+      const text = doc.fullText ?? '';
+      if (text.length <= docBudget) {
+        docBlockParts.push('--- BEGIN ' + doc.name + ' ---');
+        docBlockParts.push(text);
+        docBlockParts.push('--- END ' + doc.name + ' ---\n');
+        remaining -= text.length;
+      } else {
+        const head = text.slice(0, Math.floor(docBudget * 0.65));
+        const tail = text.slice(-Math.floor(docBudget * 0.30));
+        docBlockParts.push('--- BEGIN ' + doc.name + ' (truncated — middle elided) ---');
+        docBlockParts.push(head);
+        docBlockParts.push('\n[…middle truncated to fit context budget…]\n');
+        docBlockParts.push(tail);
+        docBlockParts.push('--- END ' + doc.name + ' ---\n');
+        remaining -= (head.length + tail.length);
+      }
+    }
+    docBlockParts.push('══════════════════════════════════════════════════════════════');
+    docBlockParts.push('END OF UPLOADED DOCUMENTS');
+    docBlockParts.push('══════════════════════════════════════════════════════════════\n');
+    docBlockParts.push('When you produce findings, advice, or analysis: cite the clause number AND quote the relevant text from the documents above. Do not paraphrase from memory of "standard contract language" — read the actual clauses.\n');
+    const docBlock = docBlockParts.join('\n');
+
+    for (const [role, def] of Object.entries(filteredAgents)) {
+      filteredAgents[role] = {
+        ...def,
+        prompt: (def.prompt ?? '') + docBlock,
+      };
+    }
+    logger.info('Injected document context into subagent prompts', {
+      docCount: session.documents.length,
+      docBlockChars: docBlock.length,
+      agentCount: Object.keys(filteredAgents).length,
+    });
+  }
+
   // v17: Soul injection — user-defined firm personality
   // Priority: session soul (from user profile) > SOUL.md file > empty
   const soulText = session.soul

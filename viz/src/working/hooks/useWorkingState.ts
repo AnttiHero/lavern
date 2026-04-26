@@ -306,7 +306,12 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   useEffect(() => {
     if (!sessionId || sessionId.startsWith('demo-session-') || completionFiredRef.current) return;
 
-    const MAX_ASSEMBLY_WAIT_MS = 30_000; // 30s fallback (assembly usually takes <15s)
+    // v0.14.5: was 30s — way too aggressive. LLM assembly on long contexts
+    // can legitimately take 60–180s. With Counsel's deterministic fast-path
+    // it's near-instant, but Review / Full-Bench still go through the LLM.
+    // Set to 5 min: at that point we transition with whatever the backend has,
+    // since the assembler has a 90s timeout + 1 retry = max ~3 min anyway.
+    const MAX_ASSEMBLY_WAIT_MS = 300_000;
 
     const poll = setInterval(async () => {
       if (completionFiredRef.current) { clearInterval(poll); return; }
