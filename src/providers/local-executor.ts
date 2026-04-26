@@ -67,7 +67,7 @@ export async function runLocalWorkflow(
     logLevel = config.logLevel,
   } = options;
 
-  const model = config.mistral.defaultModel;
+  const model = config.local.defaultModel;
 
   session.budgetUsd = maxBudgetUsd;
   session.workflowTemplateId = template.id;
@@ -90,7 +90,7 @@ export async function runLocalWorkflow(
     workflow: `${template.id} (${template.name})`,
     requestType: classification.requestType,
     budget: maxBudgetUsd.toFixed(2),
-    model: config.mistral.defaultModel,
+    model: config.local.defaultModel,
     specialists: classification.selectedSpecialists.join(', '),
   });
 
