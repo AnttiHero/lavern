@@ -95,10 +95,35 @@ export function extractCounselDocument(finalOutput: string): string {
     /^Coherence audit tool returned.*$/im,
     /^Human gate approved.*$/im,
     /^Closing out the workflow.*$/im,
+    // v0.14.7 — patterns surfaced by Gemini/Claude blind eval (Apr 2026)
+    /^Acknowledged\.?\s*Budget:.*$/im,
+    /^The (?:Counsel|Review|Full-Force|Full-Bench) workflow is complete\.?.*$/im,
+    /^Final spend:\s*\$.*budget.*$/im,
+    /^Final spend:\s*\$.*remaining.*$/im,
+    /^Pipeline (?:summary|integrity):.*$/im,
+    /^Evaluator gate (?:passed|failed)(?:\s+at\s+[\d.]+)?\s*(?:on first attempt)?.*$/im,
+    /^Self-verification V?-?\d+\s+(?:PASSED|FAILED).*$/im,
+    /^Decomposition Rationale:.*$/im,
+    /^Verification Report:.*$/im,
+    /^Workflow Status:.*$/im,
+    /^Budget:\s*\$\d/im,
+    /^Three resolutions flagged for human escalation.*$/im,
+    /^All \d+ workflow steps completed.*$/im,
+    /^\d+\/\d+ workflow steps completed.*$/im,
+    /^Confidence:\s*\d+%\.?\s*$/im,
   ];
   for (const re of NOISE_LINE_PATTERNS) {
     cleaned = cleaned.replace(re, '');
   }
+
+  // v0.14.7 — strip multi-line "Verification Report" / "Pipeline" blocks
+  // (these have a header line then 3-7 indented bullet lines underneath).
+  // A line that looks like a transcript header followed by bulleted internal
+  // metrics (PASSED/FAILED/SCORE/criteria) gets the whole block removed.
+  cleaned = cleaned.replace(
+    /^(?:Verification Report|Pipeline (?:summary|integrity)|Workflow Status|Decomposition Rationale)[^\n]{0,200}\n(?:[\s\-•*]*(?:Self-verification|Evaluator gate|All \d+|Three resolutions|Human gate|\d+\/\d+|PASSED|FAILED|criteria|workflow steps)[^\n]{0,300}\n?){1,8}/gim,
+    '',
+  );
 
   // Step 1: Find the substantive deliverable start. Prefer strong markers
   // (MEMORANDUM, BOARD BRIEFING, EXECUTIVE SUMMARY) over the first `# `
@@ -142,17 +167,40 @@ export function extractCounselDocument(finalOutput: string): string {
   // Step 1.7: Hard-stop at terminal narration markers. These appear AFTER the
   // deliverable when the orchestrator narrates wrap-up.
   const HARD_STOP_MARKERS = [
-    /\n[\s>]*Now (?:dispatching|advancing|requesting|running|retrieving)/i,
+    // v0.14.7 — orchestrator's own end-of-deliverable marker. Must be the
+    // bold form that the orchestrator actually emits — bare phrase matches
+    // would catch legitimate prose like "at the end of advice that comes…"
+    /\*\*End of Advice\*\*/,                 // exact bold marker (case-sensitive)
+    /\*\*\s*End of Memo\s*\*\*/i,            // alternate emitted variant
+    /^End of Advice\s*$/m,                   // standalone line form
+    /\nNow (?:dispatching|advancing|requesting|running|retrieving)/i,
     /\nWorkflow complete\./i,
     /\nFinal summary for the user/i,
     /\nPIPELINE INTEGRITY/i,
     /\nWorkflow Complete\b/i,
+    /\nAcknowledged\.?\s*Budget:/i,
+    /\nFinal spend:\s*\$/i,
+    /\nThe (?:Counsel|Review|Full-Force|Full-Bench) workflow is complete\b/i,
+    /\nPipeline (?:summary|integrity):/i,
+    /\nVerification Report:/i,
+    /\nDecomposition Rationale:/i,
+    /\nWorkflow Status:/i,
+    /\nSelf-verification V?-?\d+/i,
   ];
+  let explicitEndHit = false;
   for (const re of HARD_STOP_MARKERS) {
     const m = extracted.match(re);
-    if (m && m.index !== undefined && m.index > MIN_EXTRACTED_CHARS) {
-      extracted = extracted.substring(0, m.index);
-      break;
+    if (m && m.index !== undefined) {
+      // "End of Advice" / "**End of Advice**" is the orchestrator's own
+      // explicit terminator — trim there unconditionally, even if the
+      // upstream content is shorter than MIN_EXTRACTED_CHARS. A thin but
+      // clean conclusion beats a transcript dump.
+      const isExplicitEnd = /End of (?:Advice|Memo)/i.test(re.source);
+      if (isExplicitEnd || m.index > MIN_EXTRACTED_CHARS) {
+        extracted = extracted.substring(0, m.index);
+        if (isExplicitEnd) explicitEndHit = true;
+        break;
+      }
     }
   }
 
@@ -162,8 +210,14 @@ export function extractCounselDocument(finalOutput: string): string {
   extracted = stripTrailingEpilogue(extracted);
 
   // Step 3: Sanity checks — must be substantial and look like a document.
-  if (extracted.length < MIN_EXTRACTED_CHARS) return '';
-  if (!looksLikeDocument(extracted)) return '';
+  // EXCEPTION: when the orchestrator emitted an explicit "End of Advice"
+  // terminator, we trust that what's before it is the deliverable — even
+  // if thinner than usual. The downstream LLM cleanup pass will further
+  // refine if needed.
+  const RELAXED_MIN = 500;
+  const minRequired = explicitEndHit ? RELAXED_MIN : MIN_EXTRACTED_CHARS;
+  if (extracted.length < minRequired) return '';
+  if (!explicitEndHit && !looksLikeDocument(extracted)) return '';
 
   return extracted.trim();
 }
