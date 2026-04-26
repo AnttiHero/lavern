@@ -57,6 +57,18 @@ export function extractCounselDocument(finalOutput: string): string {
   const headingIndex = finalOutput.indexOf(firstHeadingMatch[0]);
   let extracted = finalOutput.substring(headingIndex);
 
+  // Step 1.5: Decode any literal escape sequences the orchestrator may have
+  // emitted (Opus sometimes writes "\\n\\n" instead of real newlines when it
+  // re-quotes contract text inside its own output). Without this, the
+  // delivered memo renders as one giant unbroken paragraph in the UI.
+  if (/\\[ntr]/.test(extracted)) {
+    extracted = extracted
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\r/g, '\r')
+      .replace(/\\"/g, '"');
+  }
+
   // Step 2: Trim trailing orchestrator epilogue. Scan line-by-line from the
   // end looking for the last line that's part of the document (prose,
   // heading, or list item) and NOT an orchestrator marker.

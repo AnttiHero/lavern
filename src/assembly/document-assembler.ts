@@ -273,14 +273,23 @@ export async function assembleDocument(
   // directly; fall back to the LLM loop only if extraction fails.
   // Kill switch: set LAVERN_COUNSEL_FAST_PATH=0 to force the LLM loop if the
   // deterministic extractor ever misbehaves in production.
-  // v0.14.5: trigger fast-path on workflow=counsel regardless of how the
-  // request type was labelled by the router. The orchestrator IS the specialist
-  // for counsel; its finalOutput is the deliverable. Re-assembling via LLM is
-  // wasteful and was causing 5+ minute stalls when the assembler context blew
-  // past Anthropic's preferred input size.
+  // v0.14.5: deterministic extraction for ALL workflows.
+  //
+  // Originally counsel-only. Extended to every workflow because:
+  //   - Review / Full-Bench orchestrators also produce substantive finalOutput
+  //     (typically a "DELIVERY PACKAGE" / "BOARD BRIEF" with executive summary).
+  //   - Specialist subagents weren't reliably posting findings via the debate
+  //     board (orchestrator-side tracking gap), so the LLM assembler had no
+  //     source material and either produced a meta-memo or hung on long
+  //     contexts (we saw 5+ minute stalls).
+  //   - The orchestrator's finalOutput already contains a clause-cited,
+  //     authority-grounded memo. Extracting it is faster, cheaper, and more
+  //     reliable than asking another LLM to "re-assemble" the same content.
+  //
+  // The LLM assembly path remains as a fallback when extraction fails.
+  // Kill switch: LAVERN_COUNSEL_FAST_PATH=0 forces the LLM loop.
   const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
-  const isCounselWorkflow = session.workflowTemplateId === 'counsel' || requestType === 'counsel_extraction';
-  if (counselFastPathEnabled && isCounselWorkflow && session.finalOutput) {
+  if (counselFastPathEnabled && session.finalOutput) {
     const extracted = extractCounselDocument(session.finalOutput);
     if (extracted) {
       const validation = validateDeliverable(extracted);
