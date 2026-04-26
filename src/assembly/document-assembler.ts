@@ -290,7 +290,31 @@ export async function assembleDocument(
   // Kill switch: LAVERN_COUNSEL_FAST_PATH=0 forces the LLM loop.
   const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
   if (counselFastPathEnabled && session.finalOutput) {
-    const extracted = extractCounselDocument(session.finalOutput);
+    let extracted = extractCounselDocument(session.finalOutput);
+
+    // v0.14.6: if the extracted text still contains transcript noise
+    // (subagent JSON envelopes, agent prompts, workflow narration), run a
+    // Sonnet cleanup pass. This is bounded (~30s, ~$0.05) and produces a
+    // clean client-facing memo. The deterministic regex extractor is still
+    // tried first — the LLM cleanup only fires when needed.
+    if (extracted && containsTranscriptNoise(extracted)) {
+      logger.info('Extracted output contains transcript noise — running LLM cleanup pass', {
+        rawChars: extracted.length,
+      });
+      try {
+        const cleanupCost = await llmCleanupExtracted(session, extracted, (cleaned) => {
+          extracted = cleaned;
+        });
+        if (cleanupCost > 0) {
+          session.updateCost(session.accumulatedCost + cleanupCost);
+        }
+      } catch (cleanupErr) {
+        logger.warn('LLM cleanup pass failed — continuing with raw extraction', {
+          error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr),
+        });
+      }
+    }
+
     if (extracted) {
       const validation = validateDeliverable(extracted);
       if (validation.valid) {
@@ -590,6 +614,103 @@ export async function assembleDocument(
 
   emitAssemblyComplete(session, totalAssemblyCost);
   return '';
+}
+
+/**
+ * Detect whether extracted output still contains transcript noise that needs
+ * a cleanup pass. Hits any of: JSON metering envelopes, agent IDs, workflow
+ * narration markers, raw evaluator/specialist prompt blocks.
+ */
+function containsTranscriptNoise(text: string): boolean {
+  if (!text) return false;
+  const NOISE_SIGNALS = [
+    /"totalDurationMs"\s*:/,
+    /"agentId"\s*:/,
+    /"totalTokens"\s*:/,
+    /"cache_creation_input_tokens"/,
+    /\bYou are the (?:evaluator|LEAD specialist|plain-language)/i,
+    /\bSpecialist analysis complete\b/i,
+    /\bWorkflow complete\b/i,
+    /\b(?:Now|Then) (?:dispatching|advancing|requesting|retrieving) the\b/i,
+    /^\s*Resolving all \d+ findings/im,
+    /\bHuman gate (?:approved|received)\b/i,
+  ];
+  return NOISE_SIGNALS.some(re => re.test(text));
+}
+
+/**
+ * Run a Sonnet 4.5 cleanup pass to extract ONLY the client-facing memo from
+ * a transcript-contaminated finalOutput. Bounded at 90s + 1 retry.
+ * Cost is typically $0.03-0.10 per call.
+ *
+ * Mutates `setCleaned` callback only on success; leaves caller's value alone
+ * on any failure (caller decides how to fall back).
+ */
+async function llmCleanupExtracted(
+  session: SessionState,
+  rawExtracted: string,
+  setCleaned: (s: string) => void,
+): Promise<number> {
+  ensureApiKey();
+  const client = new Anthropic();
+
+  // Cap input at 100k chars to stay within context comfortably
+  const MAX_INPUT = 100_000;
+  const input = rawExtracted.length > MAX_INPUT
+    ? rawExtracted.slice(0, MAX_INPUT) + '\n\n[…truncated for cleanup pass…]'
+    : rawExtracted;
+
+  const system = `You are a final-cleanup pass on a legal-advice deliverable. The text you receive came out of a multi-agent pipeline and contains the substantive client-facing memo INTERLEAVED with internal transcript noise:
+
+  - Subagent JSON envelopes ({"totalDurationMs":…,"agentId":…,"usage":…})
+  - Internal agent prompts ("You are the evaluator…", "Score against the rubric…")
+  - Workflow narration ("Specialist analysis complete", "Now dispatching", "Workflow complete", "Resolving all findings")
+  - Token / cost metering blocks
+
+Your job: extract ONLY the client-facing memo. Output the memo content verbatim where it exists; remove all transcript noise. Preserve:
+  - Memo header (To/From/Date/Re/Privilege)
+  - Executive Summary
+  - Numbered question responses (Q1–Q10) with all clause citations and case authority
+  - Tables of issues / decisions / specialists
+  - Disclaimer
+
+Output the cleaned memo as markdown. No commentary, no "here is the cleaned version", no preamble. Start directly with the memo. End with the memo's natural conclusion (the disclaimer or specialist-referrals section).`;
+
+  const res = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 16_384,
+    system,
+    messages: [{ role: 'user', content: input }],
+  }, { timeout: 120_000, maxRetries: 1 });
+
+  let cleaned = '';
+  for (const block of res.content) {
+    if (block.type === 'text') cleaned += block.text;
+  }
+  cleaned = cleaned.trim();
+
+  if (cleaned.length < 1000) {
+    throw new Error(`Cleanup produced only ${cleaned.length} chars — likely refused`);
+  }
+
+  // Sonnet 4.5 pricing
+  const inputTokens = res.usage?.input_tokens ?? 0;
+  const outputTokens = res.usage?.output_tokens ?? 0;
+  const cacheRead = (res.usage as { cache_read_input_tokens?: number } | undefined)?.cache_read_input_tokens ?? 0;
+  const regularInput = Math.max(0, inputTokens - cacheRead);
+  const costUsd =
+    (regularInput * 3.0 / 1_000_000) +
+    (outputTokens * 15.0 / 1_000_000) +
+    (cacheRead * 0.3 / 1_000_000);
+
+  logger.info('LLM cleanup pass succeeded', {
+    inputChars: input.length,
+    outputChars: cleaned.length,
+    costUsd: costUsd.toFixed(4),
+  });
+
+  setCleaned(cleaned);
+  return costUsd;
 }
 
 /**

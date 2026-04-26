@@ -49,13 +49,83 @@ const ORCHESTRATOR_EPILOGUE_MARKERS = [
 export function extractCounselDocument(finalOutput: string): string {
   if (!finalOutput || finalOutput.length < MIN_EXTRACTED_CHARS) return '';
 
-  // Step 1: Find the first top-level heading. Legal deliverables almost
-  // always start with "# Title" (ToS, contract, memo, policy).
-  const firstHeadingMatch = finalOutput.match(/^#\s+\S/m);
-  if (!firstHeadingMatch) return '';
+  // Step 0: Aggressively strip transcript noise. Multi-agent workflows
+  // (Review / Full-Bench) produce finalOutput containing the orchestrator's
+  // narration interleaved with raw subagent JSON envelopes (token counts,
+  // agentIds, internal prompts). None of that should ever appear in a
+  // client deliverable. Strip it before extraction.
+  let cleaned = finalOutput;
 
-  const headingIndex = finalOutput.indexOf(firstHeadingMatch[0]);
-  let extracted = finalOutput.substring(headingIndex);
+  // 0.a — strip JSON envelopes from subagent transcripts. These look like:
+  //   {"status":"completed","prompt":"You are ...","agentId":"abc","content":[...],"totalDurationMs":12345,...}
+  // Match ANY {...} block whose content includes one of these telltale keys.
+  // Iterative replacement to handle nested cases.
+  for (let pass = 0; pass < 6; pass++) {
+    const before = cleaned.length;
+    cleaned = cleaned.replace(/\{[^{}]*"(?:totalDurationMs|totalTokens|totalToolUseCount|agentId|cache_creation_input_tokens|cache_read_input_tokens|service_tier|inference_geo|ephemeral_5m_input_tokens)"[^{}]*\}/g, '');
+    if (cleaned.length === before) break;
+  }
+  // Also strip larger envelopes that wrap a `prompt` block (evaluator/specialist re-dispatch).
+  cleaned = cleaned.replace(/\{"status":"completed","prompt":"[\s\S]{0,40000}?"\}\}?/g, '');
+  cleaned = cleaned.replace(/\{"agentId":"[a-z0-9]+","content":\[[\s\S]{0,40000}?\]\}/g, '');
+
+  // 0.b — decode HTML entities that crept in via subagent transcripts
+  if (/&(?:quot|apos|amp|lt|gt|#39);/.test(cleaned)) {
+    cleaned = cleaned
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+  }
+
+  // 0.c — strip orchestrator workflow chatter that happens between sections.
+  // Each pattern is matched at line scope.
+  const NOISE_LINE_PATTERNS = [
+    /^Specialist analysis complete\.?.*$/im,
+    /^Now (?:advancing|dispatching|requesting|running|retrieving).*$/im,
+    /^The (?:evaluator|plain-language|specialist) sub-agent.*$/im,
+    /^I'll (?:produce|re-dispatch|now|next|start).*$/im,
+    /^All \d+ (?:debates|findings) resolved\.?.*$/im,
+    /^Resolving all .* findings.*$/im,
+    /^Workflow complete\..*$/im,
+    /^Final summary for the user.*$/im,
+    /^Two RED findings on the debate board.*$/im,
+    /^Coherence audit tool returned.*$/im,
+    /^Human gate approved.*$/im,
+    /^Closing out the workflow.*$/im,
+  ];
+  for (const re of NOISE_LINE_PATTERNS) {
+    cleaned = cleaned.replace(re, '');
+  }
+
+  // Step 1: Find the substantive deliverable start. Prefer strong markers
+  // (MEMORANDUM, BOARD BRIEFING, EXECUTIVE SUMMARY) over the first `# `
+  // because Review orchestrators sometimes emit "# CONCLUSION" early before
+  // dispatching specialists who produce the real memo later.
+  const STRONG_MARKERS = [
+    /^#+\s*(?:MEMORANDUM|BOARD BRIEFING|EXECUTIVE SUMMARY|FINAL DELIVERABLE|DELIVERY PACKAGE)\b.*$/im,
+    /^COBARIDGE BOARD BRIEFING\b.*$/im,
+    /^MEMORANDUM OF ADVICE\b.*$/im,
+    /^Re:\s+.{5,200}$/im,
+  ];
+  let startIdx = -1;
+  for (const re of STRONG_MARKERS) {
+    const m = cleaned.match(re);
+    if (m) {
+      const idx = cleaned.indexOf(m[0]);
+      if (startIdx < 0 || idx < startIdx) startIdx = idx;
+    }
+  }
+  // Fallback: first top-level markdown heading
+  if (startIdx < 0) {
+    const firstHeadingMatch = cleaned.match(/^#\s+\S/m);
+    if (firstHeadingMatch) startIdx = cleaned.indexOf(firstHeadingMatch[0]);
+  }
+  if (startIdx < 0) return '';
+
+  let extracted = cleaned.substring(startIdx);
 
   // Step 1.5: Decode any literal escape sequences the orchestrator may have
   // emitted (Opus sometimes writes "\\n\\n" instead of real newlines when it
@@ -67,6 +137,23 @@ export function extractCounselDocument(finalOutput: string): string {
       .replace(/\\t/g, '\t')
       .replace(/\\r/g, '\r')
       .replace(/\\"/g, '"');
+  }
+
+  // Step 1.7: Hard-stop at terminal narration markers. These appear AFTER the
+  // deliverable when the orchestrator narrates wrap-up.
+  const HARD_STOP_MARKERS = [
+    /\n[\s>]*Now (?:dispatching|advancing|requesting|running|retrieving)/i,
+    /\nWorkflow complete\./i,
+    /\nFinal summary for the user/i,
+    /\nPIPELINE INTEGRITY/i,
+    /\nWorkflow Complete\b/i,
+  ];
+  for (const re of HARD_STOP_MARKERS) {
+    const m = extracted.match(re);
+    if (m && m.index !== undefined && m.index > MIN_EXTRACTED_CHARS) {
+      extracted = extracted.substring(0, m.index);
+      break;
+    }
   }
 
   // Step 2: Trim trailing orchestrator epilogue. Scan line-by-line from the
