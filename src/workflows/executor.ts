@@ -405,22 +405,64 @@ function buildPromptFromRequest(
     }
   }
 
-  // v12: Document context — tell agents what documents are available
+  // v0.14.5: Documents are embedded INLINE in the prompt — not gated behind tools.
+  //
+  // Why: every workflow's prompt previously said "use list_documents / read_document_section
+  // to access content". When those tools were missing from a template's allowlist
+  // OR errored at runtime, the orchestrator would either (a) refuse to answer
+  // because it claimed it could not access the documents, or (b) hallucinate from
+  // the request text. Both produced unusable output.
+  //
+  // With Opus 4.7's 1M-token window, embedding ~150k chars of document content
+  // directly is trivial and removes an entire class of failure modes. Tools remain
+  // available as a backup for very large multi-doc cases (>200k chars total).
   if (session.documents.length > 0) {
-    parts.push('\n--- UPLOADED DOCUMENTS ---');
-    parts.push(`${session.documents.length} document(s) have been uploaded for this session:\n`);
+    const PER_DOC_BUDGET = 90_000;          // chars — generous for one ToS / contract
+    const TOTAL_BUDGET   = 240_000;         // chars across all docs (~60k tokens)
+    let remainingBudget  = TOTAL_BUDGET;
+
+    parts.push('\n══════════════════════════════════════════════════════════════');
+    parts.push('UPLOADED DOCUMENTS — full text included below for direct reading');
+    parts.push('══════════════════════════════════════════════════════════════');
+    parts.push(`${session.documents.length} document(s) attached. Read them directly. The complete clause-by-clause text is in this prompt; you do NOT need a tool call to access it. Quote clause numbers and verbatim phrases when you advise.\n`);
+
     for (let i = 0; i < session.documents.length; i++) {
       const doc = session.documents[i];
+      const docBudget = Math.min(PER_DOC_BUDGET, remainingBudget);
+      if (docBudget <= 0) {
+        parts.push(`### Document ${i + 1}: ${doc.name} — [skipped: total document budget exceeded; use \`read_document_section\` tool to access]`);
+        continue;
+      }
       const headings = doc.sections.slice(0, 10).map(s => s.heading).join(', ');
-      parts.push(`${i + 1}. **${doc.name}** — ${doc.pageCount} pages, ${doc.wordCount.toLocaleString()} words`);
-      if (headings) parts.push(`   Sections: ${headings}`);
+      parts.push(`### Document ${i + 1}: ${doc.name}`);
+      parts.push(`   ${doc.pageCount} pages · ${doc.wordCount.toLocaleString()} words${headings ? ` · sections: ${headings}` : ''}`);
       if (doc.definedTerms.length > 0) {
-        parts.push(`   Defined terms: ${doc.definedTerms.slice(0, 10).join(', ')}${doc.definedTerms.length > 10 ? '...' : ''}`);
+        parts.push(`   Defined terms: ${doc.definedTerms.slice(0, 12).join(', ')}${doc.definedTerms.length > 12 ? '…' : ''}`);
+      }
+      parts.push('');
+
+      const text = doc.fullText ?? '';
+      if (text.length <= docBudget) {
+        parts.push('--- BEGIN ' + doc.name + ' ---');
+        parts.push(text);
+        parts.push('--- END ' + doc.name + ' ---\n');
+        remainingBudget -= text.length;
+      } else {
+        // Doc is bigger than per-doc budget: keep head + tail, surface table of contents
+        const head = text.slice(0, Math.floor(docBudget * 0.65));
+        const tail = text.slice(-Math.floor(docBudget * 0.30));
+        parts.push('--- BEGIN ' + doc.name + ' (truncated — see tool calls for missing sections) ---');
+        parts.push(head);
+        parts.push('\n[…middle of document truncated to fit context budget — use `read_document_section` tool with section heading to access specific clauses…]\n');
+        parts.push(tail);
+        parts.push('--- END ' + doc.name + ' ---\n');
+        remainingBudget -= (head.length + tail.length);
       }
     }
-    parts.push('');
-    parts.push('**IMPORTANT:** Use `list_documents` to see the full table of contents, then use `read_document_section` and `search_document` to access specific content. Do NOT rely solely on the request text — analyze the actual documents.');
-    parts.push('--- END DOCUMENTS ---\n');
+    parts.push('══════════════════════════════════════════════════════════════');
+    parts.push('END OF UPLOADED DOCUMENTS');
+    parts.push('══════════════════════════════════════════════════════════════\n');
+    parts.push('When you produce findings, advice, or deliverables: cite the clause number AND quote the relevant text from the documents above. Do not paraphrase from memory of "standard contract language" — read the actual clauses. Document tools (`list_documents`, `read_document_section`, `search_document`) are available if you need them, but the content is already in this prompt.\n');
   }
 
   // Classification info

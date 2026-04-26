@@ -297,7 +297,32 @@ export function registerSessionRoutes(
 
     if (body.request) {
       // v5 dispatch mode
-      const legalRequest = body.request;
+      let legalRequest = body.request;
+
+      // v0.14.4 — Auto-brief: when the user submits a brief instruction with
+      // attached documents (the classic "covering email + contract" case),
+      // read the docs and synthesise the actual task before dispatch. This
+      // matches how Harvey/Spellbook avoid forcing users to retype prompts —
+      // we go further by extracting the task from the cover doc itself.
+      try {
+        const { enrichRequestFromDocs } = await import('../intake/auto-brief.js');
+        const enrichResult = await enrichRequestFromDocs(legalRequest, session.documents);
+        if (enrichResult.enriched) {
+          legalRequest = enrichResult.request;
+          session.events.emitEvent({
+            type: 'tool_used',
+            tool: `auto_brief: enriched request from ${session.documents.length} document(s) (cost $${enrichResult.costUsd.toFixed(3)})`,
+            agent: 'system',
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        // Best effort. Never block dispatch on enrichment errors.
+        logger.warn('Auto-brief enrichment errored, dispatching with original request', {
+          sessionId: session.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
 
       dispatch(legalRequest, {
         session,

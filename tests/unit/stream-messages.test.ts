@@ -9,15 +9,16 @@ import { describe, it, expect } from 'vitest';
 import { PRICING } from '../../src/utils/stream-messages.js';
 
 describe('PRICING table', () => {
-  it('has entries for all current Claude models (4.7 generation)', () => {
+  it('has entries for all current Claude models', () => {
     expect(PRICING['claude-opus-4-7']).toBeDefined();
     expect(PRICING['claude-sonnet-4-5']).toBeDefined();
-    expect(PRICING['claude-haiku-3-5-20250929']).toBeDefined();
+    expect(PRICING['claude-haiku-4-5']).toBeDefined();
   });
 
   it('has legacy entries for in-flight sessions + archived cost records', () => {
     expect(PRICING['claude-opus-4-6']).toBeDefined();
     expect(PRICING['claude-sonnet-4-5-20250929']).toBeDefined();
+    expect(PRICING['claude-haiku-3-5-20250929']).toBeDefined();
   });
 
   it('has entries for Mistral models', () => {
@@ -44,7 +45,7 @@ describe('PRICING table', () => {
 
   it('Sonnet is more expensive than Haiku', () => {
     const sonnet = PRICING['claude-sonnet-4-5'];
-    const haiku = PRICING['claude-haiku-3-5-20250929'];
+    const haiku = PRICING['claude-haiku-4-5'];
     expect(sonnet.input).toBeGreaterThan(haiku.input);
     expect(sonnet.output).toBeGreaterThan(haiku.output);
   });

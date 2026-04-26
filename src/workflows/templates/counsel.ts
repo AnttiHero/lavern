@@ -37,7 +37,10 @@ export const counselTemplate: WorkflowTemplate = {
     },
   },
   availableTools: [
-    'Read', 'Grep', 'Glob', 'Task', 'TodoWrite',
+    // v0.14.5: Task intentionally REMOVED from Counsel — orchestrator answers
+    // directly with documents already in its prompt context. Subagent dispatch
+    // was causing hangs (subagents had no doc context + missing tools).
+    'Read', 'Grep', 'Glob', 'TodoWrite',
     // Workflow engine
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
@@ -53,6 +56,10 @@ export const counselTemplate: WorkflowTemplate = {
     'mcp__shem__list_knowledge_base_collections',
     'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
+    // Document reader — read uploaded documents directly (was missing pre-0.14.4 — caused orchestrator to claim 'tool failure')
+    'mcp__shem__list_documents',
+    'mcp__shem__read_document_section',
+    'mcp__shem__search_document',
   ],
   requiredAgents: [
     // Selected dynamically by the router based on request type.

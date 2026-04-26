@@ -85,6 +85,10 @@ export const adversarialTemplate: WorkflowTemplate = {
     'mcp__shem__list_knowledge_base_collections',
     'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
+    // Document reader — read uploaded documents directly (was missing pre-0.14.4 — caused orchestrator to claim 'tool failure')
+    'mcp__shem__list_documents',
+    'mcp__shem__read_document_section',
+    'mcp__shem__search_document',
     // Risk pricing
     'mcp__shem__request_risk_assessment',
     'mcp__shem__record_risk_assessment',

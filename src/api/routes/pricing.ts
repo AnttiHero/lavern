@@ -97,13 +97,13 @@ function buildTokenRates(): TokenRate[] {
       cacheWritePerMillion: PRICING['claude-sonnet-4-5'].cacheWrite,
     },
     {
-      model: 'claude-haiku-3-5-20250929',
+      model: 'claude-haiku-4-5',
       tier: 'Junior / Paralegal',
-      ...PRICING['claude-haiku-3-5-20250929'],
-      inputPerMillion: PRICING['claude-haiku-3-5-20250929'].input,
-      outputPerMillion: PRICING['claude-haiku-3-5-20250929'].output,
-      cacheReadPerMillion: PRICING['claude-haiku-3-5-20250929'].cacheRead,
-      cacheWritePerMillion: PRICING['claude-haiku-3-5-20250929'].cacheWrite,
+      ...PRICING['claude-haiku-4-5'],
+      inputPerMillion: PRICING['claude-haiku-4-5'].input,
+      outputPerMillion: PRICING['claude-haiku-4-5'].output,
+      cacheReadPerMillion: PRICING['claude-haiku-4-5'].cacheRead,
+      cacheWritePerMillion: PRICING['claude-haiku-4-5'].cacheWrite,
     },
   ];
 }

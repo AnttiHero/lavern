@@ -81,6 +81,10 @@ export const legalDesignTemplate: WorkflowTemplate = {
     'mcp__shem__update_precedent_effectiveness',
     'mcp__shem__record_anti_pattern',
     'mcp__shem__query_anti_patterns',
+    // Document reader — read uploaded documents directly (was missing pre-0.14.4 — caused orchestrator to claim 'tool failure')
+    'mcp__shem__list_documents',
+    'mcp__shem__read_document_section',
+    'mcp__shem__search_document',
     // v4: Baselines
     'mcp__shem__update_baselines',
     'mcp__shem__check_against_baseline',

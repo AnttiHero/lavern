@@ -343,21 +343,49 @@ function buildPromptFromRequest(
     }
   }
 
+  // v0.14.5 — embed full document text inline (Mistral large has 128k context, so use a tighter budget)
   if (session.documents.length > 0) {
-    parts.push('\n--- UPLOADED DOCUMENTS ---');
-    parts.push(`${session.documents.length} document(s) have been uploaded for this session:\n`);
+    const PER_DOC_BUDGET = 50_000;
+    const TOTAL_BUDGET   = 110_000;
+    let remaining = TOTAL_BUDGET;
+
+    parts.push('\n══════════════════════════════════════════════════════════════');
+    parts.push('UPLOADED DOCUMENTS — full text included below');
+    parts.push('══════════════════════════════════════════════════════════════');
+    parts.push(`${session.documents.length} document(s) attached. Read them directly. Cite clause numbers and quote text.\n`);
+
     for (let i = 0; i < session.documents.length; i++) {
       const doc = session.documents[i];
+      const docBudget = Math.min(PER_DOC_BUDGET, remaining);
+      if (docBudget <= 0) {
+        parts.push(`### Document ${i + 1}: ${doc.name} — [skipped: budget exceeded]`);
+        continue;
+      }
       const headings = doc.sections.slice(0, 10).map(s => s.heading).join(', ');
-      parts.push(`${i + 1}. **${doc.name}** — ${doc.pageCount} pages, ${doc.wordCount.toLocaleString()} words`);
-      if (headings) parts.push(`   Sections: ${headings}`);
-      if (doc.definedTerms.length > 0) {
-        parts.push(`   Defined terms: ${doc.definedTerms.slice(0, 10).join(', ')}${doc.definedTerms.length > 10 ? '...' : ''}`);
+      parts.push(`### Document ${i + 1}: ${doc.name}`);
+      parts.push(`   ${doc.pageCount} pages · ${doc.wordCount.toLocaleString()} words${headings ? ` · sections: ${headings}` : ''}`);
+      parts.push('');
+      const text = doc.fullText ?? '';
+      if (text.length <= docBudget) {
+        parts.push('--- BEGIN ' + doc.name + ' ---');
+        parts.push(text);
+        parts.push('--- END ' + doc.name + ' ---\n');
+        remaining -= text.length;
+      } else {
+        const head = text.slice(0, Math.floor(docBudget * 0.65));
+        const tail = text.slice(-Math.floor(docBudget * 0.30));
+        parts.push('--- BEGIN ' + doc.name + ' (truncated) ---');
+        parts.push(head);
+        parts.push('\n[…middle truncated to fit context…]\n');
+        parts.push(tail);
+        parts.push('--- END ' + doc.name + ' ---\n');
+        remaining -= (head.length + tail.length);
       }
     }
-    parts.push('');
-    parts.push('**IMPORTANT:** Use `list_documents` to see the full table of contents, then use `read_document_section` and `search_document` to access specific content. Do NOT rely solely on the request text — analyze the actual documents.');
-    parts.push('--- END DOCUMENTS ---\n');
+    parts.push('══════════════════════════════════════════════════════════════');
+    parts.push('END OF UPLOADED DOCUMENTS');
+    parts.push('══════════════════════════════════════════════════════════════\n');
+    parts.push('Cite clause numbers and quote verbatim from the text above. Do not paraphrase from memory of standard contract language.\n');
   }
 
   parts.push(`\nRouter Classification:`);

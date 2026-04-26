@@ -23,10 +23,11 @@ export const PRICING: Record<string, { input: number; output: number; cacheRead:
   // Anthropic / Claude — current (4.7 generation)
   'claude-opus-4-7':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-sonnet-4-5':          { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
-  'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
+  'claude-haiku-4-5':            { input: 1.0,  output: 5.0,  cacheRead: 0.1,  cacheWrite: 1.25 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
   'claude-opus-4-6':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-sonnet-4-5-20250929': { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
+  'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
   // Mistral AI (EU-sovereign)
   'mistral-large-latest':       { input: 2.0,  output: 6.0,  cacheRead: 0,    cacheWrite: 0 },
   'mistral-medium-latest':      { input: 0.4,  output: 1.2,  cacheRead: 0,    cacheWrite: 0 },

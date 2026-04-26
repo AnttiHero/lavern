@@ -54,10 +54,11 @@ const logger = createLogger('ASSEMBLY');
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-opus-4-7': { input: 15.0, output: 75.0 },
   'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
-  'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
+  'claude-haiku-4-5': { input: 1.0, output: 5.0 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
   'claude-opus-4-6': { input: 15.0, output: 75.0 },
   'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },
+  'claude-haiku-3-5-20250929': { input: 0.8, output: 4.0 },
 };
 
 /**
@@ -272,8 +273,14 @@ export async function assembleDocument(
   // directly; fall back to the LLM loop only if extraction fails.
   // Kill switch: set LAVERN_COUNSEL_FAST_PATH=0 to force the LLM loop if the
   // deterministic extractor ever misbehaves in production.
+  // v0.14.5: trigger fast-path on workflow=counsel regardless of how the
+  // request type was labelled by the router. The orchestrator IS the specialist
+  // for counsel; its finalOutput is the deliverable. Re-assembling via LLM is
+  // wasteful and was causing 5+ minute stalls when the assembler context blew
+  // past Anthropic's preferred input size.
   const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
-  if (counselFastPathEnabled && requestType === 'counsel_extraction' && session.finalOutput) {
+  const isCounselWorkflow = session.workflowTemplateId === 'counsel' || requestType === 'counsel_extraction';
+  if (counselFastPathEnabled && isCounselWorkflow && session.finalOutput) {
     const extracted = extractCounselDocument(session.finalOutput);
     if (extracted) {
       const validation = validateDeliverable(extracted);
@@ -336,7 +343,7 @@ export async function assembleDocument(
         max_tokens: 16384,
         system: systemPrompt,
         messages: [{ role: 'user', content: assemblyContext }],
-      }, { timeout: 120_000 }); // 2-minute timeout for assembly (long-form generation)
+      }, { timeout: 90_000, maxRetries: 1 }); // 90s timeout; one retry on 429/5xx (was 2-min + 2 silent retries → 5+ min stalls)
 
       // Extract text from response
       let assembledText = '';

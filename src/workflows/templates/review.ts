@@ -96,6 +96,10 @@ export const reviewTemplate: WorkflowTemplate = {
     'mcp__shem__list_knowledge_base_collections',
     'mcp__shem__get_knowledge_base_entry',
     'mcp__shem__query_anti_patterns',
+    // Document reader — read uploaded documents directly (was missing pre-0.14.4 — caused orchestrator to claim 'tool failure')
+    'mcp__shem__list_documents',
+    'mcp__shem__read_document_section',
+    'mcp__shem__search_document',
     // Approval gate
     'mcp__shem__request_approval',
     // Evaluator gate
