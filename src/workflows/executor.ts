@@ -31,6 +31,8 @@ import { assembleDocument } from '../assembly/document-assembler.js';
 import { preArchiveSessionRow, updateArchivedDocument } from '../db/database.js';
 import { config } from '../config.js';
 import { runMistralWorkflow } from '../providers/mistral-executor.js';
+import { runLocalWorkflow } from '../providers/local-executor.js';
+import { checkLocalReady } from '../providers/local.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
@@ -82,6 +84,48 @@ export async function runGenericWorkflow(
         timestamp: eventTimestamp(),
       });
       throw mistralError;
+    }
+  }
+
+  if (provider === 'local') {
+    // Pre-flight check — fail fast with a clear error if Ollama isn't running
+    // or the model isn't pulled. Avoids minutes of stalled session before
+    // surfacing a setup problem.
+    const readinessError = await checkLocalReady(config.local.defaultModel);
+    if (readinessError) {
+      session.events.emitEvent({
+        type: 'error',
+        message: `Local provider not ready: ${readinessError}`,
+        source: 'orchestrator',
+        timestamp: eventTimestamp(),
+      });
+      session.events.emitEvent({
+        type: 'session_end',
+        sessionId: session.id,
+        totalCost: 0,
+        duration: 0,
+        timestamp: eventTimestamp(),
+      });
+      throw new Error(readinessError);
+    }
+    try {
+      return await runLocalWorkflow(request, template, classification, session, options);
+    } catch (localError) {
+      logger.error('Local workflow failed', { error: localError });
+      session.events.emitEvent({
+        type: 'error',
+        message: `Workflow failed: ${localError instanceof Error ? localError.message : String(localError)}`,
+        source: 'orchestrator',
+        timestamp: eventTimestamp(),
+      });
+      session.events.emitEvent({
+        type: 'session_end',
+        sessionId: session.id,
+        totalCost: session.accumulatedCost,
+        duration: 0,
+        timestamp: eventTimestamp(),
+      });
+      throw localError;
     }
   }
 

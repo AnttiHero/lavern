@@ -39,7 +39,7 @@ export const config = {
   dbPath: process.env.SHEM_DB_PATH ?? './data/lavern.db',
 
   // ── Provider ──────────────────────────────────────────────────────────
-  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'managed',
+  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'local' | 'managed',
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-7',
@@ -52,6 +52,17 @@ export const config = {
     defaultModel: process.env.MISTRAL_MODEL ?? 'mistral-large-latest',
     routerModel: process.env.MISTRAL_ROUTER_MODEL ?? 'mistral-small-latest',
     assemblyModel: process.env.MISTRAL_ASSEMBLY_MODEL ?? 'mistral-large-latest',
+  },
+
+  // ── Local (On-device via Ollama) ────────────────────────────────────
+  // Zero-egress path for confidential / privilege-sensitive matters.
+  // Default model is gemma4:26b (MoE — 26B loaded, 4B active per token,
+  // 17 GB Q4, 256k context, native function-calling).
+  local: {
+    baseUrl: process.env.LAVERN_LOCAL_URL ?? 'http://localhost:11434',
+    defaultModel: process.env.LAVERN_LOCAL_DEFAULT_MODEL ?? 'gemma4:26b',
+    routerModel: process.env.LAVERN_LOCAL_ROUTER_MODEL ?? 'gemma4:e4b',
+    assemblyModel: process.env.LAVERN_LOCAL_ASSEMBLY_MODEL ?? 'gemma4:26b',
   },
 
   // ── API ────────────────────────────────────────────────────────────────
