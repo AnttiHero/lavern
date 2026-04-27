@@ -167,6 +167,40 @@ else
 fi
 echo
 
+# ── Step 3.5: Xcode Command Line Tools ───────────────────────────────────
+# Native npm modules (better-sqlite3, etc.) compile at install time and need
+# clang. macOS doesn't ship CLT preinstalled — without this check the install
+# fails opaquely 4 minutes later in `npm install`.
+say "Checking Xcode Command Line Tools…"
+
+if xcode-select -p >/dev/null 2>&1; then
+  ok "Xcode CLT installed at $(xcode-select -p)"
+else
+  warn "Xcode CLT not installed — required to compile native npm modules."
+  warn "Triggering the install dialog now. macOS will ask you to accept."
+  xcode-select --install 2>/dev/null || true
+
+  cat <<'NOTE'
+
+    A dialog should have appeared:
+      1. Click "Install"
+      2. Accept the license
+      3. Wait for download (~2-3 GB, 5-15 min)
+
+    When it says "The software was installed.", press ENTER to continue.
+    (Or Ctrl-C to abort and re-run later.)
+
+NOTE
+  read -r _
+
+  # Verify it took
+  if ! xcode-select -p >/dev/null 2>&1; then
+    die "Xcode CLT still not detected. Open Terminal, run 'xcode-select --install', complete the install, then re-run this script."
+  fi
+  ok "Xcode CLT installed"
+fi
+echo
+
 # ── Step 4: Node.js ──────────────────────────────────────────────────────
 say "Checking Node.js…"
 
