@@ -292,9 +292,13 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Pre-flight checks before starting server
-    // API key is NOT required — server starts in demo mode without it
-    const preflightResults = await runPreflightChecks({ port, requireApiKey: false });
+    // Pre-flight checks before starting server.
+    // For local provider, the Ollama check IS run (it's the actual readiness
+    // signal — daemon must be running and the model pulled). For Anthropic
+    // mode, the API key check is informational only — server starts in demo
+    // mode without it (legacy behaviour preserved).
+    const isLocal = process.env.LAVERN_PROVIDER === 'local';
+    const preflightResults = await runPreflightChecks({ port, requireApiKey: isLocal });
     const preflightOk = printPreflightResults(preflightResults);
     if (!preflightOk) {
       const critical = preflightResults.filter(r => !r.ok && r.check !== 'Disk space');
