@@ -22,9 +22,23 @@ set -euo pipefail
 # ── Configuration ────────────────────────────────────────────────────────
 LAVERN_VERSION="${LAVERN_VERSION:-0.14.5}"
 LAVERN_HOME="${LAVERN_HOME:-$HOME/Lavern}"
-LAVERN_MODEL="${LAVERN_MODEL:-gemma4:e4b}"
 LAVERN_PORT="${LAVERN_PORT:-3000}"
 LAVERN_TARBALL_URL="${LAVERN_TARBALL_URL:-https://lavern.ai/dist/lavern-v$LAVERN_VERSION.tar.gz}"
+
+# RAM-aware model selection.
+# macOS reports total RAM in bytes via sysctl. The thresholds:
+#   < 12 GB → gemma2:2b   (small laptop — 1.6 GB pull, fits an 8 GB Air)
+#   < 24 GB → gemma4:e4b  (16 GB Macbook — 9.6 GB pull, balanced)
+#   ≥ 24 GB → gemma4:26b  (Pro/Max — 17 GB pull, highest quality)
+# User can override by setting LAVERN_MODEL before running.
+if [ -z "${LAVERN_MODEL:-}" ]; then
+  TOTAL_RAM_BYTES=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+  TOTAL_RAM_GB=$(( TOTAL_RAM_BYTES / 1073741824 ))
+  if   [ "$TOTAL_RAM_GB" -ge 24 ]; then LAVERN_MODEL="gemma4:26b"
+  elif [ "$TOTAL_RAM_GB" -ge 12 ]; then LAVERN_MODEL="gemma4:e4b"
+  else                                  LAVERN_MODEL="gemma2:2b"
+  fi
+fi
 
 # ── Pretty output ────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; NC='\033[0m'
@@ -61,11 +75,13 @@ else
 fi
 
 FREE_GB=$(df -g "$HOME" | awk 'NR==2 {print $4}')
-if [ "$FREE_GB" -lt 15 ]; then
-  warn "Only ${FREE_GB} GB free on your home volume. Recommend ≥20 GB. Continuing anyway…"
+if [ "$FREE_GB" -lt 5 ]; then
+  warn "Only ${FREE_GB} GB free on your home volume. The model alone needs more than that. Free up space and retry."
 else
   ok "${FREE_GB} GB free disk"
 fi
+
+ok "RAM: ${TOTAL_RAM_GB:-?} GB → selected model: $LAVERN_MODEL"
 echo
 
 # ── Step 2: Ollama ───────────────────────────────────────────────────────
@@ -105,12 +121,18 @@ fi
 echo
 
 # ── Step 3: Pull the model ───────────────────────────────────────────────
-say "Pulling local model: $LAVERN_MODEL (≈9.6 GB)…"
+case "$LAVERN_MODEL" in
+  gemma2:2b)   MODEL_SIZE_HINT="≈1.6 GB"; PULL_ETA="2–4 min" ;;
+  gemma4:e4b)  MODEL_SIZE_HINT="≈9.6 GB"; PULL_ETA="10–20 min" ;;
+  gemma4:26b)  MODEL_SIZE_HINT="≈17 GB";  PULL_ETA="20–40 min" ;;
+  *)           MODEL_SIZE_HINT="size unknown"; PULL_ETA="time unknown" ;;
+esac
+say "Pulling local model: $LAVERN_MODEL ($MODEL_SIZE_HINT)…"
 
 if curl -sf http://localhost:11434/api/tags | grep -q "\"$LAVERN_MODEL\""; then
   ok "Model $LAVERN_MODEL already pulled"
 else
-  warn "First-time pull — this will take 10–20 min on home Wi-Fi."
+  warn "First-time pull — this will take ~$PULL_ETA on home Wi-Fi."
   ollama pull "$LAVERN_MODEL"
   ok "Model $LAVERN_MODEL ready"
 fi
