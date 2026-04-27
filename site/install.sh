@@ -103,20 +103,49 @@ fi
 # Make the daemon-side ollama binary discoverable on PATH for this script
 export PATH="/Applications/Ollama.app/Contents/Resources:$PATH"
 
-# Boot the daemon if not already running
+# Boot the daemon if not already running.
+# On a fresh Mac, the first launch of Ollama triggers a Gatekeeper warning
+# AND a permission prompt that the user has to click through. `open -a` only
+# fires the launch — it can't bypass those. So we open the app and then ask
+# the user to confirm it's running.
 if ! curl -sf -m 2 http://localhost:11434/api/tags >/dev/null 2>&1; then
   say "Starting Ollama daemon…"
-  open -a Ollama
-  for _ in $(seq 1 20); do
+  open -a Ollama 2>/dev/null || true
+
+  # Try for ~10 sec without prompting (covers the auto-launch case)
+  for _ in $(seq 1 10); do
     sleep 1
     if curl -sf -m 2 http://localhost:11434/api/tags >/dev/null 2>&1; then break; fi
   done
+
+  # Still not up? Walk the user through the first-launch click-through.
+  if ! curl -sf -m 2 http://localhost:11434/api/tags >/dev/null 2>&1; then
+    cat <<'NOTE'
+
+    Ollama hasn't responded yet. On a fresh Mac, you need to:
+      1. Open Finder → Applications → double-click Ollama
+      2. macOS will warn "Ollama was downloaded from the internet" — click Open
+      3. Allow any permission prompts
+      4. Look for the llama icon in the menu bar (top-right of screen)
+
+    When you can see the llama icon, press ENTER to continue.
+    (Or Ctrl-C to abort.)
+
+NOTE
+    read -r _
+
+    # One more try, with a longer window for first-launch
+    for _ in $(seq 1 30); do
+      sleep 1
+      if curl -sf -m 2 http://localhost:11434/api/tags >/dev/null 2>&1; then break; fi
+    done
+  fi
 fi
 
 if curl -sf -m 2 http://localhost:11434/api/tags >/dev/null 2>&1; then
   ok "Ollama daemon reachable at http://localhost:11434"
 else
-  die "Ollama daemon did not start. Open Ollama from /Applications and re-run this script."
+  die "Ollama daemon still unreachable. The menu-bar app may not be running. Try opening it manually from /Applications and re-running this script."
 fi
 echo
 
