@@ -99,11 +99,18 @@ export async function processDocument(
     const parsed = await parseDocument(buffer, path.basename(documentPath), mime);
 
     // ── 1b. CONFIDENTIALITY GATE ──────────────────────────────────────
-    // If document matched a sensitivity pattern AND a local model is configured,
-    // process entirely on-device. No data leaves the machine.
-    if (confidential && config.claw.localModel) {
-      const localModelName = config.claw.localAnalysisModel || config.claw.localModel;
-      const processingMode = profile.processing ?? 'local';
+    // Three triggers route a doc through the local pipeline:
+    //   (a) sensitivity-pattern match (filename / metadata indicates confidential)
+    //   (b) profile.processing === 'local' — explicit "everything local" policy
+    //   (c) profile.processing === 'hybrid' — local triage + selective frontier
+    // Any of these causes the local-analysis path to run. Without one of them,
+    // the doc falls through to the standard frontier pipeline.
+    const processingMode = profile.processing ?? 'local';
+    const localModelConfigured = !!(config.claw.localModel || config.local.defaultModel);
+    const routeLocally = localModelConfigured && (confidential || processingMode === 'local' || processingMode === 'hybrid');
+
+    if (routeLocally) {
+      const localModelName = config.claw.localAnalysisModel || config.claw.localModel || config.local.defaultModel;
 
       // ── HYBRID PATH: local triage + anonymized frontier ──────────
       if (processingMode === 'hybrid') {

@@ -95,19 +95,38 @@ export async function analyzeLocally(
   filename: string,
   profile: ClawProfile,
 ): Promise<LocalAnalysisResult> {
-  const modelName = config.claw.localAnalysisModel || config.claw.localModel;
+  // Resolve model: explicit Claw setting wins, then the new top-level local
+  // provider default (LAVERN_LOCAL_DEFAULT_MODEL), then last-ditch fallback.
+  const modelName =
+    config.claw.localAnalysisModel ||
+    config.claw.localModel ||
+    config.local.defaultModel;
 
   if (!modelName) {
-    throw new Error('No local model configured. Set LAVERN_LOCAL_MODEL in .env');
+    throw new Error(
+      'No local model configured. Set LAVERN_LOCAL_DEFAULT_MODEL (preferred) or LAVERN_LOCAL_MODEL in .env',
+    );
   }
 
-  const baseUrl = config.claw.localModelUrl.replace(/\/$/, '');
+  // Resolve URL with the same fallback order — the legacy LAVERN_LOCAL_MODEL_URL
+  // and the new LAVERN_LOCAL_URL should both work.
+  const baseUrl = (config.claw.localModelUrl || config.local.baseUrl).replace(/\/$/, '');
 
-  // Truncate document to ~8000 chars for smaller models
-  // Larger models (70B) can handle more but this keeps latency reasonable
-  const maxChars = modelName.includes('70b') || modelName.includes('72b') ? 16000 : 8000;
-  const excerpt = documentText.slice(0, maxChars);
-  const truncated = documentText.length > maxChars;
+  // Truncation. Gemma 4 e4b has 256K context; serious legal documents (40-80K
+  // chars / ~10-20K tokens) fit easily. Keep a safety cap to avoid OOM on
+  // small-RAM machines, but raise from the original 8K which was set when the
+  // codebase only knew about llama3.1:8b.
+  //
+  // Cap is RAM-tier driven via env override:
+  //   LAVERN_CLAW_LOCAL_MAX_CHARS — explicit override
+  // Defaults: 32K for "standard" models (e.g. gemma4:e4b), 64K for ≥30B,
+  //           8K for very small models (≤3B) which can't hold long context.
+  const isSmallModel  = /:(?:1b|2b|3b|3\.\d+b)\b/i.test(modelName);
+  const isLargeModel  = /:(?:30b|26b|34b|70b|72b)\b/i.test(modelName);
+  const defaultMax    = isSmallModel ? 8_000 : (isLargeModel ? 64_000 : 32_000);
+  const maxChars      = Number(process.env.LAVERN_CLAW_LOCAL_MAX_CHARS) || defaultMax;
+  const excerpt       = documentText.slice(0, maxChars);
+  const truncated     = documentText.length > maxChars;
 
   const userMessage = [
     `DOCUMENT: ${filename}`,
@@ -131,7 +150,10 @@ export async function analyzeLocally(
       max_tokens: 4000,
       response_format: { type: 'json_object' },
     }),
-    signal: AbortSignal.timeout(120_000), // 2 min timeout for local inference
+    // Local inference on a small-RAM Mac is slow. 15-min ceiling covers the
+    // worst case (e.g. gemma4:e4b on an 8 GB Air with the full context window
+    // in use). Override via LAVERN_CLAW_LOCAL_TIMEOUT_MS for future hardware.
+    signal: AbortSignal.timeout(Number(process.env.LAVERN_CLAW_LOCAL_TIMEOUT_MS) || 900_000),
   });
 
   if (!response.ok) {
