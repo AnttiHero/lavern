@@ -23,24 +23,36 @@ echo "Building lavern-v$VERSION.tar.gz…"
 
 # Use git ls-files to enumerate tracked files (deterministic, ignores .gitignore).
 # Then strip the secrets/dev-only paths that should never reach a customer host.
+STAGE_DIR=$(mktemp -d)/lavern-v$VERSION
+mkdir -p "$STAGE_DIR"
+
+# Stage only the files we want into a temp dir, then tar that.
+# This works around macOS bsdtar lacking --transform.
 git ls-files | \
-  grep -vE '^(audit-logs|data|.shem|dist|coverage|tests/fixtures|\.env$|\.env\.local$)' | \
-  grep -vE '\.test\.ts$|\.spec\.ts$' \
-  > "$OUT_DIR/_files.txt"
+  grep -vE '^(audit-logs/|data/|\.shem/|dist/|coverage/|tests/|menubar/|docs/|site/dist/|Mac/|Test images/|Screenshots/|Site images/)' | \
+  grep -vE '^\.env$|^\.env\.local$' | \
+  grep -vE '\.(test|spec)\.(ts|tsx|js|jsx)$' | \
+  grep -vE '^(salvage-|whiteshoe-|marble-).*\.(ts|html|pdf|md)$' | \
+  grep -vE '\.(pdf|mov|mp4|psd|sketch|fig)$' | \
+  grep -vE '^viz/src/__tests__/' | \
+  grep -vE '^src/__tests__/' | \
+  grep -vE '^scripts/(seed-|load-test\.|smoke-test\.)' | \
+  while IFS= read -r file; do
+    target="$STAGE_DIR/$file"
+    mkdir -p "$(dirname "$target")"
+    cp "$file" "$target"
+  done
 
 # Add the built dashboard if present (viz/dist) — local installs serve this
 # as static files, no Vite dev server needed.
 if [ -d "viz/dist" ]; then
-  find viz/dist -type f >> "$OUT_DIR/_files.txt"
+  mkdir -p "$STAGE_DIR/viz/dist"
+  cp -R viz/dist/. "$STAGE_DIR/viz/dist/"
 fi
 
-# Tar with a top-level dir of "lavern-v$VERSION" so extraction creates one
-# folder, not 1000 files in cwd.
-tar -czf "$OUT_FILE" \
-  --transform "s,^,lavern-v$VERSION/," \
-  -T "$OUT_DIR/_files.txt"
-
-rm "$OUT_DIR/_files.txt"
+# Tar from the parent of the staging dir so the archive contains lavern-vX.Y.Z/...
+tar -czf "$OUT_FILE" -C "$(dirname "$STAGE_DIR")" "$(basename "$STAGE_DIR")"
+rm -rf "$(dirname "$STAGE_DIR")"
 
 SIZE=$(du -h "$OUT_FILE" | cut -f1)
 echo "  → $OUT_FILE ($SIZE)"
