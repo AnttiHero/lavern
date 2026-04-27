@@ -73,14 +73,51 @@ interface PreflightResult {
 async function runPreflightChecks(options: { port?: number; requireApiKey?: boolean } = {}): Promise<PreflightResult[]> {
   const results: PreflightResult[] = [];
 
-  // 1. API key present
+  // 1. Provider readiness — Anthropic key (cloud), Ollama daemon (local), or
+  //    Mistral key (EU sovereign). The pre-flight check adapts to the provider.
+  const provider = process.env.LAVERN_PROVIDER ?? 'anthropic';
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (options.requireApiKey !== false) {
-    results.push({
-      check: 'ANTHROPIC_API_KEY',
-      ok: !!apiKey && apiKey.length > 10,
-      detail: apiKey ? 'configured' : 'MISSING — set ANTHROPIC_API_KEY in .env or environment',
-    });
+    if (provider === 'local') {
+      const url = process.env.LAVERN_LOCAL_URL ?? 'http://localhost:11434';
+      const model = process.env.LAVERN_LOCAL_DEFAULT_MODEL ?? 'gemma4:e4b';
+      let ok = false;
+      let detail = '';
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`${url.replace(/\/$/, '')}/api/tags`, { signal: controller.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const data = await res.json() as { models?: Array<{ name?: string }> };
+          const names = (data.models ?? []).map(m => m.name ?? '');
+          if (names.some(n => n === model || n.startsWith(`${model}:`))) {
+            ok = true;
+            detail = `${model} ready at ${url}`;
+          } else {
+            detail = `Ollama running but ${model} not pulled. Run: ollama pull ${model}`;
+          }
+        } else {
+          detail = `Ollama responded HTTP ${res.status} at ${url}`;
+        }
+      } catch (err) {
+        detail = `Ollama unreachable at ${url} — is the menu-bar app running?`;
+      }
+      results.push({ check: 'Ollama (local model)', ok, detail });
+    } else if (provider === 'mistral') {
+      const mk = process.env.MISTRAL_API_KEY;
+      results.push({
+        check: 'MISTRAL_API_KEY',
+        ok: !!mk && mk.length > 10,
+        detail: mk ? 'configured' : 'MISSING — set MISTRAL_API_KEY in .env',
+      });
+    } else {
+      results.push({
+        check: 'ANTHROPIC_API_KEY',
+        ok: !!apiKey && apiKey.length > 10,
+        detail: apiKey ? 'configured' : 'MISSING — set ANTHROPIC_API_KEY in .env or environment',
+      });
+    }
   }
 
   // 2. Data directory writable
@@ -276,12 +313,28 @@ async function main(): Promise<void> {
       console.log('  📋 Created .env from .env.example — add your API keys to enable full functionality.\n');
     }
 
-    const demoMode = !process.env.ANTHROPIC_API_KEY;
-    if (demoMode) {
+    const provider = process.env.LAVERN_PROVIDER ?? 'anthropic';
+    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+
+    if (provider === 'local') {
+      const url = process.env.LAVERN_LOCAL_URL ?? 'http://localhost:11434';
+      const model = process.env.LAVERN_LOCAL_DEFAULT_MODEL ?? 'gemma4:e4b';
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║  LOCAL MODE — on-device inference via Ollama                ║');
+      console.log(`║  Endpoint: ${url.padEnd(48)} ║`);
+      console.log(`║  Model:    ${model.padEnd(48)} ║`);
+      console.log('║  Cost:     $0.00/run — nothing leaves this machine          ║');
+      console.log('╚══════════════════════════════════════════════════════════════╝\n');
+    } else if (provider === 'mistral') {
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║  EU SOVEREIGN MODE — Mistral (Paris)                        ║');
+      console.log('╚══════════════════════════════════════════════════════════════╝\n');
+    } else if (!hasAnthropicKey) {
       console.log('╔══════════════════════════════════════════════════════════════╗');
       console.log('║  DEMO MODE — no ANTHROPIC_API_KEY detected                  ║');
       console.log('║  Dashboard, auth, and Clawern dashboard will work.          ║');
       console.log('║  Agent workflows require an API key in .env                 ║');
+      console.log('║  (or set LAVERN_PROVIDER=local for on-device inference)     ║');
       console.log('╚══════════════════════════════════════════════════════════════╝\n');
     }
 
