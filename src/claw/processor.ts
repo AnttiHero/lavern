@@ -167,7 +167,7 @@ export async function processDocument(
       log(`🔒 Confidential — processing locally (${localModelName})`);
 
       try {
-        const localResult = await analyzeLocally(parsed.fullText, path.basename(documentPath), profile);
+        const localResult = await analyzeLocally(parsed.fullText, path.basename(documentPath), profile, log);
         const localFindings = extractLocalFindings(localResult);
         const deliveryDir = await delivery.deliverLocal(
           sessionId, localResult, documentPath, documentHash, clawConfig,

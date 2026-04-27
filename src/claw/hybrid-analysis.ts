@@ -106,7 +106,7 @@ export async function analyzeHybrid(
 ): Promise<HybridAnalysisResult> {
   // ── Step 1: Local triage ───────────────────────────────────────────────
   log(`[hybrid] Local triage: ${filename}`);
-  const localResult = await analyzeLocally(documentText, filename, profile);
+  const localResult = await analyzeLocally(documentText, filename, profile, log);
 
   const totalClauseCount = localResult.clauses.length;
 
