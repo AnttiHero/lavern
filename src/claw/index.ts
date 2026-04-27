@@ -228,21 +228,49 @@ async function runStart(args: ClawCliArgs): Promise<void> {
   console.log('\nPre-flight checks:');
   const checks: Array<{ label: string; ok: boolean; detail: string }> = [];
 
-  // 1. API key present
-  const apiKey = ensureApiKey();
-  checks.push({
-    label: 'API key configured',
-    ok: apiKey.length > 0,
-    detail: apiKey.length > 0 ? '' : 'ANTHROPIC_API_KEY not found in env or .env',
-  });
-
-  // 2. Profile exists
+  // 2. Profile exists (load first — needed to decide what credentials we
+  //    require: local-only mode skips the Anthropic key check entirely)
   const profile = loadProfile(dir);
+
+  // 1. Provider readiness — Anthropic key for cloud, Ollama for local.
+  //    A profile with processing='local' (or 'hybrid') needs Ollama, not
+  //    a Claude key. Without this branch the daemon refused to start in
+  //    fully-local installs.
+  const profileProcessing = profile?.processing ?? 'local';
+  if (profileProcessing === 'local') {
+    const localUrl = (config.claw.localModelUrl || config.local.baseUrl).replace(/\/$/, '');
+    const localModel = config.claw.localModel || config.local.defaultModel;
+    let ok = false; let detail = '';
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(`${localUrl}/api/tags`, { signal: controller.signal });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json() as { models?: Array<{ name?: string }> };
+        const names = (data.models ?? []).map(m => m.name ?? '');
+        if (names.some(n => n === localModel || n.startsWith(`${localModel}:`))) {
+          ok = true; detail = `${localModel} ready at ${localUrl}`;
+        } else {
+          detail = `Ollama running but ${localModel} not pulled. Run: ollama pull ${localModel}`;
+        }
+      } else { detail = `Ollama responded HTTP ${res.status} at ${localUrl}`; }
+    } catch { detail = `Ollama unreachable at ${localUrl} — is the menu-bar app running?`; }
+    checks.push({ label: 'Ollama (local model)', ok, detail });
+  } else {
+    const apiKey = ensureApiKey();
+    checks.push({
+      label: 'API key configured',
+      ok: apiKey.length > 0,
+      detail: apiKey.length > 0 ? '' : 'ANTHROPIC_API_KEY not found in env or .env',
+    });
+  }
   checks.push({
     label: profile ? `Profile loaded (${profile.company})` : 'Profile loaded',
     ok: profile !== null,
     detail: profile ? '' : 'No profile found. Run `lavern claw init` first.',
   });
+  // (API-key check moved above — provider-aware)
 
   // 3. Watch paths exist
   const allWatchPaths = [...(profile?.watchPaths ?? []), ...(args.watch ?? [])];
