@@ -33,8 +33,7 @@ import {
   type GateDecisionBody,
   type DerivativeBody,
 } from '../middleware/validation.js';
-import Anthropic from '@anthropic-ai/sdk';
-import { ensureApiKey } from '../../utils/ensure-api-key.js';
+import { crossProviderChat } from '../../providers/cross-provider-chat.js';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
@@ -1032,22 +1031,14 @@ export function registerSessionRoutes(
       // hydrate-from-archive.ts — see tests).
       const context = derivativeType.buildContext(session as SessionState);
 
-      // Call Claude API directly (single-turn, no tools).
-      // Uses Anthropic SDK not Agent SDK — derivatives need a fast single
-      // prose generation, not a full agent loop with tool catalog.
-      ensureApiKey();
-      const client = new Anthropic();
-      const response = await client.messages.create({
-        model: 'claude-opus-4-7',
-        max_tokens: 8192,
+      // Provider-aware single-turn call. Local mode uses Gemma; cloud uses Opus.
+      const { text: generatedContent } = await crossProviderChat({
         system: derivativeType.systemPrompt,
-        messages: [{ role: 'user', content: context }],
-      }, { timeout: 120_000 });
-
-      let generatedContent = '';
-      for (const block of response.content) {
-        if (block.type === 'text') generatedContent += block.text;
-      }
+        user: context,
+        tier: 'opus',
+        maxTokens: 8192,
+        timeoutMs: 240_000, // longer for local
+      });
 
       if (!generatedContent) {
         throw new Error('No content generated');
@@ -1194,28 +1185,20 @@ ${buildFullContext(session as SessionState)}`;
       : body.message.trim();
 
     try {
-      // Use Anthropic SDK directly. Non-streaming JSON response for reliability
-      // — the reply.hijack() + raw SSE write pattern was dropping bytes in this
-      // environment. Frontend reads { content } from the JSON.
-      ensureApiKey();
-      const client = new Anthropic();
-      const response = await client.messages.create({
-        model: 'claude-opus-4-7',
-        max_tokens: 4096,
+      // Provider-aware single-turn call (local Gemma or cloud Opus).
+      const { text: answer } = await crossProviderChat({
         system: systemPrompt,
-        messages: [{ role: 'user', content: prompt }],
-      }, { timeout: 120_000 });
+        user: prompt,
+        tier: 'opus',
+        maxTokens: 4096,
+        timeoutMs: 240_000,
+      });
 
-      let answer = '';
-      for (const block of response.content) {
-        if (block.type === 'text') answer += block.text;
-      }
-
-      logger.info('Conversation answered', { sessionId: id, chars: answer.length, stopReason: response.stop_reason });
+      logger.info('Conversation answered', { sessionId: id, chars: answer.length });
 
       return reply.send({
         content: answer,
-        stopReason: response.stop_reason,
+        stopReason: 'end_turn',
       });
     } catch (err) {
       logger.error('Conversation failed', { sessionId: id, error: err instanceof Error ? err.message : String(err) });

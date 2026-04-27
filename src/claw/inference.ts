@@ -13,9 +13,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { z } from 'zod';
-import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
-import { ensureApiKey } from '../utils/ensure-api-key.js';
+import { crossProviderChat } from '../providers/cross-provider-chat.js';
 import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
@@ -121,21 +120,13 @@ async function llmInfer(
   filename: string,
   profile: ClawProfile,
 ): Promise<{ type: string; workflow: string | null; reasoning: string; documentType: string; riskLevel: string }> {
-  ensureApiKey(); // Load from .env if not in process.env
-  const client = new Anthropic();
-
-  const response = await client.messages.create({
-    model: config.routerModel,
-    max_tokens: 300,
+  const { text } = await crossProviderChat({
     system: INFERENCE_PROMPT,
-    messages: [{
-      role: 'user',
-      content: `DOCUMENT: ${filename}\n\nCLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})\nCONCERNS: ${profile.concerns.join(', ')}\nRISK APPETITE: ${profile.preferences.riskAppetite}\n\nDOCUMENT EXCERPT (first 2000 chars):\n${documentExcerpt.slice(0, 2000)}`,
-    }],
+    user: `DOCUMENT: ${filename}\n\nCLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})\nCONCERNS: ${profile.concerns.join(', ')}\nRISK APPETITE: ${profile.preferences.riskAppetite}\n\nDOCUMENT EXCERPT (first 2000 chars):\n${documentExcerpt.slice(0, 2000)}`,
+    tier: 'haiku',
+    maxTokens: 300,
+    timeoutMs: 60_000,
   });
-
-  const firstBlock = response.content?.[0];
-  const text = firstBlock?.type === 'text' ? firstBlock.text : '';
 
   // Extract and validate JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);

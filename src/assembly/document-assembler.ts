@@ -36,13 +36,12 @@
  * session.finalOutput which retains the process log for audit/debugging).
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompts.js';
 import { validateDeliverable } from './validate-deliverable.js';
 import { extractCounselDocument } from './extract-counsel.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
-import { ensureApiKey } from '../utils/ensure-api-key.js';
+import { crossProviderChat, checkProviderReady } from '../providers/cross-provider-chat.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
 import { createLogger } from '../utils/logger.js';
@@ -136,8 +135,14 @@ async function llmQualityGate(
   request?: LegalRequest,
 ): Promise<{ pass: boolean; critique?: string; cost: number; apiError?: boolean }> {
   try {
-    ensureApiKey(); // Load from .env if not in process.env
-    const client = new Anthropic();
+    // Pre-flight: if the active provider isn't ready (e.g. local mode + Ollama
+    // down, or anthropic mode + no key), pass through cleanly. The gate is a
+    // safety net, not a hard requirement.
+    const notReady = await checkProviderReady();
+    if (notReady) {
+      logger.warn('Quality gate skipped — provider not ready', { reason: notReady });
+      return { pass: true, cost: 0, apiError: true };
+    }
 
     // Build a concise summary of what was expected
     const requestSummary = request?.requestText
@@ -180,25 +185,13 @@ Respond with EXACTLY one of these two formats (no other text):
 PASS
 FAIL: [one sentence explaining why this document is not good enough]`;
 
-    const response = await client.messages.create({
-      model: QUALITY_GATE_MODEL,
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }],
-    }, { timeout: 30_000 }); // 30s timeout for quality gate (short, fast call)
-
-    // Extract response text
-    let responseText = '';
-    for (const block of response.content) {
-      if (block.type === 'text') responseText += block.text;
-    }
-    responseText = responseText.trim();
-
-    // Calculate cost
-    const pricing = PRICING[QUALITY_GATE_MODEL] ?? PRICING['claude-opus-4-7'];
-    const inputTokens = response.usage?.input_tokens ?? 0;
-    const outputTokens = response.usage?.output_tokens ?? 0;
-    const gateCost = (inputTokens * pricing.input / 1_000_000) +
-      (outputTokens * pricing.output / 1_000_000);
+    const { text: responseText, cost: gateCost } = await crossProviderChat({
+      system: 'You are a quality gate for a legal document assembly system.',
+      user: prompt,
+      tier: 'sonnet',
+      maxTokens: 200,
+      timeoutMs: 30_000,
+    });
 
     // Parse response
     if (responseText.startsWith('PASS')) {
@@ -354,13 +347,8 @@ export async function assembleDocument(
   let gateFailureCount = 0; // Track consecutive quality gate API failures
   let lastStructuralReason: string | null = null;
   let consecutiveSameReason = 0;
-  ensureApiKey(); // Load from .env if not in process.env
-  const client = new Anthropic();
-
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
     try {
-      const model = config.defaultModel;
-
       // Build context with escalating retry addendums — ALL retries get feedback
       let assemblyContext = baseContext;
       if (attempt === 2 && rejectionReasons.length > 0) {
@@ -371,35 +359,22 @@ export async function assembleDocument(
 
       logger.info('Assembly attempt', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS });
 
-      const response = await client.messages.create({
-        model,
-        max_tokens: 16384,
+      const { text: rawText, cost: attemptCost } = await crossProviderChat({
         system: systemPrompt,
-        messages: [{ role: 'user', content: assemblyContext }],
-      }, { timeout: 90_000, maxRetries: 1 }); // 90s timeout; one retry on 429/5xx (was 2-min + 2 silent retries → 5+ min stalls)
-
-      // Extract text from response
-      let assembledText = '';
-      for (const block of response.content) {
-        if (block.type === 'text') {
-          assembledText += block.text;
-        }
-      }
+        user: assemblyContext,
+        tier: 'opus',
+        maxTokens: 16384,
+        timeoutMs: 90_000,
+      });
 
       // Post-process: strip any preamble that leaked through despite instructions
-      assembledText = stripProcessText(assembledText);
+      let assembledText = stripProcessText(rawText);
 
       // Track the longest output as fallback (better than nothing)
       if (assembledText.length > bestAttempt.length) {
         bestAttempt = assembledText;
       }
 
-      // Calculate cost
-      const pricing = PRICING[model] ?? PRICING['claude-opus-4-7'];
-      const inputTokens = response.usage?.input_tokens ?? 0;
-      const outputTokens = response.usage?.output_tokens ?? 0;
-      const attemptCost = (inputTokens * pricing.input / 1_000_000) +
-        (outputTokens * pricing.output / 1_000_000);
       totalAssemblyCost += attemptCost;
 
       // Update session cost
@@ -492,7 +467,7 @@ export async function assembleDocument(
       }
 
       if (qualityGate.pass) {
-        logger.info('Assembly complete', { attempt, chars: assembledText.length, inputTokens, outputTokens, cost: totalAssemblyCost.toFixed(2) });
+        logger.info('Assembly complete', { attempt, chars: assembledText.length, cost: totalAssemblyCost.toFixed(2) });
         logger.info('─'.repeat(60));
 
         emitAssemblyComplete(session, totalAssemblyCost);
@@ -651,9 +626,6 @@ async function llmCleanupExtracted(
   rawExtracted: string,
   setCleaned: (s: string) => void,
 ): Promise<number> {
-  ensureApiKey();
-  const client = new Anthropic();
-
   // Cap input at 100k chars to stay within context comfortably
   const MAX_INPUT = 100_000;
   const input = rawExtracted.length > MAX_INPUT
@@ -676,32 +648,18 @@ Your job: extract ONLY the client-facing memo. Output the memo content verbatim 
 
 Output the cleaned memo as markdown. No commentary, no "here is the cleaned version", no preamble. Start directly with the memo. End with the memo's natural conclusion (the disclaimer or specialist-referrals section).`;
 
-  const res = await client.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 16_384,
+  const { text: rawCleaned, cost: costUsd } = await crossProviderChat({
     system,
-    messages: [{ role: 'user', content: input }],
-  }, { timeout: 120_000, maxRetries: 1 });
-
-  let cleaned = '';
-  for (const block of res.content) {
-    if (block.type === 'text') cleaned += block.text;
-  }
-  cleaned = cleaned.trim();
+    user: input,
+    tier: 'sonnet',
+    maxTokens: 16_384,
+    timeoutMs: 120_000,
+  });
+  const cleaned = rawCleaned.trim();
 
   if (cleaned.length < 1000) {
     throw new Error(`Cleanup produced only ${cleaned.length} chars — likely refused`);
   }
-
-  // Sonnet 4.5 pricing
-  const inputTokens = res.usage?.input_tokens ?? 0;
-  const outputTokens = res.usage?.output_tokens ?? 0;
-  const cacheRead = (res.usage as { cache_read_input_tokens?: number } | undefined)?.cache_read_input_tokens ?? 0;
-  const regularInput = Math.max(0, inputTokens - cacheRead);
-  const costUsd =
-    (regularInput * 3.0 / 1_000_000) +
-    (outputTokens * 15.0 / 1_000_000) +
-    (cacheRead * 0.3 / 1_000_000);
 
   logger.info('LLM cleanup pass succeeded', {
     inputChars: input.length,

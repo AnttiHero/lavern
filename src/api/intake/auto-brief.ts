@@ -21,10 +21,9 @@
  * returned unchanged. Auto-enrichment is best-effort, never blocking.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { LegalRequest } from '../../types/index.js';
 import type { ParsedDocument } from '../../documents/types.js';
-import { ensureApiKey } from '../../utils/ensure-api-key.js';
+import { crossProviderChat } from '../../providers/cross-provider-chat.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('AUTO-BRIEF');
@@ -128,32 +127,15 @@ async function synthesise(
   userText: string,
   docs: ParsedDocument[],
 ): Promise<{ enrichedText: string; costUsd: number }> {
-  ensureApiKey();
-  const client = new Anthropic();
-
-  const res = await client.messages.create({
-    model: ENRICH_MODEL,
-    max_tokens: MAX_OUTPUT_TOKENS,
+  const { text, cost: costUsd } = await crossProviderChat({
     system: buildSystemPrompt(),
-    messages: [{ role: 'user', content: buildUserPrompt(userText, docs) }],
-  }, { timeout: REQUEST_TIMEOUT_MS });
+    user: buildUserPrompt(userText, docs),
+    tier: 'sonnet',
+    maxTokens: MAX_OUTPUT_TOKENS,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+  });
 
-  let text = '';
-  for (const block of res.content) {
-    if (block.type === 'text') text += block.text;
-  }
-  text = text.trim();
-
-  const pricing = pricingFor();
-  const inputTokens = res.usage?.input_tokens ?? 0;
-  const outputTokens = res.usage?.output_tokens ?? 0;
-  const cacheRead = (res.usage as { cache_read_input_tokens?: number } | undefined)?.cache_read_input_tokens ?? 0;
-  const regularInput = Math.max(0, inputTokens - cacheRead);
-  const costUsd =
-    (regularInput * pricing.input / 1_000_000) +
-    (outputTokens * pricing.output / 1_000_000);
-
-  return { enrichedText: text, costUsd };
+  return { enrichedText: text.trim(), costUsd };
 }
 
 /**
