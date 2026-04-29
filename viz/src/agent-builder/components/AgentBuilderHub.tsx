@@ -16,7 +16,10 @@
 import { useState, useCallback } from 'react';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 import { useUserProfile } from '../../my-page/hooks/useUserProfile.js';
+import { useCustomAgents } from '../hooks/useCustomAgents.js';
 import { CloneFromProfilePanel } from './CloneFromProfilePanel.js';
+import { CloneFromFirmPanel } from './CloneFromFirmPanel.js';
+import type { AgentProfile } from '../../types/agent-profile.js';
 
 interface CloneData {
   displayName?: string;
@@ -35,14 +38,23 @@ interface CloneData {
 interface Props {
   onBuildFromScratch: () => void;
   onCloneComplete: (data: CloneData) => void;
+  /** Called with the N firm-cloned profiles the user wants saved to their roster. */
+  onFirmCloneComplete: (profiles: AgentProfile[], firmName: string) => void;
 }
 
-type HubMode = 'menu' | 'clone';
+type HubMode = 'menu' | 'clone' | 'clone-firm';
 
-export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete }: Props) {
+export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmCloneComplete }: Props) {
   const [mode, setMode] = useState<HubMode>('menu');
   const { profile } = useUserProfile();
   const savedTeams = profile.savedTeams;
+  const { agents: customAgents, removeAgent } = useCustomAgents();
+
+  const handleRemoveAgent = useCallback((id: string, name: string) => {
+    if (confirm(`Remove ${name}?`)) {
+      removeAgent(id);
+    }
+  }, [removeAgent]);
 
   const handleImportTeam = useCallback((roles: string[]) => {
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(roles));
@@ -55,6 +67,17 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete }: Props) 
         <CloneFromProfilePanel
           onCancel={() => setMode('menu')}
           onComplete={onCloneComplete}
+        />
+      </div>
+    );
+  }
+
+  if (mode === 'clone-firm') {
+    return (
+      <div style={styles.container}>
+        <CloneFromFirmPanel
+          onCancel={() => setMode('menu')}
+          onComplete={onFirmCloneComplete}
         />
       </div>
     );
@@ -103,7 +126,24 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete }: Props) 
           }
         />
 
-        {/* ── Card 3: Import team ─────────────────────────────── */}
+        {/* ── Card 3: Clone a firm ────────────────────────────── */}
+        <HubCard
+          accent="#B47A3A"
+          title="Clone a firm"
+          description="Paste a firm's public homepage. We'll read it and mint a team grounded in what we find."
+          ctaLabel="Start from a URL"
+          onClick={() => setMode('clone-firm')}
+          badge="New"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18" />
+              <path d="M9 21V9" />
+            </svg>
+          }
+        />
+
+        {/* ── Card 4: Import team ─────────────────────────────── */}
         <HubCard
           accent="#6b5a3f"
           title="Import a team"
@@ -151,6 +191,44 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete }: Props) 
           )}
         </HubCard>
       </div>
+
+      {/* ── Your roster — list + delete custom agents ──────────────── */}
+      {customAgents.length > 0 && (
+        <div style={styles.roster}>
+          <div style={styles.rosterHeader}>
+            <div style={styles.rosterTitle}>Your roster</div>
+            <div style={styles.rosterCount}>
+              {customAgents.length} agent{customAgents.length === 1 ? '' : 's'} · {Math.min(customAgents.length, 20)}/20
+            </div>
+          </div>
+          <div style={styles.rosterGrid}>
+            {customAgents.map(({ id, profile: a }) => {
+              const avatar = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(a.avatarSeed || a.displayName)}&backgroundColor=transparent`;
+              return (
+                <div key={id} style={styles.rosterCard}>
+                  <img src={avatar} alt="" width={48} height={48} style={styles.rosterAvatar} />
+                  <div style={styles.rosterBody}>
+                    <div style={styles.rosterName}>{a.displayName}</div>
+                    <div style={styles.rosterArchetype}>{a.personality?.archetype}</div>
+                    <div style={styles.rosterMeta}>
+                      {a.seniority} · ${a.billingRateUsd?.toLocaleString() ?? '—'}/hr
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAgent(id, a.displayName)}
+                    style={styles.rosterRemove}
+                    title="Remove this agent"
+                    aria-label={`Remove ${a.displayName}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -366,5 +444,104 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textMuted,
     padding: '6px 10px',
     fontStyle: 'italic',
+  },
+  // ── Your-roster section ──────────────────────────────────────────────
+  roster: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTop: `1px solid ${colors.border}`,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.md,
+  },
+  rosterHeader: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  rosterTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    fontWeight: 500,
+    color: colors.text,
+    letterSpacing: 0.2,
+  },
+  rosterCount: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    fontWeight: 500,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  rosterGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: 10,
+  },
+  rosterCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    position: 'relative',
+  },
+  rosterAvatar: {
+    borderRadius: '50%',
+    backgroundColor: colors.bgPanel,
+    flexShrink: 0,
+  },
+  rosterBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+    minWidth: 0,
+    flex: 1,
+  },
+  rosterName: {
+    fontFamily: fonts.serif,
+    fontSize: 14,
+    fontWeight: 500,
+    color: colors.text,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  rosterArchetype: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontWeight: 600,
+  },
+  rosterMeta: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.textDim,
+    marginTop: 2,
+  },
+  rosterRemove: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    border: `1px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    color: colors.textMuted,
+    fontSize: 18,
+    fontFamily: fonts.sans,
+    fontWeight: 400,
+    cursor: 'pointer',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    padding: 0,
+    transition: 'all 150ms ease',
   },
 };
