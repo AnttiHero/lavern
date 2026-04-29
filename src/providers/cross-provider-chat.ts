@@ -171,15 +171,23 @@ export async function crossProviderChat(
   }
 
   // ── ANTHROPIC / MANAGED ──
+  // NOTE: Anthropic deprecated `temperature` for Opus 4.7 (April 2026 — the
+  // API now returns `invalid_request_error: 'temperature' is deprecated for
+  // this model`). Opus 4.7 always runs at the model's default sampling.
+  // Sonnet 4.5 still accepts temperature, so we conditionally include it.
   ensureApiKey();
   const client = new Anthropic();
-  const res = await client.messages.create({
+  const isOpus47 = /opus-4-7/.test(model);
+  const requestBody: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: opts.maxTokens,
-    temperature,
     system: opts.system,
     messages: [{ role: 'user', content: opts.user }],
-  }, { timeout: opts.timeoutMs ?? 120_000 });
+  };
+  if (!isOpus47) {
+    requestBody.temperature = temperature;
+  }
+  const res = await client.messages.create(requestBody, { timeout: opts.timeoutMs ?? 120_000 });
 
   let text = '';
   for (const block of res.content) {
