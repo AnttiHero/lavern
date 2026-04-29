@@ -16,7 +16,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { scrapeFirmSite, ScrapeError, extractSignaturePhrases } from '../agent-builder/firm-scraper.js';
+import { scrapeFirmSite, ScrapeError } from '../agent-builder/firm-scraper.js';
 import { analyzeFirm, synthesiseFirmSoul } from '../agent-builder/firm-analyzer.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -85,14 +85,10 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
 
       if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
 
-      // ── Phase A: extract signature phrases (no LLM, instant) ──────────
-      // We trickle these to the client during the long Opus + Soul calls
-      // so the wait is filled with "this is what we saw" — phrases drift
-      // into the parchment overlay.
-      const phrases = extractSignaturePhrases(scraped, 12);
-      log(`Identified ${phrases.length} signature phrase${phrases.length === 1 ? '' : 's'} from the site.`);
-
-      // ── Phase B: kick off Opus (agents) and Sonnet (soul) in parallel ─
+      // ── Kick off Opus (agents) and Sonnet (soul) in parallel ──────────
+      // The user sees a quiet pulsing parchment until the soul lands
+      // (~10 sec), then the team reveals when Opus returns (~30-60 sec).
+      // The soul IS the mid-wait entertainment.
       send({ type: 'progress', step: 'generating' });
       const agentsPromise = analyzeFirm(scraped, { count, hint, onLog: log });
       const soulPromise = synthesiseFirmSoul(scraped).catch((err) => {
@@ -102,16 +98,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
         return null;
       });
 
-      // ── Phase C: pace phrase reveal during the wait ───────────────────
-      // 1.6 sec per phrase × 12 = ~19 sec, comfortably inside Opus's
-      // typical 30-60 sec window.
-      for (const phrase of phrases) {
-        if (clientDisconnected) break;
-        send({ type: 'phrase', text: phrase });
-        await new Promise(r => setTimeout(r, 1600));
-      }
-
-      // ── Phase D: soul lands as soon as it's ready ─────────────────────
+      // Soul lands first (Sonnet is faster than Opus)
       const soulResult = await soulPromise;
       if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
       let soulCost = 0;

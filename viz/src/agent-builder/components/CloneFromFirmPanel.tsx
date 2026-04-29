@@ -56,7 +56,6 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
   const [firmName, setFirmName] = useState('');
   const [firmTagline, setFirmTagline] = useState('');
   const [firmSoul, setFirmSoul] = useState<string>('');
-  const [phrases, setPhrases] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cost, setCost] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -83,7 +82,6 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
     setFirmName('');
     setFirmTagline('');
     setFirmSoul('');
-    setPhrases([]);
     setErrorMsg(null);
     setCost(null);
 
@@ -134,12 +132,6 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
             return false;
           case 'progress':
             if (typeof e.step === 'string') pushLog(`⟢ ${e.step.toUpperCase()}`);
-            return false;
-          case 'phrase':
-            // Live "reading the firm" — drift these into the parchment view.
-            if (typeof e.text === 'string') {
-              setPhrases(prev => [...prev, e.text as string]);
-            }
             return false;
           case 'firm':
             if (e.firmName) setFirmName(String(e.firmName));
@@ -334,42 +326,31 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
 
       {(phase === 'running' || phase === 'done' || phase === 'error') && (
         <div style={styles.stage}>
-          {/* Parchment overlay — what we're reading from the firm */}
-          <div style={styles.parchment}>
-            {firmName ? (
-              <div style={styles.firmChapter}>
-                <div style={styles.firmName}>{firmName}</div>
-                {firmTagline && <div style={styles.firmTagline}>{firmTagline}</div>}
-              </div>
-            ) : (
-              <div style={styles.parchmentLabel}>Reading the firm</div>
-            )}
-
-            {phrases.length > 0 && (
-              <div style={styles.phraseStack}>
-                {phrases.map((p, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      ...styles.phrase,
-                      // Older phrases fade slightly so the newest stays brightest
-                      opacity: Math.max(0.35, 1 - (phrases.length - 1 - i) * 0.08),
-                      animation: `phrase-fade-in 700ms ease-out both`,
-                    }}
-                  >
-                    “{p}”
-                  </div>
-                ))}
-                {phase === 'running' && phrases.length > 0 && (
+          {/* Parchment overlay — quiet waiting state. The soul is the
+              mid-wait visual; until then, just an elegant pulse. */}
+          {(phase === 'running' || (phase === 'done' && !firmName)) && (
+            <div style={styles.parchment}>
+              {firmName ? (
+                <div style={styles.firmChapter}>
+                  <div style={styles.firmName}>{firmName}</div>
+                  {firmTagline && <div style={styles.firmTagline}>{firmTagline}</div>}
+                </div>
+              ) : (
+                <>
+                  <div style={styles.parchmentLabel}>Studying the firm</div>
                   <div style={styles.parchmentPulse}>·  ·  ·</div>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
+          )}
 
-            {phrases.length === 0 && phase === 'running' && (
-              <div style={styles.parchmentPulse}>·  ·  ·</div>
-            )}
-          </div>
+          {/* Once the firm name is known, show it as a chapter title above the team */}
+          {phase === 'done' && firmName && (
+            <div style={styles.firmChapterStandalone}>
+              <div style={styles.firmName}>{firmName}</div>
+              {firmTagline && <div style={styles.firmTagline}>{firmTagline}</div>}
+            </div>
+          )}
 
           {/* Firm soul — appears once Sonnet returns */}
           {firmSoul && (
@@ -455,7 +436,7 @@ function AgentMiniCard({ agent }: { agent: GeneratedAgent }) {
         </div>
       )}
       <div style={miniStyles.row}>
-        <img src={avatar} alt="" width={56} height={56} style={miniStyles.avatar} />
+        <img src={avatar} alt="" width={64} height={64} style={miniStyles.avatar} />
         <div style={miniStyles.body}>
           <div style={miniStyles.name}>{agent.displayName}</div>
           <div style={miniStyles.archetype}>{agent.personality.archetype}</div>
@@ -504,7 +485,7 @@ function toAgentProfile(g: GeneratedAgent): AgentProfile {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     width: '100%',
-    maxWidth: 880,
+    maxWidth: 1200,
     margin: '0 auto',
     padding: `${spacing.xl} ${spacing.lg}`,
     display: 'flex',
@@ -602,11 +583,16 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#2B2418',
     border: `1px solid #DCD2BB`,
     borderRadius: radii.md,
-    padding: '36px 40px',
-    minHeight: 220,
+    padding: '48px 40px',
+    minHeight: 180,
     boxShadow: 'inset 0 0 80px rgba(120, 90, 40, 0.06), 0 1px 2px rgba(0,0,0,0.04)',
     position: 'relative',
     overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
   },
   parchmentLabel: {
     fontFamily: fonts.sans, fontSize: 10, fontWeight: 500,
@@ -635,14 +621,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'rgba(43,36,24,0.62)',
     marginTop: 4, fontStyle: 'italic',
   },
-  phraseStack: {
-    display: 'flex', flexDirection: 'column', gap: 12,
-  },
-  phrase: {
-    fontFamily: fonts.serif, fontSize: 16,
-    color: '#3A2F1E', fontStyle: 'italic',
-    lineHeight: 1.45,
-    letterSpacing: 0.1,
+  firmChapterStandalone: {
+    paddingBottom: 12,
+    borderBottom: `1px solid ${colors.border}`,
+    marginBottom: 4,
   },
   // Soul card — appears once Sonnet returns. The firm's house voice.
   soulCard: {
@@ -694,8 +676,8 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0,
   },
   agentGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-    gap: 10,
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+    gap: 14,
   },
   error: {
     padding: spacing.md,
@@ -709,38 +691,37 @@ const styles: Record<string, React.CSSProperties> = {
 
 const miniStyles: Record<string, React.CSSProperties> = {
   card: {
-    display: 'flex', flexDirection: 'column', gap: 10,
-    padding: 14,
+    display: 'flex', flexDirection: 'column', gap: 14,
+    padding: 22,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     animation: 'card-rise 500ms ease-out both',
   },
   // Receipt: the literal phrase from the site that justifies this agent.
   // This is the headline — the credibility hook.
   receipt: {
-    fontFamily: fonts.serif, fontSize: 13,
+    fontFamily: fonts.serif, fontSize: 14,
     fontStyle: 'italic',
     color: colors.text,
-    lineHeight: 1.45,
-    paddingBottom: 10,
+    lineHeight: 1.55,
+    paddingBottom: 14,
     borderBottom: `1px solid ${colors.border}`,
-    display: '-webkit-box',
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
-    position: 'relative',
+    // No clamp — let the receipt breathe to its full length. These quotes
+    // are the credibility hook; truncating them mid-sentence undermines the
+    // whole point.
   },
   receiptMark: {
     fontFamily: fonts.serif,
-    fontSize: 18,
+    fontSize: 20,
     color: colors.accent,
     fontStyle: 'normal',
-    margin: '0 1px',
+    margin: '0 2px',
     fontWeight: 600,
+    lineHeight: 0,
   },
   row: {
-    display: 'flex', gap: 12, alignItems: 'flex-start',
+    display: 'flex', gap: 14, alignItems: 'flex-start',
   },
   avatar: {
     borderRadius: '50%',
@@ -748,28 +729,31 @@ const miniStyles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   body: {
-    display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0,
+    display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1,
   },
   name: {
-    fontFamily: fonts.serif, fontSize: 15, fontWeight: 500, color: colors.text,
+    fontFamily: fonts.serif, fontSize: 17, fontWeight: 500, color: colors.text,
+    letterSpacing: 0.1,
   },
   archetype: {
     fontFamily: fonts.sans, fontSize: 10, color: colors.accent,
-    textTransform: 'uppercase', letterSpacing: 0.6,
-    fontWeight: 500,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    fontWeight: 600,
+    marginTop: 1,
   },
   tagline: {
-    fontFamily: fonts.sans, fontSize: 11, color: colors.textSecondary,
-    lineHeight: 1.4,
-    marginTop: 2,
+    fontFamily: fonts.sans, fontSize: 12, color: colors.textSecondary,
+    lineHeight: 1.5,
+    marginTop: 5,
+    // Allow up to 3 lines instead of clamping at 2
     display: '-webkit-box',
-    WebkitLineClamp: 2,
+    WebkitLineClamp: 3,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
   meta: {
-    display: 'flex', gap: 5,
-    fontFamily: fonts.sans, fontSize: 10, color: colors.textDim,
-    marginTop: 4,
+    display: 'flex', gap: 6,
+    fontFamily: fonts.sans, fontSize: 11, color: colors.textDim,
+    marginTop: 6,
   },
 };
