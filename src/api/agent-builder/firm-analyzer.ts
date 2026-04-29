@@ -115,15 +115,18 @@ function buildSystemPrompt(): string {
 
 REQUIREMENTS
 
-1. **Named individuals only — strongly preferred.**
-   Every agent should correspond to a real, NAMED person you can identify from the scraped content (team page, partners list, leadership bios, "About us" mentions, named author of an insight article). The "displayName" field MUST be that person's actual name from the site (e.g. "Daniel Stranius, Managing Partner"). The "seenOnSite" field MUST cite the line of the website that names them — not a generic practice-area paragraph.
+1. **Named individuals only. No exceptions.**
+   Every agent MUST correspond to a real, NAMED person identified from the scraped content (team page, partners list, leadership bios, "About us" mentions, named author of an insight article). The "displayName" field MUST be that person's actual name from the site (e.g. "Daniel Stranius, Managing Partner"). The "seenOnSite" field MUST cite the specific line of the website that NAMES THEM. A practice-area paragraph or services description is NOT acceptable evidence — only a line containing the person's name.
 
-2. **Last-resort generic roles (only if the site lists fewer named people than the user requested).**
-   If after exhaustive search you genuinely cannot find enough named individuals, you MAY fill remaining slots with a single generic infrastructure/operations role per firm (e.g. "Knowledge Operations" or "Firm Engineer") — and the seenOnSite for that role MUST cite the specific firm capability that justifies it. Never invent multiple generic roles. Returning fewer agents than requested is acceptable and preferred over inventing personae.
+2. **Generic roles are forbidden.**
+   Do NOT invent roles like "Tech & IP Counsel", "Knowledge Manager", "Operations Lead", or "Firm Engineer" unless those exact words appear in the scraped content as someone's actual title. If you cannot find a real named person for a slot, leave it empty. Returning fewer agents than the user asked for is correct and expected. Inventing personae is the worst possible outcome.
 
-3. Each agent should still span the firm's needs — partner, associate, specialist, infrastructure — but ONLY if the site evidence supports each category. Do not force diversity by inventing roles.
+3. **The 'count' parameter is a maximum, not a target.**
+   If the user requests 5 and the site names 3 partners, return 3. If the site names 7 partners, return 5 (the user's max). If the site names 0 partners — only practice-area copy — return zero agents and an empty array. Never pad.
 
-4. Skills are on a 1–10 integer scale. Personality axes are 1–10 integers (low = left label, high = right label). Be deliberate — not every agent is a 10 at everything.
+4. Each named individual should be characterised through the lens of what the site says about them or their visible role. Personality, skills, and seniority should reflect what's evident from how they're described.
+
+5. Skills are on a 1–10 integer scale. Personality axes are 1–10 integers (low = left label, high = right label). Be deliberate — not every agent is a 10 at everything.
 
 5. Billing rates should track seniority: partner 1800–3500, counsel 1200–2000, senior-associate 900–1600, specialist 700–1400, associate 500–900, junior 200–500.
 
@@ -200,13 +203,19 @@ ${pagesBlock}
 
 ## Task
 
-Produce up to ${count} agents based on the actual NAMED people you can identify in the scraped content above. First scan for: managing partner, partners, of-counsel, named heads, named operations leaders, named authors. Use their REAL names in displayName. Cite the line that names them in seenOnSite.
+Find the NAMED individuals on this firm's team. Then characterise up to ${count} of them as agents.
 
-If you cannot find ${count} named individuals from the site, return fewer agents — that's better than inventing roles. Only as a last resort fill remaining slots with a single generic infrastructure or operations role per firm.
+Process:
+  1. Scan the scraped content above for proper names attached to titles. Look for "Managing Partner", "Partner", "Of Counsel", "Head of X", "CEO", "Chief X Officer", "Operations Manager", "Compliance Officer", and similar — paired with a person's first and last name.
+  2. List every named person you found and the line that names them.
+  3. Pick the most senior / most prominent up to ${count} of those people.
+  4. Build an agent for each. The displayName MUST be their actual name; seenOnSite MUST be the line that names them.
+
+If step 1 finds fewer than ${count} named people, return only the ones you found. Returning 1 agent is better than returning ${count} where ${count - 1} are real and 1 is invented. Returning 0 is acceptable if the site is purely marketing copy with no team identification.
 
 ${hint ? `User hint: ${hint}` : ''}
 
-Return a JSON object with fields: firmName, firmTagline, agents (array, up to ${count} entries — fewer is fine if the site doesn't support more).`;
+Return a JSON object with fields: firmName, firmTagline, agents (array — exactly the number of named people you actually found, up to ${count} max, can be 0 if the site has no named team members).`;
 }
 
 // ── Main entry ─────────────────────────────────────────────────────────
@@ -262,10 +271,72 @@ export async function analyzeFirm(
     throw new Error(`Firm analyzer output failed schema: ${validated.error.issues.map(i => i.path.join('.') + ' ' + i.message).slice(0, 3).join('; ')}`);
   }
 
-  const costUsd = costUsdFromCall;
-  opts.onLog?.(`Done — ${validated.data.agents.length} agents in $${costUsd.toFixed(3)}.`);
+  // Server-side backstop: drop any agent whose displayName looks like a
+  // generic role title rather than a real person's name. The model is
+  // strongly instructed not to produce these, but Opus occasionally pads
+  // when the site has fewer named individuals than requested.
+  const realPeople = validated.data.agents.filter(isLikelyNamedIndividual);
+  const removedCount = validated.data.agents.length - realPeople.length;
+  if (removedCount > 0) {
+    opts.onLog?.(`Filtered ${removedCount} generic role${removedCount === 1 ? '' : 's'} (only named individuals are kept).`);
+  }
 
-  return { analysis: validated.data, costUsd };
+  const finalAnalysis: FirmAnalysis = {
+    firmName: validated.data.firmName,
+    firmTagline: validated.data.firmTagline,
+    agents: realPeople,
+  };
+
+  const costUsd = costUsdFromCall;
+  opts.onLog?.(`Done — ${finalAnalysis.agents.length} agent${finalAnalysis.agents.length === 1 ? '' : 's'} in $${costUsd.toFixed(3)}.`);
+
+  return { analysis: finalAnalysis, costUsd };
+}
+
+/**
+ * Heuristic: does this agent represent a real named person?
+ *
+ * A name typically:
+ *   - Has 2+ capitalised words (e.g. "Daniel Stranius", "Aino Kimppa")
+ *   - The first word starts with a capital and is 2-20 chars
+ *   - The "seenOnSite" field also mentions the same name
+ *
+ * A generic role typically:
+ *   - displayName is words like "Counsel", "Partner", "Manager" alone
+ *   - Or a practice area: "Tech & IP Counsel", "Knowledge Manager"
+ *   - seenOnSite cites a paragraph, not a personal mention
+ */
+function isLikelyNamedIndividual(agent: GeneratedAgent): boolean {
+  const name = agent.displayName.trim();
+
+  // Generic-role red flags: leading title-only words with no clear personal name
+  const GENERIC_LEADING = /^(?:The\b|Tech\b|IP\b|Senior\b|Junior\b|Chief\b|Head of\b|Lead\b|Principal\b|Knowledge\b|Operations\b|Compliance\b|Risk\b|Practice\b|Deputy\b|Group\b|Firm\b|Strategy\b|Innovation\b|Digital\b|AI\b|Data\b|Tax\b|Finance\b|HR\b|Marketing\b|Business\b|Client\b)/i;
+  // Bare titles with no personal name component
+  const BARE_TITLE = /^(?:[A-Z][a-z]*\s*&?\s*)*(?:Counsel|Partner|Associate|Manager|Officer|Director|Specialist|Lawyer|Attorney|Engineer|Architect|Lead|Advisor)$/i;
+
+  // Extract candidate person-name tokens: capitalised 2-20 char words that
+  // are not entirely uppercase abbreviations (IP, AI, etc.)
+  const personTokens = name
+    .split(/[\s,]+/)
+    .filter(w => /^[A-Z][a-zA-Z'`-]{1,19}$/.test(w))
+    .filter(w => !/^[A-Z]+$/.test(w))               // skip ALLCAPS like "IP", "AI"
+    .filter(w => !/^(The|And|Of|For|At|In|To|A|An)$/.test(w)); // skip filler
+
+  // Need at least 2 person-name-shaped tokens for it to look like a name
+  if (personTokens.length < 2) return false;
+  if (BARE_TITLE.test(name) && personTokens.length < 2) return false;
+
+  // If the first word is a generic title flag AND there's no clear given+surname,
+  // probably not a person.
+  if (GENERIC_LEADING.test(name) && personTokens.length < 2) return false;
+
+  // The seenOnSite citation should also mention the name (or a portion of it).
+  // Loose check: at least one personTokens entry should appear in seenOnSite.
+  const cite = agent.seenOnSite.toLowerCase();
+  const nameMentioned = personTokens.some(t => cite.includes(t.toLowerCase()));
+  if (!nameMentioned) return false;
+
+  return true;
 }
 
 // ── Schema lenience ────────────────────────────────────────────────────
