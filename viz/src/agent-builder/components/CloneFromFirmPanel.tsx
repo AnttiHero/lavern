@@ -61,13 +61,24 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
   const [cost, setCost] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const canRun = phase === 'input' && url.trim().length > 4 && /^https?:\/\//i.test(url.trim());
+  // Looks like a domain if it has at least one dot and a TLD-ish suffix.
+  // Scheme is optional — we auto-prepend https:// at submit time.
+  const looksLikeDomain = (s: string): boolean => {
+    const cleaned = s.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(cleaned) && cleaned.length >= 4;
+  };
+  const canRun = phase === 'input' && looksLikeDomain(url);
+  const normalisedUrl = (raw: string): string => {
+    const trimmed = raw.trim();
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
 
   const pushLog = useCallback((m: string) => setLogs(prev => [...prev, m]), []);
 
   const startImport = useCallback(async () => {
+    const targetUrl = normalisedUrl(url);
     setPhase('running');
-    setLogs([`▸ Target: ${url.trim()}`]);
+    setLogs([`▸ Target: ${targetUrl}`]);
     setAgents([]);
     setFirmName('');
     setFirmTagline('');
@@ -97,7 +108,7 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: url.trim(),
+          url: targetUrl,
           count,
           hint: hint.trim() || undefined,
         }),
@@ -267,7 +278,7 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
               type="url"
               value={url}
               onChange={e => setUrl(e.target.value)}
-              placeholder="https://www.wachtell.com"
+              placeholder="wachtell.com"
               autoFocus
               style={styles.input}
             />
