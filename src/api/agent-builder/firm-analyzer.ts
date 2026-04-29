@@ -246,3 +246,73 @@ export async function analyzeFirm(
 
   return { analysis: validated.data, costUsd };
 }
+
+// ── Firm Soul Synthesis ────────────────────────────────────────────────
+
+/**
+ * From the same scraped content, produce a 4-sentence Lavern Soul — the
+ * firm's voice, principles, what it refuses, what it loves.
+ *
+ * This is what plugs into the existing Soul feature on My Page. After a
+ * firm is cloned, the user gets BOTH the team AND the firm's house voice,
+ * ready to drop into any matter.
+ *
+ * Single Sonnet 4.5 call. ~5-10 sec. ~$0.02-0.05.
+ */
+export async function synthesiseFirmSoul(
+  scraped: ScrapeResult,
+): Promise<{ soul: string; costUsd: number }> {
+  // Use only the homepage + first follow page to keep this cheap and tight.
+  const MAX_CHARS = 8_000;
+  const content = scraped.pages
+    .slice(0, 2)
+    .map((p, i) => `### Page ${i + 1}: ${p.title || p.url}\n${p.text}`)
+    .join('\n\n')
+    .slice(0, MAX_CHARS);
+
+  const system = `You are a firm anthropologist. Given the public face of a law/professional services firm, you write a four-sentence "Soul" — the firm's house voice and principles — for a multi-agent legal system to inhabit.
+
+Rules:
+- EXACTLY four sentences. No more, no fewer. Each ends with a period.
+- Voice: editorial, dignified, slightly Cormac McCarthy. Not breathless. No "passionate about". No marketing hype.
+- Sentence 1: how this firm SOUNDS — register, formality, signature phrases.
+- Sentence 2: what this firm BELIEVES — its operating principle.
+- Sentence 3: what this firm REFUSES — the kind of work or behaviour that's beneath them.
+- Sentence 4: what this firm LOVES — what makes them lean forward.
+- No proper nouns from the firm (no firm name, no partner names). Speak ABOUT them, abstractly. The Soul is a behaviour profile, not a brand bio.
+
+Output: a single JSON object: { "soul": "string" } — nothing else.`;
+
+  const user = `Firm website content:\n\n${content}\n\nNow produce the Soul.`;
+
+  const { text: raw, cost: costUsd } = await crossProviderChat({
+    system,
+    user,
+    tier: 'sonnet',
+    maxTokens: 600,
+    timeoutMs: 60_000,
+  });
+
+  // Extract the soul string from JSON response
+  let soul = '';
+  try {
+    const jsonText = extractFirstJsonObject(raw);
+    if (jsonText) {
+      const parsed = JSON.parse(jsonText) as { soul?: string };
+      if (typeof parsed.soul === 'string') soul = parsed.soul.trim();
+    }
+  } catch {
+    /* fall through */
+  }
+
+  // Fallback: if JSON parse failed, take the raw text as the soul (best effort)
+  if (!soul && raw.trim()) {
+    soul = raw.trim().replace(/^[\s"'`]*soul[\s"':]*\s*/i, '').replace(/^["']|["']$/g, '');
+  }
+
+  if (!soul) {
+    throw new Error('Soul synthesis returned empty content');
+  }
+
+  return { soul, costUsd };
+}

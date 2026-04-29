@@ -55,6 +55,8 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
   const [agents, setAgents] = useState<GeneratedAgent[]>([]);
   const [firmName, setFirmName] = useState('');
   const [firmTagline, setFirmTagline] = useState('');
+  const [firmSoul, setFirmSoul] = useState<string>('');
+  const [phrases, setPhrases] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cost, setCost] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -69,6 +71,8 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
     setAgents([]);
     setFirmName('');
     setFirmTagline('');
+    setFirmSoul('');
+    setPhrases([]);
     setErrorMsg(null);
     setCost(null);
 
@@ -112,13 +116,26 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
 
       // Helper: handle one parsed event. Returns true if we should stop the loop.
       const handleEvent = (evt: unknown): boolean => {
-        const e = evt as { type?: string; message?: string; step?: string; profile?: GeneratedAgent; firmName?: string; firmTagline?: string; cost?: number };
+        const e = evt as { type?: string; message?: string; step?: string; profile?: GeneratedAgent; firmName?: string; firmTagline?: string; cost?: number; text?: string; soul?: string };
         switch (e.type) {
           case 'log':
             if (typeof e.message === 'string') pushLog(`· ${e.message}`);
             return false;
           case 'progress':
             if (typeof e.step === 'string') pushLog(`⟢ ${e.step.toUpperCase()}`);
+            return false;
+          case 'phrase':
+            // Live "reading the firm" — drift these into the parchment view.
+            if (typeof e.text === 'string') {
+              setPhrases(prev => [...prev, e.text as string]);
+            }
+            return false;
+          case 'firm':
+            if (e.firmName) setFirmName(String(e.firmName));
+            if (e.firmTagline) setFirmTagline(String(e.firmTagline));
+            return false;
+          case 'soul':
+            if (typeof e.soul === 'string') setFirmSoul(e.soul);
             return false;
           case 'agent':
             if (e.profile) {
@@ -138,7 +155,6 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
             pendingError = e.message || 'Firm import failed (no detail).';
             return true;
           case 'heartbeat':
-            // Server keepalive — no UI change, just consume.
             return false;
           default:
             return false;
@@ -220,6 +236,21 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
 
   return (
     <div style={styles.container}>
+      {/* Inline keyframes for the cinematic reveal animations */}
+      <style>{`
+        @keyframes phrase-fade-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes phrase-pulse {
+          0%, 100% { opacity: 0.25; }
+          50%      { opacity: 0.6; }
+        }
+        @keyframes card-rise {
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
       <div style={styles.header}>
         <div style={styles.title}>Clone a firm</div>
         <div style={styles.sub}>
@@ -292,20 +323,59 @@ export function CloneFromFirmPanel({ onCancel, onComplete }: Props) {
 
       {(phase === 'running' || phase === 'done' || phase === 'error') && (
         <div style={styles.stage}>
-          <div style={styles.logPane}>
-            {firmName && (
-              <div style={styles.firmBanner}>
+          {/* Parchment overlay — what we're reading from the firm */}
+          <div style={styles.parchment}>
+            {firmName ? (
+              <div style={styles.firmChapter}>
                 <div style={styles.firmName}>{firmName}</div>
                 {firmTagline && <div style={styles.firmTagline}>{firmTagline}</div>}
               </div>
+            ) : (
+              <div style={styles.parchmentLabel}>Reading the firm</div>
             )}
-            <div style={styles.logList}>
-              {logs.map((line, i) => (
-                <div key={i} style={styles.logLine}>{line}</div>
-              ))}
-              {phase === 'running' && <div style={styles.logLinePulse}>▸ working…</div>}
-            </div>
+
+            {phrases.length > 0 && (
+              <div style={styles.phraseStack}>
+                {phrases.map((p, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      ...styles.phrase,
+                      // Older phrases fade slightly so the newest stays brightest
+                      opacity: Math.max(0.35, 1 - (phrases.length - 1 - i) * 0.08),
+                      animation: `phrase-fade-in 700ms ease-out both`,
+                    }}
+                  >
+                    “{p}”
+                  </div>
+                ))}
+                {phase === 'running' && phrases.length > 0 && (
+                  <div style={styles.parchmentPulse}>·  ·  ·</div>
+                )}
+              </div>
+            )}
+
+            {phrases.length === 0 && phase === 'running' && (
+              <div style={styles.parchmentPulse}>·  ·  ·</div>
+            )}
           </div>
+
+          {/* Firm soul — appears once Sonnet returns */}
+          {firmSoul && (
+            <div style={styles.soulCard}>
+              <div style={styles.soulLabel}>This is how they sound</div>
+              <div style={styles.soulText}>{firmSoul}</div>
+            </div>
+          )}
+
+          {/* Compact log line — for transparency, not the headline anymore */}
+          {logs.length > 0 && phase === 'running' && (
+            <div style={styles.logTrace}>
+              {logs.slice(-3).map((line, i) => (
+                <div key={i} style={styles.logTraceLine}>{line}</div>
+              ))}
+            </div>
+          )}
 
           {agents.length > 0 && (
             <div style={styles.roster}>
@@ -364,19 +434,27 @@ function AgentMiniCard({ agent }: { agent: GeneratedAgent }) {
   const avatar = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(agent.displayName)}&backgroundColor=transparent`;
   return (
     <div style={miniStyles.card}>
-      <img src={avatar} alt="" width={48} height={48} style={miniStyles.avatar} />
-      <div style={miniStyles.body}>
-        <div style={miniStyles.name}>{agent.displayName}</div>
-        <div style={miniStyles.archetype}>{agent.personality.archetype}</div>
-        <div style={miniStyles.tagline}>{agent.tagline}</div>
-        <div style={miniStyles.meta}>
-          <span>{agent.seniority}</span>
-          <span>·</span>
-          <span>${agent.billingRateUsd.toLocaleString()}/hr</span>
+      {/* Receipt: the literal phrase from the site that justified this agent.
+          This is the headline. The rest is supporting cast. */}
+      {agent.seenOnSite && (
+        <div style={miniStyles.receipt}>
+          <span style={miniStyles.receiptMark}>“</span>
+          {agent.seenOnSite}
+          <span style={miniStyles.receiptMark}>”</span>
         </div>
-        {agent.seenOnSite && (
-          <div style={miniStyles.cite}>“{agent.seenOnSite}”</div>
-        )}
+      )}
+      <div style={miniStyles.row}>
+        <img src={avatar} alt="" width={56} height={56} style={miniStyles.avatar} />
+        <div style={miniStyles.body}>
+          <div style={miniStyles.name}>{agent.displayName}</div>
+          <div style={miniStyles.archetype}>{agent.personality.archetype}</div>
+          <div style={miniStyles.tagline}>{agent.tagline}</div>
+          <div style={miniStyles.meta}>
+            <span>{agent.seniority}</span>
+            <span>·</span>
+            <span>${agent.billingRateUsd.toLocaleString()}/hr</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -506,38 +584,87 @@ const styles: Record<string, React.CSSProperties> = {
   stage: {
     display: 'flex', flexDirection: 'column', gap: spacing.lg,
   },
-  logPane: {
-    backgroundColor: '#0e0e0e',
-    color: '#E8E6DF',
+  // Parchment — the cinematic "reading the firm" panel that replaces the
+  // previous developer-console log pane. Editorial, dignified, slow.
+  parchment: {
+    background: 'linear-gradient(180deg, #FBF7EE 0%, #F5EFDF 100%)',
+    color: '#2B2418',
+    border: `1px solid #DCD2BB`,
     borderRadius: radii.md,
-    padding: spacing.lg,
-    fontFamily: `'SF Mono','Fira Code',Menlo,monospace`,
-    fontSize: 12,
-    lineHeight: 1.6,
-    minHeight: 160,
-    maxHeight: 300,
-    overflowY: 'auto',
+    padding: '36px 40px',
+    minHeight: 220,
+    boxShadow: 'inset 0 0 80px rgba(120, 90, 40, 0.06), 0 1px 2px rgba(0,0,0,0.04)',
+    position: 'relative',
+    overflow: 'hidden',
   },
-  firmBanner: {
-    marginBottom: 10,
-    paddingBottom: 10,
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
+  parchmentLabel: {
+    fontFamily: fonts.sans, fontSize: 10, fontWeight: 500,
+    color: 'rgba(43,36,24,0.45)',
+    textTransform: 'uppercase', letterSpacing: 2,
+    marginBottom: 14,
+  },
+  parchmentPulse: {
+    fontFamily: fonts.serif,
+    color: 'rgba(43,36,24,0.35)',
+    fontSize: 18, letterSpacing: 6,
+    marginTop: 12,
+    animation: 'phrase-pulse 1.6s ease-in-out infinite',
+  },
+  firmChapter: {
+    marginBottom: 18,
+    paddingBottom: 14,
+    borderBottom: '1px solid rgba(43,36,24,0.12)',
   },
   firmName: {
-    fontFamily: fonts.serif, fontSize: 18, color: '#FAF9F6', letterSpacing: 0.3,
+    fontFamily: fonts.serif, fontSize: 28, fontWeight: 500,
+    color: '#1A140A', letterSpacing: 0.2,
   },
   firmTagline: {
-    fontSize: 11, color: 'rgba(250,249,246,0.55)', marginTop: 2, fontStyle: 'italic',
+    fontFamily: fonts.serif, fontSize: 14,
+    color: 'rgba(43,36,24,0.62)',
+    marginTop: 4, fontStyle: 'italic',
   },
-  logList: {
+  phraseStack: {
+    display: 'flex', flexDirection: 'column', gap: 12,
+  },
+  phrase: {
+    fontFamily: fonts.serif, fontSize: 16,
+    color: '#3A2F1E', fontStyle: 'italic',
+    lineHeight: 1.45,
+    letterSpacing: 0.1,
+  },
+  // Soul card — appears once Sonnet returns. The firm's house voice.
+  soulCard: {
+    background: '#1A140A',
+    color: '#F5EFDF',
+    borderRadius: radii.md,
+    padding: '28px 32px',
+    border: '1px solid #2B2418',
+  },
+  soulLabel: {
+    fontFamily: fonts.sans, fontSize: 10, fontWeight: 500,
+    color: '#E8845C',
+    textTransform: 'uppercase', letterSpacing: 2,
+    marginBottom: 12,
+  },
+  soulText: {
+    fontFamily: fonts.serif, fontSize: 17,
+    color: '#F5EFDF',
+    lineHeight: 1.6, fontStyle: 'italic',
+  },
+  // Compact running log — small, technical, secondary
+  logTrace: {
+    fontFamily: `'SF Mono','Fira Code',Menlo,monospace`,
+    fontSize: 11,
+    color: colors.textDim,
+    padding: '8px 12px',
+    background: 'transparent',
+    borderTop: `1px dashed ${colors.border}`,
+    borderBottom: `1px dashed ${colors.border}`,
     display: 'flex', flexDirection: 'column', gap: 2,
   },
-  logLine: {
-    color: 'rgba(232,230,223,0.75)',
-  },
-  logLinePulse: {
-    color: '#E8845C',
-    animation: 'pulse 1.2s ease-in-out infinite',
+  logTraceLine: {
+    opacity: 0.7,
   },
   roster: {
     display: 'flex', flexDirection: 'column', gap: spacing.md,
@@ -571,11 +698,38 @@ const styles: Record<string, React.CSSProperties> = {
 
 const miniStyles: Record<string, React.CSSProperties> = {
   card: {
-    display: 'flex', gap: 10,
-    padding: 10,
+    display: 'flex', flexDirection: 'column', gap: 10,
+    padding: 14,
     backgroundColor: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: radii.sm,
+    animation: 'card-rise 500ms ease-out both',
+  },
+  // Receipt: the literal phrase from the site that justifies this agent.
+  // This is the headline — the credibility hook.
+  receipt: {
+    fontFamily: fonts.serif, fontSize: 13,
+    fontStyle: 'italic',
+    color: colors.text,
+    lineHeight: 1.45,
+    paddingBottom: 10,
+    borderBottom: `1px solid ${colors.border}`,
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  receiptMark: {
+    fontFamily: fonts.serif,
+    fontSize: 18,
+    color: colors.accent,
+    fontStyle: 'normal',
+    margin: '0 1px',
+    fontWeight: 600,
+  },
+  row: {
+    display: 'flex', gap: 12, alignItems: 'flex-start',
   },
   avatar: {
     borderRadius: '50%',
@@ -583,18 +737,20 @@ const miniStyles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   body: {
-    display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0,
+    display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0,
   },
   name: {
-    fontFamily: fonts.serif, fontSize: 14, fontWeight: 500, color: colors.text,
+    fontFamily: fonts.serif, fontSize: 15, fontWeight: 500, color: colors.text,
   },
   archetype: {
     fontFamily: fonts.sans, fontSize: 10, color: colors.accent,
-    textTransform: 'uppercase', letterSpacing: 0.5,
+    textTransform: 'uppercase', letterSpacing: 0.6,
+    fontWeight: 500,
   },
   tagline: {
     fontFamily: fonts.sans, fontSize: 11, color: colors.textSecondary,
     lineHeight: 1.4,
+    marginTop: 2,
     display: '-webkit-box',
     WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical',
@@ -603,13 +759,6 @@ const miniStyles: Record<string, React.CSSProperties> = {
   meta: {
     display: 'flex', gap: 5,
     fontFamily: fonts.sans, fontSize: 10, color: colors.textDim,
-  },
-  cite: {
-    fontFamily: fonts.sans, fontSize: 10, fontStyle: 'italic',
-    color: colors.textDim, marginTop: 4,
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
+    marginTop: 4,
   },
 };

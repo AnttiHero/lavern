@@ -16,8 +16,8 @@
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { scrapeFirmSite, ScrapeError } from '../agent-builder/firm-scraper.js';
-import { analyzeFirm } from '../agent-builder/firm-analyzer.js';
+import { scrapeFirmSite, ScrapeError, extractSignaturePhrases } from '../agent-builder/firm-scraper.js';
+import { analyzeFirm, synthesiseFirmSoul } from '../agent-builder/firm-analyzer.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('AGENT-BUILDER');
@@ -85,30 +85,72 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
 
       if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
 
+      // ── Phase A: extract signature phrases (no LLM, instant) ──────────
+      // We trickle these to the client during the long Opus + Soul calls
+      // so the wait is filled with "this is what we saw" — phrases drift
+      // into the parchment overlay.
+      const phrases = extractSignaturePhrases(scraped, 12);
+      log(`Identified ${phrases.length} signature phrase${phrases.length === 1 ? '' : 's'} from the site.`);
+
+      // ── Phase B: kick off Opus (agents) and Sonnet (soul) in parallel ─
       send({ type: 'progress', step: 'generating' });
-      const { analysis, costUsd } = await analyzeFirm(scraped, { count, hint, onLog: log });
+      const agentsPromise = analyzeFirm(scraped, { count, hint, onLog: log });
+      const soulPromise = synthesiseFirmSoul(scraped).catch((err) => {
+        // Soul is nice-to-have. If it fails, log + continue with agents.
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn('Soul synthesis failed (non-fatal)', { url, error: msg });
+        return null;
+      });
 
-      if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
-
-      // Fire one agent event per profile for reveal sequencing
-      for (const profile of analysis.agents) {
-        send({ type: 'agent', profile });
-        // Small stagger so client animations feel paced, not blasted
-        await new Promise(r => setTimeout(r, 120));
+      // ── Phase C: pace phrase reveal during the wait ───────────────────
+      // 1.6 sec per phrase × 12 = ~19 sec, comfortably inside Opus's
+      // typical 30-60 sec window.
+      for (const phrase of phrases) {
+        if (clientDisconnected) break;
+        send({ type: 'phrase', text: phrase });
+        await new Promise(r => setTimeout(r, 1600));
       }
 
+      // ── Phase D: soul lands as soon as it's ready ─────────────────────
+      const soulResult = await soulPromise;
+      if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
+      let soulCost = 0;
+      if (soulResult) {
+        soulCost = soulResult.costUsd;
+        send({ type: 'soul', soul: soulResult.soul });
+      }
+
+      // ── Phase E: agents land when Opus finishes ───────────────────────
+      const { analysis, costUsd: agentsCost } = await agentsPromise;
+      if (clientDisconnected) { clearInterval(heartbeat); reply.raw.end(); return; }
+
+      // Fire firm name as a separate event so the parchment can resolve
+      // to a chapter title before the cards stagger in.
+      send({ type: 'firm', firmName: analysis.firmName, firmTagline: analysis.firmTagline });
+      await new Promise(r => setTimeout(r, 700));
+
+      // Then archetype names only — quick chapter-title reveal — followed
+      // by the full card data 400 ms later for the expand animation.
+      for (const profile of analysis.agents) {
+        if (clientDisconnected) break;
+        send({ type: 'agent', profile });
+        await new Promise(r => setTimeout(r, 350));
+      }
+
+      const totalCost = agentsCost + soulCost;
       send({
         type: 'done',
         firmName: analysis.firmName,
         firmTagline: analysis.firmTagline,
-        cost: Number(costUsd.toFixed(4)),
+        cost: Number(totalCost.toFixed(4)),
       });
 
       logger.info('Firm import complete', {
         url,
         firmName: analysis.firmName,
         agents: analysis.agents.length,
-        costUsd: costUsd.toFixed(4),
+        soulPresent: !!soulResult,
+        costUsd: totalCost.toFixed(4),
       });
     } catch (err) {
       if (err instanceof ScrapeError) {
