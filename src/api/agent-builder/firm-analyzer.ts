@@ -235,6 +235,14 @@ export async function analyzeFirm(
     throw new Error(`Firm analyzer returned malformed JSON: ${(err as Error).message}`);
   }
 
+  // ── Lenience pass ──────────────────────────────────────────────────
+  // Models occasionally overshoot array caps (5 practice areas instead of 4)
+  // or extend a string past its limit. Failing the whole batch over an
+  // off-by-one is bad UX. Clip arrays to schema max and truncate strings
+  // before validation. The schema still rejects type mismatches, missing
+  // fields, and out-of-enum values — the things that actually matter.
+  parsed = clipForSchema(parsed);
+
   const validated = FirmAnalysisSchema.safeParse(parsed);
   if (!validated.success) {
     logger.warn('Schema validation failed', { issues: validated.error.issues.slice(0, 5) });
@@ -245,6 +253,80 @@ export async function analyzeFirm(
   opts.onLog?.(`Done — ${validated.data.agents.length} agents in $${costUsd.toFixed(3)}.`);
 
   return { analysis: validated.data, costUsd };
+}
+
+// ── Schema lenience ────────────────────────────────────────────────────
+
+/**
+ * Clip the raw model output to the bounds the Zod schema enforces, so a
+ * one-off "5 practice areas instead of 4" or a 145-char strength doesn't
+ * fail the whole import. Only clips arrays (truncate from the end) and
+ * strings (trim trailing chars). Does NOT add missing fields or change
+ * types — the schema still catches real problems.
+ */
+function clipForSchema(input: unknown): unknown {
+  if (!input || typeof input !== 'object') return input;
+  const root = input as Record<string, unknown>;
+
+  // Top-level firmName / firmTagline string caps (120 / 200)
+  if (typeof root.firmName === 'string' && root.firmName.length > 120) {
+    root.firmName = root.firmName.slice(0, 120);
+  }
+  if (typeof root.firmTagline === 'string' && root.firmTagline.length > 200) {
+    root.firmTagline = root.firmTagline.slice(0, 200);
+  }
+
+  // Per-agent caps
+  if (!Array.isArray(root.agents)) return root;
+  let agents = root.agents as unknown[];
+  // Cap top-level agents at 10 (schema max)
+  if (agents.length > 10) agents = agents.slice(0, 10);
+  root.agents = agents;
+
+  for (const agent of agents) {
+    if (!agent || typeof agent !== 'object') continue;
+    const a = agent as Record<string, unknown>;
+
+    // String fields with max-length caps
+    const stringCaps: Record<string, number> = {
+      displayName: 60, tagline: 140, seenOnSite: 240,
+    };
+    for (const [field, cap] of Object.entries(stringCaps)) {
+      if (typeof a[field] === 'string' && (a[field] as string).length > cap) {
+        a[field] = (a[field] as string).slice(0, cap);
+      }
+    }
+
+    // Array fields with max-length caps; also clip individual string elements
+    const arrayCaps: Record<string, { max: number; itemMax?: number }> = {
+      practiceAreas: { max: 4, itemMax: 40 },
+      strengths:     { max: 4, itemMax: 140 },
+      limitations:   { max: 3, itemMax: 140 },
+    };
+    for (const [field, { max, itemMax }] of Object.entries(arrayCaps)) {
+      if (Array.isArray(a[field])) {
+        let arr = a[field] as unknown[];
+        if (itemMax) {
+          arr = arr.map(v => typeof v === 'string' && v.length > itemMax ? v.slice(0, itemMax) : v);
+        }
+        if (arr.length > max) arr = arr.slice(0, max);
+        a[field] = arr;
+      }
+    }
+
+    // Personality archetype + workStyle string caps
+    if (a.personality && typeof a.personality === 'object') {
+      const p = a.personality as Record<string, unknown>;
+      if (typeof p.archetype === 'string' && p.archetype.length > 60) {
+        p.archetype = p.archetype.slice(0, 60);
+      }
+      if (typeof p.workStyle === 'string' && p.workStyle.length > 280) {
+        p.workStyle = p.workStyle.slice(0, 280);
+      }
+    }
+  }
+
+  return root;
 }
 
 // ── Firm Soul Synthesis ────────────────────────────────────────────────
