@@ -18,7 +18,7 @@ import { isIP } from 'node:net';
 const USER_AGENT = 'LavernBot/0.14 (+https://lavern.ai/bot)';
 const MAX_BYTES = 5 * 1024 * 1024;      // 5 MB
 const FETCH_TIMEOUT_MS = 12_000;
-const MAX_PAGES = 3;
+const MAX_PAGES = 5;
 const MIN_USEFUL_CONTENT_CHARS = 400;
 
 /** Keywords we match against <a href> to find team/about/practice pages. */
