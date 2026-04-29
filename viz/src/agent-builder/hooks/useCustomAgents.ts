@@ -1,9 +1,17 @@
 /**
  * useCustomAgents — CRUD for user-created agents.
  *
- * Custom agents are stored in the user profile alongside saved teams.
- * They persist in localStorage and sync to the server via the existing
- * useUserProfile infrastructure.
+ * Custom agents are stored in localStorage. Multiple hook instances within
+ * the same tab need to stay in sync — without this, deleting an agent in
+ * one component while another component holds stale state causes the
+ * deleted agent to reappear when the second component next writes
+ * (zombie agents from a stale React state overwriting localStorage).
+ *
+ * Two-layer sync:
+ *   1. Every mutation reads fresh from localStorage, then merges, then
+ *      writes. We never trust React state as the source of truth.
+ *   2. After a write, we dispatch a same-tab CustomEvent that all hook
+ *      instances listen to, plus the native `storage` event (cross-tab).
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -20,6 +28,7 @@ export interface CustomAgent {
 // ── Storage ────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'shem-custom-agents';
+const SAME_TAB_EVENT = 'shem-custom-agents:changed';
 const MAX_AGENTS = 20;
 
 function readAgents(): CustomAgent[] {
@@ -33,6 +42,9 @@ function readAgents(): CustomAgent[] {
 
 function writeAgents(agents: CustomAgent[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(agents));
+  // Notify other hook instances in this tab to re-read. The native
+  // `storage` event only fires across tabs, so we need our own.
+  window.dispatchEvent(new CustomEvent(SAME_TAB_EVENT));
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────
@@ -40,13 +52,18 @@ function writeAgents(agents: CustomAgent[]): void {
 export function useCustomAgents() {
   const [agents, setAgents] = useState<CustomAgent[]>(readAgents);
 
-  // Sync from localStorage on mount (for multi-tab)
+  // Sync on storage events — same tab (CustomEvent) and other tabs (StorageEvent).
   useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setAgents(readAgents());
+    const reread = () => setAgents(readAgents());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) reread();
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(SAME_TAB_EVENT, reread);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(SAME_TAB_EVENT, reread);
+    };
   }, []);
 
   /** Add a new custom agent. Returns the generated ID. */
@@ -58,34 +75,31 @@ export function useCustomAgents() {
       createdAt: new Date().toISOString(),
       profile: { ...profile, role: id, optional: true, defaultSelected: false },
     };
-
-    setAgents(prev => {
-      const next = [agent, ...prev].slice(0, MAX_AGENTS);
-      writeAgents(next);
-      return next;
-    });
-
+    // Read fresh from disk, NOT from React state, so we never resurrect
+    // an agent that was deleted by a sibling instance.
+    const current = readAgents();
+    const next = [agent, ...current].slice(0, MAX_AGENTS);
+    writeAgents(next);
+    setAgents(next);
     return id;
   }, []);
 
   /** Remove a custom agent by ID. */
   const removeAgent = useCallback((agentId: string) => {
-    setAgents(prev => {
-      const next = prev.filter(a => a.id !== agentId);
-      writeAgents(next);
-      return next;
-    });
+    const current = readAgents();
+    const next = current.filter(a => a.id !== agentId);
+    writeAgents(next);
+    setAgents(next);
   }, []);
 
   /** Update an existing custom agent's profile. */
   const updateAgent = useCallback((agentId: string, profile: AgentProfile) => {
-    setAgents(prev => {
-      const next = prev.map(a =>
-        a.id === agentId ? { ...a, profile: { ...profile, role: agentId } } : a,
-      );
-      writeAgents(next);
-      return next;
-    });
+    const current = readAgents();
+    const next = current.map(a =>
+      a.id === agentId ? { ...a, profile: { ...profile, role: agentId } } : a,
+    );
+    writeAgents(next);
+    setAgents(next);
   }, []);
 
   return {
