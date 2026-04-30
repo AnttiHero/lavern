@@ -19,6 +19,7 @@ import { useUserProfile } from '../../my-page/hooks/useUserProfile.js';
 import { useCustomAgents } from '../hooks/useCustomAgents.js';
 import { CloneFromProfilePanel } from './CloneFromProfilePanel.js';
 import { CloneFromFirmPanel } from './CloneFromFirmPanel.js';
+import { GOBLIN_PROFILE, GOBLIN_AVATAR_URL } from '../data/goblinProfile.js';
 import type { AgentProfile } from '../../types/agent-profile.js';
 
 interface CloneData {
@@ -48,13 +49,21 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
   const [mode, setMode] = useState<HubMode>('menu');
   const { profile } = useUserProfile();
   const savedTeams = profile.savedTeams;
-  const { agents: customAgents, removeAgent } = useCustomAgents();
+  const { agents: customAgents, addAgent, removeAgent } = useCustomAgents();
+  const [goblinSummoned, setGoblinSummoned] = useState(false);
 
   const handleRemoveAgent = useCallback((id: string, name: string) => {
     if (confirm(`Remove ${name}?`)) {
       removeAgent(id);
     }
   }, [removeAgent]);
+
+  const handleSummonGoblin = useCallback(() => {
+    addAgent(GOBLIN_PROFILE);
+    setGoblinSummoned(true);
+    // Reset the "summoned" pulse after the animation
+    setTimeout(() => setGoblinSummoned(false), 2000);
+  }, [addAgent]);
 
   const handleImportTeam = useCallback((roles: string[]) => {
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(roles));
@@ -85,6 +94,15 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
 
   return (
     <div style={styles.container}>
+      <style>{`
+        @keyframes goblin-summoned {
+          0%   { transform: scale(1) rotate(0deg); }
+          25%  { transform: scale(1.25) rotate(-8deg); }
+          50%  { transform: scale(1.15) rotate(6deg); }
+          75%  { transform: scale(1.18) rotate(-4deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+      `}</style>
       <div style={styles.header}>
         <div style={styles.headerTitle}>Start with an agent</div>
         <div style={styles.headerSub}>
@@ -203,7 +221,11 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
           </div>
           <div style={styles.rosterGrid}>
             {customAgents.map(({ id, profile: a }) => {
-              const avatar = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(a.avatarSeed || a.displayName)}&backgroundColor=transparent`;
+              // Goblin gets the photographed avatar; everyone else gets DiceBear.
+              const isGoblin = a.avatarSeed === 'goblin';
+              const avatar = isGoblin
+                ? GOBLIN_AVATAR_URL
+                : `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(a.avatarSeed || a.displayName)}&backgroundColor=transparent`;
               return (
                 <div key={id} style={styles.rosterCard}>
                   <img src={avatar} alt="" width={48} height={48} style={styles.rosterAvatar} />
@@ -229,6 +251,25 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
           </div>
         </div>
       )}
+
+      {/* Easter egg: summon the goblin. Tiny emoji bottom-right.
+          A nod to OpenAI's "Where the goblins came from" — the Nerdy
+          personality reward leaked everywhere. We are not limited to
+          corporate-counsel personas. */}
+      <button
+        type="button"
+        onClick={handleSummonGoblin}
+        style={{
+          ...styles.goblinButton,
+          animation: goblinSummoned ? 'goblin-summoned 700ms ease-out' : 'none',
+        }}
+        title="Summon the goblin"
+        aria-label="Summon the goblin"
+        onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}
+      >
+        🧌
+      </button>
     </div>
   );
 }
@@ -326,6 +367,24 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 560,
     margin: '0 auto',
     lineHeight: 1.55,
+  },
+  // Easter-egg goblin button — small emoji in the bottom-right corner.
+  goblinButton: {
+    position: 'fixed',
+    bottom: 18,
+    right: 18,
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: 22,
+    lineHeight: 1,
+    padding: 0,
+    transition: 'opacity 200ms ease',
+    opacity: 0.4,
+    zIndex: 50,
   },
   cardGrid: {
     display: 'grid',
