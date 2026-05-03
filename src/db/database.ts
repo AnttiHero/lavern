@@ -180,6 +180,22 @@ function runMigrations(db: Database.Database): void {
       updated_at   TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_shared_agents_owner ON shared_agents(owner_id);
+
+    -- ── Shared teams (public share — full lineup) ────────────────────
+    -- Same opt-in pattern as shared_agents, but stores an array of full
+    -- AgentProfile JSON (1..6 members) plus an optional team title.
+    -- The team OG image renders the front cards in a grid.
+    CREATE TABLE IF NOT EXISTS shared_teams (
+      token        TEXT PRIMARY KEY,
+      owner_id     TEXT REFERENCES users(id),
+      owner_name   TEXT DEFAULT '',
+      title        TEXT DEFAULT '',
+      team_json    TEXT NOT NULL,
+      view_count   INTEGER NOT NULL DEFAULT 0,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_shared_teams_owner ON shared_teams(owner_id);
   `);
 
   // v17: Composite indexes for filtered KB searches (doc_type, jurisdiction)
@@ -1647,5 +1663,70 @@ export function bumpSharedAgentViews(token: string): void {
 export function deleteSharedAgent(token: string, ownerId: string): boolean {
   const d = getDb();
   const r = d.prepare(`DELETE FROM shared_agents WHERE token = ? AND owner_id = ?`).run(token, ownerId);
+  return r.changes > 0;
+}
+
+// ── Shared teams ────────────────────────────────────────────────────────
+
+export interface SharedTeamRow {
+  token: string;
+  ownerId: string | null;
+  ownerName: string;
+  title: string;
+  teamJson: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Insert or replace a shared-team row (rotates token if provided). */
+export function upsertSharedTeam(
+  token: string,
+  ownerId: string | null,
+  ownerName: string,
+  title: string,
+  teamJson: string,
+): void {
+  const d = getDb();
+  const now = new Date().toISOString();
+  d.prepare(`
+    INSERT INTO shared_teams (token, owner_id, owner_name, title, team_json, view_count, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET
+      owner_id = excluded.owner_id,
+      owner_name = excluded.owner_name,
+      title = excluded.title,
+      team_json = excluded.team_json,
+      updated_at = excluded.updated_at
+  `).run(token, ownerId, ownerName, title, teamJson, now, now);
+}
+
+export function getSharedTeam(token: string): SharedTeamRow | null {
+  const d = getDb();
+  const row = d.prepare(`
+    SELECT token, owner_id, owner_name, title, team_json, view_count, created_at, updated_at
+    FROM shared_teams WHERE token = ?
+  `).get(token) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    token: row.token as string,
+    ownerId: (row.owner_id as string | null) ?? null,
+    ownerName: (row.owner_name as string) ?? '',
+    title: (row.title as string) ?? '',
+    teamJson: row.team_json as string,
+    viewCount: (row.view_count as number) ?? 0,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+export function bumpSharedTeamViews(token: string): void {
+  const d = getDb();
+  d.prepare(`UPDATE shared_teams SET view_count = view_count + 1 WHERE token = ?`).run(token);
+}
+
+export function deleteSharedTeam(token: string, ownerId: string): boolean {
+  const d = getDb();
+  const r = d.prepare(`DELETE FROM shared_teams WHERE token = ? AND owner_id = ?`).run(token, ownerId);
   return r.changes > 0;
 }

@@ -6,13 +6,15 @@
  * and download panel for work product export.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { RevisionPanel } from './RevisionPanel.js';
+import { ShareTeamModal } from './ShareTeamModal.js';
 import { SimpleMarkdown, type DocStyle } from './SimpleMarkdown.js';
+import { useAgentProfiles, type AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
 interface Props {
@@ -23,10 +25,26 @@ interface Props {
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
   const [docStyle, setDocStyle] = useState<DocStyle>('elegant');
-  // Active revision document: when null, we render data.finalOutput (v1).
-  // When set, we render the selected revision instead.
   const [activeRevisionDoc, setActiveRevisionDoc] = useState<string | null>(null);
   const [activeRevisionVersion, setActiveRevisionVersion] = useState<number | null>(null);
+  const [showShareTeam, setShowShareTeam] = useState(false);
+
+  // Resolve team role keys → AgentProfile objects so we can hand the modal
+  // a complete picture for the share card. Filter out infrastructure /
+  // orchestrator roles — the share card showcases the substantive lineup
+  // (lawyers + specialists). Cap at 6 (the OG renderer's max).
+  const { allProfiles } = useAgentProfiles();
+  const teamProfiles: AgentProfile[] = useMemo(() => {
+    const byRole = new Map(allProfiles.map(p => [p.role, p]));
+    const roles = (data.agentPerformance ?? []).map(a => a.role);
+    return roles
+      .map(r => byRole.get(r))
+      .filter((p): p is AgentProfile => !!p)
+      .filter(p => p.category === 'lawyer' || p.category === 'specialist')
+      .slice(0, 6);
+  }, [allProfiles, data.agentPerformance]);
+  const canShareTeam = teamProfiles.length > 0 && !data.sessionId.startsWith('demo-session');
+
   const displayDocument = activeRevisionDoc ?? data.finalOutput;
   const hasDocument = assemblyStatus === 'ready' && displayDocument.length > 100;
   // Only show assembly failure after polling has definitively ended (timeout/error).
@@ -70,6 +88,34 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
           setActiveRevisionVersion(version);
         }}
       />
+
+      {/* ── Share team CTA — sits below the revision panel ─────────────── */}
+      {canShareTeam && (
+        <div style={styles.shareTeamRow}>
+          <div style={styles.shareTeamHint}>
+            <span style={styles.shareTeamLabel}>Your lineup</span>
+            <span style={styles.shareTeamMembers}>
+              {teamProfiles.map(p => p.displayName).join(' · ')}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowShareTeam(true)}
+            style={styles.shareTeamBtn}
+            aria-label="Share your team as a card"
+          >
+            Share your team <span style={styles.shareTeamArrow}>→</span>
+          </button>
+        </div>
+      )}
+
+      {showShareTeam && (
+        <ShareTeamModal
+          agents={teamProfiles}
+          defaultTitle={data.documentTitle}
+          onClose={() => setShowShareTeam(false)}
+        />
+      )}
 
       {/* ── Document preview — the deliverable is what the client came for ── */}
       {hasDocument && (
@@ -122,6 +168,64 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  // ── Share team row ─────────────────────────────────────────────
+  shareTeamRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+    padding: `${spacing.sm}px ${spacing.md}px`,
+    background: colors.bgPanel,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    flexWrap: 'wrap' as const,
+  },
+  shareTeamHint: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+    minWidth: 0,
+  },
+  shareTeamLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    fontFamily: fonts.sans,
+    color: colors.accent,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+  },
+  shareTeamMembers: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+    whiteSpace: 'nowrap' as const,
+    maxWidth: 600,
+  },
+  shareTeamBtn: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    border: `1px solid ${colors.borderSelected}`,
+    borderRadius: radii.sm,
+    padding: '7px 16px',
+    cursor: 'pointer',
+    minHeight: 34,
+    transition: 'all 0.15s ease',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  shareTeamArrow: {
+    color: colors.accent,
+    fontSize: 14,
+    lineHeight: 1,
+  },
+
   // ── Hero ──────────────────────────────────────────────────────
   heroSection: {
     textAlign: 'center' as const,

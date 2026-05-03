@@ -20,9 +20,11 @@ import * as crypto from 'node:crypto';
 import { scrapeFirmSite, ScrapeError } from '../agent-builder/firm-scraper.js';
 import { analyzeFirm, synthesiseFirmSoul } from '../agent-builder/firm-analyzer.js';
 import { renderAgentOgPng } from '../agent-builder/og-image.js';
+import { renderTeamOgPng, type TeamMemberForOg } from '../agent-builder/team-og-image.js';
 import { createLogger } from '../../utils/logger.js';
 import {
   upsertSharedAgent, getSharedAgent, bumpSharedAgentViews, deleteSharedAgent,
+  upsertSharedTeam, getSharedTeam, bumpSharedTeamViews, deleteSharedTeam,
   getUserById,
 } from '../../db/database.js';
 
@@ -58,6 +60,13 @@ const SharedAgentProfileSchema = z.object({
 
 const ShareCreateBodySchema = z.object({
   profile: SharedAgentProfileSchema,
+});
+
+const ShareTeamBodySchema = z.object({
+  /** 1-6 agent profiles to render as the team's lineup. */
+  agents: z.array(SharedAgentProfileSchema).min(1).max(6),
+  /** Optional team title. Falls back to "My Team". */
+  title: z.string().max(120).optional(),
 });
 
 const logger = createLogger('AGENT-BUILDER');
@@ -278,17 +287,22 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
       : `https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(String(profile.avatarSeed || profile.displayName))}&backgroundColor=transparent&size=400`;
 
     try {
+      const personality = (profile.personality ?? {}) as Record<string, unknown>;
       const png = await renderAgentOgPng({
         displayName: String(profile.displayName ?? ''),
-        archetype: String((profile.personality as Record<string, unknown>)?.archetype ?? ''),
+        archetype: String(personality.archetype ?? ''),
         tagline: String(profile.tagline ?? ''),
         seenOnSite: String((profile as { seenOnSite?: string }).seenOnSite ?? ''),
         skills: (profile.skills as Record<string, number>) ?? {},
         practiceAreas: Array.isArray(profile.practiceAreas) ? profile.practiceAreas as string[] : [],
+        strengths: Array.isArray(profile.strengths) ? profile.strengths as string[] : [],
+        limitations: Array.isArray(profile.limitations) ? profile.limitations as string[] : [],
         category: String(profile.category ?? ''),
         seniority: String(profile.seniority ?? ''),
         costTier: String(profile.costTier ?? ''),
         billingRateUsd: typeof profile.billingRateUsd === 'number' ? profile.billingRateUsd : undefined,
+        personalityTraits: (personality.traits as Record<string, number>) ?? {},
+        workStyle: String(personality.workStyle ?? ''),
         avatarUrl,
         provenance: profile.provenance as { kind: 'self' | 'firm' | 'scratch' | 'goblin'; firmName?: string } | undefined,
       }, row.ownerName);
@@ -299,6 +313,124 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
         .send(png);
     } catch (err) {
       logger.error('OG image render failed', { token, error: err instanceof Error ? err.message : String(err) });
+      return reply.status(500).send({ error: 'Image render failed.' });
+    }
+  });
+
+  // ── TEAM SHARE ────────────────────────────────────────────────────
+  // The team analogue of /api/agents/share. Owner shares a lineup of
+  // 1-6 agents; the OG image renders front cards in a grid. Public
+  // viewers see the team at /t/:token (no auth).
+
+  // POST /api/teams/share — create or rotate a team share token.
+  fastify.post('/api/teams/share', async (request, reply) => {
+    const authReq = request as AuthenticatedRequest;
+    const userId = authReq.user?.id ?? null;
+    if (!userId) return reply.status(401).send({ error: 'Authentication required.' });
+
+    const parsed = ShareTeamBodySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Invalid team',
+        details: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
+      });
+    }
+
+    const token = crypto.randomBytes(24).toString('base64url');
+    const owner = getUserById(userId);
+    const ownerName = owner?.display_name || (owner?.email?.split('@')[0]) || '';
+
+    upsertSharedTeam(
+      token,
+      userId,
+      ownerName,
+      parsed.data.title ?? '',
+      JSON.stringify(parsed.data.agents),
+    );
+
+    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    return reply.send({
+      token,
+      url: `${baseUrl}/#/t/${token}`,
+      shareImageUrl: `${baseUrl}/api/teams/share/${token}/og.png`,
+    });
+  });
+
+  // DELETE /api/teams/share/:token — revoke
+  fastify.delete('/api/teams/share/:token', async (request, reply) => {
+    const authReq = request as AuthenticatedRequest;
+    const userId = authReq.user?.id ?? null;
+    if (!userId) return reply.status(401).send({ error: 'Authentication required.' });
+
+    const { token } = request.params as { token: string };
+    const ok = deleteSharedTeam(token, userId);
+    if (!ok) return reply.status(404).send({ error: 'Share not found or not owned by you.' });
+    return reply.send({ revoked: true });
+  });
+
+  // GET /api/teams/share/:token — public read
+  fastify.get('/api/teams/share/:token', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const row = getSharedTeam(token);
+    if (!row) return reply.status(404).send({ error: 'Not found.' });
+    bumpSharedTeamViews(token);
+
+    let agents: unknown;
+    try { agents = JSON.parse(row.teamJson); }
+    catch { return reply.status(500).send({ error: 'Stored team is corrupt.' }); }
+
+    return reply.send({
+      token,
+      agents,
+      title: row.title,
+      ownerName: row.ownerName,
+      viewCount: row.viewCount + 1,
+      createdAt: row.createdAt,
+    });
+  });
+
+  // GET /api/teams/share/:token/og.png — public team OG image
+  fastify.get('/api/teams/share/:token/og.png', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const row = getSharedTeam(token);
+    if (!row) return reply.status(404).send({ error: 'Not found.' });
+
+    let agents: Record<string, unknown>[];
+    try {
+      const parsed = JSON.parse(row.teamJson);
+      if (!Array.isArray(parsed)) throw new Error('not an array');
+      agents = parsed as Record<string, unknown>[];
+    } catch {
+      return reply.status(500).send({ error: 'Stored team is corrupt.' });
+    }
+
+    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const members: TeamMemberForOg[] = agents.slice(0, 6).map(profile => {
+      const isGoblin = profile.avatarSeed === 'goblin';
+      const avatarUrl = isGoblin
+        ? `${baseUrl}/goblin.png`
+        : `https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(String(profile.avatarSeed || profile.displayName))}&backgroundColor=transparent&size=400`;
+      return {
+        displayName: String(profile.displayName ?? ''),
+        tagline: String(profile.tagline ?? ''),
+        category: String(profile.category ?? ''),
+        seniority: String(profile.seniority ?? ''),
+        costTier: String(profile.costTier ?? ''),
+        billingRateUsd: typeof profile.billingRateUsd === 'number' ? profile.billingRateUsd : undefined,
+        practiceAreas: Array.isArray(profile.practiceAreas) ? profile.practiceAreas as string[] : [],
+        skills: (profile.skills as Record<string, number>) ?? {},
+        avatarUrl,
+      };
+    });
+
+    try {
+      const png = await renderTeamOgPng(members, row.ownerName, row.title);
+      return reply
+        .header('Content-Type', 'image/png')
+        .header('Cache-Control', 'public, max-age=3600')
+        .send(png);
+    } catch (err) {
+      logger.error('Team OG image render failed', { token, error: err instanceof Error ? err.message : String(err) });
       return reply.status(500).send({ error: 'Image render failed.' });
     }
   });

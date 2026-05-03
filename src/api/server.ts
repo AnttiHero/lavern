@@ -289,6 +289,8 @@ export async function startApiServer(port: number): Promise<void> {
     // The token is the capability (32-char base64url, unguessable). Owner-only
     // mutations (POST/DELETE share) require auth and are NOT in this list.
     'GET /api/agents/share/*',
+    // Public team-share — same capability-token pattern as agent share.
+    'GET /api/teams/share/*',
     // Session-scoped POST mutations — scoped by session ID, work without login
     // so the QuickStart → Working → Delivery flow doesn't require auth.
     // Session ID acts as the auth token (only the user who created it has it).
