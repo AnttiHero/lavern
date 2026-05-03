@@ -31,6 +31,8 @@ import { useBillingStatus } from '../my-page/hooks/useBillingStatus.js';
 import { useVoiceInput } from '../partner/hooks/useVoiceInput.js';
 
 const PacManGame = lazy(() => import('./components/PacManGame.js').then(m => ({ default: m.PacManGame })));
+const SketchPad = lazy(() => import('./components/SketchPad.js').then(m => ({ default: m.SketchPad })));
+type SketchStroke = import('./components/SketchPad.js').Stroke;
 
 interface WorkingViewProps {
   onComplete: () => void;
@@ -187,6 +189,10 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   }, [state.lastEventTimestamp]);
 
   const [showPacMan, setShowPacMan] = useState(false);
+  // Sketchpad easter-egg state. Strokes are preserved across tuck-aways
+  // (kept here in the parent so the canvas survives close → reopen).
+  const [showSketch, setShowSketch] = useState(false);
+  const sketchStrokesRef = useRef<SketchStroke[]>([]);
   const { isMobile, isTablet } = useResponsive();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -593,10 +599,39 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         </svg>
       </button>
 
+      {/* Sketchpad trigger — sits above Pac-Man (and above the mic FAB
+          when voice is supported, so it doesn't collide with it). */}
+      <button
+        onClick={() => setShowSketch(true)}
+        style={{ ...styles.ghostBtn, bottom: spacing.md + 88 }}
+        title="Open the sketchpad"
+        aria-label="Open the sketchpad"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.6}>
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+      </button>
+
       {/* Pac-Man game overlay */}
       {showPacMan && (
         <Suspense fallback={null}>
           <PacManGame onClose={() => setShowPacMan(false)} />
+        </Suspense>
+      )}
+
+      {/* Sketchpad overlay — strokes are preserved across tuck-aways
+          via sketchStrokesRef in the parent. Closing just hides; the
+          canvas re-opens with the same strokes. */}
+      {showSketch && (
+        <Suspense fallback={null}>
+          <SketchPad
+            initialStrokes={sketchStrokesRef.current}
+            onStrokesChange={(s) => { sketchStrokesRef.current = s; }}
+            onClose={() => setShowSketch(false)}
+          />
         </Suspense>
       )}
     </div>
