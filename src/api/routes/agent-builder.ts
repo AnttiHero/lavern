@@ -284,6 +284,11 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
         tagline: String(profile.tagline ?? ''),
         seenOnSite: String((profile as { seenOnSite?: string }).seenOnSite ?? ''),
         skills: (profile.skills as Record<string, number>) ?? {},
+        practiceAreas: Array.isArray(profile.practiceAreas) ? profile.practiceAreas as string[] : [],
+        category: String(profile.category ?? ''),
+        seniority: String(profile.seniority ?? ''),
+        costTier: String(profile.costTier ?? ''),
+        billingRateUsd: typeof profile.billingRateUsd === 'number' ? profile.billingRateUsd : undefined,
         avatarUrl,
         provenance: profile.provenance as { kind: 'self' | 'firm' | 'scratch' | 'goblin'; firmName?: string } | undefined,
       }, row.ownerName);
