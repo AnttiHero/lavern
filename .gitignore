@@ -25,13 +25,29 @@ npm-debug.log*
 # Test coverage
 coverage/
 
-# Runtime data
+# Runtime data — NEVER COMMIT (PII, password hashes, session contents)
 audit-logs/
-/data/
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 test-results/
+
+# User-level Lavern state (filesystem watcher, profiles, deliveries)
+.lavern/
 
 # Environment backups
 .env.save
+.env.cloud-backup
+.env.real-bak
+*.bak
+
+# Local Claude Code memory (per-project)
+.claude/projects/
+
+# Distribution tarballs (build artefacts, may contain dev DB)
+dist/lavern-*.tar.gz
 
 # Claude Code
 .claude/
@@ -49,3 +65,4 @@ site/demo.mov
 
 # OS
 Thumbs.db
+london
