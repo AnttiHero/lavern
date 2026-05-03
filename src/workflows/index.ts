@@ -14,6 +14,7 @@ import './templates/review.js';        // v11 name: 'review'
 import './templates/adversarial.js';   // v11 name: 'adversarial'
 import './templates/roundtable.js';    // v11 name: 'roundtable'
 import './templates/full-bench.js';    // v11 name: 'full-bench'
+import './templates/tabulate.js';      // v0.14.x: structured tabular extraction
 // Pre-engagement workflow (unchanged)
 import './templates/pre-engagement.js';
 // v16: Verification pipeline (standalone + post-production)

@@ -48,6 +48,11 @@ import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
+import {
+  convertTabulateToSingleCsv, convertTabulateToCsvBundle,
+  convertTabulateToHtml, convertTabulateToDocx,
+} from '../../assembly/tabulate-format-converter.js';
+import type { TabulateResult } from '../../assembly/tabulate-types.js';
 import { hydrateSessionFromArchive, type HydratedSession } from '../../session/hydrate-from-archive.js';
 import type { SessionState } from '../../session/session-state.js';
 import { createLogger } from '../../utils/logger.js';
@@ -760,6 +765,58 @@ export function registerSessionRoutes(
     // that as a work product would be catastrophic for credibility.
     const deliverable = session.assembledDocument || '';
     const soulBranding = extractSoulBranding(session.soul);
+
+    // ── TABULATE downloads ─────────────────────────────────────────────
+    // When the session ran the Tabulate workflow, its structured result lives
+    // on session.tabulateResult. Serve it in any of: csv (single concatenated),
+    // csv-bundle (multi-file zip), docx (Word with native tables), html
+    // (self-contained preview), tabulate-json (just the structured result).
+    // Falls through to the standard handlers if the format isn't tabulate-specific.
+    if (session.workflowTemplateId === 'tabulate' && session.tabulateResult) {
+      const tabulateResult = session.tabulateResult as TabulateResult;
+
+      if (format === 'csv') {
+        const csv = convertTabulateToSingleCsv(tabulateResult);
+        return reply
+          .header('Content-Type', 'text/csv; charset=utf-8')
+          .header('Content-Disposition', `attachment; filename="${lavernFilename(id, 'csv')}"`)
+          .send(csv);
+      }
+
+      if (format === 'csv-bundle') {
+        // Return a JSON object of {filename: csv} — frontend can zip client-side
+        // (avoids adding a JSZip backend dep). Most users will want format=csv.
+        const bundle = convertTabulateToCsvBundle(tabulateResult);
+        return reply
+          .header('Content-Type', 'application/json; charset=utf-8')
+          .send(bundle);
+      }
+
+      if (format === 'tabulate-html' || (format === 'html' && session.workflowTemplateId === 'tabulate')) {
+        const html = convertTabulateToHtml(tabulateResult, title);
+        return reply
+          .header('Content-Type', 'text/html; charset=utf-8')
+          .header('Content-Disposition', `attachment; filename="${lavernFilename(id, 'html')}"`)
+          .send(html);
+      }
+
+      if (format === 'tabulate-docx' || (format === 'docx' && session.workflowTemplateId === 'tabulate')) {
+        const buf = await convertTabulateToDocx(tabulateResult, title);
+        return reply
+          .header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+          .header('Content-Disposition', `attachment; filename="${lavernFilename(id, 'docx')}"`)
+          .send(buf);
+      }
+
+      if (format === 'tabulate-json') {
+        return reply
+          .header('Content-Type', 'application/json; charset=utf-8')
+          .send(tabulateResult);
+      }
+      // Other formats (md, pdf, json, summary) fall through to standard
+      // handlers — md uses the markdown rendering already stored in
+      // session.assembledDocument (built by convertTabulateToMarkdown).
+    }
 
     // For document formats (md, docx, pdf), validate before serving
     if (format === 'md' || format === 'docx' || format === 'pdf') {

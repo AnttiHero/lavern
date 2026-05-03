@@ -24,6 +24,7 @@ const DEMO_WORKFLOWS: WorkflowSummary[] = [
   { id: 'review', name: 'Review', description: 'Systematic contract analysis and redlining', stepCount: 6, steps: ['intake', 'analysis', 'redline', 'review', 'negotiate', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
   { id: 'adversarial', name: 'Adversarial', description: 'Legal research with structured memorandum output', stepCount: 5, steps: ['intake', 'research', 'draft', 'review', 'deliver'], requiredAgents: ['managing-partner', 'evaluator'], gateCount: 1, hasGates: true, gateSteps: ['deliver'] },
   { id: 'counsel', name: 'Counsel', description: 'Quick legal question answered with analysis', stepCount: 4, steps: ['intake', 'analysis', 'draft', 'deliver'], requiredAgents: ['managing-partner'], gateCount: 0, hasGates: false, gateSteps: [] },
+  { id: 'tabulate', name: 'Tabulate', description: 'Extract structured tables (cap tables, payment schedules, JV interests, lease abstracts) with per-cell source citations and confidence ratings. Output: CSV, Word with tables, HTML preview.', stepCount: 3, steps: ['intake', 'specialist_execution', 'deliver'], requiredAgents: [], gateCount: 0, hasGates: false, gateSteps: [] },
 ];
 
 export function useWorkflows() {

@@ -336,6 +336,13 @@ export class SessionState {
   /** True while document assembly is running. Prevents TTL eviction from aborting assembly. */
   public isAssembling = false;
 
+  /** Tabulate workflow result — set by document-assembler when workflow=tabulate
+   *  and the orchestrator's JSON output validated. The download routes serve
+   *  this as CSV / DOCX-with-tables / HTML / JSON. Typed as `unknown` here to
+   *  avoid a circular import with the assembly module; the route casts to
+   *  TabulateResult. */
+  public tabulateResult: unknown = null;
+
   /** Tiered output — tracks what's available at each quality level.
    *  Tier 1: Full deliverable (assembly passed all gates)
    *  Tier 2: Best-effort deliverable (assembly passed structural but not quality gate)

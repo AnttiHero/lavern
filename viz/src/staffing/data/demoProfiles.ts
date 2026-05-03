@@ -2036,6 +2036,13 @@ export const DEMO_PRESETS = [
     roles: ['evaluator'],
   },
   {
+    id: 'tabulate',
+    name: 'Cataloguer',
+    description: 'Pull tables. Cite every cell.',
+    teamSize: 1,
+    roles: ['evaluator'],
+  },
+  {
     id: 'review',
     name: 'Review Squad',
     description: 'Every clause. Every risk.',

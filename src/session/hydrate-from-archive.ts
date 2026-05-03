@@ -35,6 +35,9 @@ export interface HydratedSession {
   budgetUsd: number;
   assembledDocument: string;
   finalOutput: string;
+  /** Tabulate workflow structured result, if any. Hydrated sessions don't
+   *  preserve this (it lives in memory only) — null on hydrated paths. */
+  tabulateResult: unknown;
   matterRecord: {
     title: string;
     matterNumber?: string;
@@ -145,6 +148,7 @@ export function hydrateSessionFromArchive(archived: ArchivedSession): HydratedSe
     budgetUsd: archived.budget_usd ?? 0,
     assembledDocument: archived.assembled_document ?? '',
     finalOutput: archived.final_output ?? '',
+    tabulateResult: null,
     matterRecord: archived.title ? { title: archived.title, status: archived.status } : null,
     debate: {
       findings,

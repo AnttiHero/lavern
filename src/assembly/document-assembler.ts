@@ -39,6 +39,8 @@
 import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompts.js';
 import { validateDeliverable } from './validate-deliverable.js';
 import { extractCounselDocument } from './extract-counsel.js';
+import { extractTabulateResult } from './extract-tabulate.js';
+import { convertTabulateToMarkdown } from './tabulate-format-converter.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
 import { crossProviderChat, checkProviderReady } from '../providers/cross-provider-chat.js';
@@ -279,6 +281,29 @@ export async function assembleDocument(
   //     authority-grounded memo. Extracting it is faster, cheaper, and more
   //     reliable than asking another LLM to "re-assemble" the same content.
   //
+  // ── TABULATE FAST-PATH ─────────────────────────────────────────────
+  // The Tabulate workflow produces a JSON-table result, not prose. Pull
+  // it out, store it on the session for downloads, and produce a Markdown
+  // rendering as the assembled document so the standard delivery view
+  // shows something readable.
+  if (session.workflowTemplateId === 'tabulate' && session.finalOutput) {
+    const tabulateResult = extractTabulateResult(session.finalOutput);
+    if (tabulateResult) {
+      // Stash the structured result on the session for the API download routes
+      // to serve as CSV / DOCX-with-tables / HTML / JSON.
+      session.tabulateResult = tabulateResult;
+
+      const md = convertTabulateToMarkdown(tabulateResult);
+      logger.info('Tabulate fast-path succeeded', {
+        tables: tabulateResult.tables.length,
+        rows: tabulateResult.tables.reduce((n, t) => n + t.rows.length, 0),
+      });
+      emitAssemblyComplete(session, 0);
+      return md;
+    }
+    logger.warn('Tabulate fast-path: no valid JSON tabulate result in finalOutput — falling through to LLM assembly');
+  }
+
   // The LLM assembly path remains as a fallback when extraction fails.
   // Kill switch: LAVERN_COUNSEL_FAST_PATH=0 forces the LLM loop.
   const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
