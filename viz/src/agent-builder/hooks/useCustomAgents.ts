@@ -15,7 +15,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { AgentProfile } from '../../types/agent-profile.js';
+import type { AgentProfile, AgentProvenance } from '../../types/agent-profile.js';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -23,6 +23,9 @@ export interface CustomAgent {
   id: string;
   createdAt: string;
   profile: AgentProfile;
+  /** Public share token. Empty string = not yet shared (private).
+   *  When set, the public page at /a/<token> renders the card. */
+  shareToken?: string;
 }
 
 // ── Storage ────────────────────────────────────────────────────────────
@@ -66,14 +69,25 @@ export function useCustomAgents() {
     };
   }, []);
 
-  /** Add a new custom agent. Returns the generated ID. */
-  const addAgent = useCallback((profile: AgentProfile): string => {
+  /** Add a new custom agent. Returns the generated ID.
+   *  `provenance` records HOW this agent was created, used by the
+   *  share modal to pick the right LinkedIn pre-fill text. */
+  const addAgent = useCallback((profile: AgentProfile, provenance?: AgentProvenance): string => {
     const hex = Math.random().toString(16).slice(2, 6);
     const id = `custom-${Date.now()}-${hex}`;
+    const enrichedProfile: AgentProfile = {
+      ...profile,
+      role: id,
+      optional: true,
+      defaultSelected: false,
+      provenance: provenance
+        ? { ...provenance, createdAt: provenance.createdAt ?? new Date().toISOString() }
+        : profile.provenance,
+    };
     const agent: CustomAgent = {
       id,
       createdAt: new Date().toISOString(),
-      profile: { ...profile, role: id, optional: true, defaultSelected: false },
+      profile: enrichedProfile,
     };
     // Read fresh from disk, NOT from React state, so we never resurrect
     // an agent that was deleted by a sibling instance.
@@ -82,6 +96,22 @@ export function useCustomAgents() {
     writeAgents(next);
     setAgents(next);
     return id;
+  }, []);
+
+  /** Generate (or rotate) a public share token for an agent. */
+  const setShareToken = useCallback((agentId: string, token: string): void => {
+    const current = readAgents();
+    const next = current.map(a => a.id === agentId ? { ...a, shareToken: token } : a);
+    writeAgents(next);
+    setAgents(next);
+  }, []);
+
+  /** Revoke the public share token (URL stops working). */
+  const clearShareToken = useCallback((agentId: string): void => {
+    const current = readAgents();
+    const next = current.map(a => a.id === agentId ? { ...a, shareToken: undefined } : a);
+    writeAgents(next);
+    setAgents(next);
   }, []);
 
   /** Remove a custom agent by ID. */
@@ -107,6 +137,8 @@ export function useCustomAgents() {
     addAgent,
     removeAgent,
     updateAgent,
+    setShareToken,
+    clearShareToken,
     isAtCap: agents.length >= MAX_AGENTS,
     maxAgents: MAX_AGENTS,
   };

@@ -19,7 +19,10 @@ import { useUserProfile } from '../../my-page/hooks/useUserProfile.js';
 import { useCustomAgents } from '../hooks/useCustomAgents.js';
 import { CloneFromProfilePanel } from './CloneFromProfilePanel.js';
 import { CloneFromFirmPanel } from './CloneFromFirmPanel.js';
+import { ShareAgentModal } from './ShareAgentModal.js';
+import { ImportAgentModal } from './ImportAgentModal.js';
 import { GOBLIN_PROFILE, GOBLIN_AVATAR_URL } from '../data/goblinProfile.js';
+import type { CustomAgent } from '../hooks/useCustomAgents.js';
 import type { AgentProfile } from '../../types/agent-profile.js';
 
 interface CloneData {
@@ -49,8 +52,10 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
   const [mode, setMode] = useState<HubMode>('menu');
   const { profile } = useUserProfile();
   const savedTeams = profile.savedTeams;
-  const { agents: customAgents, addAgent, removeAgent } = useCustomAgents();
+  const { agents: customAgents, addAgent, removeAgent, setShareToken, clearShareToken } = useCustomAgents();
   const [goblinSummoned, setGoblinSummoned] = useState(false);
+  const [sharingAgent, setSharingAgent] = useState<CustomAgent | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   const handleRemoveAgent = useCallback((id: string, name: string) => {
     if (confirm(`Remove ${name}?`)) {
@@ -59,7 +64,7 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
   }, [removeAgent]);
 
   const handleSummonGoblin = useCallback(() => {
-    addAgent(GOBLIN_PROFILE);
+    addAgent(GOBLIN_PROFILE, { kind: 'goblin' });
     setGoblinSummoned(true);
     // Reset the "summoned" pulse after the animation
     setTimeout(() => setGoblinSummoned(false), 2000);
@@ -220,8 +225,8 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
             </div>
           </div>
           <div style={styles.rosterGrid}>
-            {customAgents.map(({ id, profile: a }) => {
-              // Goblin gets the photographed avatar; everyone else gets DiceBear.
+            {customAgents.map((agent) => {
+              const { id, profile: a } = agent;
               const isGoblin = a.avatarSeed === 'goblin';
               const avatar = isGoblin
                 ? GOBLIN_AVATAR_URL
@@ -236,20 +241,73 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
                       {a.seniority} · ${a.billingRateUsd?.toLocaleString() ?? '—'}/hr
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAgent(id, a.displayName)}
-                    style={styles.rosterRemove}
-                    title="Remove this agent"
-                    aria-label={`Remove ${a.displayName}`}
-                  >
-                    ×
-                  </button>
+                  <div style={styles.rosterCardActions}>
+                    <button
+                      type="button"
+                      onClick={() => setSharingAgent(agent)}
+                      style={styles.rosterShare}
+                      title="Share this agent"
+                      aria-label={`Share ${a.displayName}`}
+                    >
+                      ↗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAgent(id, a.displayName)}
+                      style={styles.rosterRemove}
+                      title="Remove this agent"
+                      aria-label={`Remove ${a.displayName}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
+      )}
+
+      {/* ── Import an agent (paste URL or drop JSON) ────────────────── */}
+      <div style={styles.importStrip}>
+        <button
+          type="button"
+          onClick={() => setShowImport(true)}
+          style={styles.importBtn}
+        >
+          Import an agent →
+        </button>
+        <span style={styles.importHint}>
+          Paste a Lavern share URL or drop a JSON file from a colleague.
+        </span>
+      </div>
+
+      {/* Share modal — appears over the hub */}
+      {sharingAgent && (
+        <ShareAgentModal
+          agent={sharingAgent}
+          onClose={() => setSharingAgent(null)}
+          onShared={(token) => {
+            setShareToken(sharingAgent.id, token);
+            // Update local view to reflect the new token
+            setSharingAgent(prev => prev ? { ...prev, shareToken: token } : prev);
+          }}
+          onRevoked={() => {
+            clearShareToken(sharingAgent.id);
+            setSharingAgent(prev => prev ? { ...prev, shareToken: undefined } : prev);
+          }}
+        />
+      )}
+
+      {/* Import modal */}
+      {showImport && (
+        <ImportAgentModal
+          onClose={() => setShowImport(false)}
+          onImported={(profile, provenance) => {
+            addAgent(profile, provenance);
+            setShowImport(false);
+          }}
+        />
       )}
 
       {/* Easter egg: summon the goblin. Tiny emoji bottom-right.
@@ -584,6 +642,31 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textDim,
     marginTop: 2,
   },
+  rosterCardActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  rosterShare: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    border: `1px solid ${colors.border}`,
+    backgroundColor: 'transparent',
+    color: colors.accent,
+    fontSize: 14,
+    fontFamily: fonts.sans,
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    padding: 0,
+  },
   rosterRemove: {
     width: 28,
     height: 28,
@@ -595,12 +678,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: fonts.sans,
     fontWeight: 400,
     cursor: 'pointer',
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     lineHeight: 1,
     padding: 0,
     transition: 'all 150ms ease',
+  },
+  importStrip: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTop: `1px solid ${colors.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.md,
+    flexWrap: 'wrap',
+  },
+  importBtn: {
+    background: 'transparent',
+    border: `1px solid ${colors.border}`,
+    color: colors.text,
+    padding: '10px 18px',
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontWeight: 500,
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontFamily: fonts.sans,
+  },
+  importHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
 };

@@ -165,6 +165,21 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_kb_chunks_document ON kb_chunks(document_id);
     CREATE INDEX IF NOT EXISTS idx_kb_chunks_collection ON kb_chunks(collection_id);
     CREATE INDEX IF NOT EXISTS idx_kb_chunks_user ON kb_chunks(user_id);
+
+    -- ── Shared agents (public share + import) ────────────────────────
+    -- Custom agents the user has explicitly opted-in to share publicly.
+    -- The token is the URL slug. profile_json is the full AgentProfile
+    -- including provenance + avatar. Owner can revoke (delete by id).
+    CREATE TABLE IF NOT EXISTS shared_agents (
+      token        TEXT PRIMARY KEY,
+      owner_id     TEXT REFERENCES users(id),
+      owner_name   TEXT DEFAULT '',
+      profile_json TEXT NOT NULL,
+      view_count   INTEGER NOT NULL DEFAULT 0,
+      created_at   TEXT NOT NULL,
+      updated_at   TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_shared_agents_owner ON shared_agents(owner_id);
   `);
 
   // v17: Composite indexes for filtered KB searches (doc_type, jurisdiction)
@@ -1569,4 +1584,68 @@ export function softDeleteUser(userId: string): boolean {
   })();
 
   return true;
+}
+
+// ── Shared Agents ──────────────────────────────────────────────────────
+
+export interface SharedAgentRow {
+  token: string;
+  ownerId: string | null;
+  ownerName: string;
+  profileJson: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Insert or replace a shared-agent row (rotates token if provided). */
+export function upsertSharedAgent(
+  token: string,
+  ownerId: string | null,
+  ownerName: string,
+  profileJson: string,
+): void {
+  const d = getDb();
+  const now = new Date().toISOString();
+  d.prepare(`
+    INSERT INTO shared_agents (token, owner_id, owner_name, profile_json, view_count, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 0, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET
+      owner_id = excluded.owner_id,
+      owner_name = excluded.owner_name,
+      profile_json = excluded.profile_json,
+      updated_at = excluded.updated_at
+  `).run(token, ownerId, ownerName, profileJson, now, now);
+}
+
+/** Look up a shared agent by token. Returns null if not found. */
+export function getSharedAgent(token: string): SharedAgentRow | null {
+  const d = getDb();
+  const row = d.prepare(`
+    SELECT token, owner_id, owner_name, profile_json, view_count, created_at, updated_at
+    FROM shared_agents WHERE token = ?
+  `).get(token) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    token: row.token as string,
+    ownerId: (row.owner_id as string | null) ?? null,
+    ownerName: (row.owner_name as string) ?? '',
+    profileJson: row.profile_json as string,
+    viewCount: (row.view_count as number) ?? 0,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+/** Increment view counter (best-effort, non-blocking semantics). */
+export function bumpSharedAgentViews(token: string): void {
+  const d = getDb();
+  d.prepare(`UPDATE shared_agents SET view_count = view_count + 1 WHERE token = ?`).run(token);
+}
+
+/** Owner-only revoke. Returns true if a row was deleted. */
+export function deleteSharedAgent(token: string, ownerId: string): boolean {
+  const d = getDb();
+  const r = d.prepare(`DELETE FROM shared_agents WHERE token = ? AND owner_id = ?`).run(token, ownerId);
+  return r.changes > 0;
 }

@@ -117,6 +117,25 @@ export interface AgentProfile {
 
   /** Optional DiceBear URL params to override avatar features (e.g. "lips=variant02") */
   avatarExtra?: string;
+
+  /** How this agent was created. Drives the share-page hero copy and the
+   *  LinkedIn pre-fill text (e.g. "I cloned myself with Lavern" vs
+   *  "I cloned MinterEllison with Lavern"). Set at addAgent time, never
+   *  shown directly in the UI. */
+  provenance?: AgentProvenance;
+}
+
+// ── Provenance ──────────────────────────────────────────────────────────
+
+export type AgentProvenanceKind = 'self' | 'firm' | 'scratch' | 'goblin';
+
+export interface AgentProvenance {
+  /** How the agent was made. */
+  kind: AgentProvenanceKind;
+  /** For 'firm' kind — the cloned firm's name (e.g. "MinterEllison"). */
+  firmName?: string;
+  /** ISO 8601 timestamp of creation. */
+  createdAt?: string;
 }
 
 // ── Team Presets ─────────────────────────────────────────────────────────

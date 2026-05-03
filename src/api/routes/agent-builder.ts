@@ -14,11 +14,51 @@
  * Rate limiting relies on the global per-user limiter registered in server.ts.
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import * as crypto from 'node:crypto';
 import { scrapeFirmSite, ScrapeError } from '../agent-builder/firm-scraper.js';
 import { analyzeFirm, synthesiseFirmSoul } from '../agent-builder/firm-analyzer.js';
+import { renderAgentOgPng } from '../agent-builder/og-image.js';
 import { createLogger } from '../../utils/logger.js';
+import {
+  upsertSharedAgent, getSharedAgent, bumpSharedAgentViews, deleteSharedAgent,
+  getUserById,
+} from '../../db/database.js';
+
+interface AuthenticatedRequest extends FastifyRequest {
+  user?: { id: string; email: string };
+}
+
+const SharedAgentProfileSchema = z.object({
+  displayName: z.string().min(1).max(120),
+  tagline: z.string().min(1).max(280),
+  category: z.enum(['lawyer', 'specialist', 'infrastructure', 'orchestrator']),
+  seniority: z.enum(['partner', 'senior-associate', 'associate', 'junior', 'specialist', 'counsel']),
+  costTier: z.enum(['opus', 'sonnet', 'haiku']),
+  billingRateUsd: z.number().int().min(0).max(10000),
+  skills: z.record(z.string(), z.number().int().min(1).max(10)),
+  personality: z.object({
+    archetype: z.string().min(1).max(120),
+    traits: z.record(z.string(), z.number()),
+    workStyle: z.string().min(1).max(560),
+  }),
+  practiceAreas: z.array(z.string()).max(10),
+  strengths: z.array(z.string()).max(10),
+  limitations: z.array(z.string()).max(10),
+  optional: z.boolean().optional(),
+  defaultSelected: z.boolean().optional(),
+  avatarSeed: z.string().max(120).optional(),
+  provenance: z.object({
+    kind: z.enum(['self', 'firm', 'scratch', 'goblin']),
+    firmName: z.string().max(120).optional(),
+    createdAt: z.string().max(50).optional(),
+  }).optional(),
+}).passthrough();
+
+const ShareCreateBodySchema = z.object({
+  profile: SharedAgentProfileSchema,
+});
 
 const logger = createLogger('AGENT-BUILDER');
 
@@ -152,6 +192,109 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
       // first. reply.raw.end() is also idempotent.
       clearInterval(heartbeat);
       try { reply.raw.end(); } catch { /* already closed */ }
+    }
+  });
+
+  // ── POST /api/agents/share — create or rotate a public share token ──
+  // Auth required. Body: { profile: AgentProfile }. Returns { token, url }.
+  fastify.post('/api/agents/share', async (request, reply) => {
+    const authReq = request as AuthenticatedRequest;
+    const userId = authReq.user?.id ?? null;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required.' });
+    }
+
+    const parsed = ShareCreateBodySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Invalid profile',
+        details: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
+      });
+    }
+
+    // Generate a 24-byte token (32 chars base64url) — unguessable in practice
+    const token = crypto.randomBytes(24).toString('base64url');
+    const owner = getUserById(userId);
+    const ownerName = owner?.display_name || (owner?.email?.split('@')[0]) || '';
+
+    upsertSharedAgent(token, userId, ownerName, JSON.stringify(parsed.data.profile));
+
+    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    return reply.send({
+      token,
+      url: `${baseUrl}/a/${token}`,
+      shareImageUrl: `${baseUrl}/api/agents/share/${token}/og.png`,
+    });
+  });
+
+  // ── DELETE /api/agents/share/:token — revoke ───────────────────────
+  fastify.delete('/api/agents/share/:token', async (request, reply) => {
+    const authReq = request as AuthenticatedRequest;
+    const userId = authReq.user?.id ?? null;
+    if (!userId) return reply.status(401).send({ error: 'Authentication required.' });
+
+    const { token } = request.params as { token: string };
+    const ok = deleteSharedAgent(token, userId);
+    if (!ok) return reply.status(404).send({ error: 'Share not found or not owned by you.' });
+    return reply.send({ revoked: true });
+  });
+
+  // ── GET /api/agents/share/:token — public read ─────────────────────
+  fastify.get('/api/agents/share/:token', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const row = getSharedAgent(token);
+    if (!row) return reply.status(404).send({ error: 'Not found.' });
+    bumpSharedAgentViews(token);
+
+    let profile: unknown;
+    try { profile = JSON.parse(row.profileJson); }
+    catch { return reply.status(500).send({ error: 'Stored profile is corrupt.' }); }
+
+    return reply.send({
+      token,
+      profile,
+      ownerName: row.ownerName,
+      viewCount: row.viewCount + 1,
+      createdAt: row.createdAt,
+    });
+  });
+
+  // ── GET /api/agents/share/:token/og.png — public OG image ──────────
+  fastify.get('/api/agents/share/:token/og.png', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const row = getSharedAgent(token);
+    if (!row) return reply.status(404).send({ error: 'Not found.' });
+
+    let profile: Record<string, unknown>;
+    try { profile = JSON.parse(row.profileJson); }
+    catch { return reply.status(500).send({ error: 'Stored profile is corrupt.' }); }
+
+    // Resolve the avatar URL — goblin gets the local /goblin.png; everyone
+    // else gets DiceBear by avatarSeed.
+    const isGoblin = profile.avatarSeed === 'goblin';
+    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const avatarUrl = isGoblin
+      ? `${baseUrl}/goblin.png`
+      : `https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(String(profile.avatarSeed || profile.displayName))}&backgroundColor=transparent&size=400`;
+
+    try {
+      const png = await renderAgentOgPng({
+        displayName: String(profile.displayName ?? ''),
+        archetype: String((profile.personality as Record<string, unknown>)?.archetype ?? ''),
+        tagline: String(profile.tagline ?? ''),
+        seenOnSite: String((profile as { seenOnSite?: string }).seenOnSite ?? ''),
+        skills: (profile.skills as Record<string, number>) ?? {},
+        avatarUrl,
+        provenance: profile.provenance as { kind: 'self' | 'firm' | 'scratch' | 'goblin'; firmName?: string } | undefined,
+      }, row.ownerName);
+
+      return reply
+        .header('Content-Type', 'image/png')
+        .header('Cache-Control', 'public, max-age=3600')
+        .send(png);
+    } catch (err) {
+      logger.error('OG image render failed', { token, error: err instanceof Error ? err.message : String(err) });
+      return reply.status(500).send({ error: 'Image render failed.' });
     }
   });
 }

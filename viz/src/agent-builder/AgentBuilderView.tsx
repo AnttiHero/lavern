@@ -81,6 +81,25 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
     play('confirm');
   }, [builder, play]);
 
+  const handleFirmCloneComplete = useCallback((profiles: AgentProfile[], firmName: string) => {
+    // Bulk-save every profile returned from the firm clone. Each addAgent
+    // call generates its own `role` id, so we don't reuse the empty placeholder.
+    for (const profile of profiles) {
+      addAgent(profile, { kind: 'firm', firmName });
+    }
+    play('confirm');
+    // Stash a flash-message hint that the Team view (or My Page) can show.
+    try {
+      sessionStorage.setItem('shem-firm-clone-flash', JSON.stringify({
+        firmName,
+        count: profiles.length,
+        at: Date.now(),
+      }));
+    } catch { /* ignore quota */ }
+    // Navigate to team so the user sees the new roster immediately.
+    window.location.hash = '#/team';
+  }, [addAgent, play]);
+
   const handleCustomiseFromReveal = useCallback(() => {
     // From the reveal: close and drop the user into the wizard with the
     // already-loaded state. Clear reveal state so a later Forge doesn't
@@ -125,13 +144,14 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
     if (isEditing && editAgentId) {
       updateAgent(editAgentId, revealProfile);
     } else {
-      addAgent(revealProfile);
+      // Track provenance: clone-from-profile = self-clone, otherwise = from-scratch
+      addAgent(revealProfile, { kind: revealFromClone ? 'self' : 'scratch' });
     }
     play('confirm');
     setShowReveal(false);
     // Navigate to team to see the agent
     window.location.hash = '#/team';
-  }, [revealProfile, addAgent, updateAgent, play, isEditing, editAgentId]);
+  }, [revealProfile, addAgent, updateAgent, play, isEditing, editAgentId, revealFromClone]);
 
   const handleBuildAnother = useCallback(() => {
     builder.reset();
@@ -258,6 +278,7 @@ export default function AgentBuilderView({ onBack, editAgentId }: Props) {
         <AgentBuilderHub
           onBuildFromScratch={handleBuildFromScratch}
           onCloneComplete={handleCloneComplete}
+          onFirmCloneComplete={handleFirmCloneComplete}
         />
       </div>
       {revealEl}

@@ -68,12 +68,13 @@ const ArchiveView = lazy(() => import('./archive/ArchiveView.js'));
 const PricingView = lazy(() => import('./pricing/PricingView.js'));
 const ChallengeView = lazy(() => import('./challenge/ChallengeView.js'));
 const AgentBuilderView = lazy(() => import('./agent-builder/AgentBuilderView.js'));
+const PublicAgentShareView = lazy(() => import('./agent-builder/PublicAgentShareView.js'));
 const LegalView = lazy(() => import('./legal/LegalView.js'));
 const FoyerView = lazy(() => import('./landing/FoyerView.js'));
 const PartnerView = lazy(() => import('./partner/PartnerView.js'));
 const ShowcaseView = lazy(() => import('./showcase/ShowcaseView.js'));
 
-type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'claw-live' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'terms' | 'privacy' | 'showcase' | 'demo';
+type AppView = 'foyer' | 'partner' | 'quickstart' | 'landing' | 'lobby' | 'login' | 'reset-password' | 'verify-email' | 'dashboard' | 'intake' | 'briefing' | 'strategy' | 'team' | 'working' | 'delivery' | 'billing' | 'my-page' | 'my-cases' | 'agent-docs' |'claw' | 'claw-live' | 'dispatch' | 'archive' | 'pricing' | 'challenge' | 'agent-builder' | 'shared-agent' | 'terms' | 'privacy' | 'showcase' | 'demo';
 
 function getViewFromHash(): AppView {
   const hash = window.location.hash;
@@ -103,6 +104,7 @@ function getViewFromHash(): AppView {
   if (hash.startsWith('#/pricing')) return 'pricing';
   if (hash.startsWith('#/challenge')) return 'challenge';
   if (hash.startsWith('#/agent-builder')) return 'agent-builder';
+  if (hash.startsWith('#/a/')) return 'shared-agent';
   if (hash.startsWith('#/terms')) return 'terms';
   if (hash.startsWith('#/privacy')) return 'privacy';
   if (hash.startsWith('#/landing')) return 'landing';
@@ -1092,6 +1094,23 @@ export function App() {
               onBack={() => { window.location.hash = '#/team'; }}
               editAgentId={window.location.hash.includes('?edit=') ? window.location.hash.split('?edit=')[1] : undefined}
             />
+          </Suspense>
+        </ViewTransition>
+      </ErrorBoundary>
+    );
+  }
+
+  // ── Public agent share — /a/:token (no auth, viewable by anyone) ─────
+  if (view === 'shared-agent') {
+    const tokenMatch = /^#\/a\/([^?#&]+)/.exec(window.location.hash);
+    const token = tokenMatch ? tokenMatch[1] : '';
+    return (
+      <ErrorBoundary>
+        {skipLink}
+        {toast}
+        <ViewTransition>
+          <Suspense fallback={<ViewFallback text="Loading…" />}>
+            <PublicAgentShareView token={token} />
           </Suspense>
         </ViewTransition>
       </ErrorBoundary>
