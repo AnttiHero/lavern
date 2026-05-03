@@ -11,6 +11,7 @@ import type { DeliveryData } from '../hooks/useDeliveryData.js';
 import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
+import { RevisionPanel } from './RevisionPanel.js';
 import { SimpleMarkdown, type DocStyle } from './SimpleMarkdown.js';
 import { colors, fonts, radii, spacing } from '../../staffing/styles/tokens.js';
 
@@ -22,7 +23,12 @@ interface Props {
 
 export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
   const [docStyle, setDocStyle] = useState<DocStyle>('elegant');
-  const hasDocument = assemblyStatus === 'ready' && data.finalOutput.length > 100;
+  // Active revision document: when null, we render data.finalOutput (v1).
+  // When set, we render the selected revision instead.
+  const [activeRevisionDoc, setActiveRevisionDoc] = useState<string | null>(null);
+  const [activeRevisionVersion, setActiveRevisionVersion] = useState<number | null>(null);
+  const displayDocument = activeRevisionDoc ?? data.finalOutput;
+  const hasDocument = assemblyStatus === 'ready' && displayDocument.length > 100;
   // Only show assembly failure after polling has definitively ended (timeout/error).
   // While still polling, the assembler may still be working — don't flash the error.
   const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error';
@@ -56,12 +62,24 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         </div>
       )}
 
+      {/* ── Revision controls (version pills + Send back CTA) ─────────── */}
+      <RevisionPanel
+        sessionId={data.sessionId}
+        onActiveDocumentChange={(doc, version) => {
+          setActiveRevisionDoc(doc);
+          setActiveRevisionVersion(version);
+        }}
+      />
+
       {/* ── Document preview — the deliverable is what the client came for ── */}
       {hasDocument && (
         <div style={styles.previewSection}>
           <div style={styles.sectionHeader}>
-            <div style={styles.sectionTitle}>Document Preview</div>
-            <div style={styles.sectionCount}>{data.finalOutput.length.toLocaleString()} chars</div>
+            <div style={styles.sectionTitle}>
+              Document Preview
+              {activeRevisionVersion ? ` · v${activeRevisionVersion}` : ''}
+            </div>
+            <div style={styles.sectionCount}>{displayDocument.length.toLocaleString()} chars</div>
           </div>
           <div style={styles.previewCard}>
             {data.sessionId.startsWith('demo-session') && (
@@ -70,8 +88,8 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
             <SimpleMarkdown
               docStyle={docStyle}
               content={
-                data.finalOutput.substring(0, 5000) +
-                (data.finalOutput.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
+                displayDocument.substring(0, 5000) +
+                (displayDocument.length > 5000 ? '\n\n---\n\n*... download full document below*' : '')
               }
             />
           </div>

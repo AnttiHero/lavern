@@ -82,6 +82,21 @@ export interface VerificationResult {
   timestamp: string;
 }
 
+// ── Revision (partner-style review loop) ────────────────────────────────
+
+export interface Revision {
+  /** 1-indexed version number. v1 is the original delivery, v2..vN are revisions. */
+  version: number;
+  /** The full markdown deliverable for this version. */
+  document: string;
+  /** Partner's notes that drove this revision. Empty for v1 (the original). */
+  instructions: string;
+  /** Wall-clock timestamp the revision landed. */
+  createdAt: string;
+  /** USD cost of producing this revision (0 for v1). */
+  costUsd: number;
+}
+
 // ── Session State ────────────────────────────────────────────────────────
 
 export class SessionState {
@@ -342,6 +357,14 @@ export class SessionState {
    *  avoid a circular import with the assembly module; the route casts to
    *  TabulateResult. */
   public tabulateResult: unknown = null;
+
+  /** Revision history — partner-style review loop.
+   *  Every time the partner sends the work product back with notes, a new
+   *  revision is appended. v1 is the original (assembledDocument as it
+   *  existed at delivery), v2..vN are produced by POST /api/sessions/:id/revise
+   *  via a focused single-Opus call (cheap + fast: ~$0.50, 30-60s).
+   *  Each revision is independently downloadable. */
+  public revisions: Revision[] = [];
 
   /** Tiered output — tracks what's available at each quality level.
    *  Tier 1: Full deliverable (assembly passed all gates)

@@ -1266,6 +1266,188 @@ ${buildFullContext(session as SessionState)}`;
     }
   });
 
+  // ── GET /api/sessions/:id/revisions — list revision history ──────────
+  // Returns v1..vN. v1 is always the original delivery; vN is the latest.
+  fastify.get('/api/sessions/:id/revisions', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = getSessionOrHydrate(sessionManager, id);
+    if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+
+    // Ensure v1 is seeded from assembledDocument. Works for both live
+    // sessions (mutation persists) and hydrated archive sessions (mutation
+    // is ephemeral but the response still contains v1).
+    const sessionRecord = session as SessionState;
+    if (!sessionRecord.revisions) {
+      // Hydrated archive sessions lack the field — initialize so we can seed v1.
+      (sessionRecord as unknown as { revisions: SessionState['revisions'] }).revisions = [];
+    }
+    if (sessionRecord.revisions.length === 0 && sessionRecord.assembledDocument) {
+      sessionRecord.revisions.push({
+        version: 1,
+        document: sessionRecord.assembledDocument,
+        instructions: '',
+        createdAt: new Date().toISOString(),
+        costUsd: 0,
+      });
+    }
+
+    const revisions = (sessionRecord.revisions ?? []).map(r => ({
+      version: r.version,
+      instructions: r.instructions,
+      createdAt: r.createdAt,
+      costUsd: r.costUsd,
+      chars: r.document.length,
+    }));
+    return reply.send({ sessionId: id, revisions });
+  });
+
+  // ── POST /api/sessions/:id/revise — partner-style review loop ────────
+  // The partner returns the work product with notes; the team produces v2.
+  // Single Opus call (focused, fast, ~$0.50, 30-60s) — not a full re-run
+  // of the multi-agent pipeline. Stack semantics: every revision is kept.
+  //
+  // Body: { instructions: string }
+  // Returns: { version, document, costUsd, createdAt }
+  fastify.post('/api/sessions/:id/revise', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = getSessionOrHydrate(sessionManager, id);
+    if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+
+    const sessionRecord = session as SessionState;
+    if (!sessionRecord.assembledDocument) {
+      return reply.status(409).send({
+        error: 'No work product to revise. Wait for the analysis to complete first.',
+      });
+    }
+
+    const body = request.body as { instructions?: string } | undefined;
+    const instructions = (body?.instructions ?? '').trim();
+    if (!instructions) {
+      return reply.status(400).send({ error: 'instructions are required.' });
+    }
+    if (instructions.length > 8_000) {
+      return reply.status(400).send({ error: 'instructions must be under 8,000 characters.' });
+    }
+
+    // Seed v1 lazily from assembledDocument if this is the first revision.
+    if (!sessionRecord.revisions) sessionRecord.revisions = [];
+    if (sessionRecord.revisions.length === 0) {
+      sessionRecord.revisions.push({
+        version: 1,
+        document: sessionRecord.assembledDocument,
+        instructions: '',
+        createdAt: new Date().toISOString(),
+        costUsd: 0,
+      });
+    }
+
+    const previous = sessionRecord.revisions[sessionRecord.revisions.length - 1];
+    const nextVersion = previous.version + 1;
+
+    // Build the revision system prompt — partner-associate metaphor explicit,
+    // tight constraints to PRESERVE everything not called out.
+    const system = `You are a senior legal associate. Your partner has reviewed your draft work product and returned it with notes.
+
+Your job: produce a revised version that addresses every note the partner raised. Strict rules:
+
+1. PRESERVE everything the partner did NOT call out. If a section is not addressed by the notes, leave it word-for-word identical to v${previous.version}. Do not "improve" things you weren't asked to change.
+
+2. Where the partner asks for a specific change, make ONLY that change. Don't rewrite adjacent material that is fine.
+
+3. Maintain the same overall structure, headings, voice, citation style, and formatting unless the partner explicitly requests a structural change.
+
+4. If a note is unclear, make your best interpretation, proceed, and continue. Do not ask for clarification — produce the revision.
+
+5. If the partner's note is incompatible with the document (e.g. asks you to add a fall-back position on a question that doesn't exist), fold it in where it makes sense and add a brief italicised note like "*[partner: revisit if this isn't where you wanted it]*" — only as a last resort.
+
+6. Output ONLY the revised work product as clean markdown. No preamble. No "Here is the revised version." No commentary. Start with the first heading or paragraph. End where the document ends.`;
+
+    const user = `## Previous version (v${previous.version})
+
+${previous.document}
+
+## Partner's notes for this revision
+
+${instructions}
+
+## Now produce v${nextVersion}
+
+Apply the partner's notes following the rules in your system prompt. Preserve everything else verbatim.`;
+
+    try {
+      const startedAt = Date.now();
+      const { text: revisedDoc, cost: costUsd } = await crossProviderChat({
+        system,
+        user,
+        tier: 'opus',
+        maxTokens: 16_000,
+        timeoutMs: 240_000,
+      });
+
+      if (!revisedDoc || revisedDoc.trim().length < 200) {
+        throw new Error(`Revision produced only ${revisedDoc?.length ?? 0} chars — likely failed.`);
+      }
+
+      const revision = {
+        version: nextVersion,
+        document: revisedDoc.trim(),
+        instructions,
+        createdAt: new Date().toISOString(),
+        costUsd,
+      };
+      sessionRecord.revisions.push(revision);
+
+      // Note: we do NOT overwrite assembledDocument. v1 stays canonical;
+      // the latest revision is fetched explicitly by the frontend.
+
+      // Charge the revision cost to the session ledger.
+      if (costUsd > 0 && typeof sessionRecord.updateCost === 'function') {
+        sessionRecord.updateCost(sessionRecord.accumulatedCost + costUsd);
+      }
+
+      logger.info('Revision produced', {
+        sessionId: id,
+        version: nextVersion,
+        chars: revision.document.length,
+        costUsd: costUsd.toFixed(4),
+        durationMs: Date.now() - startedAt,
+      });
+
+      return reply.send(revision);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error('Revision failed', { sessionId: id, error: message });
+      return reply.status(500).send({ error: 'Revision failed', details: message });
+    }
+  });
+
+  // ── GET /api/sessions/:id/revisions/:version — fetch one revision ────
+  fastify.get('/api/sessions/:id/revisions/:version', async (request, reply) => {
+    const { id, version } = request.params as { id: string; version: string };
+    const session = getSessionOrHydrate(sessionManager, id);
+    if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+
+    const sessionRecord = session as SessionState;
+    if (!sessionRecord.revisions) {
+      // Hydrated archive sessions lack the field — initialize so we can seed v1.
+      (sessionRecord as unknown as { revisions: SessionState['revisions'] }).revisions = [];
+    }
+    if (sessionRecord.revisions.length === 0 && sessionRecord.assembledDocument) {
+      sessionRecord.revisions.push({
+        version: 1,
+        document: sessionRecord.assembledDocument,
+        instructions: '',
+        createdAt: new Date().toISOString(),
+        costUsd: 0,
+      });
+    }
+
+    const v = parseInt(version, 10);
+    const rev = (sessionRecord.revisions ?? []).find(r => r.version === v);
+    if (!rev) return reply.status(404).send({ error: `Revision v${version} not found.` });
+    return reply.send(rev);
+  });
+
   // ── GET /api/sessions/:id/events — WebSocket event stream ──────────
   // SECURITY NOTE: WebSocket access is gated by session ID knowledge.
   // For anonymous/QuickStart sessions (no userId), knowing the session ID
