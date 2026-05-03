@@ -37,7 +37,7 @@ import { crossProviderChat } from '../../providers/cross-provider-chat.js';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent, holdBillableHours } from '../../db/database.js';
+import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getRecentArchivedSessions, getUserById, logAuditEvent, holdBillableHours, debitBillableHours } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -53,7 +53,7 @@ import {
   convertTabulateToHtml, convertTabulateToDocx,
 } from '../../assembly/tabulate-format-converter.js';
 import type { TabulateResult } from '../../assembly/tabulate-types.js';
-import { hydrateSessionFromArchive, type HydratedSession } from '../../session/hydrate-from-archive.js';
+import { hydrateSessionFromArchive, isHydratedFromArchive, type HydratedSession } from '../../session/hydrate-from-archive.js';
 import type { SessionState } from '../../session/session-state.js';
 import { createLogger } from '../../utils/logger.js';
 import { createMassActionGuard } from '../middleware/mass-action-guard.js';
@@ -106,6 +106,33 @@ function checkSessionOwnership(
   // No authenticated user — deny
   if (!requestUserId) return false;
   return requestUserId === session.userId;
+}
+
+/**
+ * Audit fix H6: per-session async lock. Used by /revise to ensure two
+ * concurrent submits don't race on `nextVersion` (which would double-charge
+ * the user and push duplicate version numbers into the stack).
+ *
+ * Returns a `release` function on success, or `null` if a revision is
+ * already in flight for this session.
+ */
+const revisionLocks = new Set<string>();
+function acquireRevisionLock(sessionId: string): (() => void) | null {
+  if (revisionLocks.has(sessionId)) return null;
+  revisionLocks.add(sessionId);
+  return () => { revisionLocks.delete(sessionId); };
+}
+
+/**
+ * Audit fix H5: ownership guard for endpoints that fall back to the
+ * hydrated archive shape. Returns `true` when the requester may access,
+ * `false` to reject (404 to avoid disclosing existence).
+ */
+function checkSessionOrHydrateOwnership(
+  request: unknown,
+  session: SessionState | HydratedSession,
+): boolean {
+  return checkSessionOwnership(request, session as { userId?: string });
 }
 
 /**
@@ -478,8 +505,14 @@ export function registerSessionRoutes(
   fastify.get('/api/sessions/archive', async (request, reply) => {
     const userId = (request as typeof request & { userId?: string }).userId;
 
-    // If logged in, show user's sessions. Otherwise show all (for demo/no-auth mode).
-    const archived = userId ? getSessionArchive(userId) : getAllSessionArchive();
+    // SECURITY: Anonymous access used to fall through to getAllSessionArchive(),
+    // which leaked every user's titles, costs, deliverables across the server.
+    // Closed in audit fix C1 — auth required for the archive list.
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required to view session archive.' });
+    }
+
+    const archived = getSessionArchive(userId);
     return reply.send({
       sessions: archived.map(s => ({
         id: s.id,
@@ -505,8 +538,14 @@ export function registerSessionRoutes(
     const userId = (request as typeof request & { userId?: string }).userId;
     const { id } = request.params as { id: string };
 
-    // If logged in, scope to user. Otherwise allow any (for demo/no-auth mode).
-    const session = userId ? getArchivedSession(id, userId) : getArchivedSessionById(id);
+    // SECURITY: Anonymous access used to fall through to getArchivedSessionById(),
+    // returning any user's full deliverable. Closed in audit fix C1.
+    if (!userId) {
+      return reply.status(401).send({ error: 'Authentication required to view archived session.' });
+    }
+
+    // Scope strictly to the authenticated user — owner-only.
+    const session = getArchivedSession(id, userId);
 
     if (!session) {
       return reply.status(404).send({ error: `Archived session not found: ${id}` });
@@ -1000,12 +1039,22 @@ export function registerSessionRoutes(
     const { id } = request.params as { id: string };
     const liveSession = sessionManager.getSession(id);
 
+    // Audit fix H5: ownership guard. Session ID is the capability token,
+    // but for POST mutations that bill the owner we layer a second check
+    // so a leaked URL can't drain another user's billable hours.
+    if (liveSession && !checkSessionOwnership(request, liveSession)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
     // If session is not in memory, check the archive. If it already has a
     // valid assembled document there, return success. Otherwise we can't
     // reassemble a session that's no longer live.
     if (!liveSession) {
       const archived = getArchivedSessionById(id);
       if (!archived) return reply.status(404).send({ error: `Session not found: ${id}` });
+      if (archived.user_id && !checkSessionOwnership(request, { userId: archived.user_id })) {
+        return reply.status(404).send({ error: `Session not found: ${id}` });
+      }
       if (archived.assembled_document && validateDeliverable(archived.assembled_document).valid) {
         return reply.send({ success: true, hasDocument: true, message: 'Document already assembled (from archive).' });
       }
@@ -1058,6 +1107,10 @@ export function registerSessionRoutes(
     const session = getSessionOrHydrate(sessionManager, id);
 
     if (!session) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+    // Audit fix H5: layered ownership check for billed mutations.
+    if (!checkSessionOrHydrateOwnership(request, session)) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
 
@@ -1172,6 +1225,10 @@ export function registerSessionRoutes(
     if (!session) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
+    // Audit fix H5: layered ownership check for billed mutations.
+    if (!checkSessionOrHydrateOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
 
     if (!session.assembledDocument) {
       return reply.status(409).send({
@@ -1259,10 +1316,8 @@ ${buildFullContext(session as SessionState)}`;
       });
     } catch (err) {
       logger.error('Conversation failed', { sessionId: id, error: err instanceof Error ? err.message : String(err) });
-      return reply.status(500).send({
-        error: 'Conversation failed',
-        details: err instanceof Error ? err.message : String(err),
-      });
+      // M17: generic client message; full error stays in server logs.
+      return reply.status(500).send({ error: 'Conversation failed. Please try again.' });
     }
   });
 
@@ -1272,6 +1327,10 @@ ${buildFullContext(session as SessionState)}`;
     const { id } = request.params as { id: string };
     const session = getSessionOrHydrate(sessionManager, id);
     if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+    // Audit fix H5: deliverable text is sensitive — owner-only.
+    if (!checkSessionOrHydrateOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
 
     // Ensure v1 is seeded from assembledDocument. Works for both live
     // sessions (mutation persists) and hydrated archive sessions (mutation
@@ -1306,12 +1365,37 @@ ${buildFullContext(session as SessionState)}`;
   // Single Opus call (focused, fast, ~$0.50, 30-60s) — not a full re-run
   // of the multi-agent pipeline. Stack semantics: every revision is kept.
   //
+  // Audit hardening (C2 + H5 + H6 + H8 + M11):
+  //   C2 — reject hydrated archive sessions: the in-memory `revisions` push
+  //        is request-scoped on hydrated objects and would silently lose
+  //        the user's $0.50 work product on response. Until we add a real
+  //        session_revisions persistence layer, fail fast with a clear 409.
+  //   H5 — owner-only access (checked above on getSessionOrHydrate).
+  //   H6 — per-session lock so two concurrent submits don't race on
+  //        nextVersion, double-charge, or push duplicate version numbers.
+  //   H8 — debit billable hours BEFORE the LLM call, with idempotency on
+  //        `revision:<sessionId>:<version>`. No more free revisions.
+  //   M11 — 90s timeout to give up before reverse proxies kill the request.
+  //
   // Body: { instructions: string }
   // Returns: { version, document, costUsd, createdAt }
   fastify.post('/api/sessions/:id/revise', async (request, reply) => {
     const { id } = request.params as { id: string };
     const session = getSessionOrHydrate(sessionManager, id);
     if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+
+    if (!checkSessionOrHydrateOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    // C2 — reject hydrated sessions: mutations are request-scoped (lost on
+    // GC) and the cost would not be billed. Show the user a clear path.
+    if (isHydratedFromArchive(session)) {
+      return reply.status(409).send({
+        error: 'This engagement has been archived. Download the current version, then start a new engagement to make changes.',
+        code: 'SESSION_ARCHIVED',
+      });
+    }
 
     const sessionRecord = session as SessionState;
     if (!sessionRecord.assembledDocument) {
@@ -1329,24 +1413,51 @@ ${buildFullContext(session as SessionState)}`;
       return reply.status(400).send({ error: 'instructions must be under 8,000 characters.' });
     }
 
-    // Seed v1 lazily from assembledDocument if this is the first revision.
-    if (!sessionRecord.revisions) sessionRecord.revisions = [];
-    if (sessionRecord.revisions.length === 0) {
-      sessionRecord.revisions.push({
-        version: 1,
-        document: sessionRecord.assembledDocument,
-        instructions: '',
-        createdAt: new Date().toISOString(),
-        costUsd: 0,
+    // H6 — per-session lock. acquireRevisionLock returns null if a revision
+    // is already in flight for this session; the second caller is rejected.
+    const release = acquireRevisionLock(id);
+    if (!release) {
+      return reply.status(409).send({
+        error: 'Another revision is already in progress for this session. Wait for it to finish.',
+        code: 'REVISION_IN_PROGRESS',
       });
     }
 
-    const previous = sessionRecord.revisions[sessionRecord.revisions.length - 1];
-    const nextVersion = previous.version + 1;
+    try {
+      // Seed v1 lazily from assembledDocument if this is the first revision.
+      if (!sessionRecord.revisions) sessionRecord.revisions = [];
+      if (sessionRecord.revisions.length === 0) {
+        sessionRecord.revisions.push({
+          version: 1,
+          document: sessionRecord.assembledDocument,
+          instructions: '',
+          createdAt: new Date().toISOString(),
+          costUsd: 0,
+        });
+      }
 
-    // Build the revision system prompt — partner-associate metaphor explicit,
-    // tight constraints to PRESERVE everything not called out.
-    const system = `You are a senior legal associate. Your partner has reviewed your draft work product and returned it with notes.
+      const previous = sessionRecord.revisions[sessionRecord.revisions.length - 1];
+      const nextVersion = previous.version + 1;
+
+      // H8 — debit a per-revision estimate (~$0.50 worth of hours) BEFORE
+      // the LLM call. Idempotent on `revision:<sessionId>:<version>`.
+      const REVISION_ESTIMATE_USD = 0.50;
+      const userId = sessionRecord.userId;
+      if (userId) {
+        const hoursToDebit = REVISION_ESTIMATE_USD / config.billableHours.rate;
+        const referenceId = `revision:${id}:${nextVersion}`;
+        const debited = debitBillableHours(userId, hoursToDebit, `Revision v${nextVersion} for session ${id}`, referenceId);
+        if (!debited) {
+          return reply.status(402).send({
+            error: 'Insufficient billable hours for this revision. Top up to continue.',
+            code: 'INSUFFICIENT_HOURS',
+          });
+        }
+      }
+
+      // Build the revision system prompt — partner-associate metaphor explicit,
+      // tight constraints to PRESERVE everything not called out.
+      const system = `You are a senior legal associate. Your partner has reviewed your draft work product and returned it with notes.
 
 Your job: produce a revised version that addresses every note the partner raised. Strict rules:
 
@@ -1362,7 +1473,7 @@ Your job: produce a revised version that addresses every note the partner raised
 
 6. Output ONLY the revised work product as clean markdown. No preamble. No "Here is the revised version." No commentary. Start with the first heading or paragraph. End where the document ends.`;
 
-    const user = `## Previous version (v${previous.version})
+      const user = `## Previous version (v${previous.version})
 
 ${previous.document}
 
@@ -1374,14 +1485,14 @@ ${instructions}
 
 Apply the partner's notes following the rules in your system prompt. Preserve everything else verbatim.`;
 
-    try {
       const startedAt = Date.now();
       const { text: revisedDoc, cost: costUsd } = await crossProviderChat({
         system,
         user,
         tier: 'opus',
         maxTokens: 16_000,
-        timeoutMs: 240_000,
+        // M11: 90s ceiling — most reverse proxies kill connections at 60-100s.
+        timeoutMs: 90_000,
       });
 
       if (!revisedDoc || revisedDoc.trim().length < 200) {
@@ -1400,7 +1511,7 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
       // Note: we do NOT overwrite assembledDocument. v1 stays canonical;
       // the latest revision is fetched explicitly by the frontend.
 
-      // Charge the revision cost to the session ledger.
+      // Track session-level cost (separate from billable-hours debit above).
       if (costUsd > 0 && typeof sessionRecord.updateCost === 'function') {
         sessionRecord.updateCost(sessionRecord.accumulatedCost + costUsd);
       }
@@ -1417,7 +1528,10 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error('Revision failed', { sessionId: id, error: message });
-      return reply.status(500).send({ error: 'Revision failed', details: message });
+      // M17: generic client error; full detail goes to server logs only.
+      return reply.status(500).send({ error: 'Revision failed. Please try again.' });
+    } finally {
+      release();
     }
   });
 
@@ -1426,6 +1540,10 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
     const { id, version } = request.params as { id: string; version: string };
     const session = getSessionOrHydrate(sessionManager, id);
     if (!session) return reply.status(404).send({ error: `Session not found: ${id}` });
+    // Audit fix H5: deliverable text is sensitive — owner-only.
+    if (!checkSessionOrHydrateOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
 
     const sessionRecord = session as SessionState;
     if (!sessionRecord.revisions) {

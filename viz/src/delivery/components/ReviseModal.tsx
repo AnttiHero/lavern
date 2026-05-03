@@ -49,9 +49,21 @@ export function ReviseModal({ sessionId, currentVersion, onClose, onRevised }: P
   const [elapsedMs, setElapsedMs] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const startedAtRef = useRef<number>(0);
+  // Audit fix M14: track mount + active fetch so we can cancel cleanly.
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Focus the textarea on mount.
   useEffect(() => { textareaRef.current?.focus(); }, []);
+
+  // Mount/unmount lifecycle — abort any in-flight revise on close.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      try { abortRef.current?.abort(); } catch { /* ignore */ }
+    };
+  }, []);
 
   // Tick elapsed timer while loading.
   useEffect(() => {
@@ -88,21 +100,29 @@ export function ReviseModal({ sessionId, currentVersion, onClose, onRevised }: P
     setLoading(true);
     setError(null);
     setElapsedMs(0);
+    // Fresh AbortController per submission so retries cancel the prior call.
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
     try {
       const res = await fetch(`/api/sessions/${sessionId}/revise`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ instructions: trimmed }),
+        signal: abortRef.current.signal,
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || body.details || `Server returned ${res.status}.`);
       }
       const rev = await res.json() as Revision;
+      // Guard against late callbacks after the user closed the modal.
+      if (!mountedRef.current) return;
       onRevised(rev);
       onClose();
     } catch (err) {
+      // Aborted = the user closed the modal; don't show an error.
+      if ((err as Error)?.name === 'AbortError' || !mountedRef.current) return;
       setError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     }

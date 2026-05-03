@@ -34,6 +34,10 @@ export function initDatabase(dbPath?: string): Database.Database {
   db = new Database(resolvedPath);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  // Audit fix H9: under concurrent writers (load test, viral share, parallel
+  // billing updates) without a busy_timeout, SQLite throws SQLITE_BUSY
+  // immediately. 5s wait gives WAL writers room to drain.
+  db.pragma('busy_timeout = 5000');
 
   runMigrations(db);
 
@@ -214,32 +218,36 @@ function runMigrations(db: Database.Database): void {
     );
   `);
 
-  // Sync triggers — keep FTS index in sync with kb_chunks table
-  // Use try/catch because triggers already existing is not an error we care about
-  try {
-    db.exec(`
-      CREATE TRIGGER kb_chunks_ai AFTER INSERT ON kb_chunks BEGIN
-        INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
-      END;
-    `);
-  } catch { /* trigger already exists */ }
+  // Sync triggers — keep FTS index in sync with kb_chunks table.
+  // Audit fix LOW: only swallow "already exists" errors. If FTS5 module is
+  // unavailable on this SQLite build, propagate so the operator notices —
+  // otherwise KB search silently returns empty results forever.
+  const swallowAlreadyExists = (fn: () => void, what: string): void => {
+    try { fn(); } catch (err) {
+      const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+      if (msg.includes('already exists')) return;
+      throw new Error(`FTS5 trigger setup failed for ${what}: ${msg}`);
+    }
+  };
 
-  try {
-    db.exec(`
-      CREATE TRIGGER kb_chunks_ad AFTER DELETE ON kb_chunks BEGIN
-        INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
-      END;
-    `);
-  } catch { /* trigger already exists */ }
+  swallowAlreadyExists(() => db.exec(`
+    CREATE TRIGGER kb_chunks_ai AFTER INSERT ON kb_chunks BEGIN
+      INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
+    END;
+  `), 'kb_chunks_ai');
 
-  try {
-    db.exec(`
-      CREATE TRIGGER kb_chunks_au AFTER UPDATE ON kb_chunks BEGIN
-        INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
-        INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
-      END;
-    `);
-  } catch { /* trigger already exists */ }
+  swallowAlreadyExists(() => db.exec(`
+    CREATE TRIGGER kb_chunks_ad AFTER DELETE ON kb_chunks BEGIN
+      INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
+    END;
+  `), 'kb_chunks_ad');
+
+  swallowAlreadyExists(() => db.exec(`
+    CREATE TRIGGER kb_chunks_au AFTER UPDATE ON kb_chunks BEGIN
+      INSERT INTO kb_chunks_fts(kb_chunks_fts, rowid, heading, content) VALUES('delete', old.rowid, old.heading, old.content);
+      INSERT INTO kb_chunks_fts(rowid, heading, content) VALUES (new.rowid, new.heading, new.content);
+    END;
+  `), 'kb_chunks_au');
 
   // v18 migration: Add assembled_document column to session_archive
   // SQLite ALTER TABLE ADD COLUMN is safe — no-op if column already exists via CREATE TABLE
@@ -926,11 +934,39 @@ export function getUserSpendBreakdown(
 /**
  * Delete archived sessions older than the specified number of days.
  * Returns the count of deleted rows.
+ *
+ * Audit fix M13: gate on `status` so we only purge truly-finished engagements.
+ * The previous bare DELETE could vaporize an `assembling` row mid-read on a
+ * long retention window. Rows where completed_at IS NULL are also skipped
+ * because `NULL < anything` is false in SQLite — covers the same case
+ * defensively.
  */
 export function cleanOldArchives(retentionDays: number): number {
   const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
   const result = getDb().prepare(
-    `DELETE FROM session_archive WHERE completed_at < ?`
+    `DELETE FROM session_archive
+     WHERE completed_at < ?
+       AND completed_at IS NOT NULL
+       AND status IN ('completed', 'failed', 'halted')`
+  ).run(cutoff);
+  return result.changes;
+}
+
+/**
+ * Audit fix H10: clean up holds left behind by sessions that crashed before
+ * they could archive (or by hard server restarts). Without this, the hold
+ * permanently reduces a user's available balance. Run at server boot.
+ *
+ * `maxAgeMs` is typically `config.sessionTtlMs` — a hold older than the
+ * session's max lifetime can't possibly belong to a still-running session.
+ * Returns the count of holds released.
+ */
+export function sweepStaleHolds(maxAgeMs: number): number {
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
+  const result = getDb().prepare(
+    `DELETE FROM billable_hours
+     WHERE type = 'hold'
+       AND created_at < ?`
   ).run(cutoff);
   return result.changes;
 }
@@ -1533,6 +1569,10 @@ export function exportUserData(userId: string): {
   billingEvents: Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
   billableHours: BillableHoursEntry[];
   auditLog: Array<{ timestamp: string; action: string; resource: string | null }>;
+  // Audit fix C3: include user-authored share artifacts in the GDPR
+  // portability bundle (Article 20).
+  sharedAgents: Array<{ token: string; profile_json: string; created_at: string }>;
+  sharedTeams: Array<{ token: string; title: string; team_json: string; created_at: string }>;
 } {
   const d = getDb();
   const profile = getUserById(userId);
@@ -1541,8 +1581,10 @@ export function exportUserData(userId: string): {
   const billingEvents = d.prepare(`SELECT type, amount_cents, plan, created_at FROM billing_events WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as Array<{ type: string; amount_cents: number; plan: string | null; created_at: string }>;
   const billableHours = d.prepare(`SELECT * FROM billable_hours WHERE user_id = ? ORDER BY created_at DESC`).all(userId) as BillableHoursEntry[];
   const auditLog = d.prepare(`SELECT timestamp, action, resource FROM audit_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1000`).all(userId) as Array<{ timestamp: string; action: string; resource: string | null }>;
+  const sharedAgents = d.prepare(`SELECT token, profile_json, created_at FROM shared_agents WHERE owner_id = ? ORDER BY created_at DESC`).all(userId) as Array<{ token: string; profile_json: string; created_at: string }>;
+  const sharedTeams = d.prepare(`SELECT token, title, team_json, created_at FROM shared_teams WHERE owner_id = ? ORDER BY created_at DESC`).all(userId) as Array<{ token: string; title: string; team_json: string; created_at: string }>;
 
-  return { profile, sessions, usage, billingEvents, billableHours, auditLog };
+  return { profile, sessions, usage, billingEvents, billableHours, auditLog, sharedAgents, sharedTeams };
 }
 
 /**
@@ -1591,6 +1633,13 @@ export function softDeleteUser(userId: string): boolean {
     d.prepare(`DELETE FROM kb_chunks WHERE user_id = ?`).run(userId);
     d.prepare(`DELETE FROM kb_documents WHERE user_id = ?`).run(userId);
     d.prepare(`DELETE FROM kb_collections WHERE user_id = ? AND is_global = 0`).run(userId);
+
+    // Audit fix C3: GDPR Article 17 — erase publicly-shared agent and team
+    // cards. Both tables embed `owner_name` and `profile_json`/`team_json`
+    // which contain user-authored content; leaving them public after erasure
+    // violates right-to-be-forgotten.
+    d.prepare(`DELETE FROM shared_agents WHERE owner_id = ?`).run(userId);
+    d.prepare(`DELETE FROM shared_teams WHERE owner_id = ?`).run(userId);
 
     // Anonymize audit log entries (keep timestamps/actions for analytics)
     d.prepare(`UPDATE audit_log SET ip = NULL, user_agent = NULL WHERE user_id = ?`).run(userId);

@@ -220,13 +220,18 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
         details: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
       });
     }
+    // Audit fix LOW: cap serialized payload (Zod schema uses .passthrough()).
+    const profileJson = JSON.stringify(parsed.data.profile);
+    if (profileJson.length > 32_000) {
+      return reply.status(413).send({ error: 'Profile payload too large (>32KB).' });
+    }
 
     // Generate a 24-byte token (32 chars base64url) — unguessable in practice
     const token = crypto.randomBytes(24).toString('base64url');
     const owner = getUserById(userId);
     const ownerName = owner?.display_name || (owner?.email?.split('@')[0]) || '';
 
-    upsertSharedAgent(token, userId, ownerName, JSON.stringify(parsed.data.profile));
+    upsertSharedAgent(token, userId, ownerName, profileJson);
 
     const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
     return reply.send({
@@ -253,7 +258,10 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
     const { token } = request.params as { token: string };
     const row = getSharedAgent(token);
     if (!row) return reply.status(404).send({ error: 'Not found.' });
-    bumpSharedAgentViews(token);
+    // Audit fix M12: defer the SQLite write so the response isn't blocked
+    // by serialized writes during a viral burst (LinkedIn unfurl + many
+    // simultaneous visitors). Errors are intentionally swallowed.
+    setImmediate(() => { try { bumpSharedAgentViews(token); } catch { /* ignore */ } });
 
     let profile: unknown;
     try { profile = JSON.parse(row.profileJson); }
@@ -335,6 +343,12 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
         details: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
       });
     }
+    // Audit fix LOW (Zod .passthrough): cap serialized payload so a client
+    // can't pump arbitrary extra keys to inflate row size.
+    const teamJsonSerialized = JSON.stringify(parsed.data.agents);
+    if (teamJsonSerialized.length > 64_000) {
+      return reply.status(413).send({ error: 'Team payload too large (>64KB).' });
+    }
 
     const token = crypto.randomBytes(24).toString('base64url');
     const owner = getUserById(userId);
@@ -345,7 +359,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
       userId,
       ownerName,
       parsed.data.title ?? '',
-      JSON.stringify(parsed.data.agents),
+      teamJsonSerialized,
     );
 
     const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
@@ -373,7 +387,9 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
     const { token } = request.params as { token: string };
     const row = getSharedTeam(token);
     if (!row) return reply.status(404).send({ error: 'Not found.' });
-    bumpSharedTeamViews(token);
+    // Audit fix M12: defer the write so viral bursts don't serialize
+    // the response on per-row SQLite writes.
+    setImmediate(() => { try { bumpSharedTeamViews(token); } catch { /* ignore */ } });
 
     let agents: unknown;
     try { agents = JSON.parse(row.teamJson); }

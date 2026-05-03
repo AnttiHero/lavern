@@ -32,6 +32,7 @@ import { mistralChat } from './mistral.js';
 import { PRICING as ANTHROPIC_PRICING } from '../utils/stream-messages.js';
 import { LOCAL_PRICING } from './local.js';
 import { MISTRAL_MODELS } from './types.js';
+import { withRetry } from '../utils/with-retry.js';
 
 // ── Tier → model resolution ─────────────────────────────────────────────
 
@@ -187,7 +188,13 @@ export async function crossProviderChat(
   if (!isOpus47) {
     requestBody.temperature = temperature;
   }
-  const res = await client.messages.create(requestBody, { timeout: opts.timeoutMs ?? 120_000 });
+  // Audit fix H7: wrap the Anthropic call in withRetry so transient
+  // 429/500/502/503/504/529 don't surface as a hard 500 to user-facing
+  // routes (revise, conversation, quality gate, document assembler).
+  const res = await withRetry(
+    () => client.messages.create(requestBody, { timeout: opts.timeoutMs ?? 120_000 }),
+    { label: `anthropic:${model}` },
+  );
 
   let text = '';
   for (const block of res.content) {

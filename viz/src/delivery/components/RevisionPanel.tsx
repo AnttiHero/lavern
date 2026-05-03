@@ -95,10 +95,7 @@ export function RevisionPanel({ sessionId, onActiveDocumentChange }: Props) {
   }, [onActiveDocumentChange]);
 
   const onRevised = useCallback((rev: FullRevision) => {
-    // Optimistic insert + activate the new version. We do NOT refetch from
-    // the server here — for hydrated archive sessions the mutation is
-    // in-memory only on the server and a refetch would clobber the new
-    // revision. Optimistic state is the source of truth post-revision.
+    // Optimistic insert + activate the new version for instant feedback.
     setRevisions(prev => {
       const next = [...prev];
       if (!next.some(r => r.version === 1)) {
@@ -115,7 +112,12 @@ export function RevisionPanel({ sessionId, onActiveDocumentChange }: Props) {
     });
     setActiveVersion(rev.version);
     onActiveDocumentChange(rev.document, rev.version);
-  }, [onActiveDocumentChange]);
+    // Audit fix M15: reconcile with the server. Backend now rejects /revise
+    // on hydrated archive sessions (audit fix C2), so a successful response
+    // here means the revision IS persisted server-side — refetch is safe and
+    // ensures pills reflect canonical state on reload.
+    fetchList();
+  }, [onActiveDocumentChange, fetchList]);
 
   if (isDemo) return null;
 

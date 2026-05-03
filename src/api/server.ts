@@ -62,7 +62,7 @@ import { ClientRegistry, createAuthMiddleware, registerAuthRoutes } from './midd
 import { createPerUserRateLimitHook } from './middleware/rate-limit.js';
 import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { registerGoogleAuthRoutes } from './routes/google-auth.js';
-import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives } from '../db/database.js';
+import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives, sweepStaleHolds } from '../db/database.js';
 import { config } from '../config.js';
 import { captureError, isSentryEnabled } from '../utils/sentry.js';
 import { createLogger } from '../utils/logger.js';
@@ -219,6 +219,13 @@ export async function startApiServer(port: number): Promise<void> {
   const archivedCleaned = cleanOldArchives(config.archiveRetentionDays);
   if (archivedCleaned > 0) console.log(`[ARCHIVE] Cleaned ${archivedCleaned} archived session${archivedCleaned === 1 ? '' : 's'} older than ${config.archiveRetentionDays} days`);
 
+  // Audit fix H10: sweep holds left behind by sessions that crashed before
+  // archive (or by hard restarts). Without this, the hold permanently locks
+  // billable hours from the user's available balance.
+  const sessionTtlMs = config.sessionTtlMs ?? 4 * 60 * 60 * 1000;
+  const staleHoldsReleased = sweepStaleHolds(sessionTtlMs);
+  if (staleHoldsReleased > 0) console.log(`[BILLING] Released ${staleHoldsReleased} stale hold${staleHoldsReleased === 1 ? '' : 's'} older than ${(sessionTtlMs / 3600000).toFixed(1)}h`);
+
   const tokenCleanupInterval = setInterval(() => {
     const cleaned = cleanExpiredTokens();
     if (cleaned > 0) console.log(`[AUTH] Cleaned ${cleaned} expired auth token${cleaned === 1 ? '' : 's'}`);
@@ -230,6 +237,9 @@ export async function startApiServer(port: number): Promise<void> {
     // Clean old session archives hourly
     const archiveCleaned = cleanOldArchives(config.archiveRetentionDays);
     if (archiveCleaned > 0) console.log(`[ARCHIVE] Cleaned ${archiveCleaned} old archived sessions`);
+    // Hourly stale-hold sweep — covers in-flight crashes between boots.
+    const heldReleased = sweepStaleHolds(sessionTtlMs);
+    if (heldReleased > 0) console.log(`[BILLING] Released ${heldReleased} stale holds`);
   }, 60 * 60 * 1000); // 1 hour
   tokenCleanupInterval.unref(); // Don't keep the process alive for cleanup
 
@@ -251,8 +261,11 @@ export async function startApiServer(port: number): Promise<void> {
     '/health/capacity',
     '/',
     // Session access — individual session detail/WS is public (session ID is a capability token).
-    // Listing requires auth to prevent session ID enumeration.
-    'GET /api/sessions/*',    // Session detail + WebSocket events (requires session ID)
+    // Archive endpoints (GET /api/sessions/archive[/...]) explicitly enforce
+    // auth in-route (see sessions.ts) — fix C1 closed the leak there.
+    // Future hardening (M16): replace this wildcard with explicit per-route
+    // entries once the auth matcher supports param syntax.
+    'GET /api/sessions/*',
     // NOTE: /api/clients, /api/audit-logs, /api/replay are NOT public.
     // They contain sensitive data and require authentication.
     'GET /api/agents/*',      // Agent profiles, presets, recommendations

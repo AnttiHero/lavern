@@ -121,18 +121,45 @@ async function fetchWithLimit(u: URL): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(u.toString(), {
-      method: 'GET',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'user-agent': USER_AGENT,
-        'accept': 'text/html,application/xhtml+xml',
-        'accept-language': 'en-US,en;q=0.8',
-      },
-    });
+    // Audit fix H4: SSRF defense. The previous `redirect: 'follow'` let an
+    // attacker-controlled public host 302 to 169.254.169.254 (cloud
+    // metadata) or 127.0.0.1 (Ollama / internal services). We now follow
+    // redirects manually, re-asserting `assertPublicHost` on each hop.
+    let current = u;
+    let res: Response | null = null;
+    const MAX_HOPS = 3;
+    for (let hop = 0; hop <= MAX_HOPS; hop++) {
+      const r = await fetch(current.toString(), {
+        method: 'GET',
+        redirect: 'manual',
+        signal: controller.signal,
+        headers: {
+          'user-agent': USER_AGENT,
+          'accept': 'text/html,application/xhtml+xml',
+          'accept-language': 'en-US,en;q=0.8',
+        },
+      });
+      // 3xx with Location → re-validate before following.
+      if (r.status >= 300 && r.status < 400 && r.headers.get('location')) {
+        if (hop >= MAX_HOPS) {
+          throw new ScrapeError('fetch_failed', `Too many redirects (>${MAX_HOPS}).`);
+        }
+        let next: URL;
+        try { next = new URL(r.headers.get('location') as string, current); }
+        catch { throw new ScrapeError('fetch_failed', 'Malformed redirect Location header.'); }
+        if (next.protocol !== 'http:' && next.protocol !== 'https:') {
+          throw new ScrapeError('blocked_target', `Redirect to non-HTTP scheme: ${next.protocol}`);
+        }
+        await assertPublicHost(next);
+        current = next;
+        continue;
+      }
+      res = r;
+      break;
+    }
+    if (!res) throw new ScrapeError('fetch_failed', 'Redirect loop exited without a response.');
     if (!res.ok) {
-      throw new ScrapeError('fetch_failed', `${u.hostname} returned HTTP ${res.status}`);
+      throw new ScrapeError('fetch_failed', `${current.hostname} returned HTTP ${res.status}`);
     }
     const ct = res.headers.get('content-type') ?? '';
     if (!ct.includes('html') && !ct.includes('xml') && !ct.includes('text/')) {
