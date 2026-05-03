@@ -29,6 +29,7 @@ import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyHelmet from '@fastify/helmet';
 import { SessionManager } from '../session/session-manager.js';
 import { getDailySpendStats } from '../utils/spend-tracker.js';
 import { registerSessionRoutes } from './routes/sessions.js';
@@ -88,6 +89,21 @@ export async function startApiServer(port: number): Promise<void> {
 
   // ── Plugins ──────────────────────────────────────────────────────────
 
+  // ── Security headers ─────────────────────────────────────────────────
+  // Helmet sets a baseline of defensive HTTP headers — frame protection,
+  // content sniffing block, referrer policy, HSTS in production.
+  // CSP is intentionally NOT enforced here yet: the dashboard inlines styles
+  // in many components and a strict CSP would blank-screen them. CSP is
+  // tracked as a follow-up in SECURITY.md.
+  await fastify.register(fastifyHelmet, {
+    contentSecurityPolicy: false, // see comment above; enable after CSP audit
+    crossOriginEmbedderPolicy: false, // we serve user-fetched DiceBear avatars
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // dashboard is on a different port in dev
+    hsts: process.env.NODE_ENV === 'production' ? { maxAge: 15552000, includeSubDomains: true } : false,
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  });
+
   await fastify.register(fastifyWebsocket);
 
   // CORS — locked to specific origins by default.
@@ -118,7 +134,31 @@ export async function startApiServer(port: number): Promise<void> {
   // Compared in constant time to avoid exposing the secret via timing. Empty
   // key disables the bypass entirely — production never presents the header
   // to a server missing the env.
-  const loadTestKey = config.loadTestBypassKey;
+  // Production safety: refuse to honour the bypass when NODE_ENV=production
+  // unless the operator has ALSO set LAVERN_ALLOW_LOAD_TEST_BYPASS=1. Without
+  // this, an OSS user shipping with a stray bypass key in their .env could
+  // accept arbitrary auth/rate-limit-bypass requests on the open internet.
+  // (`isProd` is already declared at the top of startApiServer for HSTS.)
+  const allowBypassInProd = process.env.LAVERN_ALLOW_LOAD_TEST_BYPASS === '1';
+  const loadTestKey =
+    isProd && !allowBypassInProd
+      ? '' // disable in production unless explicitly opted in
+      : config.loadTestBypassKey;
+  if (config.loadTestBypassKey && isProd && !allowBypassInProd) {
+    console.warn(
+      '[SECURITY] LAVERN_LOAD_TEST_BYPASS_KEY is set in production but ' +
+      'LAVERN_ALLOW_LOAD_TEST_BYPASS is not "1". The bypass is DISABLED. ' +
+      'To allow it, also set LAVERN_ALLOW_LOAD_TEST_BYPASS=1 (and understand ' +
+      'that this disables auth + rate limiting for any caller with the key).',
+    );
+  }
+  if (loadTestKey && isProd && allowBypassInProd) {
+    console.warn(
+      '[SECURITY] Load-test bypass is ACTIVE in production. Auth and rate ' +
+      'limits can be skipped by any caller presenting X-Load-Test-Bypass with ' +
+      'the configured key. Disable with LAVERN_ALLOW_LOAD_TEST_BYPASS unset.',
+    );
+  }
   const loadTestKeyBuf = loadTestKey ? Buffer.from(loadTestKey, 'utf8') : null;
   await fastify.register(fastifyRateLimit, {
     max: config.rateLimitMax,

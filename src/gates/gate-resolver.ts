@@ -15,6 +15,7 @@
 import * as readline from 'node:readline';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
+import { isUrlSafe } from '../utils/url-safety.js';
 
 const logger = createLogger('GATE');
 
@@ -227,6 +228,16 @@ export class WebhookGateResolver implements GateResolver {
 
   async resolve(request: GateRequest): Promise<GateDecision> {
     try {
+      // SSRF defence-in-depth: refuse to fetch a URL that points at a
+      // private/loopback/link-local target, even if upstream validation
+      // missed it. The /api/clients route validates at write-time, but
+      // older clients in storage and any future write paths are also
+      // covered here.
+      if (!isUrlSafe(this.callbackUrl)) {
+        logger.error('Webhook callback rejected by SSRF guard', { hostnameRedacted: true });
+        return this.fallbackResolve(request);
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 

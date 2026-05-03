@@ -13,6 +13,7 @@ import * as crypto from 'node:crypto';
 import type { ClientIdentity } from '../../types/client.js';
 import { createClientIdentity, generateApiKey } from '../../types/client.js';
 import { CreateClientSchema, validateBody, type CreateClientBody } from './validation.js';
+import { isUrlSafe } from '../../utils/url-safety.js';
 import { getUserByToken as dbGetUserByToken, saveApiClient, getApiClientByKeyHash, getAllApiClients, removeApiClient as dbRemoveApiClient, updateApiClientLastActive } from '../../db/database.js';
 import { createLogger } from '../../utils/logger.js';
 
@@ -292,6 +293,17 @@ export function registerAuthRoutes(
     // Validate request body
     const body = validateBody<CreateClientBody>(CreateClientSchema, request, reply);
     if (!body) return; // 400 already sent
+
+    // SSRF prevention — validate callbackUrl points to a public host before
+    // we store it. Otherwise an attacker can register a client with
+    // callbackUrl=http://169.254.169.254/... and use any webhook-mode
+    // session as a metadata-service exfil channel.
+    if (body.callbackUrl && !isUrlSafe(body.callbackUrl)) {
+      return reply.status(400).send({
+        error: 'Invalid callbackUrl',
+        details: 'callbackUrl must be an HTTPS URL pointing to a public host. Private IPs, localhost, and link-local addresses are blocked.',
+      });
+    }
 
     const { client, apiKey } = registry.registerClient(body.type, {
       name: body.name,
