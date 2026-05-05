@@ -518,8 +518,23 @@ export function updateUserProfile(id: string, updates: { displayName?: string; f
 }
 
 // ── Auth Token Queries ───────────────────────────────────────────────────
+//
+// Audit follow-up: tokens are hashed at rest (SHA-256). The plaintext
+// token only exists in the response that creates it (set as cookie) and
+// in the request that presents it. The DB column stores the hash, so a
+// SQLite leak (backup, stolen laptop, GDPR export gone wrong) does NOT
+// expose live sessions. API client keys (`api_clients.api_key_hash`)
+// already follow this pattern; this brings auth tokens to parity.
+//
+// Migration: existing plaintext token rows are auto-migrated on first
+// lookup — see `getUserByToken` below. New tokens are always written
+// hashed. Old rows are progressively rewritten as users hit the system.
 
 const TOKEN_TTL_DAYS = 30;
+
+function hashAuthToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 export function createAuthToken(userId: string): string {
   const token = crypto.randomBytes(32).toString('hex');
@@ -529,23 +544,48 @@ export function createAuthToken(userId: string): string {
   getDb().prepare(`
     INSERT INTO auth_tokens (token, user_id, expires_at, created_at)
     VALUES (?, ?, ?, ?)
-  `).run(token, userId, expiresAt.toISOString(), now.toISOString());
+  `).run(hashAuthToken(token), userId, expiresAt.toISOString(), now.toISOString());
 
   return token;
 }
 
 export function getUserByToken(token: string): DbUser | undefined {
-  const row = getDb().prepare(`
+  const tokenHash = hashAuthToken(token);
+  const now = new Date().toISOString();
+  const db = getDb();
+
+  // Look up by hash (the new format).
+  let row = db.prepare(`
     SELECT u.* FROM users u
     JOIN auth_tokens t ON t.user_id = u.id
     WHERE t.token = ? AND t.expires_at > ?
-  `).get(token, new Date().toISOString()) as DbUser | undefined;
+  `).get(tokenHash, now) as DbUser | undefined;
+  if (row) return row;
 
-  return row;
+  // Fallback: legacy plaintext rows (pre-hash deploy). If we find one,
+  // rewrite it as the hash on the way out so it's hashed for next time.
+  // This lets pre-existing sessions survive the rollout without forcing
+  // every user to re-login.
+  row = db.prepare(`
+    SELECT u.* FROM users u
+    JOIN auth_tokens t ON t.user_id = u.id
+    WHERE t.token = ? AND t.expires_at > ?
+  `).get(token, now) as DbUser | undefined;
+  if (row) {
+    try {
+      db.prepare(`UPDATE auth_tokens SET token = ? WHERE token = ?`).run(tokenHash, token);
+    } catch { /* race or already migrated; non-fatal */ }
+    return row;
+  }
+
+  return undefined;
 }
 
 export function deleteAuthToken(token: string): void {
-  getDb().prepare('DELETE FROM auth_tokens WHERE token = ?').run(token);
+  // Delete by hash (new format) AND by plaintext (legacy) so sign-out works
+  // either way during the migration window.
+  const db = getDb();
+  db.prepare('DELETE FROM auth_tokens WHERE token = ? OR token = ?').run(hashAuthToken(token), token);
 }
 
 export function cleanExpiredTokens(): number {

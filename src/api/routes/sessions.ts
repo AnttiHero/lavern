@@ -788,6 +788,13 @@ export function registerSessionRoutes(
     if (!session) {
       return reply.status(404).send({ error: `Session not found: ${id}` });
     }
+    // Audit follow-up: deliverable text is sensitive — owner-only. The
+    // session-ID-as-capability model is fine for non-PII reads but the
+    // assembled work product can leak attorney work-product if a URL is
+    // shared / screenshotted / logged. Layered ownership check closes that.
+    if (!checkSessionOrHydrateOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
 
     const reqQuery = request.query as { format?: string; style?: string };
     const format = reqQuery.format ?? 'md';

@@ -6,14 +6,35 @@
  * GET  /api/replay/:sessionId     — WebSocket replay of a session's events
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readAuditFile, readAuditFileMeta, verifyAuditChain } from '../../utils/audit-persistence.js';
 import { attachReplayStream } from '../ws-handler.js';
 import type { ShemEvent } from '../../events/event-bus.js';
+import { getArchivedSessionById } from '../../db/database.js';
 
 const DEFAULT_AUDIT_DIR = './audit-logs';
+
+/** Audit follow-up: ownership guard. Audit logs contain the full prompt
+ *  + every agent decision + every tool call. Treating them as
+ *  auth-required-but-globally-readable was the same BOLA pattern as the
+ *  archive-list bug closed earlier. Look up the session's owner from
+ *  session_archive and compare to the requesting user. */
+function getRequestUserId(request: FastifyRequest): string | undefined {
+  return (request as FastifyRequest & { userId?: string }).userId;
+}
+
+function userOwnsSession(sessionId: string, userId: string | undefined): boolean {
+  if (!userId) return false;
+  const archived = getArchivedSessionById(sessionId);
+  // Pre-archive (in-flight) sessions don't have a row yet — fall back to
+  // deny-by-default. Users replay COMPLETED sessions, not running ones.
+  if (!archived) return false;
+  // Sessions without an owner (legacy / anonymous) → fail closed.
+  if (!archived.user_id) return false;
+  return archived.user_id === userId;
+}
 
 export function registerReplayRoutes(
   fastify: FastifyInstance,
@@ -22,7 +43,10 @@ export function registerReplayRoutes(
 
   // ── GET /api/audit-logs — List available audit log files ───────────
 
-  fastify.get('/api/audit-logs', async (_request, reply) => {
+  fastify.get('/api/audit-logs', async (request, reply) => {
+    const userId = getRequestUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Authentication required.' });
+
     const resolvedDir = path.resolve(auditDir);
 
     if (!fs.existsSync(resolvedDir)) {
@@ -31,6 +55,8 @@ export function registerReplayRoutes(
 
     const files = fs.readdirSync(resolvedDir)
       .filter((f) => f.endsWith('.jsonl'))
+      // Owner-scope: only list sessions the requesting user owns.
+      .filter((f) => userOwnsSession(f.replace('.jsonl', ''), userId))
       .map((f) => {
         const filePath = path.join(resolvedDir, f);
         const stat = fs.statSync(filePath);
@@ -59,10 +85,17 @@ export function registerReplayRoutes(
   // ── GET /api/audit-logs/:sessionId — Parsed audit entries ──────────
 
   fastify.get('/api/audit-logs/:sessionId', async (request, reply) => {
+    const userId = getRequestUserId(request);
+    if (!userId) return reply.status(401).send({ error: 'Authentication required.' });
+
     const { sessionId } = request.params as { sessionId: string };
     // Prevent path traversal — sessionId must be alphanumeric/hyphens/underscores only
     if (!/^[\w-]+$/.test(sessionId)) {
       return reply.status(400).send({ error: 'Invalid session ID format' });
+    }
+    // Owner-only — audit log contains full prompt + agent decisions.
+    if (!userOwnsSession(sessionId, userId)) {
+      return reply.status(404).send({ error: `Audit log not found: ${sessionId}` });
     }
     const filePath = path.join(path.resolve(auditDir), `${sessionId}.jsonl`);
 
@@ -84,11 +117,19 @@ export function registerReplayRoutes(
   // ── GET /api/replay/:sessionId — WebSocket replay ─────────────────
 
   fastify.get('/api/replay/:sessionId', { websocket: true }, (socket, request) => {
+    const userId = getRequestUserId(request);
     const { sessionId } = request.params as { sessionId: string };
     // Prevent path traversal
     if (!/^[\w-]+$/.test(sessionId)) {
       socket.send(JSON.stringify({ error: 'Invalid session ID format' }));
       socket.close();
+      return;
+    }
+    // Owner-only WebSocket replay. Cookies usually traverse WS handshakes
+    // when same-origin, so userId will be populated; if not, fail closed.
+    if (!userOwnsSession(sessionId, userId)) {
+      socket.send(JSON.stringify({ error: `Audit log not found: ${sessionId}` }));
+      socket.close(4004, 'Audit log not found');
       return;
     }
     const filePath = path.join(path.resolve(auditDir), `${sessionId}.jsonl`);
