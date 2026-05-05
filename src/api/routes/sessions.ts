@@ -1098,10 +1098,8 @@ export function registerSessionRoutes(
       });
     } catch (err) {
       logger.error('Reassembly failed', { sessionId: id, error: err });
-      return reply.status(500).send({
-        error: 'Assembly failed',
-        details: err instanceof Error ? err.message : String(err),
-      });
+      // Audit follow-up: generic client message; full error to server logs only.
+      return reply.status(500).send({ error: 'Assembly failed. Please try again.' });
     }
   });
 
@@ -1199,10 +1197,8 @@ export function registerSessionRoutes(
       });
     } catch (err) {
       logger.error('Derivative generation failed', { type: body.type, error: err });
-      return reply.status(500).send({
-        error: `Failed to generate ${derivativeType.title}`,
-        details: err instanceof Error ? err.message : String(err),
-      });
+      // Audit follow-up: generic client message; full error to server logs only.
+      return reply.status(500).send({ error: `Failed to generate ${derivativeType.title}.` });
     }
   });
 

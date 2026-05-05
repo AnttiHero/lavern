@@ -137,10 +137,12 @@ export function registerVerifyRoutes(
         session.halt(`Verify failed: ${message}`);
       }
 
+      // Audit follow-up: generic client message; full `message` captured
+      // in halt() above and surfaced in subsequent session-state reads.
       return reply.status(500).send({
         sessionId: session.id,
         status: 'failed',
-        error: message,
+        error: 'Verification failed. Please try again.',
         report: session.verificationPipeline?.report ?? null,
       });
     }

@@ -380,8 +380,18 @@ export async function startApiServer(port: number): Promise<void> {
   );
 
   fastify.addHook('onRequest', async (request, reply) => {
-    // Only check state-changing methods
-    if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return;
+    const isWebSocketUpgrade =
+      request.method === 'GET' &&
+      request.headers.upgrade?.toLowerCase() === 'websocket';
+
+    // Audit follow-up: WebSocket handshakes are GETs but they ARE state-changing
+    // (they open a long-lived event stream). SameSite=Lax already prevents
+    // cross-origin cookies on WS handshakes in modern browsers, but explicit
+    // origin validation closes the door for older clients + edge cases.
+    if (!isWebSocketUpgrade) {
+      // Only check state-changing methods for non-WS requests.
+      if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return;
+    }
 
     // Bearer token auth is immune to CSRF — skip
     if (request.headers.authorization?.startsWith('Bearer ')) return;
@@ -408,9 +418,13 @@ export async function startApiServer(port: number): Promise<void> {
           // Malformed referer — reject for safety (legitimate clients send well-formed referers)
           return reply.status(403).send({ error: 'Malformed referer' });
         }
+      } else if (isWebSocketUpgrade) {
+        // WS handshake with no Origin AND no Referer is suspicious — legitimate
+        // browsers always send Origin on WebSocket upgrades. Reject.
+        return reply.status(403).send({ error: 'Origin required for WebSocket' });
       }
-      // No Origin or Referer: could be curl, Postman, or API client.
-      // SameSite=Lax cookie already prevents cross-site form submissions.
+      // No Origin or Referer on a non-WS request: could be curl, Postman, or
+      // API client. SameSite=Lax cookie already prevents cross-site form submissions.
     }
   });
 

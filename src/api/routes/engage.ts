@@ -576,11 +576,12 @@ export function registerEngageRoutes(
       const status = 'failed';
       const response = buildEngageResponse(session, status, startTime);
 
-      // Include the error in the response
+      // Audit follow-up: generic client error; full `message` is already
+      // captured in `session.halt(...)` above and the upstream logger call.
       const formatted = applyFormat(response, body.format) as Record<string, unknown>;
       return reply.status(500).send({
         ...formatted,
-        error: message,
+        error: 'Engagement failed. Please try again.',
       });
     }
   });

@@ -459,15 +459,30 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     const body = validateBody(ForgotPasswordSchema, request, reply);
     if (!body) return;
 
+    // Audit follow-up: constant-time response window. Without this floor,
+    // the existing-user branch did a DB write (createPasswordResetToken) +
+    // queued an email; the non-existing-user branch did nothing. The
+    // measurable delta lets a remote attacker enumerate registered emails
+    // by timing the response. Same mitigation as login (per v0.11.2).
+    const startedAt = Date.now();
+    const MIN_RESPONSE_MS = 200;
+
     const email = body.email.toLowerCase().trim();
     logAuditEvent({ action: 'forgot_password', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'], detail: { email } });
 
-    // Always return 200 to prevent email enumeration
+    // Always return 200 to prevent email enumeration via status code.
     const user = getUserByEmail(email);
     if (user) {
       const token = createPasswordResetToken(user.id);
       const resetUrl = `${config.email.appUrl}/#/reset-password?token=${token}`;
       sendPasswordResetEmail(email, resetUrl).catch(err => logger.error('reset_email_failed', err));
+    }
+
+    // Pad to MIN_RESPONSE_MS so existing vs. non-existing emails are
+    // indistinguishable by timing.
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_RESPONSE_MS) {
+      await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_MS - elapsed));
     }
 
     return reply.send({ success: true, message: 'If an account with that email exists, we sent a password reset link.' });

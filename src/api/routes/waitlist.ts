@@ -145,7 +145,8 @@ export function registerWaitlistRoutes(fastify: FastifyInstance): void {
 
       return reply.send({ inviteCode, email });
     } catch (err) {
-      return reply.status(500).send({ error: err instanceof Error ? err.message : 'Failed to invite' });
+      logger.error('invite_failed', { error: err instanceof Error ? err.message : String(err) });
+      return reply.status(500).send({ error: 'Failed to invite. Please try again.' });
     }
   });
 
