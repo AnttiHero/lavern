@@ -22,6 +22,7 @@ import { CloneFromFirmPanel } from './CloneFromFirmPanel.js';
 import { ShareAgentModal } from './ShareAgentModal.js';
 import { ImportAgentModal } from './ImportAgentModal.js';
 import { GOBLIN_PROFILE, GOBLIN_AVATAR_URL } from '../data/goblinProfile.js';
+import { JUDE_CLAW_PROFILE } from '../data/judeClawProfile.js';
 import type { CustomAgent } from '../hooks/useCustomAgents.js';
 import type { AgentProfile } from '../../types/agent-profile.js';
 
@@ -68,6 +69,13 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
     setGoblinSummoned(true);
     // Reset the "summoned" pulse after the animation
     setTimeout(() => setGoblinSummoned(false), 2000);
+  }, [addAgent]);
+
+  const [judeHired, setJudeHired] = useState(false);
+  const handleHireJudeClaw = useCallback(() => {
+    addAgent(JUDE_CLAW_PROFILE, { kind: 'scratch' });
+    setJudeHired(true);
+    setTimeout(() => setJudeHired(false), 2000);
   }, [addAgent]);
 
   const handleImportTeam = useCallback((roles: string[]) => {
@@ -228,9 +236,10 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
             {customAgents.map((agent) => {
               const { id, profile: a } = agent;
               const isGoblin = a.avatarSeed === 'goblin';
+              const dicebearExtra = a.avatarExtra ? `&${a.avatarExtra}` : '';
               const avatar = isGoblin
                 ? GOBLIN_AVATAR_URL
-                : `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(a.avatarSeed || a.displayName)}&backgroundColor=transparent`;
+                : `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(a.avatarSeed || a.displayName)}&backgroundColor=transparent${dicebearExtra}`;
               return (
                 <div key={id} style={styles.rosterCard}>
                   <img src={avatar} alt="" width={48} height={48} style={styles.rosterAvatar} />
@@ -327,6 +336,24 @@ export function AgentBuilderHub({ onBuildFromScratch, onCloneComplete, onFirmClo
         onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}
       >
         🧌
+      </button>
+
+      {/* Easter egg companion: hire Jude Claw. He has nothing to offer
+          except a symmetrical face. The premium rate is the joke. */}
+      <button
+        type="button"
+        onClick={handleHireJudeClaw}
+        style={{
+          ...styles.goblinButton,
+          right: 56,
+          animation: judeHired ? 'goblin-summoned 700ms ease-out' : 'none',
+        }}
+        title="Hire Jude Claw"
+        aria-label="Hire Jude Claw"
+        onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}
+      >
+        🗿
       </button>
     </div>
   );
