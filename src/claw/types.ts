@@ -53,7 +53,95 @@ export type DocumentStatus =
   | 'reviewed'      // Successfully processed
   | 'flagged'       // Processed but has critical findings
   | 'stale'         // Document changed since last review
+  | 'skipped'       // Watchman triaged as not worth deep-reading (lighthouse soft-skip)
   | 'error';        // Failed to process
+
+// ── Watchman / Lighthouse Architecture ──────────────────────────────────
+
+/** Document type recognized by the Watchman. Drives Reader template selection. */
+export type WatchmanDocumentType =
+  | 'jv'            // Joint venture agreement
+  | 'nda'           // Non-disclosure agreement
+  | 'employment'    // Employment / offer letter
+  | 'lease'         // Real-estate lease
+  | 'loan'          // Credit / loan agreement
+  | 'saas'          // SaaS / vendor agreement
+  | 'policy'        // ToS / privacy policy / EULA
+  | 'other';        // Unknown — Reader uses generic template
+
+/** What the Watchman decides happens to a document next. */
+export type WatchmanRoute =
+  | 'skip'          // Not worth deep-reading (meeting agenda, empty boilerplate, duplicate)
+  | 'quick-scan'    // Routine — single synthesis pass, no per-clause fan-out
+  | 'deep-read';    // Full per-clause analysis (the default for substantive contracts)
+
+/** Per-document triage decision. One LLM call, structured output, runs first. */
+export interface WatchmanResult {
+  documentType: WatchmanDocumentType;
+  jurisdiction: string;          // best guess from defined terms / governing-law scan
+  confidence: number;            // 0-1, how sure the Watchman is about the type
+  urgency: 'routine' | 'elevated' | 'critical';
+  route: WatchmanRoute;
+  /** Reader template ID. Today this matches `documentType`; reserved as a separate
+   *  field so a future template registry can diverge from the type taxonomy. */
+  readerTemplate: string;
+  rationale: string;
+  /** How the Watchman reached its conclusion. */
+  method: 'sidecar' | 'llm-local' | 'llm-cloud' | 'heuristic';
+  /** Inference cost in USD (zero on local, ~$0.001 on Haiku cloud fallback). */
+  costUsd: number;
+}
+
+// ── Reader (Phase 2) ────────────────────────────────────────────────────
+
+/** Single finding emitted by the Reader. */
+export interface ReaderFinding {
+  id: string;
+  clauseRef: string;             // e.g. "§4.2" or "cl 18.3"
+  severity: 'red' | 'yellow' | 'green';
+  title: string;
+  evidence: string;              // verbatim quote from the document
+  rationale: string;
+  /** PREC-id of the precedent this finding reconciled with, if any. */
+  precedentMatch?: string;
+  confidence: number;
+  /** Set to true when the grounding pass could not anchor this finding to
+   *  document text. Such findings are stripped from the deliverable but
+   *  retained in the audit trail. */
+  unanchored?: boolean;
+}
+
+export interface ReaderResult {
+  findings: ReaderFinding[];
+  documentSummary: string;
+  documentType: string;          // confirms or revises Watchman's guess
+  jurisdictionGuess: string;
+  precedentsConsulted: string[]; // PREC-ids surfaced during the per-clause sweep
+  /** Number of findings stripped by the grounding pass. */
+  unanchoredStripped: number;
+  model: string;
+}
+
+// ── Curator (Phase 3+) ──────────────────────────────────────────────────
+
+/** What the Curator decides to do at a heartbeat tick. */
+export interface CuratorDecision {
+  /** Document hashes the Curator wants re-read because precedents changed. */
+  reReadQueue: string[];
+  /** Single consolidated user-facing notification, if anything is worth saying. */
+  surface?: {
+    title: string;
+    message: string;
+    severity: 'info' | 'warning' | 'critical';
+  };
+  /** Precedent IDs the Curator wants promoted from 'tentative' to 'confirmed'. */
+  promoteToConfirmed: string[];
+  /** Precedent IDs flagged for drift (inconsistent verdicts over time). */
+  driftDetected: string[];
+  /** When the Curator's confidence is low and frontier escalation is permitted,
+   *  list the document hashes that should be sent through hybrid analysis. */
+  requestFrontierEscalation: string[];
+}
 
 export interface DocumentEntry {
   path: string;

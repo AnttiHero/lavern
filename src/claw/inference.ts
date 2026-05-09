@@ -18,7 +18,7 @@ import { crossProviderChat } from '../providers/cross-provider-chat.js';
 import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
-import type { ClawProfile, SidecarConfig } from './types.js';
+import type { ClawProfile, SidecarConfig, WatchmanResult } from './types.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('CLAW-INFERENCE');
@@ -224,17 +224,109 @@ function heuristicInfer(
 // ── Main Inference ───────────────────────────────────────────────────────
 
 /**
+ * Map a Watchman document type to the LegalRequest type taxonomy.
+ * Most contracts are reviews; policies are redesigns.
+ */
+function legalRequestTypeFromWatchman(docType: WatchmanResult['documentType']): LegalRequest['type'] {
+  switch (docType) {
+    case 'policy':
+      return 'document_redesign';
+    case 'jv':
+    case 'nda':
+    case 'employment':
+    case 'lease':
+    case 'loan':
+    case 'saas':
+      return 'contract_review';
+    default:
+      return 'contract_review';
+  }
+}
+
+/**
+ * Default workflow given a Watchman triage decision. The router can still
+ * override this; we just need a sensible starting point for the dispatch.
+ */
+function workflowFromWatchman(w: WatchmanResult): string | undefined {
+  if (w.route === 'quick-scan') return 'counsel';
+  if (w.documentType === 'policy') return 'roundtable';
+  return 'review';
+}
+
+/**
+ * Build an InferenceResult from a Watchman triage decision — no extra LLM
+ * call. This is the lighthouse-architecture path: Watchman fires first,
+ * its output drives both the Reader (local) and the dispatch (frontier).
+ */
+export function inferenceFromWatchman(
+  documentPath: string,
+  watchman: WatchmanResult,
+  profile: ClawProfile,
+): InferenceResult {
+  const filename = path.basename(documentPath);
+  const requestType = legalRequestTypeFromWatchman(watchman.documentType);
+  const verb = requestType === 'contract_review' ? 'Review' : 'Analyze';
+
+  const intensity: IntensityLevel =
+    watchman.urgency === 'critical' ? 'thorough'
+      : watchman.urgency === 'routine' ? 'quick'
+      : profile.preferences.intensity;
+
+  return {
+    request: {
+      type: requestType,
+      documentPath,
+      requestText: `${verb} ${filename} (${watchman.documentType}). ${watchman.rationale}`,
+      context: {
+        jurisdiction: (watchman.jurisdiction || profile.jurisdiction) as Jurisdiction,
+        audience: 'enterprise' as Audience,
+        moment: 'routine' as Moment,
+      },
+    },
+    workflow: workflowFromWatchman(watchman),
+    intensity,
+    method: watchman.method === 'sidecar' ? 'sidecar' : (watchman.method === 'heuristic' ? 'heuristic' : 'llm'),
+    reasoning: watchman.rationale || `Watchman classified as ${watchman.documentType} (${watchman.method})`,
+  };
+}
+
+/**
  * Infer the appropriate legal task for a document.
  *
  * Priority: sidecar > LLM > heuristic
+ *
+ * Accepts an optional pre-computed WatchmanResult. When supplied, the
+ * lighthouse architecture avoids a second LLM call here — the Watchman's
+ * triage feeds directly into the InferenceResult. This is the new default
+ * path; the legacy LLM call is preserved for backward compatibility with
+ * callers that haven't been migrated yet.
  */
 export async function inferTask(
   documentPath: string,
   documentContent: string,
   profile: ClawProfile,
+  watchmanResult?: WatchmanResult,
 ): Promise<InferenceResult> {
   const filename = path.basename(documentPath);
   const ext = path.extname(documentPath).toLowerCase();
+
+  // 0. Sidecar still bypasses everything — explicit instructions outrank the Watchman
+  // (and we don't want to burn an LLM call when the user has told us what to do).
+  // The sidecar check happens BEFORE we look at the Watchman result so a sidecar'd
+  // document gets exactly the user's instructions, not the Watchman's guess.
+  // (Sidecar logic is below; we run it first.)
+
+  // 1. If Watchman already triaged this document, build the InferenceResult
+  //    directly from it. Sidecar still wins (handled below) but otherwise
+  //    we skip the redundant LLM call.
+  if (watchmanResult && watchmanResult.method !== 'sidecar') {
+    const sidecar = findSidecar(documentPath);
+    if (sidecar) {
+      // Sidecar present — let the legacy path handle it for full parameter coverage.
+    } else {
+      return inferenceFromWatchman(documentPath, watchmanResult, profile);
+    }
+  }
 
   // 1. Check for sidecar instructions
   const sidecar = findSidecar(documentPath);

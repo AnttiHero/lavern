@@ -23,6 +23,7 @@ import type { DispatchOptions } from '../dispatch.js';
 import { parseDocument } from '../documents/parser.js';
 import { AutoApproveGateResolver } from '../gates/gate-resolver.js';
 import { inferTask } from './inference.js';
+import { watchmanTriage } from './watchman.js';
 import { ClawDelivery } from './delivery.js';
 import { DocumentRegistry } from './registry.js';
 import { extractSessionFindings } from './types.js';
@@ -97,6 +98,48 @@ export async function processDocument(
     const ext = path.extname(documentPath).toLowerCase();
     const mime = mimeFromExt(ext);
     const parsed = await parseDocument(buffer, path.basename(documentPath), mime);
+
+    // ── 1a. WATCHMAN TRIAGE (lighthouse persona 1) ────────────────────
+    // Runs first on every document. One LLM call (local-first, cloud
+    // fallback, heuristic last). Decides:
+    //   route ∈ { skip | quick-scan | deep-read }
+    //   documentType (drives Reader template selection)
+    //   urgency (drives intensity)
+    // Skip is SOFT: registry is marked 'skipped', user can force re-process.
+    const watchman = await watchmanTriage({
+      filename: path.basename(documentPath),
+      documentText: parsed.fullText,
+      profile,
+    });
+    log(`👁  Watchman: ${watchman.documentType} · route=${watchman.route} · ${watchman.method} (conf ${watchman.confidence.toFixed(2)})`);
+
+    if (watchman.route === 'skip') {
+      // Soft-skip: mark in registry, fire a low-noise notification, and exit.
+      // The user can force a re-process by deleting the entry from state.json
+      // or invoking the CLI's `claw rescan --force`.
+      log(`⏭  Skipped: ${watchman.rationale.slice(0, 140)}`);
+      registry.updateStatus(documentHash, 'skipped');
+      const durationMs = Date.now() - startTime;
+      clawEventBus.emitEvent({
+        type: 'claw_job_completed',
+        documentPath,
+        documentHash,
+        costUsd: watchman.costUsd,
+        durationMs,
+        findings: { critical: 0, major: 0, minor: 0 },
+        timestamp: eventTimestamp(),
+      });
+      return {
+        sessionId,
+        documentPath,
+        documentHash,
+        success: true,
+        costUsd: watchman.costUsd,
+        durationMs,
+        findings: { critical: 0, major: 0, minor: 0 },
+        deliveryDir: '',
+      };
+    }
 
     // ── 1b. CONFIDENTIALITY GATE ──────────────────────────────────────
     // Three triggers route a doc through the local pipeline:
@@ -216,8 +259,10 @@ export async function processDocument(
     }
 
     // ── 2. INFER ──────────────────────────────────────────────────────
+    // Watchman already classified the document. inferTask consumes that
+    // result and skips its own LLM call (lighthouse: one triage call, not two).
     log(`Inferring task...`);
-    const inference = await inferTask(documentPath, parsed.fullText, profile);
+    const inference = await inferTask(documentPath, parsed.fullText, profile, watchman);
     log(`→ ${inference.request.type} — ${inference.method} (${inference.reasoning.slice(0, 80)})`);
 
     // ── 2b. PRECEDENT LOOKUP ─────────────────────────────────────────
