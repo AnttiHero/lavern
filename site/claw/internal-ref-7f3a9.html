@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How Lavern Works: Architecture of a Driverless Law Firm</title>
-  <meta name="description" content="Technical deep-dive into building a driverless law firm. Multi-agent debate, iterative verification, autonomous processing, institutional memory.">
+  <meta name="description" content="Technical deep-dive into building a driverless law firm. Multi-agent debate, iterative verification, the lighthouse architecture, institutional memory that compounds.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -157,7 +157,7 @@
 
       <h3>Where does the data go?</h3>
       <p>Most AI tools run on frontier models. Great answers, but your client's confidential information is traveling to a third-party server, usually in the US. That's a privilege problem. In some jurisdictions, it's a regulatory problem. In all jurisdictions, it's a trust problem.</p>
-      <p>When you run Lavern in local mode, <strong>the data doesn't go anywhere.</strong> It doesn't leave your machine. When you want more firepower, you choose: <strong>Mistral</strong> (EU, data stays in Europe) or <strong>Claude</strong> (US). You can run the entire firm in EU-only mode with a single toggle.</p>
+      <p>When you run Lavern in local mode, <strong>the data doesn't go anywhere.</strong> It doesn't leave your machine — not even at triage. The Watchman that decides what each document is and where it should go runs entirely on your hardware in local-only mode; the cloud fallback is suppressed by design. A confidential matter's first line of text never crosses the boundary. When you want more firepower, you choose: <strong>Mistral</strong> (EU, data stays in Europe) or <strong>Claude</strong> (US). You can run the entire firm in EU-only mode with a single toggle.</p>
       <p>We call this <strong>Ethical Mode</strong>. One switch: all documents processed locally, EU provider when frontier is needed, conservative risk appetite. The firm handles privilege the same way a real firm would: by never letting the data out of the building.</p>
       <p>And because local processing carries a fraction of the energy cost of frontier inference, your environmental footprint shrinks too.</p>
 
@@ -620,6 +620,66 @@
     <div class="pullquote">Three commands. Drop files.<br><em>Walk away.</em></div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                       THE LIGHTHOUSE                                -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Lighthouse</div>
+      <h2>A Small Team That <em>Remembers.</em></h2>
+
+      <p>The full debate-and-verify pipeline described above is what Lavern runs when you ask it to. It's also overkill for a small model running unattended on a Mac Mini. Local Gemma can't sustain a six-agent debate the way Opus can; the signal-to-noise of a small model in committee degrades quickly. So Clawern's local mode runs on a different shape.</p>
+
+      <p>We call this the <strong>lighthouse architecture</strong>: continuous, sweeping, quietly competent. Three agents pass work to each other. Each does one thing. The Precedent Board sits between them as shared memory.</p>
+
+      <div class="diagram">
+        <svg width="560" height="200" viewBox="0 0 560 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="lhsh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+            <marker id="lhar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker>
+          </defs>
+          <rect x="20" y="40" width="140" height="64" rx="10" fill="#E8845C" fill-opacity="0.10" stroke="#E8845C" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="90" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#E8845C">Watchman</text>
+          <text x="90" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">triage · route · skip</text>
+          <path d="M160 72 L210 72" stroke="#bbb" stroke-width="2" marker-end="url(#lhar)"/>
+          <rect x="210" y="40" width="140" height="64" rx="10" fill="#B8860B" fill-opacity="0.10" stroke="#B8860B" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="280" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#B8860B">Reader</text>
+          <text x="280" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.7">per-clause · grounded</text>
+          <path d="M350 72 L400 72" stroke="#bbb" stroke-width="2" marker-end="url(#lhar)"/>
+          <rect x="400" y="40" width="140" height="64" rx="10" fill="#4a7c59" fill-opacity="0.10" stroke="#4a7c59" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="470" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4a7c59">Curator</text>
+          <text x="470" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">portfolio · re-reads</text>
+          <rect x="160" y="140" width="240" height="48" rx="10" fill="#1a1a1a" fill-opacity="0.04" stroke="#555" stroke-width="1.5" filter="url(#lhsh)"/>
+          <text x="280" y="170" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Precedent Board</text>
+          <path d="M90 104 L240 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <path d="M280 104 L280 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <path d="M470 104 L320 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+        </svg>
+        <div class="diagram-caption">Three agents, one shared memory. Each persona does one thing. The board sits between them and gets sharper with use.</div>
+      </div>
+
+      <h3>The Watchman.</h3>
+      <p>Runs first on every document. Reads filename plus the first 1,500 characters. Decides one thing: <strong>is this worth deep-reading?</strong> One structured-output call returns the document type (jv / nda / employment / lease / loan / saas / policy / other), the jurisdiction, the urgency, and the route — <em>skip</em>, <em>quick-scan</em>, or <em>deep-read</em> — plus which Reader template to load.</p>
+      <p>The Watchman has skip authority. A meeting agenda dropped accidentally into the watched folder gets routed to skip; the Reader is never invoked, no further calls burned. For confidential documents, the Watchman runs entirely local: the cloud fallback is suppressed so a confidential matter's first line of text never leaves the machine, even at triage time.</p>
+
+      <h3>The Reader.</h3>
+      <p>Per-clause analysis, the workhorse. The clause-by-clause approach we already used for small models gains three things in lighthouse mode:</p>
+      <p><strong>Document-type templates.</strong> Seven specialist prompts (one per type) replace the single generic prompt. A JV review asks about cash calls, dilution, reserved matters, and operator-vs-non-operator dynamics. A SaaS review asks about service levels, data ownership, and limitation-of-liability carve-outs. The Watchman picks the template; the Reader loads it.</p>
+      <p><strong>Precedent context injection.</strong> Each per-clause prompt receives the top-three matching precedents from the firm's history, tagged <code>[CONFIRMED]</code> or <code>[TENTATIVE]</code>. The model is asked to reconcile its judgment with prior firm position — with the document outranking when the language is plainly inconsistent.</p>
+      <p><strong>Grounding pass.</strong> After the per-clause sweep, a deterministic check strips findings whose evidence cannot be anchored back to clause text via clause-numbers, dollar amounts, percentages, or named references. The "ensure clarity" hallucinations small models occasionally emit don't reach the deliverable.</p>
+
+      <h3>The Curator.</h3>
+      <p>Runs on heartbeat across the portfolio, not per-document. Three jobs:</p>
+      <p><strong>Surface decisions.</strong> Replaces threshold-only notifications ("X documents flagged") with portfolio-aware messages ("recurring penalty-doctrine pattern across 4 vendor agreements — recommend portfolio review"). A heuristic gate skips the LLM call entirely when the folder is quiet.</p>
+      <p><strong>Re-read queue.</strong> When a new precedent enters the board, the Curator decides which past documents look stale in light of the new context — targeted re-reads instead of every-document-every-90-days.</p>
+      <p><strong>Consolidation.</strong> Every six hours, precedents that have been seen five-plus times with consistent verdicts get promoted from "tentative" to "confirmed." The Reader weights confirmed precedents higher in subsequent runs. The board sharpens with use.</p>
+
+      <div class="callout">
+        <strong>Cost on local Ollama:</strong> roughly 25 LLM calls per substantive document — Watchman (1) plus per-clause sweep (~22) plus grounding plus synthesis. <strong>Zero dollars.</strong> Skipped documents cost a single Watchman call. Quick-scan is one synthesis call. The lighthouse pays its own way.
+      </div>
+    </div>
+
+    <div class="pullquote">A lighthouse, not a search party.<br>The team is small.<br>The memory is <em>long.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <!--                    INSTITUTIONAL MEMORY                             -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
 
@@ -653,6 +713,11 @@
 
       <p>Precedents have confidence decay (old patterns lose weight unless reinforced by new findings), archival (deprecated entries are compacted to keep the active set lean), and effectiveness scoring (tracked via exponential moving average over outcomes). The precedent board evolves over time.</p>
 
+      <h3>Tentative → confirmed.</h3>
+      <p>Every precedent has a lifecycle. New patterns enter as <em>tentative</em> — the firm has noticed the issue once but hasn't seen it enough times to settle. After a precedent recurs five-plus times with consistent verdicts, the Curator promotes it to <strong>confirmed</strong>. Confirmed precedents are weighted more heavily in subsequent Reader runs: the model is told <em>"the firm has settled on this position across multiple matters; weight it heavily unless the document plainly contradicts."</em> Tentative precedents are treated as hypotheses to test against the document. Both feed the Reader; neither overrides the source text.</p>
+
+      <p>Where the board only decayed before, it now also <em>reinforces</em>. Use sharpens it.</p>
+
       <h3>Change detection.</h3>
       <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become useful instead of a full re-read.</p>
 
@@ -661,8 +726,9 @@
         <div class="product-shot-caption"><strong>What your firm has learned.</strong> Knowledge accumulates as agents work. Findings, resolutions, and patterns emerge across engagements. The firm remembers what it learned last month.</div>
       </div>
 
-      <h3>Scheduled re-review.</h3>
+      <h3>Scheduled re-review — and targeted re-review.</h3>
       <p>Real law firms don't only review documents when they change. They review contracts on a schedule: every 90 days, every quarter, before renewal dates. Clawern supports this natively. Set a review interval, and the heartbeat timer marks documents as stale when they're due. The existing staleness pipeline picks them up and processes them automatically.</p>
+      <p>The lighthouse adds a second trigger. When a new precedent enters the board, the Curator decides which past documents look stale <em>in light of the new context</em> and queues just those — targeted re-reads instead of every-document-every-90-days. A new pattern around penalty-doctrine? Only the four contracts that had penalty clauses get re-read. The rest stay quiet. The firm gets sharper without thrashing.</p>
 
     </div>
 
@@ -825,16 +891,16 @@
       <div class="stats">
         <div class="stat"><div class="stat-value">66</div><div class="stat-label">Agents</div></div>
         <div class="stat"><div class="stat-value">8</div><div class="stat-label">Workflows</div></div>
-        <div class="stat"><div class="stat-value">22</div><div class="stat-label">Claw Modules</div></div>
-        <div class="stat"><div class="stat-value">1,500+</div><div class="stat-label">Tests</div></div>
+        <div class="stat"><div class="stat-value">25</div><div class="stat-label">Claw Modules</div></div>
+        <div class="stat"><div class="stat-value">1,590</div><div class="stat-label">Tests</div></div>
       </div>
     </div>
 
     <hr>
 
     <div class="section" style="margin-bottom:40px">
-      <p>Lavern is an early-stage system building toward a specific vision. Sixty-six agents. Eight workflows. A firm that runs on a 30-minute heartbeat, learns from every engagement, and keeps your data on your machine unless you decide otherwise.</p>
-      <p>The analogy is different from anything else in the space, and the architecture follows from that difference. An AI tool waits for you to prompt it. A law firm on retainer works while you sleep.</p>
+      <p>Lavern is an early-stage system building toward a specific vision. Sixty-six agents. Eight workflows. A three-persona lighthouse for autonomous local mode. A firm that runs on a 30-minute heartbeat, learns from every engagement, and keeps your data on your machine unless you decide otherwise.</p>
+      <p>The analogy is different from anything else in the space, and the architecture follows from that difference. An AI tool waits for you to prompt it. A law firm on retainer works while you sleep — and gets sharper the longer it runs.</p>
       <p style="margin-top:8px">Interested in what this looks like in practice? Read <a href="/writing/" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(232,132,92,0.3)">what we learned building it</a> — the surprises, the failures, and the things that actually worked.</p>
     </div>
 
