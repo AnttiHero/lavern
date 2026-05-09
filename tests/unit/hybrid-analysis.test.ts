@@ -10,13 +10,31 @@ import type { ClawProfile, ClawConfig } from '../../src/claw/types.js';
 import type { ParsedDocument } from '../../src/documents/types.js';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
+//
+// hybrid-analysis.ts calls Anthropic's messages.create() directly (no
+// dispatch / Agent SDK indirection — see comment at the call site about
+// why a direct call is correct for this path). Tests mock the SDK and
+// the local-analysis call; nothing else is needed.
 
 vi.mock('../../src/claw/local-analysis.js', () => ({
   analyzeLocally: vi.fn(),
 }));
 
-vi.mock('../../src/dispatch.js', () => ({
-  dispatch: vi.fn(),
+// Hoisted spy used by the @anthropic-ai/sdk mock. The mock factory is
+// hoisted by Vitest, so anything it closes over must also be hoisted.
+const { mockMessagesCreate } = vi.hoisted(() => ({ mockMessagesCreate: vi.fn() }));
+
+vi.mock('@anthropic-ai/sdk', () => {
+  const Anthropic = vi.fn().mockImplementation(() => ({
+    messages: { create: mockMessagesCreate },
+  }));
+  return { default: Anthropic };
+});
+
+// ensureApiKey() throws unless an API key is set; the SDK is mocked
+// anyway, so we just need it not to fail.
+vi.mock('../../src/utils/ensure-api-key.js', () => ({
+  ensureApiKey: vi.fn(),
 }));
 
 vi.mock('../../src/config.js', () => ({
@@ -31,10 +49,8 @@ vi.mock('../../src/gates/gate-resolver.js', () => ({
 
 import { analyzeHybrid } from '../../src/claw/hybrid-analysis.js';
 import { analyzeLocally } from '../../src/claw/local-analysis.js';
-import { dispatch } from '../../src/dispatch.js';
 
 const mockAnalyzeLocally = vi.mocked(analyzeLocally);
-const mockDispatch = vi.mocked(dispatch);
 
 // ── Fixtures ───────────────────────────────────────────────────────────
 
@@ -56,31 +72,50 @@ function makeLocalResult(overrides: Partial<LocalAnalysisResult> = {}): LocalAna
   };
 }
 
-function makeFrontierSession(overrides: Record<string, unknown> = {}) {
+// Opus 4.7 pricing — the implementation computes cost from token usage:
+//   frontierUsd = (inputT * 15 + outputT * 75) / 1_000_000
+const OPUS_INPUT_USD_PER_M = 15;
+const OPUS_OUTPUT_USD_PER_M = 75;
+
+function expectedFrontierCost(inputTokens: number, outputTokens: number): number {
+  return (inputTokens * OPUS_INPUT_USD_PER_M + outputTokens * OPUS_OUTPUT_USD_PER_M) / 1_000_000;
+}
+
+interface FrontierMockOptions {
+  /** JSON object the model "returned". Stringified into the response.text. */
+  body?: { findings?: Array<{
+    title?: string;
+    severity?: string;
+    content?: string;
+    evidence?: string;
+    confidence?: number;
+  }> };
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+/** Build a mock Anthropic messages.create() response. Mirrors the shape
+ *  hybrid-analysis.ts actually consumes: response.content[0].text +
+ *  response.usage.{input,output}_tokens. */
+function makeFrontierResponse(opts: FrontierMockOptions = {}) {
+  const body = opts.body ?? {
+    findings: [
+      {
+        title: 'Non-Compete Risk',
+        severity: 'critical',
+        content: 'The non-compete clause is unreasonably broad against [PARTY_1]',
+        evidence: '[PARTY_1] shall not compete (Section 4.2)',
+        confidence: 0.92,
+      },
+    ],
+  };
   return {
-    id: 'test-session',
-    accumulatedCost: 0.05,
-    debate: {
-      findings: [
-        {
-          id: 'f1',
-          agentRole: 'contract-analyst',
-          findingType: 'contract-risk',
-          content: 'The non-compete clause is unreasonably broad',
-          evidence: ['Section 4.2'],
-          severity: 'RED',
-          confidence: 0.92,
-          timestamp: new Date().toISOString(),
-          resolved: false,
-        },
-      ],
-      challenges: [],
-      responses: [],
-      resolutions: [],
-      rounds: [],
+    content: [{ type: 'text' as const, text: JSON.stringify(body) }],
+    usage: {
+      input_tokens: opts.inputTokens ?? 2000,
+      output_tokens: opts.outputTokens ?? 400,
     },
-    ...overrides,
-  } as any;
+  };
 }
 
 const profile: ClawProfile = {
@@ -144,7 +179,7 @@ describe('analyzeHybrid — fast path (local only)', () => {
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
 
-    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockMessagesCreate).not.toHaveBeenCalled();
     expect(result.frontierClauseCount).toBe(0);
     expect(result.cost.frontierUsd).toBe(0);
     expect(result.cost.totalUsd).toBe(0);
@@ -188,29 +223,33 @@ describe('analyzeHybrid — fast path (local only)', () => {
 describe('analyzeHybrid — frontier escalation', () => {
   it('sends major/critical clauses to frontier', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession());
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse());
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
 
-    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockMessagesCreate).toHaveBeenCalledTimes(1);
     expect(result.frontierClauseCount).toBe(1); // only the critical clause
     expect(result.totalClauseCount).toBe(2);
   });
 
   it('cost includes frontier cost', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession());
+    // Pin token counts so the assertion is independent of mock defaults.
+    const inputTokens = 2000;
+    const outputTokens = 400;
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({ inputTokens, outputTokens }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
 
+    const expected = expectedFrontierCost(inputTokens, outputTokens);
     expect(result.cost.localUsd).toBe(0);
-    expect(result.cost.frontierUsd).toBe(0.05);
-    expect(result.cost.totalUsd).toBe(0.05);
+    expect(result.cost.frontierUsd).toBeCloseTo(expected, 6);
+    expect(result.cost.totalUsd).toBeCloseTo(expected, 6);
   });
 
   it('tags frontier findings with source "frontier" or "both"', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession());
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse());
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
 
@@ -226,7 +265,7 @@ describe('analyzeHybrid — frontier escalation', () => {
       ],
       risks: [],
     }));
-    mockDispatch.mockResolvedValue(makeFrontierSession({ debate: { findings: [], challenges: [], responses: [], resolutions: [], rounds: [] } }));
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({ body: { findings: [] } }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     // 'Acme Corp' is a defined term, should be anonymized
@@ -235,7 +274,7 @@ describe('analyzeHybrid — frontier escalation', () => {
 
   it('processingNote describes hybrid analysis', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession());
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse());
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     expect(result.processingNote).toContain('Hybrid');
@@ -252,7 +291,7 @@ describe('analyzeHybrid — frontier escalation', () => {
       ],
       risks: [],
     }));
-    mockDispatch.mockResolvedValue(makeFrontierSession({ debate: { findings: [], challenges: [], responses: [], resolutions: [], rounds: [] } }));
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({ body: { findings: [] } }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     expect(result.totalClauseCount).toBe(4);
@@ -268,7 +307,7 @@ describe('analyzeHybrid — frontier escalation', () => {
       ],
       risks: [],
     }));
-    mockDispatch.mockResolvedValue(makeFrontierSession({ debate: { findings: [], challenges: [], responses: [], resolutions: [], rounds: [] } }));
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({ body: { findings: [] } }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     expect(result.frontierClauseCount).toBe(2);
@@ -284,28 +323,23 @@ describe('analyzeHybrid — frontier escalation', () => {
       ],
       risks: [],
     }));
-    // Frontier returns anonymized placeholders — the pipeline should deanonymize them
-    mockDispatch.mockResolvedValue(makeFrontierSession({
-      accumulatedCost: 0.03,
-      debate: {
+    // Frontier returns anonymized placeholders — the pipeline should
+    // deanonymize them via the mappings produced when the clause text was
+    // anonymized in step 3 of analyzeHybrid.
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({
+      body: {
         findings: [
           {
-            id: 'f2',
-            agentRole: 'contract-analyst',
-            findingType: 'contract-risk',
+            title: 'Non-Compete is unreasonable',
+            severity: 'critical',
             content: '[PARTY_1] non-compete is unreasonable',
-            evidence: ['[PARTY_1] clause in Section 4'],
-            severity: 'RED',
+            evidence: '[PARTY_1] clause in Section 4',
             confidence: 0.9,
-            timestamp: new Date().toISOString(),
-            resolved: false,
           },
         ],
-        challenges: [],
-        responses: [],
-        resolutions: [],
-        rounds: [],
       },
+      inputTokens: 1500,
+      outputTokens: 300,
     }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
@@ -320,7 +354,7 @@ describe('analyzeHybrid — frontier escalation', () => {
 describe('analyzeHybrid — error handling', () => {
   it('falls back to local-only when dispatch throws', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockRejectedValue(new Error('API timeout'));
+    mockMessagesCreate.mockRejectedValue(new Error('API timeout'));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
 
@@ -342,7 +376,7 @@ describe('analyzeHybrid — error handling', () => {
 
   it('preserves frontier clause count on dispatch failure', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockRejectedValue(new Error('Network error'));
+    mockMessagesCreate.mockRejectedValue(new Error('Network error'));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     // frontierClauseCount should still reflect how many would have been sent
@@ -351,36 +385,40 @@ describe('analyzeHybrid — error handling', () => {
 
   it('preserves entity count on dispatch failure', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockRejectedValue(new Error('Timeout'));
+    mockMessagesCreate.mockRejectedValue(new Error('Timeout'));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
     expect(result.entityCount).toBeGreaterThanOrEqual(0);
   });
 });
 
-describe('analyzeHybrid — frontier with no debate findings', () => {
-  it('handles empty frontier debate findings', async () => {
+describe('analyzeHybrid — frontier with no findings', () => {
+  it('handles empty frontier findings array', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession({
-      accumulatedCost: 0.02,
-      debate: { findings: [], challenges: [], responses: [], resolutions: [], rounds: [] },
+    const inputTokens = 1000;
+    const outputTokens = 200;
+    mockMessagesCreate.mockResolvedValue(makeFrontierResponse({
+      body: { findings: [] },
+      inputTokens,
+      outputTokens,
     }));
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
-    expect(result.cost.frontierUsd).toBe(0.02);
+    expect(result.cost.frontierUsd).toBeCloseTo(expectedFrontierCost(inputTokens, outputTokens), 6);
     // Should still have the local findings
     expect(result.findings.length).toBeGreaterThan(0);
   });
 
-  it('handles missing debate on session', async () => {
+  it('handles malformed frontier response (missing findings field)', async () => {
     mockAnalyzeLocally.mockResolvedValue(makeLocalResult());
-    mockDispatch.mockResolvedValue(makeFrontierSession({
-      accumulatedCost: 0.01,
-      debate: undefined,
-    }));
+    // Response has no findings field at all — implementation should treat as zero
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: 'text' as const, text: '{"unrelated":"shape"}' }],
+      usage: { input_tokens: 500, output_tokens: 100 },
+    });
 
     const result = await analyzeHybrid('text', 'file.pdf', profile, clawConfig, parsedDoc, silentLog);
-    // Should gracefully handle missing debate (no frontier findings)
+    // Should gracefully handle missing findings (no frontier findings, local survive)
     expect(result.findings.length).toBeGreaterThan(0);
   });
 });
