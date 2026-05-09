@@ -106,12 +106,23 @@ export async function processDocument(
     //   documentType (drives Reader template selection)
     //   urgency (drives intensity)
     // Skip is SOFT: registry is marked 'skipped', user can force re-process.
+    //
+    // PRIVACY: pre-compute routeLocally so the Watchman can be told
+    // localOnly=true when the document would be processed locally
+    // anyway. Without this, a confidential doc's first 1500 chars +
+    // client profile would leak to cloud Haiku during triage if
+    // local Ollama happened to be unavailable. localOnly=true makes
+    // the Watchman fall straight from local→heuristic, never cloud.
+    const processingMode = profile.processing ?? 'local';
+    const localModelConfigured = !!(config.claw.localModel || config.local.defaultModel);
+    const routeLocally = localModelConfigured && (confidential || processingMode === 'local' || processingMode === 'hybrid');
     const watchman = await watchmanTriage({
       filename: path.basename(documentPath),
       documentText: parsed.fullText,
       profile,
+      localOnly: routeLocally,
     });
-    log(`👁  Watchman: ${watchman.documentType} · route=${watchman.route} · ${watchman.method} (conf ${watchman.confidence.toFixed(2)})`);
+    log(`👁  Watchman: ${watchman.documentType} · route=${watchman.route} · ${watchman.method} (conf ${watchman.confidence.toFixed(2)})${routeLocally ? ' · local-only' : ''}`);
 
     if (watchman.route === 'skip') {
       // Soft-skip: mark in registry, fire a low-noise notification, and exit.
@@ -148,9 +159,9 @@ export async function processDocument(
     //   (c) profile.processing === 'hybrid' — local triage + selective frontier
     // Any of these causes the local-analysis path to run. Without one of them,
     // the doc falls through to the standard frontier pipeline.
-    const processingMode = profile.processing ?? 'local';
-    const localModelConfigured = !!(config.claw.localModel || config.local.defaultModel);
-    const routeLocally = localModelConfigured && (confidential || processingMode === 'local' || processingMode === 'hybrid');
+    // NOTE: processingMode / localModelConfigured / routeLocally are computed
+    // earlier (above the Watchman call) so the Watchman can run in localOnly
+    // mode for confidential documents. Reused here.
 
     if (routeLocally) {
       const localModelName = config.claw.localAnalysisModel || config.claw.localModel || config.local.defaultModel;

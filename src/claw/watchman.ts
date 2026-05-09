@@ -250,14 +250,29 @@ export interface WatchmanInput {
   /** Optional: short list of precedent pattern names already known for similar
    *  filenames. Helps the Watchman recognize a recurrent doc type. */
   knownPrecedentHints?: string[];
+  /**
+   * Privacy guarantee: when true, NEVER fall through to the cloud LLM, even
+   * if local Ollama is unavailable. Required for confidential documents and
+   * for users who set `profile.processing = 'local'`. The fallback chain
+   * becomes: local Ollama → heuristic (cloud is skipped entirely).
+   *
+   * The processor sets this to true whenever the document would be routed
+   * locally anyway — that way a confidential doc's first 1500 chars + the
+   * client profile never leave the machine, even during triage.
+   */
+  localOnly?: boolean;
 }
 
 /**
  * Triage a document. Local-first, cloud fallback, heuristic last resort.
  * Always returns a usable result — never throws.
+ *
+ * Privacy: when `input.localOnly === true`, the cloud-Haiku fallback is
+ * skipped. This is the required setting for confidential documents and
+ * for the `processing: 'local'` mode.
  */
 export async function watchmanTriage(input: WatchmanInput): Promise<WatchmanResult> {
-  const { filename, documentText, profile, knownPrecedentHints } = input;
+  const { filename, documentText, profile, knownPrecedentHints, localOnly } = input;
 
   const userMessage = [
     `FILENAME: ${filename}`,
@@ -291,19 +306,28 @@ export async function watchmanTriage(input: WatchmanInput): Promise<WatchmanResu
     }
   }
 
-  // Path 2: cloud Haiku
-  try {
-    const { text, cost } = await callCloudWatchman(WATCHMAN_PROMPT, userMessage);
-    const parsed = safeJsonParse(text);
-    if (parsed) {
-      return assembleResult(parsed, 'llm-cloud', cost);
+  // Path 2: cloud Haiku — SKIPPED in localOnly mode (privacy guarantee).
+  // For confidential docs and processing='local', the document content must
+  // never leave the machine. We jump straight to the heuristic instead.
+  if (!localOnly) {
+    try {
+      const { text, cost } = await callCloudWatchman(WATCHMAN_PROMPT, userMessage);
+      const parsed = safeJsonParse(text);
+      if (parsed) {
+        return assembleResult(parsed, 'llm-cloud', cost);
+      }
+      logger.warn('Watchman cloud: malformed JSON, falling back to heuristic', { filename });
+    } catch (err) {
+      logger.warn('Watchman cloud failed, falling back to heuristic', {
+        filename,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
-    logger.warn('Watchman cloud: malformed JSON, falling back to heuristic', { filename });
-  } catch (err) {
-    logger.warn('Watchman cloud failed, falling back to heuristic', {
-      filename,
-      error: err instanceof Error ? err.message : String(err),
-    });
+  } else if (local) {
+    // Local-only mode AND local model failed above — log the privacy decision
+    // explicitly so an operator inspecting daemon logs can see why we
+    // skipped the cloud path.
+    logger.info('Watchman local-only: cloud fallback suppressed for privacy', { filename });
   }
 
   // Path 3: heuristic — never fails
