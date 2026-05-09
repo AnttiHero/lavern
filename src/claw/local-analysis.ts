@@ -38,8 +38,9 @@
  */
 
 import { config } from '../config.js';
-import type { ClawProfile, WatchmanResult } from './types.js';
+import type { ClawProfile, WatchmanResult, WatchmanDocumentType } from './types.js';
 import type { PrecedentBoard, PrecedentMatch } from './precedent-board.js';
+import { readerTemplate } from './reader-templates.js';
 
 // ── Result Types ─────────────────────────────────────────────────────────
 
@@ -340,12 +341,20 @@ async function analyseClause(
   chunk: ClauseChunk,
   profile: ClawProfile,
   precedents: PrecedentMatch[] = [],
+  /** Phase 6: document type drives template selection. Defaults to the
+   *  generic template for unknown / legacy callers. */
+  documentType: WatchmanDocumentType = 'other',
 ): Promise<ClauseFinding> {
   const precedentBlock = precedentContextBlock(precedents);
+  // Phase 6: pick the per-clause prompt that matches the document type.
+  // 'jv', 'nda', 'employment', 'lease', 'loan', 'saas', 'policy' each get a
+  // focused prompt; 'other' falls through to the generic legal-risk prompt.
+  const systemPrompt = readerTemplate(documentType);
   const userMessage = [
     `CLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})`,
     `CLIENT'S CONCERNS: ${profile.concerns.join(', ')}`,
-    `CLIENT'S ROLE: 40% non-operator participant (typically the party at risk in operator-led JVs)`,
+    `DOCUMENT TYPE: ${documentType}`,
+    `CLIENT'S ROLE: ${profile.preferences?.riskAppetite === 'aggressive' ? 'sophisticated counterparty' : 'risk-conscious participant'}`,
     precedentBlock,
     `=== CLAUSE ${chunk.number}: ${chunk.title} ===`,
     chunk.body,
@@ -354,7 +363,7 @@ async function analyseClause(
     'Now produce your JSON analysis of THIS clause only.',
   ].join('\n');
 
-  const raw = await ollamaJsonChat(cfg, PER_CLAUSE_PROMPT, userMessage, 1200) as Record<string, unknown>;
+  const raw = await ollamaJsonChat(cfg, systemPrompt, userMessage, 1200) as Record<string, unknown>;
   const concerns = Array.isArray(raw.concerns) ? raw.concerns : [];
 
   // Light heuristic: if the model's text mentions a precedent ID we passed
@@ -549,13 +558,21 @@ export async function analyzeLocally(
     }
   }
 
+  // Phase 6: pick the Reader template based on Watchman's documentType.
+  // Defaults to 'other' (generic) when no Watchman result is available
+  // (legacy callers, or processing before lighthouse rolled out).
+  const docType: WatchmanDocumentType = opts?.watchman?.documentType ?? 'other';
+  if (opts?.watchman) {
+    log?.(`  → reader template: ${docType} (Watchman conf ${opts.watchman.confidence.toFixed(2)})`);
+  }
+
   const findings: ClauseFinding[] = [];
   for (const [i, chunk] of chunks.entries()) {
     log?.(`  → analysing cl ${chunk.number} (${chunk.title.slice(0, 50)}) — ${i + 1}/${chunks.length}`);
     try {
       // Inject the top-3 most-relevant precedents. We pass the document-scoped
       // list to every clause; the model decides which (if any) apply.
-      const finding = await analyseClause(cfg, chunk, profile, documentPrecedents.slice(0, 3));
+      const finding = await analyseClause(cfg, chunk, profile, documentPrecedents.slice(0, 3), docType);
       findings.push(finding);
     } catch (err) {
       log?.(`    ✗ cl ${chunk.number} failed: ${err instanceof Error ? err.message : err}`);
