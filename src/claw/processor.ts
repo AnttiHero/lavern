@@ -160,8 +160,12 @@ export async function processDocument(
         log(`🔒🌐 Hybrid — local triage + anonymized frontier (${localModelName})`);
         try {
           const { analyzeHybrid } = await import('./hybrid-analysis.js');
+          const hybridBoard = (() => {
+            try { return getPrecedentBoard(clawConfig.dir); } catch { return undefined; }
+          })();
           const hybridResult = await analyzeHybrid(
             parsed.fullText, path.basename(documentPath), profile, clawConfig, parsed, log,
+            { watchman, precedentBoard: hybridBoard },
           );
 
           // Convert hybrid findings to summary counts
@@ -210,7 +214,13 @@ export async function processDocument(
       log(`🔒 Confidential — processing locally (${localModelName})`);
 
       try {
-        const localResult = await analyzeLocally(parsed.fullText, path.basename(documentPath), profile, log);
+        const localBoard = (() => {
+          try { return getPrecedentBoard(clawConfig.dir); } catch { return undefined; }
+        })();
+        const localResult = await analyzeLocally(parsed.fullText, path.basename(documentPath), profile, log, {
+          watchman,
+          precedentBoard: localBoard,
+        });
         const localFindings = extractLocalFindings(localResult);
         const deliveryDir = await delivery.deliverLocal(
           sessionId, localResult, documentPath, documentHash, clawConfig,

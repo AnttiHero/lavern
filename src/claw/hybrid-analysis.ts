@@ -101,10 +101,12 @@ export async function analyzeHybrid(
   clawConfig: ClawConfig,
   parsedDocument: ParsedDocument,
   log: (msg: string) => void = console.log,
+  /** Lighthouse Phase 2: forward Watchman + precedent board into local triage. */
+  opts?: { watchman?: import('./types.js').WatchmanResult; precedentBoard?: import('./precedent-board.js').PrecedentBoard },
 ): Promise<HybridAnalysisResult> {
   // ── Step 1: Local triage ───────────────────────────────────────────────
   log(`[hybrid] Local triage: ${filename}`);
-  const localResult = await analyzeLocally(documentText, filename, profile, log);
+  const localResult = await analyzeLocally(documentText, filename, profile, log, opts);
 
   const totalClauseCount = localResult.clauses.length;
 

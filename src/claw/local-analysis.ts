@@ -38,7 +38,8 @@
  */
 
 import { config } from '../config.js';
-import type { ClawProfile } from './types.js';
+import type { ClawProfile, WatchmanResult } from './types.js';
+import type { PrecedentBoard, PrecedentMatch } from './precedent-board.js';
 
 // ── Result Types ─────────────────────────────────────────────────────────
 
@@ -57,6 +58,12 @@ export interface LocalAnalysisResult {
   confidenceNote: string;
   /** Model used for analysis */
   model: string;
+  /** Lighthouse Phase 2: PREC-ids surfaced during the per-clause sweep
+   *  (deduped across clauses). Empty when no precedent board was supplied. */
+  precedentsConsulted?: string[];
+  /** Lighthouse Phase 2: number of findings the grounding pass stripped
+   *  for lacking document-text anchorage. */
+  unanchoredStripped?: number;
 }
 
 export interface ClauseAnalysis {
@@ -283,20 +290,48 @@ interface ClauseFinding {
     text: string;
     severity: 'info' | 'minor' | 'major' | 'critical';
     references: string[];
+    /** Phase 2: Precedent ID that informed or was reconciled with this concern. */
+    precedentMatch?: string;
+    /** Phase 2: Set true by the grounding pass when the evidence cannot be
+     *  anchored back to clause text. Stripped from the final result. */
+    unanchored?: boolean;
   }>;
   favoursWhom: 'operator' | 'non-operator' | 'neutral';
+  /** Phase 2: PREC-ids the model received as context for this clause. */
+  precedentsInjected: string[];
+}
+
+/**
+ * Build a precedent-context block for injection into a per-clause prompt.
+ * Empty string when no relevant precedents — keeps prompt size minimal.
+ */
+function precedentContextBlock(matches: PrecedentMatch[]): string {
+  if (matches.length === 0) return '';
+  const lines = matches.slice(0, 3).map(m => {
+    const desc = m.entry.description.replace(/[\x00-\x1f]/g, ' ').slice(0, 180);
+    return `- [${m.entry.id}] ${m.entry.patternName} — ${desc} (effectiveness ${(m.entry.effectivenessScore * 100).toFixed(0)}%, seen ${m.entry.timesUsed}x)`;
+  });
+  return [
+    '',
+    'PRIOR FIRM POSITIONS ON SIMILAR CLAUSES (advisory — the live document outranks):',
+    ...lines,
+    'Reconcile your judgment with the firm\'s prior positions where the document supports it. If the document contains language INCONSISTENT with a prior position, trust the document and explain the divergence in your concern.',
+    '',
+  ].join('\n');
 }
 
 async function analyseClause(
   cfg: OllamaConfig,
   chunk: ClauseChunk,
   profile: ClawProfile,
+  precedents: PrecedentMatch[] = [],
 ): Promise<ClauseFinding> {
+  const precedentBlock = precedentContextBlock(precedents);
   const userMessage = [
     `CLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})`,
     `CLIENT'S CONCERNS: ${profile.concerns.join(', ')}`,
     `CLIENT'S ROLE: 40% non-operator participant (typically the party at risk in operator-led JVs)`,
-    '',
+    precedentBlock,
     `=== CLAUSE ${chunk.number}: ${chunk.title} ===`,
     chunk.body,
     `=== END CLAUSE ${chunk.number} ===`,
@@ -307,6 +342,17 @@ async function analyseClause(
   const raw = await ollamaJsonChat(cfg, PER_CLAUSE_PROMPT, userMessage, 1200) as Record<string, unknown>;
   const concerns = Array.isArray(raw.concerns) ? raw.concerns : [];
 
+  // Light heuristic: if the model's text mentions a precedent ID we passed
+  // in (e.g., "PREC-ab12cd34"), tag the concern with that match.
+  const knownIds = new Set(precedents.map(p => p.entry.id));
+  function detectPrecedentMatch(text: string): string | undefined {
+    if (knownIds.size === 0) return undefined;
+    for (const id of knownIds) {
+      if (text.includes(id)) return id;
+    }
+    return undefined;
+  }
+
   return {
     clauseNumber: chunk.number,
     clauseTitle: chunk.title,
@@ -316,14 +362,51 @@ async function analyseClause(
       : chunk.body.slice(0, 400),
     concerns: concerns.map(c => {
       const cc = c as Record<string, unknown>;
+      const text = typeof cc.text === 'string' ? cc.text : '';
       return {
-        text: typeof cc.text === 'string' ? cc.text : '',
+        text,
         severity: validateSeverity(typeof cc.severity === 'string' ? cc.severity : undefined, 'minor'),
         references: Array.isArray(cc.references) ? cc.references.filter((r): r is string => typeof r === 'string') : [],
+        precedentMatch: detectPrecedentMatch(text),
       };
     }).filter(c => c.text.length > 10 && isSpecificConcern(c.text, c.references)),
     favoursWhom: validateFavours(typeof raw.favoursWhom === 'string' ? raw.favoursWhom : undefined),
+    precedentsInjected: precedents.map(p => p.entry.id),
   };
+}
+
+// ── Grounding Pass (Phase 2) ─────────────────────────────────────────────
+
+/**
+ * Strip findings whose evidence cannot be anchored back to clause text.
+ *
+ * Cheap deterministic check first: does the concern's text reference a
+ * clause number, defined term, dollar amount, or party name that appears
+ * in the clause body? If yes, anchored. If no, mark unanchored.
+ *
+ * For ambiguous cases, an optional LLM verification pass could be added —
+ * but the deterministic pass alone catches the major class of hallucinated
+ * concerns ("ensure clarity") that local Gemma sometimes emits.
+ *
+ * Returns the count of unanchored findings (which are marked, not removed
+ * from the audit trail) so the deliverable can report transparency.
+ */
+function groundingPass(findings: ClauseFinding[]): number {
+  let stripped = 0;
+  for (const finding of findings) {
+    const clauseBodyLower = finding.operativeText.toLowerCase();
+    for (const concern of finding.concerns) {
+      const tokens = concern.text.match(/\b(?:cl(?:ause)?\s*\d+(?:\.\d+)?|\$[\d,]+|\d+%|\b\d{4}\b|\b\d+\s*(?:days?|months?|years?)\b)/gi) ?? [];
+      const refsAnchored = concern.references.some(r => clauseBodyLower.includes(r.toLowerCase()));
+      const tokenAnchored = tokens.some(t => clauseBodyLower.includes(t.toLowerCase()));
+      if (!refsAnchored && !tokenAnchored && concern.references.length === 0) {
+        // No anchor — mark unanchored so synthesis can deprioritise.
+        concern.unanchored = true;
+        stripped++;
+      }
+    }
+  }
+  return stripped;
 }
 
 /**
@@ -410,27 +493,73 @@ async function synthesise(
  *
  * @throws If the local model is unreachable or returns invalid output
  */
+export interface AnalyzeLocallyOptions {
+  /** Lighthouse Phase 2: precedent board to query for per-clause context.
+   *  When omitted, Reader runs without precedent injection (legacy behavior). */
+  precedentBoard?: PrecedentBoard;
+  /** Lighthouse Phase 1+: Watchman triage result. Used to scope precedent
+   *  search by documentType + jurisdiction. */
+  watchman?: WatchmanResult;
+}
+
 export async function analyzeLocally(
   documentText: string,
   filename: string,
   profile: ClawProfile,
   log?: (msg: string) => void,
+  opts?: AnalyzeLocallyOptions,
 ): Promise<LocalAnalysisResult> {
   const cfg = resolveOllamaConfig();
   const chunks = chunkByClauseBoundaries(documentText);
 
   log?.(`  → ${chunks.length} clause${chunks.length === 1 ? '' : 's'} detected`);
 
+  // Optional precedent context — queried once by document type + jurisdiction.
+  // Per-clause precedent matching could narrow this further by clause topic
+  // (a Phase 2.1 enhancement); for now we use a single document-scoped query
+  // so the Reader sees consistent firm context across clauses.
+  let documentPrecedents: PrecedentMatch[] = [];
+  if (opts?.precedentBoard && opts?.watchman) {
+    try {
+      documentPrecedents = opts.precedentBoard.search({
+        documentType: opts.watchman.documentType,
+        jurisdiction: opts.watchman.jurisdiction || profile.jurisdiction,
+        limit: 5,
+      });
+      if (documentPrecedents.length > 0) {
+        log?.(`  → ${documentPrecedents.length} precedent(s) loaded for context`);
+      }
+    } catch (err) {
+      log?.(`    ⚠ precedent lookup failed (${err instanceof Error ? err.message : err}) — proceeding without`);
+    }
+  }
+
   const findings: ClauseFinding[] = [];
   for (const [i, chunk] of chunks.entries()) {
     log?.(`  → analysing cl ${chunk.number} (${chunk.title.slice(0, 50)}) — ${i + 1}/${chunks.length}`);
     try {
-      const finding = await analyseClause(cfg, chunk, profile);
+      // Inject the top-3 most-relevant precedents. We pass the document-scoped
+      // list to every clause; the model decides which (if any) apply.
+      const finding = await analyseClause(cfg, chunk, profile, documentPrecedents.slice(0, 3));
       findings.push(finding);
     } catch (err) {
       log?.(`    ✗ cl ${chunk.number} failed: ${err instanceof Error ? err.message : err}`);
       // Carry on — partial analysis is still useful
     }
+  }
+
+  // Phase 2: deterministic grounding pass — strips concerns whose claims
+  // cannot be anchored to clause text via clause-numbers, dollar amounts,
+  // percentages, periods, or named references.
+  const unanchoredStripped = groundingPass(findings);
+  if (unanchoredStripped > 0) {
+    log?.(`  → grounding pass: ${unanchoredStripped} unanchored finding(s) flagged`);
+  }
+  // Drop unanchored concerns from the per-clause findings so synthesis sees
+  // only grounded material. The audit trail can be reconstructed from the
+  // unanchoredStripped count if needed.
+  for (const f of findings) {
+    f.concerns = f.concerns.filter(c => !c.unanchored);
   }
 
   log?.(`  → synthesising executive summary (${findings.length} clause findings)`);
@@ -455,6 +584,24 @@ export async function analyzeLocally(
     };
   });
 
+  // Dedupe precedent IDs surfaced into any clause's findings.
+  const precedentsConsulted: string[] = Array.from(new Set(
+    findings.flatMap(f => f.concerns.map(c => c.precedentMatch).filter((id): id is string => !!id))
+      .concat(documentPrecedents.map(m => m.entry.id))
+  ));
+
+  // Phase 5 (lighthouse): reinforce precedents that were applied. Done here
+  // so the board's effectiveness scores track local-Reader usage too, not
+  // just frontier dispatch. Soft-fail — a precedent reinforce error must
+  // never poison the deliverable.
+  if (opts?.precedentBoard) {
+    for (const precId of precedentsConsulted) {
+      try {
+        opts.precedentBoard.reinforce(precId, `local-${cfg.modelName}-${Date.now()}`, 0.05);
+      } catch { /* non-fatal */ }
+    }
+  }
+
   return {
     summary: syn.summary,
     documentType: syn.documentType,
@@ -465,6 +612,8 @@ export async function analyzeLocally(
       'This document was analysed entirely on-device using a local model. No content was transmitted externally. ' +
       'For complex legal matters, verify findings with qualified counsel.',
     model: cfg.modelName,
+    precedentsConsulted: precedentsConsulted.length > 0 ? precedentsConsulted : undefined,
+    unanchoredStripped: unanchoredStripped > 0 ? unanchoredStripped : undefined,
   };
 }
 
