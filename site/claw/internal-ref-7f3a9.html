@@ -658,11 +658,11 @@
 
       <h3>The Watchman.</h3>
       <p>Runs first on every document. Reads filename plus the first 1,500 characters. Decides one thing: <strong>is this worth deep-reading?</strong> One structured-output call returns the document type (jv / nda / employment / lease / loan / saas / policy / other), the jurisdiction, the urgency, and the route — <em>skip</em>, <em>quick-scan</em>, or <em>deep-read</em> — plus which Reader template to load.</p>
-      <p>The Watchman has skip authority. A meeting agenda dropped accidentally into the watched folder gets routed to skip; the Reader is never invoked, no further calls burned. For confidential documents, the Watchman runs entirely local: the cloud fallback is suppressed so a confidential matter's first line of text never leaves the machine, even at triage time.</p>
+      <p>The Watchman has skip authority. A meeting agenda dropped accidentally into the watched folder gets routed to skip; the Reader is never invoked, no further calls burned. For local-only and hybrid modes — and any document the system has flagged confidential — the Watchman runs entirely local: the cloud fallback is suppressed by design, so the document's first line of text never leaves the machine, even at triage time. If both the local model and the cloud model are unavailable, the Watchman falls back to a deterministic heuristic classifier (filename patterns + opening-text scan) so the daemon stays useful even when every LLM is down.</p>
 
       <h3>The Reader.</h3>
       <p>Per-clause analysis, the workhorse. The clause-by-clause approach we already used for small models gains three things in lighthouse mode:</p>
-      <p><strong>Document-type templates.</strong> Seven specialist prompts (one per type) replace the single generic prompt. A JV review asks about cash calls, dilution, reserved matters, and operator-vs-non-operator dynamics. A SaaS review asks about service levels, data ownership, and limitation-of-liability carve-outs. The Watchman picks the template; the Reader loads it.</p>
+      <p><strong>Document-type templates.</strong> Seven specialist prompts — JV, NDA, employment, lease, loan, SaaS, policy — augment the generic fallback. A JV review asks about cash calls, dilution, reserved matters, and operator-vs-non-operator dynamics. A SaaS review asks about service levels, data ownership, and limitation-of-liability carve-outs. A policy review asks about consumer-law enforceability and dark-pattern language. The Watchman picks the template (or 'other' for anything outside the taxonomy); the Reader loads it.</p>
       <p><strong>Precedent context injection.</strong> Each per-clause prompt receives the top-three matching precedents from the firm's history, tagged <code>[CONFIRMED]</code> or <code>[TENTATIVE]</code>. The model is asked to reconcile its judgment with prior firm position — with the document outranking when the language is plainly inconsistent.</p>
       <p><strong>Grounding pass.</strong> After the per-clause sweep, a deterministic check strips findings whose evidence cannot be anchored back to clause text via clause-numbers, dollar amounts, percentages, or named references. The "ensure clarity" hallucinations small models occasionally emit don't reach the deliverable.</p>
 
@@ -673,7 +673,7 @@
       <p><strong>Consolidation.</strong> Every six hours, precedents that have been seen five-plus times with consistent verdicts get promoted from "tentative" to "confirmed." The Reader weights confirmed precedents higher in subsequent runs. The board sharpens with use.</p>
 
       <div class="callout">
-        <strong>Cost on local Ollama:</strong> roughly 25 LLM calls per substantive document — Watchman (1) plus per-clause sweep (~22) plus grounding plus synthesis. <strong>Zero dollars.</strong> Skipped documents cost a single Watchman call. Quick-scan is one synthesis call. The lighthouse pays its own way.
+        <strong>Cost on local Ollama:</strong> roughly 24 LLM calls per substantive document — Watchman (1) plus per-clause sweep (~22) plus synthesis (1). The grounding pass is a deterministic regex check — zero LLM calls. <strong>Zero dollars.</strong> Skipped documents cost a single Watchman call. Quick-scan is one synthesis call. The lighthouse pays its own way.
       </div>
     </div>
 
@@ -891,7 +891,7 @@
       <div class="stats">
         <div class="stat"><div class="stat-value">66</div><div class="stat-label">Agents</div></div>
         <div class="stat"><div class="stat-value">8</div><div class="stat-label">Workflows</div></div>
-        <div class="stat"><div class="stat-value">25</div><div class="stat-label">Claw Modules</div></div>
+        <div class="stat"><div class="stat-value">28</div><div class="stat-label">Claw Modules</div></div>
         <div class="stat"><div class="stat-value">1,590</div><div class="stat-label">Tests</div></div>
       </div>
     </div>
