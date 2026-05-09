@@ -54,6 +54,13 @@ interface MatterMemoryEntry {
   lastUpdated: string;
 }
 
+/** Lighthouse Phase 5: precedent lifecycle status.
+ *  Today only `deprecated: boolean` exists. The status field gives us a
+ *  third state — `confirmed` — which the Curator promotes to after a
+ *  precedent has been seen ≥ CONFIRM_THRESHOLD times with consistent
+ *  verdicts. Reader prompts weight `confirmed` precedents higher. */
+export type PrecedentStatus = 'tentative' | 'confirmed' | 'deprecated';
+
 export interface PrecedentEntry {
   id: string;
   documentType: string;
@@ -73,6 +80,12 @@ export interface PrecedentEntry {
   deprecationReason?: string;
   /** Structured tags for filtered retrieval. */
   tags?: MemoryTags;
+  // ── v5 (lighthouse): lifecycle status ────────────────────────────────
+  /** Lifecycle status. Old rows migrate to 'tentative'. The Curator
+   *  consolidation pass promotes recurring patterns to 'confirmed'. */
+  status?: PrecedentStatus;
+  /** ISO timestamp when status was last changed. */
+  statusUpdatedAt?: string;
 }
 
 // ── Migration helpers (backward-compatible with v3 JSON files) ────────
@@ -104,6 +117,11 @@ export function migratePrecedent(entry: Partial<PrecedentEntry>): PrecedentEntry
       : undefined
   );
 
+  // Lighthouse v5: existing rows default to 'tentative'. If deprecated=true,
+  // status is normalized to 'deprecated' so callers can switch on a single field.
+  const status: PrecedentStatus = entry.status
+    ?? (entry.deprecated ? 'deprecated' : 'tentative');
+
   return {
     id: entry.id || 'P-000',
     documentType: entry.documentType || 'unknown',
@@ -121,6 +139,8 @@ export function migratePrecedent(entry: Partial<PrecedentEntry>): PrecedentEntry
     deprecated: entry.deprecated ?? false,
     deprecationReason: entry.deprecationReason,
     tags: autoTags,
+    status,
+    statusUpdatedAt: entry.statusUpdatedAt,
   };
 }
 

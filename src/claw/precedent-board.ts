@@ -274,6 +274,43 @@ export class PrecedentBoard {
     return results;
   }
 
+  // ── Status (Phase 5: confirmed-precedent reinforcement) ──────────────
+
+  /**
+   * Promote a precedent from 'tentative' to 'confirmed'. Called by the
+   * Curator's consolidation pass when the precedent has been seen
+   * ≥ CONFIRM_THRESHOLD times with consistent verdicts.
+   *
+   * Confirmed precedents are weighted higher in Reader prompts — the
+   * model is told "the firm has confirmed this position across N matters"
+   * rather than "the firm has tentatively flagged this pattern."
+   *
+   * Returns true when the status actually changed.
+   */
+  markConfirmed(precedentId: string): boolean {
+    const entry = this.state.entries[precedentId];
+    if (!entry) return false;
+    if (entry.deprecated) return false;
+    if (entry.status === 'confirmed') return false;
+    entry.status = 'confirmed';
+    entry.statusUpdatedAt = new Date().toISOString();
+    this.save();
+    logger.info('Precedent confirmed', { id: precedentId, timesUsed: entry.timesUsed });
+    return true;
+  }
+
+  /** Count of precedents per lifecycle status. Useful for ops + heartbeat. */
+  statusCounts(): { tentative: number; confirmed: number; deprecated: number } {
+    let tentative = 0, confirmed = 0, deprecated = 0;
+    for (const entry of Object.values(this.state.entries)) {
+      const s = entry.status ?? (entry.deprecated ? 'deprecated' : 'tentative');
+      if (s === 'confirmed') confirmed++;
+      else if (s === 'deprecated' || entry.deprecated) deprecated++;
+      else tentative++;
+    }
+    return { tentative, confirmed, deprecated };
+  }
+
   // ── Reinforcement ─────────────────────────────────────────────────────
 
   reinforce(precedentId: string, sessionId: string, scoreDelta: number): void {

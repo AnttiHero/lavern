@@ -622,7 +622,29 @@ async function runStart(args: ClawCliArgs): Promise<void> {
                 try { registry.updateStatus(hash, 'stale'); } catch { /* per-doc soft-fail */ }
               }
             }
-            // Promotion / drift wiring lands in Phase 5 (precedent status field)
+            // Phase 5: promote precedents the Curator flagged as ready to confirm.
+            // markConfirmed is idempotent + soft-fails on missing IDs, so a stale
+            // ID list (e.g. precedent deprecated between Curator decision + heartbeat
+            // consumption) doesn't poison the daemon.
+            if (decision.promoteToConfirmed.length > 0 && precBoard) {
+              let promoted = 0;
+              for (const id of decision.promoteToConfirmed) {
+                try { if (precBoard.markConfirmed(id)) promoted++; } catch { /* per-id soft-fail */ }
+              }
+              // markConfirmed logs each promotion via logger.info — no need to
+              // double-emit on the event bus here.
+              void promoted;
+            }
+            // Drift detection — surface as a low-severity heartbeat alert next tick.
+            // We don't act automatically (the operator decides whether drift
+            // is model wobble or a real doctrinal shift).
+            if (decision.driftDetected.length > 0) {
+              notify({
+                type: 'heartbeat',
+                title: 'Precedent drift detected',
+                message: `${decision.driftDetected.length} precedent(s) showing inconsistent verdicts over time. Review the Precedents tab.`,
+              });
+            }
           }).catch(() => { /* Curator is advisory only — never break the daemon */ });
         }
 

@@ -304,17 +304,32 @@ interface ClauseFinding {
 /**
  * Build a precedent-context block for injection into a per-clause prompt.
  * Empty string when no relevant precedents — keeps prompt size minimal.
+ *
+ * Phase 5: confirmed precedents are tagged with [CONFIRMED] and listed
+ * first; tentative precedents follow with [TENTATIVE]. The Reader is
+ * told to weight confirmed positions higher than tentative ones.
  */
 function precedentContextBlock(matches: PrecedentMatch[]): string {
   if (matches.length === 0) return '';
-  const lines = matches.slice(0, 3).map(m => {
+  // Sort: confirmed precedents first (the firm has settled on this position),
+  // then by relevance score within each tier.
+  const sorted = [...matches].sort((a, b) => {
+    const aConf = (a.entry.status === 'confirmed') ? 1 : 0;
+    const bConf = (b.entry.status === 'confirmed') ? 1 : 0;
+    if (aConf !== bConf) return bConf - aConf;
+    return b.relevanceScore - a.relevanceScore;
+  });
+  const lines = sorted.slice(0, 3).map(m => {
+    const status = m.entry.status === 'confirmed' ? '[CONFIRMED]' : '[TENTATIVE]';
     const desc = m.entry.description.replace(/[\x00-\x1f]/g, ' ').slice(0, 180);
-    return `- [${m.entry.id}] ${m.entry.patternName} — ${desc} (effectiveness ${(m.entry.effectivenessScore * 100).toFixed(0)}%, seen ${m.entry.timesUsed}x)`;
+    return `- ${status} [${m.entry.id}] ${m.entry.patternName} — ${desc} (effectiveness ${(m.entry.effectivenessScore * 100).toFixed(0)}%, seen ${m.entry.timesUsed}x)`;
   });
   return [
     '',
     'PRIOR FIRM POSITIONS ON SIMILAR CLAUSES (advisory — the live document outranks):',
     ...lines,
+    '[CONFIRMED] = the firm has settled on this position across multiple matters; weight it heavily unless the document\'s language plainly contradicts.',
+    '[TENTATIVE] = the firm has flagged this pattern but not confirmed; treat as a hypothesis to test against the document.',
     'Reconcile your judgment with the firm\'s prior positions where the document supports it. If the document contains language INCONSISTENT with a prior position, trust the document and explain the divergence in your concern.',
     '',
   ].join('\n');
