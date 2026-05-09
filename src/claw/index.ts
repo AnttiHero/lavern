@@ -25,6 +25,7 @@ import { processDocument } from './processor.js';
 import { runDaemon } from './daemon-factory.js';
 import { notify } from './notify.js';
 import { getPrecedentBoard } from './precedent-board.js';
+import { runCurator } from './curator.js';
 import { clawEventBus } from './events.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { startTelegramBot, stopTelegramBot } from './telegram-bot.js';
@@ -590,6 +591,39 @@ async function runStart(args: ClawCliArgs): Promise<void> {
               } catch { /* digest computation non-fatal */ }
             }
           }
+        }
+
+        // ── Curator (lighthouse persona 3) ───────────────────────────
+        // Runs every 4th heartbeat (~2h at 30min interval) — cheap when
+        // the folder is quiet (heuristic gate skips the LLM call), and
+        // when it does fire it produces portfolio-level insight rather
+        // than per-doc threshold pings. Soft-fail by design.
+        const shouldRunCurator = heartbeatCount % 4 === 0 || alerts.length > 0;
+        if (shouldRunCurator && currentProfile && precBoard) {
+          // Fire-and-forget — heartbeat callback stays sync so we don't
+          // back up the timer. Decision actions are inside the .then().
+          runCurator({
+            registry,
+            precedentBoard: precBoard,
+            profile: currentProfile,
+            doSurface: true,
+            doReReadQueue: true,
+            doConsolidation: heartbeatCount % 12 === 0,
+          }).then(decision => {
+            if (decision.surface) {
+              notify({
+                type: decision.surface.severity === 'critical' ? 'document_flagged' : 'heartbeat',
+                title: decision.surface.title,
+                message: decision.surface.message,
+              });
+            }
+            if (decision.reReadQueue.length > 0) {
+              for (const hash of decision.reReadQueue) {
+                try { registry.updateStatus(hash, 'stale'); } catch { /* per-doc soft-fail */ }
+              }
+            }
+            // Promotion / drift wiring lands in Phase 5 (precedent status field)
+          }).catch(() => { /* Curator is advisory only — never break the daemon */ });
         }
 
         if (alerts.length === 0) return; // Silent — everything is fine
