@@ -1,0 +1,2309 @@
+[
+  {
+    "filename": "borrowmoneycom_06_11_2020",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "Florida",
+      "confidence": 0.95,
+      "method": "llm-local",
+      "rationale": "Joint venture agreement with specific terms and conditions regarding IT development, internet back office maintenance, and deployment of medical services in Florida."
+    },
+    "prompts": [
+      {
+        "callId": 1,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 2,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 3,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 4,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 5,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 6,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 7,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 8,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 9,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 10,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 11,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 12,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 13,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 14,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 15,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 16,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 17,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 18,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 19,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 20,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 21,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 22,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 23,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 24,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 25,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 26,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 27,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 28,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 29,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 30,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "dilution"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 1,
+        "contentLen": 335,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "Florida",
+          "confidence": 0.95,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Joint venture agreement with specific terms and conditions regarding IT development, internet back office maintenance, and deployment of medical services in Florida."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 2,
+        "contentLen": 1024,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the appointment and management structure of the JV, but lacks details on risk allocation, financial obligations, and dispute resolution mechanisms.",
+          "operative_text": "The following managers (the \"Managers\") have been appointed by the Members to manage the Venture: ● Aaldo PIscitello ● Jody Stewart. Except as otherwise provided in this Agreement, the individual Managers may be appointed, replaced, or removed upon unanimous consent of the Members.",
+          "concerns": [
+            {
+              "text": "The clause lacks details on risk allocation and financial obligations for the JV participants, particularly regarding capital calls, dilution mechanics, and liability caps. ",
+              "severity": "major",
+              "references": [
+                "Managers"
+              ]
+            },
+            {
+              "text": "The clause does not specify the mechanism for resolving disputes or addressing disagreements between the JV members.",
+              "severity": "minor",
+              "references": [
+                "Members"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "minor"
+        ]
+      },
+      {
+        "callId": 3,
+        "contentLen": 665,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes that the managers' fiduciary duties are to the venture, not individual members, potentially limiting their ability to act in a way that favors one member over another.",
+          "operative_text": "The Managers will have a primary duty to the best interest of the Venture and not directly to any individual Member.",
+          "concerns": [
+            {
+              "text": "This clause limits the managers' fiduciary duties, potentially creating conflicts of interest if they prioritize the venture over individual members' interests.",
+              "severity": "major",
+              "references": [
+                "Clause 9"
+              ]
+            }
+          ],
+          "favoursWhom": "non-operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 4,
+        "contentLen": 1458,
+        "parsed": {
+          "clauseRiskSummary": "This clause grants significant operational control and decision-making authority to the joint venture managers, potentially impacting Acme Holdings' risk exposure and financial obligations.",
+          "operative_text": "Within the limits of the Purpose of the Venture and the terms of this Agreement, the Managers, acting jointly, will have full authority to bind the Members in all matters relating to the direction, control and management of the Venture. Conduct and actions of the Managers will be dictated by policy and procedure established by the Members. Authority to bind the Venture in contract or in any third party business relation lies exclusively with the Managers, acting jointly.",
+          "concerns": [
+            {
+              "text": "The clause grants broad operational control to the managers, potentially impacting Acme Holdings' risk exposure and financial obligations. This raises concerns about potential conflicts of interest and lack of transparency regarding decision-making processes.",
+              "severity": "major",
+              "references": [
+                "Managers",
+                "Members",
+                "Venture"
+              ]
+            },
+            {
+              "text": "The clause grants the managers exclusive authority to bind the venture in contracts or business relations, potentially exposing Acme Holdings to significant financial risk and legal liability without adequate control.",
+              "severity": "major",
+              "references": [
+                "Managers",
+                "Venture"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 5,
+        "contentLen": 1286,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the joint management structure and responsibilities for the JV, including decision-making processes and operational duties.",
+          "operative_text": "The Managers will jointly decide major issues concerning the Venture. Where Managers are unable to reach agreement in deciding major issues, approval by a majority vote of the Members at a regular or special meeting will be required.",
+          "concerns": [
+            {
+              "text": "Joint and several liability is not explicitly addressed. This could lead to disputes regarding responsibility for liabilities arising from the JV's operations.",
+              "severity": "major",
+              "references": [
+                "Managers",
+                "Venture"
+              ]
+            },
+            {
+              "text": "The clause lacks clarity on how capital calls will be made and managed, particularly in cases of non-operator participation. This could lead to financial strain for the non-operator.",
+              "severity": "major",
+              "references": [
+                "Managers",
+                "Venture"
+              ]
+            },
+            {
+              "text": "The clause does not specify the governing law for the JV, which could create legal disputes in case of disagreements. This is a critical risk to be addressed.",
+              "severity": "critical",
+              "references": [
+                "Members",
+                "Venture"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 3,
+        "severities": [
+          "major",
+          "major",
+          "critical"
+        ]
+      },
+      {
+        "callId": 6,
+        "contentLen": 1478,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the capital contributions for the joint venture and details how those contributions are to be made. It also specifies that amendments to the agreement require unanimous consent from all members, which could pose a risk if one party is unwilling to agree to changes.",
+          "operative_text": "Each of the Members has contributed to the capital of the Venture, in cash or property in agreed upon value, as follows (the \"Capital Contribution\"): Member Contribution Description Agreed Value\nBorrowMoney.com, inc 1, 500 square feet of Leased/rent office Space Includingspecified Description of duty* $3,500,000.00 USD\nJVLS, LLC dba Vaccines 2Go\n$60,000.00 USD From Monthly Government , City And State, And Or Private Awarded Contracts. Plus (10%) Of Any Generated Gross Revenue, In  Add i t i on  To  The  To ta l Contributions.\n$3,500,000.00 USD\n=== END CLAUSE 14 ===",
+          "concerns": [
+            {
+              "text": "Unanimous consent requirement for amendments to the agreement could create a significant obstacle in case of disagreement between parties.",
+              "severity": "major",
+              "references": [
+                "Clause 14: Duties"
+              ]
+            },
+            {
+              "text": "Capital contribution mechanics are not clearly defined, particularly regarding the calculation of JVLS's contributions and the impact of revenue sharing on their overall contribution.",
+              "severity": "major",
+              "references": [
+                "Clause 15"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 7,
+        "contentLen": 1281,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines capital contributions and withdrawal rights, potentially creating risk for the non-operator if they are unable to contribute or withdraw their capital as per the agreement.",
+          "operative_text": "All Members will contribute their respective Capital Contributions fully and on time. No Member will have the right to demand or withdraw any portion of their capital contribution without the express written consent of the remaining Members.",
+          "concerns": [
+            {
+              "text": "The clause states that all members must contribute their capital contributions 'fully and on time'. This could create a risk for the non-operator if they are unable to meet these obligations, as it may result in financial penalties or other consequences. ",
+              "severity": "major",
+              "references": [
+                "Capital Contributions",
+                "on time"
+              ]
+            },
+            {
+              "text": "The clause also states that no member can withdraw capital without the consent of the remaining members. This could create a risk for the non-operator if they are unable to meet these obligations, as it may result in financial penalties or other consequences.",
+              "severity": "major",
+              "references": [
+                "Capital Contributions",
+                "consent"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 8,
+        "contentLen": 1813,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the liability structure for members in the joint venture, specifically addressing capital contributions and requiring unanimous consent for changes to those contributions.",
+          "operative_text": "The Members will not be personally liable for the return of all or part of the Capital Contributions of a Member, except as otherwise provided in this Agreement. Additional Capital 19. Capital Contributions may be amended from time to time, according to the requirements of the Venture, by decision of the Members as recommended by the Managers. Where Members' interests are affected, additional capital contributions (the \"Additional Capital Contributions\") must have the unanimous consent of the Members.",
+          "concerns": [
+            {
+              "text": "The clause states that members will not be personally liable for the return of capital contributions, except as otherwise provided in the agreement. This raises concerns about potential exposure to losses beyond the scope of the agreement.",
+              "severity": "major",
+              "references": [
+                "Clause 18"
+              ]
+            },
+            {
+              "text": "The clause states that additional capital contributions may be amended from time to time, according to the requirements of the Venture. This raises concerns about potential dilution and loss of control over the venture's financial structure.",
+              "severity": "major",
+              "references": [
+                "Clause 18"
+              ]
+            },
+            {
+              "text": "The clause requires unanimous consent for changes to capital contributions, which could create a significant hurdle in case of unforeseen circumstances or market shifts. This raises concerns about the ability to respond effectively to changing conditions.",
+              "severity": "major",
+              "references": [
+                "Clause 18"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 3,
+        "severities": [
+          "major",
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 9,
+        "contentLen": 2274,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines how capital contributions are handled, including debt treatment and potential priority over other payments. It also specifies interest rates for any outstanding debts.",
+          "operative_text": "Any advance of money to the Venture by any Member in excess of the amounts provided for in this Agreement or subsequently agreed to as an Additional Capital Contribution will be deemed a debt due from the Venture rather than an increase in Capital Contribution of the Member. This liability will be repaid with interest at such rates and times to be determined by a majority of the Members. This liability will not entitle the lending Member to a greater voting power. Such debts may have preference or priority over any other payments to Members as may be determined by a majority of the Members.",
+          "concerns": [
+            {
+              "text": "This clause creates joint and several liability for members in excess of agreed capital contributions, which could expose non-operator participants to significant financial risk. ",
+              "severity": "major",
+              "references": [
+                "Clause 20"
+              ]
+            },
+            {
+              "text": "The clause does not specify a clear mechanism for handling capital calls or the mechanics of how these calls will be funded, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Clause 20"
+              ]
+            },
+            {
+              "text": "The clause does not specify a clear mechanism for handling capital calls or the mechanics of how these calls will be funded, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Clause 20"
+              ]
+            },
+            {
+              "text": "The clause does not specify a clear mechanism for handling capital calls or the mechanics of how these calls will be funded, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Clause 20"
+              ]
+            },
+            {
+              "text": "The clause does not specify a clear mechanism for handling capital calls or the mechanics of how these calls will be funded, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Clause 20"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 5,
+        "severities": [
+          "major",
+          "major",
+          "major",
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 10,
+        "contentLen": 929,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines procedures for convening special meetings, but it does not address critical aspects like joint and several liability, capital call mechanics, governing law, penalty provisions, or indemnification carve-outs.",
+          "operative_text": "Any Member can call a special meeting to resolve urgent issues that require a vote and that cannot wait for the next regularly scheduled meeting. When calling a special meeting, all Members must be provided with reasonable notice. Where a special meeting has been called, the meeting will be restricted to the specific purpose for which the meeting was called.",
+          "concerns": [
+            {
+              "text": "This clause does not address joint and several liability, capital call mechanics, governing law, penalty provisions, or indemnification carve-outs. ",
+              "severity": "major",
+              "references": [
+                "Clause 26"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 11,
+        "contentLen": 599,
+        "parsed": {
+          "clauseRiskSummary": "This clause focuses on meeting logistics and doesn't address key JV risks like liability, capital calls, or dispute resolution.",
+          "operative_text": "All meetings will be held at a time and in a location that is reasonable, convenient and practical considering the situation of all Members.",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on how to handle disagreements regarding meeting logistics or potential conflicts of interest between members. ",
+              "severity": "minor",
+              "references": [
+                "All Members"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 12,
+        "contentLen": 1495,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the process for admitting new members, including unanimous consent requirements, but lacks clarity on how joint and several liability is addressed in case of a defaulting member.",
+          "operative_text": "Any vote required by the Members will be determined such that each Member receives one vote carrying equal weight. Amendments 29. This Agreement may be amended only with the unanimous consent of all Members. Admitting a new Member 30. New Members may be admitted into the Venture only with the unanimous consent of the existing Members. The new Member agrees to be bound by all the covenants, terms, and conditions of this Agreement, inclusive of all current and future amendments. Further, a new Member will execute such documents as are needed or required for this admission. Any new Member will receive a business interest in the Venture as determined by all other Members.",
+          "concerns": [
+            {
+              "text": "Joint and several liability is not addressed in the clause, which could lead to significant financial risk if a member defaults on their obligations",
+              "severity": "major",
+              "references": [
+                "Clause 28"
+              ]
+            },
+            {
+              "text": "The clause lacks clarity on how joint and several liability will be handled in case of a defaulting member. This could lead to significant financial risk for the non-operator participant.",
+              "severity": "major",
+              "references": [
+                "Clause 28"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 13,
+        "contentLen": 860,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes joint and several liability for the JV's harm, potentially exposing the non-operator to significant financial risk if a member's actions or inaction cause damage.",
+          "operative_text": "If the Venture is harmed as the result of an individual Member's action or failure to act, then that individual Member will be liable for that harm. If more than one Member is at fault then they will be jointly and severally liable for that harm.",
+          "concerns": [
+            {
+              "text": "Joint and several liability exposes the non-operator to significant financial risk if a member's actions or inaction cause damage. This clause should specify how joint and several liability will be calculated and enforced in practice.",
+              "severity": "major",
+              "references": [
+                "clause 32"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 14,
+        "contentLen": 822,
+        "parsed": {
+          "clauseRiskSummary": "This clause imposes joint and several liability on each member for losses arising from the JV's termination due to a breach of the agreement, potentially exposing the non-operator to significant financial risk.",
+          "operative_text": "Each Member will indemnify the remaining Members against all losses, costs and claims that may arise in the event of the Venture being terminated as a result of the breach of the Agreement by that Member.",
+          "concerns": [
+            {
+              "text": "This clause imposes joint and several liability on each member for losses arising from the JV's termination due to a breach of the agreement, potentially exposing the non-operator to significant financial risk.",
+              "severity": "major",
+              "references": [
+                "Clause 33"
+              ]
+            }
+          ],
+          "favoursWhom": "non-operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 15,
+        "contentLen": 821,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines joint and several liability for non-operator members in case of a member's bankruptcy, withdrawal, or legal action. This could expose the non-operator to significant financial risk.",
+          "operative_text": "If a Member is placed in bankruptcy, or withdraws voluntarily from the Venture, or if there is an Operation of Law against a Member, the other Members will be entitled to proceed as if the Member had breached this Agreement.",
+          "concerns": [
+            {
+              "text": "This clause creates joint and several liability for non-operator members in case of a member's bankruptcy, withdrawal, or legal action. This could expose the non-operator to significant financial risk.",
+              "severity": "major",
+              "references": [
+                "Clause 34"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 16,
+        "contentLen": 1411,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the distribution of assets upon dissolution of the JV, but lacks details on how capital calls are handled or what happens if a participant can't contribute.",
+          "operative_text": "Distribution of any amount owing to a dissociated Member will be made according to the percentage of ownership as described in the Valuation of Interest or as otherwise may be agreed in writing. Dissolution of the Joint Venture 36. The Venture will be dissolved and its assets liquidated in the event of any of the following: a. the Term expires and is not extended; b. a unanimous vote by the Members to dissolve the Venture; c. on satisfaction of the Purpose; d. loss or incapacity through any means of substantially all of the Venture's assets; or e. where only one Member remains.",
+          "concerns": [
+            {
+              "text": "The clause lacks details on how capital calls are handled and what happens if a participant can't fund their share, which could lead to significant financial risk for the non-operator",
+              "severity": "major",
+              "references": [
+                "clause 35"
+              ]
+            },
+            {
+              "text": "The clause does not specify how capital calls are handled or what happens if a participant can't fund their share, which could lead to significant financial risk for the non-operator",
+              "severity": "major",
+              "references": [
+                "clause 35"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 17,
+        "contentLen": 2062,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the distribution of assets upon liquidation, potentially impacting Acme Holdings' capital account and risk exposure.",
+          "operative_text": "On the liquidation of the Venture assets, distribution of any amounts to Members will be made in proportion to their respective capital accounts or as otherwise may be agreed in writing. Valuation of Interest 39. In the absence of a written agreement setting a value, the value of the Venture will be determined based on the fair market value appraisal of all Venture assets (less liabilities) in accordance with generally accepted accounting principles (GAAP) by an independent accounting firm agreed to by all Members. An appraiser will be appointed within a reasonable period of the date of withdrawal or dissolution. The results of the appraisal will be binding on all Members. A withdrawing Member's interest will be based on the proportion of their respective capital account less any outstanding liabilities a Member may have to the Venture.",
+          "concerns": [
+            {
+              "text": "Joint and several liability for Venture assets upon liquidation is not explicitly addressed, potentially exposing Acme Holdings to disproportionate risk",
+              "severity": "major",
+              "references": [
+                "Clause 38"
+              ]
+            },
+            {
+              "text": "Capital call mechanics are unclear.  The clause mentions 'proportion to their respective capital accounts' but lacks specifics on how this will be determined and enforced.",
+              "severity": "major",
+              "references": [
+                "Clause 38"
+              ]
+            },
+            {
+              "text": "Governing law is not specified, which could lead to legal disputes and complicate resolution of contractual issues.",
+              "severity": "major",
+              "references": [
+                "Clause 38"
+              ]
+            },
+            {
+              "text": "Penalty / liquidated damages are not defined. This lack of clarity could result in significant financial losses for Acme Holdings if the JV fails to meet its obligations.",
+              "severity": "major",
+              "references": [
+                "Clause 38"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 4,
+        "severities": [
+          "major",
+          "major",
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 18,
+        "contentLen": 1508,
+        "parsed": {
+          "clauseRiskSummary": "This clause defines 'No allowance' for goodwill, trade names, patents, and other intangible assets, except when reflected on Venture books prior to valuation.",
+          "operative_text": "No allowance will be made for goodwill, trade name, patents or other intangible assets, except where those assets have been reflected on the Venture books immediately prior to valuation. Transfer of Member Interest 41. A Member may assign their proprietary assets and their rights in distribution interest in the Venture. Such assignment will only include that Member's economic rights and interests and will not include any other rights of that Member nor will it include an automatic admission as a Member of the Venture or the right to exercise any management or voting interests. A Member who assigns any or all of their Venture interest to any third party will relinquish their status as Member including all management and voting rights. Assignment of Member status, under this clause, including any management and voting interests, will require the consent of all the remaining Members.",
+          "concerns": [
+            {
+              "text": "No allowance for goodwill, trade names, patents or other intangible assets except where reflected on Venture books immediately prior to valuation. This could lead to significant financial losses if the value of these assets is not properly accounted for.",
+              "severity": "major",
+              "references": [
+                "intangible assets"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 19,
+        "contentLen": 1022,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines general provisions for insurance, indemnification, and liability, but lacks specific details on joint and several liability or capital call mechanics.",
+          "operative_text": "This section will survive for one year after the expiration or termination of this Agreement or dissolution of the Venture. Language 47. The Members expressly state that the English language is to be the language of choice for this Agreement and all other notices and agreements required by the Venture. Page 9 of 13",
+          "concerns": [
+            {
+              "text": "This clause lacks specific details on joint and several liability, particularly in the context of capital calls or potential disputes.",
+              "severity": "minor",
+              "references": [
+                "clause 46"
+              ]
+            },
+            {
+              "text": "The clause does not address how capital calls will be made or what happens if a participant cannot fund their share.",
+              "severity": "major",
+              "references": [
+                "clause 46"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "minor",
+          "major"
+        ]
+      },
+      {
+        "callId": 20,
+        "contentLen": 1284,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines dispute resolution mechanisms for a joint venture, including mediation and arbitration in Florida law. It also requires all members to have the necessary licenses and permits.",
+          "operative_text": "If the dispute is not resolved within a reasonable period then any or all outstanding issues may be submitted to mediation in accordance with any statutory rules of mediation. If mediation is not successful in resolving the entire dispute or is unavailable, any outstanding issues will be submitted to final and binding arbitration in accordance with the laws of the State of Florida. The arbitrator's award will be final, and judgment may be entered upon it by any court having jurisdiction within the State of Florida.",
+          "concerns": [
+            {
+              "text": "The clause specifies a mandatory mediation process before arbitration, which could delay resolution and increase costs. ",
+              "severity": "major",
+              "references": [
+                "Clause 56"
+              ]
+            },
+            {
+              "text": "The clause requires all members to have the necessary licenses and permits to execute this Agreement, which is a critical risk for the non-operator participant.",
+              "severity": "critical",
+              "references": [
+                "Clause 56"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 2,
+        "severities": [
+          "major",
+          "critical"
+        ]
+      },
+      {
+        "callId": 21,
+        "contentLen": 879,
+        "parsed": {
+          "clauseRiskSummary": "This clause defines a contractual joint venture, clarifies that members are independent entities and do not assume joint liability for each other's actions.",
+          "operative_text": "This Venture is termed a contractual joint venture and will not constitute a partnership. Members will provide services to one another on an arms' length basis while remaining independent business entities. There will be no pooling of profits and losses. Each Member is responsible only for its own actions and no Member is an agent for any other Member. Members will not be jointly or severally liable for the actions of the other Members.",
+          "concerns": [
+            {
+              "text": "Members will not be jointly or severally liable for the actions of the other Members.",
+              "severity": "minor",
+              "references": [
+                "Clause 58"
+              ]
+            }
+          ],
+          "favoursWhom": "non-operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 22,
+        "contentLen": 546,
+        "parsed": {
+          "clauseRiskSummary": "This clause emphasizes the importance of timely execution and adherence to deadlines within the agreement, which can be crucial for project progress and financial commitments.",
+          "operative_text": "Time is of the essence in this Agreement.",
+          "concerns": [
+            {
+              "text": "The 'time is of the essence' clause should be accompanied by specific timeframes and deadlines to avoid ambiguity and potential disputes.",
+              "severity": "minor",
+              "references": [
+                "clause 61"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 23,
+        "contentLen": 649,
+        "parsed": {
+          "clauseRiskSummary": "This clause does not address critical aspects of the joint venture, such as risk allocation, funding mechanisms, or dispute resolution. It merely establishes the method for executing the agreement.",
+          "operative_text": "This Agreement may be executed in counterparts. Facsimile signatures are binding and are considered to be original signatures.",
+          "concerns": [
+            {
+              "text": "The clause does not address risk allocation, funding mechanisms, or dispute resolution, which are critical aspects of a joint venture agreement.",
+              "severity": "minor",
+              "references": []
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 24,
+        "contentLen": 575,
+        "parsed": {
+          "clauseRiskSummary": "This clause is purely definitional and does not contain any risk-related information relevant to the joint venture.",
+          "operative_text": "Headings are inserted for the convenience of the Members only and are not to be considered when interpreting this Agreement. Words in the singular mean and include the plural and vice versa. Words in the masculine gender include the feminine gender and vice versa. Words in the neuter gender include the masculine gender and the feminine gender and vice versa.",
+          "concerns": [],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 25,
+        "contentLen": 950,
+        "parsed": {
+          "clauseRiskSummary": "This clause addresses the potential for invalidity of certain terms and conditions within the agreement, but does not directly address specific risks like joint and several liability or capital call mechanics.",
+          "operative_text": "If any term, covenant, condition or provision of this Agreement is held by a court of competent jurisdiction to be invalid, void or unenforceable, it is the Members' intent that such provision be reduced in scope by the court only to the extent deemed necessary by that court to render the provision reasonable and enforceable and the remainder of the provisions of this Agreement will in no way be affected, impaired or invalidated as a result.",
+          "concerns": [
+            {
+              "text": "The clause does not address specific risks like joint and several liability or capital call mechanics. ",
+              "severity": "minor",
+              "references": [
+                "clause 64"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 26,
+        "contentLen": 1027,
+        "parsed": {
+          "clauseRiskSummary": "This clause states that the entire agreement is contained within this document and prior statements or understandings are not binding, potentially limiting negotiation rights and creating a risk of unforeseen terms being included in the final agreement.",
+          "operative_text": "All negotiations and understandings have been included in this Agreement. Statements or representations which may have been made by any Member in the negotiation stages of this Agreement may in some way be inconsistent with this final written Agreement. All such statements are declared to be of no value in this Agreement. Only the written terms of this Agreement will bind the Members.",
+          "concerns": [
+            {
+              "text": "This clause states that all prior negotiations and understandings are void, potentially limiting negotiation rights and creating a risk of unforeseen terms being included in the final agreement.",
+              "severity": "major",
+              "references": [
+                "Clause 65"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 27,
+        "contentLen": 778,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes that the agreement is binding on all parties involved, including their successors, assigns, etc., potentially impacting future ownership or transfer.",
+          "operative_text": "This Agreement and the terms and conditions contained in this Agreement apply to and are binding upon the Member's successors, assigns, executors, administrators, beneficiaries, and representatives.",
+          "concerns": [
+            {
+              "text": "The clause establishes broad successor liability, potentially impacting future ownership or transfer. This could create unforeseen risks for the non-operator in case of changes to the joint venture structure.",
+              "severity": "major",
+              "references": [
+                "this Agreement"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 28,
+        "contentLen": 898,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines notice and delivery procedures, which while not inherently risky, could impact communication flow and potentially lead to delays in critical decisions.",
+          "operative_text": "Any notices or delivery required here will be deemed completed when hand-delivered, delivered by agent, or seven (7) days after being placed in the post, postage prepaid, to the Members at the addresses contained in this Agreement or as the Members may later designate in writing.",
+          "concerns": [
+            {
+              "text": "Notice and delivery procedures should be clearly defined for each type of communication. The clause mentions 'hand-delivered', 'agent', and 'postage prepaid' but lacks specificity on what constitutes a 'critical' notice or when it needs to be delivered.",
+              "severity": "minor",
+              "references": [
+                "Clause 67"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 29,
+        "contentLen": 837,
+        "parsed": {
+          "clauseRiskSummary": "This clause states that all rights and remedies under the agreement are cumulative, meaning they can be used together without being exclusive to any one right or remedy. This could potentially create a risk for non-operator if it leads to an unfair burden of responsibility.",
+          "operative_text": "All of the rights, remedies and benefits provided by this Agreement will be cumulative and will not be exclusive of any other such rights, remedies and benefits allowed by law.",
+          "concerns": [
+            {
+              "text": "This clause states that all rights and remedies under the agreement are cumulative. This could potentially create a risk for non-operator if it leads to an unfair burden of responsibility.",
+              "severity": "major",
+              "references": [
+                "this Agreement"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 30,
+        "contentLen": 1214,
+        "parsed": {
+          "summary": "This agreement outlines the terms of a joint venture between Acme Holdings and [other party] for the purpose of [venture's purpose]. The agreement establishes the structure, responsibilities, and financial obligations of the joint venture. However, it lacks details on risk allocation, capital call mechanics, dispute resolution mechanisms, and governing law.  The agreement also does not address joint and several liability in detail, potentially exposing non-operator participants to significant financial risk.",
+          "documentType": "Joint Venture Agreement (Florida law)",
+          "topRisks": [
+            {
+              "description": "Lack of clarity on joint and several liability and capital call mechanics could lead to disputes and delays in project execution.",
+              "severity": "critical",
+              "citation": "cl 5, cl 10, cl 14, cl 16, cl 28, cl 32, cl 33, cl 34, cl 35, cl 40, cl 46, cl 56, cl 58, cl 61, cl 62, cl 63, cl 64, cl 65, cl 66, cl 67, cl 68"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal demand for clarification on joint and several liability and capital call mechanics.",
+            "Demand that the parties engage in mediation to resolve any disputes regarding the agreement's terms."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": {
+      "riskCount": 1,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": [],
+      "summary": "This agreement outlines the terms of a joint venture between Acme Holdings and [other party] for the purpose of [venture's purpose]. The agreement establishes the structure, responsibilities, and financial obligations of the joint venture. However, it lacks details on risk allocation, capital call mechanics, dispute resolution mechanisms, and governing law.  The agreement also does not address joint and several liability in detail, potentially exposing non-operator participants to significant financial risk.",
+      "risks": [
+        {
+          "description": "Lack of clarity on joint and several liability and capital call mechanics could lead to disputes and delays in project execution.",
+          "severity": "critical",
+          "citation": "cl 5, cl 10, cl 14, cl 16, cl 28, cl 32, cl 33, cl 34, cl 35, cl 40, cl 46, cl 56, cl 58, cl 61, cl 62, cl 63, cl 64, cl 65, cl 66, cl 67, cl 68"
+        }
+      ]
+    }
+  },
+  {
+    "filename": "sibannac_12_04_2017",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "NSW, Arizona",
+      "confidence": 0.9,
+      "method": "llm-local",
+      "rationale": "Strategic Alliance Agreement between Bravatek and Sibannac with details on joint venture responsibilities, business relationship, and specific terms of the agreement. Requires deep read for analysis."
+    },
+    "prompts": [
+      {
+        "callId": 31,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 32,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 33,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 34,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 35,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "confidential information",
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 36,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 37,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 38,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 39,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 40,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 41,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 42,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-ad09177d"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 43,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator"
+        ],
+        "ndaVocabHits": [
+          "confidential information",
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 31,
+        "contentLen": 373,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "NSW, Arizona",
+          "confidence": 0.9,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Strategic Alliance Agreement between Bravatek and Sibannac with details on joint venture responsibilities, business relationship, and specific terms of the agreement. Requires deep read for analysis."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 32,
+        "contentLen": 1226,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the non-operator's responsibilities in supporting Bravatek, but lacks clarity on financial obligations and potential liabilities.",
+          "operative_text": "COMPANY agrees to use its best efforts to promote and support project lead finding and after-sales support of Bravatek by: a. Listing Bravatek in all appropriate sales and marketing materials as a non-exclusive alliance partner (with focus of government customers)   b. Provide timely responses to both technical and administrative questions posed by Bravatek.   c. Promote Bravatek's product and service offerings whenever possible.   d. Aid Bravatek in the writing of any technical/marketing/sales documents when requested and participate in mutually-agreed upon sales calls.   e. Provide Bravatek with co-branded marketing material that can be emailed or handed to prospective clients.",
+          "concerns": [
+            {
+              "text": "This clause lacks clarity on the non-operator's financial obligations and potential liabilities for supporting Bravatek, particularly regarding the scope of support and any associated costs. ",
+              "severity": "major",
+              "references": [
+                "COMPANY"
+              ]
+            }
+          ],
+          "favoursWhom": "non-operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 33,
+        "contentLen": 1106,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines joint and several liability for the JV partners, particularly in terms of product development and marketing efforts. This could lead to disputes and delays if not clearly defined.",
+          "operative_text": "Bravatek and COMPANY agree to jointly: a. Develop and implement a joint Product Solution and Application Strategy whereby targeted markets/potential client- types/applications are mutually agreed upon;   b. Support each other in all agreed-upon technical, marketing and promotional efforts;   c. Develop a joint strategy for developing new product/services/capabilities to mutually benefit both parties;   d. Utilize each other as Preferred Vendors for services whenever possible upon mutual agreement.",
+          "concerns": [
+            {
+              "text": "Joint and several liability is not clearly defined, particularly in the context of financial obligations and dispute resolution mechanisms. This could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Bravatek",
+                "COMPANY"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 34,
+        "contentLen": 1544,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the compensation structure for sales generated by Bravatek, but lacks clarity on joint and several liability, capital call mechanics, governing law, penalty / liquidated damages, indemnification carve-outs, and potential disputes regarding project revenue.",
+          "operative_text": "When custom Products are designed, developed and to be delivered to Bravatek-identified perspective clients, the parties shall agree to a proposed sales price for use during the project in writing prior to the commencement of each project. For any Product or Solution sold to any perspective clients introduced by Bravatek registered with COMPANY via email to COMPANY's CEO and delivered through Bravatek or a COMPANY-designated distribution affiliate(s) or sales channel(s), Bravatek will receive a lead-finder fee, to be mutually discussed and finally decided by COMPANY at the range of minimum of 10% to maximum of 20% of project revenue, with an exact fee to be depending upon the overall project sales margin and cost of development and delivery of each project, payable NET 30 days after each client payment on delivered products received at COMPANY's bank account.",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on joint and several liability, capital call mechanics, governing law, penalty / liquidated damages, indemnification carve-outs, and potential disputes regarding project revenue.",
+              "severity": "major",
+              "references": [
+                "clause 4"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 35,
+        "contentLen": 1269,
+        "parsed": {
+          "clauseRiskSummary": "This clause defines 'Confidential Information' and outlines non-disclosure obligations for the parties. However, it lacks clarity on how disputes regarding confidentiality will be handled.",
+          "operative_text": "‘Confidential information’ shall mean any and all technical and non-technical information, documents and materials related to client projects of party and products, services and business of each of the parties. COMPANY and Bravatek agree to maintain in strict confidence and not to disclose or disseminate, or to use for any purposes other than performance of the projects, the Confidential Information disclosed.  The obligation of non-disclosure shall not apply to the following:   a. Information at or after such time that is publicly available through no fault of either party   b. Information at or after such time that is disclosed to either party by a third party entitled to disclose such information   c. Information which is required by law to be disclosed to federal, state or local authorities.",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on how disputes regarding confidentiality will be handled.",
+              "severity": "minor",
+              "references": [
+                "clause 5"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 36,
+        "contentLen": 1111,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines confidentiality obligations for a defined period after termination, which could be relevant to dispute resolution or future business dealings.",
+          "operative_text": "For a period of five (5) years after termination of this Agreement, the parties shall treat as confidential all information and take every reasonable precaution and use all reasonable efforts to prevent the unauthorized disclosure of the same. The parties agree to take all steps reasonably necessary and appropriate to ensure that their employees, agents, and/or assistants treat all information as confidential and to ensure that such employees, agents, and/or assistants are familiar with and abide by the terms of this Agreement.",
+          "concerns": [
+            {
+              "text": "The clause defines a confidentiality period of five years after termination. This could lead to disputes if the parties disagree on what constitutes confidential information or how long it should remain confidential.",
+              "severity": "minor",
+              "references": [
+                "five (5) years"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 37,
+        "contentLen": 1591,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines a standard twelve-month term with automatic renewal, and termination provisions. However, the lack of specific details on capital calls, joint and several liability, and indemnification could lead to disputes and delays in project execution.",
+          "operative_text": "The term of this Agreement is twelve (12) months from the date hereof, and will be automatically renewed for one (1) additional twelve month period unless either party shall notify the other in writing of its intention not to renew. Such notice must be given ninety (90) days prior to expiration of the original term. This Agreement may also be terminated by either party upon ninety (90) days written notice.",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on capital call mechanics and joint and several liability, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Term"
+              ]
+            },
+            {
+              "text": "The clause does not specify the mechanism for capital calls or how non-operator participation will be handled during such events. This lack of clarity could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Term"
+              ]
+            },
+            {
+              "text": "The clause does not specify the mechanism for capital calls or how non-operator participation will be handled during such events. This lack of clarity could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "Term"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 3,
+        "severities": [
+          "major",
+          "major",
+          "major"
+        ]
+      },
+      {
+        "callId": 38,
+        "contentLen": 802,
+        "parsed": {
+          "clauseRiskSummary": "The clause defines notice delivery addresses, but lacks clarity on joint and several liability, capital call mechanics, and indemnification carve-outs, which could lead to disputes and delays in project execution.",
+          "operative_text": "Any notices required under this Agreement shall be delivered to:   Bravatek Technologies, Inc. 2028 E. Ben White Blvd., Unit #240-2835 Austin, Texas 78741   Sibannac, Inc. 2122 E Highland Avenue, STE 425 Phoenix, AZ 85016\n",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on joint and several liability, capital call mechanics, and indemnification carve-outs, which could lead to disputes and delays in project execution.",
+              "severity": "major",
+              "references": [
+                "clause 8"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 39,
+        "contentLen": 1305,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes joint and several indemnification for both parties, potentially leading to disputes over liability allocation and cost recovery.",
+          "operative_text": "COMPANY shall indemnify Bravatek, its directors, officers and employees, for any and all damages, costs, expenses, and other liabilities, including reasonable attorney's fees and court costs incurred in connection with any third-party claim, action or proceeding arising from the negligence or intentional misconduct of COMPANY or breach of COMPANY of any of its obligations under this Agreement.  Bravatek shall indemnify COMPANY, its directors, officers and employees, for any and all damages, costs, expenses, and other liabilities, including reasonable attorney's fees and court costs, incurred in connection with any third-party claim, action or proceeding arising from the negligence or intentional misconduct of Bravatek or breach of Bravatek of any of its obligations under this Agreement.",
+          "concerns": [
+            {
+              "text": "This clause establishes joint and several indemnification for both parties, potentially leading to disputes over liability allocation and cost recovery.",
+              "severity": "major",
+              "references": [
+                "COMPANY",
+                "Bravatek"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 40,
+        "contentLen": 628,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes a clear requirement for all modifications to the agreement to be in writing and signed by all parties, minimizing potential disputes arising from informal changes.",
+          "operative_text": "No changes or modifications of this Agreement or any of its terms shall be deemed effective unless in writing and executed by the parties hereto.",
+          "concerns": [
+            {
+              "text": "This clause requires all modifications to be in writing and signed, which is a standard practice for agreements. ",
+              "severity": "minor",
+              "references": []
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "minor"
+        ]
+      },
+      {
+        "callId": 41,
+        "contentLen": 602,
+        "parsed": {
+          "clauseRiskSummary": "This clause limits assignment rights, potentially hindering flexibility and increasing risk for the non-operator if unforeseen circumstances arise.",
+          "operative_text": "This Agreement shall not be assignable by either party without the prior written consent of the other party.",
+          "concerns": [
+            {
+              "text": "The clause restricts assignment rights, which could hinder flexibility and increase risk for the non-operator in case of unforeseen circumstances. ",
+              "severity": "major",
+              "references": [
+                "This Agreement"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 42,
+        "contentLen": 950,
+        "parsed": {
+          "clauseRiskSummary": "This clause asserts the complete agreement between parties and supersedes all prior negotiations, representations or agreements. This could potentially limit negotiation room for future disputes.",
+          "operative_text": "This Agreement represents the complete and entire understanding between the parties regarding the subject matter hereof and supersedes all prior negotiations, representations, or agreements, either written or oral, regarding this subject matter. This Agreement shall not be considered accepted, approved or otherwise effective until signed by the appropriate parties.",
+          "concerns": [
+            {
+              "text": "This clause asserts the complete agreement between parties and supersedes all prior negotiations, representations or agreements. This could potentially limit negotiation room for future disputes.",
+              "severity": "major",
+              "references": [
+                "Clause 13"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 43,
+        "contentLen": 1860,
+        "parsed": {
+          "summary": "This contract outlines a joint venture agreement between Bravatek and Sibannac, with Bravatek providing non-operator support to Sibannac in developing and marketing a product. The agreement lacks clarity on financial obligations, potential liabilities, dispute resolution mechanisms, capital calls, and indemnification carve-outs, potentially leading to disputes and delays in project execution.",
+          "documentType": "Joint Venture Agreement",
+          "topRisks": [
+            {
+              "description": "Lack of clarity on financial obligations, potential liabilities, dispute resolution mechanisms, capital calls, and indemnification carve-outs could lead to disputes and delays in project execution.",
+              "severity": "critical",
+              "citation": "cl 2, cl 3, cl 4, cl 10, cl 11, cl 12, cl 7"
+            },
+            {
+              "description": "Joint and several liability for the JV partners is not clearly defined, particularly in the context of financial obligations and dispute resolution mechanisms. This could lead to disputes and delays in project execution.",
+              "severity": "high",
+              "citation": "cl 3"
+            },
+            {
+              "description": "The clause lacks clarity on capital call mechanics and joint and several liability, which could lead to disputes and delays in project execution.",
+              "severity": "critical",
+              "citation": "cl 7"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal request for clarification on the financial obligations, potential liabilities, dispute resolution mechanisms, capital call mechanics, and indemnification carve-outs outlined in the agreement.",
+            "Demand that Bravatek and Sibannac engage in good faith negotiations to clarify these points before proceeding with the joint venture.",
+            "Audit the existing legal framework for joint ventures to ensure it aligns with the specific needs of this project."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": {
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": [
+        "PREC-ad09177d"
+      ],
+      "summary": "This contract outlines a joint venture agreement between Bravatek and Sibannac, with Bravatek providing non-operator support to Sibannac in developing and marketing a product. The agreement lacks clarity on financial obligations, potential liabilities, dispute resolution mechanisms, capital calls, and indemnification carve-outs, potentially leading to disputes and delays in project execution.",
+      "risks": [
+        {
+          "description": "Lack of clarity on financial obligations, potential liabilities, dispute resolution mechanisms, capital calls, and indemnification carve-outs could lead to disputes and delays in project execution.",
+          "severity": "critical",
+          "citation": "cl 2, cl 3, cl 4, cl 10, cl 11, cl 12, cl 7"
+        },
+        {
+          "description": "Joint and several liability for the JV partners is not clearly defined, particularly in the context of financial obligations and dispute resolution mechanisms. This could lead to disputes and delays in project execution.",
+          "severity": "high",
+          "citation": "cl 3"
+        },
+        {
+          "description": "The clause lacks clarity on capital call mechanics and joint and several liability, which could lead to disputes and delays in project execution.",
+          "severity": "critical",
+          "citation": "cl 7"
+        }
+      ]
+    }
+  },
+  {
+    "filename": "veoneer_02_21_2020",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "nsw,japan,china",
+      "confidence": 0.95,
+      "method": "llm-local",
+      "rationale": "Joint venture agreement with specific parties and concerns regarding liability, capital calls, and indemnification."
+    },
+    "prompts": [
+      {
+        "callId": 44,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 45,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-b762179f",
+          "PREC-3ffdcbfd",
+          "PREC-36c8849e"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 46,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-b762179f",
+          "PREC-3ffdcbfd",
+          "PREC-36c8849e"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 47,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-b762179f",
+          "PREC-3ffdcbfd",
+          "PREC-36c8849e"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 48,
+        "hasPrecedentBlock": true,
+        "precedentIds": [
+          "PREC-b762179f",
+          "PREC-3ffdcbfd",
+          "PREC-36c8849e"
+        ],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 49,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 44,
+        "contentLen": 293,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "nsw,japan,china",
+          "confidence": 0.95,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Joint venture agreement with specific parties and concerns regarding liability, capital calls, and indemnification."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 45,
+        "contentLen": 3496,
+        "parsed": {
+          "clauseRiskSummary": "This clause modifies the JV agreement's scope and termination upon closing of specific JV entities (VNBJ, VNBZ). It also clarifies that pre-existing liabilities remain in effect even after termination.",
+          "operative_text": "Article 1. Amendment and Termination of JV Agreement\n\na. As of the VNBJ Closing, except as expressly set forth in this Amendment, the JV Agreement shall immediately cease to have any application or effect with respect to VNBJ, all rights and obligations with respect to VNBJ under the JV Agreement shall terminate and all references to \"Company\" or \"Companies\" in the JV Agreement (either in the body of the JV Agreement or its schedules and other attachments) shall read and be interpreted to mean VNBZ and/or ANRA except as the context otherwise requires. \n\nb. As of the VNBZ Closing, except as expressly set forth in this Amendment, the JV Agreement shall immediately cease to have any application or effect with respect to VNBZ, all rights and obligations with respect to VNBZ under the JV Agreement shall terminate and all references to \"Company\" or \"Companies\" in the JV Agreement (either in the body of the JV Agreement or its schedules and other attachments) shall read and be interpreted to mean VNBJ and/or ANRA except as the context otherwise requires. \n\nc. Except as expressly set forth in this Amendment and notwithstanding anything to the contrary contained in the JV Agreement (including Section 9.3.11 (Termination and Survival)), (a) effective as of the later of the VNBJ Closing and the VNBZ Closing, the JV Agreement shall terminate in its entirety with respect to the Veoneer Parties and (b) after the later of the VNBJ Closing and the VNBZ Closing, the Veoneer Parties shall cease to be a party to the JV Agreement and shall have no further obligations with respect thereto. For clarity, upon the later of the VNBJ Closing and the VNBZ Closing, the JV Agreement will remain in full force and effect in accordance with the terms thereof solely between the Nissin Parties and Autoliv AB with respect to the liquidation proceedings of ANRA.\n\nd. Notwithstanding Article 1.1, Article 1.2 and Article 1.3 above, the termination of the JV Agreement with respect to VNBJ, VNBZ or the Veoneer Parties shall not release any Veoneer Party or any Nissin Party from liability for the breach of any of its representations, warranties, covenants or agreements set forth in the JV Agreement that arise prior to the VNBJ Closing or the VNBZ Closing, as applicable.",
+          "concerns": [
+            {
+              "text": "This clause modifies the JV agreement's scope and termination upon closing of specific JV entities (VNBJ, VNBZ). It also clarifies that pre-existing liabilities remain in effect even after termination.",
+              "severity": "info",
+              "references": [
+                "Article 1. Amendment and Termination of JV Agreement"
+              ]
+            },
+            {
+              "text": "The clause states that the JV agreement will terminate upon closing of VNBJ, VNBZ or Veoneer Parties, but pre-existing liabilities remain in effect.",
+              "severity": "info",
+              "references": [
+                "Article 1. Amendment and Termination of JV Agreement"
+              ]
+            },
+            {
+              "text": "The clause clarifies that the JV agreement will remain in full force and effect for specific purposes (liquidation proceedings of ANRA) after termination.",
+              "severity": "info",
+              "references": [
+                "Article 1. Amendment and Termination of JV Agreement"
+              ]
+            }
+          ],
+          "favoursWhom": "non-operator"
+        },
+        "concernCount": 3,
+        "severities": [
+          "info",
+          "info",
+          "info"
+        ]
+      },
+      {
+        "callId": 46,
+        "contentLen": 1128,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines indemnification obligations for D&O liability for specific parties (Nissin) related to pre-closing events. It's unclear how this impacts the non-operator's financial exposure and potential liabilities.",
+          "operative_text": "Notwithstanding Article 1.1, Article 1.2 and Article 1.3 above, the Nissin Parties agree to cause each of VNBJ and VNBZ to comply with Sections 4.3.2 and 4.3.3 of the JV Agreement with respect to the indemnification or reimbursement, as applicable, of all Directors and Officers (except those individuals resigning pursuant to Section 6.2.6 of the VNBJ SPA and Section 6.2.6 of the VNBZ SPA) with respect to any Liabilities arising prior to the VNBJ Closing or the VNBZ Closing, as applicable.",
+          "concerns": [
+            {
+              "text": "The clause mentions indemnification for D&O liability but doesn't specify how this impacts the non-operator's financial exposure and potential liabilities. This needs clarification.",
+              "severity": "major",
+              "references": [
+                "Nissin Parties",
+                "VNBJ Closing",
+                "VNBZ Closing"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 47,
+        "contentLen": 539,
+        "parsed": {
+          "clauseRiskSummary": "This clause establishes Japanese law as governing for this joint venture agreement, potentially impacting dispute resolution and contractual interpretation.",
+          "operative_text": "This Amendment shall be governed by and construed in accordance with the laws of Japan.",
+          "concerns": [
+            {
+              "text": "Governing Law is set to Japanese law, which may impact dispute resolution and contract interpretation. ",
+              "severity": "major",
+              "references": [
+                "Article 3"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "major"
+        ]
+      },
+      {
+        "callId": 48,
+        "contentLen": 956,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the effectiveness of the amendment, which is contingent upon the closing of two separate agreements (VNBJ SPA and VNBZ SPA). If these agreements are terminated, the amendment will be void.",
+          "operative_text": "4.Effectiveness\nThis Amendment shall only become effective upon the VNBJ Closing with respect to Article 1.1 and the VNBZ Closing with respect to Article 1.2, and shall terminate without any force or effect in the event that the VNBJ SPA and the VNBZ SPA are terminated in accordance with the terms thereof.\n(The remainder of this page has intentionally been blank.)\n",
+          "concerns": [
+            {
+              "text": "This clause states effectiveness is contingent upon the closing of two separate agreements (VNBJ SPA and VNBZ SPA). If these agreements are terminated, the amendment will be void.",
+              "severity": "info",
+              "references": [
+                "4.Effectiveness"
+              ]
+            }
+          ],
+          "favoursWhom": "neutral"
+        },
+        "concernCount": 1,
+        "severities": [
+          "info"
+        ]
+      },
+      {
+        "callId": 49,
+        "contentLen": 1709,
+        "parsed": {
+          "summary": "This contract outlines a joint venture agreement between Veoneer and Nissin for a specific purpose (the JV entities VNBJ and VNBZ) with pre-existing liabilities remaining in effect even after termination. The agreement is governed by Japanese law, and its effectiveness depends on the closing of two separate agreements (VNBJ SPA and VNBZ SPA).  The document also outlines indemnification obligations for D&O liability related to pre-closing events.",
+          "documentType": "Joint Venture Agreement",
+          "topRisks": [
+            {
+              "description": "Unclear impact on non-operator's financial exposure and potential liabilities due to indemnification clause in cl 2.",
+              "severity": "medium",
+              "citation": "cl 2"
+            },
+            {
+              "description": "Japanese law governing the agreement may impact dispute resolution and contractual interpretation.",
+              "severity": "high",
+              "citation": "cl 3"
+            },
+            {
+              "description": "Effectiveness of the amendment is contingent on the closing of two separate agreements (VNBJ SPA and VNBZ SPA), which could lead to voiding if these agreements are terminated.",
+              "severity": "medium",
+              "citation": "cl 4"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal request for clarification on the impact of indemnification clause in cl 2 and its potential implications for the non-operator's financial exposure.",
+            "Demand a detailed analysis of the potential risks associated with Japanese law governing the agreement, including dispute resolution and contractual interpretation.",
+            "Audit the specific agreements (VNBJ SPA and VNBZ SPA) to ensure their timely closing and mitigate any potential risk of amendment voiding."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": {
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": [
+        "PREC-b762179f",
+        "PREC-3ffdcbfd",
+        "PREC-36c8849e"
+      ],
+      "summary": "This contract outlines a joint venture agreement between Veoneer and Nissin for a specific purpose (the JV entities VNBJ and VNBZ) with pre-existing liabilities remaining in effect even after termination. The agreement is governed by Japanese law, and its effectiveness depends on the closing of two separate agreements (VNBJ SPA and VNBZ SPA).  The document also outlines indemnification obligations for D&O liability related to pre-closing events.",
+      "risks": [
+        {
+          "description": "Unclear impact on non-operator's financial exposure and potential liabilities due to indemnification clause in cl 2.",
+          "severity": "medium",
+          "citation": "cl 2"
+        },
+        {
+          "description": "Japanese law governing the agreement may impact dispute resolution and contractual interpretation.",
+          "severity": "high",
+          "citation": "cl 3"
+        },
+        {
+          "description": "Effectiveness of the amendment is contingent on the closing of two separate agreements (VNBJ SPA and VNBZ SPA), which could lead to voiding if these agreements are terminated.",
+          "severity": "medium",
+          "citation": "cl 4"
+        }
+      ]
+    }
+  }
+]

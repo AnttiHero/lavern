@@ -1,0 +1,477 @@
+[
+  {
+    "filename": "borrowmoneycom_06_11_2020",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "Florida",
+      "confidence": 0.95,
+      "method": "llm-local",
+      "rationale": "Joint venture agreement with specific terms and conditions regarding IT development, including liability, capital call mechanics, governing law, penalty clauses, and indemnification. Requires deep-read analysis."
+    },
+    "prompts": [
+      {
+        "callId": 1,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 2,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 3,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 1,
+        "contentLen": 381,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "Florida",
+          "confidence": 0.95,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Joint venture agreement with specific terms and conditions regarding IT development, including liability, capital call mechanics, governing law, penalty clauses, and indemnification. Requires deep-read analysis."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 2,
+        "contentLen": 778,
+        "parsed": {
+          "clause": "Clause 1",
+          "text": "BorrowMoney.com, inc (Member) Per: /s/ Aldo Piscitello (SEAL) Aldo Piscitello President JVLS, LLC dba Vaccines 2Go (Member) Per: /s/ Jody Stewart Jody Stewart (Mar 20, 2020) (SEAL) Jody Stewart",
+          "analysis": {
+            "type": "Signature Block",
+            "parties": [
+              {
+                "name": "BorrowMoney.com, inc",
+                "role": "Member"
+              },
+              {
+                "name": "JVLS, LLC dba Vaccines 2Go",
+                "role": "Member"
+              }
+            ],
+            "signatories": [
+              {
+                "name": "Aldo Piscitello",
+                "role": "President",
+                "signature_type": "Hand and Seal"
+              },
+              {
+                "name": "Jody Stewart",
+                "role": "Member",
+                "signature_type": "Hand and Seal"
+              }
+            ],
+            "date": "20th of March 2020"
+          }
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 3,
+        "contentLen": 1729,
+        "parsed": {
+          "summary": "Acme Holdings and BorrowMoneyCom have entered into a joint venture agreement for a mining project in New South Wales, with potential exposure to significant financial risk due to joint and several liability and complex capital call mechanics.",
+          "documentType": "Mining Joint Venture Agreement (NSW, unincorporated)",
+          "topRisks": [
+            {
+              "description": "Joint and Several Liability: The agreement's structure may expose Acme Holdings to unlimited liability for BorrowMoneyCom's obligations under the JV, potentially leading to significant financial risk in case of project failure or disputes.",
+              "severity": "high",
+              "citation": "cl 1"
+            },
+            {
+              "description": "Capital Call Mechanics: The agreement's capital call mechanics may be complex and disadvantageous for Acme Holdings, potentially leading to unexpected financial obligations and dilution of ownership in the JV.",
+              "severity": "medium",
+              "citation": "cl 10"
+            },
+            {
+              "description": "Governing Law: The agreement's governing law clause may be unfavorable to Acme Holdings, potentially limiting their legal recourse or increasing costs in case of disputes.",
+              "severity": "high",
+              "citation": "cl 2"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal demand for clarification on the joint and several liability clause, seeking clear definition of each party's responsibilities and limitations.",
+            "Demand detailed analysis of the capital call mechanics to ensure clarity and minimize potential financial exposure for Acme Holdings.",
+            "Audit the governing law clause to identify any potential disadvantages or loopholes that could impact Acme Holdings' legal rights and recourse."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": {
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": [],
+      "summary": "Acme Holdings and BorrowMoneyCom have entered into a joint venture agreement for a mining project in New South Wales, with potential exposure to significant financial risk due to joint and several liability and complex capital call mechanics.",
+      "risks": [
+        {
+          "description": "Joint and Several Liability: The agreement's structure may expose Acme Holdings to unlimited liability for BorrowMoneyCom's obligations under the JV, potentially leading to significant financial risk in case of project failure or disputes.",
+          "severity": "high",
+          "citation": "cl 1"
+        },
+        {
+          "description": "Capital Call Mechanics: The agreement's capital call mechanics may be complex and disadvantageous for Acme Holdings, potentially leading to unexpected financial obligations and dilution of ownership in the JV.",
+          "severity": "medium",
+          "citation": "cl 10"
+        },
+        {
+          "description": "Governing Law: The agreement's governing law clause may be unfavorable to Acme Holdings, potentially limiting their legal recourse or increasing costs in case of disputes.",
+          "severity": "high",
+          "citation": "cl 2"
+        }
+      ]
+    }
+  },
+  {
+    "filename": "sibannac_12_04_2017",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "NSW, US",
+      "confidence": 0.9,
+      "method": "llm-local",
+      "rationale": "Strategic Alliance Agreement between Bravatek and Sibannac with details on joint venture activities, including project based business partnership channel for governmental and non-governmental departments/agencies."
+    },
+    "prompts": [
+      {
+        "callId": 4,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 5,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "confidential information",
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 6,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 4,
+        "contentLen": 382,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "NSW, US",
+          "confidence": 0.9,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Strategic Alliance Agreement between Bravatek and Sibannac with details on joint venture activities, including project based business partnership channel for governmental and non-governmental departments/agencies."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 5,
+        "contentLen": 2039,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the terms for compensation and payment structure between Bravatek and COMPANY in a joint venture agreement. It also addresses indemnification obligations, but lacks clarity on how liability is allocated.",
+          "operative_text": "The parties shall agree to a proposed sales price for use during the project in writing prior to the commencement of each project. For any Product or Solution sold to any perspective clients introduced by Bravatek registered with COMPANY via email to COMPANY's CEO and delivered through Bravatek or a COMPANY-designated distribution affiliate(s) or sales channel(s), Bravatek will receive a lead-finder fee, to be mutually discussed and finally decided by COMPANY at the range of minimum of 10% to maximum of 20% of project revenue, with an exact fee to be depending upon the overall project sales margin and cost of development and delivery of each project, payable NET 30 days after each client payment on delivered products received at COMPANY's bank account.",
+          "concerns": [
+            {
+              "text": "The clause lacks clarity on how liability is allocated between Bravatek and COMPANY in the event of a dispute or breach of contract. It also fails to specify the mechanism for resolving disputes, including the process for arbitration or mediation.",
+              "severity": "major",
+              "references": [
+                "Bravatek",
+                "COMPANY"
+              ]
+            },
+            {
+              "text": "The clause mentions 'lead-finder fee' but doesn't define what constitutes a lead. It also lacks clarity on how the fee is calculated and paid, including any specific thresholds or milestones.",
+              "severity": "major",
+              "references": [
+                "Bravatek",
+                "COMPANY"
+              ]
+            },
+            {
+              "text": "The clause mentions 'net 30 days' for payment but doesn't specify if this applies to the entire project revenue or just the delivered products. This ambiguity could lead to disputes regarding payment terms.",
+              "severity": "minor",
+              "references": [
+                "Bravatek",
+                "COMPANY"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 3,
+        "severities": [
+          "major",
+          "major",
+          "minor"
+        ]
+      },
+      {
+        "callId": 6,
+        "contentLen": 1634,
+        "parsed": {
+          "summary": "Acme Holdings and Sibannac are entering into a joint venture agreement for an exploration project in New South Wales, with significant exposure related to joint and several liability, capital call mechanics, and governing law.",
+          "documentType": "Mining Joint Venture Agreement (NSW, unincorporated)",
+          "topRisks": [
+            {
+              "description": "The lack of clarity on how liability is allocated between Bravatek and COMPANY in the event of a dispute or breach of contract poses a significant risk to Acme Holdings.",
+              "severity": "high",
+              "citation": "cl 1 (Document)"
+            },
+            {
+              "description": "The ambiguity regarding lead-finder fees, including their definition, calculation, and payment triggers, creates potential for disputes between the parties.",
+              "severity": "high",
+              "citation": "cl 1 (Document)"
+            },
+            {
+              "description": "The lack of clarity on payment terms, specifically regarding whether 'net 30 days' applies to the entire project revenue or just delivered products, could lead to disputes and financial disagreements.",
+              "severity": "medium",
+              "citation": "cl 1 (Document)"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal request for clarification on joint and several liability allocation mechanisms and dispute resolution processes.",
+            "Demand a detailed definition of lead-finder fees, including specific criteria for determining 'lead' and the calculation methodology, payment triggers, and thresholds.",
+            "Audit the existing payment terms to ensure clarity regarding the scope of 'net 30 days' application and potential disputes."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": {
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": [],
+      "summary": "Acme Holdings and Sibannac are entering into a joint venture agreement for an exploration project in New South Wales, with significant exposure related to joint and several liability, capital call mechanics, and governing law.",
+      "risks": [
+        {
+          "description": "The lack of clarity on how liability is allocated between Bravatek and COMPANY in the event of a dispute or breach of contract poses a significant risk to Acme Holdings.",
+          "severity": "high",
+          "citation": "cl 1 (Document)"
+        },
+        {
+          "description": "The ambiguity regarding lead-finder fees, including their definition, calculation, and payment triggers, creates potential for disputes between the parties.",
+          "severity": "high",
+          "citation": "cl 1 (Document)"
+        },
+        {
+          "description": "The lack of clarity on payment terms, specifically regarding whether 'net 30 days' applies to the entire project revenue or just delivered products, could lead to disputes and financial disagreements.",
+          "severity": "medium",
+          "citation": "cl 1 (Document)"
+        }
+      ]
+    }
+  },
+  {
+    "filename": "veoneer_02_21_2020",
+    "watchman": {
+      "documentType": "jv",
+      "route": "deep-read",
+      "jurisdiction": "nsw,japan,china",
+      "confidence": 0.95,
+      "method": "llm-local",
+      "rationale": "Joint Venture Agreement with specific parties and concerns regarding liability, capital calls, and indemnification."
+    },
+    "prompts": [
+      {
+        "callId": 7,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      },
+      {
+        "callId": 8,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator",
+          "non-operator",
+          "cash call",
+          "reserved matter",
+          "dilution",
+          "sole risk"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": true,
+        "isSynthesis": false
+      },
+      {
+        "callId": 9,
+        "hasPrecedentBlock": false,
+        "precedentIds": [],
+        "jvVocabHits": [
+          "operator"
+        ],
+        "ndaVocabHits": [
+          "carve-out"
+        ],
+        "saasVocabHits": [],
+        "isPerClause": false,
+        "isSynthesis": false
+      }
+    ],
+    "responses": [
+      {
+        "callId": 7,
+        "contentLen": 293,
+        "parsed": {
+          "documentType": "jv",
+          "jurisdiction": "nsw,japan,china",
+          "confidence": 0.95,
+          "urgency": "routine",
+          "route": "deep-read",
+          "readerTemplate": "jv",
+          "rationale": "Joint Venture Agreement with specific parties and concerns regarding liability, capital calls, and indemnification."
+        },
+        "concernCount": 0,
+        "severities": []
+      },
+      {
+        "callId": 8,
+        "contentLen": 1150,
+        "parsed": {
+          "clauseRiskSummary": "This clause outlines the amendment process for a joint venture agreement, including termination conditions and liability implications. It also addresses the impact on the parties' obligations after the amendments are made.",
+          "operative_text": "This Amendment shall only become effective upon the VNBJ Closing with respect to Article 1.1 and the VNBZ Closing with respect to Article 1.2, and shall terminate without any force or effect in the event that the VNBJ SPA and the VNBZ SPA are terminated in accordance with the terms thereof.",
+          "concerns": [
+            {
+              "text": "The amendment only becomes effective upon the VNBJ Closing and the VNBZ Closing, which could create a delay in implementation of changes to the JV Agreement.",
+              "severity": "info",
+              "references": [
+                "VNBJ Closing",
+                "VNBZ Closing"
+              ]
+            },
+            {
+              "text": "The amendment only becomes effective upon the VNBJ Closing and the VNBZ Closing, which could create a delay in implementation of changes to the JV Agreement.",
+              "severity": "info",
+              "references": [
+                "VNBJ Closing",
+                "VNBZ Closing"
+              ]
+            }
+          ],
+          "favoursWhom": "operator"
+        },
+        "concernCount": 2,
+        "severities": [
+          "info",
+          "info"
+        ]
+      },
+      {
+        "callId": 9,
+        "contentLen": 1136,
+        "parsed": {
+          "summary": "Acme Holdings and Veoneer are finalizing a joint venture agreement for a project in New South Wales, Australia. The biggest exposure for Acme is the potential for joint and several liability under clause 1 of the JV Agreement, which could expose them to significant financial risk if the operator fails to meet obligations.",
+          "documentType": "Mining Joint Venture Agreement (NSW, unincorporated)",
+          "topRisks": [
+            {
+              "description": "Joint and Several Liability in Clause 1",
+              "severity": "high",
+              "citation": "cl 1"
+            },
+            {
+              "description": "Capital Call Mechanics in Clause X (Specify Clause Number)",
+              "severity": "medium",
+              "citation": "cl X"
+            },
+            {
+              "description": "Governing Law in Clause Y (Specify Clause Number)",
+              "severity": "medium",
+              "citation": "cl Y"
+            }
+          ],
+          "recommendations": [
+            "Issue a formal request for clarification on the capital call mechanics and associated risk mitigation strategies.",
+            "Demand a detailed analysis of the potential impact of the governing law clause on Acme's legal exposure in case of disputes."
+          ]
+        },
+        "concernCount": 0,
+        "severities": []
+      }
+    ],
+    "reader": null
+  }
+]

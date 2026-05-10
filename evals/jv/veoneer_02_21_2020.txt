@@ -1,0 +1,93 @@
+Exhibit 10.11
+
+AMENDMENT AND TERMINATION
+
+OF
+
+JOINT VENTURE AGREEMENT
+
+This AMENDMENT AND TERMINATION OF JOINT VENTURE AGREEMENT (this "Amendment") is made and entered into effective as of October 30, 2019 (the "Effective Date") by and among (1) Veoneer AB, a Swedish corporation ("Veoneer AB") and Veoneer US, Inc., a Delaware corporation ("Veoneer US" and together with Veoneer AB, the "Veoneer Parties"), and (2) Nissin Kogyo Co., Ltd., a Japanese corporation ("Nissin"), Nissin Kogyo Holdings USA, Inc., an Ohio corporation ("Nissin Holding") and Zhongshan Nissin Industry Co., Ltd., a Peoples' Republic of China company ("NBZ" and together with Nissin and Nissin Holding, the "Nissin Parties"), as an amendment to that certain Joint Venture Agreement dated March 7, 2016 by and among Autoliv ASP, Inc. ("Autoliv ASP"), Autoliv AB ("Autoliv AB") and Autoliv Holding, Inc. ("Autoliv Holding" and together with Autoliv ASP and Autoliv AB, the "Autoliv Parties") and the Nissin Parties, as amended, supplemented or otherwise modified from time to time in accordance with the terms thereof and in effect on the date hereof (the "JV Agreement"). Capitalized terms not defined in this Amendment shall have the meanings as assigned thereto in the JV Agreement.
+
+RECITALS
+
+(A)The Autoliv Parties and the Nissin Parties entered into the JV Agreement as of March 7, 2016 to engage in the JV Business through Veoneer Nissin Brake Systems Japan, Co., Ltd. ("VNBJ"), Veoneer Nissin Brake Systems America, LLC (whose corporate name has since been changed to Veoneer Brake Systems, LLC, "VNBA"), Veoneer Nissin Brake Systems (Zhongshan), Co., Ltd. ("VNBZ") and Autoliv Nissin Brake Research Asia Co., Ltd. ("ANRA");
+
+(B)The Autoliv Parties, the Veoneer Parties and the Nissin Parties entered into that certain Addendum to Joint Venture Agreement as of September 3, 2018 pursuant to which (i) Autoliv ASP assigned the JV Agreement as well as all the rights and obligations thereunder to Veoneer US and ceased to be a party thereto and (ii) each of Autoliv AB and Autoliv Holding assigned the JV Agreement as well as all the rights and obligations thereunder to Veoneer AB and ceased to be a party thereto;
+
+(C)Notwithstanding the preceding paragraph (B), Autoliv AB remains a party to the JV Agreement only in relation to ANRA and only to the extent necessary to deal with the liquidation proceedings of ANRA;
+
+(D)Nissin and the Veoneer Parties entered into that certain VNBA Separation Agreement as of June 14, 2019 pursuant to which, among other things, Nissin Holding sold, and Veoneer Roadscape Automotive, Inc. purchased, as of June 28, 2019, all of Nissin Holding's membership interests in VNBA;
+
+(E)The Veoneer Parties and the Nissin Parties entered into that certain Amendment to Joint Venture Agreement as of June 28, 2019 pursuant to which, among other things, the JV Agreement ceased to have any application or effect to VNBA as of June 28, 2019;
+
+(F)Honda Motor Co., Ltd. ("Honda"), as of the Effective Date, Nissin and Veoneer AB entered into those certain (1) VNBJ Share Purchase Agreement, pursuant to which Veoneer AB is selling, and Honda and Nissin are purchasing, all of Veoneer AB's outstanding shares in VNBJ (the "VNBJ SPA," and the consummation of the transactions pursuant to the terms of the VNBJ SPA, the "VNBJ Closing") and (2) VNBZ Share Purchase Agreement, pursuant to which Veoneer AB is selling, and Honda and Nissin are purchasing, all of Veoneer AB's equity interests in VNBZ (the "VNBZ SPA," and the consummation of the transactions pursuant to the terms of the VNBZ SPA, the "VNBZ Closing"); and
+
+
+
+
+
+(A)Upon the later of the VNBJ Closing and the VNBZ Closing, no Veoneer Party will hold any equity interest in any of the Companies.
+
+NOW, THEREFORE, the Veoneer Parties and the Nissin Parties hereby agree as follows:
+
+Article 1.Amendment and Termination of JV Agreement
+
+a.As of the VNBJ Closing, except as expressly set forth in this Amendment, the JV Agreement shall immediately cease to have any application or effect with respect to VNBJ, all rights and obligations with respect to VNBJ under the JV Agreement shall terminate and all references to "Company" or "Companies" in the JV Agreement (either in the body of the JV Agreement or its schedules and other attachments) shall read and be interpreted to mean VNBZ and/or ANRA except as the context otherwise requires.
+
+b.As of the VNBZ Closing, except as expressly set forth in this Amendment, the JV Agreement shall immediately cease to have any application or effect with respect to VNBZ, all rights and obligations with respect to VNBZ under the JV Agreement shall terminate and all references to "Company" or "Companies" in the JV Agreement (either in the body of the JV Agreement or its schedules and other attachments) shall read and be interpreted to mean VNBJ and/or ANRA except as the context otherwise requires.
+
+c.Except as expressly set forth in this Amendment and notwithstanding anything to the contrary contained in the JV Agreement (including Section 9.3.11 (Termination and Survival)), (a) effective as of the later of the VNBJ Closing and the VNBZ Closing, the JV Agreement shall terminate in its entirety with respect to the Veoneer Parties and (b) after the later of the VNBJ Closing and the VNBZ Closing, the Veoneer Parties shall cease to be a party to the JV Agreement and shall have no further obligations with respect thereto. For clarity, upon the later of the VNBJ Closing and the VNBZ Closing, the JV Agreement will remain in full force and effect in accordance with the terms thereof solely between the Nissin Parties and Autoliv AB with respect to the liquidation proceedings of ANRA.
+
+d.Notwithstanding Article 1.1, Article 1.2 and Article 1.3 above, the termination of the JV Agreement with respect to VNBJ, VNBZ or the Veoneer Parties shall not release any Veoneer Party or any Nissin Party from liability for the breach of any of its representations, warranties, covenants or agreements set forth in the JV Agreement that arise prior to the VNBJ Closing or the VNBZ Closing, as applicable.
+
+Article 2.D&O Indemnity
+
+Notwithstanding Article 1.1, Article 1.2 and Article 1.3 above, the Nissin Parties agree to cause each of VNBJ and VNBZ to comply with Sections 4.3.2 and 4.3.3 of the JV Agreement with respect to the indemnification or reimbursement, as applicable, of all Directors and Officers (except those individuals resigning pursuant to Section 6.2.6 of the VNBJ SPA and Section 6.2.6 of the VNBZ SPA) with respect to any Liabilities arising prior to the VNBJ Closing or the VNBZ Closing, as applicable.
+
+Article 3.Governing Law
+
+This Amendment shall be governed by and construed in accordance with the laws of Japan.
+
+Article 4.Effectiveness
+
+This Amendment shall only become effective upon the VNBJ Closing with respect to Article 1.1 and the VNBZ Closing with respect to Article 1.2, and shall terminate without any force or effect in the event that the VNBJ SPA and the VNBZ SPA are terminated in accordance with the terms thereof.
+
+(The remainder of this page has intentionally been blank.)
+
+
+
+
+
+IN WITNESS WHEREOF, each of the Veoneer Parties and the Nissin Parties has caused this Amendment to be executed through its duly authorized representative effective as of the date first above written.
+
+Veoneer AB
+
+By: /s/ Mats Backman Name: Mats Backman Title: Director
+
+By: /s/ Amelie Wendels Name: Amelie Wendels Title: Director
+
+Veoneer US, Inc.
+
+By: /s/ Eric R. Swanson Name: Eric R. Swanson Title: President & Secretary
+
+Nissin Kogyo Co., Ltd.
+
+By: /s/ Yasushi Kawaguchi Name: Yasushi Kawaguchi Title: Representative Director, President for and on behalf of each of the Nissin Parties
+
+Signature Page to Amendment and Termination of Joint Venture Agreement
+
+
+
+
+
+IN WITNESS WHEREOF, each of the following companies hereby acknowledges and agrees to be bound by the terms and conditions set forth in this Amendment:
+
+Veoneer Nissin Brake Systems Japan Co., Ltd.
+
+By: /s/ John T. Jensen Name: John T. Jensen Title: President, Representative Director
+
+Veoneer Nissin Brake Systems (Zhongshan) Co., Ltd.
+
+By: /s/ Steven M. Rodé Name: Steven M. Rodé Title: Director
+
+Signature Page to Amendment and Termination of Joint Venture Agreement

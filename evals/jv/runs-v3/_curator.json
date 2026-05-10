@@ -1,0 +1,26 @@
+{
+  "decision": {
+    "reReadQueue": [],
+    "promoteToConfirmed": [
+      "PREC-d8b0e91c",
+      "PREC-ad970c87",
+      "PREC-b3e3438f",
+      "PREC-877626a7",
+      "PREC-084de5c4"
+    ],
+    "driftDetected": [],
+    "requestFrontierEscalation": [],
+    "surface": {
+      "title": "Critical findings in 2 JV agreements",
+      "message": "Two joint venture agreements (JV) have critical findings: 'Veoneer' and 'Sibannac'. These both involve a risk of survival-of-pre-closing-claims. Recommend opening these first for review.",
+      "severity": "warning"
+    }
+  },
+  "elapsedMs": 9278,
+  "boardSummary": {
+    "tentative": 30,
+    "confirmed": 0,
+    "deprecated": 0
+  },
+  "boardEntryCount": 30
+}

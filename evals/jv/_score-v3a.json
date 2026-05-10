@@ -1,0 +1,255 @@
+{
+  "rows": [
+    {
+      "filename": "acceleratedtechnologiesholdingcorp_04_24_2003",
+      "charCount": 13038,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "PA",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 16,
+      "perClausePrompts": 16,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This agreement outlines the terms of a joint venture between Bravatek and COMPANY, focusing on product acquisition, licensing, sales, and marketing activities. The agreement lacks clarity on how capital contributions are handled, what constitutes 'necessary and expected costs,' and how expenses will be allocated, potentially leading to disputes.  The agreement also lacks clear provisions for handling capital calls, potential participant withdrawals, and asset distribution upon termination, leaving room for ambiguity regarding financial obligations.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 263794
+    },
+    {
+      "filename": "borrowmoneycom_06_11_2020",
+      "charCount": 21450,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Florida",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 28,
+      "perClausePrompts": 28,
+      "promptsWithPrecedentBlock": 28,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This agreement concerns a joint venture between Bravatek and COMPANY, governed by the laws of the United States. The document outlines the capital contributions, liability allocation, and dissolution process for the JV. It also addresses the management structure and decision-making processes. However, it lacks clarity on how capital calls are handled during the dissolution process and potential disputes regarding asset allocation.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 308681
+    },
+    {
+      "filename": "loopindustriesinc.",
+      "charCount": 34740,
+      "watchman": {
+        "type": "saas",
+        "route": "quick-scan",
+        "juris": "Canada, United States",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 9,
+      "perClausePrompts": 9,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This agreement outlines the assignment of rights and obligations between Assignor and Assignee, potentially exposing the Client to joint and several liability for obligations of the SPV. The governing law for this agreement will be the laws of the State of Delaware, USA. This agreement requires both parties to take reasonable actions to facilitate the agreement.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 127989
+    },
+    {
+      "filename": "sibannac_12_04_2017",
+      "charCount": 8380,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Nevada, Arizona",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 11,
+      "perClausePrompts": 11,
+      "promptsWithPrecedentBlock": 11,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 5,
+      "summary": "This agreement outlines the terms of a joint venture between Bravatek and COMPANY, focusing on joint development and marketing activities. The agreement lacks clarity on financial responsibilities, risk allocation in case of disputes, capital call mechanics upon termination, and how confidential information will be handled during and after termination. This ambiguity could lead to disputes and financial uncertainty.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 154849
+    },
+    {
+      "filename": "theravancebiopharma_05_08_2020",
+      "charCount": 32861,
+      "watchman": {
+        "type": "other",
+        "route": "quick-scan",
+        "juris": "",
+        "conf": 0.7
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 22,
+      "perClausePrompts": 23,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This agreement concerns the employment of an Executive by Bravatek and Sibannac, a company based in NSW, Australia. The document outlines compensation, benefits, termination provisions, and intellectual property rights. It grants Bravatek and Sibannac significant control over the Executive's employment, including potential for financial risk to the CLIENT if the Executive breaches the agreement or fails to meet performance expectations.  The agreement also grants Bravatek and Sibannac broad discretion in determining payment terms and benefits, potentially exposing the CLIENT to unexpected changes or deductions.",
+      "summaryHasProfileLeak": true,
+      "summaryProfileLeakTokens": [
+        "mining",
+        "nsw",
+        "australia"
+      ],
+      "summaryHasPlaceholders": false,
+      "totalMs": 442152
+    },
+    {
+      "filename": "turnkeycapital_07_20_2017",
+      "charCount": 12648,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Florida",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 1,
+      "perClausePrompts": 1,
+      "promptsWithPrecedentBlock": 1,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This agreement outlines the structure and responsibilities of a strategic alliance between Turnkey Capital Inc. (TKCI) and a Seminole Indian Company (SIC). It defines roles, responsibilities, financial arrangements, and dispute resolution mechanisms.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 51949
+    },
+    {
+      "filename": "unitednationalbancorp_03_03_1999",
+      "charCount": 1952,
+      "watchman": {
+        "type": "saas",
+        "route": "quick-scan",
+        "juris": "",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 1,
+      "perClausePrompts": 1,
+      "promptsWithPrecedentBlock": 1,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This agreement outlines the outsourcing of information processing services between United National Bancorp and BISYS Group, Inc., but lacks clarity on capital call mechanics, triggers, procedures, and allocation of costs. This needs clarification to ensure clarity on financial obligations.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 51179
+    },
+    {
+      "filename": "veoneer_02_21_2020",
+      "charCount": 8257,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Sweden, Japan, China",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 4,
+      "perClausePrompts": 4,
+      "promptsWithPrecedentBlock": 4,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 5,
+      "summary": "This agreement outlines a joint venture between Veoneer and Nissin for the development of specific ventures (VNBJ and VNBZ). The agreement specifies Japanese law governs the agreement, with indemnification obligations for D&O liability imposed on the non-operator (Acme Holdings) before the JV closing.  The amendment to the agreement is contingent upon the closing of two separate agreements (VNBJ SPA and VNBZ SPA), and if these agreements are terminated, the amendment will be null and void.",
+      "summaryHasProfileLeak": true,
+      "summaryProfileLeakTokens": [
+        "acme holdings",
+        "acme"
+      ],
+      "summaryHasPlaceholders": false,
+      "totalMs": 109176
+    },
+    {
+      "filename": "vnueinc_20150914_8",
+      "charCount": 10553,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "New York, USA",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 16,
+      "perClausePrompts": 16,
+      "promptsWithPrecedentBlock": 16,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 5,
+      "summary": "This agreement concerns a joint venture between VNUE and the Promoter, governed by Delaware law, regarding the provision of services to secure contracts with music venues. The agreement outlines the scope of services, payment structure, and operational details but lacks clarity on liability for performance failures, capital calls upon termination, and dispute resolution mechanisms. This ambiguity could lead to disputes and financial uncertainty for both parties.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 218845
+    },
+    {
+      "filename": "xlitechnologies_12_02_2015",
+      "charCount": 5712,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Nevada",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 8,
+      "perClausePrompts": 9,
+      "promptsWithPrecedentBlock": 9,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This agreement outlines a joint venture between Bravatek and BOSCH for the distribution of Xlitechnologies' product in the territory of NSW. The agreement lacks clarity on financial responsibilities, risk allocation, dispute resolution mechanisms, and indemnification obligations. This lack of clarity could expose Bravatek to substantial financial risk if claims are made against them.",
+      "summaryHasProfileLeak": true,
+      "summaryProfileLeakTokens": [
+        "nsw"
+      ],
+      "summaryHasPlaceholders": false,
+      "totalMs": 146996
+    }
+  ],
+  "aggregate": {
+    "n": 10,
+    "chunkSum": 116,
+    "promptSum": 118,
+    "blockSum": 70,
+    "docsWithBlock": 7,
+    "docsWithLeak": 3,
+    "docsWithPlaceholder": 0,
+    "docsWithJurisNSWLeak": 0,
+    "riskSum": 30,
+    "timeSum": 1875610
+  }
+}

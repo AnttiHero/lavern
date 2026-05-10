@@ -1,0 +1,20 @@
+{
+  "decision": {
+    "reReadQueue": [],
+    "promoteToConfirmed": [],
+    "driftDetected": [],
+    "requestFrontierEscalation": [],
+    "surface": {
+      "title": "Critical findings in joint and several liability agreements",
+      "message": "We've identified three critical findings related to joint and several liability, capital call mechanics, governing law, penalty / liquidated damages, and indemnification carve-outs across three investment agreements. Review these documents for potential implications.",
+      "severity": "critical"
+    }
+  },
+  "elapsedMs": 5929,
+  "boardSummary": {
+    "tentative": 7,
+    "confirmed": 0,
+    "deprecated": 0
+  },
+  "boardEntryCount": 7
+}

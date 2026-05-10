@@ -1,0 +1,250 @@
+{
+  "rows": [
+    {
+      "filename": "acceleratedtechnologiesholdingcorp_04_24_2003",
+      "charCount": 13038,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "PA",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 16,
+      "perClausePrompts": 16,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This Agreement outlines the terms for a joint venture between Bravatek and Sibannac, operating as 'Accelerated Technologies Holding Corp.' The agreement covers business activities, including product acquisition, licensing, sales, and marketing. It also addresses financial matters such as accounting provisions, capital calls, and distribution of income and losses. However, the document lacks clarity on how capital calls will be handled, what happens in case of non-payment, and how debt will be handled upon termination.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 252280
+    },
+    {
+      "filename": "borrowmoneycom_06_11_2020",
+      "charCount": 21450,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Florida",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 28,
+      "perClausePrompts": 28,
+      "promptsWithPrecedentBlock": 28,
+      "distinctPrecedentIds": 2,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 2,
+      "summary": "This contract outlines the terms for a joint venture between Veoneer and Nissin, potentially involving capital contributions, debt management, and asset distribution upon liquidation. The agreement establishes joint and several liability for each member in case of default or breach, potentially exposing the non-operator to significant financial risk.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 351123
+    },
+    {
+      "filename": "loopindustriesinc.",
+      "charCount": 34740,
+      "watchman": {
+        "type": "saas",
+        "route": "quick-scan",
+        "juris": "Canada, United States",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 9,
+      "perClausePrompts": 9,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This contract outlines the assignment of rights and obligations related to a marketing agreement between Assignor and Assignee, potentially impacting risk allocation and operational complexity. The document specifies that the agreement will be governed by the laws of the State of Delaware, USA, and outlines procedures for amendments and assignments.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 133495
+    },
+    {
+      "filename": "sibannac_12_04_2017",
+      "charCount": 8380,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Nevada, Arizona",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 11,
+      "perClausePrompts": 11,
+      "promptsWithPrecedentBlock": 11,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 4,
+      "summary": "This contract outlines the terms of a joint venture between Bravatek and Sibannac, covering responsibilities for supporting each other's operations. The agreement defines obligations, compensation structures, confidentiality protocols, and termination provisions. However, it lacks clarity on financial obligations, capital call mechanics, and indemnification carve-outs, potentially exposing both parties to significant risk.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 173549
+    },
+    {
+      "filename": "theravancebiopharma_05_08_2020",
+      "charCount": 32861,
+      "watchman": {
+        "type": "other",
+        "route": "quick-scan",
+        "juris": "",
+        "conf": 0.6
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 22,
+      "perClausePrompts": 23,
+      "promptsWithPrecedentBlock": 0,
+      "distinctPrecedentIds": 0,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 0,
+      "summary": "This contract outlines the terms of employment for an Executive at Acme Holdings, a company based in NSW. The document grants significant discretion to the Company regarding bonus payments and travel expenses, while also outlining restrictions on the Executive's outside activities. It further details obligations upon termination, including immediate handover of business information and data deletion.",
+      "summaryHasProfileLeak": true,
+      "summaryProfileLeakTokens": [
+        "acme holdings",
+        "acme",
+        "nsw"
+      ],
+      "summaryHasPlaceholders": false,
+      "totalMs": 451645
+    },
+    {
+      "filename": "turnkeycapital_07_20_2017",
+      "charCount": 12648,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Florida",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 1,
+      "perClausePrompts": 1,
+      "promptsWithPrecedentBlock": 1,
+      "distinctPrecedentIds": 2,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 2,
+      "summary": "This document outlines a strategic alliance between Turnkey Capital Inc. (TKCI) and a Seminole Indian Company (SIC). The agreement details TKCI's financial and operational support for SIC, while also outlining indemnification provisions for potential liabilities. However, the clause clarifies that TKCI is not an employee of SIC and cannot enter into agreements on behalf of SIC.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 59423
+    },
+    {
+      "filename": "unitednationalbancorp_03_03_1999",
+      "charCount": 1952,
+      "watchman": {
+        "type": "saas",
+        "route": "quick-scan",
+        "juris": "",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 1,
+      "perClausePrompts": 1,
+      "promptsWithPrecedentBlock": 1,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This multi-year outsourcing agreement outlines the transfer of services and assets between United National Bancorp and the BISYS Group, Inc. The contract lacks specific details on capital call mechanics, triggering events, payment obligations, and indemnification carve-outs. ",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 54813
+    },
+    {
+      "filename": "veoneer_02_21_2020",
+      "charCount": 8257,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Sweden, Japan, China",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 4,
+      "perClausePrompts": 4,
+      "promptsWithPrecedentBlock": 4,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 5,
+      "summary": "This contract outlines an agreement between Veoneer and Nissin regarding a joint venture for the development of specific technologies, governed by Japanese law. The agreement specifies termination procedures and indemnification obligations for directors and officers (D&O) related to liabilities arising before the JV closing.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 106828
+    },
+    {
+      "filename": "vnueinc_20150914_8",
+      "charCount": 10553,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "New York, USA",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 16,
+      "perClausePrompts": 16,
+      "promptsWithPrecedentBlock": 16,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 5,
+      "summary": "This contract outlines the terms of a joint venture between VNUE and the Promoter regarding the operation of a music venue business. The agreement defines responsibilities, financial risk allocation, reporting obligations, and dispute resolution mechanisms. However, it lacks clarity on capital call mechanics, debt management upon termination, and non-payment handling.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 227710
+    },
+    {
+      "filename": "xlitechnologies_12_02_2015",
+      "charCount": 5712,
+      "watchman": {
+        "type": "jv",
+        "route": "deep-read",
+        "juris": "Nevada",
+        "conf": 0.9
+      },
+      "watchmanJurisLeakedNSW": false,
+      "clauseCount": 9,
+      "perClausePrompts": 9,
+      "promptsWithPrecedentBlock": 9,
+      "distinctPrecedentIds": 3,
+      "riskCount": 3,
+      "unanchoredStripped": 0,
+      "precedentsConsulted": 3,
+      "summary": "This contract outlines the roles and responsibilities of Bravatek and Sibannac regarding a joint venture for the development, marketing, and distribution of products. The agreement defines the product name, but lacks details on financial obligations or risk allocation for the non-operator's support of Bosch in case of failure to meet sales targets.  The contract also outlines indemnification obligations for CLIENT without clearly defining the scope and limitations of such obligations.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
+      "summaryHasPlaceholders": false,
+      "totalMs": 147257
+    }
+  ],
+  "aggregate": {
+    "n": 10,
+    "chunkSum": 117,
+    "promptSum": 118,
+    "blockSum": 70,
+    "docsWithBlock": 7,
+    "docsWithLeak": 1,
+    "docsWithPlaceholder": 0,
+    "docsWithJurisNSWLeak": 0,
+    "riskSum": 30,
+    "timeSum": 1958123
+  }
+}
