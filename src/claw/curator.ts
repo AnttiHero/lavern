@@ -200,7 +200,7 @@ function summarizeRecentActivity(
 
 const SURFACE_DECISION_PROMPT = `You are the Curator of a legal AI lighthouse. Your job: decide whether to ping the user about recent activity, and if so, what to say.
 
-You are looking at recent document-review activity across the portfolio. You do NOT see clause-level detail — only summary counts. The user has a noise-allergic inbox. Be sparing.
+You are looking at recent document-review activity across the portfolio. You do NOT see clause-level detail — only summary counts and document-type recurrence. The user has a noise-allergic inbox. Be sparing.
 
 Default to silence. Emit a surface decision ONLY when:
   - There is at least one critical finding the user should know about, OR
@@ -215,11 +215,26 @@ Output a single JSON object:
   "rationale": "string (1 sentence — why you decided to surface or not)"
 }
 
-Style for the message field:
-  - One actionable sentence, plus optional second sentence with the count.
-  - "We see a recurring penalty-doctrine pattern across 4 vendor agreements — recommend portfolio review."
-  - NOT "X documents have findings." That's noise.
-  - NOT "Possible issues found." That's vague.
+**CRITICAL — what NOT to do (anti-patterns that make the surface useless):**
+
+❌ FORBIDDEN: Reciting the CLIENT'S CONCERNS verbatim. The user wrote those concerns; telling them back what they already wrote is noise, not insight.
+   BAD:  "We've identified findings related to joint and several liability, capital call mechanics, and indemnification carve-outs."
+   GOOD: "Same penalty-doctrine flag fired across 3 JV agreements this week — the firm may want a portfolio-level position on this."
+
+❌ FORBIDDEN: Generic "review these documents" calls to action. The user knows they need to review them; they want to know WHICH ONE FIRST and WHY.
+   BAD:  "Review these documents for potential implications."
+   GOOD: "Warrigal East JV has 2 criticals; recommend opening that one first."
+
+❌ FORBIDDEN: Listing the client's industry, jurisdiction, or company name as if they were findings. Those are stance, not facts.
+
+**What a good surface message looks like:**
+
+It names the SPECIFIC ACROSS-DOCUMENT PATTERN you see in the activity data (not the generic concern list), or it names the SPECIFIC DOCUMENT with the most critical findings. One actionable sentence + optional second sentence with the count.
+
+Examples of good messages:
+  - "3 SaaS agreements this week share an unbounded-liability indemnity carve-out pattern — recommend portfolio position."
+  - "Veoneer JV amendment has a survival-of-pre-closing-claims risk that warrants senior partner review."
+  - "Two vendor MSAs reviewed today both flag the same auto-renewal trap on payment terms — pattern, not coincidence."
 
 If you decide NOT to surface, set surface=false and the title/message/severity to empty/info; rationale is mandatory either way.
 
@@ -268,14 +283,19 @@ async function surfaceDecisionPass(
     return undefined;
   }
 
+  // The client-context block is intentionally framed as "background only"
+  // and listed AFTER the activity data. The model is told explicitly NOT
+  // to recite the concerns. v2 eval showed gemma2:2b will repeat back the
+  // entire concerns list as if it were the cross-document pattern.
   const userMessage = [
-    `CLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})`,
-    `CLIENT'S CONCERNS: ${profile.concerns.join(', ')}`,
-    `RISK APPETITE: ${profile.preferences.riskAppetite}`,
-    '',
+    '=== ACTIVITY DATA (this is what your surface decision must describe) ===',
     summary.text,
     '',
-    'Now produce your JSON surface decision.',
+    '=== CLIENT BACKGROUND (use ONLY to set tone — do NOT paste concerns into the message) ===',
+    `Risk appetite: ${profile.preferences.riskAppetite}`,
+    `Background concerns the client has stated elsewhere (DO NOT recite these): ${profile.concerns.join('; ')}`,
+    '',
+    'Now produce your JSON surface decision. The message must describe what you see in the ACTIVITY DATA above, not the CLIENT BACKGROUND. Specifics over generics. Name documents and pattern types, not the concern list.',
   ].join('\n');
 
   try {

@@ -97,14 +97,43 @@ interface ClauseChunk {
 /**
  * Chunk a document by clause boundaries.
  *
- * Detects lines matching `<N>. <Title>` (e.g. "1. Definitions and interpretation",
- * "9. Cash Calls and Dilution") and treats everything from one such header
- * to the next as a single clause body.
+ * Two-pass strategy:
  *
- * Falls back to a single chunk if no clause headers are detected (e.g. for
- * NDAs that aren't numbered, or short letters).
+ *   PASS 1 — line-anchored (the common case for negotiated drafts):
+ *     Lines matching `<N>. <Title>` (e.g. "1. Definitions and interpretation",
+ *     "9. Cash Calls and Dilution") are treated as clause headers and
+ *     everything from one such header to the next becomes a clause body.
+ *
+ *   PASS 2 — inline-numbered fallback (for CUAD/PDF/OCR/copy-paste text):
+ *     When pass 1 finds nothing, scan for inline patterns like
+ *     `... members. 19. Capital Contributions ...` — a number-dot-space-CapTitle
+ *     embedded mid-paragraph. This is the format real-world contracts arrive
+ *     in when extracted from PDFs or pasted from a single-paragraph source.
+ *
+ *   PASS 3 — final fallback:
+ *     If both fail (an NDA-style narrative with no numbering at all), the
+ *     whole document becomes one chunk so the analyser still gets to run.
+ *
+ * Pass 2 is the load-bearing addition. Without it, the Reader's claim of
+ * ~22 calls per document silently collapses to 1 call on any flat-paragraph
+ * input. The lighthouse eval at evals/jv/EVAL_REPORT.md documents the bug
+ * this fix closes.
  */
 function chunkByClauseBoundaries(text: string): ClauseChunk[] {
+  // ── Pass 1: line-anchored headers ──────────────────────────────────────
+  const lineAnchored = chunkLineAnchored(text);
+  if (lineAnchored.length > 0) return lineAnchored;
+
+  // ── Pass 2: inline-numbered (real-world flat-paragraph contracts) ──────
+  const inlineNumbered = chunkInlineNumbered(text);
+  if (inlineNumbered.length > 0) return inlineNumbered;
+
+  // ── Pass 3: whole document as one chunk ────────────────────────────────
+  return [{ number: '1', title: 'Document', body: text.trim() }];
+}
+
+/** Pass 1: clause headers on their own line. The traditional negotiated-doc case. */
+function chunkLineAnchored(text: string): ClauseChunk[] {
   const lines = text.split('\n');
   const chunks: ClauseChunk[] = [];
   let current: { number: string; title: string; body: string[] } | null = null;
@@ -133,14 +162,99 @@ function chunkByClauseBoundaries(text: string): ClauseChunk[] {
       body: current.body.join('\n').trim(),
     });
   }
-
-  // Fallback: if no clause structure detected, treat the whole document as
-  // a single chunk so the analyser still has something to work with.
-  if (chunks.length === 0) {
-    chunks.push({ number: '1', title: 'Document', body: text.trim() });
-  }
-
   return chunks;
+}
+
+/**
+ * Pass 2: inline-numbered split. Scans for clause-boundary markers embedded
+ * in flowing prose (the CUAD/PDF-extract case). Recognises three patterns:
+ *
+ *   (a) Period-style:    `... members. 19. Capital Contributions ...`
+ *   (b) Paren-style:     `... activities. 7) Duties of COMPANY ...`
+ *   (c) Article-style:   `... above. Article 3. Governing Law ...`
+ *
+ * Returns chunks only if we find at least 3 boundaries — fewer than that is
+ * almost certainly noise (article numbers in the recitals, dates, list items).
+ * If pattern (a) finds enough boundaries, we use it; otherwise we try (b),
+ * then (c). We do not mix patterns within one document.
+ *
+ * Title extraction: the heading text may appear either BEFORE the number
+ * (BorrowMoney/CUAD style: "Withdrawal of Capital 17. No Member will...")
+ * or AFTER (Lavern-template style: "1. Definitions and interpretation").
+ * We grab whichever side looks more heading-like (capitalised, short).
+ */
+function chunkInlineNumbered(text: string): ClauseChunk[] {
+  // Try patterns in priority order. First one with ≥3 monotonic boundaries wins.
+  const patterns: Array<{ regex: RegExp; markerLen: (m: RegExpExecArray) => number }> = [
+    // (a) "N. Title" — period style, must follow sentence end / newline
+    {
+      regex: /(?:^|[.!?]["')\]]?\s+|\n\s*)(\d{1,2})\.\s+([A-Z])/g,
+      markerLen: (m) => m[0].length - (m[0].lastIndexOf(m[1])) /* offset adjusted below */,
+    },
+    // (b) "N) Title" — paren style (Sibannac et al)
+    {
+      regex: /(?:^|[.!?]["')\]]?\s+|\n\s*)(\d{1,2})\)\s+([A-Z])/g,
+      markerLen: (m) => m[0].length,
+    },
+    // (c) "Article N." / "Section N." / "ARTICLE N." style (Veoneer et al)
+    {
+      regex: /(?:^|[.!?]["')\]]?\s+|\n\s*)(?:Article|ARTICLE|Section|SECTION)\s+(\d{1,2})\.([A-Z]|\s+[A-Z])/g,
+      markerLen: (m) => m[0].length,
+    },
+  ];
+
+  for (const { regex } of patterns) {
+    const matches: Array<{ index: number; number: string }> = [];
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(text)) !== null) {
+      // Position the boundary at the start of the number, not the preceding punctuation.
+      const numIdx = m.index + m[0].indexOf(m[1]);
+      matches.push({ index: numIdx, number: m[1] });
+    }
+
+    if (matches.length < 3) continue;
+
+    // Most numbers should be increasing — guards against false-positive runs
+    // ("5%", "10 days", "2020", etc.) that happen to look like clause numbers.
+    let increasing = 0;
+    for (let i = 1; i < matches.length; i++) {
+      if (Number(matches[i].number) > Number(matches[i - 1].number)) increasing++;
+    }
+    if (increasing < matches.length * 0.6) continue;
+
+    // Build chunks
+    const chunks: ClauseChunk[] = [];
+    for (let i = 0; i < matches.length; i++) {
+      const start = matches[i].index;
+      const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+      const body = text.slice(start, end).trim();
+      if (body.length < 40) continue;
+      // Title: try preceding 80 chars first (CUAD-style "Heading 17. body…");
+      // fall back to first 60 chars after the number marker (Lavern-style).
+      const title = extractClauseTitle(text, matches[i].index, body);
+      chunks.push({ number: matches[i].number, title, body });
+    }
+    if (chunks.length >= 3) return chunks;
+  }
+  return [];
+}
+
+/** Best-effort title extraction. Looks before the number first (heading-style
+ *  layout), then after (numbered-title style). Returns "Clause N" if neither
+ *  produces something heading-shaped. */
+function extractClauseTitle(text: string, numberIdx: number, body: string): string {
+  // Look at up to 80 chars before the number for a heading word/phrase
+  const before = text.slice(Math.max(0, numberIdx - 80), numberIdx).trim();
+  const beforeWords = before.match(/(?:[A-Z][A-Za-z]+(?:\s+(?:of|and|the|in|for|to|on|with|&))?\s+)*[A-Z][A-Za-z]+\s*$/);
+  if (beforeWords && beforeWords[0].trim().length >= 3 && beforeWords[0].trim().length <= 60) {
+    return beforeWords[0].trim();
+  }
+  // Otherwise, take the first short heading-like phrase from the body
+  const afterMatch = body.match(/^\d{1,2}[\.\)]\s+([A-Z][A-Za-z0-9 ,'&/\-]{2,60}?)(?=[.\n]|\s{2}|\s+[a-z]|$)/);
+  if (afterMatch) return afterMatch[1].trim();
+  const articleMatch = body.match(/^(?:Article|ARTICLE|Section|SECTION)\s+\d+\.\s*([A-Z][A-Za-z0-9 ,'&/\-]{2,60}?)(?=[.\n]|\s{2}|$)/);
+  if (articleMatch) return articleMatch[1].trim();
+  return `Clause`;
 }
 
 // ── Prompts ──────────────────────────────────────────────────────────────
@@ -180,15 +294,26 @@ Output ONLY a JSON object with this exact structure:
   "favoursWhom": "operator" | "non-operator" | "neutral"
 }`;
 
-const SYNTHESIS_PROMPT = `You are the senior partner closing out a JV contract review. You have just received per-clause analyses from your team. Produce the executive summary.
+const SYNTHESIS_PROMPT = `You are the senior partner closing out a contract review. You have just received per-clause analyses from your team. Produce the executive summary.
+
+**CRITICAL FACTUAL DISCIPLINE — read this twice:**
+
+The CLIENT block you will receive (company, industry, jurisdiction, concerns) tells you HOW STRICTLY to read the document. It is the client's stance, not the document's facts. The summary, documentType, and risks must describe what is in the DOCUMENT — not what the client does or where the client is.
+
+- If the client is in mining but the document is a software licence, the summary describes a software licence.
+- If the client is in NSW but the document is governed by Delaware law, the summary says Delaware.
+- If the per-clause findings name "Bravatek and Sibannac" or "Veoneer and Nissin", those are the parties — NOT the client company.
+- Parties, jurisdiction, project type, and document type are EVIDENCE from the document, not assumptions from the profile.
+
+Use the CLIENT block ONLY to choose the risk-appetite framing (conservative vs aggressive) and to weight concerns that align with the client's stated interests.
 
 Rules:
 
-1. The "summary" field must be 2-3 sentences naming both parties, the project, the jurisdiction, and the single biggest exposure for the client.
+1. The "summary" field is 2-3 sentences. Name BOTH PARTIES exactly as they appear in the per-clause findings. Name the jurisdiction as it appears in the findings (governing-law clauses or party addresses). Name the actual subject of the contract (its purpose, not the client's industry). End with the single biggest exposure for the client. If the per-clause findings do not contain enough information to name a party or jurisdiction, write "(party/jurisdiction not stated)" rather than guessing.
 
-2. The "documentType" must be specific (e.g. "Mining Joint Venture Agreement (NSW, unincorporated)" — not "Contract").
+2. The "documentType" must be specific to the DOCUMENT (e.g. "Joint Venture Agreement (Florida law, contractual JV)", "Strategic Alliance / Sales Channel Agreement (Texas law)", "JV Amendment and Termination Deed"). Not "Contract". Not "Mining JV" unless the document itself is about mining.
 
-3. The "topRisks" array contains AT LEAST 3 and AT MOST 6 risks, drawn from the highest-severity concerns in the per-clause analyses. Each risk MUST reference a clause number.
+3. The "topRisks" array contains AT LEAST 3 and AT MOST 6 risks, drawn from the highest-severity concerns in the per-clause analyses. Each risk MUST reference a clause number that appears in the per-clause findings. Do not invent clause numbers.
 
 4. The "recommendations" array contains 3-5 actions the client should take BEFORE the next board meeting. Each starts with an imperative verb ("Issue", "Demand", "Audit", "Reject", "Notify"). No "review and consider" — that is not advice.
 
@@ -449,11 +574,222 @@ function isSpecificConcern(text: string, references: string[]): boolean {
 
 // ── Synthesis ────────────────────────────────────────────────────────────
 
+/**
+ * Score per-clause findings for ranking before synthesis on long documents.
+ *
+ * Heuristic — no LLM. The score blends:
+ *   - max severity of any concern in the clause (critical=4 .. info=1)
+ *   - concern count (more concerns → more substantive clause)
+ *   - favours-against-client bonus (favours: 'non-operator' for a JV review)
+ *
+ * Returns the top N findings sorted by score desc. Used by `synthesise` when
+ * the document is long enough that feeding every clause to the small model
+ * causes synthesis collapse (see v2 eval doc 1: 28 findings → 1 mega-risk).
+ */
+function rankFindingsForSynthesis(findings: ClauseFinding[], n: number): ClauseFinding[] {
+  const scored = findings.map(f => {
+    const maxSeverity = f.concerns.reduce(
+      (acc, c) => Math.max(acc, severityRank(c.severity)),
+      0,
+    );
+    const concernCount = f.concerns.length;
+    const favoursAgainst = f.favoursWhom === 'operator' ? 0 : f.favoursWhom === 'non-operator' ? 1 : 0.3;
+    // Severity weighted heavily; concern count is a tie-breaker
+    const score = maxSeverity * 10 + Math.min(concernCount, 5) + favoursAgainst;
+    return { f, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, n).map(s => s.f);
+}
+
+/**
+ * Programmatic party-name extraction from per-clause findings.
+ *
+ * v3.2 (Path A): on gemma2:2b the synthesis prompt cannot reliably override
+ * the model's training-data memorisation — it pulls memorised CUAD-dataset
+ * party names ("Bravatek", "Veoneer and Nissin") even when explicitly told
+ * not to. The structural fix: extract candidate party names from the
+ * per-clause findings DETERMINISTICALLY and inject them as a closed
+ * vocabulary the synthesis prompt must constrain to.
+ *
+ * Heuristic — no LLM. Mines four patterns:
+ *   - Quoted defined terms in operativeText / concern text  ("Member", "the Operator")
+ *   - Corporate-suffix proper nouns                          ("BorrowMoney.com Inc.", "United National Bancorp")
+ *   - All-caps acronyms 2-6 chars                            ("TKCI", "VNBJ")
+ *   - Filename-derived hints (only when filename is informative)
+ *
+ * Returns up to N party-name candidates ranked by frequency. Filters:
+ *   - Stop-list of legal/document-structure words (Article, Clause, etc.)
+ *   - Common acronyms that aren't parties (JV, NDA, MSA, IP, SPV, USD)
+ *   - The CLIENT's company name (gemma2:2b otherwise reuses it as a party)
+ */
+function extractPartyNames(
+  findings: ClauseFinding[],
+  filename: string,
+  profile: ClawProfile,
+): string[] {
+  // Mine the corpus we trust: model-quoted text from per-clause findings.
+  const corpus = findings.flatMap(f => [
+    f.clauseTitle,
+    f.clauseRiskSummary,
+    f.operativeText,
+    ...f.concerns.map(c => c.text),
+  ]).join('\n');
+
+  // Pattern 1: quoted defined terms — "Member", "the Operator", "COMPANY"
+  const quoted: string[] = [];
+  for (const m of corpus.matchAll(/["']([A-Z][A-Za-z][A-Za-z'\-]{1,40}(?:\s+[A-Z][A-Za-z'\-]{1,40}){0,4})["']/g)) {
+    quoted.push(m[1].trim());
+  }
+
+  // Pattern 2: corporate-suffix proper nouns (most reliable signal of a party)
+  const corp: string[] = [];
+  const corpRe = /\b([A-Z][A-Za-z0-9'\-&.]{1,}(?:\s+(?:de|of|and|the|&)\s+)?(?:\s+[A-Z][A-Za-z0-9'\-&.]{1,}){0,5}\s+(?:Inc|Corp|Corporation|LLC|LLP|Ltd|Limited|Co|Company|Group|Holdings|Industries|Solutions|Technologies|Partners|Trust|Foundation|Bank|Bancorp|Services|Systems|Pty|GmbH|AB|S\.A\.|AG|N\.V\.|B\.V\.|S\.p\.A\.)\.?)/g;
+  for (const m of corpus.matchAll(corpRe)) {
+    corp.push(m[1].replace(/\s+/g, ' ').trim());
+  }
+
+  // Pattern 3: all-caps acronyms 2-6 chars (corporate defined terms)
+  const acronyms: string[] = [];
+  for (const m of corpus.matchAll(/\b([A-Z]{2,6})\b/g)) {
+    acronyms.push(m[1]);
+  }
+
+  // Tally + rank
+  const counts = new Map<string, number>();
+  const allCandidates = [...quoted, ...corp, ...acronyms];
+  for (const c of allCandidates) {
+    const key = c.trim();
+    if (key.length < 2) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  // Stop-list: structural / document-language / common non-party acronyms.
+  // The CLIENT's company is added dynamically so we never recommend it as
+  // a party.
+  const STOPLIST = new Set<string>([
+    'JV', 'NDA', 'NDAS', 'MSA', 'MSAS', 'IP', 'SPV', 'USD', 'GBP', 'EUR',
+    'AUD', 'JPY', 'CNY', 'SOFR', 'LIBOR', 'GAAP', 'IFRS', 'D&O',
+    'SEC', 'IRS', 'EU', 'UK', 'US', 'USA', 'NSW', 'CEO', 'CFO', 'COO',
+    'ARTICLE', 'CLAUSE', 'SECTION', 'EXHIBIT', 'SCHEDULE', 'ANNEX',
+    'AGREEMENT', 'CONTRACT', 'DEED', 'AMENDMENT', 'ADDENDUM',
+    'AND', 'OR', 'THE', 'OF', 'TO', 'FOR', 'IN', 'ON', 'AT', 'BY',
+    profile.company.toUpperCase().replace(/[^A-Z]/g, ''),
+  ]);
+  const clientCompanyLower = profile.company.toLowerCase();
+
+  // Filename hints — strip extension + common separators, take alpha tokens
+  const filenameHints = filename
+    .replace(/\.[a-z]+$/i, '')
+    .split(/[_\-\s.]+/)
+    .filter(t => t.length >= 3 && /^[A-Za-z]/.test(t));
+
+  // Build the final ranked list
+  const ranked = [...counts.entries()]
+    .filter(([name]) => {
+      const upper = name.toUpperCase();
+      if (STOPLIST.has(upper)) return false;
+      if (name.toLowerCase().includes(clientCompanyLower) && clientCompanyLower.length > 3) return false;
+      // Drop pure-number tokens and tiny ones
+      if (/^\d+$/.test(name)) return false;
+      // Drop "The" / "And" capitalised at sentence starts
+      if (/^(The|And|Or|For|In|On|At|By|Of|To)$/.test(name)) return false;
+      return true;
+    })
+    .sort((a, b) => b[1] - a[1] || a[0].length - b[0].length);
+
+  // Take top 8 unique-on-prefix names
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const [name] of ranked) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(name);
+    if (result.length >= 8) break;
+  }
+
+  // Light filename-hint boost: if a filename token looks party-like and isn't
+  // already in the list, append it at the bottom (lowest priority).
+  for (const hint of filenameHints) {
+    const hintCap = hint[0].toUpperCase() + hint.slice(1).toLowerCase();
+    if (!seen.has(hintCap.toLowerCase()) && !STOPLIST.has(hintCap.toUpperCase()) && result.length < 10) {
+      result.push(hintCap);
+      seen.add(hintCap.toLowerCase());
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Post-synthesis validation: scan the summary for capitalised proper nouns
+ * that are NOT in the required-party list, the client name, or known
+ * jurisdiction names. Returns the list of "suspect" tokens. Caller can
+ * decide whether to log, retry, or accept.
+ *
+ * This is a smoke detector, not a strict validator — the goal is to surface
+ * obvious training-memorisation leaks (Bravatek, Veoneer-on-a-BorrowMoney-doc)
+ * without false-positiving on legitimate corporate forms ("the Company",
+ * "the Member") that appear in many contracts.
+ */
+function validateSummaryNames(
+  summary: string,
+  allowedNames: string[],
+  profile: ClawProfile,
+): string[] {
+  const allowedLower = new Set([
+    ...allowedNames.map(n => n.toLowerCase()),
+    profile.company.toLowerCase(),
+  ]);
+
+  // Find candidate party-like phrases in the summary
+  const candidates: string[] = [];
+  for (const m of summary.matchAll(/\b([A-Z][a-zA-Z'\-]{2,}(?:\s+[A-Z][a-zA-Z'\-]{1,}){0,3})\b/g)) {
+    const c = m[1].trim();
+    // Skip sentence-starts and tiny phrases
+    if (c.length < 4) continue;
+    candidates.push(c);
+  }
+
+  // Known geography + legal-document words that are not parties
+  const GEO_AND_DOC_WORDS = new Set([
+    'United', 'States', 'United States', 'United Kingdom', 'Australia',
+    'New South Wales', 'New York', 'Delaware', 'California', 'Texas', 'Florida',
+    'Japan', 'China', 'Sweden', 'Canada', 'Nevada', 'Arizona', 'Pennsylvania',
+    'Article', 'Section', 'Clause', 'Exhibit', 'Schedule', 'Joint Venture',
+    'Joint', 'Venture', 'Members', 'Member', 'Company', 'Companies',
+    'Promoter', 'Operator', 'Executive', 'Assignor', 'Assignee', 'Director',
+    'Acme Holdings', 'Acme', // client
+    'This', 'The', 'These', 'Those',
+  ]);
+
+  const suspects: string[] = [];
+  for (const c of candidates) {
+    const lower = c.toLowerCase();
+    if (allowedLower.has(lower)) continue;
+    // Exact match against the geo/doc-words list (case-sensitive enough)
+    if (GEO_AND_DOC_WORDS.has(c)) continue;
+    // Allow if every word in the candidate is a recognised geo/doc word
+    const words = c.split(/\s+/);
+    if (words.every(w => GEO_AND_DOC_WORDS.has(w))) continue;
+    suspects.push(c);
+  }
+  // Dedupe while preserving order
+  return Array.from(new Set(suspects));
+}
+
 interface Synthesis {
   summary: string;
   documentType: string;
   topRisks: Array<{ description: string; severity: 'low' | 'medium' | 'high' | 'critical'; citation: string }>;
   recommendations: string[];
+  /** v3.2: deterministic party-name extraction surfaced for transparency. */
+  extractedPartyNames?: string[];
+  /** v3.2: capitalised proper nouns in the summary that are NOT in the
+   *  closed vocabulary and NOT recognised geo/legal-doc words. Surfaces
+   *  training-memorisation hallucinations the synthesis prompt didn't block. */
+  suspectNames?: string[];
 }
 
 async function synthesise(
@@ -462,8 +798,28 @@ async function synthesise(
   filename: string,
   profile: ClawProfile,
 ): Promise<Synthesis> {
-  // Compact summary of per-clause findings to feed into synthesis
-  const compactFindings = findings.map(f => {
+  // ── Two-pass synthesis for long documents ───────────────────────────────
+  //
+  // Phase 2 eval (v2) showed that gemma2:2b chokes on synthesis when fed
+  // ~28 per-clause findings: it can't pick top risks and emits a single
+  // mega-risk that lists 20+ clause numbers as a citation ("I can't choose,
+  // so here's a meta-risk"). The summary also tends to over-cautious
+  // placeholder language ("[other party]") instead of pulling names from
+  // the per-clause findings.
+  //
+  // Fix: when finding-count > LONG_DOC_THRESHOLD, run a cheap deterministic
+  // ranking pass first (severity + favours-against-client + concern count)
+  // and feed only the top N to the synthesis. The model sees a focused
+  // input that fits its effective context, and the final synthesis quality
+  // matches what we get on short docs.
+  const LONG_DOC_THRESHOLD = 15;
+  const TOP_FINDINGS_FOR_SYNTHESIS = 10;
+  const findingsForSynthesis = findings.length > LONG_DOC_THRESHOLD
+    ? rankFindingsForSynthesis(findings, TOP_FINDINGS_FOR_SYNTHESIS)
+    : findings;
+
+  // Compact summary of (possibly ranked) per-clause findings
+  const compactFindings = findingsForSynthesis.map(f => {
     const topConcerns = f.concerns
       .sort((a, b) => severityRank(b.severity) - severityRank(a.severity))
       .slice(0, 3);
@@ -474,21 +830,69 @@ async function synthesise(
     ].join('\n');
   }).join('\n\n');
 
+  const longDocNote = findings.length > LONG_DOC_THRESHOLD
+    ? `(Ranked top ${findingsForSynthesis.length} of ${findings.length} clauses by severity. The other clauses had lower-severity findings and are still in the audit trail.)\n\n`
+    : '';
+
+  // v3.2 (Path A): programmatic party-name extraction. Builds a closed
+  // vocabulary the synthesis prompt must constrain to. Prevents the small
+  // model from substituting CUAD-memorised names ("Bravatek", "Veoneer +
+  // Nissin") when the per-clause findings don't strongly anchor real
+  // party names.
+  const requiredNames = extractPartyNames(findingsForSynthesis, filename, profile);
+  const requiredNamesBlock = requiredNames.length > 0
+    ? [
+        '',
+        '=== PARTY NAMES EXTRACTED FROM THE PER-CLAUSE FINDINGS (CLOSED VOCABULARY) ===',
+        'The following are the ONLY party names / defined terms that appear in the per-clause findings:',
+        ...requiredNames.map(n => `  - ${n}`),
+        'You MUST limit any party name you mention in the summary to this list. Names not on this list (companies you may recall from your training data, or any name not present in the per-clause findings above) MUST NOT appear in the summary. If you cannot identify a party from this list, write "(party not identified in findings)" instead of guessing.',
+      ].join('\n')
+    : '';
+
+  // Profile is the client's STANCE, not document facts. The synthesis prompt
+  // is told this explicitly; we also visually separate the blocks so the
+  // model doesn't conflate them when reading top-down.
   const userMessage = [
-    `DOCUMENT: ${filename}`,
-    `CLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})`,
-    `CLIENT'S CONCERNS: ${profile.concerns.join(', ')}`,
+    '=== DOCUMENT (the source of facts) ===',
+    `Filename: ${filename}`,
     '',
-    'PER-CLAUSE FINDINGS FROM THE TEAM:',
-    compactFindings,
+    '=== CLIENT STANCE (use ONLY for risk framing — NOT as document facts) ===',
+    `Company name: ${profile.company}`,
+    `Client's industry: ${profile.industry}`,
+    `Client's home jurisdiction: ${profile.jurisdiction}`,
+    `Client's stated concerns: ${profile.concerns.join(', ')}`,
+    'NOTE: the client may or may not be a party to this document. Do not name the client as a party unless the per-clause findings below explicitly say so.',
     '',
-    'Now produce the executive synthesis JSON.',
+    '=== PER-CLAUSE FINDINGS FROM THE TEAM (the source of truth for parties, jurisdiction, subject matter) ===',
+    longDocNote + compactFindings,
+    requiredNamesBlock,
+    '',
+    'Now produce the executive synthesis JSON. Rules:',
+    '  - Parties, jurisdiction, and document type come from the PER-CLAUSE FINDINGS only.',
+    '  - Names of parties: copy them VERBATIM from the per-clause findings, whatever they are. Do not substitute company names from your prior knowledge. Do not invent.',
+    requiredNames.length > 0
+      ? '  - HARD CONSTRAINT: party names in your output must be drawn from the CLOSED VOCABULARY block above. Any name not on that list is a violation.'
+      : '  - If no party names were identified in the per-clause findings, write "(parties not identified by per-clause analysis)" instead of guessing.',
+    '  - Empty brackets like "[other party]" or "[venture purpose]" are FORBIDDEN. If a fact is not in the per-clause findings, write "(not stated in document)" instead.',
+    '  - Pick AT LEAST 3 distinct topRisks. A single risk that lists many clause numbers as one citation is NOT acceptable — split it into separate risks per clause group.',
+    '  - Risk descriptions: describe what is in the DOCUMENT, not what the client is worried about. Do NOT recite the CLIENT\'S stated concerns list verbatim. If the document is a vendor outsourcing agreement, do not invent "capital call" or "joint and several JV liability" risks because those words appear in the client\'s concerns — those risks only apply when the DOCUMENT actually contains those mechanics.',
   ].join('\n');
 
   const raw = await ollamaJsonChat(cfg, SYNTHESIS_PROMPT, userMessage, 1500) as Record<string, unknown>;
 
+  const summary = typeof raw.summary === 'string' ? raw.summary : `Local analysis of ${filename}`;
+
+  // v3.2: post-synthesis party-name validation. Surfaces suspect names
+  // (capitalised proper nouns in the summary that are NOT in the closed
+  // vocabulary and NOT recognised geo/legal-doc words). Logged but not
+  // strictly enforced — strict enforcement risks rejecting legitimate
+  // narrative phrasing the small model produces. The audit trail is
+  // sufficient to spot regressions in the eval.
+  const suspectNames = validateSummaryNames(summary, requiredNames, profile);
+
   return {
-    summary: typeof raw.summary === 'string' ? raw.summary : `Local analysis of ${filename}`,
+    summary,
     documentType: typeof raw.documentType === 'string' ? raw.documentType : 'Document',
     topRisks: Array.isArray(raw.topRisks) ? raw.topRisks.map(r => {
       const rr = r as Record<string, unknown>;
@@ -501,6 +905,9 @@ async function synthesise(
     recommendations: Array.isArray(raw.recommendations)
       ? raw.recommendations.filter((s): s is string => typeof s === 'string' && s.length > 5)
       : [],
+    // v3.2 transparency signals (consumed by eval; UI ignores)
+    extractedPartyNames: requiredNames,
+    suspectNames,
   };
 }
 
@@ -542,14 +949,48 @@ export async function analyzeLocally(
   // Per-clause precedent matching could narrow this further by clause topic
   // (a Phase 2.1 enhancement); for now we use a single document-scoped query
   // so the Reader sees consistent firm context across clauses.
+  //
+  // Multi-jurisdiction handling: the Watchman often returns a comma-joined
+  // string (e.g., "nsw,japan,china" for a tri-party JV). The board's filter
+  // does `entry.jurisdiction.includes(query.jurisdiction)`, which never
+  // matches a single-jurisdiction stored value against a multi-jurisdiction
+  // query. We split the query on commas and run a search per token, then
+  // dedupe by precedent ID. Also try an UNFILTERED-by-jurisdiction search
+  // as a final fallback — the document type alone is a strong signal.
   let documentPrecedents: PrecedentMatch[] = [];
   if (opts?.precedentBoard && opts?.watchman) {
     try {
-      documentPrecedents = opts.precedentBoard.search({
-        documentType: opts.watchman.documentType,
-        jurisdiction: opts.watchman.jurisdiction || profile.jurisdiction,
-        limit: 5,
-      });
+      const rawJur = opts.watchman.jurisdiction || profile.jurisdiction || '';
+      const tokens = rawJur.split(/[,;\/]+/).map(s => s.trim()).filter(s => s.length >= 2);
+      const seen = new Set<string>();
+      const collected: PrecedentMatch[] = [];
+
+      // Per-jurisdiction-token search
+      for (const j of tokens) {
+        const results = opts.precedentBoard.search({
+          documentType: opts.watchman.documentType,
+          jurisdiction: j,
+          limit: 5,
+        });
+        for (const r of results) {
+          if (!seen.has(r.entry.id)) { seen.add(r.entry.id); collected.push(r); }
+        }
+      }
+
+      // Fallback: documentType-only search if jurisdiction filters returned nothing
+      if (collected.length === 0) {
+        const results = opts.precedentBoard.search({
+          documentType: opts.watchman.documentType,
+          limit: 5,
+        });
+        for (const r of results) {
+          if (!seen.has(r.entry.id)) { seen.add(r.entry.id); collected.push(r); }
+        }
+      }
+
+      // Take top 5 by relevance (the search already sorted within each token)
+      documentPrecedents = collected.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, 5);
+
       if (documentPrecedents.length > 0) {
         log?.(`  → ${documentPrecedents.length} precedent(s) loaded for context`);
       }

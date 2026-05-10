@@ -42,13 +42,25 @@ Output a single JSON object with EXACTLY these fields:
 
 {
   "documentType": "jv" | "nda" | "employment" | "lease" | "loan" | "saas" | "policy" | "other",
-  "jurisdiction": "string (best guess from defined-terms, governing-law clauses, party addresses; empty string if unclear)",
+  "jurisdiction": "string — see jurisdiction rules below",
   "confidence": number,
   "urgency": "routine" | "elevated" | "critical",
   "route": "skip" | "quick-scan" | "deep-read",
   "readerTemplate": "string (matches documentType for now)",
   "rationale": "string (one sentence)"
 }
+
+**CRITICAL — jurisdiction rules (read twice):**
+The jurisdiction field must come ONLY from the DOCUMENT TEXT below — governing-law clauses, defined terms, party addresses, or state/country names appearing in the contract. It must NOT be the CLIENT's home jurisdiction. The CLIENT field tells you who is reviewing this document; it is NOT where the document is from.
+
+Examples:
+  - Document text says "governed by the laws of Delaware" → jurisdiction = "Delaware"
+  - Document text shows a Texas address for both parties → jurisdiction = "Texas"
+  - Document text mentions Japanese and Chinese parties → jurisdiction = "Japan, China"
+  - Document text says nothing about governing law → jurisdiction = "" (empty string is valid)
+  - The CLIENT is in NSW but the document is governed by Delaware law → jurisdiction = "Delaware" (NOT "NSW, Delaware", NOT "NSW")
+
+If you cannot find a jurisdiction in the document text, return an EMPTY STRING. Do NOT use the client's jurisdiction as a fallback.
 
 Type taxonomy:
   jv         — joint venture / shareholders / consortium agreement
@@ -274,19 +286,32 @@ export interface WatchmanInput {
 export async function watchmanTriage(input: WatchmanInput): Promise<WatchmanResult> {
   const { filename, documentText, profile, knownPrecedentHints, localOnly } = input;
 
+  // Visual section dividers so the small model doesn't conflate the client
+  // block (stance) with the document text (facts). Jurisdiction in particular
+  // is at risk of profile contamination — see v2 eval where gemma2:2b
+  // leaked "NSW" into 2/3 documents' jurisdiction fields.
+  const clientBlock = [
+    '=== CLIENT (the reviewer\'s home context — DO NOT copy into jurisdiction) ===',
+    `Company name: ${profile.company}`,
+    `Client's industry: ${profile.industry}`,
+    `Client's home jurisdiction: ${profile.jurisdiction}`,
+    profile.concerns.length ? `Client's stated concerns: ${profile.concerns.join(', ')}` : '',
+    knownPrecedentHints && knownPrecedentHints.length
+      ? `Prior patterns seen on similar docs: ${knownPrecedentHints.slice(0, 3).join(' · ')}`
+      : '',
+  ].filter(Boolean).join('\n');
+
   const userMessage = [
     `FILENAME: ${filename}`,
-    `CLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})`,
-    profile.concerns.length ? `CLIENT CONCERNS: ${profile.concerns.join(', ')}` : '',
-    knownPrecedentHints && knownPrecedentHints.length
-      ? `PRIOR PATTERNS SEEN ON SIMILAR DOCS: ${knownPrecedentHints.slice(0, 3).join(' · ')}`
-      : '',
     '',
-    'FIRST 1500 CHARS OF DOCUMENT:',
+    clientBlock,
+    '',
+    '=== DOCUMENT TEXT (the source of facts — jurisdiction comes FROM HERE) ===',
     documentText.slice(0, 1500),
+    '=== END DOCUMENT TEXT ===',
     '',
-    'Return your JSON triage decision now.',
-  ].filter(Boolean).join('\n');
+    'Return your JSON triage decision now. Jurisdiction must come from DOCUMENT TEXT above, never from CLIENT.',
+  ].join('\n');
 
   // Path 1: local Ollama (preferred — free, private)
   const local = localOllamaSettings();
