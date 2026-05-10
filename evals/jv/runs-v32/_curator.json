@@ -1,0 +1,26 @@
+{
+  "decision": {
+    "reReadQueue": [],
+    "promoteToConfirmed": [
+      "PREC-dfa4fded",
+      "PREC-fd5e951a",
+      "PREC-5ac304d1",
+      "PREC-55bfc863",
+      "PREC-a3089910"
+    ],
+    "driftDetected": [],
+    "requestFrontierEscalation": [],
+    "surface": {
+      "title": "3 JV agreements flagged for review",
+      "message": "Three joint venture agreements (acceleratedtechnologiesholdingcorp_04_24_2003.txt, sibannac_12_04_2017.txt, and veoneer_02_21_2020.txt) have critical findings related to survival-of-pre-closing-claims risk.  Consider opening these first for a portfolio position.",
+      "severity": "warning"
+    }
+  },
+  "elapsedMs": 15694,
+  "boardSummary": {
+    "tentative": 24,
+    "confirmed": 0,
+    "deprecated": 0
+  },
+  "boardEntryCount": 24
+}

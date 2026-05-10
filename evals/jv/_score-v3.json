@@ -17,11 +17,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This Agreement outlines the terms for a joint venture between Bravatek and Sibannac, operating as 'Accelerated Technologies Holding Corp.' The agreement covers business activities, including product acquisition, licensing, sales, and marketing. It also addresses financial matters such as accounting provisions, capital calls, and distribution of income and losses. However, the document lacks clarity on how capital calls will be handled, what happens in case of non-payment, and how debt will be handled upon termination.",
+      "summary": "This joint venture agreement outlines the scope of business activities for Products and PVSS, including product acquisition, licensing, sales, and marketing. The agreement also specifies procedures for asset distribution upon termination, but lacks clarity on how debt will be paid and doesn't specify a mechanism for addressing potential disputes regarding the value of assets.  The agreement does not explicitly define joint and several liability or address capital call mechanics, raising concerns about financial risk and dilution for non-operator participants.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 252280
+      "totalMs": 264634
     },
     {
       "filename": "borrowmoneycom_06_11_2020",
@@ -36,15 +36,15 @@
       "clauseCount": 28,
       "perClausePrompts": 28,
       "promptsWithPrecedentBlock": 28,
-      "distinctPrecedentIds": 2,
+      "distinctPrecedentIds": 3,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 2,
-      "summary": "This contract outlines the terms for a joint venture between Veoneer and Nissin, potentially involving capital contributions, debt management, and asset distribution upon liquidation. The agreement establishes joint and several liability for each member in case of default or breach, potentially exposing the non-operator to significant financial risk.",
+      "precedentsConsulted": 3,
+      "summary": "This Agreement outlines the terms for Capital Co and Additional Capital Co to form a joint venture (JV) called Borrowmoneycom, governed by the laws of Florida. The JV will operate as a contractual entity with limited liability for individual actions of its members. However, the agreement lacks clarity on how capital calls are made, funding shortfalls are handled, and what constitutes 'necessary and expected costs' without further definition. This raises concerns about potential dilution of ownership and financial risks.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 351123
+      "totalMs": 368634
     },
     {
       "filename": "loopindustriesinc.",
@@ -63,11 +63,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This contract outlines the assignment of rights and obligations related to a marketing agreement between Assignor and Assignee, potentially impacting risk allocation and operational complexity. The document specifies that the agreement will be governed by the laws of the State of Delaware, USA, and outlines procedures for amendments and assignments.",
+      "summary": "This agreement outlines the assignment of rights and obligations related to a Special Purpose Vehicle (SPV) under a separate marketing agreement. This raises concerns about potential joint and several liability, unclear capital call mechanics, and lack of clarity on governing law and penalty provisions.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 133495
+      "totalMs": 184502
     },
     {
       "filename": "sibannac_12_04_2017",
@@ -85,12 +85,12 @@
       "distinctPrecedentIds": 3,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 4,
-      "summary": "This contract outlines the terms of a joint venture between Bravatek and Sibannac, covering responsibilities for supporting each other's operations. The agreement defines obligations, compensation structures, confidentiality protocols, and termination provisions. However, it lacks clarity on financial obligations, capital call mechanics, and indemnification carve-outs, potentially exposing both parties to significant risk.",
+      "precedentsConsulted": 5,
+      "summary": "This agreement outlines the responsibilities of AZ and NET regarding a joint venture between Bravatek Technologies and Sibannac, including financial contributions and potential liabilities. The agreement lacks clarity on how capital calls will be made and the mechanics for funding shortfalls, potentially leading to dilution of ownership and financial risks.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 173549
+      "totalMs": 220272
     },
     {
       "filename": "theravancebiopharma_05_08_2020",
@@ -99,7 +99,7 @@
         "type": "other",
         "route": "quick-scan",
         "juris": "",
-        "conf": 0.6
+        "conf": 0.7
       },
       "watchmanJurisLeakedNSW": false,
       "clauseCount": 22,
@@ -109,15 +109,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This contract outlines the terms of employment for an Executive at Acme Holdings, a company based in NSW. The document grants significant discretion to the Company regarding bonus payments and travel expenses, while also outlining restrictions on the Executive's outside activities. It further details obligations upon termination, including immediate handover of business information and data deletion.",
-      "summaryHasProfileLeak": true,
-      "summaryProfileLeakTokens": [
-        "acme holdings",
-        "acme",
-        "nsw"
-      ],
+      "summary": "This contract outlines the terms of employment for an Executive at Theravancebiopharma, granting significant power to The Company regarding termination and payment. The document also details responsibilities for the Executive, including potential joint and several liability for financial losses or legal liabilities for the CLIENT. It further outlines obligations upon termination, including immediate handover of business information and data deletion.",
+      "summaryHasProfileLeak": false,
+      "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 451645
+      "totalMs": 578137
     },
     {
       "filename": "turnkeycapital_07_20_2017",
@@ -132,15 +128,15 @@
       "clauseCount": 1,
       "perClausePrompts": 1,
       "promptsWithPrecedentBlock": 1,
-      "distinctPrecedentIds": 2,
+      "distinctPrecedentIds": 3,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 2,
-      "summary": "This document outlines a strategic alliance between Turnkey Capital Inc. (TKCI) and a Seminole Indian Company (SIC). The agreement details TKCI's financial and operational support for SIC, while also outlining indemnification provisions for potential liabilities. However, the clause clarifies that TKCI is not an employee of SIC and cannot enter into agreements on behalf of SIC.",
+      "precedentsConsulted": 3,
+      "summary": "This strategic alliance agreement outlines the structure of a joint venture between Turnkey Capital Inc. (TKCI) and a Seminole Indian Company (SIC). The agreement defines roles, responsibilities, financial arrangements, and dispute resolution mechanisms for their collaboration.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 59423
+      "totalMs": 72651
     },
     {
       "filename": "unitednationalbancorp_03_03_1999",
@@ -148,7 +144,7 @@
       "watchman": {
         "type": "saas",
         "route": "quick-scan",
-        "juris": "",
+        "juris": "NJ",
         "conf": 0.9
       },
       "watchmanJurisLeakedNSW": false,
@@ -159,11 +155,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 3,
-      "summary": "This multi-year outsourcing agreement outlines the transfer of services and assets between United National Bancorp and the BISYS Group, Inc. The contract lacks specific details on capital call mechanics, triggering events, payment obligations, and indemnification carve-outs. ",
+      "summary": "This multi-year outsourcing agreement outlines a service provision between BISYS Group, Inc. and United National Bancorp for integrated information processing services. The document lacks details on capital call mechanics, triggering events, responsibilities for both parties, and potential financial risks.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 54813
+      "totalMs": 73341
     },
     {
       "filename": "veoneer_02_21_2020",
@@ -182,11 +178,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 5,
-      "summary": "This contract outlines an agreement between Veoneer and Nissin regarding a joint venture for the development of specific technologies, governed by Japanese law. The agreement specifies termination procedures and indemnification obligations for directors and officers (D&O) related to liabilities arising before the JV closing.",
+      "summary": "This contract outlines the terms for a joint venture (JV) agreement between Veoneer Parties (VNBJ, VNBZ) and Nissin regarding the potential acquisition of ANRA. The JV Agreement will remain in force during the liquidation proceedings of ANRA even after the termination of the agreement with respect to VNBJ, VNBZ or the Veoneer Parties.  The effectiveness of the amendment is contingent on the closing of two separate agreements (VNBJ SPA and VNBZ SPA). If these agreements are terminated, the amendment will be void.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 106828
+      "totalMs": 118253
     },
     {
       "filename": "vnueinc_20150914_8",
@@ -205,11 +201,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 5,
-      "summary": "This contract outlines the terms of a joint venture between VNUE and the Promoter regarding the operation of a music venue business. The agreement defines responsibilities, financial risk allocation, reporting obligations, and dispute resolution mechanisms. However, it lacks clarity on capital call mechanics, debt management upon termination, and non-payment handling.",
+      "summary": "This Agreement outlines the terms for VNUE Inc. (VNUE) to engage with Term, Exchange Co., and Independent Co. to secure contracts with music venues. The agreement defines payment structure for Promotion Services provided by Term, but lacks clarity on capital calls, risk allocation, or governing law. This could lead to disputes regarding ownership and financial risks.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 227710
+      "totalMs": 294068
     },
     {
       "filename": "xlitechnologies_12_02_2015",
@@ -221,30 +217,30 @@
         "conf": 0.9
       },
       "watchmanJurisLeakedNSW": false,
-      "clauseCount": 9,
+      "clauseCount": 8,
       "perClausePrompts": 9,
       "promptsWithPrecedentBlock": 9,
-      "distinctPrecedentIds": 3,
+      "distinctPrecedentIds": 1,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 3,
-      "summary": "This contract outlines the roles and responsibilities of Bravatek and Sibannac regarding a joint venture for the development, marketing, and distribution of products. The agreement defines the product name, but lacks details on financial obligations or risk allocation for the non-operator's support of Bosch in case of failure to meet sales targets.  The contract also outlines indemnification obligations for CLIENT without clearly defining the scope and limitations of such obligations.",
+      "precedentsConsulted": 1,
+      "summary": "This document defines the terms of a joint venture between CLIENT and BOSCH for the development and distribution of Xlitechnologies product in the Automotive Industry. The agreement outlines operational responsibilities, financial obligations, and exclusivity rights, but lacks detail on specific risk allocation mechanisms and indemnification provisions.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 147257
+      "totalMs": 182457
     }
   ],
   "aggregate": {
     "n": 10,
-    "chunkSum": 117,
+    "chunkSum": 116,
     "promptSum": 118,
     "blockSum": 70,
     "docsWithBlock": 7,
-    "docsWithLeak": 1,
+    "docsWithLeak": 0,
     "docsWithPlaceholder": 0,
     "docsWithJurisNSWLeak": 0,
     "riskSum": 30,
-    "timeSum": 1958123
+    "timeSum": 2356949
   }
 }
