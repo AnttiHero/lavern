@@ -242,7 +242,7 @@ Total size: ${(markdown.length / 1024).toFixed(1)}KB`,
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   return [compileLegalMd, getLegalMd];

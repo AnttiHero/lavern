@@ -387,7 +387,7 @@ _Occurrences: ${ap.occurrences} | Last seen: ${ap.lastSeenAt} | Source: ${ap.sou
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   return [

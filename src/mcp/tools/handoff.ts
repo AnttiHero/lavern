@@ -124,7 +124,7 @@ export function createHandoffTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   return [submitHandoff, getHandoffs];

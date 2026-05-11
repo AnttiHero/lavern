@@ -71,7 +71,7 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
         }],
       };
     },
-    { annotations: { readOnly: true } },
+    { annotations: { readOnlyHint: true } },
   );
 
   const advanceStep = tool(
@@ -220,7 +220,7 @@ ${history || '(no steps completed)'}
         }],
       };
     },
-    { annotations: { readOnly: true } },
+    { annotations: { readOnlyHint: true } },
   );
 
   return [getCurrentStep, advanceStep, getWorkflowHistory];

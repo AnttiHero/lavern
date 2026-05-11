@@ -286,7 +286,7 @@ ${results.map(v =>
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   return [

@@ -178,7 +178,7 @@ ${args.headings.map(h => `${'  '.repeat(h.level - 1)}H${h.level}: ${h.text}`).jo
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   const checkDocumentFormatting = tool(
@@ -270,7 +270,7 @@ ${issues.length > 0 ? `### Issues\n${issues.map((issue, i) => `${i + 1}. ${issue
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   const recordPassResult = tool(

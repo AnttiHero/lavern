@@ -43,7 +43,7 @@ export const calculateComplexityTax = tool(
       content: [{ type: 'text' as const, text: `Complexity Tax: ${minutesPerReader} min/reader (Word Count: ${args.word_count}, FK Grade: ${args.fk_grade}, Multiplier: ${difficultyMultiplier}x, Re-read: ${rereadFactor}x)${savingsNote}` }],
     };
   },
-  { annotations: { readOnly: true } }
+  { annotations: { readOnlyHint: true } }
 );
 
 export const calculateReadabilityScore = tool(
@@ -99,7 +99,7 @@ export const calculateReadabilityScore = tool(
       content: [{ type: 'text' as const, text: `Readability Score: ${score}/4 (${classification})\n  FK Grade: ${args.fk_grade} (${gradeScore}/4)\n  Avg Sentence: ${args.avg_sentence_length} words (${sentenceScore}/4)\n  Passive Voice: ${args.passive_voice_pct}% (${passiveScore}/4)` }],
     };
   },
-  { annotations: { readOnly: true } }
+  { annotations: { readOnlyHint: true } }
 );
 
 export const calculateFindabilityScore = tool(
@@ -130,7 +130,7 @@ export const calculateFindabilityScore = tool(
       content: [{ type: 'text' as const, text: `Findability Score: ${score}/4 (${classification}) — ${found}/5 items found within target times.${missing.length > 0 ? `\n  Missing: ${missing.join(', ')}` : ''}` }],
     };
   },
-  { annotations: { readOnly: true } }
+  { annotations: { readOnlyHint: true } }
 );
 
 export const compareBeforeAfter = tool(
@@ -167,7 +167,7 @@ export const compareBeforeAfter = tool(
       content: [{ type: 'text' as const, text: `## Before / After Comparison\n\n| Metric | Before | After | Change |\n|--------|--------|-------|--------|\n| Word Count | ${args.original_word_count} | ${args.transformed_word_count} | ${wordReduction > 0 ? '-' : '+'}${Math.abs(wordReduction)} |\n| FK Grade | ${args.original_fk_grade} | ${args.transformed_fk_grade} | ${gradeImprovement > 0 ? '-' : '+'}${Math.abs(gradeImprovement).toFixed(1)} |\n| Avg Sentence | ${args.original_avg_sentence} words | ${args.transformed_avg_sentence} words | ${(args.original_avg_sentence - args.transformed_avg_sentence).toFixed(1)} |\n| Passive Voice | ${args.original_passive_pct}% | ${args.transformed_passive_pct}% | ${(args.original_passive_pct - args.transformed_passive_pct).toFixed(1)}% |\n| Complexity Tax | ${origTax.toFixed(1)} min | ${newTax.toFixed(1)} min | -${taxReduction} min/reader |${savings}` }],
     };
   },
-  { annotations: { readOnly: true } }
+  { annotations: { readOnlyHint: true } }
 );
 
 export const scoringEngineTools = [

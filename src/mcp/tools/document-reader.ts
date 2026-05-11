@@ -17,6 +17,14 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
 import type { DocumentSection } from '../../documents/types.js';
 
+/**
+ * Wrap a plain-string result as the MCP content-block return type expected
+ * by claude-agent-sdk ≥ 0.2.50. Used inline at the end of each tool handler
+ * below — keeps the actual handler bodies returning prose without the noise
+ * of `{ content: [{ type, text }] }` on every return path.
+ */
+const txt = (text: string) => ({ content: [{ type: 'text' as const, text }] });
+
 export function createDocumentReaderTools(session: SessionState) {
 
   // ── list_documents ──────────────────────────────────────────────────
@@ -27,7 +35,7 @@ export function createDocumentReaderTools(session: SessionState) {
     {},
     async () => {
       if (session.documents.length === 0) {
-        return 'No documents have been uploaded for this session.';
+        return txt('No documents have been uploaded for this session.');
       }
 
       const docs = session.documents.map((doc, i) => {
@@ -63,7 +71,7 @@ export function createDocumentReaderTools(session: SessionState) {
         return parts.join('\n');
       });
 
-      return docs.join('\n\n---\n\n');
+      return txt(docs.join('\n\n---\n\n'));
     },
   );
 
@@ -78,7 +86,7 @@ export function createDocumentReaderTools(session: SessionState) {
     },
     async ({ document_index, section }) => {
       if (document_index >= session.documents.length) {
-        return `Document index ${document_index} is out of range. Only ${session.documents.length} document(s) available.`;
+        return txt(`Document index ${document_index} is out of range. Only ${session.documents.length} document(s) available.`);
       }
 
       const doc = session.documents[document_index];
@@ -87,9 +95,9 @@ export function createDocumentReaderTools(session: SessionState) {
         // Return full text, truncated for very large documents
         const maxChars = 50_000;
         if (doc.fullText.length > maxChars) {
-          return `# ${doc.name} (truncated — ${doc.wordCount.toLocaleString()} words)\n\n${doc.fullText.slice(0, maxChars)}\n\n...[truncated at ${maxChars.toLocaleString()} characters. Use read_document_section with specific section headings for the rest.]`;
+          return txt(`# ${doc.name} (truncated — ${doc.wordCount.toLocaleString()} words)\n\n${doc.fullText.slice(0, maxChars)}\n\n...[truncated at ${maxChars.toLocaleString()} characters. Use read_document_section with specific section headings for the rest.]`);
         }
-        return `# ${doc.name}\n\n${doc.fullText}`;
+        return txt(`# ${doc.name}\n\n${doc.fullText}`);
       }
 
       // Search for matching section
@@ -98,7 +106,7 @@ export function createDocumentReaderTools(session: SessionState) {
         const available = flattenHeadings(doc.sections, 3)
           .map(h => h.heading)
           .join(', ');
-        return `No section matching "${section}" found in ${doc.name}. Available sections: ${available}`;
+        return txt(`No section matching "${section}" found in ${doc.name}. Available sections: ${available}`);
       }
 
       // Include children content
@@ -106,7 +114,7 @@ export function createDocumentReaderTools(session: SessionState) {
         ? '\n\n' + match.children.map(c => `### ${c.heading}\n\n${c.content}`).join('\n\n')
         : '';
 
-      return `## ${match.heading}\n\n${match.content}${childContent}`;
+      return txt(`## ${match.heading}\n\n${match.content}${childContent}`);
     },
   );
 
@@ -162,15 +170,15 @@ export function createDocumentReaderTools(session: SessionState) {
       }
 
       if (results.length === 0) {
-        return `No matches found for "${query}" across ${session.documents.length} document(s).`;
+        return txt(`No matches found for "${query}" across ${session.documents.length} document(s).`);
       }
 
-      return results.map((r, i) => {
+      return txt(results.map((r, i) => {
         const header = r.section
           ? `**${r.docName}** → ${r.section}`
           : `**${r.docName}**`;
         return `### Result ${i + 1}: ${header}\n\n${r.context}`;
-      }).join('\n\n---\n\n');
+      }).join('\n\n---\n\n'));
     },
   );
 
@@ -185,10 +193,10 @@ export function createDocumentReaderTools(session: SessionState) {
     async ({ document_index }) => {
       if (document_index !== undefined) {
         if (document_index >= session.documents.length) {
-          return `Document index ${document_index} is out of range.`;
+          return txt(`Document index ${document_index} is out of range.`);
         }
         const doc = session.documents[document_index];
-        return `## Defined Terms in ${doc.name}\n\n${doc.definedTerms.join(', ') || 'No defined terms detected.'}`;
+        return txt(`## Defined Terms in ${doc.name}\n\n${doc.definedTerms.join(', ') || 'No defined terms detected.'}`);
       }
 
       // All documents
@@ -197,7 +205,7 @@ export function createDocumentReaderTools(session: SessionState) {
         for (const term of doc.definedTerms) allTerms.add(term);
       }
 
-      return `## Defined Terms (${allTerms.size} unique across ${session.documents.length} document(s))\n\n${Array.from(allTerms).sort().join(', ') || 'No defined terms detected.'}`;
+      return txt(`## Defined Terms (${allTerms.size} unique across ${session.documents.length} document(s))\n\n${Array.from(allTerms).sort().join(', ') || 'No defined terms detected.'}`);
     },
   );
 
@@ -211,21 +219,21 @@ export function createDocumentReaderTools(session: SessionState) {
     },
     async ({ document_index }) => {
       if (document_index >= session.documents.length) {
-        return `Document index ${document_index} is out of range.`;
+        return txt(`Document index ${document_index} is out of range.`);
       }
 
       const doc = session.documents[document_index];
       if (doc.tables.length === 0) {
-        return `No tables found in ${doc.name}.`;
+        return txt(`No tables found in ${doc.name}.`);
       }
 
-      return doc.tables.map((table, i) => {
+      return txt(doc.tables.map((table, i) => {
         const caption = table.caption ? `**${table.caption}**\n\n` : '';
         const header = `| ${table.headers.join(' | ')} |`;
         const separator = `| ${table.headers.map(() => '---').join(' | ')} |`;
         const rows = table.rows.map(row => `| ${row.join(' | ')} |`).join('\n');
         return `### Table ${i + 1}\n\n${caption}${header}\n${separator}\n${rows}`;
-      }).join('\n\n');
+      }).join('\n\n'));
     },
   );
 

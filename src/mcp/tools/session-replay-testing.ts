@@ -142,7 +142,7 @@ ${violations.map(v =>
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   const runBatchRegression = tool(
@@ -205,7 +205,7 @@ ${results.map(r => `- ${r}`).join('\n')}`,
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   const compareSessions = tool(
@@ -270,7 +270,7 @@ ${dimensionRows.join('\n')}`,
         }],
       };
     },
-    { annotations: { readOnly: true } }
+    { annotations: { readOnlyHint: true } }
   );
 
   return [
