@@ -204,10 +204,10 @@ The codebase is structurally clean — no abandoned refactors, no dead branches.
 
 ### This month (~10 hours)
 
-6. **Bump `vitest 2 → 4`** — two majors behind; CI startup time will improve. Test API hasn't changed dramatically but worth a careful read. (~2 hours)
-7. **Bump `typescript 5.9 → 6`** — strictness improvements may surface real issues; expect 30-60 min of fix-up. (~2 hours)
-8. **Bump `@anthropic-ai/claude-agent-sdk 0.2.38 → 0.2.138`** — 100-version jump deserves careful changelog read. (~3 hours)
-9. **Consolidate the 24 files' direct env reads into `config.ts`** — single source of truth. (~3 hours)
+6. **Bump `vitest 2 → 4`** — two majors behind; CI startup time will improve. Test API hasn't changed dramatically but worth a careful read. (~2 hours) ✅ shipped 8efe981
+7. **Bump `typescript 5.9 → 6`** — strictness improvements may surface real issues; expect 30-60 min of fix-up. (~2 hours) ✅ shipped 7be3663
+8. **Bump `@anthropic-ai/claude-agent-sdk 0.2.38 → 0.2.138`** — 100-version jump deserves careful changelog read. (~3 hours) ⚠ **ATTEMPTED 50d1d17, REVERTED 2a9f805 + pinned 0.2.38 in f11d233.** Failure mode: 0.2.138's auth path no longer honors ANTHROPIC_API_KEY the way 0.2.38 does — returns 401 even with a valid key in process.env. The new SDK's `Options` type exposes only `apiKeyHelper` (a shell command that outputs the key) and `apiKeySource: 'user' | 'project' | 'org' | 'temporary' | 'oauth'` — no direct `apiKey` field. Auth flow appears to have moved to Claude Code's OAuth model (`CLAUDE_CODE_OAUTH_TOKEN` + `~/.claude/credentials.json`). Real migration deferred to v0.15 — needs either `claude auth login` interactive setup or a credentials-shim we control. Sample line from SDK internals: `ANTHROPIC_API_KEY&&!(Y??process.env).CLAUDE_CODE_OAUTH_TOKEN)z=await F6$()??z` — suggests the new auth path tries an OAuth bootstrap function (`F6$`) before falling back. The SDK code refactor work (32 `readOnly → readOnlyHint` renames + `document-reader.ts` content-block wrapping) is preserved in git history at commit 50d1d17 and can be cherry-picked back when we tackle the OAuth migration.
+9. **Consolidate the 24 files' direct env reads into `config.ts`** — single source of truth. (~3 hours) ✅ shipped a42a03b
 
 ### This quarter (~30 hours)
 
