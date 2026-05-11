@@ -1,0 +1,25 @@
+{
+  "decision": {
+    "reReadQueue": [],
+    "promoteToConfirmed": [
+      "PREC-3229d0a1",
+      "PREC-75eb9da0",
+      "PREC-127e9405",
+      "PREC-affff9ed"
+    ],
+    "driftDetected": [],
+    "requestFrontierEscalation": [],
+    "surface": {
+      "title": "Critical finding: Veoneer JV amendment flagged",
+      "message": "Veoneer JV amendment has a survival-of-pre-closing-claims risk that warrants senior partner review. This is a cross-document pattern across 3 agreements this week.",
+      "severity": "critical"
+    }
+  },
+  "elapsedMs": 9932,
+  "boardSummary": {
+    "tentative": 24,
+    "confirmed": 0,
+    "deprecated": 0
+  },
+  "boardEntryCount": 24
+}

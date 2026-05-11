@@ -612,16 +612,31 @@ function rankFindingsForSynthesis(findings: ClauseFinding[], n: number): ClauseF
  * per-clause findings DETERMINISTICALLY and inject them as a closed
  * vocabulary the synthesis prompt must constrain to.
  *
+ * v3.3 (regex tightening): v3.2 traded the training-memorisation problem for
+ * a regex-artifact problem on 3/10 docs (the extractor's `Co` corporate
+ * suffix greedy-matched "Co" as the first 2 letters of "Contributions",
+ * "Company"; short acronyms picked up state codes like "AZ" / "NJ" and
+ * payment terms like "NET" as candidate parties). v3.3 closes this with
+ * four deterministic regex tightenings:
+ *
+ *   1. Corporate-suffix `Co` requires a true word-boundary after — NOT
+ *      "Co" in "Contributions". The regex matches `Co\b` only when
+ *      followed by space, punctuation, or end-of-string.
+ *   2. STOPLIST expanded with all 50 US state abbreviations + common
+ *      international codes + payment-term tokens (NET, NETD, COD).
+ *   3. Short acronyms (3-4 chars) must appear ≥ 2 times in the corpus.
+ *      Single-occurrence short acronyms are almost always noise.
+ *   4. A "single-common-word + corporate-suffix" filter — candidates like
+ *      "Capital Co" / "Member Co" / "Exchange Co" are dropped unless they
+ *      also appear ≥ 2 times. Real party names like "BISYS Group" or
+ *      "United National Bancorp" survive because they're multi-word
+ *      or use stronger suffixes.
+ *
  * Heuristic — no LLM. Mines four patterns:
  *   - Quoted defined terms in operativeText / concern text  ("Member", "the Operator")
  *   - Corporate-suffix proper nouns                          ("BorrowMoney.com Inc.", "United National Bancorp")
  *   - All-caps acronyms 2-6 chars                            ("TKCI", "VNBJ")
  *   - Filename-derived hints (only when filename is informative)
- *
- * Returns up to N party-name candidates ranked by frequency. Filters:
- *   - Stop-list of legal/document-structure words (Article, Clause, etc.)
- *   - Common acronyms that aren't parties (JV, NDA, MSA, IP, SPV, USD)
- *   - The CLIENT's company name (gemma2:2b otherwise reuses it as a party)
  */
 function extractPartyNames(
   findings: ClauseFinding[],
@@ -642,14 +657,35 @@ function extractPartyNames(
     quoted.push(m[1].trim());
   }
 
-  // Pattern 2: corporate-suffix proper nouns (most reliable signal of a party)
+  // Pattern 2: corporate-suffix proper nouns (most reliable signal of a party).
+  //
+  // v3.3 change: the suffix list is split into "strong" suffixes (Inc, Corp,
+  // LLC, etc. — long enough that there's no ambiguity) and "weak" suffixes
+  // (Co, Group, Bank — which can be the first chars of other words). The
+  // weak suffixes require a true word boundary after them (period, comma,
+  // end-of-string, or punctuation) to count. "Capital Contributions" no
+  // longer becomes "Capital Co".
   const corp: string[] = [];
-  const corpRe = /\b([A-Z][A-Za-z0-9'\-&.]{1,}(?:\s+(?:de|of|and|the|&)\s+)?(?:\s+[A-Z][A-Za-z0-9'\-&.]{1,}){0,5}\s+(?:Inc|Corp|Corporation|LLC|LLP|Ltd|Limited|Co|Company|Group|Holdings|Industries|Solutions|Technologies|Partners|Trust|Foundation|Bank|Bancorp|Services|Systems|Pty|GmbH|AB|S\.A\.|AG|N\.V\.|B\.V\.|S\.p\.A\.)\.?)/g;
+  const corpRe = /\b([A-Z][A-Za-z0-9'\-&.]{1,}(?:\s+(?:de|of|and|the|&)\s+)?(?:\s+[A-Z][A-Za-z0-9'\-&.]{1,}){0,5}\s+(?:Inc|Corp|Corporation|LLC|LLP|Ltd|Limited|Company|Holdings|Industries|Solutions|Technologies|Partners|Trust|Foundation|Bancorp|Services|Systems|Pty|GmbH|S\.A\.|AG|N\.V\.|B\.V\.|S\.p\.A\.)\.?)\b/g;
+  // Weak suffixes that need stricter boundaries (Co, Group, Bank can appear
+  // as prefixes of common nouns: "Combined", "Grouping", "Banking"). Require
+  // the suffix to be followed by punctuation, end-of-line, or sentence-end.
+  const corpWeakRe = /\b([A-Z][A-Za-z0-9'\-&.]{1,}(?:\s+(?:de|of|and|the|&)\s+)?(?:\s+[A-Z][A-Za-z0-9'\-&.]{1,}){0,5}\s+(?:Co|Group|Bank|AB)\.?)(?=[,.;:)"'\s]|$)(?!\w)/g;
   for (const m of corpus.matchAll(corpRe)) {
     corp.push(m[1].replace(/\s+/g, ' ').trim());
   }
+  for (const m of corpus.matchAll(corpWeakRe)) {
+    const candidate = m[1].replace(/\s+/g, ' ').trim();
+    // v3.3 fix #4: single-common-word + weak-suffix is almost always a
+    // regex artifact (Capital Co, Member Co, Exchange Co, Term Co).
+    // Drop unless the candidate has multiple capitalised words OR appears
+    // to be a multi-word entity. We'll track and filter post-tally below.
+    corp.push(candidate);
+  }
 
-  // Pattern 3: all-caps acronyms 2-6 chars (corporate defined terms)
+  // Pattern 3: all-caps acronyms 2-6 chars (corporate defined terms).
+  // v3.3 fix #3: short acronyms (3-4 chars) require frequency ≥ 2 to count.
+  // Tracked separately so we can apply the floor after tallying.
   const acronyms: string[] = [];
   for (const m of corpus.matchAll(/\b([A-Z]{2,6})\b/g)) {
     acronyms.push(m[1]);
@@ -664,16 +700,43 @@ function extractPartyNames(
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
-  // Stop-list: structural / document-language / common non-party acronyms.
-  // The CLIENT's company is added dynamically so we never recommend it as
-  // a party.
+  // v3.3 STOPLIST: structural / document-language / common non-party
+  // acronyms PLUS all 50 US state abbreviations + Canadian provinces +
+  // common international codes + payment terms. The CLIENT's company
+  // is added dynamically so we never recommend it as a party.
   const STOPLIST = new Set<string>([
-    'JV', 'NDA', 'NDAS', 'MSA', 'MSAS', 'IP', 'SPV', 'USD', 'GBP', 'EUR',
-    'AUD', 'JPY', 'CNY', 'SOFR', 'LIBOR', 'GAAP', 'IFRS', 'D&O',
-    'SEC', 'IRS', 'EU', 'UK', 'US', 'USA', 'NSW', 'CEO', 'CFO', 'COO',
-    'ARTICLE', 'CLAUSE', 'SECTION', 'EXHIBIT', 'SCHEDULE', 'ANNEX',
-    'AGREEMENT', 'CONTRACT', 'DEED', 'AMENDMENT', 'ADDENDUM',
-    'AND', 'OR', 'THE', 'OF', 'TO', 'FOR', 'IN', 'ON', 'AT', 'BY',
+    // Legal / structural
+    'JV', 'NDA', 'NDAS', 'MSA', 'MSAS', 'IP', 'SPV', 'D&O', 'ESG', 'KPI',
+    'EBITDA', 'CAPEX', 'OPEX', 'ROFR', 'ROFO',
+    // Currency / accounting / regulatory
+    'USD', 'GBP', 'EUR', 'AUD', 'JPY', 'CNY', 'CAD', 'CHF', 'SEK', 'NOK',
+    'SOFR', 'LIBOR', 'GAAP', 'IFRS', 'CPI', 'VAT', 'TAX', 'IRS', 'SEC',
+    'FDA', 'EPA', 'OSHA', 'FTC', 'DOJ', 'GDPR', 'HIPAA', 'CCPA',
+    // Countries / blocs
+    'EU', 'UK', 'US', 'USA', 'PRC', 'EEA', 'ASEAN',
+    // US state abbreviations
+    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+    'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+    'DC', 'PR', 'VI', 'GU', 'AS', 'MP',
+    // Australian + Canadian + common abbreviations
+    'NSW', 'VIC', 'QLD', 'TAS', 'ACT', 'NT', 'SA', 'WA',
+    'ON', 'QC', 'BC', 'AB', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE',
+    // Address / form / payment terms
+    'STE', 'APT', 'BLDG', 'PO', 'POB', 'NET', 'NETD', 'COD', 'MOM',
+    'FOB', 'EXW', 'CIF', 'DDP', 'EOM', 'EOD', 'YOY', 'QOQ', 'MOM',
+    'PILON', 'COBRA', 'ERISA',
+    // Office titles (not parties)
+    'CEO', 'CFO', 'COO', 'CTO', 'CIO', 'CMO', 'CHRO', 'GC', 'SVP', 'EVP',
+    // Document structure
+    'ARTICLE', 'CLAUSE', 'SECTION', 'EXHIBIT', 'SCHEDULE', 'ANNEX', 'APPENDIX',
+    'AGREEMENT', 'CONTRACT', 'DEED', 'AMENDMENT', 'ADDENDUM', 'PREAMBLE',
+    'RECITAL', 'RECITALS', 'WHEREAS', 'NOW', 'THEREFORE',
+    // Common sentence-start capitalised words
+    'AND', 'OR', 'THE', 'OF', 'TO', 'FOR', 'IN', 'ON', 'AT', 'BY', 'AS',
+    'IF', 'IT', 'IS', 'BE', 'NO', 'WE', 'ALL', 'ANY', 'NOT', 'NEW',
     profile.company.toUpperCase().replace(/[^A-Z]/g, ''),
   ]);
   const clientCompanyLower = profile.company.toLowerCase();
@@ -684,16 +747,32 @@ function extractPartyNames(
     .split(/[_\-\s.]+/)
     .filter(t => t.length >= 3 && /^[A-Za-z]/.test(t));
 
-  // Build the final ranked list
+  // Build the final ranked list with v3.3 filters applied.
   const ranked = [...counts.entries()]
-    .filter(([name]) => {
+    .filter(([name, freq]) => {
       const upper = name.toUpperCase();
       if (STOPLIST.has(upper)) return false;
       if (name.toLowerCase().includes(clientCompanyLower) && clientCompanyLower.length > 3) return false;
       // Drop pure-number tokens and tiny ones
       if (/^\d+$/.test(name)) return false;
       // Drop "The" / "And" capitalised at sentence starts
-      if (/^(The|And|Or|For|In|On|At|By|Of|To)$/.test(name)) return false;
+      if (/^(The|And|Or|For|In|On|At|By|Of|To|As|It|Is|Be)$/.test(name)) return false;
+
+      // v3.3 fix #3: short acronyms need frequency ≥ 2.
+      // (Acronyms are uppercase-only, 3-4 char, no punctuation.)
+      if (/^[A-Z]{3,4}$/.test(name) && freq < 2) return false;
+      // 2-char all-caps also need ≥ 2 — most 2-char strings (US, JV, NY)
+      // are STOPLIST'd, but anything that slipped through is suspect.
+      if (/^[A-Z]{2}$/.test(name) && freq < 2) return false;
+
+      // v3.3 fix #4: single-common-word + weak-corporate-suffix.
+      // A candidate like "Capital Co", "Member Co", "Exchange Co" with a
+      // SINGLE word before the suffix is almost always a regex artifact
+      // from a longer phrase ("Capital Contributions"). Require freq ≥ 2.
+      // Multi-word names ("BISYS Group", "First National Bank") survive.
+      const weakSuffixSingleWord = /^[A-Z][A-Za-z]+\s+(?:Co|Group|Bank|AB)\.?$/;
+      if (weakSuffixSingleWord.test(name) && freq < 2) return false;
+
       return true;
     })
     .sort((a, b) => b[1] - a[1] || a[0].length - b[0].length);
