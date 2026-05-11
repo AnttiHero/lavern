@@ -25,9 +25,15 @@ vi.mock('../../src/claw/local-analysis.js', () => ({
 const { mockMessagesCreate } = vi.hoisted(() => ({ mockMessagesCreate: vi.fn() }));
 
 vi.mock('@anthropic-ai/sdk', () => {
-  const Anthropic = vi.fn().mockImplementation(() => ({
-    messages: { create: mockMessagesCreate },
-  }));
+  // v4 strictness: vi.fn() used as a constructor (`new Anthropic()`) must be
+  // implemented with a regular function or class — arrow functions are not
+  // constructible. Previously (v2) vitest tolerated arrows here; v4 rejects
+  // them with "The vi.fn() mock did not use 'function' or 'class'".
+  const Anthropic = vi.fn().mockImplementation(function (this: unknown) {
+    return {
+      messages: { create: mockMessagesCreate },
+    };
+  });
   return { default: Anthropic };
 });
 

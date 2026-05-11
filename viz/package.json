@@ -2,7 +2,7 @@
   "name": "lavern-dashboard",
   "version": "0.14.0",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "description": "Lavern Dashboard — React frontend for the driverless law firm",
   "scripts": {
     "dev": "vite",
