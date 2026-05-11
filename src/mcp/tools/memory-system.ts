@@ -312,7 +312,7 @@ export function createMemoryTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const saveMatterMemory = tool(
@@ -381,7 +381,7 @@ export function createMemoryTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const savePrecedent = tool(
@@ -521,7 +521,7 @@ export function createMemoryTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   return [

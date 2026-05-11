@@ -307,7 +307,7 @@ ${violations.map(v =>
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const getBaseline = tool(
@@ -356,7 +356,7 @@ ${baseline.expectedImprovement.map(i =>
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const getQualityTrend = tool(
@@ -426,7 +426,7 @@ ${points.map((p, i) =>
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   return [

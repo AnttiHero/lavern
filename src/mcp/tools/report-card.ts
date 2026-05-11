@@ -297,7 +297,7 @@ ${deltas.map(d => `- ${d.dimension}: ${d.before.toFixed(1)} → ${d.after.toFixe
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   return [compileReportCard, getReportCard];

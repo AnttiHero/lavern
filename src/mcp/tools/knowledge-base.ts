@@ -83,7 +83,7 @@ export function createKnowledgeBaseTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } },
+    { annotations: { readOnly: true } },
   );
 
   // ── list_knowledge_base_collections ────────────────────────────────
@@ -128,7 +128,7 @@ export function createKnowledgeBaseTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } },
+    { annotations: { readOnly: true } },
   );
 
   // ── get_knowledge_base_entry ───────────────────────────────────────
@@ -173,7 +173,7 @@ export function createKnowledgeBaseTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } },
+    { annotations: { readOnly: true } },
   );
 
   return [searchKb, listKbCollections, getKbEntry];

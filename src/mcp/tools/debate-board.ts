@@ -337,7 +337,7 @@ export function createDebateBoardTools(session: SessionState) {
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const getFindings = tool(
@@ -362,7 +362,7 @@ export function createDebateBoardTools(session: SessionState) {
         content: [{ type: 'text' as const, text: results.length > 0 ? summary : 'No findings match the criteria.' }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const getChallenges = tool(
@@ -392,7 +392,7 @@ export function createDebateBoardTools(session: SessionState) {
         content: [{ type: 'text' as const, text: results.length > 0 ? summary : 'No challenges match the criteria.' }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const auditDebateCoherence = tool(
@@ -539,7 +539,7 @@ ${issueText}
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const getDebateSummary = tool(
@@ -578,7 +578,7 @@ ${state.challenges.filter(c => !c.resolved).map(c => `- ${c.id}: ${c.challengeTe
         content: [{ type: 'text' as const, text: summary }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   return [

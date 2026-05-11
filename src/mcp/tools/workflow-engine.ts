@@ -47,7 +47,7 @@ ${stepDef.requiresGateApproval ? `**Gate Required**: ${stepDef.gateType} (must i
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   const advanceStep = tool(
@@ -180,7 +180,7 @@ ${history || '(no steps completed)'}
         }],
       };
     },
-    { annotations: { readOnlyHint: true } }
+    { annotations: { readOnly: true } }
   );
 
   return [getCurrentStep, advanceStep, getWorkflowHistory];
