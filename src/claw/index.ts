@@ -486,7 +486,7 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         const state = registry.getState();
 
         // Health check: verify API key still available
-        if (!process.env.ANTHROPIC_API_KEY) {
+        if (!config.anthropic.apiKey) {
           alerts.push('API key missing — processing will fail');
         }
 
@@ -758,7 +758,7 @@ function runValidate(args: ClawCliArgs): void {
   checks.push({ label: 'Profile exists', ok: !!profile, detail: profile ? dir + '/profile.json' : 'Run `lavern claw init` to create' });
 
   // API key
-  const apiKey = process.env.ANTHROPIC_API_KEY ?? '';
+  const apiKey = config.anthropic.apiKey;
   checks.push({ label: 'API key configured', ok: apiKey.length > 0, detail: apiKey.length > 0 ? `${apiKey.slice(0, 8)}...` : 'Set ANTHROPIC_API_KEY' });
 
   // Watch paths

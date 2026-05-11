@@ -211,7 +211,7 @@ export async function assembleMistralDocument(
 
         // Don't log rejected output contents — see document-assembler.ts for rationale.
         logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
-        if (process.env.LAVERN_LOG_PREVIEWS === '1') {
+        if (config.logPreviews) {
           const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
           logger.warn('Rejected output preview (debug only)', { preview });
         }

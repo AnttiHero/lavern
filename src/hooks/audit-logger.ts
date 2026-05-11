@@ -13,6 +13,7 @@ import type { SessionState } from '../session/session-state.js';
 import { boundedPush } from '../session/session-state.js';
 import { initPersistentAudit, persistAuditEntry, finalizePersistentAudit } from '../utils/audit-persistence.js';
 import { eventTimestamp } from '../events/event-bus.js';
+import { config } from '../config.js';
 
 /**
  * Initialize the audit log for a session.
@@ -97,7 +98,7 @@ export function createAuditHooks(session: SessionState) {
       timestamp: eventTimestamp(),
     });
 
-    if (process.env.SHEM_LOG_LEVEL === 'debug') {
+    if (config.logLevel === 'debug') {
       process.stderr.write(`[AUDIT] ${entry.timestamp} ${entry.action}\n`);
     }
 
@@ -144,7 +145,7 @@ export function createAuditHooks(session: SessionState) {
       timestamp: eventTimestamp(),
     });
 
-    if (process.env.SHEM_LOG_LEVEL === 'debug') {
+    if (config.logLevel === 'debug') {
       process.stderr.write(`[AUDIT] Subagent started: ${agentName} (${agentId}) — ${taskDescription.slice(0, 80)}\n`);
     }
 
@@ -201,7 +202,7 @@ export function createAuditHooks(session: SessionState) {
       timestamp: eventTimestamp(),
     });
 
-    if (process.env.SHEM_LOG_LEVEL === 'debug') {
+    if (config.logLevel === 'debug') {
       process.stderr.write(`[AUDIT] Subagent stopped: ${agentName} (${(durationMs / 1000).toFixed(1)}s)\n`);
     }
 

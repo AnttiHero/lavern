@@ -14,11 +14,11 @@
 import type { WebSocket } from '@fastify/websocket';
 import type { SessionState } from '../session/session-state.js';
 import type { ShemEvent } from '../events/event-bus.js';
+import { config } from '../config.js';
 
 // ── Global Connection Tracking ──────────────────────────────────────────
 
-const _parsedMaxWs = parseInt(process.env.SHEM_MAX_WS_CONNECTIONS ?? '200', 10);
-const MAX_WS_CONNECTIONS = Number.isFinite(_parsedMaxWs) && _parsedMaxWs > 0 ? _parsedMaxWs : 200;
+const MAX_WS_CONNECTIONS = config.maxWsConnections;
 
 interface WsClientState {
   sessionId: string;

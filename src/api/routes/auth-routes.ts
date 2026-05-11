@@ -107,7 +107,7 @@ const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 // NODE_ENV and the base URL — NODE_ENV is often unset in local runs, and
 // the cookie is silently dropped by every browser if Secure is set over HTTP.
 const isLocalDev =
-  process.env.NODE_ENV === 'development' ||
+  config.isDevelopment ||
   config.baseUrl.startsWith('http://localhost') ||
   config.baseUrl.startsWith('http://127.0.0.1');
 const SECURE_FLAG = isLocalDev ? '' : '; Secure';
@@ -158,7 +158,7 @@ export function registerUserAuthRoutes(fastify: FastifyInstance): void {
     },
   }, async (request, reply) => {
     // Signup gate — set LAVERN_SIGNUP_DISABLED=true to block new registrations
-    if (process.env.LAVERN_SIGNUP_DISABLED === 'true') {
+    if (config.signupDisabled) {
       return reply.status(503).send({ error: 'We are not accepting new accounts at this time. Join the waitlist at lavern.ai.' });
     }
 

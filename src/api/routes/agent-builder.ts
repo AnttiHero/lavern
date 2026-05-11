@@ -22,6 +22,7 @@ import { analyzeFirm, synthesiseFirmSoul } from '../agent-builder/firm-analyzer.
 import { renderAgentOgPng } from '../agent-builder/og-image.js';
 import { renderTeamOgPng, type TeamMemberForOg } from '../agent-builder/team-og-image.js';
 import { createLogger } from '../../utils/logger.js';
+import { config } from '../../config.js';
 import {
   upsertSharedAgent, getSharedAgent, bumpSharedAgentViews, deleteSharedAgent,
   upsertSharedTeam, getSharedTeam, bumpSharedTeamViews, deleteSharedTeam,
@@ -233,7 +234,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
 
     upsertSharedAgent(token, userId, ownerName, profileJson);
 
-    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const baseUrl = config.baseUrl;
     return reply.send({
       token,
       url: `${baseUrl}/a/${token}`,
@@ -289,7 +290,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
     // Resolve the avatar URL — goblin gets the local /goblin.png; everyone
     // else gets DiceBear by avatarSeed.
     const isGoblin = profile.avatarSeed === 'goblin';
-    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const baseUrl = config.baseUrl;
     const avatarUrl = isGoblin
       ? `${baseUrl}/goblin.png`
       : `https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(String(profile.avatarSeed || profile.displayName))}&backgroundColor=transparent&size=400`;
@@ -362,7 +363,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
       teamJsonSerialized,
     );
 
-    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const baseUrl = config.baseUrl;
     return reply.send({
       token,
       url: `${baseUrl}/#/t/${token}`,
@@ -420,7 +421,7 @@ export function registerAgentBuilderRoutes(fastify: FastifyInstance): void {
       return reply.status(500).send({ error: 'Stored team is corrupt.' });
     }
 
-    const baseUrl = process.env.SHEM_BASE_URL ?? 'http://localhost:3000';
+    const baseUrl = config.baseUrl;
     const members: TeamMemberForOg[] = agents.slice(0, 6).map(profile => {
       const isGoblin = profile.avatarSeed === 'goblin';
       const avatarUrl = isGoblin

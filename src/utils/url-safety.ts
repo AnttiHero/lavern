@@ -13,6 +13,8 @@
  * SECURITY.md.
  */
 
+import { config } from '../config.js';
+
 /**
  * Validate that a URL is safe to fetch.
  * Blocks:
@@ -31,7 +33,7 @@ export function isUrlSafe(url: string): boolean {
   }
 
   // Only allow HTTPS (and HTTP localhost in dev mode)
-  const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+  const isDev = config.isDevelopment || config.isTest;
   if (parsed.protocol === 'http:') {
     if (!isDev || !isLocalhostHostname(parsed.hostname)) {
       return false;

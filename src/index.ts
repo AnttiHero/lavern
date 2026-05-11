@@ -61,6 +61,7 @@ import type { DocumentContext, Moment, Audience, Jurisdiction, LegalRequest } fr
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
+import { config } from './config.js';
 
 // ── Pre-flight Checks ──────────────────────────────────────────────────
 
@@ -75,12 +76,12 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
 
   // 1. Provider readiness — Anthropic key (cloud), Ollama daemon (local), or
   //    Mistral key (EU sovereign). The pre-flight check adapts to the provider.
-  const provider = process.env.LAVERN_PROVIDER ?? 'anthropic';
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const provider = config.provider;
+  const apiKey = config.anthropic.apiKey;
   if (options.requireApiKey !== false) {
     if (provider === 'local') {
-      const url = process.env.LAVERN_LOCAL_URL ?? 'http://localhost:11434';
-      const model = process.env.LAVERN_LOCAL_DEFAULT_MODEL ?? 'gemma4:e4b';
+      const url = config.local.baseUrl;
+      const model = config.local.defaultModel;
       let ok = false;
       let detail = '';
       try {
@@ -105,7 +106,7 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
       }
       results.push({ check: 'Ollama (local model)', ok, detail });
     } else if (provider === 'mistral') {
-      const mk = process.env.MISTRAL_API_KEY;
+      const mk = config.mistral.apiKey;
       results.push({
         check: 'MISTRAL_API_KEY',
         ok: !!mk && mk.length > 10,
@@ -121,7 +122,7 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
   }
 
   // 2. Data directory writable
-  const dbPath = process.env.SHEM_DB_PATH ?? './data/lavern.db';
+  const dbPath = config.dbPath;
   const dataDir = path.dirname(dbPath);
   try {
     if (!fs.existsSync(dataDir)) {
@@ -147,7 +148,7 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
   }
 
   // 4. Required directories exist (audit, memory)
-  const auditDir = process.env.SHEM_AUDIT_DIR ?? './audit-logs';
+  const auditDir = config.auditDir;
   try {
     if (!fs.existsSync(auditDir)) {
       fs.mkdirSync(auditDir, { recursive: true });
@@ -297,7 +298,7 @@ async function main(): Promise<void> {
     // signal — daemon must be running and the model pulled). For Anthropic
     // mode, the API key check is informational only — server starts in demo
     // mode without it (legacy behaviour preserved).
-    const isLocal = process.env.LAVERN_PROVIDER === 'local';
+    const isLocal = config.provider === 'local';
     const preflightResults = await runPreflightChecks({ port, requireApiKey: isLocal });
     const preflightOk = printPreflightResults(preflightResults);
     if (!preflightOk) {
@@ -317,12 +318,12 @@ async function main(): Promise<void> {
       console.log('  📋 Created .env from .env.example — add your API keys to enable full functionality.\n');
     }
 
-    const provider = process.env.LAVERN_PROVIDER ?? 'anthropic';
-    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+    const provider = config.provider;
+    const hasAnthropicKey = !!config.anthropic.apiKey;
 
     if (provider === 'local') {
-      const url = process.env.LAVERN_LOCAL_URL ?? 'http://localhost:11434';
-      const model = process.env.LAVERN_LOCAL_DEFAULT_MODEL ?? 'gemma4:e4b';
+      const url = config.local.baseUrl;
+      const model = config.local.defaultModel;
       console.log('╔══════════════════════════════════════════════════════════════╗');
       console.log('║  LOCAL MODE — on-device inference via Ollama                ║');
       console.log(`║  Endpoint: ${url.padEnd(48)} ║`);

@@ -22,7 +22,7 @@ function initialize(): void {
   if (initialized) return;
   initialized = true;
 
-  const dsn = process.env.SENTRY_DSN;
+  const dsn = config.sentry.dsn;
   if (!dsn) return;
 
   const match = dsn.match(/^https:\/\/([^@]+)@([^/]+)\/(\d+)$/);

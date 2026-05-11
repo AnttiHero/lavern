@@ -70,7 +70,7 @@ import { createLogger } from '../utils/logger.js';
 const logger = createLogger('SERVER');
 
 export async function startApiServer(port: number): Promise<void> {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = config.isProduction;
   const fastify = Fastify({
     trustProxy: config.trustProxy,
     logger: {
@@ -99,7 +99,7 @@ export async function startApiServer(port: number): Promise<void> {
     contentSecurityPolicy: false, // see comment above; enable after CSP audit
     crossOriginEmbedderPolicy: false, // we serve user-fetched DiceBear avatars
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // dashboard is on a different port in dev
-    hsts: process.env.NODE_ENV === 'production' ? { maxAge: 15552000, includeSubDomains: true } : false,
+    hsts: config.isProduction ? { maxAge: 15552000, includeSubDomains: true } : false,
     frameguard: { action: 'deny' },
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   });
@@ -139,7 +139,7 @@ export async function startApiServer(port: number): Promise<void> {
   // this, an OSS user shipping with a stray bypass key in their .env could
   // accept arbitrary auth/rate-limit-bypass requests on the open internet.
   // (`isProd` is already declared at the top of startApiServer for HSTS.)
-  const allowBypassInProd = process.env.LAVERN_ALLOW_LOAD_TEST_BYPASS === '1';
+  const allowBypassInProd = config.allowLoadTestBypassInProd;
   const loadTestKey =
     isProd && !allowBypassInProd
       ? '' // disable in production unless explicitly opted in
@@ -465,8 +465,8 @@ export async function startApiServer(port: number): Promise<void> {
 
     // LLM API key present
     checks.llm = {
-      ok: !!process.env.ANTHROPIC_API_KEY,
-      detail: process.env.ANTHROPIC_API_KEY ? 'configured' : 'ANTHROPIC_API_KEY not set',
+      ok: !!config.anthropic.apiKey,
+      detail: config.anthropic.apiKey ? 'configured' : 'ANTHROPIC_API_KEY not set',
     };
 
     // Email service

@@ -98,7 +98,7 @@ function localOllamaSettings(): OllamaSettings | null {
   const baseUrl = (config.claw.localModelUrl || config.local.baseUrl).replace(/\/$/, '');
   // Watchman is small and fast — keep the timeout tight so a hung Ollama
   // doesn't block the entire pipeline.
-  const timeoutMs = Number(process.env.LAVERN_CLAW_WATCHMAN_TIMEOUT_MS) || 60_000;
+  const timeoutMs = config.claw.watchmanTimeoutMs;
   return { baseUrl, modelName, timeoutMs };
 }
 

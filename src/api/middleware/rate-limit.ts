@@ -17,18 +17,12 @@ import type { SessionManager } from '../../session/session-manager.js';
 import { config } from '../../config.js';
 
 // ── Config ────────────────────────────────────────────────────────────────
-
-function safeEnvInt(val: string | undefined, fallback: number): number {
-  if (val === undefined) return fallback;
-  const parsed = parseInt(val, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
 // 120/min = 2 rps sustained. Modern SPAs fan out multiple reads per view
 // (profile, billing, custom agents, saved teams, polling). 30/min was
 // tripping during normal dashboard navigation.
-const PER_USER_MAX = safeEnvInt(process.env.SHEM_RATE_LIMIT_USER_MAX, 120);
-const PER_USER_WINDOW_MS = safeEnvInt(process.env.SHEM_RATE_LIMIT_USER_WINDOW_MS, 60000);
-const MAX_CONCURRENT_SESSIONS = safeEnvInt(process.env.SHEM_MAX_USER_SESSIONS, 5);
+const PER_USER_MAX = config.rateLimitUserMax;
+const PER_USER_WINDOW_MS = config.rateLimitUserWindowMs;
+const MAX_CONCURRENT_SESSIONS = config.maxUserSessions;
 
 // ── Sliding window counters ──────────────────────────────────────────────
 

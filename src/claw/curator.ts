@@ -41,13 +41,11 @@ const logger = createLogger('CLAW-CURATOR');
 // ── Configuration ──────────────────────────────────────────────────────
 
 /** How far back the Curator looks when deciding what to surface. */
-const SURFACE_LOOKBACK_HOURS =
-  Number(process.env.LAVERN_CLAW_CURATOR_SURFACE_HOURS) || 24;
+const SURFACE_LOOKBACK_HOURS = config.claw.curatorSurfaceHours;
 
 /** Threshold to promote a precedent from tentative to confirmed.
  *  Default 5; env-configurable per the architecture plan. */
-export const CONFIRM_THRESHOLD =
-  Number(process.env.LAVERN_CLAW_PRECEDENT_CONFIRM_THRESHOLD) || 5;
+export const CONFIRM_THRESHOLD = config.claw.precedentConfirmThreshold;
 
 /** Minimum portfolio-level pattern recurrence before the Curator surfaces
  *  a "we see this across the portfolio" alert vs a per-doc threshold alert. */
@@ -68,7 +66,7 @@ function localOllamaSettings(): OllamaSettings | null {
     config.local.defaultModel;
   if (!modelName) return null;
   const baseUrl = (config.claw.localModelUrl || config.local.baseUrl).replace(/\/$/, '');
-  const timeoutMs = Number(process.env.LAVERN_CLAW_CURATOR_TIMEOUT_MS) || 120_000;
+  const timeoutMs = config.claw.curatorTimeoutMs;
   return { baseUrl, modelName, timeoutMs };
 }
 

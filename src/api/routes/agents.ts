@@ -60,7 +60,7 @@ Calibration notes:
 - If the text is not a professional profile, still do your best with whatever information is present`;
 
 async function callAnthropicForClone(profileText: string): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = config.anthropic.apiKey;
   if (!apiKey) throw new Error('API key not configured');
 
   const res = await fetch(ANTHROPIC_API_URL, {

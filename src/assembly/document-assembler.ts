@@ -306,7 +306,7 @@ export async function assembleDocument(
 
   // The LLM assembly path remains as a fallback when extraction fails.
   // Kill switch: LAVERN_COUNSEL_FAST_PATH=0 forces the LLM loop.
-  const counselFastPathEnabled = process.env.LAVERN_COUNSEL_FAST_PATH !== '0';
+  const counselFastPathEnabled = config.counselFastPathEnabled;
   if (counselFastPathEnabled && session.finalOutput) {
     let extracted = extractCounselDocument(session.finalOutput);
 
@@ -422,7 +422,7 @@ export async function assembleDocument(
         // client document text (contracts, PII). Gate behind LAVERN_LOG_PREVIEWS=1
         // for local debugging only; never in production.
         logger.warn('Assembly attempt rejected (structural)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, reason, chars: assembledText.length });
-        if (process.env.LAVERN_LOG_PREVIEWS === '1') {
+        if (config.logPreviews) {
           const preview = assembledText.substring(0, 500).replace(/\n/g, '\\n');
           logger.warn('Rejected output preview (debug only)', { preview });
         }

@@ -14,6 +14,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as zlib from 'node:zlib';
+import { config } from '../config.js';
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -27,9 +28,8 @@ interface LogEntry {
 
 // ── File Transport ──────────────────────────────────────────────────────
 
-const LOG_DIR = process.env.SHEM_LOG_DIR ?? '';
-const _parsedRetain = parseInt(process.env.SHEM_LOG_RETAIN_DAYS ?? '14', 10);
-const LOG_RETAIN_DAYS = Number.isFinite(_parsedRetain) && _parsedRetain > 0 ? _parsedRetain : 14;
+const LOG_DIR = config.logDir;
+const LOG_RETAIN_DAYS = config.logRetainDays;
 
 /** Current date string for log filenames (YYYY-MM-DD). */
 function dateString(): string {
@@ -160,7 +160,7 @@ export function createLogger(component: string) {
       writeToFile(formatted, false);
     },
     debug(msg: string, data?: unknown) {
-      if (process.env.SHEM_LOG_LEVEL !== 'debug') return;
+      if (config.logLevel !== 'debug') return;
       const entry: LogEntry = { ts: ts(), level: 'debug', component, msg, data };
       const formatted = formatEntry(entry);
       console.log(formatted);

@@ -48,23 +48,14 @@ function fingerprint(text: string): string {
   return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
-function resolveConfig(partial?: Partial<MassActionConfig>): MassActionConfig {
-  const envThreshold = process.env.LAVERN_MASS_ACTION_THRESHOLD;
-  const envWindowMs = process.env.LAVERN_MASS_ACTION_WINDOW_MS;
-  const envMode = process.env.LAVERN_MASS_ACTION_MODE;
+import { config } from '../../config.js';
 
+function resolveConfig(partial?: Partial<MassActionConfig>): MassActionConfig {
   return {
-    templateThreshold:
-      partial?.templateThreshold ??
-      (envThreshold !== undefined ? parseInt(envThreshold, 10) : 10),
-    similarRequestThreshold:
-      partial?.similarRequestThreshold ?? 5,
-    windowMs:
-      partial?.windowMs ??
-      (envWindowMs !== undefined ? parseInt(envWindowMs, 10) : 3_600_000),
-    action:
-      partial?.action ??
-      ((envMode === 'block' ? 'block' : 'flag') as 'flag' | 'block'),
+    templateThreshold: partial?.templateThreshold ?? config.massAction.threshold,
+    similarRequestThreshold: partial?.similarRequestThreshold ?? 5,
+    windowMs: partial?.windowMs ?? config.massAction.windowMs,
+    action: partial?.action ?? (config.massAction.mode === 'block' ? 'block' : 'flag'),
   };
 }
 

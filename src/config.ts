@@ -31,12 +31,33 @@ function safeFloat(envVal: string | undefined, fallback: number): number {
 }
 
 export const config = {
+  // ── Environment ────────────────────────────────────────────────────────
+  /** Node environment string. Defaults to 'development' when unset. */
+  nodeEnv: (process.env.NODE_ENV ?? 'development') as 'development' | 'production' | 'test',
+  /** True when NODE_ENV=production. Prefer this over scattered string checks. */
+  get isProduction(): boolean { return this.nodeEnv === 'production'; },
+  /** True when NODE_ENV=development OR unset. */
+  get isDevelopment(): boolean { return this.nodeEnv === 'development' || this.nodeEnv === undefined; },
+  /** True when NODE_ENV=test. */
+  get isTest(): boolean { return this.nodeEnv === 'test'; },
+
   // ── Paths ──────────────────────────────────────────────────────────────
   auditDir: process.env.SHEM_AUDIT_DIR ?? './audit-logs',
   memoryDir: process.env.SHEM_MEMORY_DIR ?? '.shem/memory',
   reportsDir: process.env.SHEM_REPORTS_DIR ?? '.shem/reports',
   baselinesDir: process.env.SHEM_BASELINES_DIR ?? '.shem/baselines',
   dbPath: process.env.SHEM_DB_PATH ?? './data/lavern.db',
+
+  // ── Anthropic ─────────────────────────────────────────────────────────
+  /** API key for direct Anthropic SDK calls (hybrid-analysis, agents,
+   *  ensure-api-key prompt). Mutable at runtime by ensure-api-key when the
+   *  interactive prompt asks the user; readers should always go through
+   *  config.anthropic.apiKey for the latest value. */
+  anthropic: {
+    /** Read live each access so the interactive prompt in ensure-api-key
+     *  takes effect without a server restart. */
+    get apiKey(): string { return process.env.ANTHROPIC_API_KEY ?? ''; },
+  },
 
   // ── Provider ──────────────────────────────────────────────────────────
   provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'local' | 'managed',
@@ -88,10 +109,35 @@ export const config = {
   rateLimitAuthSignupMax: safeInt(process.env.SHEM_RATE_LIMIT_AUTH_SIGNUP_MAX, 3),
   /** Auth rate limit window in ms (default: 60 000 = 1 minute) */
   rateLimitAuthWindowMs: safeInt(process.env.SHEM_RATE_LIMIT_AUTH_WINDOW_MS, 60_000),
+  /** Max requests per window per AUTHENTICATED USER (default: 120/min) */
+  rateLimitUserMax: safeInt(process.env.SHEM_RATE_LIMIT_USER_MAX, 120),
+  /** Per-user rate-limit window in ms (default: 60 000) */
+  rateLimitUserWindowMs: safeInt(process.env.SHEM_RATE_LIMIT_USER_WINDOW_MS, 60_000),
+  /** Max concurrent sessions per user (default: 5) */
+  maxUserSessions: safeInt(process.env.SHEM_MAX_USER_SESSIONS, 5),
+  /** Max concurrent WebSocket connections (default: 200) */
+  maxWsConnections: safeInt(process.env.SHEM_MAX_WS_CONNECTIONS, 200),
   /** Shared secret that, when presented in the `X-Load-Test-Bypass` header,
    *  skips all rate limits for the request. Empty string = disabled (prod default).
    *  Set only on the machine running `scripts/load-test.ts`. 32+ chars recommended. */
   loadTestBypassKey: process.env.LAVERN_LOAD_TEST_BYPASS_KEY ?? '',
+  /** Production override flag: allow the X-Load-Test-Bypass header in prod
+   *  too (default: disabled — bypass is dev/test only). Set to '1' on the
+   *  load-testing host only. */
+  allowLoadTestBypassInProd: process.env.LAVERN_ALLOW_LOAD_TEST_BYPASS === '1',
+
+  // ── Mass-action abuse guard ─────────────────────────────────────────────
+  /** Threshold of suspicious actions per user before mass-action flag fires. */
+  massAction: {
+    threshold: safeInt(process.env.LAVERN_MASS_ACTION_THRESHOLD, 10),
+    windowMs: safeInt(process.env.LAVERN_MASS_ACTION_WINDOW_MS, 60_000),
+    /** 'log' (default), 'block' (reject the request), or 'flag' (allow + alert). */
+    mode: (process.env.LAVERN_MASS_ACTION_MODE ?? 'log') as 'log' | 'block' | 'flag',
+  },
+
+  // ── Auth gating ────────────────────────────────────────────────────────
+  /** When true, signup endpoints return 503 (waitlist-only mode). */
+  signupDisabled: process.env.LAVERN_SIGNUP_DISABLED === 'true',
 
   // ── Payment (x402 — USDC on Base) ───────────────────────────────────
   x402Enabled: process.env.SHEM_X402_ENABLED === 'true',
@@ -200,6 +246,23 @@ export const config = {
 
   // ── Logging ────────────────────────────────────────────────────────────
   logLevel: (process.env.SHEM_LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error',
+  /** Directory for file-based log output. Empty string = disabled. */
+  logDir: process.env.SHEM_LOG_DIR ?? '',
+  /** Days to retain rotated log files (default: 14). */
+  logRetainDays: safeInt(process.env.SHEM_LOG_RETAIN_DAYS, 14),
+  /** When true, log raw model output previews to stdout (debugging only). */
+  logPreviews: process.env.LAVERN_LOG_PREVIEWS === '1',
+
+  // ── Sentry ────────────────────────────────────────────────────────────
+  sentry: {
+    dsn: process.env.SENTRY_DSN ?? '',
+  },
+
+  // ── Counsel fast-path (assembly bypass) ────────────────────────────────
+  /** When true (default), single-agent counsel sessions skip the document
+   *  assembly step and stream the agent output directly. Set to '0' to
+   *  force every session through the assembler. */
+  counselFastPathEnabled: process.env.LAVERN_COUNSEL_FAST_PATH !== '0',
 
   // ── Claw Mode (Law Firm on Retainer) ──────────────────────────────────
   claw: {
@@ -231,6 +294,16 @@ export const config = {
     precedentDecayDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_DECAY_DAYS, 30),
     precedentArchiveDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS, 90),
     precedentMaxOutcomes: safeInt(process.env.LAVERN_CLAW_PRECEDENT_MAX_OUTCOMES, 50),
+    /** Recurrences before a precedent is promoted tentative → confirmed (v3.2 lighthouse) */
+    precedentConfirmThreshold: safeInt(process.env.LAVERN_CLAW_PRECEDENT_CONFIRM_THRESHOLD, 5),
+    /** Curator surface-decision lookback window in hours (default: 24) */
+    curatorSurfaceHours: safeInt(process.env.LAVERN_CLAW_CURATOR_SURFACE_HOURS, 24),
+    /** Curator LLM call timeout in ms (default: 2 min) */
+    curatorTimeoutMs: safeInt(process.env.LAVERN_CLAW_CURATOR_TIMEOUT_MS, 120_000),
+    /** Watchman LLM call timeout in ms (default: 60s) */
+    watchmanTimeoutMs: safeInt(process.env.LAVERN_CLAW_WATCHMAN_TIMEOUT_MS, 60_000),
+    /** Per-clause Reader LLM call timeout in ms (default: 15 min for the big fan-outs) */
+    localTimeoutMs: safeInt(process.env.LAVERN_CLAW_LOCAL_TIMEOUT_MS, 900_000),
     // Notification level: 'minimal' (counts only), 'summary' (default), 'full' (include evidence)
     notifyLevel: (process.env.LAVERN_CLAW_NOTIFY_LEVEL ?? 'summary') as 'minimal' | 'summary' | 'full',
     // Telegram notifications (v0.14)

@@ -32,6 +32,10 @@ vi.mock('../../src/config.js', () => ({
     routerModel: 'claude-sonnet-4-5',
     logLevel: 'info',
     version: '0.10.0',
+    // v3.5 env consolidation: rate-limit.ts now reads these from config
+    rateLimitUserMax: 120,
+    rateLimitUserWindowMs: 60000,
+    maxUserSessions: 5,
   },
 }));
 

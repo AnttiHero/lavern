@@ -88,7 +88,7 @@ function executeCommand(command: Command): string {
     case 'scan':
       // Trigger immediate scan by touching the state file to wake the watcher
       try {
-        const statePath = join(process.env.HOME ?? '', '.lavern', 'state.json');
+        const statePath = join(config.claw.dir, 'state.json');
         const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
         const stateData = JSON.parse(readFileSync(statePath, 'utf-8'));
         stateData._scanRequested = Date.now();
@@ -98,7 +98,7 @@ function executeCommand(command: Command): string {
 
     case 'pause': {
       try {
-        const profilePath = join(process.env.HOME ?? '', '.lavern', 'profile.json');
+        const profilePath = join(config.claw.dir, 'profile.json');
         const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
         const profile = JSON.parse(readFileSync(profilePath, 'utf-8'));
         profile.paused = true;
@@ -109,7 +109,7 @@ function executeCommand(command: Command): string {
 
     case 'resume': {
       try {
-        const profilePath = join(process.env.HOME ?? '', '.lavern', 'profile.json');
+        const profilePath = join(config.claw.dir, 'profile.json');
         const { readFileSync, writeFileSync } = require('fs') as typeof import('fs');
         const profile = JSON.parse(readFileSync(profilePath, 'utf-8'));
         profile.paused = false;

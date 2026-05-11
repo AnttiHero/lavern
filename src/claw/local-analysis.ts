@@ -356,7 +356,7 @@ function resolveOllamaConfig(): OllamaConfig {
   }
 
   const baseUrl = (config.claw.localModelUrl || config.local.baseUrl).replace(/\/$/, '');
-  const timeoutMs = Number(process.env.LAVERN_CLAW_LOCAL_TIMEOUT_MS) || 900_000;
+  const timeoutMs = config.claw.localTimeoutMs;
   return { baseUrl, modelName, timeoutMs };
 }
 
