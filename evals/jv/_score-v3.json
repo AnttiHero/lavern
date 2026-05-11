@@ -17,11 +17,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This joint venture agreement outlines the scope of business activities for Products and PVSS, including product acquisition, licensing, sales, and marketing. The agreement also specifies procedures for asset distribution upon termination, but lacks clarity on how debt will be paid and doesn't specify a mechanism for addressing potential disputes regarding the value of assets.  The agreement does not explicitly define joint and several liability or address capital call mechanics, raising concerns about financial risk and dilution for non-operator participants.",
+      "summary": "This joint venture agreement outlines the scope of business activities for PVSS Products, including product acquisition, licensing, sales, and marketing. The agreement also addresses accounting responsibilities, but lacks clarity on capital contributions, funding mechanisms, and dispute resolution. It does not specify a governing law or jurisdiction, potentially leading to legal disputes.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 264634
+      "totalMs": 230430
     },
     {
       "filename": "borrowmoneycom_06_11_2020",
@@ -40,11 +40,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 3,
-      "summary": "This Agreement outlines the terms for Capital Co and Additional Capital Co to form a joint venture (JV) called Borrowmoneycom, governed by the laws of Florida. The JV will operate as a contractual entity with limited liability for individual actions of its members. However, the agreement lacks clarity on how capital calls are made, funding shortfalls are handled, and what constitutes 'necessary and expected costs' without further definition. This raises concerns about potential dilution of ownership and financial risks.",
+      "summary": "This contract outlines the terms for a contractual joint venture between Borrowmoneycom and another party (not identified) regarding asset distribution upon liquidation, capital contributions, and potential financial strain in case of unforeseen circumstances. The agreement lacks clarity on how capital calls are handled, potentially creating financial risk for the non-operator if a capital call is required.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 368634
+      "totalMs": 418069
     },
     {
       "filename": "loopindustriesinc.",
@@ -63,11 +63,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This agreement outlines the assignment of rights and obligations related to a Special Purpose Vehicle (SPV) under a separate marketing agreement. This raises concerns about potential joint and several liability, unclear capital call mechanics, and lack of clarity on governing law and penalty provisions.",
+      "summary": "This contract outlines the assignment of rights and obligations related to a Special Purpose Vehicle (SPV) under a marketing agreement, potentially involving delegation to an SPV. This raises potential risks regarding liability, capital calls, and legal jurisdiction. The agreement is governed by the laws of Delaware, USA, and requires all changes to be made in writing.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 184502
+      "totalMs": 144596
     },
     {
       "filename": "sibannac_12_04_2017",
@@ -85,12 +85,12 @@
       "distinctPrecedentIds": 3,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 5,
-      "summary": "This agreement outlines the responsibilities of AZ and NET regarding a joint venture between Bravatek Technologies and Sibannac, including financial contributions and potential liabilities. The agreement lacks clarity on how capital calls will be made and the mechanics for funding shortfalls, potentially leading to dilution of ownership and financial risks.",
+      "precedentsConsulted": 4,
+      "summary": "This agreement outlines the terms of a joint venture between COMPANY and Bravatek Technologies, defining their respective responsibilities and obligations. The agreement establishes operational procedures for the joint venture, including specific duties for each party, but lacks clarity on financial mechanisms, risk allocation, and potential disputes regarding asset valuation and distribution upon termination. This lack of clarity could lead to financial strain for the non-operator if Bravatek's performance falls short.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 220272
+      "totalMs": 176127
     },
     {
       "filename": "theravancebiopharma_05_08_2020",
@@ -109,11 +109,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 0,
-      "summary": "This contract outlines the terms of employment for an Executive at Theravancebiopharma, granting significant power to The Company regarding termination and payment. The document also details responsibilities for the Executive, including potential joint and several liability for financial losses or legal liabilities for the CLIENT. It further outlines obligations upon termination, including immediate handover of business information and data deletion.",
+      "summary": "This contract outlines the terms of employment for an Executive at Theravancebiopharma, including salary, benefits, restrictions on outside activities, and obligations upon termination. The agreement grants significant discretion to the Company regarding bonus payments, payment mechanics, and potential deductions from salary. It also includes provisions for intellectual property ownership, joint and several liability in case of breach of contract, and penalties for non-compliance with specified obligations.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 578137
+      "totalMs": 539666
     },
     {
       "filename": "turnkeycapital_07_20_2017",
@@ -128,15 +128,15 @@
       "clauseCount": 1,
       "perClausePrompts": 1,
       "promptsWithPrecedentBlock": 1,
-      "distinctPrecedentIds": 3,
+      "distinctPrecedentIds": 1,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 3,
-      "summary": "This strategic alliance agreement outlines the structure of a joint venture between Turnkey Capital Inc. (TKCI) and a Seminole Indian Company (SIC). The agreement defines roles, responsibilities, financial arrangements, and dispute resolution mechanisms for their collaboration.",
+      "precedentsConsulted": 1,
+      "summary": "This Turnkey Capital Inc. (TKCI) joint venture agreement outlines the structure, responsibilities, and financial arrangements of a partnership between SIC and Seminole Indian Company. The agreement details capital contributions, financial reporting, indemnification, dispute resolution, and roles and responsibilities for each party.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 72651
+      "totalMs": 67702
     },
     {
       "filename": "unitednationalbancorp_03_03_1999",
@@ -155,11 +155,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 3,
-      "summary": "This multi-year outsourcing agreement outlines a service provision between BISYS Group, Inc. and United National Bancorp for integrated information processing services. The document lacks details on capital call mechanics, triggering events, responsibilities for both parties, and potential financial risks.",
+      "summary": "This multi-year outsourcing agreement between BISYS Group, Inc. and United National Bancorp outlines the transfer of information processing services. The agreement lacks specific details on liability, capital calls, governing law, penalties, or indemnification. It also does not specify the governing law for this agreement.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 73341
+      "totalMs": 59934
     },
     {
       "filename": "veoneer_02_21_2020",
@@ -178,11 +178,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 5,
-      "summary": "This contract outlines the terms for a joint venture (JV) agreement between Veoneer Parties (VNBJ, VNBZ) and Nissin regarding the potential acquisition of ANRA. The JV Agreement will remain in force during the liquidation proceedings of ANRA even after the termination of the agreement with respect to VNBJ, VNBZ or the Veoneer Parties.  The effectiveness of the amendment is contingent on the closing of two separate agreements (VNBJ SPA and VNBZ SPA). If these agreements are terminated, the amendment will be void.",
+      "summary": "This contract outlines the terms of a joint venture agreement between Veoneer (VNBJ) and Nissin (VNBZ), with pre-existing obligations remaining in effect even after termination. The agreement specifies Japan as governing law, and its effectiveness is contingent on the closing of two separate agreements (VNBJ SPA and VNBZ SPA).  The document also outlines indemnification obligations for D&O liability related to pre-closing events.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 118253
+      "totalMs": 123944
     },
     {
       "filename": "vnueinc_20150914_8",
@@ -201,11 +201,11 @@
       "riskCount": 3,
       "unanchoredStripped": 0,
       "precedentsConsulted": 5,
-      "summary": "This Agreement outlines the terms for VNUE Inc. (VNUE) to engage with Term, Exchange Co., and Independent Co. to secure contracts with music venues. The agreement defines payment structure for Promotion Services provided by Term, but lacks clarity on capital calls, risk allocation, or governing law. This could lead to disputes regarding ownership and financial risks.",
+      "summary": "This agreement outlines the terms for a joint venture between VNUE and Promotion Services, covering services and financial arrangements. The agreement lacks clarity on how capital contributions will be handled in case of unforeseen circumstances, potentially creating financial risk for the non-operator.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 294068
+      "totalMs": 223254
     },
     {
       "filename": "xlitechnologies_12_02_2015",
@@ -217,23 +217,23 @@
         "conf": 0.9
       },
       "watchmanJurisLeakedNSW": false,
-      "clauseCount": 8,
+      "clauseCount": 9,
       "perClausePrompts": 9,
       "promptsWithPrecedentBlock": 9,
-      "distinctPrecedentIds": 1,
+      "distinctPrecedentIds": 3,
       "riskCount": 3,
       "unanchoredStripped": 0,
-      "precedentsConsulted": 1,
-      "summary": "This document defines the terms of a joint venture between CLIENT and BOSCH for the development and distribution of Xlitechnologies product in the Automotive Industry. The agreement outlines operational responsibilities, financial obligations, and exclusivity rights, but lacks detail on specific risk allocation mechanisms and indemnification provisions.",
+      "precedentsConsulted": 3,
+      "summary": "This contract defines the roles and responsibilities of CLIENT and BOSCH for a joint venture agreement regarding the Product, including territory rights, cost allocation, and product distribution. The agreement grants BOSCH exclusive rights to operate within the specified territory and limits CLIENT's ability to act independently. This could create a risk of conflict if BOSCH's actions negatively impact CLIENT's business objectives.",
       "summaryHasProfileLeak": false,
       "summaryProfileLeakTokens": [],
       "summaryHasPlaceholders": false,
-      "totalMs": 182457
+      "totalMs": 169035
     }
   ],
   "aggregate": {
     "n": 10,
-    "chunkSum": 116,
+    "chunkSum": 117,
     "promptSum": 118,
     "blockSum": 70,
     "docsWithBlock": 7,
@@ -241,6 +241,6 @@
     "docsWithPlaceholder": 0,
     "docsWithJurisNSWLeak": 0,
     "riskSum": 30,
-    "timeSum": 2356949
+    "timeSum": 2152757
   }
 }

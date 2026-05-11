@@ -1,0 +1,25 @@
+{
+  "decision": {
+    "reReadQueue": [],
+    "promoteToConfirmed": [
+      "PREC-f2584dba",
+      "PREC-14b022b7",
+      "PREC-d2a7974b",
+      "PREC-a2c8438a"
+    ],
+    "driftDetected": [],
+    "requestFrontierEscalation": [],
+    "surface": {
+      "title": "3 JV agreements flagged for review",
+      "message": "Three joint venture agreements (acceleratedtechnologiesholdingcorp_04_24_2003.txt, sibannac_12_04_2017.txt, veoneer_02_21_2020.txt) show a pattern of unbounded-liability indemnity carve-outs.  Consider portfolio position on this.",
+      "severity": "info"
+    }
+  },
+  "elapsedMs": 15046,
+  "boardSummary": {
+    "tentative": 25,
+    "confirmed": 0,
+    "deprecated": 0
+  },
+  "boardEntryCount": 25
+}

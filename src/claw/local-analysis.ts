@@ -65,6 +65,10 @@ export interface LocalAnalysisResult {
   /** Lighthouse Phase 2: number of findings the grounding pass stripped
    *  for lacking document-text anchorage. */
   unanchoredStripped?: number;
+  /** v3.4: true if the synthesis emitted the client's company name and
+   *  the post-process had to strip it (replacing with "the client"). The
+   *  output is sanitised either way; this flag exists for the audit trail. */
+  clientNameLeaked?: boolean;
 }
 
 export interface ClauseAnalysis {
@@ -817,10 +821,13 @@ function validateSummaryNames(
   allowedNames: string[],
   profile: ClawProfile,
 ): string[] {
-  const allowedLower = new Set([
-    ...allowedNames.map(n => n.toLowerCase()),
-    profile.company.toLowerCase(),
-  ]);
+  // v3.4: NOTE — profile.company is INTENTIONALLY excluded from allowedLower.
+  // The closed-vocabulary mechanism + the v3.4 prompt change keep the client
+  // name out of the synthesis altogether. If it shows up in the summary
+  // anyway, we want it surfaced as a suspect (and stripped by the post-process
+  // step in `synthesise`). Previously (v3.3) we added profile.company here,
+  // which masked the Veoneer "exposing Acme Holdings" leak from this check.
+  const allowedLower = new Set(allowedNames.map(n => n.toLowerCase()));
 
   // Find candidate party-like phrases in the summary
   const candidates: string[] = [];
@@ -831,7 +838,9 @@ function validateSummaryNames(
     candidates.push(c);
   }
 
-  // Known geography + legal-document words that are not parties
+  // Known geography + legal-document words that are not parties.
+  // Note: the client company is *not* on this list — if it appears in the
+  // summary, it should be flagged as a suspect, not allowed.
   const GEO_AND_DOC_WORDS = new Set([
     'United', 'States', 'United States', 'United Kingdom', 'Australia',
     'New South Wales', 'New York', 'Delaware', 'California', 'Texas', 'Florida',
@@ -839,7 +848,6 @@ function validateSummaryNames(
     'Article', 'Section', 'Clause', 'Exhibit', 'Schedule', 'Joint Venture',
     'Joint', 'Venture', 'Members', 'Member', 'Company', 'Companies',
     'Promoter', 'Operator', 'Executive', 'Assignor', 'Assignee', 'Director',
-    'Acme Holdings', 'Acme', // client
     'This', 'The', 'These', 'Those',
   ]);
 
@@ -869,6 +877,12 @@ interface Synthesis {
    *  closed vocabulary and NOT recognised geo/legal-doc words. Surfaces
    *  training-memorisation hallucinations the synthesis prompt didn't block. */
   suspectNames?: string[];
+  /** v3.4: true if the synthesis emitted the client's company name in the
+   *  summary, any risk description, or any recommendation. The synthesise()
+   *  post-process strips these (replacing with "the client") before returning;
+   *  this flag exists for the audit trail so the eval can score how often
+   *  the post-process had to intervene. */
+  clientNameLeaked?: boolean;
 }
 
 async function synthesise(
@@ -932,16 +946,27 @@ async function synthesise(
   // Profile is the client's STANCE, not document facts. The synthesis prompt
   // is told this explicitly; we also visually separate the blocks so the
   // model doesn't conflate them when reading top-down.
+  //
+  // v3.4: the client's COMPANY NAME is deliberately omitted from this block.
+  // v3.3 eval (EVAL_REPORT_V33.md) surfaced a new leak vector: even though
+  // the closed-vocabulary mechanism filtered the client name out of the
+  // candidate parties list, the synthesis was still naming the client in
+  // the risk-framing narrative ("potentially exposing Acme Holdings to
+  // significant financial risk..."). gemma2:2b can't reliably distinguish
+  // "stance" from "subject" — if the company name is in the prompt as a
+  // tangible string, it leaks into prose. The structural fix: don't show
+  // the name to the synthesis. Industry + jurisdiction + concerns are
+  // enough framing context; the actual company name is never needed for
+  // the executive summary.
   const userMessage = [
     '=== DOCUMENT (the source of facts) ===',
     `Filename: ${filename}`,
     '',
     '=== CLIENT STANCE (use ONLY for risk framing — NOT as document facts) ===',
-    `Company name: ${profile.company}`,
     `Client's industry: ${profile.industry}`,
     `Client's home jurisdiction: ${profile.jurisdiction}`,
     `Client's stated concerns: ${profile.concerns.join(', ')}`,
-    'NOTE: the client may or may not be a party to this document. Do not name the client as a party unless the per-clause findings below explicitly say so.',
+    'NOTE: the client reviewing this document may or may not be a party to it. If you need to refer to the reviewer in the summary or in risk descriptions, use "the client" — NEVER a specific company name. Specific company names come ONLY from the per-clause findings.',
     '',
     '=== PER-CLAUSE FINDINGS FROM THE TEAM (the source of truth for parties, jurisdiction, subject matter) ===',
     longDocNote + compactFindings,
@@ -960,34 +985,82 @@ async function synthesise(
 
   const raw = await ollamaJsonChat(cfg, SYNTHESIS_PROMPT, userMessage, 1500) as Record<string, unknown>;
 
-  const summary = typeof raw.summary === 'string' ? raw.summary : `Local analysis of ${filename}`;
+  const rawSummary = typeof raw.summary === 'string' ? raw.summary : `Local analysis of ${filename}`;
+  const rawRisks = Array.isArray(raw.topRisks) ? raw.topRisks.map(r => {
+    const rr = r as Record<string, unknown>;
+    return {
+      description: typeof rr.description === 'string' ? rr.description : '',
+      severity: validateRiskSeverity(typeof rr.severity === 'string' ? rr.severity : undefined, 'medium'),
+      citation: typeof rr.citation === 'string' ? rr.citation : '',
+    };
+  }).filter(r => r.description.length > 0) : [];
+  const rawRecommendations = Array.isArray(raw.recommendations)
+    ? raw.recommendations.filter((s): s is string => typeof s === 'string' && s.length > 5)
+    : [];
+
+  // v3.4 defensive post-process: even with the client name removed from the
+  // synthesis user-message (v3.4 fix #1), gemma2:2b can still produce the
+  // client name in narrative text if it's recurring in the per-clause
+  // findings or if the model latches onto a pattern from training. We do a
+  // word-boundary regex replace of `profile.company` with "the client" in
+  // the summary, every risk description, and every recommendation, and
+  // surface a `clientNameLeaked` boolean on the result for the audit trail.
+  const { sanitised: summary, leaked: summaryLeak } = stripClientName(rawSummary, profile.company);
+  const sanitisedRisks = rawRisks.map(r => {
+    const { sanitised, leaked } = stripClientName(r.description, profile.company);
+    return { ...r, description: sanitised, _leaked: leaked };
+  });
+  const risksLeaked = sanitisedRisks.some(r => r._leaked);
+  const sanitisedRecommendations = rawRecommendations.map(rec => stripClientName(rec, profile.company).sanitised);
+  const clientNameLeaked = summaryLeak || risksLeaked;
 
   // v3.2: post-synthesis party-name validation. Surfaces suspect names
   // (capitalised proper nouns in the summary that are NOT in the closed
-  // vocabulary and NOT recognised geo/legal-doc words). Logged but not
-  // strictly enforced — strict enforcement risks rejecting legitimate
-  // narrative phrasing the small model produces. The audit trail is
-  // sufficient to spot regressions in the eval.
+  // vocabulary and NOT recognised geo/legal-doc words). v3.4: now also
+  // catches profile.company appearances (which v3.3 accidentally masked).
   const suspectNames = validateSummaryNames(summary, requiredNames, profile);
 
   return {
     summary,
     documentType: typeof raw.documentType === 'string' ? raw.documentType : 'Document',
-    topRisks: Array.isArray(raw.topRisks) ? raw.topRisks.map(r => {
-      const rr = r as Record<string, unknown>;
-      return {
-        description: typeof rr.description === 'string' ? rr.description : '',
-        severity: validateRiskSeverity(typeof rr.severity === 'string' ? rr.severity : undefined, 'medium'),
-        citation: typeof rr.citation === 'string' ? rr.citation : '',
-      };
-    }).filter(r => r.description.length > 0) : [],
-    recommendations: Array.isArray(raw.recommendations)
-      ? raw.recommendations.filter((s): s is string => typeof s === 'string' && s.length > 5)
-      : [],
+    topRisks: sanitisedRisks.map(r => ({ description: r.description, severity: r.severity, citation: r.citation })),
+    recommendations: sanitisedRecommendations,
     // v3.2 transparency signals (consumed by eval; UI ignores)
     extractedPartyNames: requiredNames,
     suspectNames,
+    // v3.4 transparency: did we strip a client-name leak post-synthesis?
+    clientNameLeaked,
   };
+}
+
+/**
+ * v3.4: replace word-boundary occurrences of the client's company name in a
+ * given string with "the client". Returns the sanitised string + a flag
+ * indicating whether any replacement was made. Case-insensitive match;
+ * preserves case via "the client" / "The client" depending on position.
+ *
+ * Also handles common possessive form (e.g., "Acme Holdings's" → "the
+ * client's") to keep the output readable.
+ */
+function stripClientName(text: string, companyName: string): { sanitised: string; leaked: boolean } {
+  if (!text || !companyName || companyName.length < 3) return { sanitised: text, leaked: false };
+  // Escape special regex chars in the company name
+  const escaped = companyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Match the full name AND its possessive forms (with apostrophe-s, with trailing 's)
+  const re = new RegExp(`\\b${escaped}(?:['’]s|s')?\\b`, 'gi');
+  let leaked = false;
+  const sanitised = text.replace(re, (match, _offset, fullText) => {
+    leaked = true;
+    // Preserve the leading-capitalisation context: if the match is at the
+    // start of a sentence, use "The client"; otherwise "the client".
+    const startsSentence = (typeof _offset === 'number')
+      ? (_offset === 0 || /[.!?]\s*$/.test((fullText as string).slice(0, _offset)))
+      : false;
+    const possessive = /['’]s$|s'$/.test(match);
+    if (startsSentence) return possessive ? "The client's" : 'The client';
+    return possessive ? "the client's" : 'the client';
+  });
+  return { sanitised, leaked };
 }
 
 // ── Main Entry Point ─────────────────────────────────────────────────────
@@ -1166,6 +1239,7 @@ export async function analyzeLocally(
     model: cfg.modelName,
     precedentsConsulted: precedentsConsulted.length > 0 ? precedentsConsulted : undefined,
     unanchoredStripped: unanchoredStripped > 0 ? unanchoredStripped : undefined,
+    clientNameLeaked: syn.clientNameLeaked === true ? true : undefined,
   };
 }
 
