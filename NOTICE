@@ -1,5 +1,10 @@
-Lavern — An Agentic Legal Architecture
+Lavern — An Agentic Legal Architecture ("The Shem")
 Copyright (c) 2025-2026 Antti Innanen
+
+Licensed under the Apache License, Version 2.0. See LICENSE at the repo
+root for the full text. You may obtain a copy at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
 
 This product includes software developed by third parties.
 See package.json and viz/package.json for the full dependency list.
@@ -22,18 +27,16 @@ LEGAL DATASETS (seeded via scripts/seed-knowledge-base.ts)
   License: CC BY-SA 4.0
   Source: https://github.com/coastalcph/fairlex (LexGLUE)
 
-  ContractNLI — Contract Natural Language Inference
-  License: CC BY-NC-SA 4.0 (non-commercial use only)
-  Source: https://stanfordnlp.github.io/contract-nli/
-
   LEDGAR — SEC Contract Provisions
   License: CC BY-SA 4.0
   Source: https://github.com/zhuoranzhang/LEDGAR (LexGLUE)
 
-NOTE ON CONTRACTNLI: The ContractNLI dataset is licensed under
-CC BY-NC-SA 4.0, which restricts commercial use. If deploying
-Lavern commercially, either exclude ContractNLI from the knowledge
-base seed or obtain a separate commercial license.
+  ContractNLI — REMOVED
+  Previously seeded; removed 2026-05-11. Its CC BY-NC-SA 4.0 license
+  (non-commercial + share-alike) is incompatible with Lavern's Apache 2.0
+  distribution. Users who want this dataset may fetch it independently
+  from https://stanfordnlp.github.io/contract-nli/ and accept its terms
+  separately.
 
 FONTS
 

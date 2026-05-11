@@ -12,7 +12,6 @@
  *   npx tsx scripts/seed-knowledge-base.ts --maud        # seed MAUD only
  *   npx tsx scripts/seed-knowledge-base.ts --acord       # seed ACORD only
  *   npx tsx scripts/seed-knowledge-base.ts --unfair-tos  # seed UNFAIR-ToS only
- *   npx tsx scripts/seed-knowledge-base.ts --contractnli # seed ContractNLI only
  *   npx tsx scripts/seed-knowledge-base.ts --ledgar      # seed LEDGAR only
  *
  * Data sources:
@@ -20,8 +19,13 @@
  *   MAUD:        theatticusproject/maud           (152 merger agreements, 92 deal points, CC BY 4.0)
  *   ACORD:       theatticusproject/acord          (114 queries, 126K+ clause pairs, CC BY 4.0)
  *   UNFAIR-ToS:  coastalcph/lex_glue/unfair_tos  (5.5K sentences, 8 unfair clause types, CC BY-SA 4.0)
- *   ContractNLI: kiddothe2b/contract-nli          (10K+ premise/hypothesis pairs, CC BY-NC-SA 4.0)
  *   LEDGAR:      coastalcph/lex_glue/ledgar       (60K provisions, 98 clause types, CC BY-SA 4.0)
+ *
+ * NOTE: ContractNLI (kiddothe2b/contract-nli) was previously seeded here but
+ * has been removed because its CC BY-NC-SA 4.0 license is incompatible with
+ * Lavern's permissive (Apache 2.0) distribution license. Anyone wanting to
+ * use ContractNLI alongside Lavern can fetch it independently from HuggingFace
+ * and accept its non-commercial-share-alike terms separately.
  */
 
 import * as crypto from 'node:crypto';
@@ -37,7 +41,6 @@ const CUAD_COLLECTION_NAME = 'CUAD — Commercial Contract Clauses';
 const MAUD_COLLECTION_NAME = 'MAUD — Merger Agreement Deal Points';
 const ACORD_COLLECTION_NAME = 'ACORD — Clause Retrieval Pairs';
 const UNFAIR_TOS_COLLECTION_NAME = 'UNFAIR-ToS — Unfair Terms of Service Clauses';
-const CONTRACTNLI_COLLECTION_NAME = 'ContractNLI — Contract Natural Language Inference';
 const LEDGAR_COLLECTION_NAME = 'LEDGAR — SEC Contract Provisions';
 const CACHE_DIR = './data/seed-cache';
 const HF_ROWS_URL = 'https://datasets-server.huggingface.co/rows';
@@ -728,106 +731,16 @@ async function seedUnfairTos(force: boolean): Promise<number> {
 }
 
 // ── ContractNLI Ingestion ────────────────────────────────────────────────
-
-const NLI_LABELS = ['contradiction', 'entailment', 'neutral'];
-
-interface ContractNliRow {
-  premise: string;
-  hypothesis: string;
-  label: number;
-}
-
-async function seedContractNli(force: boolean): Promise<number> {
-  console.log('\n── ContractNLI ───────────────────────────────────────');
-
-  if (!force && collectionHasData(CONTRACTNLI_COLLECTION_NAME)) {
-    console.log('Already seeded. Use --force to re-seed.');
-    return 0;
-  }
-
-  if (force) deleteCollection(CONTRACTNLI_COLLECTION_NAME);
-
-  const collectionId = ensureGlobalCollection(
-    CONTRACTNLI_COLLECTION_NAME,
-    'Contract NLI dataset with premise/hypothesis pairs labeled for entailment, contradiction, and neutral. CC BY-NC-SA 4.0.',
-    'precedent',
-  );
-
-  // Fetch from both configs
-  const rowsA = await fetchAllHfRows<ContractNliRow>('kiddothe2b/contract-nli', 'contractnli_a', 'train', 'contractnli-a-train');
-  const rowsATest = await fetchAllHfRows<ContractNliRow>('kiddothe2b/contract-nli', 'contractnli_a', 'test', 'contractnli-a-test');
-  const rowsAVal = await fetchAllHfRows<ContractNliRow>('kiddothe2b/contract-nli', 'contractnli_a', 'validation', 'contractnli-a-val');
-  const allRows = [...rowsA, ...rowsATest, ...rowsAVal];
-
-  // Deduplicate by premise (many hypotheses share the same premise text)
-  const premiseMap = new Map<string, Array<{ hypothesis: string; label: string }>>();
-  for (const row of allRows) {
-    if (!row.premise?.trim()) continue;
-    const premiseKey = row.premise.trim().slice(0, 200); // Use first 200 chars as key
-    let hypotheses = premiseMap.get(premiseKey);
-    if (!hypotheses) {
-      hypotheses = [];
-      premiseMap.set(premiseKey, hypotheses);
-    }
-    const labelName = NLI_LABELS[row.label] ?? 'unknown';
-    // Avoid duplicate hypothesis entries
-    if (!hypotheses.some(h => h.hypothesis === row.hypothesis)) {
-      hypotheses.push({ hypothesis: row.hypothesis, label: labelName });
-    }
-  }
-
-  console.log(`  ${allRows.length} total pairs, ${premiseMap.size} unique premises, indexing...`);
-
-  const db = getDb();
-  const now = new Date().toISOString();
-  const { insertDoc, insertChunk } = prepareInsertStatements();
-
-  let totalChunks = 0;
-
-  // Group by NLI label for organized browsing
-  const insertAll = db.transaction(() => {
-    // Create one doc per batch of ~100 premises
-    let batchIdx = 0;
-    let batchPremises: Array<{ premise: string; hypotheses: Array<{ hypothesis: string; label: string }> }> = [];
-
-    const flushBatch = () => {
-      if (batchPremises.length === 0) return;
-      const docId = uid('kbdoc');
-      const totalWords = batchPremises.reduce((sum, p) => sum + wordCount(p.premise), 0);
-      insertDoc.run(docId, collectionId, SYSTEM_USER_ID, `ContractNLI-batch-${batchIdx}.txt`, totalWords * 6, totalWords, Math.ceil(totalWords / 250), now);
-
-      for (let i = 0; i < batchPremises.length; i++) {
-        const { premise, hypotheses } = batchPremises[i];
-        const chunkId = uid('kbc');
-        // Include top hypotheses in the content for searchability
-        const topHypotheses = hypotheses.slice(0, 3);
-        const content = `${premise}\n\n${topHypotheses.map(h => `[${h.label.toUpperCase()}] ${h.hypothesis}`).join('\n')}`;
-        const wc = wordCount(content);
-        const metadata = JSON.stringify({
-          hypotheses: hypotheses.slice(0, 5),
-          source: 'ContractNLI',
-        });
-        insertChunk.run(chunkId, docId, collectionId, SYSTEM_USER_ID, 'Contract NLI', content, i, wc, metadata, now);
-        totalChunks++;
-      }
-
-      batchIdx++;
-      batchPremises = [];
-    };
-
-    for (const [premiseKey, hypotheses] of premiseMap) {
-      // Find the full premise text (premiseKey is truncated)
-      const fullPremise = allRows.find(r => r.premise?.trim().startsWith(premiseKey))?.premise?.trim() ?? premiseKey;
-      batchPremises.push({ premise: fullPremise, hypotheses });
-      if (batchPremises.length >= 100) flushBatch();
-    }
-    flushBatch();
-  });
-
-  insertAll();
-  console.log(`  Indexed ${totalChunks} premise chunks.`);
-  return totalChunks;
-}
+//
+// Removed in 2026-05-11. ContractNLI (kiddothe2b/contract-nli) is licensed
+// CC BY-NC-SA 4.0 — Non-Commercial, Share-Alike. Bundling it as a seed
+// dataset constrains Lavern's permissive (Apache 2.0) distribution and
+// blocks commercial use by downstream users. Users who want this dataset
+// can fetch it directly from HuggingFace and accept its terms separately.
+//
+// The previous implementation lived here. To restore it for personal
+// non-commercial use, see git history pre-2026-05-11 commit (the function
+// `seedContractNli` + `ContractNliRow` interface + `NLI_LABELS` constant).
 
 // ── LEDGAR Ingestion ─────────────────────────────────────────────────────
 
@@ -925,17 +838,24 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const force = args.includes('--force');
 
-  // Per-dataset flags
+  // Per-dataset flags. ContractNLI was removed (CC BY-NC-SA license is
+  // incompatible with Lavern's permissive distribution).
   const flags = {
     cuad: args.includes('--cuad'),
     maud: args.includes('--maud'),
     acord: args.includes('--acord'),
     unfairTos: args.includes('--unfair-tos'),
-    contractNli: args.includes('--contractnli'),
     ledgar: args.includes('--ledgar'),
   };
   const anySpecific = Object.values(flags).some(Boolean);
   const all = !anySpecific; // No specific flag = seed everything
+
+  // Reject the old --contractnli flag with a clear error so old scripts don't
+  // silently no-op.
+  if (args.includes('--contractnli')) {
+    console.error('--contractnli is no longer supported. ContractNLI was removed because its CC BY-NC-SA 4.0 license is incompatible with Lavern\'s permissive distribution. Fetch it independently from HuggingFace if you need it.');
+    process.exit(1);
+  }
 
   console.log('Lavern Knowledge Base Seeder');
   console.log('═══════════════════════════════════════════════════════');
@@ -949,7 +869,6 @@ async function main(): Promise<void> {
   if (all || flags.maud) results.MAUD = await seedMaud(force);
   if (all || flags.acord) results.ACORD = await seedAcord(force);
   if (all || flags.unfairTos) results['UNFAIR-ToS'] = await seedUnfairTos(force);
-  if (all || flags.contractNli) results.ContractNLI = await seedContractNli(force);
   if (all || flags.ledgar) results.LEDGAR = await seedLedgar(force);
 
   console.log('\n═══════════════════════════════════════════════════════');

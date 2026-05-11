@@ -36,9 +36,9 @@ with qualified legal professionals.
 ## Project Structure
 
 ### Core Engine
-- `src/agents/` — 66 agent prompts (59 specialists + 7 orchestrators), 59 agent definitions
+- `src/agents/` — 67 agent prompts (59 specialists + 7 orchestrators + 1 base), 59 agent definitions
 - `src/agents/profiles.ts` — 63-agent profile registry (skill ratings, personality, DiceBear avatars)
-- `src/mcp/tools/` — 19 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs)
+- `src/mcp/tools/` — 21 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs, feedback loop, document reader)
 - `src/mcp/remote-bridge/` — JSON-RPC 2.0 HTTP bridge exposing 12 Counsel tools for Anthropic Managed Agents; shared-secret auth, per-session dispatch, Zod arg validation (gated by `LAVERN_MANAGED_AGENTS_BRIDGE=1`)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
@@ -68,7 +68,7 @@ with qualified legal professionals.
 ### API Server
 - `src/api/` — Fastify API server with WebSocket event streaming
   - `src/api/middleware/` — Auth (Bearer + cookie), Zod validation, x402 payment
-  - `src/api/routes/` — 20 route modules:
+  - `src/api/routes/` — 27 route modules:
     - `sessions.ts` — Session CRUD + gate decisions + soul injection from user profile
     - `engage.ts` — Agent-native engagement (sync + webhook modes)
     - `verify.ts` — Standalone document verification
@@ -114,7 +114,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
   - `types.ts` — Shared provider type definitions (`LLMProvider = 'anthropic' | 'mistral'`)
 
 ### Clawern (Law Firm on Retainer)
-- `src/claw/` — Autonomous document processing pipeline (22 modules):
+- `src/claw/` — Autonomous document processing pipeline (28 modules). Lighthouse architecture (Watchman → Reader → Curator + precedent-board lifecycle) added in commits 4455d89 → 2276bae after the v1→v3.4 eval arc on 10 CUAD contracts:
   - `registry.ts` — Document tracking by content hash (SHA-256), persistence
   - `planner.ts` — Budget-aware work planning with sensitivity pattern matching + ethical mode
   - `processor.ts` — Document processing (parse, infer, dispatch, deliver) + precedent lookup/indexing
@@ -182,7 +182,7 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (6 datasets)
 
 ### Tests
-- `tests/` — 1500+ tests across 92 files (83 unit + 9 integration)
+- `tests/` — 1,686 tests across 107 files (98 unit + 9 integration). 96 new tests landed alongside the lighthouse architecture (claw-watchman, claw-curator, claw-reader-precedent, claw-reader-templates, claw-reader-grounding, claw-precedent-lifecycle, claw-skip-route).
 
 ## Version History
 
