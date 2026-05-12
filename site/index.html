@@ -1492,9 +1492,23 @@
     }
     .footer-links a{transition:color .25s var(--ease)}
     .footer-links a:hover{color:var(--text)}
+    .footer-kindred{
+      max-width:var(--max);margin:28px auto 0;
+      padding-top:22px;border-top:1px solid var(--hair);
+      display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)
+    }
+    .footer-kindred .label{color:var(--dim)}
+    .footer-kindred .sep{color:var(--dim)}
+    .footer-kindred a{
+      color:var(--muted);transition:color .25s var(--ease)
+    }
+    .footer-kindred a:hover{color:var(--text)}
     @media(max-width:640px){
       .footer-grid{grid-template-columns:1fr;gap:18px}
       .footer-links{justify-content:flex-start;gap:16px}
+      .footer-kindred{gap:12px}
     }
 
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
@@ -2092,6 +2106,13 @@
         <a href="/privacy/">Privacy</a>
         <a href="https://github.com/lavern-ai/lavern" rel="noopener">GitHub ↗</a>
       </div>
+    </div>
+    <div class="footer-kindred">
+      <span class="label">Also us</span>
+      <span class="sep">—</span>
+      <a href="https://www.wearelegit.ai" rel="noopener" target="_blank">Legit ↗</a>
+      <span class="sep">·</span>
+      <a href="https://www.dot.legal" rel="noopener" target="_blank">Dot Legal ↗</a>
     </div>
   </footer>
 
