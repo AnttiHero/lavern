@@ -486,20 +486,6 @@
       .feature.built .m-dot.ok{animation:none}
     }
 
-    /* TL;DR — staggered item entrance with offset slide */
-    .tldr-item{
-      opacity:0;transform:translateX(-12px);
-      transition:opacity .8s var(--ease),transform .8s var(--ease)
-    }
-    .tldr-item.v{opacity:1;transform:translateX(0)}
-    .tldr-list.v .tldr-item:nth-child(1){transition-delay:.05s}
-    .tldr-list.v .tldr-item:nth-child(2){transition-delay:.13s}
-    .tldr-list.v .tldr-item:nth-child(3){transition-delay:.21s}
-    .tldr-list.v .tldr-item:nth-child(4){transition-delay:.29s}
-    .tldr-list.v .tldr-item:nth-child(5){transition-delay:.37s}
-    .tldr-list.v .tldr-item:nth-child(6){transition-delay:.45s}
-    .tldr-list.v .tldr-item:nth-child(7){transition-delay:.53s}
-
     /* FAQ — same treatment */
     .faq-item{
       opacity:0;transform:translateY(8px);
@@ -528,7 +514,7 @@
     @media(prefers-reduced-motion:reduce){
       .r,.section-title,.hero h1,.closing h2,
       .feature .feature-body > *,
-      .tldr-item,.faq-item,.hero-meta-item{
+      .faq-item,.hero-meta-item{
         opacity:1;transform:none;clip-path:none;transition:none
       }
     }
@@ -1100,515 +1086,286 @@
     }
 
     /* ═══════════════════════════════════════════════════════════════════
-       TL;DR — MAC MINI + STACKED LAYERS (Legora aOS reskin)
-       Mac Mini base; seven translucent glass layers stacked above; pill
-       nav on the left lets you switch the active layer; description
-       updates next to the visual.
+       TL;DR — THE CODEX
+       Three-column editorial layout. Left: sticky 01–07 spine (the
+       visible "stack" as hairline tick marks). Center: seven monumental
+       statements, each ~62vh tall, scroll-tracked. Right: sticky SVG
+       section-elevation of the firm as a building — seven floors over
+       a Mac Mini foundation, MIT roof. Floors construct themselves
+       bottom-up when the section enters view; the active floor brightens
+       as you scroll past each principle. Coda: full-bleed Mac Mini
+       photo backdrop with the metaphor payoff.
        ═══════════════════════════════════════════════════════════════════ */
-    .tldr-head{margin:0 auto 56px;max-width:840px;text-align:center}
-    .tldr-stage{
-      display:grid;grid-template-columns:300px 1fr;gap:48px;
-      max-width:1180px;margin:0 auto;align-items:center;
-      min-height:min(720px,90vh)
+    .codex-head{margin:0 auto clamp(72px,9vw,120px);max-width:840px;text-align:center}
+
+    .codex-grid{
+      display:grid;
+      grid-template-columns:84px 1fr 320px;
+      gap:48px;
+      max-width:var(--max);
+      margin:0 auto;
+      align-items:start;
+      position:relative
+    }
+    @media(max-width:1180px){
+      .codex-grid{grid-template-columns:68px 1fr 280px;gap:32px}
     }
     @media(max-width:900px){
-      .tldr-stage{grid-template-columns:1fr;gap:32px}
+      .codex-grid{grid-template-columns:1fr;gap:0}
+      .codex-spine,.codex-building-wrap{display:none}
     }
 
-    /* Left column — pill nav of principles */
-    .tldr-nav{
-      display:flex;flex-direction:column;gap:10px;align-self:start;
-      position:sticky;top:14vh
+    /* ─── SPINE — sticky 01–07 hairline ticks (the visible "stack") ─── */
+    .codex-spine{
+      position:sticky;top:22vh;align-self:start;
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:1.6px;color:var(--muted);
+      padding-top:4px
     }
-    .tldr-pill{
-      display:flex;align-items:center;justify-content:space-between;gap:14px;
-      font-family:var(--sans);font-size:13px;font-weight:500;
-      letter-spacing:-0.005em;color:var(--text);
-      background:var(--surface-2);border:1px solid var(--hair);
-      padding:12px 18px;border-radius:100px;cursor:pointer;
-      transition:all .35s var(--ease);text-align:left;width:100%;
-      box-shadow:var(--shadow-sm)
+    .codex-spine ol{
+      list-style:none;display:flex;flex-direction:column;gap:20px
     }
-    .tldr-pill:hover{
-      border-color:var(--hair-strong);transform:translateX(2px)
-    }
-    .tldr-pill.active{
-      background:var(--text);color:var(--bg);
-      border-color:var(--text);box-shadow:var(--shadow-md)
-    }
-    .tldr-pill .plus{
-      font-family:var(--mono);font-size:11px;color:var(--muted);
-      transition:transform .3s var(--ease),color .25s var(--ease)
-    }
-    .tldr-pill.active .plus{color:var(--bg);transform:rotate(45deg)}
-    @media(max-width:900px){
-      .tldr-nav{position:static;flex-direction:row;flex-wrap:wrap}
-      .tldr-pill{width:auto}
-    }
-
-    /* ─── TRUE 3D STACK — beyond Legora ───────────────────────────────
-       Real CSS 3D transforms: perspective, preserve-3d, mouse parallax,
-       per-slab click-to-lift, sequential boot, continuous rotation,
-       light beam scanning vertically. No image — every pixel is rendered
-       live so we can react to every input.
-    */
-    .tldr-visual{
-      position:relative;width:100%;aspect-ratio:5/4;
-      perspective:2000px;perspective-origin:50% 45%;
-      cursor:grab
-    }
-    .tldr-visual:active{cursor:grabbing}
-
-    /* Soft warm spotlight behind the stack — radial cream wash */
-    .tldr-visual::before{
-      content:'';position:absolute;inset:8%;
-      background:radial-gradient(ellipse 90% 90% at 50% 60%,
-        rgba(255,248,225,0.92) 0%,
-        rgba(252,240,210,0.55) 30%,
-        rgba(244,232,200,0.25) 55%,
-        rgba(244,242,234,0) 80%);
-      filter:blur(45px);z-index:0
-    }
-
-    /* Stack rotator — JS writes its rotateX/rotateZ for mouse parallax,
-       and CSS adds a gentle continuous yaw on top. */
-    .tldr-stack3d{
-      position:absolute;inset:0;
-      transform-style:preserve-3d;
-      transform:rotateX(56deg) rotateZ(-22deg);
-      transition:transform .8s var(--ease);
-      animation:stackOrbit 18s ease-in-out infinite alternate
-    }
-    @keyframes stackOrbit{
-      0%  {transform:rotateX(56deg) rotateZ(-22deg)}
-      50% {transform:rotateX(54deg) rotateZ(-18deg)}
-      100%{transform:rotateX(56deg) rotateZ(-26deg)}
-    }
-    .tldr-visual.parallax .tldr-stack3d{
-      animation:none;
-      transition:transform .2s linear
-    }
-
-    /* Each glass slab — proper translucent material with depth */
-    .tldr-slab{
-      position:absolute;left:50%;top:50%;
-      width:46%;aspect-ratio:1/1;
-      transform-origin:center center;
-      transform:translate3d(-50%,-50%,var(--z,0px));
-      /* Frosted glass surface */
-      background:
-        linear-gradient(135deg,
-          rgba(255,255,255,0.62) 0%,
-          rgba(255,250,238,0.42) 35%,
-          rgba(245,238,222,0.32) 65%,
-          rgba(225,218,200,0.36) 100%);
-      border:1px solid rgba(255,255,255,0.72);
-      border-radius:16%;
-      box-shadow:
-        /* slab thickness — fake edge depth */
-        0 1px 0 rgba(20,19,16,0.10),
-        0 2px 0 rgba(255,255,255,0.55),
-        0 4px 0 rgba(20,19,16,0.10),
-        0 6px 0 rgba(255,255,255,0.45),
-        /* drop shadow on the surface below */
-        0 12px 24px rgba(20,19,16,0.12),
-        0 24px 40px rgba(20,19,16,0.08),
-        /* inner sheen */
-        inset 0 2px 1px rgba(255,255,255,0.80),
-        inset 0 -2px 1px rgba(20,19,16,0.06);
-      backdrop-filter:blur(2px) saturate(1.05);
-      -webkit-backdrop-filter:blur(2px) saturate(1.05);
-      display:flex;align-items:center;justify-content:center;
-      font-family:var(--sans);font-size:13px;font-weight:500;
-      color:var(--text);letter-spacing:-0.01em;
+    .codex-spine li{
+      position:relative;padding-left:22px;
+      color:var(--dim);
+      transition:color .45s var(--ease),padding-left .35s var(--ease);
       cursor:pointer;
-      transition:transform .6s cubic-bezier(0.4,0,0.2,1),
-                 box-shadow .6s var(--ease),
-                 background .35s var(--ease);
-      /* Initial: hidden + collapsed for boot-in animation */
-      opacity:0
+      white-space:nowrap
     }
-    /* Edge highlight — long warm streak along the leading edge of each slab */
-    .tldr-slab::before{
-      content:'';position:absolute;left:8%;right:8%;top:0;height:6%;
-      background:linear-gradient(90deg,
-        transparent 0%,
-        rgba(255,232,180,0.45) 50%,
-        transparent 100%);
-      border-radius:50% 50% 0 0;
-      filter:blur(1.5px);pointer-events:none;
-      opacity:.7
+    .codex-spine li::before{
+      content:'';position:absolute;left:0;top:6px;
+      width:10px;height:1px;background:currentColor;
+      transition:width .45s var(--ease),background .45s var(--ease)
     }
-    .tldr-slab .slab-label{
-      /* counter-rotate so text reads upright on the isometric face */
-      transform:rotateZ(22deg) rotateX(-56deg);
-      padding:8px 14px;
-      background:rgba(255,253,245,0.92);
-      border-radius:10px;
-      border:1px solid var(--hair);
-      box-shadow:
-        0 3px 10px rgba(20,19,16,0.10),
-        inset 0 1px 0 rgba(255,255,255,0.7);
-      backdrop-filter:blur(4px);
-      white-space:nowrap;
-      transition:background .35s var(--ease),color .35s var(--ease),transform .55s var(--ease)
+    .codex-spine li:hover{color:var(--text)}
+    .codex-spine li.active{color:var(--text);padding-left:26px}
+    .codex-spine li.active::before{width:18px;background:var(--text)}
+
+    /* ─── ENTRIES — seven editorial principles ─── */
+    .codex-entries{
+      display:flex;flex-direction:column
     }
-    /* Active slab — lifted, brighter, bordered. Subtle pre-flip cue. */
-    .tldr-slab.active{
-      background:
-        linear-gradient(135deg,
-          rgba(255,253,245,0.95) 0%,
-          rgba(255,245,225,0.80) 45%,
-          rgba(252,235,200,0.70) 100%);
-      box-shadow:
-        0 1px 0 rgba(20,19,16,0.12),
-        0 2px 0 rgba(255,255,255,0.7),
-        0 4px 0 rgba(20,19,16,0.12),
-        0 6px 0 rgba(255,255,255,0.55),
-        0 0 0 1px rgba(20,19,16,0.18),
-        0 20px 50px rgba(255,200,120,0.30),
-        0 30px 70px rgba(20,19,16,0.18),
-        inset 0 2px 1px rgba(255,255,255,0.95)
+    .codex-entry{
+      min-height:62vh;
+      padding:6vh 0;
+      display:flex;flex-direction:column;justify-content:center;
+      border-top:1px solid var(--hair);
+      max-width:54ch
     }
-    .tldr-slab.active .slab-label{
-      background:var(--text);color:var(--bg);
-      border-color:var(--text);font-weight:600
+    .codex-entry:first-child{border-top:none;padding-top:0}
+    .codex-entry:last-child{padding-bottom:0}
+    .codex-eyebrow{
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.8px;color:var(--muted);text-transform:uppercase;
+      margin-bottom:24px;
+      display:inline-flex;align-items:center;gap:10px
+    }
+    .codex-eyebrow .sep{color:var(--dim)}
+    .codex-title{
+      font-family:var(--sans);
+      font-size:clamp(36px,4.8vw,68px);
+      font-weight:500;
+      line-height:1.04;letter-spacing:-0.032em;
+      color:var(--text);
+      margin-bottom:32px
+    }
+    .codex-title em{font-style:italic;font-weight:400;color:var(--muted)}
+    .codex-body{
+      font-family:var(--sans);font-size:clamp(16px,1.5vw,19px);font-weight:400;
+      line-height:1.55;color:var(--muted);
+      max-width:50ch;margin-bottom:36px
+    }
+    .codex-receipt{
+      display:inline-flex;align-items:center;gap:12px;
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;
+      padding-top:18px;border-top:1px solid var(--hair);
+      max-width:fit-content
+    }
+    .codex-receipt .dot{
+      display:inline-block;width:5px;height:5px;border-radius:50%;
+      background:var(--warm);flex:none
+    }
+    .codex-receipt code{
+      font-family:var(--mono);color:var(--text);font-weight:500
     }
 
-    /* FLIPPED — slab pops out, counter-rotates to face camera, grows.
-       Counter-rotation = inverse of the parent's rotateX(56deg) rotateZ(-22deg). */
-    .tldr-slab.flipped{
-      transform:
-        translate3d(-50%,-50%,260px)
-        rotateZ(22deg)
-        rotateX(-56deg)
-        scale(1.85);
-      z-index:50;
-      background:
-        linear-gradient(135deg,
-          rgba(255,253,245,0.98) 0%,
-          rgba(255,250,238,0.95) 50%,
-          rgba(252,245,230,0.92) 100%);
-      box-shadow:
-        0 1px 0 rgba(20,19,16,0.14),
-        0 3px 0 rgba(255,255,255,0.7),
-        0 6px 0 rgba(20,19,16,0.14),
-        0 9px 0 rgba(255,255,255,0.55),
-        0 0 0 1px rgba(20,19,16,0.10),
-        0 40px 80px rgba(20,19,16,0.20),
-        0 80px 140px rgba(255,200,120,0.18),
-        inset 0 2px 1px rgba(255,255,255,0.95)
+    /* ─── BUILDING — sticky SVG section-elevation ─── */
+    .codex-building-wrap{
+      position:sticky;top:14vh;align-self:start;
+      display:flex;flex-direction:column;gap:0
     }
-    /* Hide stacked label, show big face when flipped */
-    .tldr-slab.flipped .slab-label{opacity:0;pointer-events:none}
-    .tldr-slab.flipped .slab-face{opacity:1;pointer-events:auto}
-
-    /* Slab face — content shown after the flip lands */
-    .tldr-slab .slab-face{
-      position:absolute;inset:9%;
-      display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
-      text-align:left;gap:8px;
-      opacity:0;pointer-events:none;
-      transition:opacity .35s var(--ease) .25s; /* fades in mid-flip */
+    .codex-building-meta,
+    .codex-building-caption{
+      display:flex;justify-content:space-between;align-items:baseline;
+      font-family:var(--mono);font-size:9px;font-weight:500;
+      letter-spacing:1.8px;color:var(--dim);text-transform:uppercase
     }
-    .slab-face .face-num{
-      font-family:var(--mono);font-size:9px;font-weight:600;
-      letter-spacing:1.6px;text-transform:uppercase;color:var(--accent-dim,var(--muted))
-    }
-    .slab-face .face-title{
-      font-family:var(--sans);font-size:14px;font-weight:600;
-      line-height:1.15;letter-spacing:-0.015em;color:var(--text);
-      max-width:24ch
-    }
-    .slab-face .face-body{
-      font-family:var(--sans);font-size:10px;font-weight:400;
-      line-height:1.5;color:var(--muted);
-      max-width:36ch
-    }
-    .slab-face .face-tag{
-      align-self:flex-start;
-      font-family:var(--mono);font-size:8px;font-weight:500;
-      letter-spacing:1.2px;text-transform:uppercase;
-      padding:3px 8px;border-radius:100px;
-      background:var(--text);color:var(--bg);
-      margin-top:6px
+    .codex-building-meta{padding-bottom:14px;border-bottom:1px solid var(--hair)}
+    .codex-building-caption{padding-top:14px;border-top:1px solid var(--hair)}
+    .codex-building{
+      width:100%;height:auto;display:block;
+      color:var(--text);
+      margin:18px 0
     }
 
-    /* Stack mode (no slab flipped) — body card visible. Flip mode — hidden. */
-    .tldr-visual.has-flipped .tldr-bodycard{opacity:0;pointer-events:none}
+    /* Building elements — base state: hairline outline, no fill */
+    .bldg-floor,.bldg-roof,.bldg-found{
+      fill:rgba(20,19,16,0.012);
+      stroke:currentColor;stroke-width:1;
+      vector-effect:non-scaling-stroke;
+      transform-box:fill-box;
+      transform-origin:center bottom;
+      transform:scaleY(0);
+      opacity:0;
+      transition:fill .5s var(--ease),stroke .5s var(--ease)
+    }
+    .bldg-line{
+      stroke:var(--hair-strong);stroke-width:0.75;
+      vector-effect:non-scaling-stroke;
+      opacity:0;transition:opacity .5s var(--ease)
+    }
+    .bldg-ground,.bldg-ground-tick{
+      stroke:currentColor;stroke-width:1;
+      vector-effect:non-scaling-stroke;
+      opacity:0;transition:opacity .5s var(--ease)
+    }
+    .bldg-ground-tick{stroke:var(--hair-strong);stroke-width:0.75}
 
-    /* Other slabs dim + sink back when one is flipped */
-    .tldr-visual.has-flipped .tldr-slab:not(.flipped){
-      opacity:.35;
-      filter:saturate(.5) blur(.5px);
-      transform:translate3d(-50%,-50%,calc(var(--z,0px) - 30px)) scale(.92)
+    .bldg-label{
+      font-family:var(--mono);font-size:7.5px;font-weight:500;
+      letter-spacing:1.8px;fill:var(--muted);
+      text-transform:uppercase;
+      opacity:0;
+      transition:fill .45s var(--ease),font-weight .45s var(--ease)
     }
-    /* Boot-in animation — each slab materializes from below with delay */
-    .tldr-visual.booted .tldr-slab{
-      animation:slabBoot 1.1s cubic-bezier(0.16,1,0.3,1) forwards
-    }
-    .tldr-visual.booted .tldr-slab:nth-child(1){animation-delay:.15s}
-    .tldr-visual.booted .tldr-slab:nth-child(2){animation-delay:.30s}
-    .tldr-visual.booted .tldr-slab:nth-child(3){animation-delay:.45s}
-    .tldr-visual.booted .tldr-slab:nth-child(4){animation-delay:.60s}
-    .tldr-visual.booted .tldr-slab:nth-child(5){animation-delay:.75s}
-    .tldr-visual.booted .tldr-slab:nth-child(6){animation-delay:.90s}
-    .tldr-visual.booted .tldr-slab:nth-child(7){animation-delay:1.05s}
-    @keyframes slabBoot{
-      0%   {opacity:0;transform:translate3d(-50%,-50%,calc(var(--z,0px) - 240px)) scale(.7)}
-      60%  {opacity:1}
-      100% {opacity:1;transform:translate3d(-50%,-50%,var(--z,0px)) scale(1)}
-    }
-
-    /* Mac Mini base — proper 3D box (top + visible sides via box-shadow) */
-    .tldr-macmini{
-      position:absolute;left:50%;top:50%;
-      width:50%;aspect-ratio:1/1;
-      transform:translate3d(-50%,-50%,-220px);
-      background:
-        radial-gradient(ellipse 70% 50% at 50% 30%,
-          rgba(255,255,255,0.85) 0%,
-          rgba(220,218,212,0.5) 35%,
-          transparent 70%),
-        linear-gradient(180deg,#E8E6E0 0%,#C8C5BE 45%,#A0998F 100%);
-      border:1px solid rgba(255,255,255,0.5);
-      border-radius:14%;
-      box-shadow:
-        0 1px 0 rgba(20,19,16,0.10),
-        0 2px 0 rgba(255,255,255,0.45),
-        0 4px 0 rgba(20,19,16,0.12),
-        0 6px 0 rgba(255,255,255,0.40),
-        0 8px 0 rgba(20,19,16,0.14),
-        0 10px 0 rgba(255,255,255,0.35),
-        0 12px 0 rgba(20,19,16,0.16),
-        /* drop shadow on the floor */
-        0 40px 60px rgba(20,19,16,0.32),
-        0 80px 120px rgba(20,19,16,0.18),
-        /* inner highlights */
-        inset 0 3px 4px rgba(255,255,255,0.55),
-        inset 0 -3px 4px rgba(0,0,0,0.18)
-    }
-    /* Apple logo on top */
-    .tldr-macmini::before{
-      content:'';position:absolute;
-      top:50%;left:50%;
-      width:22%;height:22%;
-      transform:translate(-50%,-50%);
-      background:
-        radial-gradient(circle, rgba(20,19,16,0.45) 0%, rgba(20,19,16,0.25) 60%, transparent 80%);
-      filter:blur(1px);
-      border-radius:50%;
-      opacity:.4
-    }
-    /* USB-C ports row at the front edge */
-    .tldr-macmini::after{
-      content:'';position:absolute;
-      bottom:10%;left:18%;right:18%;
-      height:6%;
-      background:linear-gradient(90deg,
-        transparent 0%,
-        rgba(20,19,16,0.35) 10%,
-        rgba(20,19,16,0.35) 90%,
-        transparent 100%);
-      border-radius:4px;
-      box-shadow:inset 0 1px 2px rgba(0,0,0,0.5)
-    }
-    /* Floor surface beneath the Mac Mini — soft warm reflection */
-    .tldr-floor{
-      position:absolute;left:50%;top:50%;
-      width:90%;height:90%;
-      transform:translate3d(-50%,-50%,-260px) rotateX(0deg);
-      background:radial-gradient(ellipse 60% 50% at 50% 50%,
-        rgba(255,238,205,0.65) 0%,
-        rgba(255,228,180,0.30) 35%,
-        rgba(255,220,170,0.10) 55%,
-        transparent 75%);
-      filter:blur(20px);
-      pointer-events:none;
-      animation:floorBreathe 5s ease-in-out infinite alternate
-    }
-    @keyframes floorBreathe{
-      0%{opacity:.65;transform:translate3d(-50%,-50%,-260px) scale(1)}
-      100%{opacity:1;transform:translate3d(-50%,-50%,-260px) scale(1.08)}
+    .bldg-label.found{font-weight:600;fill:var(--text);letter-spacing:2px}
+    .bldg-label.roof{fill:var(--text);font-weight:600;letter-spacing:2px}
+    .bldg-title{
+      font-family:var(--mono);font-size:6px;font-weight:500;
+      letter-spacing:2.4px;fill:var(--dim);text-transform:uppercase;
+      opacity:0;transition:opacity .5s var(--ease)
     }
 
-    /* Light beam — a soft warm vertical pulse traveling up through the
-       slabs continuously, like data flowing layer-to-layer. */
-    .tldr-beam{
-      position:absolute;left:50%;top:50%;
-      width:50%;aspect-ratio:1/1;
-      transform:translate3d(-50%,-50%,0);
-      pointer-events:none;
-      transform-style:preserve-3d
+    /* Active floor — warm tint fill, deepened stroke + label */
+    .bldg-floor.active{
+      fill:rgba(107,79,58,0.10);
+      stroke:var(--text)
     }
-    .tldr-beam::before{
-      content:'';position:absolute;left:42%;right:42%;
-      top:88%;height:10%;
-      background:radial-gradient(ellipse at center,
-        rgba(255,232,180,0.85) 0%,
-        rgba(255,210,150,0.45) 40%,
-        transparent 75%);
-      filter:blur(8px);
-      mix-blend-mode:screen;
-      animation:beamRise 4.5s cubic-bezier(.4,.0,.4,1) infinite
+    .bldg-label.active{
+      fill:var(--text);font-weight:600
     }
-    @keyframes beamRise{
-      0%   {top:88%;opacity:0;transform:scale(.6)}
-      8%   {opacity:.9}
-      90%  {opacity:.7}
-      100% {top:-15%;opacity:0;transform:scale(1.2)}
+
+    /* Foundation: Mac Mini — slightly heavier fill to anchor the stack */
+    .bldg-found{
+      fill:rgba(20,19,16,0.06);
+      stroke:var(--text)
     }
+    .bldg-roof{
+      fill:rgba(20,19,16,0.03);
+      stroke:var(--text)
+    }
+
+    /* Construction animation — building assembles bottom-up on scroll */
+    .codex-building.built .bldg-found,
+    .codex-building.built .bldg-floor,
+    .codex-building.built .bldg-roof{
+      animation:bldgRise .7s cubic-bezier(0.4,0,0.2,1) forwards
+    }
+    @keyframes bldgRise{
+      to{transform:scaleY(1);opacity:1}
+    }
+    /* Labels + decorative lines fade in shortly after each element lands */
+    .codex-building.built .bldg-label,
+    .codex-building.built .bldg-line,
+    .codex-building.built .bldg-ground,
+    .codex-building.built .bldg-ground-tick,
+    .codex-building.built .bldg-title{
+      animation:bldgFade .5s var(--ease) forwards
+    }
+    @keyframes bldgFade{
+      to{opacity:1}
+    }
+
+    /* Construction sequence — foundation first, then floors bottom-up,
+       then roof. ~190ms stagger; total ~2.0s. */
+    .codex-building.built .bldg-found            {animation-delay:0s}
+    .codex-building.built .bldg-label.found      {animation-delay:.40s}
+    .codex-building.built .bldg-line             {animation-delay:.40s}
+    .codex-building.built .bldg-floor[data-i="0"]{animation-delay:.20s}
+    .codex-building.built .bldg-label[data-i="0"]{animation-delay:.60s}
+    .codex-building.built .bldg-floor[data-i="1"]{animation-delay:.38s}
+    .codex-building.built .bldg-label[data-i="1"]{animation-delay:.78s}
+    .codex-building.built .bldg-floor[data-i="2"]{animation-delay:.56s}
+    .codex-building.built .bldg-label[data-i="2"]{animation-delay:.96s}
+    .codex-building.built .bldg-floor[data-i="3"]{animation-delay:.74s}
+    .codex-building.built .bldg-label[data-i="3"]{animation-delay:1.14s}
+    .codex-building.built .bldg-floor[data-i="4"]{animation-delay:.92s}
+    .codex-building.built .bldg-label[data-i="4"]{animation-delay:1.32s}
+    .codex-building.built .bldg-floor[data-i="5"]{animation-delay:1.10s}
+    .codex-building.built .bldg-label[data-i="5"]{animation-delay:1.50s}
+    .codex-building.built .bldg-floor[data-i="6"]{animation-delay:1.28s}
+    .codex-building.built .bldg-label[data-i="6"]{animation-delay:1.68s}
+    .codex-building.built .bldg-roof             {animation-delay:1.48s}
+    .codex-building.built .bldg-label.roof       {animation-delay:1.88s}
+    .codex-building.built .bldg-ground           {animation-delay:.05s}
+    .codex-building.built .bldg-ground-tick      {animation-delay:.20s}
+    .codex-building.built .bldg-title            {animation-delay:2.00s}
 
     @media(prefers-reduced-motion:reduce){
-      .tldr-stack3d{animation:none}
-      .tldr-floor,.tldr-beam::before{animation:none}
-      .tldr-visual.booted .tldr-slab{animation:none;opacity:1;transform:translate3d(-50%,-50%,var(--z,0px))}
+      .bldg-floor,.bldg-roof,.bldg-found{
+        transform:scaleY(1);opacity:1;animation:none
+      }
+      .bldg-label,.bldg-line,.bldg-ground,.bldg-ground-tick,.bldg-title{
+        opacity:1;animation:none
+      }
     }
 
-    /* The body panel that floats next to the active slab */
-    .tldr-bodycard{
-      position:absolute;left:0;top:50%;
-      transform:translateY(-50%);
-      max-width:340px;
-      background:rgba(20,19,16,0.85);color:var(--bg);
-      padding:22px 26px;border-radius:18px;
-      backdrop-filter:blur(14px);
-      -webkit-backdrop-filter:blur(14px);
-      box-shadow:var(--shadow-lg);
-      z-index:10;pointer-events:none;
-      opacity:0;transform:translateY(-50%) translateX(-10px);
-      transition:opacity .4s var(--ease),transform .4s var(--ease)
+    /* ─── CODA — the metaphor pays off ─── */
+    .codex-coda{
+      position:relative;
+      margin-top:clamp(96px,14vw,180px);
+      padding:clamp(120px,16vw,220px) 32px;
+      text-align:center;
+      overflow:hidden;
+      border-top:1px solid var(--hair);
+      border-bottom:1px solid var(--hair)
     }
-    .tldr-visual.has-active .tldr-bodycard{
-      opacity:1;transform:translateY(-50%) translateX(0)
+    .codex-coda::before{
+      content:'';position:absolute;inset:0;
+      background:url('img/atmos-mac-mini-dark.jpg') center/cover no-repeat;
+      opacity:0.18;
+      filter:contrast(1.05) brightness(.95) grayscale(.15);
+      z-index:0
     }
-    .tldr-bodycard h4{
-      font-family:var(--sans);font-size:14px;font-weight:600;
-      letter-spacing:-0.01em;margin-bottom:8px
+    .codex-coda::after{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(180deg,
+        var(--bg) 0%,
+        rgba(240,238,230,0.72) 28%,
+        rgba(240,238,230,0.72) 72%,
+        var(--bg) 100%);
+      z-index:1
     }
-    .tldr-bodycard p{
-      font-family:var(--sans);font-size:13px;font-weight:400;
-      line-height:1.6;color:rgba(250,249,246,0.85)
+    .codex-coda > *{position:relative;z-index:2}
+    .codex-coda-eyebrow{
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:2.4px;color:var(--muted);text-transform:uppercase;
+      margin-bottom:36px;
+      display:inline-flex;align-items:center;gap:14px
     }
-
-    /* Optional rendered image override — drop site/img/mac-mini-stack.png
-       in and the CSS stack hides automatically. */
-    .tldr-visual.has-image .tldr-stack3d,
-    .tldr-visual.has-image .tldr-macmini{display:none}
-    .tldr-visual-img{
-      display:none;position:absolute;inset:0;
-      width:100%;height:100%;object-fit:contain;
-      z-index:1;
-      transform-origin:50% 60%;
-      /* Continuous gentle breathing — the stack "lives" */
-      animation:stackBreathe 7s ease-in-out infinite alternate;
-      will-change:transform,filter
+    .codex-coda-eyebrow::before,
+    .codex-coda-eyebrow::after{
+      content:'';display:inline-block;width:24px;height:1px;
+      background:var(--hair-strong)
     }
-    .tldr-visual.has-image .tldr-visual-img{display:block}
-    /* Fully alive: gentle yaw + lift breath on a 9s loop */
-    @keyframes stackBreathe{
-      0%   {transform:perspective(1400px) rotateY(-1.4deg) translateY(0)   scale(1);     filter:brightness(1)    saturate(1)}
-      25%  {transform:perspective(1400px) rotateY( 0deg)   translateY(-4px) scale(1.005); filter:brightness(1.03) saturate(1.03)}
-      50%  {transform:perspective(1400px) rotateY( 1.4deg) translateY(-8px) scale(1.012); filter:brightness(1.06) saturate(1.07)}
-      75%  {transform:perspective(1400px) rotateY( 0deg)   translateY(-4px) scale(1.005); filter:brightness(1.03) saturate(1.03)}
-      100% {transform:perspective(1400px) rotateY(-1.4deg) translateY(0)   scale(1);     filter:brightness(1)    saturate(1)}
+    .codex-coda h3{
+      font-family:var(--sans);
+      font-size:clamp(40px,6.4vw,88px);
+      font-weight:500;line-height:1.02;letter-spacing:-0.038em;
+      max-width:18ch;margin:0 auto
     }
-    /* Pill-click pulse — flash brighten + lift */
-    .tldr-visual.pulse .tldr-visual-img{
-      animation:stackPulse .9s var(--ease) 1, stackBreathe 9s ease-in-out infinite
-    }
-    @keyframes stackPulse{
-      0%   {transform:translateY(-6px) scale(1.008);filter:brightness(1.04)}
-      40%  {transform:translateY(-14px) scale(1.045);filter:brightness(1.22) saturate(1.18)}
-      100% {transform:translateY(-6px) scale(1.008);filter:brightness(1.04)}
-    }
-
-    /* Active-layer highlight — a soft warm glow ring sliding between slabs */
-    .tldr-layer-glow{
-      position:absolute;left:18%;right:18%;
-      height:14%;
-      pointer-events:none;z-index:3;
-      background:radial-gradient(ellipse at center,
-        rgba(255,238,205,0.6) 0%,
-        rgba(255,225,170,0.34) 28%,
-        rgba(255,210,140,0.12) 55%,
-        transparent 75%);
-      mix-blend-mode:screen;
-      filter:blur(14px);
-      opacity:0;
-      transition:top .65s var(--ease),opacity .55s var(--ease)
-    }
-    .tldr-visual.has-image .tldr-layer-glow{opacity:1}
-
-    /* Scan wave — a soft horizontal band of light traveling UP through the
-       stack every 5.5s, like the system is processing layer-by-layer. */
-    .tldr-scan{
-      position:absolute;left:10%;right:10%;
-      top:100%;
-      height:22%;
-      pointer-events:none;z-index:2;
-      background:linear-gradient(to bottom,
-        transparent 0%,
-        rgba(255,238,200,0.0) 8%,
-        rgba(255,232,180,0.45) 50%,
-        rgba(255,238,200,0.0) 92%,
-        transparent 100%);
-      mix-blend-mode:screen;filter:blur(10px);
-      animation:scanMove 5.5s cubic-bezier(.4,.0,.4,1) infinite;
-      opacity:0
-    }
-    .tldr-visual.has-image .tldr-scan{opacity:1}
-    @keyframes scanMove{
-      0%   {top:95%;  opacity:0}
-      8%   {opacity:.9}
-      92%  {opacity:.9}
-      100% {top:-22%; opacity:0}
-    }
-
-    /* Secondary drifting highlight — slower, smaller, opposite direction.
-       Adds the impression of multiple processes running. */
-    .tldr-driftglow{
-      position:absolute;
-      width:60%;height:18%;
-      left:20%;
-      pointer-events:none;z-index:2;
-      background:radial-gradient(ellipse at center,
-        rgba(180,210,255,0.30) 0%,
-        rgba(180,210,255,0.10) 40%,
-        transparent 70%);
-      mix-blend-mode:screen;filter:blur(20px);
-      opacity:0;
-      animation:driftMove 8.5s ease-in-out infinite
-    }
-    .tldr-visual.has-image .tldr-driftglow{opacity:1}
-    @keyframes driftMove{
-      0%   {top:10%; transform:translateX(-15%) scale(1)}
-      50%  {top:55%; transform:translateX(15%)  scale(1.1)}
-      100% {top:10%; transform:translateX(-15%) scale(1)}
-    }
-
-    /* Soft glow under the Mac Mini base — anchors the stack to the surface */
-    .tldr-baseglow{
-      position:absolute;left:25%;right:25%;
-      bottom:5%;height:8%;
-      pointer-events:none;z-index:0;
-      background:radial-gradient(ellipse at center,
-        rgba(255,240,200,0.55) 0%,
-        rgba(255,235,190,0.22) 40%,
-        transparent 75%);
-      filter:blur(18px);
-      animation:baseGlow 4.2s ease-in-out infinite alternate
-    }
-    @keyframes baseGlow{
-      0%{opacity:.55;transform:scaleX(1)}
-      100%{opacity:.95;transform:scaleX(1.08)}
-    }
-
-    @media(prefers-reduced-motion:reduce){
-      .tldr-visual-img,.tldr-visual.pulse .tldr-visual-img,
-      .tldr-scan,.tldr-driftglow,.tldr-baseglow{animation:none}
-      .tldr-layer-glow{transition:none}
-    }
+    .codex-coda h3 em{font-style:italic;font-weight:400;color:var(--muted)}
 
     /* ═══════════════════════════════════════════════════════════════════
        STATS — big numbers section (Legora ROI block reskin)
@@ -2054,50 +1811,155 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       TL;DR
+       TL;DR — The Codex
+       Editorial three-column layout: spine, entries, building.
        ═══════════════════════════════════════════════════════════════════ -->
   <section id="tldr">
     <div class="container">
-      <div class="tldr-head r">
+      <div class="codex-head r">
         <span class="section-tag"><span class="num">03</span> · TL;DR</span>
         <h2 class="section-title word-reveal">What this <em>actually is.</em></h2>
       </div>
-      <!-- Mac Mini + glass layers stage (Legora aOS reskin) -->
-      <div class="tldr-stage" id="tldrStage">
-        <!-- Pill nav (left column) -->
-        <div class="tldr-nav" role="tablist" aria-label="Lavern principles">
-          <button class="tldr-pill" data-i="0" role="tab"><span>Architecture</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="1" role="tab"><span>Evidence</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="2" role="tab"><span>Loops</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="3" role="tab"><span>Context</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="4" role="tab"><span>Providers</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="5" role="tab"><span>Clawern</span><span class="plus">+</span></button>
-          <button class="tldr-pill" data-i="6" role="tab"><span>Open Source</span><span class="plus">+</span></button>
+
+      <div class="codex-grid">
+        <!-- Spine — the visible "stack" -->
+        <nav class="codex-spine" aria-label="Lavern principles">
+          <ol>
+            <li data-i="0">01 · Architecture</li>
+            <li data-i="1">02 · Evidence</li>
+            <li data-i="2">03 · Loops</li>
+            <li data-i="3">04 · Context</li>
+            <li data-i="4">05 · Providers</li>
+            <li data-i="5">06 · Clawern</li>
+            <li data-i="6">07 · Open Source</li>
+          </ol>
+        </nav>
+
+        <!-- Seven editorial entries -->
+        <div class="codex-entries">
+          <article class="codex-entry" data-i="0">
+            <span class="codex-eyebrow">01<span class="sep">/</span>Architecture</span>
+            <h3 class="codex-title">A multi-agent legal system, <em>not a chatbot.</em></h3>
+            <p class="codex-body">The architecture borrows from law firms — partners, associates, debate rooms, institutional memory. Sixty-seven specialist agents organised to do the work the way a firm does it.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/agents/</code> · 67 specialists · 7 orchestrators</span>
+          </article>
+
+          <article class="codex-entry" data-i="1">
+            <span class="codex-eyebrow">02<span class="sep">/</span>Evidence</span>
+            <h3 class="codex-title">Every finding cites <em>text.</em></h3>
+            <p class="codex-body">Every challenge cites counter-text. The orchestrator weighs both and resolves. The audit trail isn't bolted on after — it's a side effect of how the system thinks.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/mcp/tools/</code> · 21 modules · debate board</span>
+          </article>
+
+          <article class="codex-entry" data-i="2">
+            <span class="codex-eyebrow">03<span class="sep">/</span>Loops</span>
+            <h3 class="codex-title">Defined by its <em>feedback loops.</em></h3>
+            <p class="codex-body">Briefing loops. Debate loops. A ten-pass verification loop before anything reaches the user. Workflows aren't chains — they're spirals that keep tightening until the work survives.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/workflows/</code> · 8 templates · 1,686 tests</span>
+          </article>
+
+          <article class="codex-entry" data-i="3">
+            <span class="codex-eyebrow">04<span class="sep">/</span>Context</span>
+            <h3 class="codex-title">Context is the <em>bottleneck.</em></h3>
+            <p class="codex-body">The model is not. An intake that asks questions outperforms one that doesn't. Lavern interviews before it acts — the briefing alone is most of the work.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/api/briefing.ts</code> · LLM-led intake</span>
+          </article>
+
+          <article class="codex-entry" data-i="4">
+            <span class="codex-eyebrow">05<span class="sep">/</span>Providers</span>
+            <h3 class="codex-title">Claude. Mistral. <em>Or local.</em></h3>
+            <p class="codex-body">Runs on Anthropic or Mistral for EU data sovereignty. Optional on-device mode means confidential documents never leave your machine. The firm follows your jurisdiction, not the other way round.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/providers/</code> · Claude · Mistral · Ollama</span>
+          </article>
+
+          <article class="codex-entry" data-i="5">
+            <span class="codex-eyebrow">06<span class="sep">/</span>Clawern</span>
+            <h3 class="codex-title">A firm <em>on retainer.</em></h3>
+            <p class="codex-body">Pointed at a folder, Lavern becomes Clawern — running on a thirty-minute heartbeat with precedent memory, cost forecasting, and a hard budget cap. It watches. You decide.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>src/claw/</code> · 28 modules · LaunchAgent</span>
+          </article>
+
+          <article class="codex-entry" data-i="6">
+            <span class="codex-eyebrow">07<span class="sep">/</span>Open Source</span>
+            <h3 class="codex-title">Read the source. <em>Run the firm.</em></h3>
+            <p class="codex-body">Every agent prompt, debate protocol, precedent rule, and verification pass is there to be read, audited, and argued with. MIT-licensed. Made in Helsinki.</p>
+            <span class="codex-receipt"><span class="dot"></span><code>github.com/lavern-ai</code> · MIT</span>
+          </article>
         </div>
 
-        <!-- Stacked visual (right column) -->
-        <div class="tldr-visual" id="tldrVisual">
-          <!-- Pure 3D CSS stack — every pixel rendered live so we can
-               react to mouse, scroll, pill clicks. -->
-          <div class="tldr-stack3d" id="tldrStack3d">
-            <div class="tldr-floor"></div>
-            <div class="tldr-macmini"></div>
-            <div class="tldr-beam"></div>
-            <div class="tldr-slab" data-i="0" style="--z:-160px"><span class="slab-label">Architecture</span></div>
-            <div class="tldr-slab" data-i="1" style="--z:-110px"><span class="slab-label">Evidence</span></div>
-            <div class="tldr-slab" data-i="2" style="--z:-60px"><span class="slab-label">Loops</span></div>
-            <div class="tldr-slab" data-i="3" style="--z:-10px"><span class="slab-label">Context</span></div>
-            <div class="tldr-slab" data-i="4" style="--z:40px"><span class="slab-label">Providers</span></div>
-            <div class="tldr-slab" data-i="5" style="--z:90px"><span class="slab-label">Clawern</span></div>
-            <div class="tldr-slab" data-i="6" style="--z:140px"><span class="slab-label">Open Source</span></div>
+        <!-- The Building — sticky SVG section-elevation -->
+        <aside class="codex-building-wrap" aria-hidden="true">
+          <div class="codex-building-meta">
+            <span>Lavern · Section</span>
+            <span>NTS</span>
           </div>
+          <svg class="codex-building" id="codexBuilding" viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The firm drawn as a building, seven storeys on a Mac Mini foundation.">
+            <!-- Title block (top corner of the drawing) -->
+            <text class="bldg-title" x="20" y="22">DWG · 01</text>
+            <text class="bldg-title" x="280" y="22" text-anchor="end">SCALE · NTS</text>
 
-          <!-- Body card — floats next to active layer with its description -->
-          <div class="tldr-bodycard" id="tldrBody" aria-live="polite">
-            <h4 id="tldrBodyTitle"></h4>
-            <p id="tldrBodyText"></p>
+            <!-- Roof cap (MIT) -->
+            <rect class="bldg-roof" x="60" y="50" width="180" height="22" />
+            <text class="bldg-label roof" x="150" y="61" text-anchor="middle" dominant-baseline="middle">MIT · ROOF</text>
+
+            <!-- Floor 07 — Open Source -->
+            <rect class="bldg-floor" data-i="6" x="65" y="72" width="170" height="56" />
+            <text class="bldg-label" data-i="6" x="150" y="100" text-anchor="middle" dominant-baseline="middle">07 · OPEN SRC</text>
+
+            <!-- Floor 06 — Clawern -->
+            <rect class="bldg-floor" data-i="5" x="65" y="128" width="170" height="56" />
+            <text class="bldg-label" data-i="5" x="150" y="156" text-anchor="middle" dominant-baseline="middle">06 · CLAWERN</text>
+
+            <!-- Floor 05 — Providers -->
+            <rect class="bldg-floor" data-i="4" x="65" y="184" width="170" height="56" />
+            <text class="bldg-label" data-i="4" x="150" y="212" text-anchor="middle" dominant-baseline="middle">05 · PROVIDERS</text>
+
+            <!-- Floor 04 — Context -->
+            <rect class="bldg-floor" data-i="3" x="65" y="240" width="170" height="56" />
+            <text class="bldg-label" data-i="3" x="150" y="268" text-anchor="middle" dominant-baseline="middle">04 · CONTEXT</text>
+
+            <!-- Floor 03 — Loops -->
+            <rect class="bldg-floor" data-i="2" x="65" y="296" width="170" height="56" />
+            <text class="bldg-label" data-i="2" x="150" y="324" text-anchor="middle" dominant-baseline="middle">03 · LOOPS</text>
+
+            <!-- Floor 02 — Evidence -->
+            <rect class="bldg-floor" data-i="1" x="65" y="352" width="170" height="56" />
+            <text class="bldg-label" data-i="1" x="150" y="380" text-anchor="middle" dominant-baseline="middle">02 · EVIDENCE</text>
+
+            <!-- Floor 01 — Architecture -->
+            <rect class="bldg-floor" data-i="0" x="65" y="408" width="170" height="56" />
+            <text class="bldg-label" data-i="0" x="150" y="436" text-anchor="middle" dominant-baseline="middle">01 · ARCHITECTURE</text>
+
+            <!-- Foundation — Mac Mini -->
+            <rect class="bldg-found" x="50" y="470" width="200" height="46" rx="3" />
+            <text class="bldg-label found" x="150" y="487" text-anchor="middle" dominant-baseline="middle">MAC · MINI · LOCAL</text>
+            <line class="bldg-line" x1="80" y1="506" x2="220" y2="506" />
+
+            <!-- Ground line + lot ticks -->
+            <line class="bldg-ground" x1="20" y1="522" x2="280" y2="522" />
+            <line class="bldg-ground-tick" x1="40" y1="522" x2="40" y2="530" />
+            <line class="bldg-ground-tick" x1="80" y1="522" x2="80" y2="530" />
+            <line class="bldg-ground-tick" x1="120" y1="522" x2="120" y2="530" />
+            <line class="bldg-ground-tick" x1="160" y1="522" x2="160" y2="530" />
+            <line class="bldg-ground-tick" x1="200" y1="522" x2="200" y2="530" />
+            <line class="bldg-ground-tick" x1="240" y1="522" x2="240" y2="530" />
+            <line class="bldg-ground-tick" x1="280" y1="522" x2="280" y2="530" />
+
+            <!-- Bottom title block -->
+            <text class="bldg-title" x="20" y="550">LAVERN · HELSINKI</text>
+            <text class="bldg-title" x="280" y="550" text-anchor="end">REV · 0.14.3</text>
+          </svg>
+          <div class="codex-building-caption">
+            <span>Drawn · A.I.</span>
+            <span>2026</span>
           </div>
-        </div>
+        </aside>
+      </div>
+
+      <!-- The coda — metaphor payoff with Mac Mini photo backdrop -->
+      <div class="codex-coda">
+        <div class="codex-coda-eyebrow">The Stack</div>
+        <h3>Seven things, stacked on one <em>small computer.</em></h3>
       </div>
     </div>
   </section>
@@ -2306,142 +2168,60 @@
     })();
 
     // ──────────────────────────────────────────────────────────────────
-    // TL;DR — Mac Mini + glass layers interactivity
-    // Click a pill → corresponding slab activates → body card updates
-    // Auto-cycles on scroll-into-view if nothing manually selected.
+    // TL;DR — The Codex
+    // Scroll-tracked spine + active floor + initial building construction.
     // ──────────────────────────────────────────────────────────────────
     (function(){
-      var PRINCIPLES = [
-        { title: 'A multi-agent legal system, not a chatbot.',
-          text: 'The architecture borrows from law firms — partners, associates, debate, and institutional memory.' },
-        { title: 'Every finding cites evidence.',
-          text: 'Every challenge cites counter-evidence. The orchestrator weighs both and resolves. The audit trail is a side effect.' },
-        { title: 'Defined by its feedback loops.',
-          text: 'Briefing loops. Debate loops. A ten-pass verification loop before anything reaches the user.' },
-        { title: 'Context is the bottleneck.',
-          text: 'The model is not. An intake that asks questions outperforms one that doesn\'t.' },
-        { title: 'Claude or Mistral. Or local.',
-          text: 'Runs on Anthropic or Mistral (EU sovereign). Optional local mode means confidential documents never leave your machine.' },
-        { title: 'A firm on retainer.',
-          text: 'Pointed at a folder, it becomes Clawern — running on a thirty-minute heartbeat with cost forecasting and a hard budget cap.' },
-        { title: 'Open source. MIT-licensed.',
-          text: 'Architecture, agent prompts, debate protocols, precedent board, and verification pipeline — all there to be read, improved, and argued with.' }
-      ];
+      var section = document.getElementById('tldr');
+      if (!section) return;
+      var entries    = section.querySelectorAll('.codex-entry');
+      var spineItems = section.querySelectorAll('.codex-spine li');
+      var floors     = section.querySelectorAll('.bldg-floor');
+      var labels     = section.querySelectorAll('.bldg-label[data-i]');
+      var building   = section.querySelector('.codex-building');
 
-      var stage = document.getElementById('tldrStage');
-      if (!stage) return;
-      var pills = stage.querySelectorAll('.tldr-pill');
-      var slabs = stage.querySelectorAll('.tldr-slab');
-      var visual = document.getElementById('tldrVisual');
-      var bodyTitle = document.getElementById('tldrBodyTitle');
-      var bodyText = document.getElementById('tldrBodyText');
-
-      // Approximate vertical positions of each layer in mock5.png (% from top).
-      // The image has the Mac Mini at the bottom with 7 slabs rising above.
-      // These %s are tuned to the actual photograph.
-      var GLOW_TOPS = ['16%','25%','34%','43%','52%','60%','68%'];
-      var glow = document.getElementById('tldrGlow');
-
-      // Hydrate each slab with its face content (the principle expanded)
-      slabs.forEach(function(s, i){
-        if (s.querySelector('.slab-face') || !PRINCIPLES[i]) return;
-        var face = document.createElement('div');
-        face.className = 'slab-face';
-        var tags = ['Architecture','Evidence','Loops','Context','Providers','Clawern','Open Source'];
-        face.innerHTML =
-          '<span class="face-num">' + String(i+1).padStart(2,'0') + ' / ' + (tags[i]||'Layer') + '</span>' +
-          '<h4 class="face-title">' + PRINCIPLES[i].title + '</h4>' +
-          '<p class="face-body">' + PRINCIPLES[i].text + '</p>' +
-          '<span class="face-tag">Click stack to close</span>';
-        s.appendChild(face);
-      });
-
-      function setActive(i){
-        pills.forEach(function(p, idx){ p.classList.toggle('active', idx === i); });
-        // Active = flipped: that slab pops out and faces camera
-        slabs.forEach(function(s, idx){
-          s.classList.toggle('active', idx === i);
-          s.classList.toggle('flipped', idx === i);
-        });
-        if (PRINCIPLES[i]) {
-          bodyTitle.textContent = PRINCIPLES[i].title;
-          bodyText.textContent = PRINCIPLES[i].text;
-        }
-        visual.classList.add('has-active');
-        visual.classList.add('has-flipped');
+      function setActive(idx){
+        spineItems.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
+        floors.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
+        labels.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
       }
 
-      // Click outside any pill/slab → collapse flipped slab back into the stack
-      function collapseAll(){
-        slabs.forEach(function(s){ s.classList.remove('flipped','active'); });
-        pills.forEach(function(p){ p.classList.remove('active'); });
-        visual.classList.remove('has-flipped');
+      // Scroll-tracked: whichever entry crosses the viewport middle wins.
+      var entryIO = new IntersectionObserver(function(items){
+        items.forEach(function(it){
+          if (!it.isIntersecting) return;
+          var idx = parseInt(it.target.getAttribute('data-i'), 10);
+          if (!isNaN(idx)) setActive(idx);
+        });
+      }, { rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+      entries.forEach(function(el){ entryIO.observe(el); });
+
+      // Spine click → scroll the matching entry to center.
+      spineItems.forEach(function(el, i){
+        el.setAttribute('role','button');
+        el.setAttribute('tabindex','0');
+        el.addEventListener('click', function(){
+          if (entries[i]) entries[i].scrollIntoView({ behavior:'smooth', block:'center' });
+        });
+        el.addEventListener('keydown', function(e){
+          if (e.key === 'Enter' || e.key === ' '){
+            e.preventDefault();
+            if (entries[i]) entries[i].scrollIntoView({ behavior:'smooth', block:'center' });
+          }
+        });
+      });
+
+      // Building construction — one-shot bottom-up assembly on first view.
+      if (building){
+        var buildIO = new IntersectionObserver(function(items){
+          items.forEach(function(it){
+            if (!it.isIntersecting) return;
+            building.classList.add('built');
+            buildIO.unobserve(it.target);
+          });
+        }, { threshold: 0.18 });
+        buildIO.observe(building);
       }
-      stage.addEventListener('click', function(e){
-        var inside = e.target.closest && e.target.closest('.tldr-pill, .tldr-slab');
-        if (!inside) collapseAll();
-      });
-
-      pills.forEach(function(p, i){
-        p.addEventListener('click', function(){ setActive(i); });
-      });
-      slabs.forEach(function(s, i){
-        s.addEventListener('click', function(){ setActive(i); });
-      });
-
-      // Start with no active state. When section scrolls into view, cycle
-      // through the layers once so the user sees the stack respond.
-      var hasCycled = false;
-      var io = new IntersectionObserver(function(entries){
-        entries.forEach(function(e){
-          if (!e.isIntersecting || hasCycled) return;
-          hasCycled = true;
-          var i = 0;
-          var iv = setInterval(function(){
-            setActive(i);
-            i++;
-            if (i >= PRINCIPLES.length) {
-              clearInterval(iv);
-              // Settle on first layer after cycle
-              setTimeout(function(){ setActive(0); }, 400);
-            }
-          }, 380);
-        });
-      }, { threshold: 0.35 });
-      io.observe(stage);
-
-      // Mouse parallax — stack tilts toward the cursor.
-      var rotator = document.getElementById('tldrStack3d');
-      if (rotator) {
-        var BASE_X = 56, BASE_Z = -22;
-        var TILT_X_MAX = 14;  // °, peak X rotation swing
-        var TILT_Z_MAX = 18;  // °, peak Z rotation swing
-        visual.addEventListener('mouseenter', function(){
-          visual.classList.add('parallax');
-        });
-        visual.addEventListener('mousemove', function(e){
-          var r = visual.getBoundingClientRect();
-          var px = (e.clientX - r.left) / r.width  - 0.5; // -0.5 .. +0.5
-          var py = (e.clientY - r.top)  / r.height - 0.5;
-          var rx = BASE_X + (py * TILT_X_MAX);
-          var rz = BASE_Z + (px * TILT_Z_MAX);
-          rotator.style.transform = 'rotateX(' + rx + 'deg) rotateZ(' + rz + 'deg)';
-        });
-        visual.addEventListener('mouseleave', function(){
-          visual.classList.remove('parallax');
-          rotator.style.transform = ''; // back to CSS-driven orbit
-        });
-      }
-
-      // Boot animation — slabs materialize one-by-one when section enters view
-      var bootIO = new IntersectionObserver(function(entries){
-        entries.forEach(function(e){
-          if (!e.isIntersecting) return;
-          visual.classList.add('booted');
-          bootIO.unobserve(e.target);
-        });
-      }, { threshold: 0.35 });
-      bootIO.observe(visual);
     })();
 
     // ──────────────────────────────────────────────────────────────────
@@ -2712,12 +2492,12 @@
     // Scroll reveal — IntersectionObserver
     // Adds .v on entrance. For .feature also adds .built (triggers
     // inner mockup stagger + signature animations).
-    // Also observes .tldr-list / .faq-list / .hero-meta so children
-    // can stagger via their nth-child delays.
+    // Also observes .faq-list / .hero-meta so children can stagger
+    // via their nth-child delays.
     // ──────────────────────────────────────────────────────────────────
     (function(){
       var reveals = document.querySelectorAll('.r');
-      var lists = document.querySelectorAll('.tldr-list, .faq-list, .hero-meta');
+      var lists = document.querySelectorAll('.faq-list, .hero-meta');
       // Universal "build on scroll" — every element that has a transition
       // tied to a .v class needs to be observed.
       var built = document.querySelectorAll(
