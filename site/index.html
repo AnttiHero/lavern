@@ -662,8 +662,34 @@
       .feature.built .m-bubble,
       .feature.built .m-card-ping,
       .feature.built .m-cta,
+      .feature.built .m-soul-line,
+      .feature.built .m-doc-large-title,
+      .feature.built .m-doc-large-body p,
+      .feature.built .m-doc-large-body li,
+      .feature.built .m-doc-large-footer,
+      .feature.built .m-doc-stamp,
       .m-caret,
       .m-spin{animation:none}
+      .feature.built .m-soul-line,
+      .feature.built .m-doc-large-title,
+      .feature.built .m-doc-large-body p,
+      .feature.built .m-doc-large-body li,
+      .feature.built .m-doc-large-footer{opacity:1;transform:none}
+    }
+
+    /* Card 4 Soul — after the lines write in, a subtle drift keeps the
+       block alive (very low-amplitude opacity pulse, 5s) */
+    @keyframes soulDrift{
+      0%,100%{opacity:1}
+      50%{opacity:.86}
+    }
+    .feature.built .m-soul-line:nth-of-type(2){
+      animation:soulLineIn .55s ease-out 1.0s forwards,
+                soulDrift 5.5s ease-in-out 3s infinite
+    }
+    .feature.built .m-soul-line:nth-of-type(3){
+      animation:soulLineIn .55s ease-out 1.5s forwards,
+                soulDrift 5.5s ease-in-out 3.3s infinite
     }
 
     /* FAQ — same treatment */
@@ -964,7 +990,7 @@
       margin-bottom:56px;background:var(--surface-2);
       box-shadow:var(--shadow-pill)
     }
-    .section-tag .num{color:var(--text);font-weight:600}
+    .section-tag .num{color:var(--text);font-weight:500}
     .section-title{
       font-family:var(--sans);font-size:clamp(36px,5.6vw,84px);
       font-weight:500;line-height:.96;letter-spacing:-0.035em;
@@ -1169,10 +1195,12 @@
       padding:26px 28px 30px;display:flex;flex-direction:column;gap:10px
     }
     .feature-num{
-      font-family:var(--mono);font-size:10px;
-      letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)
     }
-    .feature-num span{color:var(--text);font-weight:600}
+    /* Lighter number — was 600 black, looked too heavy. Now matches the
+       surrounding mono caps weight (500) and uses --text without bold. */
+    .feature-num span{color:var(--text);font-weight:500}
     .feature-title{
       font-family:var(--sans);font-size:24px;font-weight:500;
       line-height:1.15;letter-spacing:-0.02em;color:var(--text)
@@ -1257,6 +1285,106 @@
       object-fit:cover;display:block
     }
     .m-avatar-img.sm{width:22px;height:22px}
+
+    /* Single Lavern deliverable — full editorial document mockup for the
+       Delivery card. Writes itself in line-by-line when the card builds. */
+    .m-doc-large{
+      background:#fff;border:1px solid var(--hair);border-radius:10px;
+      padding:14px 16px 12px;box-shadow:var(--shadow-md);
+      display:flex;flex-direction:column;gap:8px;width:100%;
+      font-family:var(--sans)
+    }
+    .m-doc-large-header{
+      display:flex;justify-content:space-between;align-items:center;gap:8px
+    }
+    .m-doc-large-tag{
+      font-family:var(--mono);font-size:8px;font-weight:600;
+      letter-spacing:1.6px;text-transform:uppercase;
+      background:var(--text);color:var(--bg);
+      padding:3px 8px;border-radius:3px
+    }
+    .m-doc-large-meta{
+      font-family:var(--mono);font-size:8.5px;font-weight:500;
+      letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)
+    }
+    .m-doc-large-title{
+      font-family:var(--sans);font-size:15px;font-weight:600;
+      letter-spacing:-0.012em;color:var(--text);line-height:1.2;
+      padding-bottom:4px;border-bottom:1px solid var(--hair)
+    }
+    .m-doc-large-body{
+      font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--muted)
+    }
+    .m-doc-large-body p{margin-bottom:7px}
+    .m-doc-large-body ul{
+      list-style:none;display:flex;flex-direction:column;gap:5px
+    }
+    .m-doc-large-body li{
+      position:relative;padding-left:11px;font-size:10.5px
+    }
+    .m-doc-large-body li::before{
+      content:'';position:absolute;left:2px;top:6px;
+      width:4px;height:4px;border-radius:50%;background:var(--text)
+    }
+    .m-doc-large-body li strong{color:var(--text);font-weight:600}
+    .m-doc-large-footer{
+      display:flex;align-items:center;gap:8px;
+      font-family:var(--mono);font-size:8.5px;font-weight:500;
+      letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);
+      padding-top:6px;border-top:1px solid var(--hair)
+    }
+    .m-doc-stamp{
+      display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:var(--text);flex:none
+    }
+    /* Each body line writes itself in sequentially after the card builds. */
+    .feature .m-doc-large-body p,
+    .feature .m-doc-large-body li,
+    .feature .m-doc-large-title,
+    .feature .m-doc-large-footer{
+      opacity:0;transform:translateY(4px)
+    }
+    .feature.built .m-doc-large-title{
+      animation:lineWriteIn .5s ease-out .4s forwards
+    }
+    .feature.built .m-doc-large-body p{
+      animation:lineWriteIn .5s ease-out .8s forwards
+    }
+    .feature.built .m-doc-large-body li:nth-of-type(1){
+      animation:lineWriteIn .5s ease-out 1.2s forwards
+    }
+    .feature.built .m-doc-large-body li:nth-of-type(2){
+      animation:lineWriteIn .5s ease-out 1.55s forwards
+    }
+    .feature.built .m-doc-large-body li:nth-of-type(3){
+      animation:lineWriteIn .5s ease-out 1.9s forwards
+    }
+    .feature.built .m-doc-large-footer{
+      animation:lineWriteIn .5s ease-out 2.3s forwards
+    }
+    @keyframes lineWriteIn{
+      to{opacity:1;transform:translateY(0)}
+    }
+    .feature.built .m-doc-stamp{
+      animation:statusBlink 2.4s ease-in-out 2.8s infinite
+    }
+
+    /* Soul card — each principle types itself in on a different beat */
+    .feature .m-soul-line{opacity:0;transform:translateX(-6px)}
+    .feature.built .m-soul-line{
+      animation:soulLineIn .55s ease-out forwards
+    }
+    .feature.built .m-soul-line:nth-of-type(1){animation-delay:.5s}
+    .feature.built .m-soul-line:nth-of-type(2){animation-delay:1.0s}
+    .feature.built .m-soul-line:nth-of-type(3){animation-delay:1.5s}
+    @keyframes soulLineIn{
+      to{opacity:1;transform:translateX(0)}
+    }
+
+    /* Knowledge card — sources cascade in one row at a time */
+    .feature.built .feature-body .m-row{opacity:1}
+    /* (rows are flex parents so we don't reset their opacity globally,
+       but specifically inside the Knowledge body we want a stagger) */
 
     /* Document thumbnail — generative deliverable in the Delivery card grid */
     .m-doc{
@@ -1790,10 +1918,10 @@
         <!-- 04 The Soul -->
         <article class="feature">
           <div class="feature-mockup"><div class="feature-body" style="gap:6px;color:var(--muted);font-family:var(--sans);font-style:italic;font-size:13px;line-height:1.55">
-              <div style="color:var(--text);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;opacity:.7">// FIRM PERSONALITY</div>
-              <div>We are conservative on liability, pragmatic on commerce.</div>
-              <div>We default to client privilege. We never round numbers.</div>
-              <div>We speak plainly. Latin only when it earns its keep.<span class="m-caret"></span></div>
+              <div style="color:var(--text);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:500;opacity:.7">// FIRM PERSONALITY</div>
+              <div class="m-soul-line">No legalese. Plain language.</div>
+              <div class="m-soul-line">Look at everything from the client's perspective.</div>
+              <div class="m-soul-line">Explain every decision in business terms.<span class="m-caret"></span></div>
               <div style="color:var(--dim);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;margin-top:4px">— injected into every engagement</div>
             </div>
           </div>
@@ -1841,24 +1969,33 @@
           </div>
         </article>
 
-        <!-- 07 Delivery — many generative documents from one engagement -->
+        <!-- 07 Delivery — one beautifully-typeset Lavern document -->
         <article class="feature">
-          <div class="feature-mockup"><div class="feature-body" style="gap:8px">
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Memo</span></div>
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Brief</span></div>
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Redline</span></div>
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Summary</span></div>
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Board email</span></div>
-                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Deck</span></div>
+          <div class="feature-mockup"><div class="feature-body" style="gap:0;justify-content:center;align-items:stretch">
+              <div class="m-doc-large">
+                <div class="m-doc-large-header">
+                  <span class="m-doc-large-tag">Executive memo</span>
+                  <span class="m-doc-large-meta">Lavern · 12 May 2026</span>
+                </div>
+                <div class="m-doc-large-title">Two-year non-compete review</div>
+                <div class="m-doc-large-body">
+                  <p>Twelve states. Buy-side. Three risks ranked by severity.</p>
+                  <ul>
+                    <li>Texas — California-style void provision <strong>does not apply</strong>.</li>
+                    <li>Massachusetts — §24L garden-leave gap is <strong>actionable</strong>.</li>
+                    <li>Florida — tolling provision <strong>missing</strong>; recommend redline.</li>
+                  </ul>
+                </div>
+                <div class="m-doc-large-footer">
+                  <span class="m-doc-stamp"></span><span>3 of 14 findings · cited at §1.2, §3.4, §5.1</span>
+                </div>
               </div>
-              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--muted);justify-content:center;padding-top:6px"><span>One engagement · every artifact your reader needs</span></div>
             </div>
           </div>
           <div class="feature-caption">
             <div class="feature-num"><span>07</span> · Delivery</div>
-            <h3 class="feature-title">Every <em>artifact.</em></h3>
-            <p class="feature-desc">From one engagement, every deliverable the moment needs: an executive memo, a redline, a board email, a deck, a one-pager. Pick the register the audience expects.</p>
+            <h3 class="feature-title">An actual <em>deliverable.</em></h3>
+            <p class="feature-desc">Lavern produces real documents — executive memos, redlines, board emails — typeset, cited, ready to send. Not a chat transcript, a deliverable.</p>
           </div>
         </article>
 
