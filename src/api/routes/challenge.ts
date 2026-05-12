@@ -81,7 +81,17 @@ export function registerChallengeRoutes(
     };
 
     try {
-      // Call Sonnet directly via Anthropic SDK with assistant prefill to force JSON
+      // Call Opus 4.7 directly via Anthropic SDK. The system prompt already
+      // mandates JSON-only output (see buildComparisonSystemPrompt); the
+      // downstream cleanup at lines 110-126 strips fences/thinking and
+      // extracts the outermost {...} block, so we don't need to use an
+      // assistant-prefill message to force JSON.
+      //
+      // Why prefill is gone: newer Opus models (4.7+) reject the
+      // `[{user}, {assistant: "{"}]` shape with HTTP 400 "This model does
+      // not support assistant message prefill. The conversation must end
+      // with a user message." Relying on the system prompt + post-process
+      // cleanup is both more robust and works on every model line.
       const systemPrompt = buildComparisonSystemPrompt();
       const userPrompt = buildComparisonUserPrompt(docA, docB);
 
@@ -91,19 +101,18 @@ export function registerChallengeRoutes(
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt },
-          { role: 'assistant', content: '{' },  // Prefill forces JSON output
         ],
       });
 
       // Extract text from response
-      let responseText = '{';  // Start with the prefilled brace
+      let responseText = '';
       for (const block of response.content) {
         if (block.type === 'text') {
           responseText += block.text;
         }
       }
 
-      if (responseText.length <= 1) {
+      if (responseText.length === 0) {
         throw new Error('No response from judge');
       }
 

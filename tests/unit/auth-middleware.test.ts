@@ -384,4 +384,63 @@ describe('createAuthMiddleware', () => {
       ).rejects.toThrow('Authentication required');
     });
   });
+
+  // ── Opportunistic auth on public routes ────────────────────────────────
+  //
+  // Regression test for the bug fixed in commit (this commit's SHA): public
+  // routes like `GET /api/sessions/:id/download` previously did an early
+  // `return` from the auth middleware without ever populating
+  // `request.userId`. Per-route ownership checks (which return 404 to mask
+  // existence) then failed for any logged-in user accessing their own
+  // archived session via a capability-token URL. The fix: even on public
+  // routes, opportunistically try Bearer + cookie auth and attach userId
+  // if available — never throw on failure.
+  describe('opportunistic auth on public routes', () => {
+    const oppRegistry = new ClientRegistry();
+    const middleware = createAuthMiddleware(oppRegistry, [
+      '/health',
+      'GET /api/sessions/*',
+    ]);
+
+    it('should populate request.client when a valid Bearer token is present on a public route', async () => {
+      const { apiKey } = oppRegistry.registerClient('agent', { name: 'Public-Route Bot' });
+      const req = createMockRequest('GET', '/api/sessions/abc123', {
+        authorization: `Bearer ${apiKey}`,
+      });
+      await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
+      expect((req as any).userId).toBeDefined();
+      expect((req as any).client?.name).toBe('Public-Route Bot');
+    });
+
+    it('should ignore an invalid Bearer token on a public route (no throw, no userId)', async () => {
+      const req = createMockRequest('GET', '/api/sessions/abc123', {
+        authorization: 'Bearer invalid_token_xyz',
+      });
+      // Public route — silent failure, no throw, userId stays undefined.
+      await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
+      expect((req as any).userId).toBeUndefined();
+      expect((req as any).client).toBeUndefined();
+    });
+
+    it('should ignore a malformed cookie on a public route (no throw, no userId)', async () => {
+      const req = createMockRequest('GET', '/api/sessions/abc123', {
+        cookie: 'lavern_token=garbage_not_real_token',
+      });
+      // dbGetUserByToken throws or returns undefined for unknown tokens;
+      // the public-route branch catches/silences both. No userId is set.
+      await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
+      expect((req as any).userId).toBeUndefined();
+    });
+
+    it('should still resolve without auth on a public route when no credentials are present', async () => {
+      const req = createMockRequest('GET', '/api/sessions/abc123');
+      await expect(middleware(req, createMockReply())).resolves.toBeUndefined();
+      expect((req as any).userId).toBeUndefined();
+    });
+
+    it('should not call auth at all on non-public routes — still throws when auth missing', async () => {
+      const req = createMockRequest('GET', '/api/secret');
+      await expect(middleware(req, createMockReply())).rejects.toThrow('Authentication required');
+    });
+  });
 });

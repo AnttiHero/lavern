@@ -239,7 +239,45 @@ export function createAuthMiddleware(
       // Exact match
       return urlPath === p;
     });
-    if (isPublic) return;
+    if (isPublic) {
+      // Bug fix: even on public routes, opportunistically populate
+      // request.userId from the cookie (or Bearer) so that PER-ROUTE
+      // ownership checks can work. Previously the early return meant
+      // a logged-in user hitting `GET /api/sessions/:id/download` (a
+      // public capability-token route) had request.userId === undefined,
+      // and any `checkSessionOwnership()` call would 404 even with a
+      // valid cookie. We try both auth paths and silently ignore any
+      // failure — the route is public; auth is best-effort here.
+      const authHeader = request.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const apiKey = authHeader.slice(7).trim();
+        if (apiKey) {
+          const client = registry.authenticate(apiKey);
+          if (client) {
+            (request as FastifyRequest & { client?: ClientIdentity; userId?: string }).client = client;
+            (request as FastifyRequest & { userId?: string }).userId = client.id;
+          }
+        }
+      } else {
+        const cookieToken = parseCookieToken(request.headers.cookie);
+        if (cookieToken) {
+          try {
+            const user = dbGetUserByToken(cookieToken);
+            if (user) {
+              (request as FastifyRequest & { userId?: string; user?: { id: string; email: string; displayName: string } }).userId = user.id;
+              (request as FastifyRequest & { user?: { id: string; email: string; displayName: string } }).user = {
+                id: user.id,
+                email: user.email,
+                displayName: user.display_name,
+              };
+            }
+          } catch {
+            // Public route — auth failure is fine, fall through.
+          }
+        }
+      }
+      return;
+    }
 
     // Path 1: Bearer token auth (API clients / agents)
     const authHeader = request.headers.authorization;
