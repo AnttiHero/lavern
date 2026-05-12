@@ -224,7 +224,7 @@
 
       <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 50+ agents, through three verification layers, across every workflow. In a multi-agent architecture, incremental model improvements compound across the whole team. The system benefits from that.</p>
 
-      <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 8 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
+      <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 9 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
 
       <p><strong>Speech will be the primary prompting mode.</strong> Typing legal questions into a chat box is a 2024 interaction pattern. The natural interface for legal counsel is a conversation. You can talk to partner agents, dictate briefing answers, and control Clawern by voice.</p>
 
@@ -497,9 +497,9 @@
 
     <div class="section">
       <div class="section-label">Workflows</div>
-      <h2>Eight Ways to <em>Work.</em></h2>
+      <h2>Nine Ways to <em>Work.</em></h2>
 
-      <p>Different legal tasks need different approaches. A quick question doesn't need a full adversarial review. A merger agreement doesn't need a 30-second answer. Lavern offers 8 workflow templates that match the complexity of the task to the resources deployed.</p>
+      <p>Different legal tasks need different approaches. A quick question doesn't need a full adversarial review. A merger agreement doesn't need a 30-second answer. Lavern offers 9 workflow templates that match the complexity of the task to the resources deployed.</p>
 
       <div class="features">
         <div class="feat"><div class="feat-title">Quick Counsel</div><div class="feat-desc">Direct question, direct answer. 30 seconds, minimal cost. Like texting a lawyer friend. For ad-hoc questions during a call.</div></div>
@@ -510,6 +510,7 @@
         <div class="feat"><div class="feat-title">Full Bench</div><div class="feat-desc">Every available specialist. Maximum team engagement. For M&A agreements, major litigation documents, anything where every clause matters.</div></div>
         <div class="feat"><div class="feat-title">Pre-Engagement</div><div class="feat-desc">Intake and team selection. LLM-powered briefing builds context before work begins. The system understands the matter before dispatching agents.</div></div>
         <div class="feat"><div class="feat-title">Verification</div><div class="feat-desc">Standalone document verification pipeline. When you already have a deliverable and need it checked against the original. Pure quality assurance.</div></div>
+        <div class="feat"><div class="feat-title">Tabulate</div><div class="feat-desc">Structured tabular extraction. Cap tables from SHAs, payment schedules from contracts, JV participating interests, lease abstracts, compliance matrices. Output: CSV, DOCX with native tables, HTML preview, or JSON with per-cell source citations.</div></div>
       </div>
 
       <div class="diagram">
@@ -663,7 +664,7 @@
       <h3>The Reader.</h3>
       <p>Per-clause analysis, the workhorse. The clause-by-clause approach we already used for small models gains three things in lighthouse mode:</p>
       <p><strong>Document-type templates.</strong> Seven specialist prompts — JV, NDA, employment, lease, loan, SaaS, policy — augment the generic fallback. A JV review asks about cash calls, dilution, reserved matters, and operator-vs-non-operator dynamics. A SaaS review asks about service levels, data ownership, and limitation-of-liability carve-outs. A policy review asks about consumer-law enforceability and dark-pattern language. The Watchman picks the template (or 'other' for anything outside the taxonomy); the Reader loads it.</p>
-      <p><strong>Precedent context injection.</strong> Each per-clause prompt receives the top-three matching precedents from the firm's history, tagged <code>[CONFIRMED]</code> or <code>[TENTATIVE]</code>. The model is asked to reconcile its judgment with prior firm position — with the document outranking when the language is plainly inconsistent.</p>
+      <p><strong>Precedent context injection.</strong> Each per-clause prompt receives the top five matching precedents from the firm's history, tagged <code>[CONFIRMED]</code> or <code>[TENTATIVE]</code>. The model is asked to reconcile its judgment with prior firm position — with the document outranking when the language is plainly inconsistent.</p>
       <p><strong>Grounding pass.</strong> After the per-clause sweep, a deterministic check strips findings whose evidence cannot be anchored back to clause text via clause-numbers, dollar amounts, percentages, or named references. The "ensure clarity" hallucinations small models occasionally emit don't reach the deliverable.</p>
 
       <h3>The Curator.</h3>
@@ -804,7 +805,7 @@
       <p>A law firm can't crash. It can't lose data. It can't expose confidential information in a notification. It can't silently stop watching for new documents. These are the basics.</p>
 
       <div class="features">
-        <div class="feat"><div class="feat-title">1,500+ Tests</div><div class="feat-desc">92 test files. Unit tests, integration tests, edge case hardening across every layer of the system.</div></div>
+        <div class="feat"><div class="feat-title">1,695 Tests</div><div class="feat-desc">108 test files. Unit tests, integration tests, edge case hardening across every layer of the system. Zero security advisories in production dependencies.</div></div>
         <div class="feat"><div class="feat-title">Audit Trail</div><div class="feat-desc">Append-only JSON lines log. Every action recorded with initiator, timestamp, and details. Rotation at 5MB, 3 rotated files. The firm keeps records.</div></div>
         <div class="feat"><div class="feat-title">Daily Backups</div><div class="feat-desc">State, precedents, and profile backed up daily with 30-day retention. Recoverable after any failure. Your institutional memory is protected.</div></div>
         <div class="feat"><div class="feat-title">Prometheus Metrics</div><div class="feat-desc">GET /api/claw/metrics exports documents processed, findings by severity, budget utilization, session counts, precedent activity. Observable from any monitoring stack.</div></div>
