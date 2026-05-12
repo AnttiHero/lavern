@@ -668,28 +668,85 @@
       .feature.built .m-doc-large-body li,
       .feature.built .m-doc-large-footer,
       .feature.built .m-doc-stamp,
+      .feature .m-type-instruct,
+      .feature.briefing-card .m-bubble,
+      .feature.briefing-card .m-typing,
       .m-caret,
       .m-spin{animation:none}
       .feature.built .m-soul-line,
       .feature.built .m-doc-large-title,
       .feature.built .m-doc-large-body p,
       .feature.built .m-doc-large-body li,
-      .feature.built .m-doc-large-footer{opacity:1;transform:none}
+      .feature.built .m-doc-large-footer,
+      .feature .m-type-instruct,
+      .feature .m-soul-line,
+      .feature.briefing-card .m-bubble{
+        opacity:1;transform:none;clip-path:none
+      }
     }
 
-    /* Card 4 Soul — after the lines write in, a subtle drift keeps the
-       block alive (very low-amplitude opacity pulse, 5s) */
+    /* ═══════════════════════════════════════════════════════════════════
+       TYPEWRITER — text reveals itself left-to-right with stepped ticks,
+       mimicking a keyboard typing the content out. clip-path inset is
+       used so it works on multi-line text and respects line wrap.
+       Step count is tuned per element to roughly match its character
+       length so the "tick" feels right.
+       ═══════════════════════════════════════════════════════════════════ */
+    @keyframes typeReveal{
+      from{clip-path:inset(0 100% 0 0)}
+      to{clip-path:inset(0 -2% 0 0)}
+    }
+
+    /* Card 1 — the instruct request types itself in (≈122 chars) */
+    .feature .m-type-instruct{clip-path:inset(0 100% 0 0)}
+    .feature.built .m-type-instruct{
+      animation:typeReveal 2.4s steps(70) .4s forwards
+    }
+
+    /* Card 4 Soul — each principle types in sequence (overrides the prior
+       slide-in stagger). After the type completes, lines 2 & 3 drift on a
+       subtle opacity loop so the block keeps breathing. */
     @keyframes soulDrift{
       0%,100%{opacity:1}
-      50%{opacity:.86}
+      50%{opacity:.82}
+    }
+    .feature .m-soul-line{
+      clip-path:inset(0 100% 0 0);opacity:1;transform:none
+    }
+    .feature.built .m-soul-line:nth-of-type(1){
+      animation:typeReveal 1.1s steps(28) .5s forwards
     }
     .feature.built .m-soul-line:nth-of-type(2){
-      animation:soulLineIn .55s ease-out 1.0s forwards,
-                soulDrift 5.5s ease-in-out 3s infinite
+      animation:typeReveal 1.7s steps(48) 1.8s forwards,
+                soulDrift 5.5s ease-in-out 3.7s infinite
     }
     .feature.built .m-soul-line:nth-of-type(3){
-      animation:soulLineIn .55s ease-out 1.5s forwards,
-                soulDrift 5.5s ease-in-out 3.3s infinite
+      animation:typeReveal 1.4s steps(42) 3.7s forwards,
+                soulDrift 5.5s ease-in-out 5.4s infinite
+    }
+
+    /* Card 8 Briefing — chat bubbles type in like a real conversation,
+       alternating between the interviewer and the user. Overrides the
+       universal bubbleIn fade cascade on this card only. */
+    .feature.briefing-card .m-bubble{
+      opacity:1;transform:none;clip-path:inset(0 100% 0 0)
+    }
+    .feature.briefing-card.built .feature-body > .m-row:nth-of-type(1) .m-bubble{
+      animation:typeReveal 1.5s steps(40) .5s forwards
+    }
+    .feature.briefing-card.built .feature-body > .m-bubble:nth-of-type(1){
+      animation:typeReveal 1.0s steps(28) 2.3s forwards
+    }
+    .feature.briefing-card.built .feature-body > .m-row:nth-of-type(2) .m-bubble{
+      animation:typeReveal 1.7s steps(46) 3.6s forwards
+    }
+    .feature.briefing-card.built .feature-body > .m-bubble:nth-of-type(2){
+      animation:typeReveal .8s steps(17) 5.6s forwards
+    }
+    /* The typing indicator at the end shows AFTER the last reply lands */
+    .feature.briefing-card .m-typing{opacity:0}
+    .feature.briefing-card.built .m-typing{
+      animation:lineWriteIn .4s ease-out 6.6s forwards
     }
 
     /* FAQ — same treatment */
@@ -1862,7 +1919,7 @@
           <div class="feature-mockup"><div class="feature-body" style="gap:10px">
               <div class="m-card" style="background:var(--surface-2);gap:8px">
                 <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)">What brings you in today?</div>
-                <div style="font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.4">Review this <strong>two-year non-compete</strong> across <strong>twelve states</strong>. Buy-side. Find anything we should push back on.<span class="m-caret"></span></div>
+                <div class="m-type-instruct" style="font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.4">Review this <strong>two-year non-compete</strong> across <strong>twelve states</strong>. Buy-side. Find anything we should push back on.<span class="m-caret"></span></div>
                 <div class="m-row" style="justify-content:flex-end;gap:8px;padding-top:4px">
                   <span class="m-tag neutral">+ Attach</span>
                   <span class="m-tag m-cta" style="background:var(--text);color:var(--bg)">Instruct →</span>
@@ -2000,7 +2057,7 @@
         </article>
 
         <!-- 08 Briefing — Law is a context game -->
-        <article class="feature">
+        <article class="feature briefing-card">
           <div class="feature-mockup"><div class="feature-body" style="gap:10px">
               <div class="m-row" style="align-items:flex-start;gap:8px"><img class="m-avatar-img sm" src="https://api.dicebear.com/9.x/notionists/svg?seed=intake&backgroundColor=f4f2ec" alt="" loading="lazy"><div class="m-bubble them" style="flex:1">What kind of document are we looking at?</div></div>
               <div class="m-bubble you">M&amp;A NDA. Delaware. $50M deal.</div>
