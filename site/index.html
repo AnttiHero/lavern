@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LAVERN — The World's First Driverless Law Firm</title>
   <meta name="description" content="An open-source multi-agent legal system. 67 specialist agents, evidence-backed debate, institutional memory. Helsinki, MIT-licensed.">
-  <meta name="theme-color" content="#F0EEE6">
+  <meta name="theme-color" content="#FAFAFA">
 
   <meta property="og:title" content="LAVERN — The world's first driverless law firm.">
   <meta property="og:description" content="An open-source multi-agent legal system. Evidence-backed debate, institutional memory. MIT-licensed.">
@@ -34,7 +34,7 @@
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     :root{
       /* Cream paper palette */
-      --bg:#F0EEE6;
+      --bg:#FAFAFA;
       --surface:#FAF8F0;
       --surface-2:#FFFFFF;
       --text:#141310;
@@ -50,24 +50,33 @@
       --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
       --ease:cubic-bezier(0.16,1,0.3,1);
       --max:1280px;
-      /* ─── Elevation (Apple-class multi-layer shadows) ─── */
+      /* ─── Elevation — heavy, dramatic shadows for "floating on paper" feel ─── */
       --shadow-sm:
-        0 1px 2px rgba(20,19,16,0.04),
-        0 2px 4px rgba(20,19,16,0.03);
+        0 2px 4px rgba(20,19,16,0.08),
+        0 6px 14px rgba(20,19,16,0.06);
       --shadow-md:
-        0 2px 4px rgba(20,19,16,0.04),
-        0 8px 18px rgba(20,19,16,0.06),
-        0 18px 36px rgba(20,19,16,0.04);
+        0 4px 8px rgba(20,19,16,0.10),
+        0 12px 28px rgba(20,19,16,0.14),
+        0 28px 56px rgba(20,19,16,0.10);
       --shadow-lg:
-        0 1px 2px rgba(20,19,16,0.04),
-        0 12px 24px rgba(20,19,16,0.06),
-        0 30px 60px rgba(20,19,16,0.10),
-        0 60px 110px rgba(20,19,16,0.06);
+        0 4px 8px rgba(20,19,16,0.10),
+        0 18px 36px rgba(20,19,16,0.14),
+        0 42px 84px rgba(20,19,16,0.20),
+        0 80px 140px rgba(20,19,16,0.14);
       --shadow-xl:
-        0 1px 2px rgba(20,19,16,0.05),
-        0 16px 32px rgba(20,19,16,0.08),
-        0 40px 80px rgba(20,19,16,0.12),
-        0 80px 140px rgba(20,19,16,0.08);
+        0 4px 10px rgba(20,19,16,0.12),
+        0 24px 48px rgba(20,19,16,0.18),
+        0 56px 112px rgba(20,19,16,0.24),
+        0 110px 200px rgba(20,19,16,0.18);
+      /* Pill-specific — dramatic single drop for buttons / install / kindred links */
+      --shadow-pill:
+        0 3px 6px rgba(20,19,16,0.10),
+        0 10px 22px rgba(20,19,16,0.14),
+        0 22px 44px rgba(20,19,16,0.12);
+      --shadow-pill-hover:
+        0 4px 8px rgba(20,19,16,0.12),
+        0 16px 32px rgba(20,19,16,0.18),
+        0 36px 64px rgba(20,19,16,0.18);
       /* ─── Corner radii (Apple-class generosity) ─── */
       --r-sm:10px;
       --r-md:18px;
@@ -99,7 +108,7 @@
       content:'';position:fixed;inset:-50%;z-index:9998;pointer-events:none;
       background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size:240px 240px;
-      opacity:0.08;
+      opacity:0.06;
       mix-blend-mode:multiply;
       animation:grain 9s steps(10) infinite
     }
@@ -197,20 +206,20 @@
         rgba(0,0,0,0.45) 65%,
         transparent 100%);
       background:linear-gradient(to top,
-        rgba(240,238,230,0.30) 0%,
-        rgba(240,238,230,0.08) 60%,
+        rgba(250,250,250,0.30) 0%,
+        rgba(250,250,250,0.08) 60%,
         transparent 100%)
     }
     /* Safari/older fallback — without backdrop-filter, the gentle bg tint
        alone still softens the edges visually. */
     @supports not (backdrop-filter:blur(1px)){
       .scroll-fog.top{background:linear-gradient(to bottom,
-        rgba(240,238,230,0.85) 0%,
-        rgba(240,238,230,0.35) 60%,
+        rgba(250,250,250,0.85) 0%,
+        rgba(250,250,250,0.35) 60%,
         transparent 100%)}
       .scroll-fog.bottom{background:linear-gradient(to top,
-        rgba(240,238,230,0.85) 0%,
-        rgba(240,238,230,0.35) 60%,
+        rgba(250,250,250,0.85) 0%,
+        rgba(250,250,250,0.35) 60%,
         transparent 100%)}
     }
 
@@ -430,8 +439,10 @@
       60%{transform:scale(1.15);opacity:1}
       100%{transform:scale(1);opacity:1}
     }
-    .feature .m-avatar{transform:scale(0);opacity:0}
-    .feature.built .m-avatar{animation:avatarPop .8s var(--ease) forwards}
+    .feature .m-avatar,
+    .feature .m-avatar-img{transform:scale(0);opacity:0}
+    .feature.built .m-avatar,
+    .feature.built .m-avatar-img{animation:avatarPop .8s var(--ease) forwards}
 
     /* Verification dots: each pops individually with cumulative delay */
     @keyframes dotPop{
@@ -474,9 +485,185 @@
     }
     .feature.built .m-dot.ok{animation:statusBlink 2.4s ease-in-out infinite}
 
+    /* ═══════════════════════════════════════════════════════════════════
+       MOVEMENT — life in every card. Each animation is subtle, but they
+       compound into a sustained sense of motion across the grid.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* — Cursor blink — a steady |‎  at the end of typed text */
+    @keyframes caretBlink{
+      0%,49%{opacity:1}50%,100%{opacity:0}
+    }
+    .m-caret{
+      display:inline-block;width:1px;height:1em;
+      background:var(--text);vertical-align:-2px;margin-left:2px;
+      animation:caretBlink 1.05s steps(1) infinite
+    }
+
+    /* — Ring pulse — a soft expanding halo around primary CTAs */
+    @keyframes ringPulse{
+      0%{box-shadow:0 0 0 0 rgba(20,19,16,0.30)}
+      80%,100%{box-shadow:0 0 0 12px rgba(20,19,16,0)}
+    }
+    .feature.built .m-pulse-ring{animation:ringPulse 2s var(--ease) infinite}
+
+    /* — Breath pulse — gentle 1 → 1.04 → 1 scale */
+    @keyframes breathPulse{
+      0%,100%{transform:scale(1);filter:brightness(1)}
+      50%{transform:scale(1.04);filter:brightness(1.05)}
+    }
+    .feature.built .m-breath{animation:breathPulse 3.2s ease-in-out infinite}
+
+    /* — Avatar bob — tiny up/down 2px float, suggests a "speaking" head.
+       Every DiceBear avatar in every card bobs continuously, staggered
+       across n-th positions so they don't all bob in unison. The bob
+       chains after the initial pop-in. */
+    @keyframes avatarBob{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-2.5px)}
+    }
+    .feature.built .m-avatar-img{
+      animation:avatarPop .8s var(--ease) forwards,
+                avatarBob 3.4s ease-in-out 1.1s infinite
+    }
+    .feature.built .feature-body .m-avatar-img:nth-of-type(2n){animation-delay:0s, 1.7s}
+    .feature.built .feature-body .m-avatar-img:nth-of-type(3n){animation-delay:0s, 2.2s}
+    .feature.built .feature-body .m-avatar-img:nth-of-type(4n){animation-delay:0s, 2.8s}
+    /* Explicit class hooks (debate cards, voice mic) — still work for elements
+       that aren't .m-avatar-img */
+    .feature.built .m-bobber{animation:avatarBob 2.4s ease-in-out infinite}
+
+    /* — Float bob (delivery docs) — each card bobs on a different phase */
+    @keyframes docFloat{
+      0%,100%{transform:translateY(0) rotate(0)}
+      50%{transform:translateY(-4px) rotate(-0.5deg)}
+    }
+    .feature.built .m-doc{animation:docFloat 4s ease-in-out infinite}
+    .feature.built .m-doc:nth-child(1){animation-delay:0s}
+    .feature.built .m-doc:nth-child(2){animation-delay:.4s}
+    .feature.built .m-doc:nth-child(3){animation-delay:.8s}
+    .feature.built .m-doc:nth-child(4){animation-delay:1.2s}
+    .feature.built .m-doc:nth-child(5){animation-delay:1.6s}
+    .feature.built .m-doc:nth-child(6){animation-delay:2s}
+
+    /* — Shimmer — a soft diagonal highlight sliding across a surface */
+    @keyframes shimmerSlide{
+      0%{background-position:-180% 0}
+      100%{background-position:180% 0}
+    }
+    .feature.built .m-shimmer{
+      background:linear-gradient(105deg,
+        transparent 38%,
+        rgba(20,19,16,0.06) 50%,
+        transparent 62%);
+      background-size:300% 100%;
+      animation:shimmerSlide 4.5s linear infinite
+    }
+
+    /* — Orbit spin — for "+" affordance + processing spinners */
+    @keyframes orbitSpin{
+      to{transform:rotate(360deg)}
+    }
+    .m-spin{
+      display:inline-flex;width:14px;height:14px;
+      border:1.5px solid var(--hair-strong);
+      border-top-color:var(--text);
+      border-radius:50%;
+      animation:orbitSpin 1.1s linear infinite;
+      flex:none
+    }
+    .feature.built .m-plus-rotate{animation:orbitSpin 12s linear infinite;display:inline-block}
+
+    /* — Bar fill loop — a progress bar that fills 0→100% on a loop */
+    @keyframes barFillLoop{
+      0%{width:0%;opacity:1}
+      80%{width:100%;opacity:1}
+      90%{width:100%;opacity:.3}
+      100%{width:0%;opacity:0}
+    }
+    .feature.built .m-bar .m-bar-loop{
+      animation:barFillLoop 3.6s cubic-bezier(.4,.0,.2,1) infinite
+    }
+
+    /* — Arrow swap — vertical ↕ flips emphasis between top/bottom */
+    @keyframes arrowSwap{
+      0%,40%{transform:translateY(-2px) scale(1.0);opacity:1}
+      50%,90%{transform:translateY(2px) scale(1.0);opacity:1}
+      100%{transform:translateY(-2px) scale(1.0);opacity:1}
+    }
+    .feature.built .m-arrow-swap{animation:arrowSwap 2.6s ease-in-out infinite;display:inline-block}
+
+    /* — Status tag pulse — the small green "on" / "delivered" tags ripple
+       through, drawing the eye through the team / clawern lists */
+    @keyframes tagPulse{
+      0%,100%{filter:brightness(1)}
+      50%{filter:brightness(1.18)}
+    }
+    .feature.built .m-tag.ok{animation:tagPulse 2.6s ease-in-out infinite}
+    .feature.built .m-row:nth-of-type(1) .m-tag.ok{animation-delay:0s}
+    .feature.built .m-row:nth-of-type(2) .m-tag.ok{animation-delay:.4s}
+    .feature.built .m-row:nth-of-type(3) .m-tag.ok{animation-delay:.8s}
+    .feature.built .m-row:nth-of-type(4) .m-tag.ok{animation-delay:1.2s}
+
+    /* — Bubble cascade — chat bubbles slide in one-by-one when card builds */
+    .feature .m-bubble{opacity:0;transform:translateY(8px)}
+    .feature.built .m-bubble{
+      animation:bubbleIn .55s var(--ease) forwards
+    }
+    @keyframes bubbleIn{
+      0%{opacity:0;transform:translateY(8px)}
+      100%{opacity:1;transform:translateY(0)}
+    }
+    .feature.built .feature-body > .m-row:nth-of-type(1) .m-bubble,
+    .feature.built .feature-body > .m-bubble:nth-of-type(1){animation-delay:.30s}
+    .feature.built .feature-body > .m-row:nth-of-type(2) .m-bubble,
+    .feature.built .feature-body > .m-bubble:nth-of-type(2){animation-delay:.55s}
+    .feature.built .feature-body > .m-row:nth-of-type(3) .m-bubble,
+    .feature.built .feature-body > .m-bubble:nth-of-type(3){animation-delay:.80s}
+    .feature.built .feature-body > .m-row:nth-of-type(4) .m-bubble,
+    .feature.built .feature-body > .m-bubble:nth-of-type(4){animation-delay:1.05s}
+
+    /* — Card highlight ping — debate's findings briefly brighten in turn */
+    @keyframes cardPing{
+      0%,100%{box-shadow:var(--shadow-sm);border-color:var(--hair)}
+      50%{box-shadow:var(--shadow-md);border-color:var(--hair-strong)}
+    }
+    .feature.built .m-card-ping{animation:cardPing 4s ease-in-out infinite}
+    .feature.built .m-card-ping:nth-of-type(2){animation-delay:2s}
+
+    /* — Tap-shimmer — for the "Instruct →" button pop */
+    @keyframes tapShimmer{
+      0%,100%{transform:scale(1);box-shadow:0 2px 4px rgba(20,19,16,0.15)}
+      50%{transform:scale(1.03);box-shadow:0 4px 12px rgba(20,19,16,0.28)}
+    }
+    .feature.built .m-cta{animation:tapShimmer 2.4s ease-in-out infinite}
+
+    /* — Wave breath — the wave-svg ALSO subtly translates and the whole
+       card gets a "voice is here" feel */
+    @keyframes voiceMicPulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(20,19,16,0.18)}
+      60%{box-shadow:0 0 0 14px rgba(20,19,16,0)}
+    }
+    .feature.built .voice-avatar{animation:avatarBob 2.4s ease-in-out infinite, voiceMicPulse 2.4s ease-in-out infinite}
+
     @media(prefers-reduced-motion:reduce){
       .feature.built .wave-svg rect,
-      .feature.built .m-dot.ok{animation:none}
+      .feature.built .m-dot.ok,
+      .feature.built .m-pulse-ring,
+      .feature.built .m-breath,
+      .feature.built .voice-avatar,
+      .feature.built .m-bobber,
+      .feature.built .m-doc,
+      .feature.built .m-shimmer,
+      .feature.built .m-plus-rotate,
+      .feature.built .m-bar .m-bar-loop,
+      .feature.built .m-arrow-swap,
+      .feature.built .m-tag.ok,
+      .feature.built .m-bubble,
+      .feature.built .m-card-ping,
+      .feature.built .m-cta,
+      .m-caret,
+      .m-spin{animation:none}
     }
 
     /* FAQ — same treatment */
@@ -522,7 +709,7 @@
       position:fixed;top:0;left:0;right:0;z-index:100;
       display:flex;align-items:center;justify-content:space-between;
       padding:22px 32px;
-      background:rgba(240,238,230,0.78);
+      background:rgba(250,250,250,0.78);
       backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
       border-bottom:1px solid var(--hair)
     }
@@ -552,9 +739,11 @@
     .nav-link:hover{background:rgba(20,19,16,0.06)}
     .nav-link.primary{
       background:var(--text);color:var(--bg);
-      display:inline-flex;align-items:center;gap:8px
+      display:inline-flex;align-items:center;gap:8px;
+      box-shadow:var(--shadow-pill);
+      transition:background .25s var(--ease),box-shadow .35s var(--ease),transform .35s var(--ease)
     }
-    .nav-link.primary:hover{background:#000}
+    .nav-link.primary:hover{background:#000;box-shadow:var(--shadow-pill-hover);transform:translateY(-1px)}
     .nav-link svg{width:13px;height:13px}
     @media(max-width:760px){
       .nav{padding:14px 18px}
@@ -567,7 +756,7 @@
        ═══════════════════════════════════════════════════════════════════ */
     .hero{
       min-height:100vh;min-height:100dvh;position:relative;
-      padding:96px 32px 0;
+      padding:clamp(140px,18vh,240px) 32px 0;
       display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
       max-width:var(--max);margin:0 auto;text-align:center
     }
@@ -588,8 +777,8 @@
        the play button until the user clicks. */
     .hero-imac-screen{
       position:absolute;
-      top:3.2%;left:20%;
-      width:60%;height:64.5%;
+      top:8.5%;left:22%;
+      width:56%;height:58%;
       overflow:hidden;
       background:#0a0908;
       opacity:0;pointer-events:none;
@@ -617,7 +806,7 @@
       filter:drop-shadow(0 8px 26px rgba(0,0,0,0.45));
       transition:opacity .4s var(--ease),transform .4s var(--ease)
     }
-    .hero-imac-play:hover{transform:translate(-50%,-50%) scale(1.05)}
+    .hero-imac-play:hover{transform:translate(-50%,-50%) scale(1.06)}
     .hero-imac-play-circle{display:inline-flex}
     .hero-imac-play svg{width:88px;height:88px}
     .hero-imac-play-label{
@@ -666,9 +855,9 @@
 
     .hero h1{
       font-family:var(--sans);
-      font-size:clamp(44px,7.8vw,120px);
-      font-weight:500;line-height:.92;letter-spacing:-0.04em;
-      color:var(--text);margin:0 auto 28px;max-width:1180px
+      font-size:clamp(64px,8.8vw,160px);
+      font-weight:500;line-height:.9;letter-spacing:-0.045em;
+      color:var(--text);margin:0 auto 44px;max-width:1320px
     }
     .hero h1 em{
       font-style:italic;font-weight:400;color:var(--muted)
@@ -681,7 +870,7 @@
     .hero-deck strong{color:var(--text);font-weight:500}
 
     /* Hero CTAs */
-    .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+    .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center}
     .btn{
       display:inline-flex;align-items:center;gap:10px;
       font-family:var(--sans);font-size:14px;font-weight:500;
@@ -691,21 +880,21 @@
     }
     .btn-primary{
       background:var(--text);color:var(--bg);
-      box-shadow:var(--shadow-md)
+      box-shadow:var(--shadow-pill)
     }
     .btn-primary:hover{
       background:#000;transform:translateY(-2px);
-      box-shadow:var(--shadow-lg)
+      box-shadow:var(--shadow-pill-hover)
     }
     .btn-ghost{
       background:var(--surface-2);color:var(--text);
       border-color:var(--hair-strong);
-      box-shadow:var(--shadow-sm)
+      box-shadow:var(--shadow-pill)
     }
     .btn-ghost:hover{
       background:#fff;border-color:var(--text);
       transform:translateY(-2px);
-      box-shadow:var(--shadow-md)
+      box-shadow:var(--shadow-pill-hover)
     }
     .btn svg{width:15px;height:15px}
     .btn .stars{
@@ -722,12 +911,12 @@
       background:var(--surface-2);border:1px solid var(--hair-strong);
       padding:13px 22px;border-radius:var(--r-pill);color:var(--text);cursor:pointer;
       transition:transform .35s var(--ease),box-shadow .35s var(--ease),background-color .25s var(--ease),border-color .25s var(--ease);
-      max-width:100%;box-shadow:var(--shadow-sm)
+      max-width:100%;box-shadow:var(--shadow-pill)
     }
     .install:hover{
       background:#fff;border-color:var(--text);
       transform:translateY(-2px);
-      box-shadow:var(--shadow-md)
+      box-shadow:var(--shadow-pill-hover)
     }
     .install-prompt{color:var(--dim);user-select:none}
     .install-cmd{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -740,7 +929,7 @@
     .install.copied .install-copy{color:var(--warm)}
 
     .hero-meta{
-      margin:48px auto 0;padding-top:28px;border-top:1px solid var(--hair);
+      margin:36px auto 0;padding-top:24px;border-top:1px solid var(--hair);
       display:grid;grid-template-columns:repeat(4,1fr);gap:24px;
       max-width:780px;width:100%;text-align:left
     }
@@ -771,8 +960,9 @@
       display:inline-flex;align-items:center;gap:8px;
       font-family:var(--mono);font-size:10px;font-weight:500;
       letter-spacing:2px;text-transform:uppercase;color:var(--muted);
-      padding:6px 12px;border:1px solid var(--hair-strong);border-radius:100px;
-      margin-bottom:28px;background:var(--surface-2)
+      padding:8px 14px;border:1px solid var(--hair-strong);border-radius:100px;
+      margin-bottom:56px;background:var(--surface-2);
+      box-shadow:var(--shadow-pill)
     }
     .section-tag .num{color:var(--text);font-weight:600}
     .section-title{
@@ -785,6 +975,17 @@
       font-family:var(--sans);font-size:clamp(16px,1.6vw,20px);
       font-weight:400;color:var(--muted);max-width:580px;line-height:1.55;
       margin:0 auto
+    }
+    /* Quote variant — pull-quote testimonial under a section title */
+    .section-quote{
+      font-size:clamp(18px,1.9vw,24px);max-width:680px
+    }
+    .section-quote em{color:var(--text);font-style:italic;font-weight:400}
+    .quote-attr{
+      display:inline-block;margin-left:6px;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);
+      vertical-align:0.15em
     }
 
     /* Section divider — massive statement, cinematic typographic moment */
@@ -882,7 +1083,7 @@
           rgba(255,253,245,1) 0%,
           rgba(252,250,242,0.7) 40%,
           rgba(244,242,234,0.4) 70%,
-          rgba(240,238,230,0) 100%),
+          rgba(250,250,250,0) 100%),
         linear-gradient(160deg, #F8F6EE 0%, #F1EFE5 100%);
       border-bottom:1px solid var(--hair);
       overflow:hidden;display:flex;flex-direction:column;
@@ -1049,6 +1250,41 @@
       font-family:var(--sans);font-style:italic;font-size:12px;
       font-weight:500;color:var(--text)
     }
+    /* DiceBear avatar image — drop-in replacement for .m-avatar letter circle */
+    .m-avatar-img{
+      width:30px;height:30px;border-radius:50%;flex:none;
+      background:#EFEDE5;border:1px solid var(--hair-strong);
+      object-fit:cover;display:block
+    }
+    .m-avatar-img.sm{width:22px;height:22px}
+
+    /* Document thumbnail — generative deliverable in the Delivery card grid */
+    .m-doc{
+      position:relative;
+      background:#fff;border:1px solid var(--hair);border-radius:6px;
+      padding:9px 8px 8px 12px;
+      display:flex;flex-direction:column;justify-content:flex-end;
+      aspect-ratio:1.05/1.4;min-height:0;
+      box-shadow:var(--shadow-sm);overflow:hidden
+    }
+    .m-doc::before{
+      /* faint horizontal "text lines" suggesting a written page */
+      content:'';position:absolute;left:8px;right:8px;top:8px;height:60%;
+      background:
+        linear-gradient(var(--hair) 1px, transparent 1px) 0 0/100% 7px,
+        linear-gradient(180deg, var(--hair-strong) 0%, transparent 70%);
+      opacity:.55
+    }
+    .m-doc-spine{
+      position:absolute;left:0;top:0;bottom:0;width:3px;
+      background:var(--text)
+    }
+    .m-doc-tag{
+      font-family:var(--mono);font-size:8.5px;font-weight:600;
+      letter-spacing:1.2px;text-transform:uppercase;color:var(--text);
+      position:relative;z-index:1
+    }
+
     .m-quote{
       font-family:var(--sans);font-style:italic;font-weight:400;
       font-size:13px;line-height:1.45;color:var(--text)
@@ -1176,7 +1412,7 @@
         ellipse 65% 55% at 50% 62%,
         rgba(255,232,195,0.45) 0%,
         rgba(255,225,180,0.18) 35%,
-        rgba(240,238,230,0) 72%);
+        rgba(250,250,250,0) 72%);
       isolation:isolate
     }
     .codex-hero-img{
@@ -1426,20 +1662,19 @@
        ═══════════════════════════════════════════════════════════════════ -->
   <section class="hero" id="hero">
     <div class="hero-mist" aria-hidden="true"><span></span><span></span><span></span></div>
-    <div class="hero-tag r v"><span class="pulse"></span> Open source · MIT · v0.14.3</div>
     <h1 class="word-reveal" id="heroHeadline">
-      One of the most advanced<br>
-      agentic systems in law.<br>
-      <em>Open source. Free.</em>
+      An agentic law firm.<br>
+      <em>Yours.</em>
     </h1>
     <p class="hero-deck r r2 v">
-      A multi-agent legal system you can run, read, and rewrite.
-      Sixty-seven specialist agents, evidence-backed debate, institutional memory.
+      Sixty-seven specialist agents.
+      <strong>Free</strong> for you to use and build.
+      <strong>Open source.</strong>
     </p>
     <div class="cta-row r r3 v">
       <a class="btn btn-primary" href="https://github.com/lavern-ai/lavern" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
-        View on GitHub<span class="stars">MIT</span>
+        View source on GitHub
       </a>
       <button class="install" id="install" type="button" aria-label="Copy install command">
         <span class="install-prompt">$</span>
@@ -1447,13 +1682,6 @@
         <span class="install-copy" id="installCopy">Copy</span>
       </button>
     </div>
-    <div class="hero-meta r r4 v">
-      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="67">0</div><div class="hero-meta-label">Agents</div></div>
-      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="10" data-suffix="×">0×</div><div class="hero-meta-label">Verification passes</div></div>
-      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="100" data-suffix="%">0%</div><div class="hero-meta-label">Open source</div></div>
-      <div class="hero-meta-item"><div class="hero-meta-num">Local</div><div class="hero-meta-label">On-device option</div></div>
-    </div>
-
     <!-- iMac shot doubles as the demo video player — click play to start. -->
     <div class="hero-imac" id="heroImac">
       <img src="img/imac-hero.jpg" alt="Lavern running on an iMac. Click to play the demo." loading="eager" decoding="async">
@@ -1477,6 +1705,13 @@
       </button>
     </div>
     <p class="hero-imac-cap">Lavern on your desk — <em>not in a browser tab.</em></p>
+
+    <div class="hero-meta r r4 v">
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="67">0</div><div class="hero-meta-label">Agents</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="10" data-suffix="×">0×</div><div class="hero-meta-label">Verification passes</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="100" data-suffix="%">0%</div><div class="hero-meta-label">Open source</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num">Local</div><div class="hero-meta-label">On-device option</div></div>
+    </div>
   </section>
 
   </div>
@@ -1488,55 +1723,59 @@
     <div class="container">
       <div class="features-head r">
         <span class="section-tag"><span class="num">01</span> · The system</span>
-        <h2 class="section-title word-reveal">Ten parts of a <em>working firm.</em></h2>
-        <p class="section-deck">Each one is a feedback loop. None of them are demos.</p>
+        <h2 class="section-title word-reveal">The architecture <em>of Lavern.</em></h2>
+        <p class="section-deck section-quote"><em>“It is like a legal tech tool, mixed with some NBA 2K and Pokémon.”</em> <span class="quote-attr">— GC</span></p>
       </div>
 
       <div class="features-grid">
 
-        <!-- 01 The Briefing -->
+        <!-- 01 Legal AI tool — the basic Lavern functionality -->
         <article class="feature">
           <div class="feature-mockup"><div class="feature-body" style="gap:10px">
-              <div class="m-bubble them">What kind of document are we looking at?</div>
-              <div class="m-bubble you">M&amp;A NDA. Delaware. $50M deal.</div>
-              <div class="m-bubble them">What's your risk appetite — strict or pragmatic?</div>
-              <div class="m-bubble you">Strict. Buy-side.</div>
-              <div class="m-typing" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="m-card" style="background:var(--surface-2);gap:8px">
+                <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)">What brings you in today?</div>
+                <div style="font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.4">Review this <strong>two-year non-compete</strong> across <strong>twelve states</strong>. Buy-side. Find anything we should push back on.<span class="m-caret"></span></div>
+                <div class="m-row" style="justify-content:flex-end;gap:8px;padding-top:4px">
+                  <span class="m-tag neutral">+ Attach</span>
+                  <span class="m-tag m-cta" style="background:var(--text);color:var(--bg)">Instruct →</span>
+                </div>
+              </div>
+              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--muted);justify-content:center"><span class="m-dot ok"></span><span>Your firm is on it</span></div>
             </div>
           </div>
           <div class="feature-caption">
-            <div class="feature-num"><span>01</span> · Briefing</div>
-            <h3 class="feature-title">An intake that <em>asks questions.</em></h3>
-            <p class="feature-desc">An adaptive interview builds the context every agent will need — jurisdiction, deal size, risk appetite, intent. The model is not the bottleneck. Context is.</p>
+            <div class="feature-num"><span>01</span> · The tool</div>
+            <h3 class="feature-title">Legal work, <em>on demand.</em></h3>
+            <p class="feature-desc">Type the request — review, draft, redline, summarise, restructure. Lavern's team picks up the work. The instruct line is the front door.</p>
           </div>
         </article>
 
-        <!-- 02 The Team -->
+        <!-- 02 Agentic team — DiceBear Notionists avatars -->
         <article class="feature">
           <div class="feature-mockup"><div class="feature-body" style="gap:8px">
-              <div class="m-row"><div class="m-avatar">E</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Eleanor Vance · Senior Partner</div><div style="font-size:10.5px">M&amp;A · 30y · debate-ready</div></div><span class="m-tag ok">on</span></div>
-              <div class="m-row"><div class="m-avatar">M</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Marcus Ito · Associate</div><div style="font-size:10.5px">Contracts · adversarial</div></div><span class="m-tag ok">on</span></div>
-              <div class="m-row"><div class="m-avatar">S</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Sana Reyes · Specialist</div><div style="font-size:10.5px">Delaware corporate</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><img class="m-avatar-img" src="https://api.dicebear.com/9.x/notionists/svg?seed=eleanor&backgroundColor=f4f2ec,e8e4d8,d8d2c4" alt="" loading="lazy"><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Eleanor Vance · Senior Partner</div><div style="font-size:10.5px">M&amp;A · 30y · debate-ready</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><img class="m-avatar-img" src="https://api.dicebear.com/9.x/notionists/svg?seed=marcus&backgroundColor=f4f2ec,e8e4d8,d8d2c4" alt="" loading="lazy"><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Marcus Ito · Associate</div><div style="font-size:10.5px">Contracts · adversarial</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><img class="m-avatar-img" src="https://api.dicebear.com/9.x/notionists/svg?seed=sana&backgroundColor=f4f2ec,e8e4d8,d8d2c4" alt="" loading="lazy"><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Sana Reyes · Specialist</div><div style="font-size:10.5px">Delaware corporate</div></div><span class="m-tag ok">on</span></div>
               <div class="m-row"><div class="m-avatar" style="opacity:.5">+</div><div style="flex:1;font-size:10.5px;color:var(--dim)">64 more available</div></div>
             </div>
           </div>
           <div class="feature-caption">
             <div class="feature-num"><span>02</span> · Team</div>
-            <h3 class="feature-title">Sixty-seven <em>specialists.</em></h3>
-            <p class="feature-desc">Pick the team for the document. M&amp;A partner, adversarial associate, jurisdictional specialist, dark-pattern auditor. Or build your own.</p>
+            <h3 class="feature-title">An agentic <em>team.</em></h3>
+            <p class="feature-desc">Sixty-seven specialists with skill ratings, personalities, and faces. M&amp;A partner, adversarial associate, jurisdictional specialist. Or build your own.</p>
           </div>
         </article>
 
-        <!-- 03 The Debate -->
+        <!-- 03 Debate — with DiceBear avatars on the contesting voices -->
         <article class="feature">
-          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
-              <div class="m-card">
-                <div class="m-row"><span class="m-tag danger">red</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Indemnification cap is uncapped.</span></div>
-                <div class="m-quote" style="font-size:11px;color:var(--muted)">"…the Indemnifying Party shall be liable for all losses…" §8.2</div>
+          <div class="feature-mockup"><div class="feature-body" style="gap:8px">
+              <div class="m-card m-card-ping">
+                <div class="m-row" style="gap:8px"><img class="m-avatar-img sm m-bobber" src="https://api.dicebear.com/9.x/notionists/svg?seed=eleanor&backgroundColor=f4f2ec" alt="" loading="lazy"><span class="m-tag danger">red</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500;flex:1">Indemnification cap is uncapped.</span></div>
+                <div class="m-quote" style="font-size:11px;color:var(--muted)">“…the Indemnifying Party shall be liable for all losses…” §8.2</div>
               </div>
-              <div style="text-align:center;color:var(--text);font-size:14px;line-height:1;opacity:.5">↕</div>
-              <div class="m-card">
-                <div class="m-row"><span class="m-tag warn">challenge</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">§13.1 carves out — see "Notwithstanding".</span></div>
+              <div style="text-align:center;color:var(--text);font-size:14px;line-height:1;opacity:.5"><span class="m-arrow-swap">↕</span></div>
+              <div class="m-card m-card-ping">
+                <div class="m-row" style="gap:8px"><img class="m-avatar-img sm m-bobber" src="https://api.dicebear.com/9.x/notionists/svg?seed=marcus&backgroundColor=f4f2ec" alt="" loading="lazy"><span class="m-tag warn">challenge</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500;flex:1">§13.1 carves out — see “Notwithstanding”.</span></div>
                 <div class="m-quote" style="font-size:11px;color:var(--muted)">Marcus Ito · counter-evidence cited</div>
               </div>
             </div>
@@ -1554,7 +1793,7 @@
               <div style="color:var(--text);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;opacity:.7">// FIRM PERSONALITY</div>
               <div>We are conservative on liability, pragmatic on commerce.</div>
               <div>We default to client privilege. We never round numbers.</div>
-              <div>We speak plainly. Latin only when it earns its keep.</div>
+              <div>We speak plainly. Latin only when it earns its keep.<span class="m-caret"></span></div>
               <div style="color:var(--dim);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;margin-top:4px">— injected into every engagement</div>
             </div>
           </div>
@@ -1565,21 +1804,20 @@
           </div>
         </article>
 
-        <!-- 05 Knowledge Base -->
+        <!-- 05 Knowledge — open, bring-your-own -->
         <article class="feature">
-          <div class="feature-mockup">            <div class="feature-body" style="gap:7px">
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">CUAD</span><span style="color:var(--dim)">510 contracts · 41 types</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">MAUD</span><span style="color:var(--dim)">152 deals · 92 points</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">ACORD</span><span style="color:var(--dim)">126k clause pairs</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">LEDGAR</span><span style="color:var(--dim)">60k SEC provisions</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">UNFAIR-ToS</span><span style="color:var(--dim)">EU unfair clauses</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">ContractNLI</span><span style="color:var(--dim)">10k NLI pairs</span></div>
+          <div class="feature-mockup"><div class="feature-body" style="gap:7px">
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span class="m-dot ok"></span><span style="flex:1;font-weight:500">Your firm precedents</span><span style="color:var(--dim)">243 docs</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span class="m-dot ok"></span><span style="flex:1;font-weight:500">Past contracts</span><span style="color:var(--dim)">1,840 docs</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span class="m-dot ok"></span><span style="flex:1;font-weight:500">CUAD · MAUD · LEDGAR</span><span style="color:var(--dim)">6 datasets</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span class="m-dot ok"></span><span style="flex:1;font-weight:500">Your client memos</span><span style="color:var(--dim)">412 docs</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--dim);padding-top:4px;border-top:1px solid var(--hair)"><span class="m-plus-rotate" style="font-size:14px;line-height:1;color:var(--text)">+</span><span style="flex:1">Drop a folder. It indexes.</span></div>
             </div>
           </div>
           <div class="feature-caption">
             <div class="feature-num"><span>05</span> · Knowledge</div>
-            <h3 class="feature-title">Six legal <em>datasets.</em></h3>
-            <p class="feature-desc">CUAD, MAUD, ACORD, LEDGAR, UNFAIR-ToS, ContractNLI — wired into FTS5 retrieval and citable on demand. The reference shelf is loaded.</p>
+            <h3 class="feature-title">Open <em>shelf.</em></h3>
+            <p class="feature-desc">Six public legal datasets out of the box. Plus your firm's precedents, contracts, memos, anything. Drop a folder, it indexes, the agents cite it.</p>
           </div>
         </article>
 
@@ -1592,7 +1830,7 @@
                 <span class="m-dot ok"></span><span class="m-dot warn"></span><span class="m-dot dim"></span><span class="m-dot dim"></span>
               </div>
               <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.5px">pass 7 of 10 · structure · evidence · preservation · placeholders · …</div>
-              <div class="m-bar"><span style="--fill:70%"></span></div>
+              <div class="m-bar"><span class="m-bar-loop" style="--fill:70%"></span></div>
               <div class="m-quote" style="font-size:13px;color:var(--text)">critique → revise → resubmit</div>
             </div>
           </div>
@@ -1603,27 +1841,45 @@
           </div>
         </article>
 
-        <!-- 07 Delivery -->
+        <!-- 07 Delivery — many generative documents from one engagement -->
         <article class="feature">
-          <div class="feature-mockup"><div class="feature-body" style="flex-direction:row;gap:12px;align-items:stretch">
-              <div class="m-card" style="flex:1;background:var(--warm-soft);border-color:rgba(107,79,58,0.18)">
-                <span class="m-tag" style="align-self:flex-start">For You</span>
-                <div style="font-family:var(--sans);font-size:12px;color:var(--text);line-height:1.4;font-weight:500">Plain-language brief.<br>Three risks, ranked.</div>
+          <div class="feature-mockup"><div class="feature-body" style="gap:8px">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Memo</span></div>
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Brief</span></div>
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Redline</span></div>
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Summary</span></div>
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Board email</span></div>
+                <div class="m-doc"><span class="m-doc-spine"></span><span class="m-doc-tag">Deck</span></div>
               </div>
-              <div class="m-card" style="flex:1">
-                <span class="m-tag neutral" style="align-self:flex-start">For Counsel</span>
-                <div style="font-family:var(--sans);font-size:12px;color:var(--text);line-height:1.4;font-weight:500">Annotated original.<br>14 findings, cited.</div>
-              </div>
+              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--muted);justify-content:center;padding-top:6px"><span>One engagement · every artifact your reader needs</span></div>
             </div>
           </div>
           <div class="feature-caption">
             <div class="feature-num"><span>07</span> · Delivery</div>
-            <h3 class="feature-title">Two artifacts. <em>Always.</em></h3>
-            <p class="feature-desc">A document for you. A document for the lawyer who'll check it. Same engagement, two registers — because legal work has two readers.</p>
+            <h3 class="feature-title">Every <em>artifact.</em></h3>
+            <p class="feature-desc">From one engagement, every deliverable the moment needs: an executive memo, a redline, a board email, a deck, a one-pager. Pick the register the audience expects.</p>
           </div>
         </article>
 
-        <!-- 08 Voice -->
+        <!-- 08 Briefing — Law is a context game -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:10px">
+              <div class="m-row" style="align-items:flex-start;gap:8px"><img class="m-avatar-img sm" src="https://api.dicebear.com/9.x/notionists/svg?seed=intake&backgroundColor=f4f2ec" alt="" loading="lazy"><div class="m-bubble them" style="flex:1">What kind of document are we looking at?</div></div>
+              <div class="m-bubble you">M&amp;A NDA. Delaware. $50M deal.</div>
+              <div class="m-row" style="align-items:flex-start;gap:8px"><img class="m-avatar-img sm" src="https://api.dicebear.com/9.x/notionists/svg?seed=intake&backgroundColor=f4f2ec" alt="" loading="lazy"><div class="m-bubble them" style="flex:1">What's your risk appetite — strict or pragmatic?</div></div>
+              <div class="m-bubble you">Strict. Buy-side.</div>
+              <div class="m-typing" aria-hidden="true"><i></i><i></i><i></i></div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>08</span> · Briefing</div>
+            <h3 class="feature-title">Law is a <em>context game.</em></h3>
+            <p class="feature-desc">An adaptive interview builds the context every agent will need — jurisdiction, deal size, risk appetite, intent. The model is not the bottleneck. Context is.</p>
+          </div>
+        </article>
+
+        <!-- 09 Voice — talk to the partner -->
         <article class="feature">
           <div class="feature-mockup"><div class="feature-body" style="gap:16px;justify-content:center;align-items:center">
               <svg class="wave-svg" viewBox="0 0 200 40" style="width:90%;max-width:320px;height:40px" aria-hidden="true">
@@ -1646,50 +1902,31 @@
                   <rect x="182" y="16" width="2" height="8"/><rect x="188" y="18" width="2" height="4"/>
                 </g>
               </svg>
-              <div class="m-bubble them" style="max-width:90%;font-style:italic;font-size:13px">"Two-year non-compete, twelve states. Find anything we should push back on."</div>
+              <div class="m-row" style="align-items:flex-start;gap:8px;max-width:92%"><img class="m-avatar-img sm voice-avatar" src="https://api.dicebear.com/9.x/notionists/svg?seed=eleanor&backgroundColor=f4f2ec" alt="" loading="lazy"><div class="m-bubble them" style="flex:1;font-style:italic;font-size:13px">“Eleanor, what's the strongest counter we have on §8.2?”</div></div>
             </div>
           </div>
           <div class="feature-caption">
-            <div class="feature-num"><span>08</span> · Voice</div>
-            <h3 class="feature-title">Speak to the <em>firm.</em></h3>
-            <p class="feature-desc">Voice in three places — the intake, mid-engagement interruption, and post-delivery Q&amp;A. The interface isn't neutral. It changes what people say.</p>
+            <div class="feature-num"><span>09</span> · Voice</div>
+            <h3 class="feature-title">Talk to the <em>partner.</em></h3>
+            <p class="feature-desc">Ask questions, interrupt the work, reopen the conversation post-delivery. Voice in three places — and the partner you're talking to is the one you picked.</p>
           </div>
         </article>
 
-        <!-- 09 Clawern -->
+        <!-- 10 Clawern — autonomous, local AI models -->
         <article class="feature">
-          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
-              <div class="m-row"><span class="m-tag ok">watching</span><span style="color:var(--text);font-family:var(--mono);font-size:11px">~/Documents/Contracts</span></div>
+          <div class="feature-mockup"><div class="feature-body" style="gap:8px">
+              <div class="m-row"><img class="m-avatar-img sm" src="https://api.dicebear.com/9.x/notionists/svg?seed=eleanor&backgroundColor=f4f2ec" alt="" loading="lazy"><img class="m-avatar-img sm" src="https://api.dicebear.com/9.x/notionists/svg?seed=marcus&backgroundColor=f4f2ec" alt="" loading="lazy" style="margin-left:-8px"><span style="flex:1;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase">Team on retainer</span><span class="m-tag" style="background:var(--text);color:var(--bg)">local</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:10.5px;color:var(--text)"><span class="m-tag ok">watching</span><span>~/Documents/Contracts</span></div>
               <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot ok"></span><span style="flex:1">SaaS-MSA-Acme.pdf</span><span class="m-tag ok">delivered</span></div>
               <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot warn"></span><span style="flex:1">Vendor-DPA-v3.docx</span><span class="m-tag warn">3 flags</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot"></span><span style="flex:1">M&amp;A-LOI-redline.pdf</span><span class="m-tag neutral">processing</span></div>
-              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--dim);padding-top:6px;border-top:1px solid var(--hair)"><span style="flex:1">heartbeat · 30 min</span><span>$2.41 / $50.00</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-spin"></span><span style="flex:1">M&amp;A-LOI-redline.pdf</span><span class="m-tag neutral">processing</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--dim);padding-top:6px;border-top:1px solid var(--hair)"><span style="flex:1">on-device · nothing leaves the laptop</span><span>$0.00</span></div>
             </div>
           </div>
           <div class="feature-caption">
-            <div class="feature-num"><span>09</span> · Clawern</div>
-            <h3 class="feature-title">A firm on <em>retainer.</em></h3>
-            <p class="feature-desc">Point it at a folder. It watches, drafts findings, delivers a dual-artifact bundle, and keeps a budget. Optional local mode for documents that can't leave the machine.</p>
-          </div>
-        </article>
-
-        <!-- 10 Precedent Board -->
-        <article class="feature">
-          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
-              <div class="m-card">
-                <div class="m-row"><span class="m-tag neutral">pattern</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;flex:1;font-weight:500">Auto-renewal w/o notice cap</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--text);font-weight:600">94%</span></div>
-                <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">seen 12× · 8 vendors · last week</div>
-              </div>
-              <div class="m-card">
-                <div class="m-row"><span class="m-tag neutral">pattern</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;flex:1;font-weight:500">Indemnification carve-out gap</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--text);font-weight:600">87%</span></div>
-                <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">seen 7× · M&amp;A · jurisdiction-stable</div>
-              </div>
-            </div>
-          </div>
-          <div class="feature-caption">
-            <div class="feature-num"><span>10</span> · Precedent</div>
-            <h3 class="feature-title">A firm that <em>remembers.</em></h3>
-            <p class="feature-desc">Significant findings persist across documents. Recurring patterns surface as precedents, scored by relevance, decayed over time, queryable by the next engagement.</p>
+            <div class="feature-num"><span>10</span> · Clawern</div>
+            <h3 class="feature-title">Autonomous, <em>on local.</em></h3>
+            <p class="feature-desc">Point Clawern at a folder. It watches, drafts findings, delivers a bundle — running on your machine with local models. No document leaves the laptop.</p>
           </div>
         </article>
 
@@ -2114,11 +2351,12 @@
           var absD = Math.abs(d);
           // Opacity: peak 1 at center, falls to 0 at |d| ~ 0.7
           var so = clamp(1.25 - absD * 1.7, 0, 1);
-          // Scale: peak 1 at center, 0.88 at edges
-          var ss = clamp(1 - absD * 0.16, 0.86, 1);
-          // Subtle vertical drift — cards lift slightly as they approach center,
-          // settle to 0, drift up a touch as they leave
-          var sy = d * 18; // px
+          // Scale: dialled back from cranked, still much more dramatic
+          // than the original (was 0.86→1.0, ~14% swing). Now ~32% swing
+          // with a subtle 1.02 overshoot for the centre-pop.
+          var ss = clamp(1.02 - absD * 0.32, 0.7, 1.02);
+          // Drift: midway between cranked (60) and original (18).
+          var sy = d * 38; // px
           el.style.setProperty('--so', so.toFixed(3));
           el.style.setProperty('--ss', ss.toFixed(3));
           el.style.setProperty('--sy', sy.toFixed(1) + 'px');
