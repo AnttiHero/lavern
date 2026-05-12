@@ -348,8 +348,22 @@
       transform:translateX(0) scale(1)
     }
 
-    /* Counter — keep dimensions stable while value tweens */
-    .count-up{font-variant-numeric:tabular-nums}
+    /* Counter — stable digit widths during tween */
+    .count-up{font-variant-numeric:tabular-nums;display:inline-block}
+
+    /* Hero stats — values + labels both crossfade as the row rotates
+       through different stat sets every ~6 seconds. */
+    .hero-meta-num,.hero-meta-label{
+      transition:opacity .35s var(--ease),transform .45s var(--ease);
+      will-change:opacity,transform
+    }
+    .hero-meta-item.swapping .hero-meta-num,
+    .hero-meta-item.swapping .hero-meta-label{
+      opacity:0;transform:translateY(-6px)
+    }
+    @media(prefers-reduced-motion:reduce){
+      .hero-meta-num,.hero-meta-label{transition:none}
+    }
 
     /* ═══════════════════════════════════════════════════════════════════
        BY THE NUMBERS — Legora-style big-number stats grid
@@ -571,16 +585,37 @@
        ═══════════════════════════════════════════════════════════════════ */
     .hero{
       min-height:100vh;min-height:100dvh;position:relative;
-      padding:140px 32px 80px;
-      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      padding:96px 32px 0;
+      display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
       max-width:var(--max);margin:0 auto;text-align:center
+    }
+    /* iMac shot embedded directly in the hero — first impression includes
+       the product visual. Tight margin so it peeks above the fold. */
+    .hero-imac{
+      position:relative;width:100%;max-width:1000px;margin:28px auto 0;
+      border-radius:var(--r-xl);overflow:hidden;
+      box-shadow:var(--shadow-xl);
+      opacity:var(--so,0);
+      transform:scale(var(--ss,.92));
+      transition:box-shadow .6s var(--ease)
+    }
+    .hero-imac img{display:block;width:100%;height:auto}
+    .hero-imac-cap{
+      margin-top:20px;text-align:center;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)
+    }
+    .hero-imac-cap em{
+      font-family:var(--sans);font-weight:400;font-style:italic;
+      letter-spacing:-0.005em;text-transform:none;color:var(--text);
+      font-size:14px;margin-left:6px
     }
     .hero-tag{
       display:inline-flex;align-items:center;gap:10px;
       font-family:var(--mono);font-size:10px;font-weight:500;
       letter-spacing:2px;text-transform:uppercase;color:var(--muted);
       padding:6px 12px;border:1px solid var(--hair-strong);border-radius:100px;
-      margin-bottom:48px;background:var(--surface-2)
+      margin-bottom:30px;background:var(--surface-2)
     }
     .hero-tag .pulse{
       display:inline-block;width:6px;height:6px;border-radius:50%;
@@ -594,17 +629,17 @@
 
     .hero h1{
       font-family:var(--sans);
-      font-size:clamp(48px,9.5vw,148px);
+      font-size:clamp(44px,7.8vw,120px);
       font-weight:500;line-height:.92;letter-spacing:-0.04em;
-      color:var(--text);margin:0 auto 40px;max-width:1180px
+      color:var(--text);margin:0 auto 28px;max-width:1180px
     }
     .hero h1 em{
       font-style:italic;font-weight:400;color:var(--muted)
     }
     .hero-deck{
-      font-family:var(--sans);font-size:clamp(17px,1.7vw,22px);
+      font-family:var(--sans);font-size:clamp(16px,1.5vw,20px);
       font-weight:400;color:var(--muted);
-      max-width:620px;line-height:1.5;margin:0 auto 48px
+      max-width:580px;line-height:1.5;margin:0 auto 32px
     }
     .hero-deck strong{color:var(--text);font-weight:500}
 
@@ -668,7 +703,7 @@
     .install.copied .install-copy{color:var(--warm)}
 
     .hero-meta{
-      margin:80px auto 0;padding-top:32px;border-top:1px solid var(--hair);
+      margin:48px auto 0;padding-top:28px;border-top:1px solid var(--hair);
       display:grid;grid-template-columns:repeat(4,1fr);gap:24px;
       max-width:780px;width:100%;text-align:left
     }
@@ -715,18 +750,60 @@
       margin:0 auto
     }
 
-    /* Section divider — poetic italic interstitial, Legit-style */
+    /* Section divider — massive statement, cinematic typographic moment */
     .interstitial{
-      max-width:760px;margin:0 auto;padding:clamp(60px,10vw,140px) 32px;
-      text-align:center
+      max-width:1180px;margin:0 auto;
+      padding:clamp(80px,12vw,180px) 32px;
+      text-align:center;position:relative
     }
     .interstitial p{
-      font-family:var(--sans);font-style:italic;font-weight:400;
-      font-size:clamp(22px,2.6vw,30px);line-height:1.4;
-      color:var(--text);letter-spacing:-0.015em
+      font-family:var(--sans);font-weight:500;
+      font-size:clamp(32px,5.2vw,76px);
+      line-height:1.02;letter-spacing:-0.035em;
+      color:var(--text);max-width:18ch;margin:0 auto
     }
-    .interstitial p::before{content:'— '}
-    .interstitial p::after{content:' —'}
+    .interstitial p em{
+      font-style:italic;font-weight:400;color:var(--muted)
+    }
+    .interstitial p strong{font-weight:500;color:var(--text)}
+    /* Decorative hairlines flanking the statement */
+    .interstitial::before,.interstitial::after{
+      content:'';position:absolute;left:50%;transform:translateX(-50%);
+      width:80px;height:1px;background:var(--text);opacity:.5
+    }
+    .interstitial::before{top:clamp(40px,7vw,120px)}
+    .interstitial::after{bottom:clamp(40px,7vw,120px)}
+    /* No more dashes around the text — we use hairlines instead */
+    .interstitial p::before,.interstitial p::after{content:none}
+    /* Slowly-pulsing dot above the text */
+    .interstitial .accent-dot{
+      display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:#3a7d44;margin-bottom:32px;
+      animation:dotPulse 2.4s ease-in-out infinite;position:relative
+    }
+    .interstitial .accent-dot::after{
+      content:'';position:absolute;inset:-6px;border-radius:50%;
+      border:1px solid #3a7d44;opacity:0;
+      animation:dotRing 2.4s ease-out infinite
+    }
+    @keyframes dotPulse{
+      0%,100%{transform:scale(.85)}
+      50%{transform:scale(1.1)}
+    }
+    @keyframes dotRing{
+      0%{transform:scale(.7);opacity:.7}
+      80%,100%{transform:scale(2.4);opacity:0}
+    }
+    .interstitial .meta-line{
+      margin-top:48px;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);
+      display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap
+    }
+    .interstitial .meta-line span+span{padding-left:18px;border-left:1px solid var(--hair-strong)}
+    @media(prefers-reduced-motion:reduce){
+      .interstitial .accent-dot,.interstitial .accent-dot::after{animation:none}
+    }
 
     /* ═══════════════════════════════════════════════════════════════════
        SHOWCASE — full-width Mac / iMac shot proving the product is real.
@@ -1069,107 +1146,323 @@
       .tldr-pill{width:auto}
     }
 
-    /* Right column — the Mac Mini stacked layers visual */
+    /* ─── TRUE 3D STACK — beyond Legora ───────────────────────────────
+       Real CSS 3D transforms: perspective, preserve-3d, mouse parallax,
+       per-slab click-to-lift, sequential boot, continuous rotation,
+       light beam scanning vertically. No image — every pixel is rendered
+       live so we can react to every input.
+    */
     .tldr-visual{
       position:relative;width:100%;aspect-ratio:5/4;
-      perspective:1800px;perspective-origin:50% 50%
+      perspective:2000px;perspective-origin:50% 45%;
+      cursor:grab
     }
-    /* Soft warm glow behind the stack */
+    .tldr-visual:active{cursor:grabbing}
+
+    /* Soft warm spotlight behind the stack — radial cream wash */
     .tldr-visual::before{
-      content:'';position:absolute;inset:10%;
-      background:radial-gradient(ellipse 80% 80% at 50% 60%,
-        rgba(255,253,245,0.9) 0%,
-        rgba(252,250,242,0.45) 35%,
-        rgba(244,242,234,0) 70%);
-      filter:blur(40px);z-index:0
+      content:'';position:absolute;inset:8%;
+      background:radial-gradient(ellipse 90% 90% at 50% 60%,
+        rgba(255,248,225,0.92) 0%,
+        rgba(252,240,210,0.55) 30%,
+        rgba(244,232,200,0.25) 55%,
+        rgba(244,242,234,0) 80%);
+      filter:blur(45px);z-index:0
     }
+
+    /* Stack rotator — JS writes its rotateX/rotateZ for mouse parallax,
+       and CSS adds a gentle continuous yaw on top. */
     .tldr-stack3d{
       position:absolute;inset:0;
       transform-style:preserve-3d;
-      transform:rotateX(58deg) rotateZ(-22deg);
-      transition:transform .6s var(--ease)
+      transform:rotateX(56deg) rotateZ(-22deg);
+      transition:transform .8s var(--ease);
+      animation:stackOrbit 18s ease-in-out infinite alternate
     }
-    .tldr-visual:hover .tldr-stack3d{
-      transform:rotateX(54deg) rotateZ(-22deg)
+    @keyframes stackOrbit{
+      0%  {transform:rotateX(56deg) rotateZ(-22deg)}
+      50% {transform:rotateX(54deg) rotateZ(-18deg)}
+      100%{transform:rotateX(56deg) rotateZ(-26deg)}
+    }
+    .tldr-visual.parallax .tldr-stack3d{
+      animation:none;
+      transition:transform .2s linear
     }
 
-    /* Each glass slab — square footprint, sits at a Y-translate */
+    /* Each glass slab — proper translucent material with depth */
     .tldr-slab{
       position:absolute;left:50%;top:50%;
       width:46%;aspect-ratio:1/1;
       transform-origin:center center;
       transform:translate3d(-50%,-50%,var(--z,0px));
-      background:linear-gradient(135deg,
-        rgba(255,255,255,0.55) 0%,
-        rgba(245,243,236,0.35) 50%,
-        rgba(220,217,208,0.30) 100%);
-      border:1px solid rgba(255,255,255,0.6);
-      border-radius:18px;
+      /* Frosted glass surface */
+      background:
+        linear-gradient(135deg,
+          rgba(255,255,255,0.62) 0%,
+          rgba(255,250,238,0.42) 35%,
+          rgba(245,238,222,0.32) 65%,
+          rgba(225,218,200,0.36) 100%);
+      border:1px solid rgba(255,255,255,0.72);
+      border-radius:16%;
       box-shadow:
-        0 6px 20px rgba(20,19,16,0.10),
-        inset 0 1px 0 rgba(255,255,255,0.65),
-        inset 0 -1px 0 rgba(20,19,16,0.06);
-      backdrop-filter:blur(3px);
-      -webkit-backdrop-filter:blur(3px);
+        /* slab thickness — fake edge depth */
+        0 1px 0 rgba(20,19,16,0.10),
+        0 2px 0 rgba(255,255,255,0.55),
+        0 4px 0 rgba(20,19,16,0.10),
+        0 6px 0 rgba(255,255,255,0.45),
+        /* drop shadow on the surface below */
+        0 12px 24px rgba(20,19,16,0.12),
+        0 24px 40px rgba(20,19,16,0.08),
+        /* inner sheen */
+        inset 0 2px 1px rgba(255,255,255,0.80),
+        inset 0 -2px 1px rgba(20,19,16,0.06);
+      backdrop-filter:blur(2px) saturate(1.05);
+      -webkit-backdrop-filter:blur(2px) saturate(1.05);
       display:flex;align-items:center;justify-content:center;
       font-family:var(--sans);font-size:13px;font-weight:500;
       color:var(--text);letter-spacing:-0.01em;
       cursor:pointer;
-      transition:transform .55s var(--ease),box-shadow .55s var(--ease),background .35s var(--ease)
+      transition:transform .6s cubic-bezier(0.4,0,0.2,1),
+                 box-shadow .6s var(--ease),
+                 background .35s var(--ease);
+      /* Initial: hidden + collapsed for boot-in animation */
+      opacity:0
+    }
+    /* Edge highlight — long warm streak along the leading edge of each slab */
+    .tldr-slab::before{
+      content:'';position:absolute;left:8%;right:8%;top:0;height:6%;
+      background:linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,232,180,0.45) 50%,
+        transparent 100%);
+      border-radius:50% 50% 0 0;
+      filter:blur(1.5px);pointer-events:none;
+      opacity:.7
     }
     .tldr-slab .slab-label{
-      transform:rotateZ(22deg) rotateX(-58deg); /* counter-rotate so text reads upright */
+      /* counter-rotate so text reads upright on the isometric face */
+      transform:rotateZ(22deg) rotateX(-56deg);
       padding:8px 14px;
-      background:rgba(255,253,245,0.85);
-      border-radius:8px;
+      background:rgba(255,253,245,0.92);
+      border-radius:10px;
       border:1px solid var(--hair);
-      box-shadow:0 2px 8px rgba(20,19,16,0.08);
-      backdrop-filter:blur(4px);
-      white-space:nowrap
-    }
-    .tldr-slab.active{
-      background:linear-gradient(135deg,
-        rgba(255,253,245,0.92) 0%,
-        rgba(248,245,234,0.75) 50%,
-        rgba(232,225,210,0.65) 100%);
       box-shadow:
-        0 12px 36px rgba(20,19,16,0.18),
-        0 0 0 1px rgba(20,19,16,0.20),
-        inset 0 1px 0 rgba(255,255,255,0.95)
+        0 3px 10px rgba(20,19,16,0.10),
+        inset 0 1px 0 rgba(255,255,255,0.7);
+      backdrop-filter:blur(4px);
+      white-space:nowrap;
+      transition:background .35s var(--ease),color .35s var(--ease),transform .55s var(--ease)
+    }
+    /* Active slab — lifted, brighter, bordered. Subtle pre-flip cue. */
+    .tldr-slab.active{
+      background:
+        linear-gradient(135deg,
+          rgba(255,253,245,0.95) 0%,
+          rgba(255,245,225,0.80) 45%,
+          rgba(252,235,200,0.70) 100%);
+      box-shadow:
+        0 1px 0 rgba(20,19,16,0.12),
+        0 2px 0 rgba(255,255,255,0.7),
+        0 4px 0 rgba(20,19,16,0.12),
+        0 6px 0 rgba(255,255,255,0.55),
+        0 0 0 1px rgba(20,19,16,0.18),
+        0 20px 50px rgba(255,200,120,0.30),
+        0 30px 70px rgba(20,19,16,0.18),
+        inset 0 2px 1px rgba(255,255,255,0.95)
     }
     .tldr-slab.active .slab-label{
       background:var(--text);color:var(--bg);
       border-color:var(--text);font-weight:600
     }
 
-    /* Mac Mini base — sits below the slab stack */
+    /* FLIPPED — slab pops out, counter-rotates to face camera, grows.
+       Counter-rotation = inverse of the parent's rotateX(56deg) rotateZ(-22deg). */
+    .tldr-slab.flipped{
+      transform:
+        translate3d(-50%,-50%,260px)
+        rotateZ(22deg)
+        rotateX(-56deg)
+        scale(1.85);
+      z-index:50;
+      background:
+        linear-gradient(135deg,
+          rgba(255,253,245,0.98) 0%,
+          rgba(255,250,238,0.95) 50%,
+          rgba(252,245,230,0.92) 100%);
+      box-shadow:
+        0 1px 0 rgba(20,19,16,0.14),
+        0 3px 0 rgba(255,255,255,0.7),
+        0 6px 0 rgba(20,19,16,0.14),
+        0 9px 0 rgba(255,255,255,0.55),
+        0 0 0 1px rgba(20,19,16,0.10),
+        0 40px 80px rgba(20,19,16,0.20),
+        0 80px 140px rgba(255,200,120,0.18),
+        inset 0 2px 1px rgba(255,255,255,0.95)
+    }
+    /* Hide stacked label, show big face when flipped */
+    .tldr-slab.flipped .slab-label{opacity:0;pointer-events:none}
+    .tldr-slab.flipped .slab-face{opacity:1;pointer-events:auto}
+
+    /* Slab face — content shown after the flip lands */
+    .tldr-slab .slab-face{
+      position:absolute;inset:9%;
+      display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+      text-align:left;gap:8px;
+      opacity:0;pointer-events:none;
+      transition:opacity .35s var(--ease) .25s; /* fades in mid-flip */
+    }
+    .slab-face .face-num{
+      font-family:var(--mono);font-size:9px;font-weight:600;
+      letter-spacing:1.6px;text-transform:uppercase;color:var(--accent-dim,var(--muted))
+    }
+    .slab-face .face-title{
+      font-family:var(--sans);font-size:14px;font-weight:600;
+      line-height:1.15;letter-spacing:-0.015em;color:var(--text);
+      max-width:24ch
+    }
+    .slab-face .face-body{
+      font-family:var(--sans);font-size:10px;font-weight:400;
+      line-height:1.5;color:var(--muted);
+      max-width:36ch
+    }
+    .slab-face .face-tag{
+      align-self:flex-start;
+      font-family:var(--mono);font-size:8px;font-weight:500;
+      letter-spacing:1.2px;text-transform:uppercase;
+      padding:3px 8px;border-radius:100px;
+      background:var(--text);color:var(--bg);
+      margin-top:6px
+    }
+
+    /* Stack mode (no slab flipped) — body card visible. Flip mode — hidden. */
+    .tldr-visual.has-flipped .tldr-bodycard{opacity:0;pointer-events:none}
+
+    /* Other slabs dim + sink back when one is flipped */
+    .tldr-visual.has-flipped .tldr-slab:not(.flipped){
+      opacity:.35;
+      filter:saturate(.5) blur(.5px);
+      transform:translate3d(-50%,-50%,calc(var(--z,0px) - 30px)) scale(.92)
+    }
+    /* Boot-in animation — each slab materializes from below with delay */
+    .tldr-visual.booted .tldr-slab{
+      animation:slabBoot 1.1s cubic-bezier(0.16,1,0.3,1) forwards
+    }
+    .tldr-visual.booted .tldr-slab:nth-child(1){animation-delay:.15s}
+    .tldr-visual.booted .tldr-slab:nth-child(2){animation-delay:.30s}
+    .tldr-visual.booted .tldr-slab:nth-child(3){animation-delay:.45s}
+    .tldr-visual.booted .tldr-slab:nth-child(4){animation-delay:.60s}
+    .tldr-visual.booted .tldr-slab:nth-child(5){animation-delay:.75s}
+    .tldr-visual.booted .tldr-slab:nth-child(6){animation-delay:.90s}
+    .tldr-visual.booted .tldr-slab:nth-child(7){animation-delay:1.05s}
+    @keyframes slabBoot{
+      0%   {opacity:0;transform:translate3d(-50%,-50%,calc(var(--z,0px) - 240px)) scale(.7)}
+      60%  {opacity:1}
+      100% {opacity:1;transform:translate3d(-50%,-50%,var(--z,0px)) scale(1)}
+    }
+
+    /* Mac Mini base — proper 3D box (top + visible sides via box-shadow) */
     .tldr-macmini{
       position:absolute;left:50%;top:50%;
       width:50%;aspect-ratio:1/1;
-      transform:translate3d(-50%,-50%,-180px);
+      transform:translate3d(-50%,-50%,-220px);
       background:
-        linear-gradient(180deg,#E2E0DA 0%,#B6B4AE 50%,#8E8B83 100%);
-      border-radius:18px;
+        radial-gradient(ellipse 70% 50% at 50% 30%,
+          rgba(255,255,255,0.85) 0%,
+          rgba(220,218,212,0.5) 35%,
+          transparent 70%),
+        linear-gradient(180deg,#E8E6E0 0%,#C8C5BE 45%,#A0998F 100%);
+      border:1px solid rgba(255,255,255,0.5);
+      border-radius:14%;
       box-shadow:
-        0 30px 60px rgba(20,19,16,0.30),
-        0 60px 100px rgba(20,19,16,0.18),
-        inset 0 2px 4px rgba(255,255,255,0.40),
-        inset 0 -2px 4px rgba(0,0,0,0.18)
+        0 1px 0 rgba(20,19,16,0.10),
+        0 2px 0 rgba(255,255,255,0.45),
+        0 4px 0 rgba(20,19,16,0.12),
+        0 6px 0 rgba(255,255,255,0.40),
+        0 8px 0 rgba(20,19,16,0.14),
+        0 10px 0 rgba(255,255,255,0.35),
+        0 12px 0 rgba(20,19,16,0.16),
+        /* drop shadow on the floor */
+        0 40px 60px rgba(20,19,16,0.32),
+        0 80px 120px rgba(20,19,16,0.18),
+        /* inner highlights */
+        inset 0 3px 4px rgba(255,255,255,0.55),
+        inset 0 -3px 4px rgba(0,0,0,0.18)
     }
-    .tldr-macmini::after{
-      content:'';position:absolute;
-      bottom:14%;left:50%;transform:translateX(-50%) rotateZ(22deg) rotateX(-58deg);
-      width:18%;height:5%;
-      background:rgba(20,19,16,0.45);border-radius:100px;
-      box-shadow:inset 0 1px 2px rgba(0,0,0,0.4)
-    }
-    /* Tiny LED below the Mac Mini */
+    /* Apple logo on top */
     .tldr-macmini::before{
       content:'';position:absolute;
-      bottom:8%;left:30%;transform:rotateZ(22deg) rotateX(-58deg);
-      width:4px;height:4px;border-radius:50%;
-      background:#5ab26a;
-      box-shadow:0 0 6px rgba(90,178,106,0.7)
+      top:50%;left:50%;
+      width:22%;height:22%;
+      transform:translate(-50%,-50%);
+      background:
+        radial-gradient(circle, rgba(20,19,16,0.45) 0%, rgba(20,19,16,0.25) 60%, transparent 80%);
+      filter:blur(1px);
+      border-radius:50%;
+      opacity:.4
+    }
+    /* USB-C ports row at the front edge */
+    .tldr-macmini::after{
+      content:'';position:absolute;
+      bottom:10%;left:18%;right:18%;
+      height:6%;
+      background:linear-gradient(90deg,
+        transparent 0%,
+        rgba(20,19,16,0.35) 10%,
+        rgba(20,19,16,0.35) 90%,
+        transparent 100%);
+      border-radius:4px;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,0.5)
+    }
+    /* Floor surface beneath the Mac Mini — soft warm reflection */
+    .tldr-floor{
+      position:absolute;left:50%;top:50%;
+      width:90%;height:90%;
+      transform:translate3d(-50%,-50%,-260px) rotateX(0deg);
+      background:radial-gradient(ellipse 60% 50% at 50% 50%,
+        rgba(255,238,205,0.65) 0%,
+        rgba(255,228,180,0.30) 35%,
+        rgba(255,220,170,0.10) 55%,
+        transparent 75%);
+      filter:blur(20px);
+      pointer-events:none;
+      animation:floorBreathe 5s ease-in-out infinite alternate
+    }
+    @keyframes floorBreathe{
+      0%{opacity:.65;transform:translate3d(-50%,-50%,-260px) scale(1)}
+      100%{opacity:1;transform:translate3d(-50%,-50%,-260px) scale(1.08)}
+    }
+
+    /* Light beam — a soft warm vertical pulse traveling up through the
+       slabs continuously, like data flowing layer-to-layer. */
+    .tldr-beam{
+      position:absolute;left:50%;top:50%;
+      width:50%;aspect-ratio:1/1;
+      transform:translate3d(-50%,-50%,0);
+      pointer-events:none;
+      transform-style:preserve-3d
+    }
+    .tldr-beam::before{
+      content:'';position:absolute;left:42%;right:42%;
+      top:88%;height:10%;
+      background:radial-gradient(ellipse at center,
+        rgba(255,232,180,0.85) 0%,
+        rgba(255,210,150,0.45) 40%,
+        transparent 75%);
+      filter:blur(8px);
+      mix-blend-mode:screen;
+      animation:beamRise 4.5s cubic-bezier(.4,.0,.4,1) infinite
+    }
+    @keyframes beamRise{
+      0%   {top:88%;opacity:0;transform:scale(.6)}
+      8%   {opacity:.9}
+      90%  {opacity:.7}
+      100% {top:-15%;opacity:0;transform:scale(1.2)}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .tldr-stack3d{animation:none}
+      .tldr-floor,.tldr-beam::before{animation:none}
+      .tldr-visual.booted .tldr-slab{animation:none;opacity:1;transform:translate3d(-50%,-50%,var(--z,0px))}
     }
 
     /* The body panel that floats next to the active slab */
@@ -1205,9 +1498,117 @@
     .tldr-visual-img{
       display:none;position:absolute;inset:0;
       width:100%;height:100%;object-fit:contain;
-      z-index:1
+      z-index:1;
+      transform-origin:50% 60%;
+      /* Continuous gentle breathing — the stack "lives" */
+      animation:stackBreathe 7s ease-in-out infinite alternate;
+      will-change:transform,filter
     }
     .tldr-visual.has-image .tldr-visual-img{display:block}
+    /* Fully alive: gentle yaw + lift breath on a 9s loop */
+    @keyframes stackBreathe{
+      0%   {transform:perspective(1400px) rotateY(-1.4deg) translateY(0)   scale(1);     filter:brightness(1)    saturate(1)}
+      25%  {transform:perspective(1400px) rotateY( 0deg)   translateY(-4px) scale(1.005); filter:brightness(1.03) saturate(1.03)}
+      50%  {transform:perspective(1400px) rotateY( 1.4deg) translateY(-8px) scale(1.012); filter:brightness(1.06) saturate(1.07)}
+      75%  {transform:perspective(1400px) rotateY( 0deg)   translateY(-4px) scale(1.005); filter:brightness(1.03) saturate(1.03)}
+      100% {transform:perspective(1400px) rotateY(-1.4deg) translateY(0)   scale(1);     filter:brightness(1)    saturate(1)}
+    }
+    /* Pill-click pulse — flash brighten + lift */
+    .tldr-visual.pulse .tldr-visual-img{
+      animation:stackPulse .9s var(--ease) 1, stackBreathe 9s ease-in-out infinite
+    }
+    @keyframes stackPulse{
+      0%   {transform:translateY(-6px) scale(1.008);filter:brightness(1.04)}
+      40%  {transform:translateY(-14px) scale(1.045);filter:brightness(1.22) saturate(1.18)}
+      100% {transform:translateY(-6px) scale(1.008);filter:brightness(1.04)}
+    }
+
+    /* Active-layer highlight — a soft warm glow ring sliding between slabs */
+    .tldr-layer-glow{
+      position:absolute;left:18%;right:18%;
+      height:14%;
+      pointer-events:none;z-index:3;
+      background:radial-gradient(ellipse at center,
+        rgba(255,238,205,0.6) 0%,
+        rgba(255,225,170,0.34) 28%,
+        rgba(255,210,140,0.12) 55%,
+        transparent 75%);
+      mix-blend-mode:screen;
+      filter:blur(14px);
+      opacity:0;
+      transition:top .65s var(--ease),opacity .55s var(--ease)
+    }
+    .tldr-visual.has-image .tldr-layer-glow{opacity:1}
+
+    /* Scan wave — a soft horizontal band of light traveling UP through the
+       stack every 5.5s, like the system is processing layer-by-layer. */
+    .tldr-scan{
+      position:absolute;left:10%;right:10%;
+      top:100%;
+      height:22%;
+      pointer-events:none;z-index:2;
+      background:linear-gradient(to bottom,
+        transparent 0%,
+        rgba(255,238,200,0.0) 8%,
+        rgba(255,232,180,0.45) 50%,
+        rgba(255,238,200,0.0) 92%,
+        transparent 100%);
+      mix-blend-mode:screen;filter:blur(10px);
+      animation:scanMove 5.5s cubic-bezier(.4,.0,.4,1) infinite;
+      opacity:0
+    }
+    .tldr-visual.has-image .tldr-scan{opacity:1}
+    @keyframes scanMove{
+      0%   {top:95%;  opacity:0}
+      8%   {opacity:.9}
+      92%  {opacity:.9}
+      100% {top:-22%; opacity:0}
+    }
+
+    /* Secondary drifting highlight — slower, smaller, opposite direction.
+       Adds the impression of multiple processes running. */
+    .tldr-driftglow{
+      position:absolute;
+      width:60%;height:18%;
+      left:20%;
+      pointer-events:none;z-index:2;
+      background:radial-gradient(ellipse at center,
+        rgba(180,210,255,0.30) 0%,
+        rgba(180,210,255,0.10) 40%,
+        transparent 70%);
+      mix-blend-mode:screen;filter:blur(20px);
+      opacity:0;
+      animation:driftMove 8.5s ease-in-out infinite
+    }
+    .tldr-visual.has-image .tldr-driftglow{opacity:1}
+    @keyframes driftMove{
+      0%   {top:10%; transform:translateX(-15%) scale(1)}
+      50%  {top:55%; transform:translateX(15%)  scale(1.1)}
+      100% {top:10%; transform:translateX(-15%) scale(1)}
+    }
+
+    /* Soft glow under the Mac Mini base — anchors the stack to the surface */
+    .tldr-baseglow{
+      position:absolute;left:25%;right:25%;
+      bottom:5%;height:8%;
+      pointer-events:none;z-index:0;
+      background:radial-gradient(ellipse at center,
+        rgba(255,240,200,0.55) 0%,
+        rgba(255,235,190,0.22) 40%,
+        transparent 75%);
+      filter:blur(18px);
+      animation:baseGlow 4.2s ease-in-out infinite alternate
+    }
+    @keyframes baseGlow{
+      0%{opacity:.55;transform:scaleX(1)}
+      100%{opacity:.95;transform:scaleX(1.08)}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .tldr-visual-img,.tldr-visual.pulse .tldr-visual-img,
+      .tldr-scan,.tldr-driftglow,.tldr-baseglow{animation:none}
+      .tldr-layer-glow{transition:none}
+    }
 
     /* ═══════════════════════════════════════════════════════════════════
        STATS — big numbers section (Legora ROI block reskin)
@@ -1388,24 +1789,26 @@
     <div class="hero-meta r r4 v">
       <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="67">0</div><div class="hero-meta-label">Agents</div></div>
       <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="10" data-suffix="×">0×</div><div class="hero-meta-label">Verification passes</div></div>
-      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="6">0</div><div class="hero-meta-label">Legal datasets</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="100" data-suffix="%">0%</div><div class="hero-meta-label">Open source</div></div>
       <div class="hero-meta-item"><div class="hero-meta-num">∅</div><div class="hero-meta-label">Cloud-required</div></div>
     </div>
-  </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       SHOWCASE — the product, in context. iMac on a desk.
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="showcase" id="showcase">
-    <div class="showcase-frame">
-      <img src="img/imac-hero.jpg" alt="Lavern running on an iMac — the firm-is-ready intake screen" loading="lazy" decoding="async">
+    <!-- iMac shot lives inside the hero now — first viewport includes the product -->
+    <div class="hero-imac">
+      <img src="img/imac-hero.jpg" alt="Lavern on an iMac — the firm-is-ready intake screen" loading="eager" decoding="async">
     </div>
-    <p class="showcase-cap">Lavern on your desk — <em>not in a browser tab.</em></p>
+    <p class="hero-imac-cap">Lavern on your desk — <em>not in a browser tab.</em></p>
   </section>
 
-  <!-- Poetic divider — Legit-style italic interstitial -->
-  <div class="interstitial">
-    <p>A loop that checks, critiques, and iterates produces a deliverable. A single pass produces a draft.</p>
+  <!-- Big statement — the headline thesis of the project -->
+  <div class="interstitial" id="thesis">
+    <span class="accent-dot" aria-hidden="true"></span>
+    <p>One of the most advanced agentic systems in law. <em>Open source. Free.</em></p>
+    <div class="meta-line">
+      <span>MIT licensed</span>
+      <span>67 specialist agents</span>
+      <span>Helsinki built</span>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
@@ -1419,7 +1822,7 @@
       </div>
       <div class="video-glow r r1">
         <div class="video-wrap">
-          <video controls preload="metadata" poster="img/product.jpg" playsinline>
+          <video controls preload="metadata" poster="img/atmos-desk-clean.jpg" playsinline>
             <source src="demo.mp4" type="video/mp4">
             <source src="demo.mov" type="video/quicktime">
           </video>
@@ -1674,21 +2077,19 @@
 
         <!-- Stacked visual (right column) -->
         <div class="tldr-visual" id="tldrVisual">
-          <!-- Optional rendered image override; drop site/img/mac-mini-stack.png
-               and add class="has-image" on .tldr-visual to use it. -->
-          <img class="tldr-visual-img" src="img/mac-mini-stack.png" alt="" onerror="this.remove()">
-
-          <div class="tldr-stack3d" aria-hidden="true">
-            <!-- Mac Mini base, sits at the bottom of the stack -->
+          <!-- Pure 3D CSS stack — every pixel rendered live so we can
+               react to mouse, scroll, pill clicks. -->
+          <div class="tldr-stack3d" id="tldrStack3d">
+            <div class="tldr-floor"></div>
             <div class="tldr-macmini"></div>
-            <!-- Seven glass slabs, each positioned at increasing --z (height). -->
-            <div class="tldr-slab" data-i="0" style="--z:-120px"><span class="slab-label">Architecture</span></div>
-            <div class="tldr-slab" data-i="1" style="--z:-90px"><span class="slab-label">Evidence</span></div>
+            <div class="tldr-beam"></div>
+            <div class="tldr-slab" data-i="0" style="--z:-160px"><span class="slab-label">Architecture</span></div>
+            <div class="tldr-slab" data-i="1" style="--z:-110px"><span class="slab-label">Evidence</span></div>
             <div class="tldr-slab" data-i="2" style="--z:-60px"><span class="slab-label">Loops</span></div>
-            <div class="tldr-slab" data-i="3" style="--z:-30px"><span class="slab-label">Context</span></div>
-            <div class="tldr-slab" data-i="4" style="--z:0px"><span class="slab-label">Providers</span></div>
-            <div class="tldr-slab" data-i="5" style="--z:30px"><span class="slab-label">Clawern</span></div>
-            <div class="tldr-slab" data-i="6" style="--z:60px"><span class="slab-label">Open Source</span></div>
+            <div class="tldr-slab" data-i="3" style="--z:-10px"><span class="slab-label">Context</span></div>
+            <div class="tldr-slab" data-i="4" style="--z:40px"><span class="slab-label">Providers</span></div>
+            <div class="tldr-slab" data-i="5" style="--z:90px"><span class="slab-label">Clawern</span></div>
+            <div class="tldr-slab" data-i="6" style="--z:140px"><span class="slab-label">Open Source</span></div>
           </div>
 
           <!-- Body card — floats next to active layer with its description -->
@@ -1723,7 +2124,7 @@
         </div>
         <div class="stat-cell r r2">
           <span class="stat-label">Test suite</span>
-          <div class="stat-num"><span class="count-up" data-target="1686">0</span></div>
+          <div class="stat-num"><span class="count-up" data-target="1686" data-format="comma">0</span></div>
           <p class="stat-caption">Automated tests across the codebase — unit, integration, security, fuzz. Open source. Read them. Argue with them.</p>
         </div>
       </div>
@@ -1935,15 +2336,51 @@
       var bodyTitle = document.getElementById('tldrBodyTitle');
       var bodyText = document.getElementById('tldrBodyText');
 
+      // Approximate vertical positions of each layer in mock5.png (% from top).
+      // The image has the Mac Mini at the bottom with 7 slabs rising above.
+      // These %s are tuned to the actual photograph.
+      var GLOW_TOPS = ['16%','25%','34%','43%','52%','60%','68%'];
+      var glow = document.getElementById('tldrGlow');
+
+      // Hydrate each slab with its face content (the principle expanded)
+      slabs.forEach(function(s, i){
+        if (s.querySelector('.slab-face') || !PRINCIPLES[i]) return;
+        var face = document.createElement('div');
+        face.className = 'slab-face';
+        var tags = ['Architecture','Evidence','Loops','Context','Providers','Clawern','Open Source'];
+        face.innerHTML =
+          '<span class="face-num">' + String(i+1).padStart(2,'0') + ' / ' + (tags[i]||'Layer') + '</span>' +
+          '<h4 class="face-title">' + PRINCIPLES[i].title + '</h4>' +
+          '<p class="face-body">' + PRINCIPLES[i].text + '</p>' +
+          '<span class="face-tag">Click stack to close</span>';
+        s.appendChild(face);
+      });
+
       function setActive(i){
         pills.forEach(function(p, idx){ p.classList.toggle('active', idx === i); });
-        slabs.forEach(function(s, idx){ s.classList.toggle('active', idx === i); });
+        // Active = flipped: that slab pops out and faces camera
+        slabs.forEach(function(s, idx){
+          s.classList.toggle('active', idx === i);
+          s.classList.toggle('flipped', idx === i);
+        });
         if (PRINCIPLES[i]) {
           bodyTitle.textContent = PRINCIPLES[i].title;
           bodyText.textContent = PRINCIPLES[i].text;
         }
         visual.classList.add('has-active');
+        visual.classList.add('has-flipped');
       }
+
+      // Click outside any pill/slab → collapse flipped slab back into the stack
+      function collapseAll(){
+        slabs.forEach(function(s){ s.classList.remove('flipped','active'); });
+        pills.forEach(function(p){ p.classList.remove('active'); });
+        visual.classList.remove('has-flipped');
+      }
+      stage.addEventListener('click', function(e){
+        var inside = e.target.closest && e.target.closest('.tldr-pill, .tldr-slab');
+        if (!inside) collapseAll();
+      });
 
       pills.forEach(function(p, i){
         p.addEventListener('click', function(){ setActive(i); });
@@ -1973,17 +2410,38 @@
       }, { threshold: 0.35 });
       io.observe(stage);
 
-      // If a pre-rendered image exists, use it instead of the CSS stack.
-      var img = visual.querySelector('.tldr-visual-img');
-      if (img) {
-        img.addEventListener('load', function(){
-          visual.classList.add('has-image');
+      // Mouse parallax — stack tilts toward the cursor.
+      var rotator = document.getElementById('tldrStack3d');
+      if (rotator) {
+        var BASE_X = 56, BASE_Z = -22;
+        var TILT_X_MAX = 14;  // °, peak X rotation swing
+        var TILT_Z_MAX = 18;  // °, peak Z rotation swing
+        visual.addEventListener('mouseenter', function(){
+          visual.classList.add('parallax');
         });
-        // If naturalWidth is already 0 by now (404), onerror should have fired
-        if (img.complete && img.naturalWidth > 0) {
-          visual.classList.add('has-image');
-        }
+        visual.addEventListener('mousemove', function(e){
+          var r = visual.getBoundingClientRect();
+          var px = (e.clientX - r.left) / r.width  - 0.5; // -0.5 .. +0.5
+          var py = (e.clientY - r.top)  / r.height - 0.5;
+          var rx = BASE_X + (py * TILT_X_MAX);
+          var rz = BASE_Z + (px * TILT_Z_MAX);
+          rotator.style.transform = 'rotateX(' + rx + 'deg) rotateZ(' + rz + 'deg)';
+        });
+        visual.addEventListener('mouseleave', function(){
+          visual.classList.remove('parallax');
+          rotator.style.transform = ''; // back to CSS-driven orbit
+        });
       }
+
+      // Boot animation — slabs materialize one-by-one when section enters view
+      var bootIO = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting) return;
+          visual.classList.add('booted');
+          bootIO.unobserve(e.target);
+        });
+      }, { threshold: 0.35 });
+      bootIO.observe(visual);
     })();
 
     // ──────────────────────────────────────────────────────────────────
@@ -1995,7 +2453,7 @@
       var els = [];
       function collect(){
         els = Array.prototype.slice.call(
-          document.querySelectorAll('.feature, .video-wrap, .showcase-frame, .billboard-frame')
+          document.querySelectorAll('.feature, .video-wrap, .showcase-frame, .billboard-frame, .hero-imac')
         );
       }
       function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
@@ -2119,19 +2577,118 @@
       var target = parseFloat(el.dataset.target);
       if (isNaN(target)) return;
       var suffix = el.dataset.suffix || '';
+      var format = el.dataset.format || '';
+      function fmt(n){
+        if (format === 'comma') return n.toLocaleString('en-US');
+        return String(n);
+      }
       var dur = 1400;
       var t0 = performance.now();
       function step(now){
         var p = Math.min((now - t0) / dur, 1);
         var eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(target * eased) + suffix;
+        el.textContent = fmt(Math.round(target * eased)) + suffix;
         if (p < 1) requestAnimationFrame(step);
-        else el.textContent = target + suffix;
+        else el.textContent = fmt(target) + suffix;
       }
       requestAnimationFrame(step);
     }
-    // Hero counters fire on load (hero is in view immediately)
-    document.querySelectorAll('.hero .count-up').forEach(tweenCounter);
+    // Hero stats — rotate through multiple sets every ~6s.
+    // Each set is 4 cells of {value, label, count?: bool, target?: n, suffix?}.
+    // When a numeric cell appears, it tweens up from 0 with the existing
+    // tweenCounter. Text cells just crossfade.
+    (function(){
+      var items = document.querySelectorAll('.hero .hero-meta-item');
+      if (items.length !== 4) return;
+
+      var SETS = [
+        // Set 1 — the scale + openness pitch
+        [
+          { value: '67',   label: 'Specialist agents',  count: true, target: 67 },
+          { value: '10×',  label: 'Verification passes', count: true, target: 10, suffix: '×' },
+          { value: '100%', label: 'Open source',        count: true, target: 100, suffix: '%' },
+          { value: '∅',    label: 'Cloud-required' }
+        ],
+        // Set 2 — the capabilities pitch
+        [
+          { value: 'Agent',  label: 'Builder' },
+          { value: 'Verify', label: 'Loops' },
+          { value: 'Folder', label: 'Watcher' },
+          { value: 'Local',  label: 'First mode' }
+        ],
+        // Set 3 — the engineering pitch (numeric)
+        [
+          { value: '1,686', label: 'Tests',          count: true, target: 1686, format: 'comma' },
+          { value: '21',    label: 'MCP tools',      count: true, target: 21 },
+          { value: '27',    label: 'API routes',     count: true, target: 27 },
+          { value: '8',     label: 'Workflows',      count: true, target: 8 }
+        ],
+        // Set 4 — the philosophy pitch
+        [
+          { value: 'Open',     label: 'Source' },
+          { value: 'MIT',      label: 'Licensed' },
+          { value: 'Helsinki', label: 'Built' },
+          { value: '∞',        label: 'Forkable' }
+        ]
+      ];
+
+      var idx = 0;
+
+      function applySet(set){
+        // Phase 1: fade old content out by tagging .swapping on each item
+        items.forEach(function(it){ it.classList.add('swapping'); });
+
+        setTimeout(function(){
+          items.forEach(function(it, i){
+            var cell = set[i];
+            var num = it.querySelector('.hero-meta-num');
+            var lbl = it.querySelector('.hero-meta-label');
+            if (!num || !lbl || !cell) return;
+
+            lbl.textContent = cell.label;
+
+            if (cell.count && typeof cell.target === 'number'){
+              num.classList.add('count-up');
+              num.dataset.target = String(cell.target);
+              if (cell.suffix) num.dataset.suffix = cell.suffix;
+              else delete num.dataset.suffix;
+              if (cell.format === 'comma') num.dataset.format = 'comma';
+              else delete num.dataset.format;
+              num._tweened = false;
+              num.textContent = '0' + (cell.suffix || '');
+            } else {
+              num.classList.remove('count-up');
+              delete num.dataset.target;
+              delete num.dataset.suffix;
+              delete num.dataset.format;
+              num.textContent = cell.value;
+            }
+          });
+
+          // Force layout, then fade back in
+          requestAnimationFrame(function(){
+            items.forEach(function(it){ it.classList.remove('swapping'); });
+            // Kick the counters now that the cells are visible again
+            items.forEach(function(it){
+              var num = it.querySelector('.count-up');
+              if (num) tweenCounter(num);
+            });
+          });
+        }, 360);
+      }
+
+      // First display — apply set 0 immediately, with delayed initial tween
+      // so the user notices the count-up. Then rotate every ~6s.
+      setTimeout(function(){ applySet(SETS[0]); }, 400);
+      function next(){
+        if (document.visibilityState !== 'hidden'){
+          idx = (idx + 1) % SETS.length;
+          applySet(SETS[idx]);
+        }
+        setTimeout(next, 6200);
+      }
+      setTimeout(next, 6200);
+    })();
 
     // Stats section counters — fire when scrolled into view
     (function(){
