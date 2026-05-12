@@ -1100,19 +1100,20 @@
 
     .codex-grid{
       display:grid;
-      grid-template-columns:84px 1fr 320px;
-      gap:48px;
+      grid-template-columns:84px 1fr;
+      gap:64px;
       max-width:var(--max);
       margin:0 auto;
+      padding:0 32px;
       align-items:start;
       position:relative
     }
     @media(max-width:1180px){
-      .codex-grid{grid-template-columns:68px 1fr 280px;gap:32px}
+      .codex-grid{grid-template-columns:68px 1fr;gap:48px}
     }
-    @media(max-width:900px){
-      .codex-grid{grid-template-columns:1fr;gap:0}
-      .codex-spine,.codex-building-wrap{display:none}
+    @media(max-width:760px){
+      .codex-grid{grid-template-columns:1fr;gap:0;padding:0 20px}
+      .codex-spine{display:none}
     }
 
     /* ─── SPINE — sticky 01–07 hairline ticks (the visible "stack") ─── */
@@ -1190,182 +1191,102 @@
       font-family:var(--mono);color:var(--text);font-weight:500
     }
 
-    /* ─── BUILDING — sticky SVG section-elevation ─── */
-    .codex-building-wrap{
-      position:sticky;top:14vh;align-self:start;
-      display:flex;flex-direction:column;gap:0
+    /* ─── HERO STACK IMAGE — the real product render anchors the section ─── */
+    .codex-hero{
+      margin:0 auto clamp(80px,10vw,140px);
+      max-width:1180px;
+      padding:0 32px;
+      display:flex;flex-direction:column;align-items:center
     }
-    .codex-building-meta,
-    .codex-building-caption{
-      display:flex;justify-content:space-between;align-items:baseline;
-      font-family:var(--mono);font-size:9px;font-weight:500;
-      letter-spacing:1.8px;color:var(--dim);text-transform:uppercase
-    }
-    .codex-building-meta{padding-bottom:14px;border-bottom:1px solid var(--hair)}
-    .codex-building-caption{padding-top:14px;border-top:1px solid var(--hair)}
-    .codex-building{
-      width:100%;height:auto;display:block;
-      color:var(--text);
-      margin:18px 0
-    }
-
-    /* Building elements — base state: hairline outline, no fill */
-    .bldg-floor,.bldg-roof,.bldg-found{
-      fill:rgba(20,19,16,0.012);
-      stroke:currentColor;stroke-width:1;
-      vector-effect:non-scaling-stroke;
-      transform-box:fill-box;
-      transform-origin:center bottom;
-      transform:scaleY(0);
-      opacity:0;
-      transition:fill .5s var(--ease),stroke .5s var(--ease)
-    }
-    .bldg-line{
-      stroke:var(--hair-strong);stroke-width:0.75;
-      vector-effect:non-scaling-stroke;
-      opacity:0;transition:opacity .5s var(--ease)
-    }
-    .bldg-ground,.bldg-ground-tick{
-      stroke:currentColor;stroke-width:1;
-      vector-effect:non-scaling-stroke;
-      opacity:0;transition:opacity .5s var(--ease)
-    }
-    .bldg-ground-tick{stroke:var(--hair-strong);stroke-width:0.75}
-
-    .bldg-label{
-      font-family:var(--mono);font-size:7.5px;font-weight:500;
-      letter-spacing:1.8px;fill:var(--muted);
-      text-transform:uppercase;
-      opacity:0;
-      transition:fill .45s var(--ease),font-weight .45s var(--ease)
-    }
-    .bldg-label.found{font-weight:600;fill:var(--text);letter-spacing:2px}
-    .bldg-label.roof{fill:var(--text);font-weight:600;letter-spacing:2px}
-    .bldg-title{
-      font-family:var(--mono);font-size:6px;font-weight:500;
-      letter-spacing:2.4px;fill:var(--dim);text-transform:uppercase;
-      opacity:0;transition:opacity .5s var(--ease)
-    }
-
-    /* Active floor — warm tint fill, deepened stroke + label */
-    .bldg-floor.active{
-      fill:rgba(107,79,58,0.10);
-      stroke:var(--text)
-    }
-    .bldg-label.active{
-      fill:var(--text);font-weight:600
-    }
-
-    /* Foundation: Mac Mini — slightly heavier fill to anchor the stack */
-    .bldg-found{
-      fill:rgba(20,19,16,0.06);
-      stroke:var(--text)
-    }
-    .bldg-roof{
-      fill:rgba(20,19,16,0.03);
-      stroke:var(--text)
-    }
-
-    /* Construction animation — building assembles bottom-up on scroll */
-    .codex-building.built .bldg-found,
-    .codex-building.built .bldg-floor,
-    .codex-building.built .bldg-roof{
-      animation:bldgRise .7s cubic-bezier(0.4,0,0.2,1) forwards
-    }
-    @keyframes bldgRise{
-      to{transform:scaleY(1);opacity:1}
-    }
-    /* Labels + decorative lines fade in shortly after each element lands */
-    .codex-building.built .bldg-label,
-    .codex-building.built .bldg-line,
-    .codex-building.built .bldg-ground,
-    .codex-building.built .bldg-ground-tick,
-    .codex-building.built .bldg-title{
-      animation:bldgFade .5s var(--ease) forwards
-    }
-    @keyframes bldgFade{
-      to{opacity:1}
-    }
-
-    /* Construction sequence — foundation first, then floors bottom-up,
-       then roof. ~190ms stagger; total ~2.0s. */
-    .codex-building.built .bldg-found            {animation-delay:0s}
-    .codex-building.built .bldg-label.found      {animation-delay:.40s}
-    .codex-building.built .bldg-line             {animation-delay:.40s}
-    .codex-building.built .bldg-floor[data-i="0"]{animation-delay:.20s}
-    .codex-building.built .bldg-label[data-i="0"]{animation-delay:.60s}
-    .codex-building.built .bldg-floor[data-i="1"]{animation-delay:.38s}
-    .codex-building.built .bldg-label[data-i="1"]{animation-delay:.78s}
-    .codex-building.built .bldg-floor[data-i="2"]{animation-delay:.56s}
-    .codex-building.built .bldg-label[data-i="2"]{animation-delay:.96s}
-    .codex-building.built .bldg-floor[data-i="3"]{animation-delay:.74s}
-    .codex-building.built .bldg-label[data-i="3"]{animation-delay:1.14s}
-    .codex-building.built .bldg-floor[data-i="4"]{animation-delay:.92s}
-    .codex-building.built .bldg-label[data-i="4"]{animation-delay:1.32s}
-    .codex-building.built .bldg-floor[data-i="5"]{animation-delay:1.10s}
-    .codex-building.built .bldg-label[data-i="5"]{animation-delay:1.50s}
-    .codex-building.built .bldg-floor[data-i="6"]{animation-delay:1.28s}
-    .codex-building.built .bldg-label[data-i="6"]{animation-delay:1.68s}
-    .codex-building.built .bldg-roof             {animation-delay:1.48s}
-    .codex-building.built .bldg-label.roof       {animation-delay:1.88s}
-    .codex-building.built .bldg-ground           {animation-delay:.05s}
-    .codex-building.built .bldg-ground-tick      {animation-delay:.20s}
-    .codex-building.built .bldg-title            {animation-delay:2.00s}
-
-    @media(prefers-reduced-motion:reduce){
-      .bldg-floor,.bldg-roof,.bldg-found{
-        transform:scaleY(1);opacity:1;animation:none
-      }
-      .bldg-label,.bldg-line,.bldg-ground,.bldg-ground-tick,.bldg-title{
-        opacity:1;animation:none
-      }
-    }
-
-    /* ─── CODA — the metaphor pays off ─── */
-    .codex-coda{
+    .codex-hero-frame{
       position:relative;
-      margin-top:clamp(96px,14vw,180px);
-      padding:clamp(120px,16vw,220px) 32px;
-      text-align:center;
-      overflow:hidden;
-      border-top:1px solid var(--hair);
-      border-bottom:1px solid var(--hair)
+      display:inline-block;
+      max-width:100%;max-height:78vh;
+      /* Warm ambient wash picks up the slab glow and bleeds onto the paper */
+      background:radial-gradient(
+        ellipse 65% 55% at 50% 62%,
+        rgba(255,232,195,0.45) 0%,
+        rgba(255,225,180,0.18) 35%,
+        rgba(240,238,230,0) 72%);
+      isolation:isolate
     }
-    .codex-coda::before{
-      content:'';position:absolute;inset:0;
-      background:url('img/atmos-mac-mini-dark.jpg') center/cover no-repeat;
-      opacity:0.18;
-      filter:contrast(1.05) brightness(.95) grayscale(.15);
-      z-index:0
+    .codex-hero-img{
+      max-width:100%;height:auto;max-height:78vh;
+      object-fit:contain;display:block;
+      /* Subtle breathing — a 10s loop that never twitches */
+      animation:stackBreathe 10s ease-in-out infinite alternate;
+      will-change:transform,filter
     }
-    .codex-coda::after{
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(180deg,
-        var(--bg) 0%,
-        rgba(240,238,230,0.72) 28%,
-        rgba(240,238,230,0.72) 72%,
-        var(--bg) 100%);
-      z-index:1
+    @keyframes stackBreathe{
+      0%   {transform:translateY(0)    scale(1);     filter:brightness(1)    saturate(1)}
+      100% {transform:translateY(-6px) scale(1.018); filter:brightness(1.04) saturate(1.05)}
     }
-    .codex-coda > *{position:relative;z-index:2}
-    .codex-coda-eyebrow{
+
+    /* Annotation stickers — mono numerals callout each slab in the render.
+       Coordinates (top:%) are eyeballed against the photograph. The slab
+       stack rises from ~62% (just above the Mac Mini) to ~22% (top slab).
+       Stickers breathe in lockstep with the image they sit over. */
+    .codex-hero-anno{
+      position:absolute;left:0;right:0;top:0;bottom:0;
+      pointer-events:none;
+      animation:stackBreathe 10s ease-in-out infinite alternate
+    }
+    .codex-hero-anno > span{
+      position:absolute;
+      font-family:var(--mono);font-size:9.5px;font-weight:600;
+      letter-spacing:1.8px;color:var(--text);
+      background:rgba(250,248,240,0.88);
+      padding:3px 8px;border-radius:2px;
+      border:1px solid var(--hair-strong);
+      box-shadow:0 1px 3px rgba(20,19,16,0.08);
+      -webkit-backdrop-filter:blur(2px);
+      backdrop-filter:blur(2px);
+      white-space:nowrap;
+      transition:background .35s var(--ease),color .35s var(--ease),transform .35s var(--ease),border-color .35s var(--ease)
+    }
+    /* Leader hairline reaching from sticker toward the slab */
+    .codex-hero-anno > span::after{
+      content:'';position:absolute;top:50%;width:24px;height:1px;
+      background:var(--hair-strong);
+      transition:background .35s var(--ease),width .35s var(--ease)
+    }
+    .codex-hero-anno > span.right{right:6%}
+    .codex-hero-anno > span.right::after{right:100%;margin-right:6px}
+    .codex-hero-anno > span.left{left:6%}
+    .codex-hero-anno > span.left::after{left:100%;margin-left:6px}
+    /* Scroll-tied active state — the sticker matching the active entry pops */
+    .codex-hero-anno > span.active{
+      background:var(--text);color:var(--bg);
+      border-color:var(--text);
+      transform:translateY(-1px) scale(1.10);
+      box-shadow:0 2px 8px rgba(20,19,16,0.18)
+    }
+    .codex-hero-anno > span.active::after{
+      background:var(--text);width:36px
+    }
+    /* Hide annotations at narrow widths where they'd crowd the image */
+    @media(max-width:760px){
+      .codex-hero-anno{display:none}
+    }
+
+    .codex-hero-caption{
+      margin-top:clamp(32px,3.6vw,52px);
+      display:inline-flex;align-items:center;gap:18px;
       font-family:var(--mono);font-size:11px;font-weight:500;
-      letter-spacing:2.4px;color:var(--muted);text-transform:uppercase;
-      margin-bottom:36px;
-      display:inline-flex;align-items:center;gap:14px
+      letter-spacing:2.4px;color:var(--muted);text-transform:uppercase
     }
-    .codex-coda-eyebrow::before,
-    .codex-coda-eyebrow::after{
-      content:'';display:inline-block;width:24px;height:1px;
+    .codex-hero-caption .rule{
+      display:inline-block;width:48px;height:1px;
       background:var(--hair-strong)
     }
-    .codex-coda h3{
-      font-family:var(--sans);
-      font-size:clamp(40px,6.4vw,88px);
-      font-weight:500;line-height:1.02;letter-spacing:-0.038em;
-      max-width:18ch;margin:0 auto
+    @media(prefers-reduced-motion:reduce){
+      .codex-hero-img,.codex-hero-anno{animation:none}
     }
-    .codex-coda h3 em{font-style:italic;font-weight:400;color:var(--muted)}
+    @media(max-width:760px){
+      .codex-hero{padding:0 20px}
+      .codex-hero-caption{font-size:10px;gap:12px}
+      .codex-hero-caption .rule{width:28px}
+    }
 
     /* ═══════════════════════════════════════════════════════════════════
        STATS — big numbers section (Legora ROI block reskin)
@@ -1835,6 +1756,34 @@
         <h2 class="section-title word-reveal">What this <em>actually is.</em></h2>
       </div>
 
+      <!-- Hero stack image — the real product render -->
+      <figure class="codex-hero r">
+        <div class="codex-hero-frame">
+          <img src="img/mac-mini-stack.png"
+               alt="A Mac Mini sitting on a desk with seven luminous glass slabs stacked above it, warm light pouring through each layer."
+               class="codex-hero-img"
+               width="1200" height="1095"
+               loading="lazy" decoding="async" />
+          <!-- Annotation callouts — alternate sides, lined up with the slabs.
+               Top % values are eyeballed against the photograph; slabs run
+               from ~62% (closest to the Mac Mini) up to ~22% (top). -->
+          <div class="codex-hero-anno" aria-hidden="true">
+            <span class="right" data-i="0" style="top:60%">01 · Architecture</span>
+            <span class="left"  data-i="1" style="top:54%">02 · Evidence</span>
+            <span class="right" data-i="2" style="top:48%">03 · Loops</span>
+            <span class="left"  data-i="3" style="top:42%">04 · Context</span>
+            <span class="right" data-i="4" style="top:36%">05 · Providers</span>
+            <span class="left"  data-i="5" style="top:30%">06 · Clawern</span>
+            <span class="right" data-i="6" style="top:24%">07 · Open Source</span>
+          </div>
+        </div>
+        <figcaption class="codex-hero-caption">
+          <span class="rule" aria-hidden="true"></span>
+          <span>Seven things, stacked on one small computer</span>
+          <span class="rule" aria-hidden="true"></span>
+        </figcaption>
+      </figure>
+
       <div class="codex-grid">
         <!-- Spine — the visible "stack" -->
         <nav class="codex-spine" aria-label="Lavern principles">
@@ -1901,80 +1850,8 @@
           </article>
         </div>
 
-        <!-- The Building — sticky SVG section-elevation -->
-        <aside class="codex-building-wrap" aria-hidden="true">
-          <div class="codex-building-meta">
-            <span>Lavern · Section</span>
-            <span>NTS</span>
-          </div>
-          <svg class="codex-building" id="codexBuilding" viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The firm drawn as a building, seven storeys on a Mac Mini foundation.">
-            <!-- Title block (top corner of the drawing) -->
-            <text class="bldg-title" x="20" y="22">DWG · 01</text>
-            <text class="bldg-title" x="280" y="22" text-anchor="end">SCALE · NTS</text>
-
-            <!-- Roof cap (MIT) -->
-            <rect class="bldg-roof" x="60" y="50" width="180" height="22" />
-            <text class="bldg-label roof" x="150" y="61" text-anchor="middle" dominant-baseline="middle">MIT · ROOF</text>
-
-            <!-- Floor 07 — Open Source -->
-            <rect class="bldg-floor" data-i="6" x="65" y="72" width="170" height="56" />
-            <text class="bldg-label" data-i="6" x="150" y="100" text-anchor="middle" dominant-baseline="middle">07 · OPEN SRC</text>
-
-            <!-- Floor 06 — Clawern -->
-            <rect class="bldg-floor" data-i="5" x="65" y="128" width="170" height="56" />
-            <text class="bldg-label" data-i="5" x="150" y="156" text-anchor="middle" dominant-baseline="middle">06 · CLAWERN</text>
-
-            <!-- Floor 05 — Providers -->
-            <rect class="bldg-floor" data-i="4" x="65" y="184" width="170" height="56" />
-            <text class="bldg-label" data-i="4" x="150" y="212" text-anchor="middle" dominant-baseline="middle">05 · PROVIDERS</text>
-
-            <!-- Floor 04 — Context -->
-            <rect class="bldg-floor" data-i="3" x="65" y="240" width="170" height="56" />
-            <text class="bldg-label" data-i="3" x="150" y="268" text-anchor="middle" dominant-baseline="middle">04 · CONTEXT</text>
-
-            <!-- Floor 03 — Loops -->
-            <rect class="bldg-floor" data-i="2" x="65" y="296" width="170" height="56" />
-            <text class="bldg-label" data-i="2" x="150" y="324" text-anchor="middle" dominant-baseline="middle">03 · LOOPS</text>
-
-            <!-- Floor 02 — Evidence -->
-            <rect class="bldg-floor" data-i="1" x="65" y="352" width="170" height="56" />
-            <text class="bldg-label" data-i="1" x="150" y="380" text-anchor="middle" dominant-baseline="middle">02 · EVIDENCE</text>
-
-            <!-- Floor 01 — Architecture -->
-            <rect class="bldg-floor" data-i="0" x="65" y="408" width="170" height="56" />
-            <text class="bldg-label" data-i="0" x="150" y="436" text-anchor="middle" dominant-baseline="middle">01 · ARCHITECTURE</text>
-
-            <!-- Foundation — Mac Mini -->
-            <rect class="bldg-found" x="50" y="470" width="200" height="46" rx="3" />
-            <text class="bldg-label found" x="150" y="487" text-anchor="middle" dominant-baseline="middle">MAC · MINI · LOCAL</text>
-            <line class="bldg-line" x1="80" y1="506" x2="220" y2="506" />
-
-            <!-- Ground line + lot ticks -->
-            <line class="bldg-ground" x1="20" y1="522" x2="280" y2="522" />
-            <line class="bldg-ground-tick" x1="40" y1="522" x2="40" y2="530" />
-            <line class="bldg-ground-tick" x1="80" y1="522" x2="80" y2="530" />
-            <line class="bldg-ground-tick" x1="120" y1="522" x2="120" y2="530" />
-            <line class="bldg-ground-tick" x1="160" y1="522" x2="160" y2="530" />
-            <line class="bldg-ground-tick" x1="200" y1="522" x2="200" y2="530" />
-            <line class="bldg-ground-tick" x1="240" y1="522" x2="240" y2="530" />
-            <line class="bldg-ground-tick" x1="280" y1="522" x2="280" y2="530" />
-
-            <!-- Bottom title block -->
-            <text class="bldg-title" x="20" y="550">LAVERN · HELSINKI</text>
-            <text class="bldg-title" x="280" y="550" text-anchor="end">REV · 0.14.3</text>
-          </svg>
-          <div class="codex-building-caption">
-            <span>Drawn · A.I.</span>
-            <span>2026</span>
-          </div>
-        </aside>
       </div>
 
-      <!-- The coda — metaphor payoff with Mac Mini photo backdrop -->
-      <div class="codex-coda">
-        <div class="codex-coda-eyebrow">The Stack</div>
-        <h3>Seven things, stacked on one <em>small computer.</em></h3>
-      </div>
     </div>
   </section>
 
@@ -2197,14 +2074,11 @@
       if (!section) return;
       var entries    = section.querySelectorAll('.codex-entry');
       var spineItems = section.querySelectorAll('.codex-spine li');
-      var floors     = section.querySelectorAll('.bldg-floor');
-      var labels     = section.querySelectorAll('.bldg-label[data-i]');
-      var building   = section.querySelector('.codex-building');
+      var stickers   = section.querySelectorAll('.codex-hero-anno > span');
 
       function setActive(idx){
         spineItems.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
-        floors.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
-        labels.forEach(function(el,i){ el.classList.toggle('active', i === idx); });
+        stickers.forEach(function(el,i){   el.classList.toggle('active', i === idx); });
       }
 
       // Scroll-tracked: whichever entry crosses the viewport middle wins.
@@ -2232,17 +2106,6 @@
         });
       });
 
-      // Building construction — one-shot bottom-up assembly on first view.
-      if (building){
-        var buildIO = new IntersectionObserver(function(items){
-          items.forEach(function(it){
-            if (!it.isIntersecting) return;
-            building.classList.add('built');
-            buildIO.unobserve(it.target);
-          });
-        }, { threshold: 0.18 });
-        buildIO.observe(building);
-      }
     })();
 
     // ──────────────────────────────────────────────────────────────────
