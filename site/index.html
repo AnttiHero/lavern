@@ -3,659 +3,2256 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LAVERN</title>
-  <meta name="description" content="LAVERN — The world's first driverless law firm.">
-  <meta name="theme-color" content="#080808">
+  <title>LAVERN — The World's First Driverless Law Firm</title>
+  <meta name="description" content="An open-source multi-agent legal system. 67 specialist agents, evidence-backed debate, institutional memory. Helsinki, MIT-licensed.">
+  <meta name="theme-color" content="#F0EEE6">
+
+  <meta property="og:title" content="LAVERN — The world's first driverless law firm.">
+  <meta property="og:description" content="An open-source multi-agent legal system. Evidence-backed debate, institutional memory. MIT-licensed.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lavern.ai">
+  <meta property="og:image" content="https://lavern.ai/img/imac-hero.jpg">
+  <meta property="og:image:width" content="1600">
+  <meta property="og:image:height" content="931">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lavern.ai/img/imac-hero.jpg">
+
+  <script defer data-domain="lavern.ai" src="https://plausible.io/js/script.js"></script>
+
+  <!-- Switzer (Apfel Grotezk stand-in, free for commercial use) + JetBrains Mono -->
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=switzer@200,300,400,500,600,700,1,2,3,4,5&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       TOKENS — Legit DNA: warm cream paper, near-black text, tonal restraint
+       ═══════════════════════════════════════════════════════════════════ */
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-    /* Custom cursor — hide native on desktop */
-    @media(pointer:fine){*,*::before,*::after{cursor:none!important}}
     :root{
-      --dark:#080808;--text:#FAF9F6;--muted:rgba(250,249,246,0.4);--dim:rgba(250,249,246,0.12);
-      --accent:#E8845C;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',-apple-system,sans-serif;
-      --ease:cubic-bezier(0.16,1,0.3,1)
+      /* Cream paper palette */
+      --bg:#F0EEE6;
+      --surface:#FAF8F0;
+      --surface-2:#FFFFFF;
+      --text:#141310;
+      --muted:rgba(20,19,16,0.58);
+      --dim:rgba(20,19,16,0.36);
+      --hair:rgba(20,19,16,0.10);
+      --hair-strong:rgba(20,19,16,0.22);
+      /* Quiet warm accent — used sparingly on tags only */
+      --warm:#6B4F3A;
+      --warm-soft:rgba(107,79,58,0.10);
+      /* Type — Switzer (Apfel substitute) + JetBrains Mono */
+      --sans:'Switzer','Apfel Grotezk',Inter,-apple-system,BlinkMacSystemFont,sans-serif;
+      --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+      --ease:cubic-bezier(0.16,1,0.3,1);
+      --max:1280px;
+      /* ─── Elevation (Apple-class multi-layer shadows) ─── */
+      --shadow-sm:
+        0 1px 2px rgba(20,19,16,0.04),
+        0 2px 4px rgba(20,19,16,0.03);
+      --shadow-md:
+        0 2px 4px rgba(20,19,16,0.04),
+        0 8px 18px rgba(20,19,16,0.06),
+        0 18px 36px rgba(20,19,16,0.04);
+      --shadow-lg:
+        0 1px 2px rgba(20,19,16,0.04),
+        0 12px 24px rgba(20,19,16,0.06),
+        0 30px 60px rgba(20,19,16,0.10),
+        0 60px 110px rgba(20,19,16,0.06);
+      --shadow-xl:
+        0 1px 2px rgba(20,19,16,0.05),
+        0 16px 32px rgba(20,19,16,0.08),
+        0 40px 80px rgba(20,19,16,0.12),
+        0 80px 140px rgba(20,19,16,0.08);
+      /* ─── Corner radii (Apple-class generosity) ─── */
+      --r-sm:10px;
+      --r-md:18px;
+      --r-lg:28px;
+      --r-xl:36px;
+      --r-pill:100px;
     }
     html{scroll-behavior:smooth}
     body{
-      font-family:var(--sans);background:var(--dark);color:var(--text);
-      -webkit-font-smoothing:antialiased;overflow-x:hidden
+      font-family:var(--sans);background:var(--bg);color:var(--text);
+      -webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.55;
+      font-feature-settings:"ss01","ss02";font-weight:400
     }
+    ::selection{background:var(--text);color:var(--bg)}
+    a{color:inherit;text-decoration:none}
 
-    /* Film grain */
+    /* ═══════════════════════════════════════════════════════════════════
+       PAPER GRAIN — letterpress stipple on cream, multiply-blended
+       ═══════════════════════════════════════════════════════════════════ */
     @keyframes grain{
       0%,100%{transform:translate(0,0)}
-      10%{transform:translate(-5%,-10%)}
-      20%{transform:translate(-15%,5%)}
-      30%{transform:translate(7%,-25%)}
-      40%{transform:translate(-5%,25%)}
-      50%{transform:translate(-15%,10%)}
-      60%{transform:translate(15%,0)}
-      70%{transform:translate(0,15%)}
-      80%{transform:translate(3%,-35%)}
-      90%{transform:translate(-10%,10%)}
+      10%{transform:translate(-2%,-4%)} 20%{transform:translate(-7%,3%)}
+      30%{transform:translate(4%,-10%)} 40%{transform:translate(-3%,10%)}
+      50%{transform:translate(-7%,5%)}  60%{transform:translate(7%,0)}
+      70%{transform:translate(0,7%)}    80%{transform:translate(2%,-14%)}
+      90%{transform:translate(-5%,5%)}
     }
     body::after{
-      content:'';position:fixed;inset:-50%;z-index:9999;pointer-events:none;
-      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      background-size:256px 256px;
-      opacity:0.35;
-      animation:grain 8s steps(10) infinite;
-      mix-blend-mode:overlay
+      content:'';position:fixed;inset:-50%;z-index:9998;pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:240px 240px;
+      opacity:0.08;
+      mix-blend-mode:multiply;
+      animation:grain 9s steps(10) infinite
     }
     @media(prefers-reduced-motion:reduce){body::after{animation:none}}
 
-    /* Word-by-word reveal */
-    [data-words] .w{display:inline-block;opacity:0;transform:translateY(12px);transition:opacity 0.6s var(--ease),transform 0.6s var(--ease)}
-    [data-words].revealed .w{opacity:1;transform:translateY(0)}
+    /* Hero mist removed — the only atmospheric fog is now battle-mist at
+       the lower part of the viewport. Keep stub so HTML <div> is harmless. */
+    .hero-mist{display:none}
+    .hero-mist-disabled{
+      position:absolute;inset:-10%;pointer-events:none;overflow:hidden;
+      z-index:0
+    }
+    .hero-mist span{
+      position:absolute;border-radius:50%;
+      filter:blur(30px);will-change:transform
+    }
+    /* 1 — large warm shadow stain, upper left (aged paper edge) — CRANKED */
+    .hero-mist span:nth-child(1){
+      width:75vw;height:75vw;top:-22vw;left:-18vw;
+      background:radial-gradient(circle,
+        rgba(107,79,58,0.65) 0%,
+        rgba(107,79,58,0.36) 22%,
+        rgba(107,79,58,0.16) 45%,
+        rgba(107,79,58,0.04) 65%,
+        rgba(107,79,58,0) 78%);
+      mix-blend-mode:multiply;
+      animation:mist1 32s ease-in-out infinite alternate
+    }
+    /* 2 — bright cream highlight, mid-right (beam of light) — CRANKED */
+    .hero-mist span:nth-child(2){
+      width:60vw;height:60vw;top:6vw;right:-18vw;
+      background:radial-gradient(circle,
+        rgba(255,255,255,1) 0%,
+        rgba(255,255,255,0.7) 22%,
+        rgba(255,255,255,0.35) 45%,
+        rgba(255,255,255,0.1) 65%,
+        rgba(255,255,255,0) 78%);
+      mix-blend-mode:screen;
+      animation:mist2 42s ease-in-out infinite alternate
+    }
+    /* 3 — warm tea stain, lower center (foxing) — CRANKED */
+    .hero-mist span:nth-child(3){
+      width:65vw;height:65vw;bottom:-26vw;left:22vw;
+      background:radial-gradient(circle,
+        rgba(184,134,11,0.50) 0%,
+        rgba(184,134,11,0.26) 22%,
+        rgba(184,134,11,0.10) 45%,
+        rgba(184,134,11,0.02) 65%,
+        rgba(184,134,11,0) 78%);
+      mix-blend-mode:multiply;
+      animation:mist3 48s ease-in-out infinite alternate
+    }
+    @keyframes mist1{
+      0%{transform:translate(0,0) scale(1)}
+      100%{transform:translate(10vw,6vw) scale(1.14)}
+    }
+    @keyframes mist2{
+      0%{transform:translate(0,0) scale(1)}
+      100%{transform:translate(-8vw,10vw) scale(.9)}
+    }
+    @keyframes mist3{
+      0%{transform:translate(0,0) scale(1)}
+      100%{transform:translate(-12vw,-8vw) scale(1.1)}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .hero-mist span{animation:none}
+    }
+    /* Make sure hero content sits above mist */
+    .hero > *:not(.hero-mist){position:relative;z-index:1}
 
-    /* Reveals */
-    .r{opacity:0;transform:translateY(50px);transition:opacity 1.2s var(--ease),transform 1.2s var(--ease)}
-    .r.v{opacity:1;transform:translateY(0)}
-    .r1{transition-delay:.15s}.r2{transition-delay:.3s}.r3{transition-delay:.45s}
-    @media(prefers-reduced-motion:reduce){.r{opacity:1;transform:none;transition:none}}
+    /* ═══════════════════════════════════════════════════════════════════
+       SCROLL FOG — depth-of-field blur at top & bottom of viewport.
+       Subtle backdrop-blur on the outer edges; crisp focus zone in the
+       middle. Content scrolls in/out of softness like a real camera DOF.
+       (Apple/Linear/Vercel use this. Not battle fog. Subtle.)
+       ═══════════════════════════════════════════════════════════════════ */
+    .scroll-fog{
+      position:fixed;left:0;right:0;pointer-events:none;z-index:9997;
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px)
+    }
+    /* Top scroll-fog removed — the nav already handles the top edge with
+       its own backdrop-blur, so duplicating fog up there muddied the air
+       without adding any DOF effect. Bottom-only now. */
+    .scroll-fog.bottom{
+      bottom:0;height:14vh;
+      mask-image:linear-gradient(to top,
+        #000 0%,
+        rgba(0,0,0,0.85) 35%,
+        rgba(0,0,0,0.45) 65%,
+        transparent 100%);
+      -webkit-mask-image:linear-gradient(to top,
+        #000 0%,
+        rgba(0,0,0,0.85) 35%,
+        rgba(0,0,0,0.45) 65%,
+        transparent 100%);
+      background:linear-gradient(to top,
+        rgba(240,238,230,0.30) 0%,
+        rgba(240,238,230,0.08) 60%,
+        transparent 100%)
+    }
+    /* Safari/older fallback — without backdrop-filter, the gentle bg tint
+       alone still softens the edges visually. */
+    @supports not (backdrop-filter:blur(1px)){
+      .scroll-fog.top{background:linear-gradient(to bottom,
+        rgba(240,238,230,0.85) 0%,
+        rgba(240,238,230,0.35) 60%,
+        transparent 100%)}
+      .scroll-fog.bottom{background:linear-gradient(to top,
+        rgba(240,238,230,0.85) 0%,
+        rgba(240,238,230,0.35) 60%,
+        transparent 100%)}
+    }
 
-    /* ═══════════════════════════════════════
-       1. LOGO — top-left, just the mark
-       ═══════════════════════════════════════ */
-    .logo{
-      position:fixed;top:32px;left:40px;z-index:100;
-      font-family:var(--serif);font-size:18px;font-weight:300;
-      color:var(--text);text-decoration:none;letter-spacing:8px;
+    /* ═══════════════════════════════════════════════════════════════════
+       LAVERN CURSOR — matches viz/src/components/CustomCursor.tsx
+       Dot tracks instantly; blurred trail lags. Difference-blended so it
+       auto-inverts on cream paper AND on the dark GitHub button.
+       ═══════════════════════════════════════════════════════════════════ */
+    @media(pointer:fine){
+      html,body,*{cursor:none !important}
+    }
+    .cursor-dot,.cursor-trail{
+      position:fixed;top:0;left:0;pointer-events:none;
+      border-radius:50%;opacity:0;
       mix-blend-mode:difference
     }
-    .login{
-      position:fixed;top:36px;right:40px;z-index:100;
-      font-family:var(--serif);font-size:14px;font-weight:300;font-style:italic;
-      color:var(--text);text-decoration:none;letter-spacing:0;
-      mix-blend-mode:difference;opacity:.45;
-      transition:opacity .4s var(--ease)
+    .cursor-dot{
+      width:8px;height:8px;
+      background:#FFFFFF;
+      z-index:99999;
+      transition:background-color .35s ease,border .35s ease
     }
-    .login:hover{opacity:1}
+    .cursor-dot.hover{
+      background:transparent;
+      border:1.5px solid rgba(255,255,255,0.6)
+    }
+    .cursor-trail{
+      width:32px;height:32px;
+      background:rgba(255,255,255,0.12);
+      filter:blur(8px);
+      z-index:99998
+    }
+    @media(pointer:coarse){
+      .cursor-dot,.cursor-trail{display:none}
+    }
 
-    /* ═══════════════════════════════════════
-       2. HERO
-       ═══════════════════════════════════════ */
+    /* Scroll reveals */
+    .r{opacity:0;transform:translateY(20px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+    .r.v{opacity:1;transform:translateY(0)}
+    .r1{transition-delay:.08s}.r2{transition-delay:.16s}.r3{transition-delay:.24s}.r4{transition-delay:.32s}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       SCROLL-BUILT ANIMATIONS — content assembles as you scroll
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ─── WORD-BY-WORD REVEAL — awwwards-style headlines that read in ─── */
+    .word-reveal{display:block}
+    .word-reveal .word{
+      display:inline-block;opacity:0;
+      transform:translateY(35%) skewY(4deg);
+      transform-origin:left bottom;
+      transition:opacity .85s var(--ease),transform .85s var(--ease);
+      will-change:transform,opacity
+    }
+    .word-reveal.v .word{opacity:1;transform:translateY(0) skewY(0)}
+    /* Container that holds an inline-block word — generous padding so
+       italic slants and descenders are never clipped at the edges. */
+    .word-reveal .word-mask{
+      display:inline-block;overflow:visible;vertical-align:baseline;
+      padding:0.08em 0.12em 0.2em 0
+    }
+
+    /* Make headlines that lost the clip-path wipe still elegant on the
+       feature card layer when no JS runs (graceful degradation). */
+    @media(prefers-reduced-motion:reduce){
+      .word-reveal .word{opacity:1;transform:none;transition:none}
+    }
+
+    /* Interstitial paragraph reveals on scroll */
+    .interstitial p{
+      opacity:0;transform:translateY(24px);
+      transition:opacity 1s var(--ease),transform 1s var(--ease)
+    }
+    .interstitial p.v{opacity:1;transform:translateY(0)}
+
+    /* Feature CAPTION children — number / title / desc stagger in
+       (was static before). The mockup itself already cascades; now the
+       text below the mockup builds too. */
+    .feature-caption .feature-num,
+    .feature-caption .feature-title,
+    .feature-caption .feature-desc{
+      opacity:0;transform:translateY(18px);
+      transition:opacity .8s var(--ease),transform .8s var(--ease)
+    }
+    .feature.v .feature-caption .feature-num{
+      opacity:1;transform:translateY(0);transition-delay:.25s
+    }
+    .feature.v .feature-caption .feature-title{
+      opacity:1;transform:translateY(0);transition-delay:.35s
+    }
+    .feature.v .feature-caption .feature-desc{
+      opacity:1;transform:translateY(0);transition-delay:.50s
+    }
+
+    /* Footer fade-in */
+    footer{
+      opacity:0;transform:translateY(16px);
+      transition:opacity .8s var(--ease),transform .8s var(--ease)
+    }
+    footer.v{opacity:1;transform:translateY(0)}
+
+    /* Section eyebrow pill — pop in */
+    .section-tag{
+      opacity:0;transform:scale(.9) translateY(8px);
+      transition:opacity .6s var(--ease),transform .6s var(--ease)
+    }
+    .section-tag.v,.v > .section-tag,.v .section-tag{
+      opacity:1;transform:scale(1) translateY(0)
+    }
+
+    /* Feature mockup — INNER BUILD when card enters view. Explicit
+       cascade so the user clearly SEES each piece arrive. */
+    .feature .feature-body > *{
+      opacity:0;transform:translateY(40px) scale(.85);
+      transition:opacity 1s var(--ease),transform 1s var(--ease)
+    }
+    .feature.built .feature-body > *{opacity:1;transform:translateY(0) scale(1)}
+    .feature.built .feature-body > *:nth-child(1){transition-delay:.25s}
+    .feature.built .feature-body > *:nth-child(2){transition-delay:.50s}
+    .feature.built .feature-body > *:nth-child(3){transition-delay:.75s}
+    .feature.built .feature-body > *:nth-child(4){transition-delay:1.00s}
+    .feature.built .feature-body > *:nth-child(5){transition-delay:1.25s}
+    .feature.built .feature-body > *:nth-child(6){transition-delay:1.50s}
+    .feature.built .feature-body > *:nth-child(7){transition-delay:1.75s}
+
+    /* Chat bubbles slide horizontally — "you" from right, "them" from left */
+    .feature .feature-body > .m-bubble.you{
+      transform:translateX(60px) scale(.9);transform-origin:right center
+    }
+    .feature .feature-body > .m-bubble.them{
+      transform:translateX(-60px) scale(.9);transform-origin:left center
+    }
+    .feature.built .feature-body > .m-bubble.you,
+    .feature.built .feature-body > .m-bubble.them{
+      transform:translateX(0) scale(1)
+    }
+
+    /* Counter — keep dimensions stable while value tweens */
+    .count-up{font-variant-numeric:tabular-nums}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BY THE NUMBERS — Legora-style big-number stats grid
+       Numbers count up from 0 → target when scrolled into view. Tabular
+       nums prevent layout shift. Stagger across the row.
+       ═══════════════════════════════════════════════════════════════════ */
+    .numbers-section{padding:clamp(80px,10vw,140px) 32px}
+    .numbers-head{margin:0 auto 80px;max-width:840px;text-align:center}
+    .numbers-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:48px;
+      max-width:var(--max);margin:0 auto;
+      border-top:1px solid var(--hair);padding-top:64px
+    }
+    .numbers-cell{
+      display:flex;flex-direction:column;gap:14px;text-align:center;
+      padding:0 12px
+    }
+    .numbers-big{
+      font-family:var(--sans);
+      font-size:clamp(64px,9vw,144px);
+      font-weight:500;line-height:.95;letter-spacing:-0.045em;
+      color:var(--text);
+      font-variant-numeric:tabular-nums;
+      display:flex;align-items:baseline;justify-content:center;gap:2px;
+      position:relative
+    }
+    .numbers-big .suffix{
+      font-size:0.5em;font-weight:400;color:var(--muted);
+      letter-spacing:-0.02em;margin-left:2px
+    }
+    .numbers-big .comma{display:inline-block}
+    .numbers-big em{font-style:italic;font-weight:400;color:var(--muted)}
+    .numbers-label{
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);
+      max-width:24ch;margin:0 auto;line-height:1.4
+    }
+    .numbers-hint{
+      font-family:var(--sans);font-size:13px;font-weight:400;
+      color:var(--dim);max-width:30ch;margin:6px auto 0;line-height:1.5
+    }
+    @media(max-width:900px){
+      .numbers-grid{grid-template-columns:repeat(2,1fr);gap:64px 32px}
+    }
+    @media(max-width:520px){
+      .numbers-grid{grid-template-columns:1fr;gap:56px}
+    }
+    /* Each cell fades up on scroll-in with stagger */
+    .numbers-cell{
+      opacity:0;transform:translateY(24px);
+      transition:opacity .9s var(--ease),transform .9s var(--ease)
+    }
+    .numbers-grid.v .numbers-cell{opacity:1;transform:translateY(0)}
+    .numbers-grid.v .numbers-cell:nth-child(1){transition-delay:.05s}
+    .numbers-grid.v .numbers-cell:nth-child(2){transition-delay:.18s}
+    .numbers-grid.v .numbers-cell:nth-child(3){transition-delay:.31s}
+    .numbers-grid.v .numbers-cell:nth-child(4){transition-delay:.44s}
+
+    /* ─── Signature animations per mockup (explicit & dramatic) ─── */
+
+    /* Verification: progress bar fills 0 → target on build */
+    .m-bar > span{
+      width:0;
+      transition:width 1.8s cubic-bezier(0.65,0,0.35,1) .9s
+    }
+    .feature.built .m-bar > span{width:var(--fill,70%)}
+
+    /* Avatars: pop in with overshoot scale */
+    @keyframes avatarPop{
+      0%{transform:scale(0);opacity:0}
+      60%{transform:scale(1.15);opacity:1}
+      100%{transform:scale(1);opacity:1}
+    }
+    .feature .m-avatar{transform:scale(0);opacity:0}
+    .feature.built .m-avatar{animation:avatarPop .8s var(--ease) forwards}
+
+    /* Verification dots: each pops individually with cumulative delay */
+    @keyframes dotPop{
+      0%{transform:scale(0);opacity:0}
+      55%{transform:scale(1.35);opacity:1}
+      100%{transform:scale(1);opacity:1}
+    }
+    .feature .feature-body .m-dot{transform:scale(0);opacity:0}
+    .feature.built .feature-body .m-dot{animation:dotPop .5s var(--ease) forwards}
+    .feature.built .feature-body .m-dot:nth-of-type(1){animation-delay:.5s}
+    .feature.built .feature-body .m-dot:nth-of-type(2){animation-delay:.6s}
+    .feature.built .feature-body .m-dot:nth-of-type(3){animation-delay:.7s}
+    .feature.built .feature-body .m-dot:nth-of-type(4){animation-delay:.8s}
+    .feature.built .feature-body .m-dot:nth-of-type(5){animation-delay:.9s}
+    .feature.built .feature-body .m-dot:nth-of-type(6){animation-delay:1.0s}
+    .feature.built .feature-body .m-dot:nth-of-type(7){animation-delay:1.1s}
+    .feature.built .feature-body .m-dot:nth-of-type(8){animation-delay:1.2s}
+    .feature.built .feature-body .m-dot:nth-of-type(9){animation-delay:1.3s}
+    .feature.built .feature-body .m-dot:nth-of-type(10){animation-delay:1.4s}
+
+    /* Voice — much more dramatic waveform pulse */
+    @keyframes wavePulse{
+      0%,100%{transform:scaleY(1)}
+      50%{transform:scaleY(.15)}
+    }
+    .feature.built .wave-svg rect{
+      animation:wavePulse 1.1s ease-in-out infinite;
+      transform-origin:center;transform-box:fill-box
+    }
+    .feature.built .wave-svg rect:nth-child(2n){animation-delay:.10s}
+    .feature.built .wave-svg rect:nth-child(3n){animation-delay:.22s}
+    .feature.built .wave-svg rect:nth-child(4n){animation-delay:.34s}
+    .feature.built .wave-svg rect:nth-child(5n){animation-delay:.46s}
+    .feature.built .wave-svg rect:nth-child(7n){animation-delay:.58s}
+
+    /* Clawern — bigger green status pulse */
+    @keyframes statusBlink{
+      0%,80%,100%{box-shadow:0 0 0 0 rgba(58,125,68,0)}
+      40%{box-shadow:0 0 0 7px rgba(58,125,68,0.18)}
+    }
+    .feature.built .m-dot.ok{animation:statusBlink 2.4s ease-in-out infinite}
+
+    @media(prefers-reduced-motion:reduce){
+      .feature.built .wave-svg rect,
+      .feature.built .m-dot.ok{animation:none}
+    }
+
+    /* TL;DR — staggered item entrance with offset slide */
+    .tldr-item{
+      opacity:0;transform:translateX(-12px);
+      transition:opacity .8s var(--ease),transform .8s var(--ease)
+    }
+    .tldr-item.v{opacity:1;transform:translateX(0)}
+    .tldr-list.v .tldr-item:nth-child(1){transition-delay:.05s}
+    .tldr-list.v .tldr-item:nth-child(2){transition-delay:.13s}
+    .tldr-list.v .tldr-item:nth-child(3){transition-delay:.21s}
+    .tldr-list.v .tldr-item:nth-child(4){transition-delay:.29s}
+    .tldr-list.v .tldr-item:nth-child(5){transition-delay:.37s}
+    .tldr-list.v .tldr-item:nth-child(6){transition-delay:.45s}
+    .tldr-list.v .tldr-item:nth-child(7){transition-delay:.53s}
+
+    /* FAQ — same treatment */
+    .faq-item{
+      opacity:0;transform:translateY(8px);
+      transition:opacity .7s var(--ease),transform .7s var(--ease)
+    }
+    .faq-item.v{opacity:1;transform:translateY(0)}
+    .faq-list.v .faq-item:nth-child(1){transition-delay:.04s}
+    .faq-list.v .faq-item:nth-child(2){transition-delay:.10s}
+    .faq-list.v .faq-item:nth-child(3){transition-delay:.16s}
+    .faq-list.v .faq-item:nth-child(4){transition-delay:.22s}
+    .faq-list.v .faq-item:nth-child(5){transition-delay:.28s}
+    .faq-list.v .faq-item:nth-child(6){transition-delay:.34s}
+    .faq-list.v .faq-item:nth-child(7){transition-delay:.40s}
+    .faq-list.v .faq-item:nth-child(8){transition-delay:.46s}
+
+    /* Hero meta — staggered count-up appearance */
+    .hero-meta-item{
+      opacity:0;transform:translateY(12px);
+      transition:opacity .8s var(--ease),transform .8s var(--ease)
+    }
+    .hero-meta.v .hero-meta-item:nth-child(1){opacity:1;transform:translateY(0);transition-delay:.1s}
+    .hero-meta.v .hero-meta-item:nth-child(2){opacity:1;transform:translateY(0);transition-delay:.22s}
+    .hero-meta.v .hero-meta-item:nth-child(3){opacity:1;transform:translateY(0);transition-delay:.34s}
+    .hero-meta.v .hero-meta-item:nth-child(4){opacity:1;transform:translateY(0);transition-delay:.46s}
+
+    @media(prefers-reduced-motion:reduce){
+      .r,.section-title,.hero h1,.closing h2,
+      .feature .feature-body > *,
+      .tldr-item,.faq-item,.hero-meta-item{
+        opacity:1;transform:none;clip-path:none;transition:none
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       NAV — borrowed from Legit: identify-as prompt, restrained
+       ═══════════════════════════════════════════════════════════════════ */
+    .nav{
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:22px 32px;
+      background:rgba(240,238,230,0.78);
+      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--hair)
+    }
+    .brand{
+      font-family:var(--sans);font-size:18px;font-weight:500;
+      letter-spacing:-0.5px;color:var(--text)
+    }
+    .brand .mark{
+      display:inline-block;width:8px;height:8px;background:var(--text);
+      border-radius:1px;margin-right:10px;vertical-align:1px
+    }
+    .nav-meta{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:1.5px;text-transform:uppercase;
+      color:var(--muted);display:flex;gap:18px;align-items:center
+    }
+    .nav-meta span.dot{
+      display:inline-block;width:5px;height:5px;border-radius:50%;
+      background:var(--text);margin-right:8px;vertical-align:1px
+    }
+    .nav-links{display:flex;gap:8px;align-items:center}
+    .nav-link{
+      font-family:var(--sans);font-size:13px;font-weight:500;
+      color:var(--text);padding:8px 14px;border-radius:6px;
+      transition:background .25s var(--ease)
+    }
+    .nav-link:hover{background:rgba(20,19,16,0.06)}
+    .nav-link.primary{
+      background:var(--text);color:var(--bg);
+      display:inline-flex;align-items:center;gap:8px
+    }
+    .nav-link.primary:hover{background:#000}
+    .nav-link svg{width:13px;height:13px}
+    @media(max-width:760px){
+      .nav{padding:14px 18px}
+      .nav-meta{display:none}
+      .nav-link{padding:8px 10px;font-size:12px}
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       HERO — type-first, no photo, paper restraint, CENTERED
+       ═══════════════════════════════════════════════════════════════════ */
     .hero{
-      min-height:100vh;min-height:100dvh;position:relative;overflow:hidden;
-      display:flex;align-items:center;justify-content:center;text-align:center
+      min-height:100vh;min-height:100dvh;position:relative;
+      padding:140px 32px 80px;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      max-width:var(--max);margin:0 auto;text-align:center
     }
-    .hero-img{
-      position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-      animation:drift 25s ease-in-out infinite alternate
-    }
-    @keyframes drift{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.06) translate(-1%,1%)}}
-    .hero::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:35%;z-index:1;
-      background:linear-gradient(to top,transparent,var(--dark));pointer-events:none
-    }
-    .hero::after{
-      content:'';position:absolute;bottom:0;left:0;right:0;height:50%;z-index:1;
-      background:linear-gradient(to bottom,transparent 0%,var(--dark) 85%);pointer-events:none
-    }
-    .hero-fog-left{
-      position:absolute;top:0;left:0;bottom:0;width:25%;z-index:1;
-      background:linear-gradient(to right,rgba(8,8,8,0.7),transparent);pointer-events:none
-    }
-    .hero-fog-right{
-      position:absolute;top:0;right:0;bottom:0;width:25%;z-index:1;
-      background:linear-gradient(to left,rgba(8,8,8,0.7),transparent);pointer-events:none
-    }
-    .hero-content{position:relative;z-index:2;padding:24px;max-width:900px}
-    .hero h1{
-      font-family:var(--serif);font-size:clamp(56px,11vw,140px);
-      font-weight:300;line-height:.95;letter-spacing:-2px;margin-bottom:48px;
-      text-shadow:0 4px 80px rgba(0,0,0,.6)
-    }
-    .hero h1 em{font-style:italic;display:block}
-
-    /* Apply button — dark, rounded pill */
-    .btn-invite{
+    .hero-tag{
       display:inline-flex;align-items:center;gap:10px;
-      font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
-      text-decoration:none;color:var(--text);
-      background:#000;
-      padding:20px 56px;border-radius:100px;border:1px solid rgba(255,255,255,0.06);
-      cursor:pointer;transition:all .5s var(--ease);
-      box-shadow:0 4px 30px rgba(0,0,0,0.4)
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+      padding:6px 12px;border:1px solid var(--hair-strong);border-radius:100px;
+      margin-bottom:48px;background:var(--surface-2)
     }
-    .btn-invite:hover{
-      background:#181818;border-color:rgba(255,255,255,0.15);
+    .hero-tag .pulse{
+      display:inline-block;width:6px;height:6px;border-radius:50%;
+      background:#3a7d44;position:relative
+    }
+    .hero-tag .pulse::after{
+      content:'';position:absolute;inset:-3px;border-radius:50%;
+      border:1px solid #3a7d44;opacity:.5;animation:pulse 2s ease-out infinite
+    }
+    @keyframes pulse{0%{transform:scale(.8);opacity:.7}100%{transform:scale(2);opacity:0}}
+
+    .hero h1{
+      font-family:var(--sans);
+      font-size:clamp(48px,9.5vw,148px);
+      font-weight:500;line-height:.92;letter-spacing:-0.04em;
+      color:var(--text);margin:0 auto 40px;max-width:1180px
+    }
+    .hero h1 em{
+      font-style:italic;font-weight:400;color:var(--muted)
+    }
+    .hero-deck{
+      font-family:var(--sans);font-size:clamp(17px,1.7vw,22px);
+      font-weight:400;color:var(--muted);
+      max-width:620px;line-height:1.5;margin:0 auto 48px
+    }
+    .hero-deck strong{color:var(--text);font-weight:500}
+
+    /* Hero CTAs */
+    .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+    .btn{
+      display:inline-flex;align-items:center;gap:10px;
+      font-family:var(--sans);font-size:14px;font-weight:500;
+      padding:15px 26px;border-radius:var(--r-pill);cursor:pointer;
+      transition:transform .35s var(--ease),box-shadow .35s var(--ease),background-color .25s var(--ease);
+      border:1px solid transparent;letter-spacing:-0.005em
+    }
+    .btn-primary{
+      background:var(--text);color:var(--bg);
+      box-shadow:var(--shadow-md)
+    }
+    .btn-primary:hover{
+      background:#000;transform:translateY(-2px);
+      box-shadow:var(--shadow-lg)
+    }
+    .btn-ghost{
+      background:var(--surface-2);color:var(--text);
+      border-color:var(--hair-strong);
+      box-shadow:var(--shadow-sm)
+    }
+    .btn-ghost:hover{
+      background:#fff;border-color:var(--text);
       transform:translateY(-2px);
-      box-shadow:0 8px 40px rgba(0,0,0,0.5)
+      box-shadow:var(--shadow-md)
     }
-    .btn-demo{
-      display:inline-block;margin-top:20px;
-      font-family:var(--serif);font-size:15px;font-weight:300;font-style:italic;
-      color:var(--muted);text-decoration:none;letter-spacing:0;
-      transition:color .4s var(--ease)
+    .btn svg{width:15px;height:15px}
+    .btn .stars{
+      font-family:var(--mono);font-size:12px;
+      padding-left:10px;border-left:1px solid rgba(255,255,255,0.18);
+      opacity:.85;margin-left:2px
     }
-    .btn-demo:hover{color:var(--text)}
+    .btn-ghost .stars{border-left-color:var(--hair);opacity:.6}
 
-    .hero-scroll{
-      position:absolute;bottom:36px;left:50%;transform:translateX(-50%);z-index:3;
-      display:flex;flex-direction:column;align-items:center;gap:10px
+    /* Install one-liner pill */
+    .install{
+      display:inline-flex;align-items:center;gap:14px;
+      font-family:var(--mono);font-size:13px;
+      background:var(--surface-2);border:1px solid var(--hair-strong);
+      padding:13px 22px;border-radius:var(--r-pill);color:var(--text);cursor:pointer;
+      transition:transform .35s var(--ease),box-shadow .35s var(--ease),background-color .25s var(--ease),border-color .25s var(--ease);
+      max-width:100%;box-shadow:var(--shadow-sm)
     }
-    .hero-scroll span{font-size:9px;font-weight:500;letter-spacing:5px;text-transform:uppercase;color:var(--dim)}
-    .pulse-line{
-      width:1px;height:36px;background:linear-gradient(to bottom,var(--dim),transparent);
-      animation:pulse 2.5s ease-in-out infinite
+    .install:hover{
+      background:#fff;border-color:var(--text);
+      transform:translateY(-2px);
+      box-shadow:var(--shadow-md)
     }
-    @keyframes pulse{0%,100%{opacity:.2;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.3)}}
-
-    /* ═══════════════════════════════════════
-       3. STATEMENT — text over image, stronger contrast
-       ═══════════════════════════════════════ */
-    .statement{
-      min-height:80vh;position:relative;overflow:hidden;
-      display:flex;align-items:center;justify-content:center;text-align:center
-    }
-    .statement-img{
-      position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-      filter:brightness(0.45)
-    }
-    .statement::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:50%;z-index:1;
-      background:linear-gradient(to top,transparent,var(--dark));pointer-events:none
-    }
-    .statement::after{
-      content:'';position:absolute;bottom:0;left:0;right:0;height:50%;z-index:1;
-      background:linear-gradient(to bottom,transparent,var(--dark));pointer-events:none
-    }
-    /* Dark vignette overlay for readability */
-    .statement-overlay{
-      position:absolute;inset:0;z-index:1;
-      background:radial-gradient(ellipse at center,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.6) 100%);
-      pointer-events:none
-    }
-    .statement-text{
-      position:relative;z-index:2;font-family:var(--serif);
-      font-size:clamp(40px,8vw,100px);font-weight:300;line-height:1.05;
-      max-width:800px;padding:24px;
-      text-shadow:0 2px 40px rgba(0,0,0,.8),0 8px 80px rgba(0,0,0,.5)
-    }
-    .statement-text em{
-      font-style:italic;
-      background:linear-gradient(135deg,var(--accent),#E0B888);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-      filter:drop-shadow(0 2px 24px rgba(212,144,96,.35))
-    }
-
-    /* ═══════════════════════════════════════
-       4. ART ROW with pull quote
-       ═══════════════════════════════════════ */
-    /* Unified fog system for all images */
-    .fog{position:relative;overflow:hidden}
-    .fog::before{
-      content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-      box-shadow:inset 0 0 120px 60px var(--dark)
-    }
-
-    .art-card{
-      padding:0 24px;max-width:1200px;margin:0 auto
-    }
-    .art-card-inner{
-      border-radius:28px;overflow:hidden;position:relative;
-      box-shadow:0 60px 120px rgba(0,0,0,.6),0 0 60px rgba(196,93,62,.04)
-    }
-    .art-card-inner img{width:100%;display:block;height:auto}
-
-    .art-quote-row{
-      display:grid;grid-template-columns:1fr 1fr;gap:0;
-      max-width:1200px;margin:0 auto;padding:0 24px;
-      min-height:520px;position:relative
-    }
-    /* Fog over the image side only — left/top/bottom edges dissolve into dark */
-    .art-quote-row::before{
-      content:'';position:absolute;top:0;bottom:0;left:0;width:50%;z-index:2;pointer-events:none;
-      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-      mask-image:
-        linear-gradient(to top, black 0%, transparent 40%),
-        linear-gradient(to bottom, black 0%, transparent 40%),
-        linear-gradient(to right, black 0%, transparent 30%);
-      -webkit-mask-image:
-        linear-gradient(to top, black 0%, transparent 40%),
-        linear-gradient(to bottom, black 0%, transparent 40%),
-        linear-gradient(to right, black 0%, transparent 30%);
-      mask-composite:add;-webkit-mask-composite:source-over;
-      background:
-        linear-gradient(to top, var(--dark) 0%, transparent 40%),
-        linear-gradient(to bottom, var(--dark) 0%, transparent 40%),
-        linear-gradient(to right, var(--dark) 0%, transparent 30%)
-    }
-    /* Soft blend — stays within image column, never touches quote text */
-    .art-quote-row::after{
-      content:'';position:absolute;top:0;bottom:0;left:35%;width:15%;z-index:2;pointer-events:none;
-      background:linear-gradient(to right, transparent 0%, var(--dark) 100%)
-    }
-    .art-quote-img{
-      border-radius:24px;overflow:hidden;position:relative;
-      box-shadow:0 40px 80px rgba(0,0,0,.5)
-    }
-    .art-quote-img img{width:100%;height:100%;object-fit:cover;display:block}
-
-    .art-quote-text{
-      display:flex;flex-direction:column;justify-content:center;
-      padding:40px 48px 40px 64px;
-      will-change:transform
-    }
-    .art-quote-text .pull-quote{
-      transition:transform 0.1s linear;will-change:transform;
-      transform:translateY(40px)
-    }
-    .pull-quote{
-      font-family:var(--serif);font-style:italic;font-weight:300;
-      font-size:clamp(24px,3.5vw,42px);line-height:1.35;
-      color:var(--text)
-    }
-    .pull-quote-attr{
+    .install-prompt{color:var(--dim);user-select:none}
+    .install-cmd{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .install-copy{
       font-family:var(--sans);font-size:11px;font-weight:500;
-      letter-spacing:3px;text-transform:uppercase;color:var(--muted)
+      color:var(--muted);padding-left:12px;border-left:1px solid var(--hair);
+      transition:color .25s var(--ease)
     }
-    .quote-attr{
-      display:block;margin-top:16px;
-      font-family:var(--sans);font-size:11px;font-weight:400;
+    .install:hover .install-copy{color:var(--text)}
+    .install.copied .install-copy{color:var(--warm)}
+
+    .hero-meta{
+      margin:80px auto 0;padding-top:32px;border-top:1px solid var(--hair);
+      display:grid;grid-template-columns:repeat(4,1fr);gap:24px;
+      max-width:780px;width:100%;text-align:left
+    }
+    .hero-meta-item{
+      display:flex;flex-direction:column;gap:4px
+    }
+    .hero-meta-num{
+      font-family:var(--sans);font-size:22px;font-weight:500;
+      letter-spacing:-0.02em;color:var(--text)
+    }
+    .hero-meta-label{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)
+    }
+    @media(max-width:640px){
+      .hero{padding:120px 22px 60px}
+      .hero-meta{grid-template-columns:repeat(2,1fr)}
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       SECTION SCAFFOLDING
+       ═══════════════════════════════════════════════════════════════════ */
+    section{padding:clamp(80px,10vw,140px) 32px;position:relative}
+    .container{max-width:var(--max);margin:0 auto}
+    .container-narrow{max-width:840px;margin:0 auto}
+
+    .section-tag{
+      display:inline-flex;align-items:center;gap:8px;
+      font-family:var(--mono);font-size:10px;font-weight:500;
+      letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+      padding:6px 12px;border:1px solid var(--hair-strong);border-radius:100px;
+      margin-bottom:28px;background:var(--surface-2)
+    }
+    .section-tag .num{color:var(--text);font-weight:600}
+    .section-title{
+      font-family:var(--sans);font-size:clamp(36px,5.6vw,84px);
+      font-weight:500;line-height:.96;letter-spacing:-0.035em;
+      margin:0 auto 24px;max-width:18ch
+    }
+    .section-title em{font-style:italic;font-weight:400;color:var(--muted)}
+    .section-deck{
+      font-family:var(--sans);font-size:clamp(16px,1.6vw,20px);
+      font-weight:400;color:var(--muted);max-width:580px;line-height:1.55;
+      margin:0 auto
+    }
+
+    /* Section divider — poetic italic interstitial, Legit-style */
+    .interstitial{
+      max-width:760px;margin:0 auto;padding:clamp(60px,10vw,140px) 32px;
+      text-align:center
+    }
+    .interstitial p{
+      font-family:var(--sans);font-style:italic;font-weight:400;
+      font-size:clamp(22px,2.6vw,30px);line-height:1.4;
+      color:var(--text);letter-spacing:-0.015em
+    }
+    .interstitial p::before{content:'— '}
+    .interstitial p::after{content:' —'}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       SHOWCASE — full-width Mac / iMac shot proving the product is real.
+       Sits between the hero and the demo video so the user first reads,
+       then sees, then watches.
+       ═══════════════════════════════════════════════════════════════════ */
+    .showcase{
+      padding:clamp(40px,7vw,100px) 24px clamp(60px,8vw,120px);
+      position:relative
+    }
+    .showcase-frame{
+      position:relative;max-width:1180px;margin:0 auto;
+      border-radius:var(--r-xl);overflow:hidden;
+      box-shadow:var(--shadow-xl);
+      /* Scroll-choreographed like the video */
+      opacity:var(--so,0);
+      transform:scale(var(--ss,.92));
+      transition:box-shadow .6s var(--ease)
+    }
+    .showcase-frame img{
+      display:block;width:100%;height:auto
+    }
+    .showcase-cap{
+      margin-top:24px;text-align:center;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)
+    }
+    .showcase-cap em{
+      font-family:var(--sans);font-weight:400;font-style:italic;
+      letter-spacing:-0.005em;text-transform:none;color:var(--text);
+      font-size:14px;margin-left:6px
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       BILLBOARD — brand moment, full-bleed photograph
+       ═══════════════════════════════════════════════════════════════════ */
+    .billboard{
+      padding:clamp(80px,10vw,140px) 24px;
+      position:relative
+    }
+    .billboard-frame{
+      position:relative;max-width:1180px;margin:0 auto;
+      border-radius:var(--r-xl);overflow:hidden;
+      box-shadow:var(--shadow-xl);
+      opacity:var(--so,0);
+      transform:scale(var(--ss,.92));
+      transition:box-shadow .6s var(--ease)
+    }
+    .billboard-frame img{
+      display:block;width:100%;height:auto
+    }
+    .billboard-cap{
+      margin-top:32px;text-align:center;
+      font-family:var(--sans);font-style:italic;font-weight:400;
+      font-size:clamp(18px,1.8vw,22px);color:var(--muted);
+      max-width:520px;margin-left:auto;margin-right:auto;line-height:1.5
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       VIDEO SECTION
+       ═══════════════════════════════════════════════════════════════════ */
+    .video-section{padding-top:clamp(60px,8vw,100px)}
+    .video-head{margin:0 auto clamp(48px,7vw,72px);max-width:840px;text-align:center}
+    .video-glow{position:relative;max-width:1180px;margin:0 auto}
+    .video-wrap{
+      background:#0a0908;border-radius:var(--r-xl);overflow:hidden;
+      border:1px solid var(--hair-strong);
+      box-shadow:var(--shadow-xl);
+      /* Scroll-choreographed like .feature */
+      opacity:var(--so, 0);
+      transform:scale(var(--ss, .92));
+      transition:box-shadow .6s var(--ease)
+    }
+    .video-wrap:hover{
+      box-shadow:
+        0 1px 2px rgba(20,19,16,0.05),
+        0 20px 40px rgba(20,19,16,0.10),
+        0 50px 100px rgba(20,19,16,0.14),
+        0 100px 160px rgba(20,19,16,0.10)
+    }
+    .video-wrap video{width:100%;display:block;height:auto;background:#000;border-radius:var(--r-xl)}
+    .video-cap{
+      margin-top:20px;font-family:var(--mono);font-size:11px;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+      text-align:center
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       FEATURE GRID — 10 boxes with light-paper mockups
+       ═══════════════════════════════════════════════════════════════════ */
+    .features-head{margin:0 auto clamp(56px,8vw,90px);max-width:840px;text-align:center}
+    .features-grid{
+      display:grid;grid-template-columns:repeat(2,1fr);
+      gap:28px;max-width:var(--max);margin:0 auto
+    }
+    @media(max-width:860px){.features-grid{grid-template-columns:1fr;gap:20px}}
+
+    .feature{
+      background:var(--surface-2);
+      border:1px solid var(--hair);
+      border-radius:var(--r-lg);overflow:hidden;
+      display:flex;flex-direction:column;
+      box-shadow:var(--shadow-md);
+      /* Scroll-choreographed: --sy and --so are written by the rAF
+         scroll handler. Cards fade in as they enter, peak when centered,
+         fade out as they leave. */
+      opacity:var(--so, 0);
+      transform:scale(var(--ss, .9)) translateY(var(--sy, 30px));
+      transition:border-color .45s var(--ease),box-shadow .55s var(--ease)
+    }
+    .feature:hover{
+      border-color:var(--hair-strong);
+      box-shadow:var(--shadow-lg);
+      --sy:-6px
+    }
+    .feature-mockup{
+      position:relative;aspect-ratio:5/4;
+      /* Soft cream radial spotlight — Legora-class light wash */
+      background:
+        radial-gradient(ellipse 100% 80% at 50% 35%,
+          rgba(255,253,245,1) 0%,
+          rgba(252,250,242,0.7) 40%,
+          rgba(244,242,234,0.4) 70%,
+          rgba(240,238,230,0) 100%),
+        linear-gradient(160deg, #F8F6EE 0%, #F1EFE5 100%);
+      border-bottom:1px solid var(--hair);
+      overflow:hidden;display:flex;flex-direction:column;
+      padding-top:36px; /* clears the Mac chrome bar */
+      isolation:isolate
+    }
+    /* ─── Mac chrome — proper macOS window top bar ─── */
+    .mac-chrome{
+      position:absolute;top:0;left:0;right:0;height:36px;
+      display:flex;align-items:center;gap:8px;padding:0 14px;
+      background:linear-gradient(180deg,
+        rgba(255,253,245,0.78) 0%,
+        rgba(240,236,224,0.55) 100%);
+      border-bottom:1px solid rgba(20,19,16,0.07);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      z-index:3
+    }
+    .mac-chrome i{
+      width:11px;height:11px;border-radius:50%;
+      box-shadow:
+        inset 0 -1px 0 rgba(0,0,0,0.10),
+        inset 0 1px 0 rgba(255,255,255,0.30),
+        0 0 0 0.5px rgba(0,0,0,0.06)
+    }
+    .mac-chrome i.r{background:linear-gradient(180deg,#FF6157 0%,#DE3F39 100%)}
+    .mac-chrome i.y{background:linear-gradient(180deg,#FEBE2E 0%,#DEA226 100%)}
+    .mac-chrome i.g{background:linear-gradient(180deg,#28C940 0%,#1AA631 100%)}
+    .mac-chrome .stage-title{
+      margin-left:auto;margin-right:auto;
+      font-family:var(--mono);font-size:10.5px;
+      color:var(--dim);letter-spacing:.4px;
+      transform:translateX(-22px); /* offset for the dots on the left */
+      display:inline-flex;align-items:center;gap:7px
+    }
+    /* Live indicator — small green pulsing dot inside the chrome title */
+    .mac-chrome .live-dot{
+      width:6px;height:6px;border-radius:50%;
+      background:#3a7d44;flex:none;position:relative
+    }
+    .mac-chrome .live-dot::after{
+      content:'';position:absolute;inset:-3px;border-radius:50%;
+      border:1.5px solid #3a7d44;opacity:0;
+      animation:liveBlink 2.4s ease-out infinite
+    }
+    @keyframes liveBlink{
+      0%{transform:scale(.6);opacity:.7}
+      80%,100%{transform:scale(1.9);opacity:0}
+    }
+    @media(prefers-reduced-motion:reduce){.mac-chrome .live-dot::after{animation:none}}
+    /* Subtle inner highlight for premium card glass feel */
+    .feature-mockup::after{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 60% 50% at 50% 10%,
+        rgba(255,255,255,0.55) 0%,
+        rgba(255,255,255,0.18) 30%,
+        transparent 60%);
+      mix-blend-mode:soft-light;z-index:0
+    }
+    .feature-body{
+      position:relative;z-index:1;
+      flex:1;padding:36px 32px;display:flex;flex-direction:column;
+      justify-content:center;align-items:stretch;
+      gap:10px;font-family:var(--mono);font-size:11px;color:var(--muted);
+      overflow:hidden
+    }
+    /* Center-stage layout for hero-moment mockups */
+    .feature-body.center{justify-content:center;align-items:center;text-align:center}
+
+    /* Real Lavern screenshot embedded inside the feature mockup. Sits
+       below the Mac chrome bar, fills the rest of the mockup, top-cropped. */
+    .feature-screen{
+      position:absolute;left:0;right:0;top:36px;bottom:0;
+      width:100%;height:calc(100% - 36px);
+      object-fit:cover;object-position:top center;
+      z-index:1;
+      /* Tiny inset shadow at the top so the chrome doesn't float */
+      box-shadow:inset 0 1px 0 rgba(20,19,16,0.04)
+    }
+    /* When a screen image is present, hide the CSS mockup body */
+    .feature-mockup.has-screen .feature-body{display:none}
+    .feature-caption{
+      padding:26px 28px 30px;display:flex;flex-direction:column;gap:10px
+    }
+    .feature-num{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)
+    }
+    .feature-num span{color:var(--text);font-weight:600}
+    .feature-title{
+      font-family:var(--sans);font-size:24px;font-weight:500;
+      line-height:1.15;letter-spacing:-0.02em;color:var(--text)
+    }
+    .feature-title em{font-style:italic;font-weight:400;color:var(--muted)}
+    .feature-desc{
+      font-family:var(--sans);font-size:14px;color:var(--muted);
+      line-height:1.6;max-width:50ch
+    }
+
+    /* Mockup atoms — light theme */
+    .m-row{display:flex;align-items:center;gap:10px}
+    .m-dot{width:7px;height:7px;border-radius:50%;background:var(--text);flex:none}
+    .m-dot.dim{background:var(--dim)}
+    .m-dot.ok{background:#3a7d44}
+    .m-dot.warn{background:#B8860B}
+    .m-line{height:1px;background:var(--hair);flex:1}
+    .m-bar{height:5px;border-radius:3px;background:rgba(20,19,16,0.08);overflow:hidden}
+    .m-bar span{display:block;height:100%;background:var(--text)}
+    .m-bubble{
+      padding:10px 15px;border-radius:18px;
+      font-family:var(--sans);font-size:12px;font-weight:400;
+      line-height:1.5;letter-spacing:-0.005em;
+      max-width:78%;color:var(--text);position:relative
+    }
+    .m-bubble.you{
+      background:linear-gradient(180deg,#1e1c18 0%,#141310 100%);
+      color:var(--bg);
+      align-self:flex-end;border-bottom-right-radius:6px;
+      box-shadow:0 2px 6px rgba(20,19,16,0.15),0 1px 2px rgba(20,19,16,0.08)
+    }
+    .m-bubble.them{
+      background:#fff;border:1px solid var(--hair-strong);
+      align-self:flex-start;border-bottom-left-radius:6px;
+      box-shadow:0 2px 6px rgba(20,19,16,0.06),0 1px 2px rgba(20,19,16,0.03)
+    }
+    /* Typing indicator — three pulsing dots, looped continuously */
+    .m-typing{
+      display:inline-flex;gap:4px;padding:11px 16px;
+      background:#fff;border:1px solid var(--hair-strong);
+      border-radius:18px;border-bottom-left-radius:6px;
+      align-self:flex-start;
+      box-shadow:0 2px 6px rgba(20,19,16,0.06)
+    }
+    .m-typing i{
+      width:5px;height:5px;border-radius:50%;background:var(--muted);
+      animation:typingPulse 1.4s ease-in-out infinite
+    }
+    .m-typing i:nth-child(2){animation-delay:.18s}
+    .m-typing i:nth-child(3){animation-delay:.36s}
+    @keyframes typingPulse{
+      0%,80%,100%{opacity:.3;transform:translateY(0)}
+      40%{opacity:1;transform:translateY(-2px)}
+    }
+    @media(prefers-reduced-motion:reduce){.m-typing i{animation:none}}
+    .m-tag{
+      display:inline-block;font-family:var(--mono);font-size:9px;
+      padding:2px 7px;border-radius:3px;letter-spacing:.5px;
+      background:var(--warm-soft);color:var(--warm);
+      text-transform:uppercase;font-weight:500
+    }
+    .m-tag.ok{background:rgba(58,125,68,0.10);color:#3a7d44}
+    .m-tag.warn{background:rgba(184,134,11,0.10);color:#8a6608}
+    .m-tag.danger{background:rgba(155,40,30,0.10);color:#9b281e}
+    .m-tag.neutral{background:rgba(20,19,16,0.06);color:var(--text)}
+    .m-card{
+      background:#fff;border:1px solid var(--hair);
+      border-radius:var(--r-md);padding:11px 14px;display:flex;flex-direction:column;gap:6px;
+      box-shadow:var(--shadow-sm)
+    }
+    .m-avatar{
+      width:26px;height:26px;border-radius:50%;flex:none;
+      background:#EFEDE5;border:1px solid var(--hair-strong);
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--sans);font-style:italic;font-size:12px;
+      font-weight:500;color:var(--text)
+    }
+    .m-quote{
+      font-family:var(--sans);font-style:italic;font-weight:400;
+      font-size:13px;line-height:1.45;color:var(--text)
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       TL;DR — MAC MINI + STACKED LAYERS (Legora aOS reskin)
+       Mac Mini base; seven translucent glass layers stacked above; pill
+       nav on the left lets you switch the active layer; description
+       updates next to the visual.
+       ═══════════════════════════════════════════════════════════════════ */
+    .tldr-head{margin:0 auto 56px;max-width:840px;text-align:center}
+    .tldr-stage{
+      display:grid;grid-template-columns:300px 1fr;gap:48px;
+      max-width:1180px;margin:0 auto;align-items:center;
+      min-height:min(720px,90vh)
+    }
+    @media(max-width:900px){
+      .tldr-stage{grid-template-columns:1fr;gap:32px}
+    }
+
+    /* Left column — pill nav of principles */
+    .tldr-nav{
+      display:flex;flex-direction:column;gap:10px;align-self:start;
+      position:sticky;top:14vh
+    }
+    .tldr-pill{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      font-family:var(--sans);font-size:13px;font-weight:500;
+      letter-spacing:-0.005em;color:var(--text);
+      background:var(--surface-2);border:1px solid var(--hair);
+      padding:12px 18px;border-radius:100px;cursor:pointer;
+      transition:all .35s var(--ease);text-align:left;width:100%;
+      box-shadow:var(--shadow-sm)
+    }
+    .tldr-pill:hover{
+      border-color:var(--hair-strong);transform:translateX(2px)
+    }
+    .tldr-pill.active{
+      background:var(--text);color:var(--bg);
+      border-color:var(--text);box-shadow:var(--shadow-md)
+    }
+    .tldr-pill .plus{
+      font-family:var(--mono);font-size:11px;color:var(--muted);
+      transition:transform .3s var(--ease),color .25s var(--ease)
+    }
+    .tldr-pill.active .plus{color:var(--bg);transform:rotate(45deg)}
+    @media(max-width:900px){
+      .tldr-nav{position:static;flex-direction:row;flex-wrap:wrap}
+      .tldr-pill{width:auto}
+    }
+
+    /* Right column — the Mac Mini stacked layers visual */
+    .tldr-visual{
+      position:relative;width:100%;aspect-ratio:5/4;
+      perspective:1800px;perspective-origin:50% 50%
+    }
+    /* Soft warm glow behind the stack */
+    .tldr-visual::before{
+      content:'';position:absolute;inset:10%;
+      background:radial-gradient(ellipse 80% 80% at 50% 60%,
+        rgba(255,253,245,0.9) 0%,
+        rgba(252,250,242,0.45) 35%,
+        rgba(244,242,234,0) 70%);
+      filter:blur(40px);z-index:0
+    }
+    .tldr-stack3d{
+      position:absolute;inset:0;
+      transform-style:preserve-3d;
+      transform:rotateX(58deg) rotateZ(-22deg);
+      transition:transform .6s var(--ease)
+    }
+    .tldr-visual:hover .tldr-stack3d{
+      transform:rotateX(54deg) rotateZ(-22deg)
+    }
+
+    /* Each glass slab — square footprint, sits at a Y-translate */
+    .tldr-slab{
+      position:absolute;left:50%;top:50%;
+      width:46%;aspect-ratio:1/1;
+      transform-origin:center center;
+      transform:translate3d(-50%,-50%,var(--z,0px));
+      background:linear-gradient(135deg,
+        rgba(255,255,255,0.55) 0%,
+        rgba(245,243,236,0.35) 50%,
+        rgba(220,217,208,0.30) 100%);
+      border:1px solid rgba(255,255,255,0.6);
+      border-radius:18px;
+      box-shadow:
+        0 6px 20px rgba(20,19,16,0.10),
+        inset 0 1px 0 rgba(255,255,255,0.65),
+        inset 0 -1px 0 rgba(20,19,16,0.06);
+      backdrop-filter:blur(3px);
+      -webkit-backdrop-filter:blur(3px);
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--sans);font-size:13px;font-weight:500;
+      color:var(--text);letter-spacing:-0.01em;
+      cursor:pointer;
+      transition:transform .55s var(--ease),box-shadow .55s var(--ease),background .35s var(--ease)
+    }
+    .tldr-slab .slab-label{
+      transform:rotateZ(22deg) rotateX(-58deg); /* counter-rotate so text reads upright */
+      padding:8px 14px;
+      background:rgba(255,253,245,0.85);
+      border-radius:8px;
+      border:1px solid var(--hair);
+      box-shadow:0 2px 8px rgba(20,19,16,0.08);
+      backdrop-filter:blur(4px);
+      white-space:nowrap
+    }
+    .tldr-slab.active{
+      background:linear-gradient(135deg,
+        rgba(255,253,245,0.92) 0%,
+        rgba(248,245,234,0.75) 50%,
+        rgba(232,225,210,0.65) 100%);
+      box-shadow:
+        0 12px 36px rgba(20,19,16,0.18),
+        0 0 0 1px rgba(20,19,16,0.20),
+        inset 0 1px 0 rgba(255,255,255,0.95)
+    }
+    .tldr-slab.active .slab-label{
+      background:var(--text);color:var(--bg);
+      border-color:var(--text);font-weight:600
+    }
+
+    /* Mac Mini base — sits below the slab stack */
+    .tldr-macmini{
+      position:absolute;left:50%;top:50%;
+      width:50%;aspect-ratio:1/1;
+      transform:translate3d(-50%,-50%,-180px);
+      background:
+        linear-gradient(180deg,#E2E0DA 0%,#B6B4AE 50%,#8E8B83 100%);
+      border-radius:18px;
+      box-shadow:
+        0 30px 60px rgba(20,19,16,0.30),
+        0 60px 100px rgba(20,19,16,0.18),
+        inset 0 2px 4px rgba(255,255,255,0.40),
+        inset 0 -2px 4px rgba(0,0,0,0.18)
+    }
+    .tldr-macmini::after{
+      content:'';position:absolute;
+      bottom:14%;left:50%;transform:translateX(-50%) rotateZ(22deg) rotateX(-58deg);
+      width:18%;height:5%;
+      background:rgba(20,19,16,0.45);border-radius:100px;
+      box-shadow:inset 0 1px 2px rgba(0,0,0,0.4)
+    }
+    /* Tiny LED below the Mac Mini */
+    .tldr-macmini::before{
+      content:'';position:absolute;
+      bottom:8%;left:30%;transform:rotateZ(22deg) rotateX(-58deg);
+      width:4px;height:4px;border-radius:50%;
+      background:#5ab26a;
+      box-shadow:0 0 6px rgba(90,178,106,0.7)
+    }
+
+    /* The body panel that floats next to the active slab */
+    .tldr-bodycard{
+      position:absolute;left:0;top:50%;
+      transform:translateY(-50%);
+      max-width:340px;
+      background:rgba(20,19,16,0.85);color:var(--bg);
+      padding:22px 26px;border-radius:18px;
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      box-shadow:var(--shadow-lg);
+      z-index:10;pointer-events:none;
+      opacity:0;transform:translateY(-50%) translateX(-10px);
+      transition:opacity .4s var(--ease),transform .4s var(--ease)
+    }
+    .tldr-visual.has-active .tldr-bodycard{
+      opacity:1;transform:translateY(-50%) translateX(0)
+    }
+    .tldr-bodycard h4{
+      font-family:var(--sans);font-size:14px;font-weight:600;
+      letter-spacing:-0.01em;margin-bottom:8px
+    }
+    .tldr-bodycard p{
+      font-family:var(--sans);font-size:13px;font-weight:400;
+      line-height:1.6;color:rgba(250,249,246,0.85)
+    }
+
+    /* Optional rendered image override — drop site/img/mac-mini-stack.png
+       in and the CSS stack hides automatically. */
+    .tldr-visual.has-image .tldr-stack3d,
+    .tldr-visual.has-image .tldr-macmini{display:none}
+    .tldr-visual-img{
+      display:none;position:absolute;inset:0;
+      width:100%;height:100%;object-fit:contain;
+      z-index:1
+    }
+    .tldr-visual.has-image .tldr-visual-img{display:block}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       STATS — big numbers section (Legora ROI block reskin)
+       Three colossal counters with mono labels and one-line captions.
+       Numbers tween up from 0 with easeOutCubic when scrolled into view.
+       ═══════════════════════════════════════════════════════════════════ */
+    .stats-section{
+      padding:clamp(80px,12vw,160px) 32px;
+      border-top:1px solid var(--hair);
+      border-bottom:1px solid var(--hair);
+      position:relative
+    }
+    .stats-head{margin:0 auto clamp(64px,8vw,100px);max-width:840px;text-align:center}
+    .stats-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:64px;max-width:var(--max);margin:0 auto;align-items:start
+    }
+    .stat-cell{
+      display:flex;flex-direction:column;gap:24px;
+      padding-top:32px;border-top:1px solid var(--hair)
+    }
+    .stat-label{
+      font-family:var(--mono);font-size:11px;font-weight:500;
       letter-spacing:2px;text-transform:uppercase;color:var(--muted)
     }
-    .solo-quote{
-      max-width:800px;margin:0 auto;padding:80px 24px;text-align:center
+    .stat-num{
+      font-family:var(--sans);
+      font-size:clamp(80px,11vw,180px);
+      font-weight:500;line-height:.9;letter-spacing:-0.045em;
+      color:var(--text);font-variant-numeric:tabular-nums;
+      display:flex;align-items:baseline
+    }
+    .stat-num .suffix{
+      font-weight:400;color:var(--muted);
+      font-size:0.55em;margin-left:0.06em;letter-spacing:-0.02em
+    }
+    .stat-caption{
+      font-family:var(--sans);font-size:15px;font-weight:400;
+      line-height:1.55;color:var(--muted);max-width:32ch
+    }
+    @media(max-width:860px){
+      .stats-grid{grid-template-columns:1fr;gap:40px}
     }
 
-    /* ═══════════════════════════════════════
-       5. VIDEO SECTION — embedded, framed
-       ═══════════════════════════════════════ */
-    .video-section{padding:clamp(80px,14vw,200px) 24px}
-    .video-label{
-      text-align:center;font-family:var(--serif);
-      font-size:clamp(36px,6vw,72px);font-weight:300;line-height:1.1;
-      margin-bottom:clamp(48px,8vw,96px)
+    /* ═══════════════════════════════════════════════════════════════════
+       FAQ
+       ═══════════════════════════════════════════════════════════════════ */
+    .faq-head{margin:0 auto 64px;max-width:840px;text-align:center}
+    .faq-list{max-width:840px;display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+    .faq-item{border-bottom:1px solid var(--hair)}
+    .faq-q{
+      width:100%;text-align:left;background:none;border:none;
+      padding:24px 0;cursor:pointer;
+      display:flex;justify-content:space-between;align-items:flex-start;gap:24px;
+      font-family:var(--sans);font-size:clamp(18px,2vw,24px);
+      font-weight:500;line-height:1.3;color:var(--text);
+      letter-spacing:-0.02em;transition:color .25s var(--ease)
     }
-    .video-glow{
-      position:relative;max-width:1000px;margin:0 auto;isolation:isolate
+    .faq-q:hover{color:var(--warm)}
+    .faq-q em{font-style:italic;font-weight:400;color:var(--muted)}
+    .faq-toggle{
+      flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:18px;color:var(--text);
+      transition:transform .35s var(--ease);margin-top:4px
     }
-    .video-glow::before{
-      content:'';position:absolute;
-      top:50%;left:50%;transform:translate(-50%,-50%);
-      width:320%;height:350%;
-      background:radial-gradient(ellipse at center,
-        rgba(232,132,92,0.9) 0%,
-        rgba(232,132,92,0.5) 15%,
-        rgba(200,110,80,0.25) 30%,
-        rgba(150,80,50,0.1) 50%,
-        transparent 65%);
-      filter:blur(120px);
-      pointer-events:none;z-index:-1
+    .faq-item.open .faq-toggle{transform:rotate(45deg)}
+    .faq-a{
+      max-height:0;overflow:hidden;
+      transition:max-height .45s var(--ease),padding .45s var(--ease)
     }
-    .video-wrap{
-      max-width:1000px;margin:0 auto;
-      background:#0a0a0a;border-radius:20px;overflow:hidden;
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow:
-        0 100px 200px rgba(0,0,0,.8),
-        0 50px 100px rgba(0,0,0,.5),
-        0 0 120px rgba(232,132,92,.04),
-        0 0 0 1px rgba(255,255,255,.03) inset;
-      mask-image:none;
-      -webkit-mask-image:none
+    .faq-item.open .faq-a{max-height:640px;padding:0 0 28px}
+    .faq-a p{
+      font-family:var(--sans);font-size:15px;line-height:1.7;
+      color:var(--muted);margin-bottom:12px;max-width:64ch
     }
-    .video-chrome{
-      display:flex;align-items:center;gap:7px;padding:14px 20px;
-      background:#0d0d0d;border-bottom:1px solid rgba(255,255,255,.05)
+    .faq-a p strong{color:var(--text);font-weight:600}
+    .faq-a a{color:var(--text);border-bottom:1px solid var(--hair-strong);font-weight:500}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       CLOSING + footer
+       ═══════════════════════════════════════════════════════════════════ */
+    .closing{padding:clamp(100px,14vw,180px) 32px clamp(80px,12vw,140px)}
+    .closing .container-narrow{max-width:900px}
+    .closing h2{
+      font-family:var(--sans);font-size:clamp(40px,7vw,96px);
+      font-weight:500;line-height:.96;letter-spacing:-0.035em;
+      margin-bottom:28px;max-width:14ch
     }
-    .dot{width:10px;height:10px;border-radius:50%}
-    .dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
-    .video-chrome-url{flex:1;text-align:center;font-size:11px;color:rgba(255,255,255,.18);font-weight:500}
-    .video-container{
-      position:relative;width:100%;padding-bottom:56.25%;
-      background:#000
+    .closing h2 em{font-style:italic;font-weight:400;color:var(--muted)}
+    .closing-deck{
+      font-family:var(--sans);font-size:clamp(17px,1.8vw,22px);
+      font-weight:400;color:var(--muted);max-width:520px;margin-bottom:40px;line-height:1.55
     }
-    .video-container iframe{
-      position:absolute;top:0;left:0;width:100%;height:100%;border:none
+    .deepdive-link{
+      display:inline-flex;align-items:center;gap:8px;margin-top:48px;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+      padding-bottom:4px;border-bottom:1px solid var(--hair-strong);
+      transition:color .25s var(--ease),border-color .25s var(--ease)
     }
-    /* Placeholder state before video loads or if no video yet */
-    .video-placeholder{
-      position:absolute;inset:0;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:20px;background:#0a0a0a;cursor:pointer
+    .deepdive-link:hover{color:var(--text);border-color:var(--text)}
+    .deepdive-link .arrow{display:inline-block;transition:transform .25s var(--ease)}
+    .deepdive-link:hover .arrow{transform:translate(2px,-2px)}
+
+    footer{
+      border-top:1px solid var(--hair);padding:48px 32px
     }
-    .video-play{
-      width:80px;height:80px;border-radius:50%;
-      background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
-      display:flex;align-items:center;justify-content:center;
-      transition:all .4s var(--ease)
+    .footer-grid{
+      max-width:var(--max);margin:0 auto;
+      display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center
     }
-    .video-placeholder:hover .video-play{
-      background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);
-      transform:scale(1.08)
+    .footer-mark{
+      font-family:var(--sans);font-size:18px;font-weight:500;
+      letter-spacing:-0.5px;color:var(--text)
     }
-    .video-play-arrow{
-      width:0;height:0;border-style:solid;
-      border-width:12px 0 12px 22px;
-      border-color:transparent transparent transparent rgba(255,255,255,0.5);
-      margin-left:4px
+    .footer-mark .mark{
+      display:inline-block;width:8px;height:8px;background:var(--text);
+      border-radius:1px;margin-right:10px;vertical-align:1px
     }
-    .video-soon{
-      font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;
-      color:rgba(255,255,255,0.2)
+    .footer-links{
+      display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)
+    }
+    .footer-links a{transition:color .25s var(--ease)}
+    .footer-links a:hover{color:var(--text)}
+    @media(max-width:640px){
+      .footer-grid{grid-template-columns:1fr;gap:18px}
+      .footer-links{justify-content:flex-start;gap:16px}
     }
 
-    /* ═══════════════════════════════════════
-       6. CTA
-       ═══════════════════════════════════════ */
-    .cta{
-      min-height:90vh;position:relative;overflow:hidden;
-      display:flex;align-items:center;justify-content:center;text-align:center
-    }
-    .cta-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .cta::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:50%;z-index:1;
-      background:linear-gradient(to top,transparent,var(--dark));pointer-events:none
-    }
-    .cta::after{
-      content:'';position:absolute;bottom:0;left:0;right:0;height:50%;z-index:1;
-      background:linear-gradient(to bottom,transparent,var(--dark));pointer-events:none
-    }
-    .cta-content{position:relative;z-index:2;padding:24px}
-    .cta-title{
-      font-family:var(--serif);font-size:clamp(48px,9vw,120px);
-      font-weight:300;line-height:.95;margin-bottom:40px;
-      text-shadow:0 4px 60px rgba(0,0,0,.5)
-    }
-    .cta-title em{font-style:italic}
-
-    /* Mist — soft fog rising from the bottom of the page */
-    .smoke{
-      position:fixed;bottom:0;left:0;right:0;height:40vh;pointer-events:none;z-index:9998;
-      background:linear-gradient(to top,
-        var(--dark) 0%,
-        rgba(8,8,8,0.85) 20%,
-        rgba(8,8,8,0.5) 45%,
-        rgba(8,8,8,0.15) 70%,
-        transparent 100%
-      )
-    }
-
-    /* Footer */
-    .footer{
-      padding:48px 24px 32px;border-top:1px solid rgba(255,255,255,.04);
-      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px;
-      max-width:1200px;margin:0 auto
-    }
-    .footer-left{display:flex;align-items:center;gap:24px}
-    .footer-mark{font-family:var(--serif);font-size:16px;font-weight:300;letter-spacing:8px;color:var(--text)}
-    .footer-link{font-size:12px;color:var(--muted);text-decoration:none;transition:color .2s}
-    .footer-link:hover{color:var(--text)}
-    .footer-right{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
-
-    /* Spacers */
-    .sp{height:clamp(80px,12vw,160px)}
-    .sp-lg{height:clamp(120px,16vw,240px)}
-
-    /* Responsive */
-    @media(max-width:1024px){
-      .art-quote-row{grid-template-columns:1fr;min-height:auto}
-      .art-quote-text{padding:40px 24px}
-      /* Disable side fog when stacked — use simple vertical fade instead */
-      .art-quote-row::before{
-        width:100%;
-        mask-image:
-          linear-gradient(to top, black 0%, transparent 30%),
-          linear-gradient(to bottom, black 0%, transparent 30%);
-        -webkit-mask-image:
-          linear-gradient(to top, black 0%, transparent 30%),
-          linear-gradient(to bottom, black 0%, transparent 30%);
-        background:
-          linear-gradient(to top, var(--dark) 0%, transparent 30%),
-          linear-gradient(to bottom, var(--dark) 0%, transparent 30%)
-      }
-      .art-quote-row::after{display:none}
-    }
-    @media(max-width:768px){
-      /* ── Mobile: hero + footer only, single screen, no scroll ── */
-      .statement,.art-quote-row,.video-section,.cta,.sp,.sp-lg,.hero-scroll{display:none !important}
-      html,body{overflow:hidden;height:100vh;height:100dvh}
-      .login{display:none}
-      .logo{top:20px;left:20px;font-size:15px;letter-spacing:6px}
-      .hero h1{letter-spacing:-1px;margin-bottom:36px}
-      /* Disable ALL image animation/transform on mobile */
-      .hero-img{animation:none !important;transform:none !important}
-      /* Fix iOS Safari viewport resize — lock hero height, +1px kills sub-pixel seam */
-      .hero{min-height:calc(100vh + 1px);min-height:calc(100dvh + 1px);max-height:calc(100vh + 1px);max-height:calc(100dvh + 1px);overflow:hidden}
-      .hero-img{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 1px);height:calc(100dvh + 1px);object-fit:cover}
-      .btn-invite{padding:16px 44px;font-size:10px}
-      .btn-invite:hover{transform:none}
-      .hero::after{height:40%}
-      .smoke{height:35vh}
-      /* Footer — single clean row, no border */
-      .footer{padding:16px 20px;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:transparent;border-top:none;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:0;max-width:none;margin:0}
-      .footer-left{flex-direction:row;align-items:center;gap:0}
-      .footer-mark{font-size:13px;letter-spacing:6px}
-      .footer-right{font-size:9px;letter-spacing:2px}
-      .footer-right a{color:var(--muted);text-decoration:none}
-      /* Hide footer links — architecture link is in top-right via .arch-link */
-      .footer-link{display:none}
-    }
-    @media(max-width:420px){
-      .logo{top:16px;left:16px;font-size:13px;letter-spacing:5px}
-      .hero-content{padding:16px}
-      .hero h1{font-size:clamp(40px,12vw,56px)}
-      .btn-invite{padding:14px 36px;font-size:9px;letter-spacing:2px}
-    }
-
-    /* The Architecture — desktop: hidden (it's in the footer). Mobile: top-right fixed. */
-    .arch-link{display:none}
-    @media(max-width:768px){
-      .arch-link{display:block;position:fixed;top:22px;right:20px;z-index:100;font-family:var(--sans);font-size:10px;font-weight:400;letter-spacing:2px;text-transform:uppercase;color:var(--text);text-decoration:none;mix-blend-mode:difference;opacity:.45}
-    }
-    .skip-link{position:absolute;top:-100px;left:0;background:var(--accent);color:#fff;padding:12px 24px;z-index:10001;font-size:14px;text-decoration:none}
-    .skip-link:focus{top:0}
-    a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
   </style>
 </head>
 <body>
-  <script defer data-domain="lavern.ai" src="https://plausible.io/js/script.js"></script>
-  <a href="#main" class="skip-link">Skip to content</a>
 
-  <!-- 1. Logo only — top left, nothing else -->
-  <a href="#" class="logo">LAVERN</a>
-  <a href="#" class="login">Log In</a>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NAV
+       ═══════════════════════════════════════════════════════════════════ -->
+  <nav class="nav" aria-label="Primary">
+    <a href="/" class="brand" aria-label="Lavern home"><span class="mark"></span>Lavern</a>
+    <div class="nav-meta"><span><span class="dot"></span>v0.14.3 · MIT licensed</span></div>
+    <div class="nav-links">
+      <a class="nav-link" href="/writing/">Writing</a>
+      <a class="nav-link primary" href="https://github.com/lavern-ai/lavern" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </nav>
 
-  <main id="main">
+  <!-- ═══════════════════════════════════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-mist" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="hero-tag r v"><span class="pulse"></span> Open source · MIT · v0.14.3</div>
+    <h1 class="word-reveal" id="heroHeadline">
+      The world's first<br>
+      driverless <em>law firm.</em>
+    </h1>
+    <p class="hero-deck r r2 v">
+      A multi-agent legal system you can run, read, and rewrite.
+      Sixty-seven specialist agents, evidence-backed debate, institutional memory.
+      <strong>Open source. Helsinki-built.</strong>
+    </p>
+    <div class="cta-row r r3 v">
+      <a class="btn btn-primary" href="https://github.com/lavern-ai/lavern" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+        View on GitHub<span class="stars">★ 0</span>
+      </a>
+      <button class="install" id="install" type="button" aria-label="Copy install command">
+        <span class="install-prompt">$</span>
+        <span class="install-cmd">curl -fsSL lavern.ai/install.sh | sh</span>
+        <span class="install-copy" id="installCopy">Copy</span>
+      </button>
+    </div>
+    <div class="hero-meta r r4 v">
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="67">0</div><div class="hero-meta-label">Agents</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="10" data-suffix="×">0×</div><div class="hero-meta-label">Verification passes</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num count-up" data-target="6">0</div><div class="hero-meta-label">Legal datasets</div></div>
+      <div class="hero-meta-item"><div class="hero-meta-num">∅</div><div class="hero-meta-label">Cloud-required</div></div>
+    </div>
+  </section>
 
-    <!-- ═══════ HERO ═══════ -->
-    <section class="hero">
-      <img src="img/hero.jpg" alt="" role="presentation" class="hero-img" loading="eager">
-      <div class="hero-fog-left"></div>
-      <div class="hero-fog-right"></div>
-      <div class="hero-content">
-        <h1 class="r">Excellence<br>doesn't scale.<br><em>Until now.</em></h1>
-        <a href="https://app.lavern.ai/#/demo" class="btn-invite r r1">Talk is cheap</a>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SHOWCASE — the product, in context. iMac on a desk.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="showcase" id="showcase">
+    <div class="showcase-frame">
+      <img src="img/imac-hero.jpg" alt="Lavern running on an iMac — the firm-is-ready intake screen" loading="lazy" decoding="async">
+    </div>
+    <p class="showcase-cap">Lavern on your desk — <em>not in a browser tab.</em></p>
+  </section>
+
+  <!-- Poetic divider — Legit-style italic interstitial -->
+  <div class="interstitial">
+    <p>A loop that checks, critiques, and iterates produces a deliverable. A single pass produces a draft.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       VIDEO
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="video-section" id="demo">
+    <div class="container">
+      <div class="video-head r">
+        <span class="section-tag"><span class="num">01</span> · The demo</span>
+        <h2 class="section-title word-reveal">Watch the firm <em>work.</em></h2>
       </div>
-    </section>
-
-    <div class="sp-lg"></div>
-
-    <!-- ═══════ STATEMENT — darkened image for text visibility ═══════ -->
-    <section class="statement">
-      <img src="img/statement.jpg" alt="" role="presentation" class="statement-img" loading="lazy">
-      <div class="statement-overlay"></div>
-      <p class="statement-text r">Law firms sell hours.<br>We sell <em>answers.</em></p>
-    </section>
-
-    <!-- ═══════ Art + pull quote ═══════ -->
-    <div class="sp-lg"></div>
-    <div class="art-quote-row">
-      <div class="art-quote-img r">
-        <img src="img/detail.jpg" alt="" role="presentation" loading="lazy">
+      <div class="video-glow r r1">
+        <div class="video-wrap">
+          <video controls preload="metadata" poster="img/product.jpg" playsinline>
+            <source src="demo.mp4" type="video/mp4">
+            <source src="demo.mov" type="video/quicktime">
+          </video>
+        </div>
       </div>
-      <div class="art-quote-text r r1">
-        <p class="pull-quote" data-words>"This might be the strangest legal tech tool I have ever seen." — GC</p>
+      <p class="video-cap r r2">A complete engagement, end to end. No edits.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       FEATURES — 10 boxes
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section id="features">
+    <div class="container">
+      <div class="features-head r">
+        <span class="section-tag"><span class="num">02</span> · The system</span>
+        <h2 class="section-title word-reveal">Ten parts of a <em>working firm.</em></h2>
+        <p class="section-deck">Each one is a feedback loop. None of them are demos.</p>
+      </div>
+
+      <div class="features-grid">
+
+        <!-- 01 The Briefing -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:10px">
+              <div class="m-bubble them">What kind of document are we looking at?</div>
+              <div class="m-bubble you">M&amp;A NDA. Delaware. $50M deal.</div>
+              <div class="m-bubble them">What's your risk appetite — strict or pragmatic?</div>
+              <div class="m-bubble you">Strict. Buy-side.</div>
+              <div class="m-typing" aria-hidden="true"><i></i><i></i><i></i></div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>01</span> · Briefing</div>
+            <h3 class="feature-title">An intake that <em>asks questions.</em></h3>
+            <p class="feature-desc">An adaptive interview builds the context every agent will need — jurisdiction, deal size, risk appetite, intent. The model is not the bottleneck. Context is.</p>
+          </div>
+        </article>
+
+        <!-- 02 The Team -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:8px">
+              <div class="m-row"><div class="m-avatar">E</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Eleanor Vance · Senior Partner</div><div style="font-size:10.5px">M&amp;A · 30y · debate-ready</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><div class="m-avatar">M</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Marcus Ito · Associate</div><div style="font-size:10.5px">Contracts · adversarial</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><div class="m-avatar">S</div><div style="flex:1"><div style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Sana Reyes · Specialist</div><div style="font-size:10.5px">Delaware corporate</div></div><span class="m-tag ok">on</span></div>
+              <div class="m-row"><div class="m-avatar" style="opacity:.5">+</div><div style="flex:1;font-size:10.5px;color:var(--dim)">64 more available</div></div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>02</span> · Team</div>
+            <h3 class="feature-title">Sixty-seven <em>specialists.</em></h3>
+            <p class="feature-desc">Pick the team for the document. M&amp;A partner, adversarial associate, jurisdictional specialist, dark-pattern auditor. Or build your own.</p>
+          </div>
+        </article>
+
+        <!-- 03 The Debate -->
+        <article class="feature">
+          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
+              <div class="m-card">
+                <div class="m-row"><span class="m-tag danger">red</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">Indemnification cap is uncapped.</span></div>
+                <div class="m-quote" style="font-size:11px;color:var(--muted)">"…the Indemnifying Party shall be liable for all losses…" §8.2</div>
+              </div>
+              <div style="text-align:center;color:var(--text);font-size:14px;line-height:1;opacity:.5">↕</div>
+              <div class="m-card">
+                <div class="m-row"><span class="m-tag warn">challenge</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;font-weight:500">§13.1 carves out — see "Notwithstanding".</span></div>
+                <div class="m-quote" style="font-size:11px;color:var(--muted)">Marcus Ito · counter-evidence cited</div>
+              </div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>03</span> · Debate</div>
+            <h3 class="feature-title">Agents that <em>argue.</em></h3>
+            <p class="feature-desc">Every finding cites evidence. Every challenge cites counter-evidence. The orchestrator weighs both and resolves. The audit trail is a side effect.</p>
+          </div>
+        </article>
+
+        <!-- 04 The Soul -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:6px;color:var(--muted);font-family:var(--sans);font-style:italic;font-size:13px;line-height:1.55">
+              <div style="color:var(--text);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;opacity:.7">// FIRM PERSONALITY</div>
+              <div>We are conservative on liability, pragmatic on commerce.</div>
+              <div>We default to client privilege. We never round numbers.</div>
+              <div>We speak plainly. Latin only when it earns its keep.</div>
+              <div style="color:var(--dim);font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;margin-top:4px">— injected into every engagement</div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>04</span> · Soul</div>
+            <h3 class="feature-title">A firm with a <em>voice.</em></h3>
+            <p class="feature-desc">Write the principles. They flow into the orchestrator's system prompt for every engagement. The firm sounds like the firm — not like a model.</p>
+          </div>
+        </article>
+
+        <!-- 05 Knowledge Base -->
+        <article class="feature">
+          <div class="feature-mockup">            <div class="feature-body" style="gap:7px">
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">CUAD</span><span style="color:var(--dim)">510 contracts · 41 types</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">MAUD</span><span style="color:var(--dim)">152 deals · 92 points</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">ACORD</span><span style="color:var(--dim)">126k clause pairs</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">LEDGAR</span><span style="color:var(--dim)">60k SEC provisions</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">UNFAIR-ToS</span><span style="color:var(--dim)">EU unfair clauses</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--text)"><span style="flex:1;font-weight:500">ContractNLI</span><span style="color:var(--dim)">10k NLI pairs</span></div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>05</span> · Knowledge</div>
+            <h3 class="feature-title">Six legal <em>datasets.</em></h3>
+            <p class="feature-desc">CUAD, MAUD, ACORD, LEDGAR, UNFAIR-ToS, ContractNLI — wired into FTS5 retrieval and citable on demand. The reference shelf is loaded.</p>
+          </div>
+        </article>
+
+        <!-- 06 Verification -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:14px;justify-content:center">
+              <div class="m-row" style="gap:9px">
+                <span class="m-dot ok"></span><span class="m-dot ok"></span><span class="m-dot ok"></span>
+                <span class="m-dot ok"></span><span class="m-dot ok"></span><span class="m-dot ok"></span>
+                <span class="m-dot ok"></span><span class="m-dot warn"></span><span class="m-dot dim"></span><span class="m-dot dim"></span>
+              </div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.5px">pass 7 of 10 · structure · evidence · preservation · placeholders · …</div>
+              <div class="m-bar"><span style="--fill:70%"></span></div>
+              <div class="m-quote" style="font-size:13px;color:var(--text)">critique → revise → resubmit</div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>06</span> · Verification</div>
+            <h3 class="feature-title">A ten-pass <em>loop.</em></h3>
+            <p class="feature-desc">A loop that checks, critiques, and iterates produces a deliverable. A single pass produces a draft. Lavern is a loop. That's the difference.</p>
+          </div>
+        </article>
+
+        <!-- 07 Delivery -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="flex-direction:row;gap:12px;align-items:stretch">
+              <div class="m-card" style="flex:1;background:var(--warm-soft);border-color:rgba(107,79,58,0.18)">
+                <span class="m-tag" style="align-self:flex-start">For You</span>
+                <div style="font-family:var(--sans);font-size:12px;color:var(--text);line-height:1.4;font-weight:500">Plain-language brief.<br>Three risks, ranked.</div>
+              </div>
+              <div class="m-card" style="flex:1">
+                <span class="m-tag neutral" style="align-self:flex-start">For Counsel</span>
+                <div style="font-family:var(--sans);font-size:12px;color:var(--text);line-height:1.4;font-weight:500">Annotated original.<br>14 findings, cited.</div>
+              </div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>07</span> · Delivery</div>
+            <h3 class="feature-title">Two artifacts. <em>Always.</em></h3>
+            <p class="feature-desc">A document for you. A document for the lawyer who'll check it. Same engagement, two registers — because legal work has two readers.</p>
+          </div>
+        </article>
+
+        <!-- 08 Voice -->
+        <article class="feature">
+          <div class="feature-mockup"><div class="feature-body" style="gap:16px;justify-content:center;align-items:center">
+              <svg class="wave-svg" viewBox="0 0 200 40" style="width:90%;max-width:320px;height:40px" aria-hidden="true">
+                <g fill="var(--text)">
+                  <rect x="2" y="17" width="2" height="6"/><rect x="8" y="14" width="2" height="12"/>
+                  <rect x="14" y="10" width="2" height="20"/><rect x="20" y="6" width="2" height="28"/>
+                  <rect x="26" y="11" width="2" height="18"/><rect x="32" y="15" width="2" height="10"/>
+                  <rect x="38" y="9" width="2" height="22"/><rect x="44" y="13" width="2" height="14"/>
+                  <rect x="50" y="7" width="2" height="26"/><rect x="56" y="12" width="2" height="16"/>
+                  <rect x="62" y="16" width="2" height="8"/><rect x="68" y="10" width="2" height="20"/>
+                  <rect x="74" y="14" width="2" height="12"/><rect x="80" y="8" width="2" height="24"/>
+                  <rect x="86" y="11" width="2" height="18"/><rect x="92" y="15" width="2" height="10"/>
+                  <rect x="98" y="9" width="2" height="22"/><rect x="104" y="13" width="2" height="14"/>
+                  <rect x="110" y="6" width="2" height="28"/><rect x="116" y="12" width="2" height="16"/>
+                  <rect x="122" y="16" width="2" height="8"/><rect x="128" y="11" width="2" height="18"/>
+                  <rect x="134" y="14" width="2" height="12"/><rect x="140" y="8" width="2" height="24"/>
+                  <rect x="146" y="13" width="2" height="14"/><rect x="152" y="15" width="2" height="10"/>
+                  <rect x="158" y="10" width="2" height="20"/><rect x="164" y="14" width="2" height="12"/>
+                  <rect x="170" y="17" width="2" height="6"/><rect x="176" y="13" width="2" height="14"/>
+                  <rect x="182" y="16" width="2" height="8"/><rect x="188" y="18" width="2" height="4"/>
+                </g>
+              </svg>
+              <div class="m-bubble them" style="max-width:90%;font-style:italic;font-size:13px">"Two-year non-compete, twelve states. Find anything we should push back on."</div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>08</span> · Voice</div>
+            <h3 class="feature-title">Speak to the <em>firm.</em></h3>
+            <p class="feature-desc">Voice in three places — the intake, mid-engagement interruption, and post-delivery Q&amp;A. The interface isn't neutral. It changes what people say.</p>
+          </div>
+        </article>
+
+        <!-- 09 Clawern -->
+        <article class="feature">
+          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
+              <div class="m-row"><span class="m-tag ok">watching</span><span style="color:var(--text);font-family:var(--mono);font-size:11px">~/Documents/Contracts</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot ok"></span><span style="flex:1">SaaS-MSA-Acme.pdf</span><span class="m-tag ok">delivered</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot warn"></span><span style="flex:1">Vendor-DPA-v3.docx</span><span class="m-tag warn">3 flags</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:11px;color:var(--muted)"><span class="m-dot"></span><span style="flex:1">M&amp;A-LOI-redline.pdf</span><span class="m-tag neutral">processing</span></div>
+              <div class="m-row" style="font-family:var(--mono);font-size:10px;color:var(--dim);padding-top:6px;border-top:1px solid var(--hair)"><span style="flex:1">heartbeat · 30 min</span><span>$2.41 / $50.00</span></div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>09</span> · Clawern</div>
+            <h3 class="feature-title">A firm on <em>retainer.</em></h3>
+            <p class="feature-desc">Point it at a folder. It watches, drafts findings, delivers a dual-artifact bundle, and keeps a budget. Optional local mode for documents that can't leave the machine.</p>
+          </div>
+        </article>
+
+        <!-- 10 Precedent Board -->
+        <article class="feature">
+          <div class="feature-mockup">            <div class="feature-body" style="gap:8px">
+              <div class="m-card">
+                <div class="m-row"><span class="m-tag neutral">pattern</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;flex:1;font-weight:500">Auto-renewal w/o notice cap</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--text);font-weight:600">94%</span></div>
+                <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">seen 12× · 8 vendors · last week</div>
+              </div>
+              <div class="m-card">
+                <div class="m-row"><span class="m-tag neutral">pattern</span><span style="color:var(--text);font-family:var(--sans);font-size:11.5px;flex:1;font-weight:500">Indemnification carve-out gap</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--text);font-weight:600">87%</span></div>
+                <div style="font-size:10px;color:var(--dim);font-family:var(--mono)">seen 7× · M&amp;A · jurisdiction-stable</div>
+              </div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <div class="feature-num"><span>10</span> · Precedent</div>
+            <h3 class="feature-title">A firm that <em>remembers.</em></h3>
+            <p class="feature-desc">Significant findings persist across documents. Recurring patterns surface as precedents, scored by relevance, decayed over time, queryable by the next engagement.</p>
+          </div>
+        </article>
+
       </div>
     </div>
-    <div class="sp-lg"></div>
+  </section>
 
-    <!-- ═══════ VIDEO — framed like Vesence ═══════ -->
-    <section class="video-section">
-      <h2 class="video-label r">It is a law firm.<br>Just that the offices are in a Mac Mini.</h2>
-      <div class="video-glow">
-        <div class="video-wrap fog r r1">
-          <div class="video-chrome">
-            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-            <div class="video-chrome-url">lavern.ai</div>
+  <!-- Poetic divider -->
+  <div class="interstitial">
+    <p>The model is not the bottleneck. Context is the bottleneck.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       TL;DR
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section id="tldr">
+    <div class="container">
+      <div class="tldr-head r">
+        <span class="section-tag"><span class="num">03</span> · TL;DR</span>
+        <h2 class="section-title word-reveal">What this <em>actually is.</em></h2>
+      </div>
+      <!-- Mac Mini + glass layers stage (Legora aOS reskin) -->
+      <div class="tldr-stage" id="tldrStage">
+        <!-- Pill nav (left column) -->
+        <div class="tldr-nav" role="tablist" aria-label="Lavern principles">
+          <button class="tldr-pill" data-i="0" role="tab"><span>Architecture</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="1" role="tab"><span>Evidence</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="2" role="tab"><span>Loops</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="3" role="tab"><span>Context</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="4" role="tab"><span>Providers</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="5" role="tab"><span>Clawern</span><span class="plus">+</span></button>
+          <button class="tldr-pill" data-i="6" role="tab"><span>Open Source</span><span class="plus">+</span></button>
+        </div>
+
+        <!-- Stacked visual (right column) -->
+        <div class="tldr-visual" id="tldrVisual">
+          <!-- Optional rendered image override; drop site/img/mac-mini-stack.png
+               and add class="has-image" on .tldr-visual to use it. -->
+          <img class="tldr-visual-img" src="img/mac-mini-stack.png" alt="" onerror="this.remove()">
+
+          <div class="tldr-stack3d" aria-hidden="true">
+            <!-- Mac Mini base, sits at the bottom of the stack -->
+            <div class="tldr-macmini"></div>
+            <!-- Seven glass slabs, each positioned at increasing --z (height). -->
+            <div class="tldr-slab" data-i="0" style="--z:-120px"><span class="slab-label">Architecture</span></div>
+            <div class="tldr-slab" data-i="1" style="--z:-90px"><span class="slab-label">Evidence</span></div>
+            <div class="tldr-slab" data-i="2" style="--z:-60px"><span class="slab-label">Loops</span></div>
+            <div class="tldr-slab" data-i="3" style="--z:-30px"><span class="slab-label">Context</span></div>
+            <div class="tldr-slab" data-i="4" style="--z:0px"><span class="slab-label">Providers</span></div>
+            <div class="tldr-slab" data-i="5" style="--z:30px"><span class="slab-label">Clawern</span></div>
+            <div class="tldr-slab" data-i="6" style="--z:60px"><span class="slab-label">Open Source</span></div>
           </div>
-          <div class="video-container">
-            <video autoplay muted loop playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">
-              <source src="demo.mov" type="video/quicktime">
-              <source src="demo.mp4" type="video/mp4">
-            </video>
+
+          <!-- Body card — floats next to active layer with its description -->
+          <div class="tldr-bodycard" id="tldrBody" aria-live="polite">
+            <h4 id="tldrBodyTitle"></h4>
+            <p id="tldrBodyText"></p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <div class="sp-lg"></div>
-
-    <!-- ═══════ CTA ═══════ -->
-    <section class="cta">
-      <img src="img/cta.jpg" alt="" role="presentation" class="cta-img" loading="lazy">
-      <div class="cta-content">
-        <h2 class="cta-title r"><em>Speak to Us.</em></h2>
-        <a href="mailto:hello@lavern.ai?subject=Knock%20Knock&body=I%E2%80%99d%20like%20to%20see%20a%20demo." class="btn-invite r r1">Knock</a>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       STATS — big counters (Legora ROI reskin)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+      <div class="stats-head r">
+        <span class="section-tag"><span class="num">04</span> · Numbers</span>
+        <h2 class="section-title word-reveal">Built at <em>scale.</em></h2>
       </div>
-    </section>
+      <div class="stats-grid">
+        <div class="stat-cell r">
+          <span class="stat-label">Specialists</span>
+          <div class="stat-num"><span class="count-up" data-target="67">0</span></div>
+          <p class="stat-caption">Senior partners, associates, jurisdictional specialists, dark-pattern auditors — all ready to engage on a single document.</p>
+        </div>
+        <div class="stat-cell r r1">
+          <span class="stat-label">Verification</span>
+          <div class="stat-num"><span class="count-up" data-target="10">0</span><span class="suffix">×</span></div>
+          <p class="stat-caption">Passes through the quality loop before a document reaches the user. One pass produces a draft. Ten produce a deliverable.</p>
+        </div>
+        <div class="stat-cell r r2">
+          <span class="stat-label">Test suite</span>
+          <div class="stat-num"><span class="count-up" data-target="1686">0</span></div>
+          <p class="stat-caption">Automated tests across the codebase — unit, integration, security, fuzz. Open source. Read them. Argue with them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  </main>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       BILLBOARD — brand moment, Times Square
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="billboard" id="billboard">
+    <div class="billboard-frame">
+      <img src="img/billboard.jpg" alt="A Lavern billboard at Times Square — 'Your firm. Amplified.'" loading="lazy" decoding="async">
+    </div>
+    <p class="billboard-cap">Helsinki built. <em>The world reads.</em></p>
+  </section>
 
-  <div class="smoke"></div>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       FAQ
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section id="faq">
+    <div class="container">
+      <div class="faq-head r">
+        <span class="section-tag"><span class="num">05</span> · FAQ</span>
+        <h2 class="section-title word-reveal">Everything <em>else.</em></h2>
+      </div>
+      <div class="faq-list">
 
-  <footer class="footer">
-    <div class="footer-left">
-      <span class="footer-mark">LAVERN</span>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>Is this <em>legal advice?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p><strong>No.</strong> Lavern assists with document design, review, and accessibility. It does not constitute legal advice and does not replace a qualified lawyer. Outputs are dual-artifact for a reason — one document for the operator, one for the counsel who'll check it.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>How is this different from prompting <em>Claude or GPT?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>A single LLM call is one agent guessing. Lavern is a system of agents with evidence requirements, debate, a soul, a knowledge base, and a ten-pass verification loop. Quality lives in the loops — not in any single inference. The model is interchangeable. The architecture is not.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>Where does my <em>document go?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>You choose. Frontier mode sends document text to Anthropic or Mistral (EU sovereign). Local mode runs on-device via Ollama — the document never leaves the machine. Hybrid mode runs a local pass first, anonymizes flagged clauses, then dispatches only those to a frontier model. Provenance is tracked per finding.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>What does it <em>cost?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>The software is free and MIT-licensed. Running it costs whatever your LLM provider charges — typically a few cents to a few dollars per engagement, depending on team size and document length. Local mode is $0. Clawern includes per-document cost forecasting and a hard budget cap.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>Will agents <em>actually argue</em>, or just take turns agreeing?</span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>Making language models truly argue is still an open problem — they're sycophantic by default. We've built structures around it: evidence weight requirements, confidence thresholds, adversarial roles, escalation protocols. It works better than no structure. It's not solved. The "What We're Still Learning" sections of the source are the most interesting parts.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>Can I run it <em>on my own laptop?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>Yes. The CLI runs anywhere Node 20+ runs. Frontier mode needs API keys (Anthropic or Mistral). Local mode needs Ollama and a model like Llama 3 or Qwen 2.5. Clawern is a macOS LaunchAgent / Linux systemd daemon — point it at a folder and walk away.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>What's the <em>license?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>MIT. Fork it, ship it, sell what you build on top, attribute where appropriate. The agent prompts, the debate protocols, the verification pipeline, the precedent board — all of it. Knowledge-base datasets carry their own licenses (CC BY 4.0, CC BY-SA 4.0, CC BY-NC-SA 4.0) — non-commercial restrictions are flagged per-dataset.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false"><span>Why <em>open source?</em></span><span class="faq-toggle">+</span></button>
+          <div class="faq-a"><p>Legal AI shouldn't be a black box. If a system is going to draft, redline, or critique a document with real-world consequences, the operator deserves to read the prompts, audit the loops, and replace the parts they disagree with. The source is available, the ideas are there to be improved on, and the analogy is there to be argued with. That is the point of publishing it.</p></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       CLOSING + footer
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="closing" id="install-bottom">
+    <div class="container-narrow">
+      <h2 class="word-reveal">Read the source.<br><em>Run the firm.</em></h2>
+      <p class="closing-deck r r1">Helsinki, MIT-licensed, eight months of opinions baked in.</p>
+      <div class="cta-row r r2">
+        <a class="btn btn-primary" href="https://github.com/lavern-ai/lavern" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+          Clone on GitHub
+        </a>
+        <button class="install" id="installBottom" type="button" aria-label="Copy install command">
+          <span class="install-prompt">$</span>
+          <span class="install-cmd">curl -fsSL lavern.ai/install.sh | sh</span>
+          <span class="install-copy">Copy</span>
+        </button>
+      </div>
+      <a class="deepdive-link r r3" href="/claw/internal-ref-7f3a9.html">
+        Architecture deep-dive <span class="arrow">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-mark"><span class="mark"></span>Lavern · Helsinki · Paris</div>
+      <div class="footer-links">
+        <a href="/writing/">Writing</a>
+        <a href="/claw/internal-ref-7f3a9.html">Architecture</a>
+        <a href="/terms/">Terms</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="https://github.com/lavern-ai/lavern" rel="noopener">GitHub ↗</a>
+      </div>
     </div>
   </footer>
 
+  <!-- Scroll fog — subtle DOF blur at the bottom of the viewport only -->
+  <div class="scroll-fog bottom" aria-hidden="true"></div>
+
+  <!-- Lavern cursor — dot + blurred trail, difference-blended (matches viz/CustomCursor) -->
+  <div class="cursor-dot" aria-hidden="true"></div>
+  <div class="cursor-trail" aria-hidden="true"></div>
+
   <script>
-    const obs=window.IntersectionObserver
-      ?new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('v');obs.unobserve(x.target)}}),{threshold:.06,rootMargin:'0px 0px -80px 0px'})
-      :null;
-    document.querySelectorAll('.r').forEach(el=>obs?obs.observe(el):el.classList.add('v'));
+    // ──────────────────────────────────────────────────────────────────
+    // Lavern cursor — ports viz/src/components/CustomCursor.tsx
+    // Dot follows instantly; trail lags at lerp 0.12. Both use
+    // mix-blend-mode: difference so they auto-invert against any bg.
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      // Skip on touch devices
+      if (window.matchMedia('(pointer:coarse)').matches) return;
+      var dot = document.querySelector('.cursor-dot');
+      var trail = document.querySelector('.cursor-trail');
+      if (!dot || !trail) return;
 
-    // Word-by-word reveal for pull quote
-    document.querySelectorAll('[data-words]').forEach(el=>{
-      const text=el.textContent;
-      el.innerHTML=text.split(/(\s+)/).map(w=>
-        /^\s+$/.test(w)?w:`<span class="w" style="transition-delay:${0}ms">${w}</span>`
-      ).join('');
-      // Set staggered delays
-      let i=0;
-      el.querySelectorAll('.w').forEach(w=>{w.style.transitionDelay=`${i*70}ms`;i++});
-      // Trigger on scroll
-      const wObs=new IntersectionObserver(e=>{
-        if(e[0].isIntersecting){el.classList.add('revealed');wObs.disconnect()}
-      },{threshold:0.3});
-      wObs.observe(el);
-    });
+      var CLICKABLE = 'a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"]), label[for], summary, .cursor-pointer, .install, .faq-q';
 
-    // Subtle parallax on full-bleed art (desktop only)
-    if(window.innerWidth>768){
-      let t=false;
-      addEventListener('scroll',()=>{
-        if(!t){requestAnimationFrame(()=>{
-          document.querySelectorAll('.hero-img,.statement-img,.cta-img').forEach(img=>{
-            const r=img.parentElement.getBoundingClientRect();
-            const off=(r.top+r.height/2-innerHeight/2)*0.03;
-            img.style.transform=`translateY(${off}px) scale(1.06)`;
-          });
-          t=false;
-        });t=true}
-      },{passive:true});
-    }
+      var mouse = { x: -100, y: -100 };
+      var trailPos = { x: -100, y: -100 };
+      var hovering = false;
+      var visible = false;
 
-    // Autoplay video when visible (iOS Safari needs a nudge)
-    const vid=document.querySelector('.video-container video');
-    if(vid){
-      const vObs=new IntersectionObserver(e=>{
-        if(e[0].isIntersecting){vid.play().catch(()=>{});vObs.disconnect()}
-      },{threshold:0.3});
-      vObs.observe(vid);
-    }
+      function applyStyle(){
+        var vis = visible ? '1' : '0';
+        // Dot — follows mouse instantly, centered (8/2 = 4)
+        dot.style.left = (mouse.x - 4) + 'px';
+        dot.style.top  = (mouse.y - 4) + 'px';
+        dot.classList.toggle('hover', hovering);
+        dot.style.opacity = vis;
 
-    // Quote parallax — rises on scroll, stops before hitting video-label
-    const qWrap=document.querySelector('.art-quote-text');
-    const qText=qWrap&&qWrap.querySelector('.pull-quote');
-    const vLabel=document.querySelector('.video-label');
-    if(qText&&vLabel){
-      addEventListener('scroll',()=>{
-        requestAnimationFrame(()=>{
-          const rect=qWrap.getBoundingClientRect();
-          const progress=(rect.top+rect.height/2-innerHeight/2)/innerHeight;
-          // Text rises as you scroll past — moves UP, never toward video-label
-          const y=10+progress*30;
-          qText.style.transform=`translateY(${y}px)`;
+        // Trail — lags at 0.12, centered (32/2 = 16)
+        trailPos.x += (mouse.x - trailPos.x) * 0.12;
+        trailPos.y += (mouse.y - trailPos.y) * 0.12;
+        trail.style.left = (trailPos.x - 16) + 'px';
+        trail.style.top  = (trailPos.y - 16) + 'px';
+        trail.style.opacity = vis;
+      }
+      function animate(){ applyStyle(); requestAnimationFrame(animate); }
+      requestAnimationFrame(animate);
+
+      document.addEventListener('mousemove', function(e){
+        mouse.x = e.clientX; mouse.y = e.clientY;
+        if (!visible) visible = true;
+      }, { passive: true });
+
+      document.documentElement.addEventListener('mouseleave', function(){
+        visible = false;
+        dot.style.opacity = '0';
+        trail.style.opacity = '0';
+      });
+
+      window.addEventListener('blur', function(){
+        visible = false;
+        dot.style.opacity = '0';
+        trail.style.opacity = '0';
+      });
+
+      document.addEventListener('mouseover', function(e){
+        var t = e.target;
+        if (t && t.closest && t.closest(CLICKABLE)) hovering = true;
+      }, { passive: true });
+      document.addEventListener('mouseout', function(e){
+        var rt = e.relatedTarget;
+        if (!rt || !rt.closest || !rt.closest(CLICKABLE)) hovering = false;
+      }, { passive: true });
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // TL;DR — Mac Mini + glass layers interactivity
+    // Click a pill → corresponding slab activates → body card updates
+    // Auto-cycles on scroll-into-view if nothing manually selected.
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      var PRINCIPLES = [
+        { title: 'A multi-agent legal system, not a chatbot.',
+          text: 'The architecture borrows from law firms — partners, associates, debate, and institutional memory.' },
+        { title: 'Every finding cites evidence.',
+          text: 'Every challenge cites counter-evidence. The orchestrator weighs both and resolves. The audit trail is a side effect.' },
+        { title: 'Defined by its feedback loops.',
+          text: 'Briefing loops. Debate loops. A ten-pass verification loop before anything reaches the user.' },
+        { title: 'Context is the bottleneck.',
+          text: 'The model is not. An intake that asks questions outperforms one that doesn\'t.' },
+        { title: 'Claude or Mistral. Or local.',
+          text: 'Runs on Anthropic or Mistral (EU sovereign). Optional local mode means confidential documents never leave your machine.' },
+        { title: 'A firm on retainer.',
+          text: 'Pointed at a folder, it becomes Clawern — running on a thirty-minute heartbeat with cost forecasting and a hard budget cap.' },
+        { title: 'Open source. MIT-licensed.',
+          text: 'Architecture, agent prompts, debate protocols, precedent board, and verification pipeline — all there to be read, improved, and argued with.' }
+      ];
+
+      var stage = document.getElementById('tldrStage');
+      if (!stage) return;
+      var pills = stage.querySelectorAll('.tldr-pill');
+      var slabs = stage.querySelectorAll('.tldr-slab');
+      var visual = document.getElementById('tldrVisual');
+      var bodyTitle = document.getElementById('tldrBodyTitle');
+      var bodyText = document.getElementById('tldrBodyText');
+
+      function setActive(i){
+        pills.forEach(function(p, idx){ p.classList.toggle('active', idx === i); });
+        slabs.forEach(function(s, idx){ s.classList.toggle('active', idx === i); });
+        if (PRINCIPLES[i]) {
+          bodyTitle.textContent = PRINCIPLES[i].title;
+          bodyText.textContent = PRINCIPLES[i].text;
+        }
+        visual.classList.add('has-active');
+      }
+
+      pills.forEach(function(p, i){
+        p.addEventListener('click', function(){ setActive(i); });
+      });
+      slabs.forEach(function(s, i){
+        s.addEventListener('click', function(){ setActive(i); });
+      });
+
+      // Start with no active state. When section scrolls into view, cycle
+      // through the layers once so the user sees the stack respond.
+      var hasCycled = false;
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting || hasCycled) return;
+          hasCycled = true;
+          var i = 0;
+          var iv = setInterval(function(){
+            setActive(i);
+            i++;
+            if (i >= PRINCIPLES.length) {
+              clearInterval(iv);
+              // Settle on first layer after cycle
+              setTimeout(function(){ setActive(0); }, 400);
+            }
+          }, 380);
         });
-      },{passive:true});
-    }
+      }, { threshold: 0.35 });
+      io.observe(stage);
 
-    // Smooth anchor
-    document.querySelectorAll('a[href^="#"]').forEach(a=>
-      a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}})
-    );
-
-    // Mist — fade out when near bottom of page so footer is visible
-    const smokeEl=document.querySelector('.smoke');
-    if(smokeEl){
-      addEventListener('scroll',()=>{
-        const distFromBottom=document.documentElement.scrollHeight-window.scrollY-window.innerHeight;
-        smokeEl.style.opacity=distFromBottom<200?String(distFromBottom/200):'1';
-      },{passive:true});
-    }
-
-    // Magnetic buttons — pull towards cursor on hover (fine pointer / desktop only)
-    if(matchMedia('(pointer:fine)').matches){
-      document.querySelectorAll('.btn-invite, .login, .footer-link').forEach(btn=>{
-        btn.addEventListener('mousemove',e=>{
-          const r=btn.getBoundingClientRect();
-          const x=e.clientX-r.left-r.width/2;
-          const y=e.clientY-r.top-r.height/2;
-          btn.style.transform=`translate(${x*0.3}px,${y*0.3}px)`;
-          btn.style.transition='transform 0.15s ease-out';
+      // If a pre-rendered image exists, use it instead of the CSS stack.
+      var img = visual.querySelector('.tldr-visual-img');
+      if (img) {
+        img.addEventListener('load', function(){
+          visual.classList.add('has-image');
         });
-        btn.addEventListener('mouseleave',()=>{
-          btn.style.transform='translate(0,0)';
-          btn.style.transition='transform 0.5s var(--ease)';
+        // If naturalWidth is already 0 by now (404), onerror should have fired
+        if (img.complete && img.naturalWidth > 0) {
+          visual.classList.add('has-image');
+        }
+      }
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // Scroll choreography — feature cards + video scale/fade based on
+    // their distance from viewport center. "Pictures appear and reappear"
+    // as you scroll up/down. Pure scroll-linked, no transitions, rAF.
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      var els = [];
+      function collect(){
+        els = Array.prototype.slice.call(
+          document.querySelectorAll('.feature, .video-wrap, .showcase-frame, .billboard-frame')
+        );
+      }
+      function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+      var ticking = false;
+      function update(){
+        ticking = false;
+        var vh = window.innerHeight;
+        var vc = vh / 2; // viewport center y
+        for (var i = 0; i < els.length; i++){
+          var el = els[i];
+          var r = el.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200){
+            // Far outside viewport — park at fade-out state and skip
+            el.style.setProperty('--so', '0');
+            el.style.setProperty('--ss', '.9');
+            el.style.setProperty('--sy', '40px');
+            continue;
+          }
+          var center = r.top + r.height / 2;
+          // d in [-1, 1] approximately: -1 = center is at viewport bottom,
+          // 0 = element is centered in viewport, +1 = center is at top.
+          var d = (center - vc) / vh;
+          var absD = Math.abs(d);
+          // Opacity: peak 1 at center, falls to 0 at |d| ~ 0.7
+          var so = clamp(1.25 - absD * 1.7, 0, 1);
+          // Scale: peak 1 at center, 0.88 at edges
+          var ss = clamp(1 - absD * 0.16, 0.86, 1);
+          // Subtle vertical drift — cards lift slightly as they approach center,
+          // settle to 0, drift up a touch as they leave
+          var sy = d * 18; // px
+          el.style.setProperty('--so', so.toFixed(3));
+          el.style.setProperty('--ss', ss.toFixed(3));
+          el.style.setProperty('--sy', sy.toFixed(1) + 'px');
+        }
+      }
+      function onScroll(){
+        if (!ticking){
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      }
+      collect();
+      update();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', function(){ collect(); update(); }, { passive: true });
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // Word splitter — wraps each visible word in <span class="word">,
+    // preserving inline tags like <em> and <br>. After splitting we add
+    // a cumulative transition-delay to each word so they cascade.
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      function splitWords(el){
+        if (el._wordSplit) return; el._wordSplit = true;
+        function wrap(node){
+          if (node.nodeType === 3) { // text node
+            var parent = node.parentNode;
+            var frag = document.createDocumentFragment();
+            var parts = node.textContent.split(/(\s+)/);
+            parts.forEach(function(part){
+              if (!part) return;
+              if (/^\s+$/.test(part)) {
+                frag.appendChild(document.createTextNode(part));
+              } else {
+                var mask = document.createElement('span');
+                mask.className = 'word-mask';
+                var word = document.createElement('span');
+                word.className = 'word';
+                word.textContent = part;
+                mask.appendChild(word);
+                frag.appendChild(mask);
+              }
+            });
+            parent.replaceChild(frag, node);
+          } else if (node.nodeType === 1 && node.tagName !== 'BR') {
+            // recurse into children (handles <em>, etc.)
+            Array.from(node.childNodes).forEach(wrap);
+          }
+        }
+        Array.from(el.childNodes).forEach(wrap);
+        // Assign cumulative delays
+        var words = el.querySelectorAll('.word');
+        words.forEach(function(w, i){
+          w.style.transitionDelay = (i * 0.06) + 's';
+        });
+      }
+      // Apply to all headlines that should reveal word-by-word
+      document.querySelectorAll('.word-reveal').forEach(splitWords);
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // Mac chrome injection — one window bar per feature mockup
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      var titles = [
+        'briefing.app','staffing.app','debate-board.app','my-page.app',
+        'knowledge-base.app','verification.app','delivery.app',
+        'voice.app','clawern.app','precedent-board.app'
+      ];
+      document.querySelectorAll('.feature-mockup').forEach(function(m, i){
+        if (m.querySelector('.mac-chrome')) return;
+        var c = document.createElement('div');
+        c.className = 'mac-chrome';
+        c.setAttribute('aria-hidden','true');
+        c.innerHTML =
+          '<i class="r"></i><i class="y"></i><i class="g"></i>' +
+          '<span class="stage-title">' +
+            '<span class="live-dot" aria-hidden="true"></span>' +
+            (titles[i]||'lavern.app') +
+          '</span>';
+        m.insertBefore(c, m.firstChild);
+      });
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // Number tween — counts up from 0 to data-target with easeOutCubic
+    // ──────────────────────────────────────────────────────────────────
+    function tweenCounter(el){
+      if (el._tweened) return; el._tweened = true;
+      var target = parseFloat(el.dataset.target);
+      if (isNaN(target)) return;
+      var suffix = el.dataset.suffix || '';
+      var dur = 1400;
+      var t0 = performance.now();
+      function step(now){
+        var p = Math.min((now - t0) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + suffix;
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = target + suffix;
+      }
+      requestAnimationFrame(step);
+    }
+    // Hero counters fire on load (hero is in view immediately)
+    document.querySelectorAll('.hero .count-up').forEach(tweenCounter);
+
+    // Stats section counters — fire when scrolled into view
+    (function(){
+      var grid = document.querySelector('.stats-grid');
+      if (!grid) return;
+      if (!('IntersectionObserver' in window)) {
+        grid.querySelectorAll('.count-up').forEach(tweenCounter);
+        return;
+      }
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting) return;
+          grid.querySelectorAll('.count-up').forEach(tweenCounter);
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.4 });
+      io.observe(grid);
+    })();
+
+    // ──────────────────────────────────────────────────────────────────
+    // Scroll reveal — IntersectionObserver
+    // Adds .v on entrance. For .feature also adds .built (triggers
+    // inner mockup stagger + signature animations).
+    // Also observes .tldr-list / .faq-list / .hero-meta so children
+    // can stagger via their nth-child delays.
+    // ──────────────────────────────────────────────────────────────────
+    (function(){
+      var reveals = document.querySelectorAll('.r');
+      var lists = document.querySelectorAll('.tldr-list, .faq-list, .hero-meta');
+      // Universal "build on scroll" — every element that has a transition
+      // tied to a .v class needs to be observed.
+      var built = document.querySelectorAll(
+        '.word-reveal, .interstitial p, footer, .section-tag, .feature, .feature-caption'
+      );
+
+      function fire(el){
+        if (el.classList.contains('v')) return;
+        el.classList.add('v');
+        if (el.classList.contains('feature')) {
+          setTimeout(function(){ el.classList.add('built'); }, 300);
+        }
+      }
+
+      if (!('IntersectionObserver' in window)) {
+        reveals.forEach(fire);
+        document.querySelectorAll('.feature').forEach(function(f){ f.classList.add('built'); });
+        lists.forEach(fire);
+        built.forEach(fire);
+        return;
+      }
+
+      // Two observers — light reveals fire early (~10% threshold), but
+      // feature cards fire later (35% threshold) so the user is looking
+      // at them when they build.
+      var ioLight = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting) return;
+          fire(e.target);
+          ioLight.unobserve(e.target);
+        });
+      }, { threshold: 0.10, rootMargin: '0px 0px -8% 0px' });
+
+      var ioDeep = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting) return;
+          fire(e.target);
+          ioDeep.unobserve(e.target);
+        });
+      }, { threshold: 0.35, rootMargin: '-12% 0px -12% 0px' });
+
+      reveals.forEach(function(el){ if (!el.classList.contains('v')) ioLight.observe(el); });
+      lists.forEach(function(l){ ioLight.observe(l); });
+      built.forEach(function(el){
+        if (el.classList.contains('feature')) ioDeep.observe(el);
+        else ioLight.observe(el);
+      });
+
+      // Hero headline is in view on load — trigger immediately
+      setTimeout(function(){
+        var hero = document.getElementById('heroHeadline');
+        if (hero) hero.classList.add('v');
+      }, 120);
+    })();
+
+    // Copy install command
+    (function(){
+      var cmd = 'curl -fsSL https://lavern.ai/install.sh | sh';
+      function bind(btn){
+        if (!btn) return;
+        btn.addEventListener('click', function(){
+          var label = btn.querySelector('.install-copy');
+          var original = label ? label.textContent : 'Copy';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(cmd).then(function(){
+              btn.classList.add('copied');
+              if (label) label.textContent = 'Copied';
+              setTimeout(function(){
+                btn.classList.remove('copied');
+                if (label) label.textContent = original;
+              }, 1800);
+            }).catch(function(){});
+          }
+        });
+      }
+      bind(document.getElementById('install'));
+      bind(document.getElementById('installBottom'));
+    })();
+
+    // FAQ accordion
+    (function(){
+      var items = document.querySelectorAll('.faq-item');
+      items.forEach(function(item){
+        var btn = item.querySelector('.faq-q');
+        if (!btn) return;
+        btn.addEventListener('click', function(){
+          var open = item.classList.toggle('open');
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
         });
       });
-    }
-
-    // Custom cursor (desktop only — fine pointer)
-    if(matchMedia('(pointer:fine)').matches){
-      const dot=document.createElement('div');
-      const trail=document.createElement('div');
-      Object.assign(dot.style,{position:'fixed',width:'8px',height:'8px',borderRadius:'50%',background:'#fff',pointerEvents:'none',zIndex:'99999',mixBlendMode:'difference',left:'-100px',top:'-100px',transition:'width 0.2s,height 0.2s,background 0.2s,border 0.2s'});
-      Object.assign(trail.style,{position:'fixed',width:'32px',height:'32px',borderRadius:'50%',background:'rgba(255,255,255,0.12)',filter:'blur(8px)',pointerEvents:'none',zIndex:'99998',mixBlendMode:'difference',left:'-100px',top:'-100px'});
-      document.body.appendChild(dot);
-      document.body.appendChild(trail);
-      const mouse={x:-100,y:-100},tPos={x:-100,y:-100};
-      let hovering=false;
-      document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY},{passive:true});
-      document.addEventListener('mouseover',e=>{
-        hovering=!!e.target.closest('a,button,[role="button"],input,select,textarea,[tabindex]:not([tabindex="-1"]),label[for],summary');
-        if(hovering){dot.style.width='16px';dot.style.height='16px';dot.style.background='transparent';dot.style.border='1.5px solid rgba(255,255,255,0.6)'}
-        else{dot.style.width='8px';dot.style.height='8px';dot.style.background='#fff';dot.style.border='none'}
-      });
-      document.addEventListener('mouseout',()=>{if(!hovering)return;hovering=false;dot.style.width='8px';dot.style.height='8px';dot.style.background='#fff';dot.style.border='none'});
-      (function tick(){
-        tPos.x+=(mouse.x-tPos.x)*0.12;
-        tPos.y+=(mouse.y-tPos.y)*0.12;
-        dot.style.left=(mouse.x-parseInt(dot.style.width)/2)+'px';
-        dot.style.top=(mouse.y-parseInt(dot.style.height)/2)+'px';
-        trail.style.left=(tPos.x-16)+'px';
-        trail.style.top=(tPos.y-16)+'px';
-        requestAnimationFrame(tick);
-      })();
-    }
+    })();
   </script>
+
 </body>
 </html>
