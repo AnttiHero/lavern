@@ -1,5 +1,5 @@
 /**
- * Local Gemma 4 26B end-to-end test against the Warrigal East JV docs.
+ * Local Gemma 4 26B end-to-end test against the Bellrock JV docs.
  *
  * Pipeline:
  *   1. Parse the JV Agreement DOCX → markdown
@@ -30,7 +30,7 @@ const QUESTIONS = `
 
 **Q3.** Hartogen has charged $2.1M of "internal costs" (Perth HO executive remuneration + group insurance) under cl 8.4. Cobaridge believes this duplicates the cl 8.4 management fee (3%/2%). What are Cobaridge's audit and dispute rights and recovery prospects?
 
-**Q4.** Hartogen invokes cl 13 Sole Risk for further Warrigal East feasibility work, claiming the 200% premium recoverable from Cobaridge's production share. Cobaridge says cl 13 was meant for new discoveries, not the known resource. Who has the better construction argument?
+**Q4.** Hartogen invokes cl 13 Sole Risk for further Bellrock feasibility work, claiming the 200% premium recoverable from Cobaridge's production share. Cobaridge says cl 13 was meant for new discoveries, not the known resource. Who has the better construction argument?
 
 **Q5.** A Singapore consortium will acquire 100% of Hartogen. Does this trigger cl 16 change of control? FATA implications? What's Cobaridge's pre-emptive right under cl 16.7?
 
@@ -56,13 +56,13 @@ async function main() {
   console.log(`      OK — ${config.local.defaultModel} loaded.`);
 
   // 2. Parse JV Agreement
-  console.log('[2/4] Parsing Warrigal_East_JV_Agreement.docx…');
-  const jvBytes = readFileSync(join(homedir(), 'Desktop/Warrigal_East_JV_Agreement.docx'));
-  const parsed = await parseDocument(jvBytes, 'Warrigal_East_JV_Agreement.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  console.log('[2/4] Parsing Bellrock_JV_Agreement.docx…');
+  const jvBytes = readFileSync(join(homedir(), 'Desktop/Bellrock_JV_Agreement.docx'));
+  const parsed = await parseDocument(jvBytes, 'Bellrock_JV_Agreement.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   console.log(`      OK — ${parsed.fullText.length} chars extracted.`);
 
   // 3. Build the prompt
-  const system = `You are senior Australian legal counsel advising Cobaridge Resources Limited (40% participant, NON-OPERATOR) on its unincorporated joint venture with Hartogen Metals Limited (60%, Operator) for the Warrigal East Copper-Gold Project, Cobar Superbasin, NSW. JV Agreement dated 14 March 2025. Governing law: NSW. Audience: Cobaridge Board + General Counsel Michelle Tran. Deadline: 5 December 2026 Board meeting.
+  const system = `You are senior Australian legal counsel advising Cobaridge Resources Limited (40% participant, NON-OPERATOR) on its unincorporated joint venture with Hartogen Metals Limited (60%, Operator) for the Bellrock Copper-Gold Project, Cobar Superbasin, NSW. JV Agreement dated 14 March 2025. Governing law: NSW. Audience: Cobaridge Board + General Counsel Michelle Tran. Deadline: 5 December 2026 Board meeting.
 
 The full text of the JV Agreement is provided below. Read the clauses directly. Quote verbatim where you cite them.
 

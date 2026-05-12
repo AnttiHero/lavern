@@ -28,8 +28,8 @@ payload = {
         },
     },
     'documents': [{
-        'id': 'doc-jv-warrigal',
-        'name': 'Warrigal_East_JV_Agreement.docx',
+        'id': 'doc-jv-bellrock',
+        'name': 'Bellrock_JV_Agreement.docx',
         'fullText': text,
         'mimeType': 'text/plain',
         'size': len(text),
