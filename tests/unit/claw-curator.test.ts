@@ -156,7 +156,7 @@ describe('Curator · surface-decision pass', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(
       JSON.stringify({ choices: [{ message: { content: JSON.stringify({
         surface: true,
-        title: '2 critical findings on warrigal_east_jv_v3.docx',
+        title: '2 critical findings on bellrock_jv_v3.docx',
         message: 'Two critical findings on a JV agreement reviewed in the past 24h. Recommend immediate review of penalty + governing-law clauses.',
         severity: 'critical',
         rationale: 'Critical severity in 1 doc; client risk appetite is conservative.',

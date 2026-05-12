@@ -123,7 +123,7 @@ describe('processor · Watchman skip-route authority', () => {
     fs.writeFileSync(fp,
       `JOINT VENTURE AGREEMENT\n\n` +
       `This Joint Venture Agreement is made between Acme Holdings and ` +
-      `Warrigal Resources for the East Tenement project.\n\n` +
+      `Bellrock Minerals for the East Tenement project.\n\n` +
       `1. Contributions\nAcme contributes AUD 5,000,000.\n` +
       `2. Penalty\nLate contribution triggers AUD 500,000/week.\n`.padEnd(900, ' ')
     );

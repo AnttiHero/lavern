@@ -39,14 +39,14 @@ const profile: ClawProfile = {
 const JV_TEXT = `JOINT VENTURE AGREEMENT
 
 This Joint Venture Agreement ("Agreement") is entered into between
-Acme Holdings Pty Ltd ("Acme") and Warrigal East Resources Pty Ltd
-("Warrigal"), each a "Party" and together the "Parties".
+Acme Holdings Pty Ltd ("Acme") and Bellrock Mineral Holdings Pty Ltd
+("Bellrock"), each a "Party" and together the "Parties".
 
 Governing law: New South Wales, Australia.
 
 1. Contributions
    Acme shall contribute AUD 5,000,000 in cash on or before the
-   Commencement Date. Warrigal shall contribute the East Tenement
+   Commencement Date. Bellrock shall contribute the East Tenement
    mining lease at an agreed value of AUD 5,000,000.
 
 2. Penalty for Late Contribution
@@ -73,7 +73,7 @@ Attendees: A. Singh, M. Tran, P. Dube
 
 const NDA_TEXT = `MUTUAL NON-DISCLOSURE AGREEMENT
 
-Between Acme Holdings Pty Ltd and Warrigal East Resources Pty Ltd.
+Between Acme Holdings Pty Ltd and Bellrock Mineral Holdings Pty Ltd.
 Term: 3 years from Effective Date. Governing law: NSW.
 
 1. Confidential Information
@@ -111,7 +111,7 @@ async function testWatchman() {
   banner('TEST 1 · Watchman triage (Ollama)');
 
   const w1 = await timeIt('JV doc', () => watchmanTriage({
-    filename: 'warrigal_east_jv_v3.docx',
+    filename: 'bellrock_jv_v3.docx',
     documentText: JV_TEXT,
     profile,
     localOnly: true,
@@ -172,7 +172,7 @@ async function testReader(watchmanResult: Awaited<ReturnType<typeof watchmanTria
 
   const result = await timeIt('Reader full pass', () => analyzeLocally(
     JV_TEXT,
-    'warrigal_east_jv_v3.docx',
+    'bellrock_jv_v3.docx',
     profile,
     (m) => console.log(`    [reader] ${m}`),
     { precedentBoard: board, watchman: watchmanResult },

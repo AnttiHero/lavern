@@ -3,7 +3,7 @@
  *
  * Sequence:
  *   1. Screen dims to dark overlay
- *   2. Card appears face-down (dark back with marble "W" embossed)
+ *   2. Card appears face-down (dark back with marble "L" embossed)
  *   3. 1.5s pause — light rays emanate from card edges
  *   4. 3D flip reveals the full card
  *   5. Flash of light at flip apex

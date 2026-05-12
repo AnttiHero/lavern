@@ -1,7 +1,7 @@
 /**
  * PacManGame — A polished Pac-Man mini-game for the working screen.
  *
- * The hero is the Lavern "W" — a serif letter that glides through the maze
+ * The hero is the Lavern "L" — a serif letter that glides through the maze
  * eating pellets. Smooth sub-pixel interpolation between grid cells gives
  * buttery 60fps movement. Four colored ghosts with chase/scatter AI.
  *
@@ -444,7 +444,7 @@ export function PacManGame({ onClose }: Props) {
       ctx.font = `bold ${CELL}px "Cormorant Garamond", "Georgia", serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('W', 0, 1);
+      ctx.fillText('L', 0, 1);
 
       ctx.restore();
     }
@@ -517,12 +517,12 @@ export function PacManGame({ onClose }: Props) {
     ctx.textBaseline = 'bottom';
     ctx.fillText(`SCORE  ${scoreRef.current}`, 8, H - 4);
 
-    // Lives as mini Ms
+    // Lives as mini Ls (Lavern brand mark)
     ctx.textAlign = 'right';
     ctx.fillStyle = M_COLOR;
     ctx.font = `bold 12px "Cormorant Garamond", serif`;
     for (let i = 0; i < livesRef.current; i++) {
-      ctx.fillText('W', W - 6 - i * 16, H - 3);
+      ctx.fillText('L', W - 6 - i * 16, H - 3);
     }
 
     // ── Overlay text

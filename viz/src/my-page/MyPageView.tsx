@@ -284,8 +284,8 @@ export default function MyPageView({ onBack }: Props) {
       {/* ── Section 4: Lavern's Soul ──────────────────────────────── */}
       <div style={styles.soulContainer}>
         <div style={styles.soulInner}>
-          {/* Decorative W watermark */}
-          <div style={styles.soulWatermark} aria-hidden="true">W</div>
+          {/* Decorative Lavern L watermark */}
+          <div style={styles.soulWatermark} aria-hidden="true">L</div>
 
           <div style={styles.soulLabel}>Soul</div>
           <h2 style={styles.soulHeading}>

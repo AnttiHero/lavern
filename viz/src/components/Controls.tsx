@@ -48,7 +48,7 @@ export function Controls({
     <div style={styles.container}>
       {/* Left: Title + Status */}
       <div style={styles.leftSection}>
-        <span style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, lineHeight: 1 }}>W</span>
+        <span style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: 300, color: colors.text, lineHeight: 1 }}>L</span>
         <span style={styles.title}>Lavern</span>
         <div
           style={{

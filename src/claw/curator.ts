@@ -221,7 +221,7 @@ Output a single JSON object:
 
 ❌ FORBIDDEN: Generic "review these documents" calls to action. The user knows they need to review them; they want to know WHICH ONE FIRST and WHY.
    BAD:  "Review these documents for potential implications."
-   GOOD: "Warrigal East JV has 2 criticals; recommend opening that one first."
+   GOOD: "Bellrock JV has 2 criticals; recommend opening that one first."
 
 ❌ FORBIDDEN: Listing the client's industry, jurisdiction, or company name as if they were findings. Those are stance, not facts.
 
