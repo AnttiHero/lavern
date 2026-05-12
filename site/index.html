@@ -279,13 +279,6 @@
       .word-reveal .word{opacity:1;transform:none;transition:none}
     }
 
-    /* Interstitial paragraph reveals on scroll */
-    .interstitial p{
-      opacity:0;transform:translateY(24px);
-      transition:opacity 1s var(--ease),transform 1s var(--ease)
-    }
-    .interstitial p.v{opacity:1;transform:translateY(0)}
-
     /* Feature CAPTION children — number / title / desc stagger in
        (was static before). The mockup itself already cascades; now the
        text below the mockup builds too. */
@@ -589,6 +582,37 @@
       transition:box-shadow .6s var(--ease)
     }
     .hero-imac img{display:block;width:100%;height:auto}
+    /* Live demo video locked into the iMac screen area of imac-hero.jpg.
+       Pixel-tuned to the photograph (1600×931): screen runs roughly from
+       y=30 (top bezel) to y=600 (chin), x=320 to x=1280. */
+    .hero-imac-screen{
+      position:absolute;
+      top:3.2%;left:20%;
+      width:60%;height:64.5%;
+      overflow:hidden;
+      background:#0a0908;
+      cursor:pointer
+    }
+    .hero-imac-screen video{
+      width:100%;height:100%;
+      object-fit:cover;display:block;
+      background:#0a0908
+    }
+    .hero-imac-screen-hint{
+      position:absolute;right:12px;bottom:12px;
+      font-family:var(--mono);font-size:8.5px;font-weight:500;
+      letter-spacing:2px;color:rgba(250,248,240,0.92);
+      background:rgba(10,9,8,0.55);
+      padding:5px 10px;border-radius:2px;
+      opacity:0;pointer-events:none;
+      transition:opacity .35s var(--ease);
+      text-transform:uppercase
+    }
+    .hero-imac:hover .hero-imac-screen-hint{opacity:1}
+    .hero-imac-screen.unmuted .hero-imac-screen-hint{display:none}
+    @media(prefers-reduced-motion:reduce){
+      .hero-imac-screen video{display:none}
+    }
     .hero-imac-cap{
       margin-top:20px;text-align:center;
       font-family:var(--mono);font-size:11px;font-weight:500;
@@ -740,60 +764,6 @@
     }
 
     /* Section divider — massive statement, cinematic typographic moment */
-    .interstitial{
-      max-width:1180px;margin:0 auto;
-      padding:clamp(80px,12vw,180px) 32px;
-      text-align:center;position:relative
-    }
-    .interstitial p{
-      font-family:var(--sans);font-weight:500;
-      font-size:clamp(32px,5.2vw,76px);
-      line-height:1.02;letter-spacing:-0.035em;
-      color:var(--text);max-width:18ch;margin:0 auto
-    }
-    .interstitial p em{
-      font-style:italic;font-weight:400;color:var(--muted)
-    }
-    .interstitial p strong{font-weight:500;color:var(--text)}
-    /* Decorative hairlines flanking the statement */
-    .interstitial::before,.interstitial::after{
-      content:'';position:absolute;left:50%;transform:translateX(-50%);
-      width:80px;height:1px;background:var(--text);opacity:.5
-    }
-    .interstitial::before{top:clamp(40px,7vw,120px)}
-    .interstitial::after{bottom:clamp(40px,7vw,120px)}
-    /* No more dashes around the text — we use hairlines instead */
-    .interstitial p::before,.interstitial p::after{content:none}
-    /* Slowly-pulsing dot above the text */
-    .interstitial .accent-dot{
-      display:inline-block;width:8px;height:8px;border-radius:50%;
-      background:#3a7d44;margin-bottom:32px;
-      animation:dotPulse 2.4s ease-in-out infinite;position:relative
-    }
-    .interstitial .accent-dot::after{
-      content:'';position:absolute;inset:-6px;border-radius:50%;
-      border:1px solid #3a7d44;opacity:0;
-      animation:dotRing 2.4s ease-out infinite
-    }
-    @keyframes dotPulse{
-      0%,100%{transform:scale(.85)}
-      50%{transform:scale(1.1)}
-    }
-    @keyframes dotRing{
-      0%{transform:scale(.7);opacity:.7}
-      80%,100%{transform:scale(2.4);opacity:0}
-    }
-    .interstitial .meta-line{
-      margin-top:48px;
-      font-family:var(--mono);font-size:11px;font-weight:500;
-      letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);
-      display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap
-    }
-    .interstitial .meta-line span+span{padding-left:18px;border-left:1px solid var(--hair-strong)}
-    @media(prefers-reduced-motion:reduce){
-      .interstitial .accent-dot,.interstitial .accent-dot::after{animation:none}
-    }
-
     /* ═══════════════════════════════════════════════════════════════════
        SHOWCASE — full-width Mac / iMac shot proving the product is real.
        Sits between the hero and the demo video so the user first reads,
@@ -851,74 +821,6 @@
       max-width:520px;margin-left:auto;margin-right:auto;line-height:1.5
     }
 
-    /* ═══════════════════════════════════════════════════════════════════
-       VIDEO SECTION
-       ═══════════════════════════════════════════════════════════════════ */
-    .video-section{padding-top:clamp(60px,8vw,100px)}
-    .video-head{margin:0 auto clamp(48px,7vw,72px);max-width:840px;text-align:center}
-    .video-glow{position:relative;max-width:1180px;margin:0 auto}
-    .video-wrap{
-      position:relative;
-      background:#0a0908;border-radius:var(--r-xl);overflow:hidden;
-      border:1px solid var(--hair-strong);
-      box-shadow:var(--shadow-xl);
-      /* Scroll-choreographed like .feature */
-      opacity:var(--so, 0);
-      transform:scale(var(--ss, .92));
-      transition:box-shadow .6s var(--ease)
-    }
-    .video-wrap:hover{
-      box-shadow:
-        0 1px 2px rgba(20,19,16,0.05),
-        0 20px 40px rgba(20,19,16,0.10),
-        0 50px 100px rgba(20,19,16,0.14),
-        0 100px 160px rgba(20,19,16,0.10)
-    }
-    .video-wrap video{width:100%;display:block;height:auto;background:#000;border-radius:var(--r-xl);cursor:pointer}
-    /* Custom play overlay — sits over the poster until first click */
-    .video-play{
-      position:absolute;inset:0;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-      background:linear-gradient(180deg,
-        rgba(10,9,8,0) 0%,
-        rgba(10,9,8,0.10) 55%,
-        rgba(10,9,8,0.42) 100%);
-      border:none;cursor:pointer;
-      color:rgba(250,248,240,0.95);
-      font-family:var(--sans);
-      transition:opacity .45s var(--ease),background .45s var(--ease);
-      border-radius:var(--r-xl)
-    }
-    .video-play:hover{background:linear-gradient(180deg,
-      rgba(10,9,8,0.05) 0%,
-      rgba(10,9,8,0.15) 55%,
-      rgba(10,9,8,0.48) 100%)}
-    .video-play svg{
-      width:88px;height:88px;
-      filter:drop-shadow(0 6px 18px rgba(0,0,0,0.45));
-      transition:transform .35s var(--ease)
-    }
-    .video-play:hover svg{transform:scale(1.06)}
-    .video-play-label{
-      font-family:var(--mono);font-size:11px;font-weight:500;
-      letter-spacing:2.4px;text-transform:uppercase;
-      opacity:.92
-    }
-    .video-play-meta{
-      font-family:var(--mono);font-size:9.5px;font-weight:500;
-      letter-spacing:1.8px;text-transform:uppercase;
-      opacity:.58
-    }
-    .video-wrap.playing .video-play{opacity:0;pointer-events:none}
-    @media(max-width:760px){
-      .video-play svg{width:64px;height:64px}
-      .video-play{gap:14px}
-    }
-    .video-cap{
-      margin-top:20px;font-family:var(--mono);font-size:11px;
-      letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
-      text-align:center
-    }
 
     /* ═══════════════════════════════════════════════════════════════════
        FEATURE GRID — 10 boxes with light-paper mockups
@@ -1502,13 +1404,13 @@
     <div class="hero-mist" aria-hidden="true"><span></span><span></span><span></span></div>
     <div class="hero-tag r v"><span class="pulse"></span> Open source · MIT · v0.14.3</div>
     <h1 class="word-reveal" id="heroHeadline">
-      The world's first<br>
-      driverless <em>law firm.</em>
+      One of the most advanced<br>
+      agentic systems in law.<br>
+      <em>Open source. Free.</em>
     </h1>
     <p class="hero-deck r r2 v">
       A multi-agent legal system you can run, read, and rewrite.
       Sixty-seven specialist agents, evidence-backed debate, institutional memory.
-      <strong>Open source. Helsinki-built.</strong>
     </p>
     <div class="cta-row r r3 v">
       <a class="btn btn-primary" href="https://github.com/lavern-ai/lavern" rel="noopener">
@@ -1528,52 +1430,24 @@
       <div class="hero-meta-item"><div class="hero-meta-num">Local</div><div class="hero-meta-label">On-device option</div></div>
     </div>
 
-    <!-- iMac shot lives inside the hero now — first viewport includes the product -->
+    <!-- iMac shot with the demo running live inside the screen — first viewport includes the product -->
     <div class="hero-imac">
-      <img src="img/imac-hero.jpg" alt="Lavern on an iMac — the firm-is-ready intake screen" loading="eager" decoding="async">
+      <img src="img/imac-hero.jpg" alt="Lavern running live on an iMac." loading="eager" decoding="async">
+      <!-- Video overlay locked to the iMac screen area within imac-hero.jpg.
+           Autoplays muted on load (loops ambiently); click anywhere on the
+           screen to unmute. -->
+      <div class="hero-imac-screen" id="heroVideoScreen" role="button" tabindex="0" aria-label="Demo video — click to unmute">
+        <video id="heroVideo" autoplay muted loop playsinline preload="auto" poster="img/atmos-desk-clean.jpg">
+          <source src="demo.mp4" type="video/mp4">
+          <source src="demo.mov" type="video/quicktime">
+        </video>
+        <span class="hero-imac-screen-hint" aria-hidden="true">Click to unmute</span>
+      </div>
     </div>
     <p class="hero-imac-cap">Lavern on your desk — <em>not in a browser tab.</em></p>
   </section>
 
-  <!-- Big statement — the headline thesis of the project -->
-  <div class="interstitial" id="thesis">
-    <span class="accent-dot" aria-hidden="true"></span>
-    <p>One of the most advanced agentic systems in law. <em>Open source. Free.</em></p>
-    <div class="meta-line">
-      <span>MIT licensed</span>
-      <span>67 specialist agents</span>
-      <span>Helsinki built</span>
-    </div>
   </div>
-
-  <!-- ═══════════════════════════════════════════════════════════════════
-       VIDEO
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="video-section" id="demo">
-    <div class="container">
-      <div class="video-head r">
-        <span class="section-tag"><span class="num">01</span> · The demo</span>
-        <h2 class="section-title word-reveal">Watch the firm <em>work.</em></h2>
-      </div>
-      <div class="video-glow r r1">
-        <div class="video-wrap" id="demoVideoWrap">
-          <video id="demoVideo" preload="metadata" poster="img/atmos-desk-clean.jpg" playsinline>
-            <source src="demo.mp4" type="video/mp4">
-            <source src="demo.mov" type="video/quicktime">
-          </video>
-          <button class="video-play" type="button" aria-label="Play the demo video" id="demoPlay">
-            <svg viewBox="0 0 88 88" aria-hidden="true">
-              <circle cx="44" cy="44" r="42.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M36 28 L62 44 L36 60 Z" fill="currentColor"/>
-            </svg>
-            <span class="video-play-label">Watch the demo</span>
-            <span class="video-play-meta">demo.mp4 · ≈ 27 sec</span>
-          </button>
-        </div>
-      </div>
-      <p class="video-cap r r2">A complete engagement, end to end. No edits.</p>
-    </div>
-  </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════
        FEATURES — 10 boxes
@@ -1581,7 +1455,7 @@
   <section id="features">
     <div class="container">
       <div class="features-head r">
-        <span class="section-tag"><span class="num">02</span> · The system</span>
+        <span class="section-tag"><span class="num">01</span> · The system</span>
         <h2 class="section-title word-reveal">Ten parts of a <em>working firm.</em></h2>
         <p class="section-deck">Each one is a feedback loop. None of them are demos.</p>
       </div>
@@ -1791,11 +1665,6 @@
     </div>
   </section>
 
-  <!-- Poetic divider -->
-  <div class="interstitial">
-    <p>The model is not the bottleneck. Context is the bottleneck.</p>
-  </div>
-
   <!-- ═══════════════════════════════════════════════════════════════════
        TL;DR — The Codex
        Editorial three-column layout: spine, entries, building.
@@ -1803,7 +1672,7 @@
   <section id="tldr">
     <div class="container">
       <div class="codex-head r">
-        <span class="section-tag"><span class="num">03</span> · TL;DR</span>
+        <span class="section-tag"><span class="num">02</span> · TL;DR</span>
         <h2 class="section-title word-reveal">What this <em>actually is.</em></h2>
       </div>
 
@@ -1912,7 +1781,7 @@
   <section class="stats-section" id="stats">
     <div class="container">
       <div class="stats-head r">
-        <span class="section-tag"><span class="num">04</span> · Numbers</span>
+        <span class="section-tag"><span class="num">03</span> · Numbers</span>
         <h2 class="section-title word-reveal">Built at <em>scale.</em></h2>
       </div>
       <div class="stats-grid">
@@ -1951,7 +1820,7 @@
   <section id="faq">
     <div class="container">
       <div class="faq-head r">
-        <span class="section-tag"><span class="num">05</span> · FAQ</span>
+        <span class="section-tag"><span class="num">04</span> · FAQ</span>
         <h2 class="section-title word-reveal">Everything <em>else.</em></h2>
       </div>
       <div class="faq-list">
@@ -2117,25 +1986,31 @@
     })();
 
     // ──────────────────────────────────────────────────────────────────
-    // Demo video — custom play overlay swaps in native controls on first
-    // user gesture (iOS-safe). After playing once, controls stick around.
+    // Hero video — autoplays muted on load (looping ambient demo).
+    // Click anywhere on the iMac screen to unmute; subsequent clicks
+    // toggle pause/play.
     // ──────────────────────────────────────────────────────────────────
     (function(){
-      var wrap = document.getElementById('demoVideoWrap');
-      if (!wrap) return;
-      var video = wrap.querySelector('video');
-      var btn   = wrap.querySelector('.video-play');
-      if (!video || !btn) return;
-      function start(){
-        if (wrap.classList.contains('playing')) return;
-        wrap.classList.add('playing');
-        video.setAttribute('controls','');
-        var p = video.play();
-        if (p && typeof p.catch === 'function') p.catch(function(){ /* autoplay blocked → user can hit native play */ });
+      var screen = document.getElementById('heroVideoScreen');
+      if (!screen) return;
+      var video = document.getElementById('heroVideo');
+      if (!video) return;
+      function onClick(){
+        if (video.muted){
+          video.muted = false;
+          try { video.volume = 1; } catch(e){}
+          screen.classList.add('unmuted');
+          // Restart from beginning so the user hears the demo from the top
+          try { video.currentTime = 0; video.play(); } catch(e){}
+        } else if (video.paused){
+          video.play();
+        } else {
+          video.pause();
+        }
       }
-      btn.addEventListener('click', start);
-      video.addEventListener('click', function(){
-        if (!wrap.classList.contains('playing')) start();
+      screen.addEventListener('click', onClick);
+      screen.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onClick(); }
       });
     })();
 
@@ -2191,7 +2066,7 @@
       var els = [];
       function collect(){
         els = Array.prototype.slice.call(
-          document.querySelectorAll('.feature, .video-wrap, .showcase-frame, .billboard-frame, .hero-imac')
+          document.querySelectorAll('.feature, .showcase-frame, .billboard-frame, .hero-imac')
         );
       }
       function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
@@ -2459,7 +2334,7 @@
       // Universal "build on scroll" — every element that has a transition
       // tied to a .v class needs to be observed.
       var built = document.querySelectorAll(
-        '.word-reveal, .interstitial p, footer, .section-tag, .feature, .feature-caption'
+        '.word-reveal, footer, .section-tag, .feature, .feature-caption'
       );
 
       function fire(el){
