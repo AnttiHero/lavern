@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terms of Service — LAVERN</title>
+  <title>Terms of Use. LAVERN</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="description" content="Lavern Terms of Service">
   <meta name="theme-color" content="#080808">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,77 +35,75 @@
     .footer-link{font-size:12px;color:var(--muted);text-decoration:none;transition:color .2s}
     .footer-link:hover{color:var(--text)}
     .footer-right{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+    .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--dark);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
+    .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
 <body>
-  <div class="page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main" class="page">
     <a href="/" class="back">&larr; Back to Lavern</a>
 
-    <h1>Terms of Service</h1>
-    <p class="updated">Last Updated: 20 March 2026</p>
+    <h1>Terms of Use</h1>
+    <p class="updated">Last updated: 13 May 2026</p>
 
-    <p class="intro">These Terms of Service ("Terms") govern your use of Lavern (the "Service"), operated by Lavern, a limited liability company registered in Finland, with its registered address at Helsinki, Finland ("we," "us," or "our").</p>
+    <p class="intro">These Terms govern your use of <strong>lavern.ai</strong> (the "Site") and the <strong>Lavern</strong> open-source software. By accessing the Site or using the software you agree to these Terms. If you do not agree, do not use the Site or the software.</p>
 
-    <p>By accessing or using the Service, you agree to be bound by these Terms. If you do not agree, do not use the Service.</p>
+    <h2>1. What this is</h2>
+    <p>Lavern is open-source software published by Legit AI Oy at <a href="https://github.com/AnttiHero/lavern" rel="noopener">github.com/AnttiHero/lavern</a> under the Apache License, Version 2.0. The Site is a static marketing page describing the software.</p>
+    <p><strong>There is no hosted service on lavern.ai.</strong> No account, no upload, no document processing happens on this domain. To use Lavern, you clone or install it on your own machine. You operate it. Legit AI Oy doesn't host or run it for you.</p>
 
-    <h2>1. Eligibility</h2>
-    <p>You must be at least 18 years old and capable of entering a binding agreement. By using the Service, you represent that you meet these requirements.</p>
+    <h2>2. Not legal advice</h2>
+    <p>Lavern is software. It does not provide legal, financial, tax, regulatory, or professional advice, and it does not create an attorney-client relationship.</p>
+    <p>Output produced by Lavern may be inaccurate, incomplete, outdated, or misleading. You are solely responsible for reviewing, verifying, and exercising professional judgement before relying on any output, especially in client work, filings, transactions, negotiations, or legal advice.</p>
+    <p>If you have a legal problem, talk to a qualified lawyer.</p>
 
-    <h2>2. Account Registration</h2>
-    <p>You may need to create an account to access certain features. You are responsible for maintaining the confidentiality of your credentials and for all activity under your account. You agree to notify us immediately of any unauthorized use.</p>
+    <h2>3. The software</h2>
+    <p>Your use, modification, and distribution of Lavern is governed by the <strong>Apache License, Version 2.0</strong> in the repository, not by these Terms. Apache 2.0 disclaims all warranties, limits all liability, and includes an explicit patent grant from contributors. Read it.</p>
+    <p>The install command shown on the Site (<code>curl -fsSL lavern.ai/install.sh | sh</code>) fetches and runs a shell script. Read it before you run it. By running it, you accept that Legit AI Oy is not liable for any consequence of executing unverified code on your machine.</p>
 
-    <h2>3. Acceptable Use</h2>
-    <p>You agree not to: (a) violate any applicable law or regulation; (b) infringe on the rights of others; (c) upload harmful, abusive, or unlawful content; (d) attempt to gain unauthorized access to the Service or its infrastructure; (e) use the Service for automated scraping, data mining, or similar purposes without our written consent; or (f) interfere with the operation or security of the Service.</p>
+    <h2>4. Trademark</h2>
+    <p>"Lavern" and the Lavern wordmark are trademarks of Legit AI Oy. The Apache License covers the source code and explicitly states (§ 6) that it does not grant rights to the Licensor's trademarks. If you fork Lavern, please rename your fork.</p>
 
-    <h2>4. Intellectual Property</h2>
-    <p>All content, features, and functionality of the Service are owned by us or our licensors and are protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our prior written consent.</p>
+    <h2>5. Acceptable use of the Site</h2>
+    <p>You may not attack, probe, scrape excessively, or otherwise interfere with the Site's availability, attempt to gain unauthorised access, or impersonate Legit AI Oy or Lavern. Standard internet good behaviour.</p>
 
-    <h2>5. User Content</h2>
-    <p>You retain ownership of content you submit to the Service ("User Content"). By submitting User Content, you grant us a non-exclusive, worldwide, royalty-free license to use, store, and display it as necessary to provide and improve the Service. You represent that you have the right to grant this license.</p>
+    <h2>6. Feedback</h2>
+    <p>If you send us feedback, suggestions, ideas, bug reports, or pull requests (by email, GitHub issue, or otherwise), you grant Legit AI Oy a perpetual, irrevocable, worldwide, royalty-free licence to use that feedback for any purpose without obligation to compensate you.</p>
 
-    <h2>6. AI Services Disclaimer</h2>
-    <p>The Service uses artificial intelligence to assist with document design, analysis, and transformation. <strong>The Service does not constitute legal advice.</strong> All output generated by the Service should be reviewed by a qualified legal professional before being relied upon for any legal purpose. We make no representation that AI-generated analysis is complete, correct, or suitable for any particular legal purpose. You acknowledge that AI systems may produce errors, omissions, or inaccuracies, and that you bear sole responsibility for how you use any output from the Service.</p>
+    <h2>7. Privacy</h2>
+    <p>The Site does not collect personal data. See our <a href="/privacy">Privacy Policy</a> for the full statement.</p>
 
-    <h2>7. Fees and Payment</h2>
-    <p>Access to certain features requires payment via billable hours (credit packs) as described on the pricing page. All fees are stated in EUR and are non-refundable except as required by law. We reserve the right to modify pricing with 30 days' notice.</p>
+    <h2>8. Disclaimers</h2>
+    <p>The Site and Lavern are provided <strong>"as is"</strong> and <strong>"as available"</strong> without warranties of any kind, whether express, implied, or statutory. To the maximum extent permitted by Finnish law, Legit AI Oy disclaims all warranties, including implied warranties of merchantability, fitness for a particular purpose, title, non-infringement, accuracy, availability, security, and reliability.</p>
+    <p>We do not warrant that the Site or Lavern will be uninterrupted, error-free, secure, current, complete, or suitable for any particular legal or professional use.</p>
 
-    <h2>8. Termination</h2>
-    <p>We may suspend or terminate your access at our discretion if you violate these Terms. You may terminate your account at any time by deleting your account in the My Page settings, or by contacting us at <a href="mailto:hello@lavern.ai">hello@lavern.ai</a>. Upon termination, your right to use the Service ceases immediately.</p>
+    <h2>9. Limitation of liability</h2>
+    <p>To the maximum extent permitted by Finnish law, Legit AI Oy and its affiliates will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost revenue, lost data, loss of goodwill, business interruption, or substitute services, arising from your use of the Site, the Lavern software, or any output it produces.</p>
+    <p>The Site and Lavern are provided free of charge. To the maximum extent permitted by Finnish law, Legit AI Oy's total aggregate liability arising from these Terms is limited to zero.</p>
 
-    <h2>9. Limitation of Liability</h2>
-    <p>To the maximum extent permitted by law, we are not liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service. Our total aggregate liability shall not exceed the amounts you have paid to us in the 12 months preceding the claim, or EUR 100, whichever is greater.</p>
+    <h2>10. Governing law and disputes</h2>
+    <p>These Terms are governed by the laws of <strong>Finland</strong>, excluding its conflict-of-laws rules. Any dispute will be resolved in the courts of <strong>Helsinki, Finland</strong>.</p>
 
-    <h2>10. Indemnification</h2>
-    <p>You agree to indemnify and hold us harmless from any claims, damages, or expenses arising from your violation of these Terms or your use of the Service.</p>
+    <h2>11. Changes</h2>
+    <p>If we change these Terms, the "Last updated" date above will reflect it. Continued use of the Site after that date means you accept the updated Terms.</p>
 
-    <h2>11. Modifications</h2>
-    <p>We may update these Terms from time to time. Material changes will be communicated via email or prominent notice on the Service at least 30 days before taking effect. Continued use after changes constitutes acceptance.</p>
+    <h2>12. Contact</h2>
+    <p>
+      <strong>Legit AI Oy</strong><br>
+      Fleminginkatu 10 A 1<br>
+      00530 Helsinki, Finland<br>
+      <a href="mailto:hello@lavern.ai">hello@lavern.ai</a>
+    </p>
 
-    <h2>12. Governing Law and Disputes</h2>
-    <p>These Terms are governed by the laws of Finland. Any disputes shall be resolved through the courts of Helsinki, Finland, with first-instance jurisdiction.</p>
-
-    <h2>13. Subprocessors</h2>
-    <p>The Service relies on the following third-party subprocessors to deliver its functionality:</p>
-    <ul>
-      <li><strong>Anthropic</strong> (United States) — AI language model processing</li>
-      <li><strong>Mistral AI</strong> (European Union) — AI language model processing (EU Sovereign option)</li>
-      <li><strong>Stripe</strong> (United States / European Union) — Payment processing</li>
-      <li><strong>Resend</strong> (United States) — Transactional email delivery</li>
-      <li><strong>Plausible Analytics</strong> (European Union) — Privacy-friendly website analytics</li>
-      <li><strong>Netlify</strong> (United States) — Website hosting</li>
-    </ul>
-
-    <h2>14. Contact</h2>
-    <p>For questions about these Terms, contact us at <a href="mailto:hello@lavern.ai">hello@lavern.ai</a>.</p>
-
-  </div>
+  </main>
   <footer class="footer">
     <div class="footer-left">
       <span class="footer-mark">LAVERN</span>
       <a href="/terms" class="footer-link">Terms</a>
       <a href="/privacy" class="footer-link">Privacy</a>
     </div>
-    <div class="footer-right"><a href="#" onclick="event.preventDefault();window.location='mailto:helsinki@lavern.ai'" class="footer-link">Helsinki</a> &nbsp;·&nbsp; <a href="#" onclick="event.preventDefault();window.location='mailto:paris@lavern.ai'" class="footer-link">Paris</a></div>
+    <div class="footer-right"><a href="mailto:hello@lavern.ai" class="footer-link">hello@lavern.ai</a></div>
   </footer>
 </body>
 </html>

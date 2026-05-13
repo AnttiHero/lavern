@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What I Learned Building a Multi-Agent Legal System — Lavern</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="description" content="Eight months building Lavern. The surprises, the failures, and the things that actually worked. On analogies, debate, and what separates a demo from a system.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,18 +49,40 @@
     .lesson-title{font-family:var(--serif);font-size:20px;font-weight:400;color:var(--text);margin-bottom:10px}
     .lesson-body{font-size:15px;color:var(--muted);line-height:1.75}
     .lesson-body strong{color:var(--text);font-weight:600}
-    .footer{text-align:center;padding:48px 0 0;font-size:12px;color:var(--dim)}
-    .footer a{color:var(--muted);text-decoration:none;letter-spacing:1px}
+    .page-nav{display:flex;justify-content:space-between;align-items:center;padding:24px 0 20px;margin-bottom:32px;border-bottom:1px solid var(--border)}
+    .page-nav-brand{font-family:var(--serif);font-size:13px;letter-spacing:6px;color:var(--text);text-transform:uppercase;text-decoration:none;font-weight:400}
+    .page-nav-links{display:flex;gap:24px;font-family:var(--sans);font-size:12px;letter-spacing:0.3px}
+    .page-nav-links a{color:var(--muted);text-decoration:none;transition:color .2s}
+    .page-nav-links a:hover{color:var(--text)}
+    .footer{text-align:center;padding:64px 0 0;font-size:12px;color:var(--dim)}
+    .footer-row{margin-bottom:14px}
+    .footer-row:last-child{margin-bottom:0}
+    .footer a{color:var(--muted);text-decoration:none;letter-spacing:1px;transition:color .2s}
+    .footer a:hover{color:var(--text)}
+    .footer-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;font-size:11px;letter-spacing:.5px}
+    .footer-links .sep{color:var(--dim);opacity:.5}
     .continue{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;margin-top:56px}
     .continue-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
     .continue a{font-family:var(--serif);font-size:20px;font-weight:300;color:var(--text);text-decoration:none;display:block;margin-bottom:6px;transition:color 0.2s}
     .continue a:hover{color:var(--accent)}
     .continue-sub{font-size:13px;color:var(--dim)}
+    .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
+    .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <div class="container">
 
+    <nav class="page-nav" aria-label="Primary">
+      <a href="/" class="page-nav-brand">Lavern</a>
+      <div class="page-nav-links">
+        <a href="/claw/internal-ref-7f3a9.html">Architecture</a>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
+    </nav>
+
+    <main id="main">
 
     <div class="header">
       <div class="header-mark">LAVERN — Writing</div>
@@ -204,8 +227,23 @@
       <div class="continue-sub">The full technical deep-dive. Diagrams, mechanisms, and the reasoning behind the decisions.</div>
     </div>
 
-    <div class="footer">
-      <a href="/">LAVERN</a> &nbsp;·&nbsp; Helsinki · Paris
+    </main>
+
+    <div class="footer" role="contentinfo">
+      <div class="footer-row">
+        <a href="/">LAVERN</a> &nbsp;·&nbsp; Helsinki · Paris
+      </div>
+      <div class="footer-row footer-links">
+        <a href="/">Home</a>
+        <span class="sep">·</span>
+        <a href="/claw/internal-ref-7f3a9.html">Architecture</a>
+        <span class="sep">·</span>
+        <a href="/terms/">Terms</a>
+        <span class="sep">·</span>
+        <a href="/privacy/">Privacy</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
     </div>
 
   </div>

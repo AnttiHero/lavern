@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLAWERN — Your Firm on Retainer</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="description" content="CLAWERN — Autonomous legal document processing. Drop files in a folder. The firm handles the rest.">
   <meta name="theme-color" content="#080808">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -188,10 +189,13 @@
     }
 
     a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--dark);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
+    .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
 <body>
-  <main>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main">
     <section class="hero">
       <img src="crab.jpg" alt="" role="presentation" class="hero-img" loading="eager">
       <div class="fog-top"></div>

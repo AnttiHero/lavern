@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How Lavern Works: Architecture of a Driverless Law Firm</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="description" content="Technical deep-dive into building a driverless law firm. Multi-agent debate, iterative verification, the lighthouse architecture, institutional memory that compounds.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,10 +95,35 @@
     .stats-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 20px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
     .cta-btn{display:inline-block;padding:18px 56px;background:#1a1a1a;color:#e8e0d4;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:14px;letter-spacing:2px;text-transform:uppercase;border-radius:60px;border:1.5px solid rgba(232,132,92,0.3);transition:all 0.3s}
     .cta-btn:hover{background:#E8845C;color:#fff;border-color:#E8845C;transform:translateY(-1px);box-shadow:0 4px 20px rgba(232,132,92,0.3)}
+    .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
+    .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
+    .page-nav{display:flex;justify-content:space-between;align-items:center;padding:24px 0 20px;margin-bottom:48px;border-bottom:1px solid var(--border)}
+    .page-nav-brand{font-family:var(--serif);font-size:13px;letter-spacing:6px;color:var(--text);text-transform:uppercase;text-decoration:none;font-weight:400}
+    .page-nav-links{display:flex;gap:24px;font-family:var(--sans);font-size:12px;letter-spacing:0.3px}
+    .page-nav-links a{color:var(--muted);text-decoration:none;transition:color .2s}
+    .page-nav-links a:hover{color:var(--text)}
+    .page-footer{text-align:center;padding:64px 0 24px;font-size:12px;color:var(--dim);border-top:1px solid var(--border);margin-top:48px}
+    .page-footer-row{margin-bottom:14px}
+    .page-footer-row:last-child{margin-bottom:0}
+    .page-footer a{color:var(--muted);text-decoration:none;letter-spacing:1px;transition:color .2s}
+    .page-footer a:hover{color:var(--text)}
+    .page-footer-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;font-size:11px;letter-spacing:.5px}
+    .page-footer-links .sep{color:var(--dim);opacity:.5}
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <div class="container">
+
+    <nav class="page-nav" aria-label="Primary">
+      <a href="/" class="page-nav-brand">Lavern</a>
+      <div class="page-nav-links">
+        <a href="/writing/">Writing</a>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
+    </nav>
+
+    <main id="main">
 
     <div class="header">
       <div class="header-mark">LAVERN</div>
@@ -910,6 +936,26 @@
     <div style="text-align:center;margin-bottom:48px">
       <a href="mailto:hello@lavern.ai?subject=Knock%20Knock" style="display:inline-block;padding:16px 36px;background:var(--fg);color:var(--bg);font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none;border-radius:100px;transition:opacity .2s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Contact us</a>
     </div>
+
+    </main>
+
+    <footer class="page-footer" role="contentinfo">
+      <div class="page-footer-row">
+        <a href="/">LAVERN</a> &nbsp;·&nbsp; Helsinki · Paris
+      </div>
+      <div class="page-footer-row page-footer-links">
+        <a href="/">Home</a>
+        <span class="sep">·</span>
+        <a href="/writing/">Writing</a>
+        <span class="sep">·</span>
+        <a href="/terms/">Terms</a>
+        <span class="sep">·</span>
+        <a href="/privacy/">Privacy</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
+    </footer>
+
   </div>
 </body>
 </html>
