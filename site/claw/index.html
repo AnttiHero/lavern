@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLAWERN — Your Firm on Retainer</title>
+  <title>Clawern — Your Firm on Retainer</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="description" content="CLAWERN — Autonomous legal document processing. Drop files in a folder. The firm handles the rest.">
   <meta name="theme-color" content="#080808">
@@ -189,12 +189,27 @@
     }
 
     a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    /* Top nav — fixed overlay, sits above the fullscreen hero with a subtle blur */
+    .page-nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:rgba(8,8,8,0.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.06)}
+    .page-nav-brand{font-family:var(--serif);font-size:13px;letter-spacing:6px;color:var(--text);text-transform:uppercase;text-decoration:none;font-weight:400;opacity:.85;transition:opacity .2s}
+    .page-nav-brand:hover{opacity:1}
+    .page-nav-links{display:flex;gap:22px;font-family:var(--sans);font-size:12px;letter-spacing:0.3px}
+    .page-nav-links a{color:var(--muted);text-decoration:none;transition:color .2s}
+    .page-nav-links a:hover{color:var(--text)}
+    @media(max-width:600px){.page-nav{padding:14px 18px}.page-nav-links{gap:14px}}
     .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--dark);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
     .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
   </style>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="page-nav" aria-label="Primary">
+    <a href="/" class="page-nav-brand">Lavern</a>
+    <div class="page-nav-links">
+      <a href="/architecture/">Architecture</a>
+      <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+    </div>
+  </nav>
   <main id="main">
     <section class="hero">
       <img src="crab.jpg" alt="" role="presentation" class="hero-img" loading="eager">
@@ -262,6 +277,8 @@
       <span>by LAVERN</span>
       <span>·</span>
       <a href="/" class="footer-link">lavern.ai</a>
+      <span>·</span>
+      <a href="https://github.com/AnttiHero/lavern" rel="noopener" class="footer-link">github ↗</a>
     </div>
   </footer>
 

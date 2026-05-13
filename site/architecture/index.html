@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Lavern Works — Lavern</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="Technical deep-dive into building a driverless law firm. Multi-agent debate, iterative verification, the lighthouse architecture, institutional memory that compounds.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#FAFAF8;--surface:#fff;--text:#1a1a1a;--muted:#555;--dim:#999;
+      --accent:#E8845C;--gold:#B8860B;--green:#4a7c59;--red:#c45d3e;--blue:#2E5D9C;
+      --border:#e8e5e0;--code-bg:#f5f3f0;
+      --serif:'Cormorant Garamond',Georgia,serif;
+      --sans:'Inter',-apple-system,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.75;-webkit-font-smoothing:antialiased}
+    .container{max-width:740px;margin:0 auto;padding:80px 24px 120px}
+    .header{text-align:center;margin-bottom:80px}
+    .header-mark{font-family:var(--serif);font-size:13px;letter-spacing:8px;color:var(--dim);text-transform:uppercase;margin-bottom:24px}
+    .header h1{font-family:var(--serif);font-size:clamp(34px,5.5vw,56px);font-weight:300;line-height:1.1;margin-bottom:24px}
+    .header h1 em{font-style:italic}
+    .header .subtitle{font-size:17px;color:var(--muted);max-width:580px;margin:0 auto;line-height:1.7}
+    .section{margin-bottom:80px}
+    .section-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+    .section h2{font-family:var(--serif);font-size:30px;font-weight:300;margin-bottom:20px}
+    .section h2 em{font-style:italic}
+    .section h3{font-family:var(--serif);font-size:22px;font-weight:400;margin:36px 0 14px;color:var(--text)}
+    .section p{font-size:15.5px;color:var(--muted);margin-bottom:22px}
+    .section p strong{color:var(--text);font-weight:600}
+    .section p a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(232,132,92,0.3)}
+    .section p a:hover{border-bottom-color:var(--accent)}
+    .diagram{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;margin:36px 0;overflow-x:auto;box-shadow:0 4px 24px rgba(0,0,0,0.06),0 1px 4px rgba(0,0,0,0.04)}
+    .diagram svg{display:block;margin:0 auto}
+    .diagram-caption{text-align:center;font-size:12px;color:var(--dim);margin-top:16px;font-style:italic}
+    .callout{background:var(--code-bg);border-left:3px solid var(--gold);padding:18px 22px;border-radius:0 8px 8px 0;margin:28px 0;font-size:14.5px;color:var(--text);line-height:1.7}
+    .callout strong{color:var(--gold)}
+    .callout.accent{border-left-color:var(--accent)}.callout.accent strong{color:var(--accent)}
+    .callout.blue{border-left-color:var(--blue)}.callout.blue strong{color:var(--blue)}
+    .callout.green{border-left-color:var(--green)}.callout.green strong{color:var(--green)}
+    .callout.red{border-left-color:var(--red)}.callout.red strong{color:var(--red)}
+    .callout.dark{background:#1a1a1a;color:#e8e0d4;border-left-color:var(--accent)}
+    .callout.dark strong{color:var(--accent)}
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:32px 0}
+    .feat{padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
+    .feat-title{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:8px}
+    .feat-desc{font-size:13.5px;color:var(--muted);line-height:1.65}
+    @media(max-width:600px){.features{grid-template-columns:1fr}}
+    .flow-steps{display:flex;gap:0;margin:32px 0;flex-wrap:wrap;justify-content:center}
+    .flow-step{text-align:center;flex:1;min-width:100px;max-width:140px;position:relative}
+    .flow-step::after{content:'\2192';position:absolute;right:-8px;top:20px;color:var(--dim);font-size:18px}
+    .flow-step:last-child::after{content:''}
+    .flow-circle{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px}
+    .flow-label{font-size:12px;font-weight:600;letter-spacing:0.5px;color:var(--text)}
+    .flow-sub{font-size:9px;color:var(--dim);margin-top:3px}
+    .code-block{background:#1a1a1a;color:#e8e0d4;padding:24px 28px;border-radius:10px;font-family:var(--mono);font-size:14px;line-height:1.8;margin:28px 0;overflow-x:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+    .code-block .comment{color:#666}
+    .code-block .cmd{color:#E8845C}
+    .part-divider{text-align:center;padding:72px 0;margin:48px 0}
+    .part-divider-mark{font-family:var(--serif);font-size:12px;letter-spacing:6px;color:var(--dim);text-transform:uppercase;margin-bottom:18px}
+    .part-divider h2{font-family:var(--serif);font-size:clamp(30px,4.5vw,44px);font-weight:300}
+    .part-divider h2 em{font-style:italic}
+    .part-divider p{font-size:16px;color:var(--muted);max-width:520px;margin:14px auto 0}
+    hr{border:none;height:1px;background:var(--border);margin:64px 0}
+    .stats{display:flex;gap:36px;justify-content:center;margin:48px 0;flex-wrap:wrap}
+    .stat{text-align:center}
+    .stat-value{font-size:36px;font-weight:700;font-family:var(--mono);color:var(--text)}
+    .stat-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+    .scenario{background:#1a1a1a;color:#e8e0d4;border-radius:12px;padding:28px 32px;margin:32px 0;box-shadow:0 4px 24px rgba(0,0,0,0.15)}
+    .scenario-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+    .scenario p{color:#e8e0d4;font-size:14.5px;margin-bottom:14px;line-height:1.7}
+    .scenario p:last-child{margin-bottom:0}
+    .scenario strong{color:var(--accent)}
+    .novel{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+    .footer{text-align:center;padding:40px 0;font-size:12px;color:var(--dim);letter-spacing:1px}
+    .footer a{color:var(--muted);text-decoration:none}
+    .product-shot{margin:40px -40px;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--border)}
+    .product-shot img{display:block;width:100%;height:auto}
+    .product-shot-caption{background:var(--surface);padding:16px 24px;font-size:13px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border)}
+    .product-shot-caption strong{color:var(--text);font-weight:600}
+    .product-shot-pair{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:40px 0}
+    .product-shot-pair .product-shot{margin:0}
+    @media(max-width:600px){.product-shot{margin:40px -12px;border-radius:10px}.product-shot-pair{grid-template-columns:1fr}}
+    .pullquote{font-family:var(--serif);font-size:clamp(22px,3.5vw,30px);font-weight:300;line-height:1.4;color:var(--text);text-align:center;padding:48px 20px;margin:48px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .pullquote em{font-style:italic;color:var(--accent)}
+    .intro-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 40px;margin-bottom:48px;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+    .intro-box p{font-size:15.5px;color:var(--muted);margin-bottom:16px}
+    .intro-box p:last-child{margin-bottom:0}
+    .intro-box p strong{color:var(--text);font-weight:600}
+    .stats-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 20px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+    .cta-btn{display:inline-block;padding:18px 56px;background:#1a1a1a;color:#e8e0d4;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:14px;letter-spacing:2px;text-transform:uppercase;border-radius:60px;border:1.5px solid rgba(232,132,92,0.3);transition:all 0.3s}
+    .cta-btn:hover{background:#E8845C;color:#fff;border-color:#E8845C;transform:translateY(-1px);box-shadow:0 4px 20px rgba(232,132,92,0.3)}
+    .skip-link{position:absolute;left:16px;top:-44px;z-index:1000;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:6px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:top .2s ease}
+    .skip-link:focus{top:16px;outline:2px solid var(--accent);outline-offset:2px}
+    .page-nav{display:flex;justify-content:space-between;align-items:center;padding:24px 0 20px;margin-bottom:48px;border-bottom:1px solid var(--border)}
+    .page-nav-brand{font-family:var(--serif);font-size:13px;letter-spacing:6px;color:var(--text);text-transform:uppercase;text-decoration:none;font-weight:400}
+    .page-nav-links{display:flex;gap:24px;font-family:var(--sans);font-size:12px;letter-spacing:0.3px}
+    .page-nav-links a{color:var(--muted);text-decoration:none;transition:color .2s}
+    .page-nav-links a:hover{color:var(--text)}
+    .page-footer{text-align:center;padding:64px 0 24px;font-size:12px;color:var(--dim);border-top:1px solid var(--border);margin-top:48px}
+    .page-footer-row{margin-bottom:14px}
+    .page-footer-row:last-child{margin-bottom:0}
+    .page-footer a{color:var(--muted);text-decoration:none;letter-spacing:1px;transition:color .2s}
+    .page-footer a:hover{color:var(--text)}
+    .page-footer-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;font-size:11px;letter-spacing:.5px}
+    .page-footer-links .sep{color:var(--dim);opacity:.5}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="container">
+
+    <nav class="page-nav" aria-label="Primary">
+      <a href="/" class="page-nav-brand">Lavern</a>
+      <div class="page-nav-links">
+        <a href="/writing/">Writing</a>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
+    </nav>
+
+    <main id="main">
+
+    <div class="header">
+      <div class="header-mark">LAVERN</div>
+      <h1>Architecture of a<br><em>Driverless Law Firm.</em></h1>
+    </div>
+
+    <div class="intro-box">
+      <p>Lavern is an agentic legal architecture. A law firm, staffed with AI agents. It reviews documents, debates risks across a team of diverse "workers." It aims to produce <strong>better documents</strong>, not just do the old stuff faster.</p>
+      <p>It can work like your regular AI tool. You prompt it, it responds. But you can also configure it: create new agents, build agent teams, define the firm's personality. While other tools act like a "junior associate," Lavern aims to be <strong>a law firm</strong>. With agents as workers.</p>
+      <p>And it can work in <strong>autonomous mode</strong>. A miniature law firm living on your computer. A 30-minute heartbeat. You don't need to prompt it. Your data doesn't leave your machine.</p>
+      <p>Lavern is still in an early stage. But the architecture and the ideas are different enough from the current tools that we believe it has the potential to be very influential.</p>
+    </div>
+
+    <div class="product-shot">
+      <img src="img/landing.png" alt="Lavern landing: Your firm is ready. 50+ agent experts across Counsel, Review, and Full Bench tiers." loading="lazy">
+      <div class="product-shot-caption"><strong>Your firm is ready.</strong> Choose your engagement depth: Quick Counsel for a fast opinion, Review for a dedicated team, or Full Bench for every specialist.</div>
+    </div>
+
+    <div class="pullquote">This is a technical deep-dive into building an ambitious legal tech tool that starts from a different analogy. It is not a tool for lawyers. It is a law firm that happens to have offices in your <em>Mac Mini.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                          THE ANALOGY                               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Analogy</div>
+      <h2>New Things Struggle with <em>Old Shapes.</em></h2>
+
+      <p>Analogy is how we make meaning. We encounter something unfamiliar, and the first thing we do is reach for something familiar: <em>this feels like that other thing, so maybe it behaves similarly.</em> Analogy is the engine behind categorization. It's how children learn language and how adults navigate new technology. But analogies can also be cages.</p>
+
+      <p>With genuinely new things, the old analogies are often the wrong ones. The printing press did not immediately reinvent knowledge; the first printed books imitated manuscripts, complete with hand-drawn margins. Early automobiles looked like carriages without horses. The telephone was marketed as a way to broadcast concerts. <strong>New tools tend to imitate old forms</strong> until someone has the nerve to ask what form the tool actually wants to be.</p>
+
+      <p>Most legal AI systems are not designed to change legal work. They are designed to fit into it. Watch the products carefully and you'll see the inherited shapes everywhere: wood panels, lawyers dressed in suits, hierarchies preserved in pixel form. Gold sponsorships and tennis tournaments. The work is done with a new tool, but the underlying analogy is always the same: <strong>"AI as a junior associate"</strong> and <strong>"AI is a tool for lawyers."</strong></p>
+
+      <p>These are reasonable analogies. They are also limiting ones. A junior associate still needs a senior partner. A tool still needs an operator. The system is designed around the human bottleneck rather than around the question of whether it needs to exist.</p>
+
+      <p>We started playing with different analogies. What if the whole firm was staffed with agents? What if the office was in a Mac Mini? What would a self-driving law firm look like?</p>
+
+      <p>2025 was the year of the copilot: AI that suggests, you decide. 2026 is the year of the <strong>agent</strong>: AI that acts. <a href="https://www.kdnuggets.com/openclaw-explained-the-free-ai-agent-tool-going-viral-already-in-2026">OpenClaw</a> proved that a personal AI assistant running on your own hardware could surpass 250,000 GitHub stars in months. Claude Code showed that agentic loops could handle entire implementation workflows.</p>
+
+      <p>The analogy isn't "better cruise control." It's the self-driving car. Cruise control assists a driver. A self-driving car replaces the need for one. Harvey and Legora are cruise control for lawyers: powerful, but someone still has to sit in the seat, hands on the wheel, eyes on the road. Lavern is built from a different analogy.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                       THE HARD QUESTIONS                           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Hard Questions</div>
+      <h2>Three Questions Every Legal AI <em>Has to Answer.</em></h2>
+
+      <p>Before the architecture, before the features: there are three questions that determine whether a legal AI system is serious.</p>
+
+      <h3>Who does the work?</h3>
+      <p>Every other tool waits for you. You prompt it, it responds, you move on.</p>
+      <p>Lavern is different. You can guide the briefing, select the team, choose the workflow, intervene at every gate. But you don't have to. Lavern runs on a <strong>30-minute heartbeat</strong>: always on, always working, always making progress on your matters. It doesn't need you.</p>
+
+      <h3>Where does the data go?</h3>
+      <p>Most AI tools run on frontier models. Great answers, but your client's confidential information is traveling to a third-party server, usually in the US. That's a privilege problem. In some jurisdictions, it's a regulatory problem. In all jurisdictions, it's a trust problem.</p>
+      <p>When you run Lavern in local mode, <strong>the data doesn't go anywhere.</strong> It doesn't leave your machine — not even at triage. The Watchman that decides what each document is and where it should go runs entirely on your hardware in local-only mode; the cloud fallback is suppressed by design. A confidential matter's first line of text never crosses the boundary. When you want more firepower, you choose: <strong>Mistral</strong> (EU, data stays in Europe) or <strong>Claude</strong> (US). You can run the entire firm in EU-only mode with a single toggle.</p>
+      <p>We call this <strong>Ethical Mode</strong>. One switch: all documents processed locally, EU provider when frontier is needed, conservative risk appetite. The firm handles privilege the same way a real firm would: by never letting the data out of the building.</p>
+      <p>And because local processing carries a fraction of the energy cost of frontier inference, your environmental footprint shrinks too.</p>
+
+      <h3>What does it cost?</h3>
+      <p>Confidential documents analyzed locally cost <strong>$0</strong>. Zero. The model runs on your hardware, there is no API call, there is no meter running.</p>
+      <p>For frontier analysis, Lavern forecasts the cost <em>before</em> processing and shows you a budget gauge in real-time. Per-document caps prevent surprises. You set a total retainer budget and the firm stops when it's spent. You see where every dollar goes, which agents used it, and what they produced.</p>
+
+      <div class="callout">
+        <strong>Cost transparency is a design constraint, not a feature.</strong> The system was built this way because the alternative, a bill you can't predict, is the reason clients hate law firms in the first place.
+      </div>
+    </div>
+
+    <div class="pullquote">Most legal AI is built around<br>the old analogy of a BigLaw firm.<br>Lavern is built <em>different.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                          THE IDEAS                                 -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Ideas</div>
+      <h2>The Ideas Behind <em>the Firm.</em></h2>
+
+      <p>Lavern wasn't built by assembling features. It was built from a set of convictions about how AI and law intersect. These are the ideas behind it.</p>
+
+      <p><strong>Agents produce better results in work-like environments.</strong> A single LLM call returns an answer. A team of agents that debate, challenge, and revise each other's work returns a defensible position. When agents operate in structures that mirror real work, with orchestrators compiling output and specialists contributing their perspective, the quality of the result improves in ways that simply scaling the model does not.</p>
+
+      <p><strong>Multiple perspectives are the whole point.</strong> When you have a team of specialists, it becomes trivially easy to look at the same problem from different angles. How does this contract look from the client's perspective? Is it understandable by a non-lawyer? What would an adversary exploit? What would a regulator flag? Adding competencies is as simple as adding agents.</p>
+
+      <p><strong>Law is a context game.</strong> The bottleneck in legal AI is not model quality. Current LLMs do solid legal work when they have rich context. The bottleneck is that most tools send a document to an LLM and hope for the best. Lavern's structured briefing, knowledge base queries, precedent injection, and soul personality all serve the same purpose: giving the agents enough context to do work that actually matters for the specific situation.</p>
+
+      <p><strong>Value is at the edges.</strong> We have little say in how foundational models improve. The middle of the pipeline, the raw LLM inference, is a commodity that gets better on its own schedule. But the edges, intake and output, are where we can always improve. Better briefing. Better document parsing. Different output forms: derivatives, iterations, dual artifacts. The ends are where the product lives, and the ends always get better.</p>
+
+      <div class="diagram">
+        <svg width="560" height="170" viewBox="0 0 560 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ds2_sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+          </defs>
+          <!-- Intake zone (left, green) -->
+          <rect x="10" y="20" width="150" height="110" rx="10" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="2" filter="url(#ds2_sh)"/>
+          <text x="85" y="46" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4a7c59">Intake</text>
+          <text x="85" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Briefing</text>
+          <text x="85" y="84" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Context</text>
+          <text x="85" y="100" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Voice</text>
+          <!-- Middle zone (muted) -->
+          <rect x="190" y="20" width="180" height="110" rx="10" fill="#f5f3f0" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds2_sh)"/>
+          <text x="280" y="50" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#999">LLM Inference</text>
+          <text x="280" y="72" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">Improves on its</text>
+          <text x="280" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">own schedule</text>
+          <!-- Output zone (right, green) -->
+          <rect x="400" y="20" width="150" height="110" rx="10" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="2" filter="url(#ds2_sh)"/>
+          <text x="475" y="46" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4a7c59">Output</text>
+          <text x="475" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Assembly</text>
+          <text x="475" y="84" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Derivatives</text>
+          <text x="475" y="100" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Dual artifacts</text>
+          <!-- Left curved arrow: "you improve this" -->
+          <path d="M85 135 C85 155, 190 155, 190 135" stroke="#4a7c59" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <text x="138" y="160" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#4a7c59">you improve this</text>
+          <!-- Right curved arrow: "you improve this" -->
+          <path d="M370 135 C370 155, 475 155, 475 135" stroke="#4a7c59" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <text x="422" y="160" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#4a7c59">you improve this</text>
+        </svg>
+        <div class="diagram-caption">The edges are where the product lives. We can always improve intake and output. The middle improves on its own.</div>
+      </div>
+
+      <p><strong>Small LLM improvements have disproportionate effect.</strong> When a foundational model gets 2% better at legal reasoning, that improvement multiplies across 50+ agents, through three verification layers, across every workflow. In a multi-agent architecture, incremental model improvements compound across the whole team. The system benefits from that.</p>
+
+      <p><strong>Orchestration is a skill worth mastering.</strong> There is enormous room for customization in how agents are selected, combined, and directed. The NBA2K-style agent builder, the 9 workflow templates, the soul editor, the custom team selection: these exist because orchestration is where the leverage is. But the system also works if you never touch any of it. Write what you want, drop a file, walk away. The defaults are good. The customization is there for those who want it.</p>
+
+      <p><strong>Speech will be the primary prompting mode.</strong> Typing legal questions into a chat box is a 2024 interaction pattern. The natural interface for legal counsel is a conversation. You can talk to partner agents, dictate briefing answers, and control Clawern by voice.</p>
+
+      <p><strong>Law is worth investing in.</strong> If you'd pay $500 to $1,000 per hour for a lawyer, it follows that investing in a thorough AI review is worthwhile. Lavern costs more than a typical AI chatbot. These are serious documents with real consequences. A good agent team running a proper adversarial review costs a few dollars. That's not expensive.</p>
+
+      <p><strong>Truly agentic work happens on local models working tirelessly.</strong> The most powerful form of AI assistance isn't a frontier model that runs once. It's a local model that runs continuously, on your hardware, processing your documents on its own schedule. Clawern lives in your Mac Mini.</p>
+
+      <p><strong>AI works well with loops.</strong> A single pass produces a draft. A loop that checks, revises, and checks again produces a deliverable. The Ralph pattern, named after the agentic coding technique of reading your own past work to improve it, is at the core of everything Lavern does. Agents don't submit work and move on. They submit work, receive critique, revise, and submit again.</p>
+
+      <p><strong>Feedback loops are the most important thing.</strong> More important than model size, agent count, or workflow complexity. Good checking loops, where output is verified against specific criteria and sent back for revision when it fails, are what separate a toy demo from a production system. The three-layer verification pipeline, the debate board, the precedent board's reinforcement scoring: these are all feedback loops. They are what makes the output better.</p>
+    </div>
+
+    <div class="pullquote">You don't need a bigger model.<br>You need more <em>viewpoints.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                       THE ARCHITECTURE                             -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Architecture</div>
+      <h2>Not One Agent. <em>A Firm.</em></h2>
+
+      <p>Most AI legal tools are a single LLM call wrapped in a UI. One prompt in, one answer out. Lavern is modeled on how a real law firm operates: <strong>66 specialist agents and orchestrators</strong> who coordinate through structured debate.</p>
+
+      <p>This follows the orchestrator-worker architecture, but applied to a domain where adversarial reasoning is the entire point. In software engineering, you want agents to converge on the right answer. In law, you want agents to <em>argue until the strongest position wins</em>. That's a different design goal, and it produces different architecture.</p>
+
+      <div class="diagram">
+        <svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="sh1" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter></defs>
+          <rect x="200" y="50" width="160" height="50" rx="25" fill="#E8845C" fill-opacity="0.12" stroke="#E8845C" stroke-width="2" filter="url(#sh1)"/>
+          <text x="280" y="80" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#E8845C">Orchestrator</text>
+          <rect x="0" y="0" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="50" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Reviewer</text><path d="M100 18 L200 62" stroke="#ddd" stroke-width="1.5"/>
+          <rect x="0" y="60" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="50" y="82" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Attacker</text><path d="M100 78 L200 75" stroke="#ddd" stroke-width="1.5"/>
+          <rect x="0" y="120" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="50" y="142" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Synthesizer</text><path d="M100 138 L200 88" stroke="#ddd" stroke-width="1.5"/>
+          <rect x="460" y="0" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="510" y="22" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Verifier</text><path d="M460 18 L360 62" stroke="#ddd" stroke-width="1.5"/>
+          <rect x="460" y="60" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="510" y="82" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Designer</text><path d="M460 78 L360 75" stroke="#ddd" stroke-width="1.5"/>
+          <rect x="460" y="120" width="100" height="36" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#sh1)"/><text x="510" y="142" text-anchor="middle" font-family="Inter" font-size="11" fill="#1a1a1a">Assembler</text><path d="M460 138 L360 88" stroke="#ddd" stroke-width="1.5"/>
+          <text x="280" y="130" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">+ 52 more specialists</text>
+        </svg>
+        <div class="diagram-caption">The orchestrator-worker pattern. Each specialist has a defined role, skill ratings, and personality. The orchestrator dispatches, mediates debate, and assembles the final output.</div>
+      </div>
+
+      <div class="callout">
+        <strong>In practice:</strong> A contract review dispatches a reviewer, an adversarial attacker, a risk assessor, and a synthesizer. The orchestrator manages the debate, resolves conflicts, and produces a coherent output. You watch it happen: agents appear in a live chat room, post findings as speech bubbles, challenge each other, resolve disputes. During processing silences, the system tells you what's happening ("Cross-referencing findings against precedents..."). Not a spinner and a prayer. A team working, and you're watching over their shoulder.
+      </div>
+
+      <h3>Build your own agents.</h3>
+      <p>The built-in specialists cover the common ground: contract risk, dark patterns, IP assignment, non-compete enforceability, regulatory compliance. But every firm has domain expertise that no pre-built agent can match. A maritime law boutique needs different instincts than a tech M&A shop.</p>
+      <p>Lavern includes an <strong>NBA2K-style agent builder</strong>: a three-step wizard (Identity, Face, Stats) where you define a custom agent's name, personality, skill ratings across 8 dimensions, and practice area specializations. Your custom agents join the team alongside the built-in specialists and participate in the same debate process.</p>
+      <p>This is how you encode institutional knowledge as a permanent team member. The senior partner who always catches the termination clause issue? Build an agent with their instincts.</p>
+
+      <div class="product-shot">
+        <img src="img/team.png" alt="Agent team selection: Partner agents with radar charts showing skill profiles across 8 dimensions." loading="lazy">
+        <div class="product-shot-caption"><strong>Your team.</strong> Each agent has skill ratings, a personality, and a specialty. Select who works on your matter.</div>
+      </div>
+
+
+      <h3>The Soul of the firm.</h3>
+      <p>Every real law firm has a culture: how they communicate, what they prioritize, how formal they are. Lavern has a <strong>Soul</strong>: a user-defined firm personality (voice, principles, style, values) that's injected into every agent's system prompt. The Soul shapes how agents write, what they emphasize, and how they resolve ambiguity.</p>
+      <p>A conservative insurance defense firm gets different outputs than a startup-friendly tech boutique, even on the same document. Not because the analysis is different, but because the communication is tailored to what matters to that firm's clients.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                     LAW IS A CONTEXT GAME                          -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Problem</div>
+      <h2>Law Is a <em>Context Game.</em></h2>
+
+      <p>The hardest part of legal analysis isn't reading the document. It's understanding <em>why</em> the client cares.</p>
+
+      <p>A non-compete clause means something different for a Fortune 500 CEO than for a junior developer. An indemnification cap matters differently in a $10M deal versus a $100K engagement. A termination clause that's perfectly standard in Delaware could be unenforceable in California. <strong>Without context, analysis is difficult.</strong></p>
+
+      <h3>The briefing interview.</h3>
+      <p>Lavern starts every engagement with a structured briefing: an LLM-powered interview that builds understanding before any agent touches the document. The interview adapts based on document type, asking about jurisdiction, commercial intent, risk appetite, deal size, and specific concerns. You can choose an interviewer persona. You can answer by voice.</p>
+
+      <p>This context follows the document through every stage of analysis. It shapes which agents are dispatched, what they look for, how they weight their findings, and how they communicate the results.</p>
+
+      <div class="flow-steps">
+        <div class="flow-step"><div class="flow-circle" style="background:rgba(232,132,92,0.1)">📋</div><div class="flow-label">Briefing</div><div class="flow-sub">LLM interview</div></div>
+        <div class="flow-step"><div class="flow-circle" style="background:rgba(184,134,11,0.1)">⚙️</div><div class="flow-label">Strategy</div><div class="flow-sub">Workflow + intensity</div></div>
+        <div class="flow-step"><div class="flow-circle" style="background:rgba(46,93,156,0.1)">👥</div><div class="flow-label">Team</div><div class="flow-sub">Agent selection</div></div>
+        <div class="flow-step"><div class="flow-circle" style="background:rgba(232,132,92,0.15)">⚡</div><div class="flow-label">Working</div><div class="flow-sub">Live debate</div></div>
+        <div class="flow-step"><div class="flow-circle" style="background:rgba(74,124,89,0.1)">📦</div><div class="flow-label">Delivery</div><div class="flow-sub">Dual artifacts</div></div>
+      </div>
+
+      <div class="product-shot">
+        <img src="img/strategy.png" alt="Strategy view: Workflow selection with Roundtable, Deep Review, Stress Test, Quick Counsel options." loading="lazy">
+        <div class="product-shot-caption"><strong>Match the workflow to the matter.</strong> Choose the approach, the depth, and the engine. The router suggests a default. You decide.</div>
+      </div>
+
+      <h3>Talk to a Partner.</h3>
+      <p>For quick questions ("What does this indemnification clause actually mean for us?"), Lavern offers a <strong>Partner consultation</strong> mode. Voice input, conversational flow, spoken response. Like calling a lawyer, except the lawyer has read every contract in your knowledge base and responds in 30 seconds.</p>
+      <p>The interface is a single glowing orb: tap to speak, listen to the answer. No forms. No menus. Just a conversation.</p>
+
+      <div class="product-shot">
+        <img src="img/voice-dispatch.png" alt="Voice Dispatch: Catherine M. Blackwell, Managing Partner Agent, with Press to Speak button on marble background." loading="lazy">
+        <div class="product-shot-caption"><strong>Press to speak.</strong> Catherine Blackwell, Managing Partner Agent. Ask a question, get an answer. Like calling your lawyer.</div>
+      </div>
+
+      <h3>Dual artifacts.</h3>
+      <p>Every engagement produces two outputs.</p>
+      <p>The first is the <strong>user-facing deliverable</strong>: the review, the redesigned document, the analysis. What the client sees and acts on.</p>
+      <p>The second is the <strong>legal review package</strong>: the complete audit trail of every finding, every challenge, every response, every resolution, with evidence citations, confidence scores, and which agent resolved each dispute. The full chain of reasoning, preserved.</p>
+      <p>The first is what you use. The second is what makes the work <em>defensible</em>. If a compliance officer asks "why did you flag this clause?" the answer is traceable. If opposing counsel questions the analysis, the reasoning is documented. Most AI tools can't explain their own output. Lavern produces the explanation as an artifact alongside the output itself.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      SURFACES                                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Experience</div>
+      <h2>Surfaces: How You <em>Experience</em> the Firm.</h2>
+
+      <p>Architecture determines what a system can do. Surfaces determine whether anyone wants to use it. The same analysis pipeline, experienced through a blank screen that loads a PDF after 90 seconds, feels completely different from one where you watch agents debate in real-time.</p>
+
+      <p><strong>The Working View is a team chat room.</strong> When agents work on your document, you see them. Agent starts work. Finding posted. Challenge issued. Response filed. Resolution reached. Each event streams through WebSocket as a speech bubble with the agent's avatar and role. You're watching your firm work. When there's a processing silence, reassurance messages appear: "The team is cross-referencing findings." It's a small thing that changes the entire experience from "is it broken?" to "they're working."</p>
+
+      <p><strong>Tiered output means you always get something.</strong> If the full deliverable assembles perfectly, you get Tier 1: a polished document that passed every quality gate. If assembly struggles but produces something structurally valid, you get Tier 2: a best-effort document with warnings. If assembly fails entirely, you get Tier 3: the raw findings, debate resolutions, and evidence. Even if the session errors mid-analysis, you get Tier 4: whatever findings were posted before the interruption. You never get nothing. Partial results are preserved and labeled.</p>
+
+      <p><strong>Circuit breakers give you control.</strong> You can pause a session mid-analysis (agents stop at the next tool boundary and wait), then resume when you're ready. You can cancel and keep the partial results. You can see budget consumption in real-time and decide whether the additional analysis is worth the cost. The system works for you, not the other way around.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      THE CHECKING LOOPS                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Loops</div>
+      <h2>Iterative Verification: <em>The Ralph Pattern.</em></h2>
+
+      <p>The Ralph Loop, named after the "Ralph Wiggum technique" in agentic coding, is the pattern where an AI reads its own past work to inform improvements. In Claude Code, this means iterating until tests pass. In Lavern, we apply the same principle to legal analysis: <strong>agents review their own output, and other agents review theirs.</strong></p>
+
+      <p>In software, a wrong line of code produces a failing test. In law, a wrong finding produces a wrong decision. A missed liability cap costs money. A false positive wastes a client's time and erodes trust. The cost of error is different. So the verification has to be more thorough.</p>
+
+      <h3>Three layers of checking.</h3>
+
+      <div class="diagram">
+        <svg width="540" height="270" viewBox="0 0 540 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+            <marker id="aE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E8845C"/></marker>
+            <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#B8860B"/></marker>
+            <marker id="aGr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4a7c59"/></marker>
+          </defs>
+          <rect x="50" y="10" width="400" height="64" rx="10" fill="#E8845C" fill-opacity="0.06" stroke="#E8845C" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="36" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#E8845C">Layer 1: Evaluator Gate</text>
+          <text x="250" y="56" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">Each agent's output checked. Fail → revision loop (up to 3x).</text>
+          <path d="M450 42 L480 42 L480 12 L450 12" stroke="#E8845C" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aE)"/>
+          <text x="498" y="30" font-family="Inter" font-size="9" font-weight="500" fill="#E8845C">retry</text>
+          <rect x="50" y="94" width="400" height="64" rx="10" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="120" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#B8860B">Layer 2: Adversarial Debate</text>
+          <text x="250" y="140" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.7">Agents challenge each other. Evidence-weighted resolution.</text>
+          <path d="M50 126 L22 126 L22 42 L50 42" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aG)"/>
+          <text x="8" y="88" font-family="Inter" font-size="9" font-weight="500" fill="#B8860B" transform="rotate(-90,8,88)">escalate</text>
+          <rect x="50" y="178" width="400" height="64" rx="10" fill="#4a7c59" fill-opacity="0.06" stroke="#4a7c59" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="250" y="204" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#4a7c59">Layer 3: 10-Pass Verification Pipeline</text>
+          <text x="250" y="224" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">Self-check, cross-check, score dimensions. Quality gate fail-closed.</text>
+          <path d="M450 210 L480 210 L480 180 L450 180" stroke="#4a7c59" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aGr)"/>
+          <text x="498" y="198" font-family="Inter" font-size="9" font-weight="500" fill="#4a7c59">retry</text>
+          <text x="250" y="264" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#1a1a1a">Output: only if all three layers pass</text>
+        </svg>
+        <div class="diagram-caption">Three nested verification loops. Each layer can send output back for revision. Nothing reaches the user without passing all three.</div>
+      </div>
+
+      <p><strong>Layer 1: The Evaluator Gate.</strong> After each specialist completes its work, an evaluator checks the output against quality criteria: structural validity, evidence requirements, placeholder contamination, process text leakage. If the output fails, it's sent back to the same agent with the evaluator's specific critique. The agent reads its own failed output, understands what's wrong, and tries again. Up to 3 iterations before escalation to the orchestrator.</p>
+
+      <p><strong>Layer 2: Adversarial Debate.</strong> Findings that pass the evaluator gate are posted to the Debate Board. Other agents can challenge them with counter-evidence. The original agent responds. The orchestrator resolves the dispute with a formal resolution that includes the winning position, evidence weight, confidence score, and whether human escalation is needed. This is the legal equivalent of cross-examination: it catches what direct testimony misses.</p>
+
+      <p><strong>Layer 3: The 10-Pass Verification Pipeline.</strong> The assembled output goes through 10 independent verification passes: self-consistency, cross-reference, accuracy, completeness, clarity, placeholder detection (<code>[TBD]</code>, <code>[PLACEHOLDER]</code>), process contamination (<code>"I'll analyze..."</code>), citation validity, and structural integrity. The quality gate <strong>fails closed</strong>: if any pass encounters an API error, the output is rejected rather than silently passing through. No garbage reaches the user.</p>
+
+      <div class="callout blue">
+        <strong>Why three layers?</strong> A single check catches approximately 80% of issues. Two layers catch approximately 95%. Three layers with adversarial debate catch significantly more. The marginal cost of each additional layer is small. The marginal cost of a wrong finding in a legal context is not.
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      GROUNDING: HALLUCINATION PREVENTION           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Ground Truth</div>
+      <h2>Grounding: How Lavern Prevents <em>Hallucination.</em></h2>
+
+      <p>People ask two different questions that sound the same. <strong>"Is it accurate?"</strong> means: are the legal findings correct? <strong>"Does it hallucinate?"</strong> means: does it make things up? Different failure modes need different defenses.</p>
+
+      <p><strong>The source document is the ground truth.</strong> Every finding must include evidence: specific quotes, section references, clause numbers from the actual document. After agents post their findings, a mechanical grounding verifier cross-references every citation against the parsed document. If an agent says "Section 5.2 states X," the system confirms Section 5.2 exists and contains X. This is not LLM judgment. It is string matching. Zero cost, zero ambiguity.</p>
+
+      <div class="diagram">
+        <svg width="700" height="140" viewBox="0 0 700 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="shg" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter></defs>
+          <!-- Finding -->
+          <rect x="20" y="35" width="130" height="65" rx="10" fill="#C1543D" fill-opacity="0.08" stroke="#C1543D" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="85" y="62" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#C1543D">Finding</text>
+          <text x="85" y="80" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">with evidence[]</text>
+          <!-- Arrow -->
+          <line x1="155" y1="67" x2="195" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <defs><marker id="arrowG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker></defs>
+          <!-- Extract -->
+          <rect x="200" y="35" width="130" height="65" rx="10" fill="#ddd" stroke="#bbb" stroke-width="1" filter="url(#shg)"/>
+          <text x="265" y="58" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#555">Extract</text>
+          <text x="265" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">Section refs</text>
+          <text x="265" y="88" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">Quoted text</text>
+          <!-- Arrow -->
+          <line x1="335" y1="67" x2="375" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <!-- Cross-Reference -->
+          <rect x="380" y="35" width="150" height="65" rx="10" fill="#1a5276" fill-opacity="0.06" stroke="#1a5276" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="455" y="58" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a5276">Cross-Reference</text>
+          <text x="455" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">vs. parsed document</text>
+          <text x="455" y="88" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">string matching</text>
+          <!-- Arrow -->
+          <line x1="535" y1="67" x2="575" y2="67" stroke="#bbb" stroke-width="1.5" marker-end="url(#arrowG)"/>
+          <!-- Score -->
+          <rect x="580" y="35" width="100" height="65" rx="10" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5" filter="url(#shg)"/>
+          <text x="630" y="58" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#4a7c59">Score</text>
+          <text x="630" y="78" text-anchor="middle" font-family="Inter" font-size="11" fill="#999">0.0 - 1.0</text>
+        </svg>
+        <div class="diagram-caption">The grounding pipeline. Evidence is extracted from each finding, cross-referenced mechanically against the source document, and scored. No LLM involved.</div>
+      </div>
+
+      <p><strong>Cross-model evaluation catches correlated errors.</strong> The evaluator agent runs on a different model than the specialists. This is deliberate. If all agents run on the same model, they make the same mistakes. The evaluator scores work across 8 dimensions including factual correctness and citation validity, each with auto-fail triggers: a fabricated citation scores 0.0 regardless of everything else.</p>
+
+      <p><strong>Post-assembly fidelity verification.</strong> After the final document is assembled from all agent work, it is checked against what agents actually found. Are the critical findings represented? Are debate resolutions reflected? This catches the subtle failure where assembly "summarizes" findings in a way that distorts them.</p>
+
+      <p><strong>What the user sees.</strong> The delivery includes a confidence score: a weighted average across findings, debate resolutions, verification checks, and evaluator scores. Low-confidence findings are flagged. Grounding scores show how well evidence is rooted in the source document. The full audit trail is in the review package.</p>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      THE DEBATE BOARD                              -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Mechanism</div>
+      <h2>Debate Is a <em>Feature.</em></h2>
+
+      <p>The Debate Board is Lavern's central nervous system. It's shared state where agents interact through a formal protocol: post a finding with evidence, challenge with counter-evidence, respond, resolve.</p>
+
+      <div class="diagram">
+        <svg width="480" height="200" viewBox="0 0 480 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="sh2" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="6" flood-opacity="0.1"/></filter></defs>
+          <rect x="120" y="60" width="240" height="80" rx="12" fill="#B8860B" fill-opacity="0.06" stroke="#B8860B" stroke-width="1.5" filter="url(#sh2)"/>
+          <text x="240" y="85" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#B8860B">Debate Board</text>
+          <text x="240" y="105" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B">findings · challenges · resolutions</text>
+          <text x="240" y="125" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.5">evidence-linked shared state</text>
+          <rect x="0" y="0" width="100" height="32" rx="6" fill="#c45d3e" fill-opacity="0.08" stroke="#c45d3e" stroke-width="1.5" filter="url(#sh2)"/><text x="50" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#c45d3e">Post Finding</text><path d="M100 16 L120 70" stroke="#c45d3e" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <rect x="380" y="0" width="100" height="32" rx="6" fill="#E8845C" fill-opacity="0.08" stroke="#E8845C" stroke-width="1.5" filter="url(#sh2)"/><text x="430" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#E8845C">Challenge</text><path d="M380 16 L360 70" stroke="#E8845C" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <rect x="0" y="160" width="100" height="32" rx="6" fill="#2E5D9C" fill-opacity="0.08" stroke="#2E5D9C" stroke-width="1.5" filter="url(#sh2)"/><text x="50" y="180" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#2E5D9C">Respond</text><path d="M100 176 L120 130" stroke="#2E5D9C" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <rect x="380" y="160" width="100" height="32" rx="6" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="1.5" filter="url(#sh2)"/><text x="430" y="180" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#4a7c59">Resolve</text><path d="M380 176 L360 130" stroke="#4a7c59" stroke-width="1.5" stroke-dasharray="3 2"/>
+        </svg>
+      </div>
+
+      <p>Every finding must cite specific text as evidence. Not "there may be a risk in section 4." Instead: <em>"Section 4.2: 'Company shall indemnify and hold harmless without limitation' creates unlimited liability exposure without a monetary cap."</em> If an agent can't cite evidence, the finding is rejected.</p>
+
+      <p>Every resolution is an <strong>auditable event</strong>: the topic, the winning position, the evidence weight, the confidence score, whether human escalation was recommended, and which agent resolved it. An insurance reviewer or compliance officer can trace any finding back through the full chain of reasoning. The reasoning is traceable.</p>
+
+      <div class="product-shot">
+        <img src="img/working.png" alt="Working view: Live agents analyzing with checklist, findings streaming in with confidence scores." loading="lazy">
+        <div class="product-shot-caption"><strong>You can watch the agents work.</strong> The Ethics Auditor flags an EU AI Act transparency issue. The Plain Language Specialist measures readability. Findings stream in with evidence citations and confidence scores. The checklist on the left tracks progress through each phase.</div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                         WORKFLOWS                                  -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Workflows</div>
+      <h2>Nine Ways to <em>Work.</em></h2>
+
+      <p>Different legal tasks need different approaches. A quick question doesn't need a full adversarial review. A merger agreement doesn't need a 30-second answer. Lavern offers 9 workflow templates that match the complexity of the task to the resources deployed.</p>
+
+      <div class="features">
+        <div class="feat"><div class="feat-title">Quick Counsel</div><div class="feat-desc">Direct question, direct answer. 30 seconds, minimal cost. Like texting a lawyer friend. For ad-hoc questions during a call.</div></div>
+        <div class="feat"><div class="feat-title">Contract Review</div><div class="feat-desc">Full multi-agent review with debate. Risks, deviations from standard, missing protections. The workhorse. For incoming NDAs and MSAs.</div></div>
+        <div class="feat"><div class="feat-title">Adversarial</div><div class="feat-desc">Builder + Attacker + Synthesizer. One writes, another tries to break it, a third reconciles. For documents you plan to sign.</div></div>
+        <div class="feat"><div class="feat-title">Roundtable</div><div class="feat-desc">Parallel expert panel. 5+ specialists analyze simultaneously, then debate and synthesize. For maximum coverage on complex matters.</div></div>
+        <div class="feat"><div class="feat-title">Legal Design</div><div class="feat-desc">Transform legalese into readable documents with legal effect preservation as a design objective. Multi-layer verification checks for meaning drift. Accessibility-first.</div></div>
+        <div class="feat"><div class="feat-title">Full Bench</div><div class="feat-desc">Every available specialist. Maximum team engagement. For M&A agreements, major litigation documents, anything where every clause matters.</div></div>
+        <div class="feat"><div class="feat-title">Pre-Engagement</div><div class="feat-desc">Intake and team selection. LLM-powered briefing builds context before work begins. The system understands the matter before dispatching agents.</div></div>
+        <div class="feat"><div class="feat-title">Verification</div><div class="feat-desc">Standalone document verification pipeline. When you already have a deliverable and need it checked against the original. Pure quality assurance.</div></div>
+        <div class="feat"><div class="feat-title">Tabulate</div><div class="feat-desc">Structured tabular extraction. Cap tables from SHAs, payment schedules from contracts, JV participating interests, lease abstracts, compliance matrices. Output: CSV, DOCX with native tables, HTML preview, or JSON with per-cell source citations.</div></div>
+      </div>
+
+      <div class="diagram">
+        <svg width="560" height="240" viewBox="0 0 560 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ds4_sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+            <marker id="ds4_ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker>
+          </defs>
+          <!-- Document box (left) -->
+          <rect x="10" y="90" width="110" height="50" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds4_sh)"/>
+          <text x="65" y="120" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Document</text>
+          <!-- Arrow to Router -->
+          <path d="M120 115 L180 115" stroke="#bbb" stroke-width="2" marker-end="url(#ds4_ar)"/>
+          <!-- Router box (center) -->
+          <rect x="180" y="78" width="140" height="64" rx="10" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="2" filter="url(#ds4_sh)"/>
+          <text x="250" y="104" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#E8845C">Router</text>
+          <text x="250" y="124" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">type · size · complexity</text>
+          <!-- Fan-out arrows -->
+          <path d="M320 95 L380 40" stroke="#bbb" stroke-width="2" marker-end="url(#ds4_ar)"/>
+          <path d="M320 105 L380 95" stroke="#bbb" stroke-width="2" marker-end="url(#ds4_ar)"/>
+          <path d="M320 120 L380 150" stroke="#bbb" stroke-width="2" marker-end="url(#ds4_ar)"/>
+          <path d="M320 130 L380 205" stroke="#bbb" stroke-width="2" marker-end="url(#ds4_ar)"/>
+          <!-- Quick Counsel (light) -->
+          <rect x="380" y="20" width="170" height="40" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1" filter="url(#ds4_sh)"/>
+          <text x="465" y="38" text-anchor="middle" font-family="Inter" font-size="12" font-weight="500" fill="#999">Quick Counsel</text>
+          <text x="465" y="52" text-anchor="middle" font-family="Inter" font-size="9" fill="#dim">fast · minimal cost</text>
+          <!-- Review / Adversarial (medium) -->
+          <rect x="380" y="76" width="170" height="40" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds4_sh)"/>
+          <text x="465" y="94" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#555">Review · Adversarial</text>
+          <text x="465" y="108" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">standard scrutiny</text>
+          <!-- Roundtable / Legal Design (heavier) -->
+          <rect x="380" y="132" width="170" height="40" rx="10" fill="#1a1a1a" fill-opacity="0.04" stroke="#555" stroke-width="1.5" filter="url(#ds4_sh)"/>
+          <text x="465" y="150" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#1a1a1a">Roundtable · Design</text>
+          <text x="465" y="164" text-anchor="middle" font-family="Inter" font-size="9" fill="#555">parallel experts</text>
+          <!-- Full Bench (heavy, bold) -->
+          <rect x="380" y="188" width="170" height="42" rx="10" fill="#1a1a1a" fill-opacity="0.08" stroke="#1a1a1a" stroke-width="2" filter="url(#ds4_sh)"/>
+          <text x="465" y="207" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#1a1a1a">Full Bench</text>
+          <text x="465" y="222" text-anchor="middle" font-family="Inter" font-size="9" fill="#555">every specialist</text>
+        </svg>
+        <div class="diagram-caption">The router matches document complexity to workflow intensity. Simple questions get fast answers. Critical contracts get the full team.</div>
+      </div>
+
+      <p>The router can auto-select the workflow based on document type, size, and complexity. Or you pick manually. Or Clawern picks for you based on your profile's default intensity.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                          CLAWERN                                   -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="part-divider">
+      <div class="part-divider-mark">CLAWERN</div>
+      <h2>Your Firm <em>on Retainer.</em></h2>
+      <p>Everything above runs interactively. This is what happens when the firm runs without you.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Autonomous Mode</div>
+      <h2>The OpenClaw Moment <em>for Law.</em></h2>
+
+      <div class="product-shot">
+        <img src="img/crab-hero.png" alt="Your Firm Working While You Sleep." loading="lazy">
+      </div>
+
+      <p><a href="https://openclaw.ai">OpenClaw</a> showed that personal AI assistants running on your own hardware could work well. OpenClaw's insight was <strong>meeting users where they already are</strong>: WhatsApp, Telegram, Signal. Your assistant lives in your chat apps, not in a browser tab.</p>
+
+      <p>We wanted to pay homage to ClawdBot, so we call the autonomous version "Clawern." Claw + Lavern. The crab is not accidental.</p>
+
+      <p>Clawern applies the same principle to legal work. It watches your folders, processes documents with the full agent pipeline, learns from past reviews, and pushes findings to your Telegram. The interface isn't a dashboard you check. It's a notification that finds you. A law firm that runs on a Mac Mini (or a Linux server) while you sleep.</p>
+
+      <div class="diagram">
+        <svg width="600" height="110" viewBox="0 0 600 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="bshadow" x="-8%" y="-8%" width="116%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.1"/></filter>
+            <marker id="a1" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 10 6 L 0 11 z" fill="#bbb"/></marker>
+          </defs>
+          <rect x="0" y="20" width="100" height="56" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#bshadow)"/><text x="50" y="53" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Watch</text>
+          <rect x="132" y="20" width="100" height="56" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#bshadow)"/><text x="182" y="53" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Parse</text>
+          <rect x="264" y="20" width="100" height="56" rx="10" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="2" filter="url(#bshadow)"/><text x="314" y="53" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#E8845C">Process</text>
+          <rect x="396" y="20" width="100" height="56" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#bshadow)"/><text x="446" y="53" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Deliver</text>
+          <rect x="518" y="20" width="80" height="56" rx="10" fill="#4a7c59" fill-opacity="0.08" stroke="#4a7c59" stroke-width="2" filter="url(#bshadow)"/><text x="558" y="53" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#4a7c59">Learn</text>
+          <path d="M100 48 L132 48" stroke="#bbb" stroke-width="2" marker-end="url(#a1)"/>
+          <path d="M232 48 L264 48" stroke="#bbb" stroke-width="2" marker-end="url(#a1)"/>
+          <path d="M364 48 L396 48" stroke="#bbb" stroke-width="2" marker-end="url(#a1)"/>
+          <path d="M496 48 L518 48" stroke="#bbb" stroke-width="2" marker-end="url(#a1)"/>
+          <text x="50" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">fs.watch</text>
+          <text x="182" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">PDF / DOCX / MD</text>
+          <text x="314" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">50+ agents</text>
+          <text x="446" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#999">MD + DOCX</text>
+          <text x="558" y="96" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59">precedents</text>
+        </svg>
+      </div>
+
+      <div class="code-block">
+        <span class="cmd">lavern claw init</span>      <span class="comment"># Set up your firm</span><br>
+        <span class="cmd">lavern claw validate</span>  <span class="comment"># Check everything's ready</span><br>
+        <span class="cmd">lavern claw start</span>     <span class="comment"># Start the firm</span><br>
+        <span class="comment"># Drop files. Walk away.</span>
+      </div>
+
+      <p>That's the entire setup. Three commands. The validate step runs a color-coded health report: API key configured, watch paths exist, local model reachable, Telegram connected, email set up, budget allocated. Every check passes or tells you exactly what to fix.</p>
+
+      <div class="product-shot">
+        <img src="img/nightshift.png" alt="Clawern dashboard: The Night Shift. Live activity feed, budget gauge, pause/resume, document processing status." loading="lazy">
+        <div class="product-shot-caption"><strong>The Night Shift.</strong> Live activity feed shows agents reviewing documents in real-time. Budget gauge, pause/resume controls, and per-document status. The Contract Reviewer found 2 critical findings in the MSA. A confidential merger agreement was automatically routed to local analysis.</div>
+      </div>
+    </div>
+
+    <div class="pullquote">Three commands. Drop files.<br><em>Walk away.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                       THE LIGHTHOUSE                                -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">The Lighthouse</div>
+      <h2>A Small Team That <em>Remembers.</em></h2>
+
+      <p>The full debate-and-verify pipeline described above is what Lavern runs when you ask it to. It's also overkill for a small model running unattended on a Mac Mini. Local Gemma can't sustain a six-agent debate the way Opus can; the signal-to-noise of a small model in committee degrades quickly. So Clawern's local mode runs on a different shape.</p>
+
+      <p>We call this the <strong>lighthouse architecture</strong>: continuous, sweeping, quietly competent. Three agents pass work to each other. Each does one thing. The Precedent Board sits between them as shared memory.</p>
+
+      <div class="diagram">
+        <svg width="560" height="200" viewBox="0 0 560 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><filter id="lhsh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+            <marker id="lhar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bbb"/></marker>
+          </defs>
+          <rect x="20" y="40" width="140" height="64" rx="10" fill="#E8845C" fill-opacity="0.10" stroke="#E8845C" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="90" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#E8845C">Watchman</text>
+          <text x="90" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">triage · route · skip</text>
+          <path d="M160 72 L210 72" stroke="#bbb" stroke-width="2" marker-end="url(#lhar)"/>
+          <rect x="210" y="40" width="140" height="64" rx="10" fill="#B8860B" fill-opacity="0.10" stroke="#B8860B" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="280" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#B8860B">Reader</text>
+          <text x="280" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#B8860B" opacity="0.7">per-clause · grounded</text>
+          <path d="M350 72 L400 72" stroke="#bbb" stroke-width="2" marker-end="url(#lhar)"/>
+          <rect x="400" y="40" width="140" height="64" rx="10" fill="#4a7c59" fill-opacity="0.10" stroke="#4a7c59" stroke-width="2" filter="url(#lhsh)"/>
+          <text x="470" y="68" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#4a7c59">Curator</text>
+          <text x="470" y="86" text-anchor="middle" font-family="Inter" font-size="10" fill="#4a7c59" opacity="0.7">portfolio · re-reads</text>
+          <rect x="160" y="140" width="240" height="48" rx="10" fill="#1a1a1a" fill-opacity="0.04" stroke="#555" stroke-width="1.5" filter="url(#lhsh)"/>
+          <text x="280" y="170" text-anchor="middle" font-family="Inter" font-size="13" font-weight="600" fill="#1a1a1a">Precedent Board</text>
+          <path d="M90 104 L240 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <path d="M280 104 L280 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <path d="M470 104 L320 140" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+        </svg>
+        <div class="diagram-caption">Three agents, one shared memory. Each persona does one thing. The board sits between them and gets sharper with use.</div>
+      </div>
+
+      <h3>The Watchman.</h3>
+      <p>Runs first on every document. Reads filename plus the first 1,500 characters. Decides one thing: <strong>is this worth deep-reading?</strong> One structured-output call returns the document type (jv / nda / employment / lease / loan / saas / policy / other), the jurisdiction, the urgency, and the route — <em>skip</em>, <em>quick-scan</em>, or <em>deep-read</em> — plus which Reader template to load.</p>
+      <p>The Watchman has skip authority. A meeting agenda dropped accidentally into the watched folder gets routed to skip; the Reader is never invoked, no further calls burned. For local-only and hybrid modes — and any document the system has flagged confidential — the Watchman runs entirely local: the cloud fallback is suppressed by design, so the document's first line of text never leaves the machine, even at triage time. If both the local model and the cloud model are unavailable, the Watchman falls back to a deterministic heuristic classifier (filename patterns + opening-text scan) so the daemon stays useful even when every LLM is down.</p>
+
+      <h3>The Reader.</h3>
+      <p>Per-clause analysis, the workhorse. The clause-by-clause approach we already used for small models gains three things in lighthouse mode:</p>
+      <p><strong>Document-type templates.</strong> Seven specialist prompts — JV, NDA, employment, lease, loan, SaaS, policy — augment the generic fallback. A JV review asks about cash calls, dilution, reserved matters, and operator-vs-non-operator dynamics. A SaaS review asks about service levels, data ownership, and limitation-of-liability carve-outs. A policy review asks about consumer-law enforceability and dark-pattern language. The Watchman picks the template (or 'other' for anything outside the taxonomy); the Reader loads it.</p>
+      <p><strong>Precedent context injection.</strong> Each per-clause prompt receives the top five matching precedents from the firm's history, tagged <code>[CONFIRMED]</code> or <code>[TENTATIVE]</code>. The model is asked to reconcile its judgment with prior firm position — with the document outranking when the language is plainly inconsistent.</p>
+      <p><strong>Grounding pass.</strong> After the per-clause sweep, a deterministic check strips findings whose evidence cannot be anchored back to clause text via clause-numbers, dollar amounts, percentages, or named references. The "ensure clarity" hallucinations small models occasionally emit don't reach the deliverable.</p>
+
+      <h3>The Curator.</h3>
+      <p>Runs on heartbeat across the portfolio, not per-document. Three jobs:</p>
+      <p><strong>Surface decisions.</strong> Replaces threshold-only notifications ("X documents flagged") with portfolio-aware messages ("recurring penalty-doctrine pattern across 4 vendor agreements — recommend portfolio review"). A heuristic gate skips the LLM call entirely when the folder is quiet.</p>
+      <p><strong>Re-read queue.</strong> When a new precedent enters the board, the Curator decides which past documents look stale in light of the new context — targeted re-reads instead of every-document-every-90-days.</p>
+      <p><strong>Consolidation.</strong> Every six hours, precedents that have been seen five-plus times with consistent verdicts get promoted from "tentative" to "confirmed." The Reader weights confirmed precedents higher in subsequent runs. The board sharpens with use.</p>
+
+      <div class="callout">
+        <strong>Cost on local Ollama:</strong> roughly 24 LLM calls per substantive document — Watchman (1) plus per-clause sweep (~22) plus synthesis (1). The grounding pass is a deterministic regex check — zero LLM calls. <strong>Zero dollars.</strong> Skipped documents cost a single Watchman call. Quick-scan is one synthesis call. The lighthouse pays its own way.
+      </div>
+    </div>
+
+    <div class="pullquote">A lighthouse, not a search party.<br>The team is small.<br>The memory is <em>long.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                    INSTITUTIONAL MEMORY                             -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Institutional Memory</div>
+      <h2>The Firm Gets <em>Smarter.</em></h2>
+
+      <p>This is where Clawern gets interesting.</p>
+
+      <p>Each review's significant findings (RED or YELLOW severity with confidence above 0.7) are automatically indexed into a <strong>Precedent Board</strong>: persistent institutional memory with evidence-linked entries, O(1) dedup indexing, confidence decay, and relevance scoring. Before processing a new document, the board is queried and matching precedents are injected as context into the agent pipeline.</p>
+
+      <div class="diagram">
+        <svg width="520" height="260" viewBox="0 0 520 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ishadow" x="-6%" y="-6%" width="112%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.1"/></filter>
+            <marker id="a2" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 10 6 L 0 11 z" fill="#B8860B"/></marker>
+            <marker id="a2g" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 10 6 L 0 11 z" fill="#bbb"/></marker>
+          </defs>
+          <rect x="150" y="20" width="220" height="56" rx="10" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="2" filter="url(#ishadow)"/><text x="260" y="53" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#E8845C">Process Document</text>
+          <path d="M260 76 L260 108" stroke="#bbb" stroke-width="2" marker-end="url(#a2g)"/>
+          <rect x="150" y="108" width="220" height="48" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ishadow)"/><text x="260" y="137" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="#1a1a1a">Extract Findings</text>
+          <path d="M260 156 L260 188" stroke="#B8860B" stroke-width="2" marker-end="url(#a2)"/>
+          <rect x="110" y="188" width="300" height="52" rx="10" fill="#B8860B" fill-opacity="0.07" stroke="#B8860B" stroke-width="2" filter="url(#ishadow)"/><text x="260" y="219" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#B8860B">Precedent Board</text>
+          <path d="M410 214 L460 214 L460 48 L370 48" stroke="#B8860B" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a2)"/>
+          <rect x="440" y="118" width="80" height="22" rx="4" fill="#FAFAF8"/><text x="480" y="133" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#B8860B">inject context</text>
+        </svg>
+        <div class="diagram-caption">The intelligence loop. Findings flow down into the Precedent Board; context flows back up into future processing. The firm compounds knowledge over time.</div>
+      </div>
+
+      <p>The same Ralph Loop pattern that powers iterative verification now operates <strong>across time</strong>: the firm reads its own past analysis to inform future work. A liability cap pattern found in an NDA in January informs the review of a different client's MSA in March. Automatically. No human has to remember.</p>
+
+      <p>Precedents have confidence decay (old patterns lose weight unless reinforced by new findings), archival (deprecated entries are compacted to keep the active set lean), and effectiveness scoring (tracked via exponential moving average over outcomes). The precedent board evolves over time.</p>
+
+      <h3>Tentative → confirmed.</h3>
+      <p>Every precedent has a lifecycle. New patterns enter as <em>tentative</em> — the firm has noticed the issue once but hasn't seen it enough times to settle. After a precedent recurs five-plus times with consistent verdicts, the Curator promotes it to <strong>confirmed</strong>. Confirmed precedents are weighted more heavily in subsequent Reader runs: the model is told <em>"the firm has settled on this position across multiple matters; weight it heavily unless the document plainly contradicts."</em> Tentative precedents are treated as hypotheses to test against the document. Both feed the Reader; neither overrides the source text.</p>
+
+      <p>Where the board only decayed before, it now also <em>reinforces</em>. Use sharpens it.</p>
+
+      <h3>Change detection.</h3>
+      <p>When a document changes and gets re-reviewed, Clawern doesn't start from zero. It compares the new findings to the previous review and shows the delta: <strong>"+3 new, -1 resolved, ~2 changed."</strong> The diff is written to the delivery bundle and shown on the dashboard. Re-reviews become useful instead of a full re-read.</p>
+
+      <div class="product-shot">
+        <img src="img/memory.png" alt="Session memory: What your firm has learned. Findings, resolutions, and patterns accumulating over time." loading="lazy">
+        <div class="product-shot-caption"><strong>What your firm has learned.</strong> Knowledge accumulates as agents work. Findings, resolutions, and patterns emerge across engagements. The firm remembers what it learned last month.</div>
+      </div>
+
+      <h3>Scheduled re-review — and targeted re-review.</h3>
+      <p>Real law firms don't only review documents when they change. They review contracts on a schedule: every 90 days, every quarter, before renewal dates. Clawern supports this natively. Set a review interval, and the heartbeat timer marks documents as stale when they're due. The existing staleness pipeline picks them up and processes them automatically.</p>
+      <p>The lighthouse adds a second trigger. When a new precedent enters the board, the Curator decides which past documents look stale <em>in light of the new context</em> and queues just those — targeted re-reads instead of every-document-every-90-days. A new pattern around penalty-doctrine? Only the four contracts that had penalty clauses get re-read. The rest stay quiet. The firm gets sharper without thrashing.</p>
+
+    </div>
+
+    <div class="pullquote">The firm reads its own past analysis<br>to inform <em>future work.</em></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                       REACH & VOICE                                -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Reach</div>
+      <h2>The Firm <em>Finds You.</em></h2>
+
+      <p>Following OpenClaw's multi-channel philosophy, Clawern pushes findings to every surface the user inhabits:</p>
+
+      <div class="features">
+        <div class="feat"><div class="feat-title">Telegram Bot</div><div class="feat-desc">Two-way control. Get alerts, check status, pause processing, retry documents. All from your phone, via chat. Long polling, no public URL needed.</div></div>
+        <div class="feat"><div class="feat-title">Email Alerts</div><div class="feat-desc">Critical findings, failures, budget exhaustion sent via Resend. Weekly digest with documents processed, findings summary, cost, precedents learned.</div></div>
+        <div class="feat"><div class="feat-title">Voice Dispatch</div><div class="feat-desc">"What's the status?" from your phone. Web Speech API input, keyword routing (no LLM cost), spoken response via SpeechSynthesis. The firm in your pocket.</div></div>
+        <div class="feat"><div class="feat-title">WebSocket Dashboard</div><div class="feat-desc">Real-time event streaming. 9 event types with late-join replay. See agents working, findings posted, debates resolved. Not a polling page: a live feed.</div></div>
+      </div>
+
+
+      <div class="diagram">
+        <svg width="480" height="320" viewBox="0 0 480 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ds3_sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="5" flood-opacity="0.1"/></filter>
+          </defs>
+          <!-- Center hub -->
+          <rect x="168" y="120" width="144" height="64" rx="32" fill="#E8845C" fill-opacity="0.12" stroke="#E8845C" stroke-width="2" filter="url(#ds3_sh)"/>
+          <text x="240" y="148" text-anchor="middle" font-family="Inter" font-size="15" font-weight="700" fill="#E8845C">Daemon</text>
+          <text x="240" y="168" text-anchor="middle" font-family="Inter" font-size="10" fill="#E8845C" opacity="0.7">Clawern</text>
+          <!-- Telegram (top) -->
+          <rect x="185" y="10" width="110" height="38" rx="10" fill="#4a7c59" fill-opacity="0.1" stroke="#4a7c59" stroke-width="2" filter="url(#ds3_sh)"/>
+          <text x="240" y="34" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#4a7c59">Telegram</text>
+          <path d="M240 48 L240 120" stroke="#4a7c59" stroke-width="1.5"/>
+          <!-- Email (top-right) -->
+          <rect x="360" y="50" width="110" height="38" rx="10" fill="#2E5D9C" fill-opacity="0.1" stroke="#2E5D9C" stroke-width="2" filter="url(#ds3_sh)"/>
+          <text x="415" y="74" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#2E5D9C">Email</text>
+          <path d="M360 69 L312 130" stroke="#2E5D9C" stroke-width="1.5"/>
+          <!-- Voice Dispatch (right) -->
+          <rect x="370" y="135" width="110" height="38" rx="10" fill="#E8845C" fill-opacity="0.1" stroke="#E8845C" stroke-width="2" filter="url(#ds3_sh)"/>
+          <text x="425" y="159" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#E8845C">Voice Dispatch</text>
+          <path d="M370 154 L312 152" stroke="#E8845C" stroke-width="1.5"/>
+          <!-- WebSocket (bottom-right) -->
+          <rect x="350" y="230" width="110" height="38" rx="10" fill="#B8860B" fill-opacity="0.1" stroke="#B8860B" stroke-width="2" filter="url(#ds3_sh)"/>
+          <text x="405" y="254" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#B8860B">WebSocket</text>
+          <path d="M350 249 L300 184" stroke="#B8860B" stroke-width="1.5"/>
+          <!-- Webhook (bottom) -->
+          <rect x="185" y="260" width="110" height="38" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds3_sh)"/>
+          <text x="240" y="284" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#999">Webhook</text>
+          <path d="M240 260 L240 184" stroke="#bbb" stroke-width="1.5"/>
+          <!-- macOS Notify (bottom-left) -->
+          <rect x="10" y="230" width="110" height="38" rx="10" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds3_sh)"/>
+          <text x="65" y="254" text-anchor="middle" font-family="Inter" font-size="12" font-weight="600" fill="#999">macOS Notify</text>
+          <path d="M120 249 L180 184" stroke="#bbb" stroke-width="1.5"/>
+        </svg>
+        <div class="diagram-caption">The firm finds you. Findings flow from the daemon to every surface you inhabit.</div>
+      </div>
+
+      <h3>Portfolio Intelligence.</h3>
+      <p>Clawern also aggregates findings across your entire portfolio. Total findings by severity, top document types, highest-risk documents, recurring patterns from the Precedent Board, and budget utilization.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                      PRODUCTION HARDENED                           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Production</div>
+      <h2>Built to <em>Run.</em></h2>
+
+      <p>A law firm can't crash. It can't lose data. It can't expose confidential information in a notification. It can't silently stop watching for new documents. These are the basics.</p>
+
+      <div class="features">
+        <div class="feat"><div class="feat-title">1,695 Tests</div><div class="feat-desc">108 test files. Unit tests, integration tests, edge case hardening across every layer of the system. Zero security advisories in production dependencies.</div></div>
+        <div class="feat"><div class="feat-title">Audit Trail</div><div class="feat-desc">Append-only JSON lines log. Every action recorded with initiator, timestamp, and details. Rotation at 5MB, 3 rotated files. The firm keeps records.</div></div>
+        <div class="feat"><div class="feat-title">Daily Backups</div><div class="feat-desc">State, precedents, and profile backed up daily with 30-day retention. Recoverable after any failure. Your institutional memory is protected.</div></div>
+        <div class="feat"><div class="feat-title">Prometheus Metrics</div><div class="feat-desc">GET /api/claw/metrics exports documents processed, findings by severity, budget utilization, session counts, precedent activity. Observable from any monitoring stack.</div></div>
+        <div class="feat"><div class="feat-title">Health Checks</div><div class="feat-desc">Every heartbeat verifies: API key present, watcher running, precedent board accessible. Degradation surfaces as alerts, not silent failures.</div></div>
+        <div class="feat"><div class="feat-title">Mac or Linux</div><div class="feat-desc">macOS LaunchAgent or Linux systemd user service. Starts on boot. Restarts on crash. No root required. The firm never sleeps because the daemon never dies.</div></div>
+      </div>
+
+      <div class="callout">
+        <strong>Configuration validation:</strong> <code>lavern claw validate</code> runs a color-coded health report before you start: API key, watch paths, local model, Telegram, email, budget. Every check passes or tells you exactly what to fix.
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                   MULTI-CLIENT                                     -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Scale</div>
+      <h2>Multiple Clients. <em>Isolated.</em></h2>
+
+      <p>A real retainer firm serves multiple clients. Each has their own matters, their own documents, their own budget, their own confidentiality requirements. Clawern's client registry creates isolated environments per client: separate directory, profile, state, precedent board, and delivery folder. The default client uses the root directory for backward compatibility. Adding a new client is an API call.</p>
+
+      <div class="diagram">
+        <svg width="500" height="200" viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="ds5_sh" x="-4%" y="-4%" width="108%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/></filter>
+          </defs>
+          <!-- Client A container -->
+          <rect x="10" y="10" width="210" height="175" rx="12" fill="none" stroke="#2E5D9C" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="115" y="34" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#2E5D9C">Client A</text>
+          <!-- Client A inner boxes -->
+          <rect x="25" y="50" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="67" y="70" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">State</text>
+          <rect x="120" y="50" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="162" y="70" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Precedents</text>
+          <rect x="25" y="96" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="67" y="116" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Budget</text>
+          <rect x="120" y="96" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="162" y="116" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Deliveries</text>
+          <text x="115" y="155" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">~/.lavern/clients/a/</text>
+          <!-- Barrier -->
+          <line x1="250" y1="20" x2="250" y2="180" stroke="#c45d3e" stroke-width="2.5"/>
+          <text x="250" y="195" text-anchor="middle" font-family="Inter" font-size="18" font-weight="700" fill="#c45d3e">✕</text>
+          <!-- Client B container -->
+          <rect x="280" y="10" width="210" height="175" rx="12" fill="none" stroke="#4a7c59" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="385" y="34" text-anchor="middle" font-family="Inter" font-size="13" font-weight="700" fill="#4a7c59">Client B</text>
+          <!-- Client B inner boxes -->
+          <rect x="295" y="50" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="337" y="70" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">State</text>
+          <rect x="390" y="50" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="432" y="70" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Precedents</text>
+          <rect x="295" y="96" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="337" y="116" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Budget</text>
+          <rect x="390" y="96" width="85" height="32" rx="6" fill="#fff" stroke="#d5d0c8" stroke-width="1.5" filter="url(#ds5_sh)"/><text x="432" y="116" text-anchor="middle" font-family="Inter" font-size="10" font-weight="600" fill="#1a1a1a">Deliveries</text>
+          <text x="385" y="155" text-anchor="middle" font-family="Inter" font-size="9" fill="#999">~/.lavern/clients/b/</text>
+        </svg>
+        <div class="diagram-caption">Full isolation. Each client gets their own state, precedent history, budget, and delivery folder. No data crosses the boundary.</div>
+      </div>
+
+      <p>This means you can run Clawern for your own company's contracts AND for a client's portfolio on the same machine without any data leakage between them. Different budgets. Different watch paths. Different precedent histories.</p>
+    </div>
+
+    <hr>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--                    WHAT WE'RE STILL LEARNING                       -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <div class="section">
+      <div class="section-label">Honesty</div>
+      <h2>What We're <em>Still Learning.</em></h2>
+
+      <p>Building something genuinely new means encountering problems that don't have established solutions. We are not going to pretend the system is perfect. Here is what we're still working through.</p>
+
+      <h3>AI is not that good at listening.</h3>
+      <p>You'd think agents debating would always lead to better results. Often it does. But many times, agents are siloed in their own reasoning. They talk past each other. Or they swing to the opposite extreme: an agent completely reverses its position when challenged, not because the challenge was stronger, but because it was newer. Discussion and joint meaning-making, the thing that makes real legal partnership valuable, is genuinely difficult for language models. We've built structures around the problem (evidence requirements, formal resolution protocols, confidence scoring), but the underlying challenge remains: <strong>making AI agents truly listen to each other is an unsolved problem.</strong></p>
+
+      <h3>More agents don't always mean better results.</h3>
+      <p>You'd think more agents and more processing loops would always improve quality. But it's not that simple. There's a point of diminishing returns, and sometimes additional agents introduce noise rather than signal. A five-agent review can outperform a fifteen-agent review if the five are well-chosen and well-orchestrated. This is why Lavern has workflow templates with different team sizes rather than always deploying the full bench. The right amount of scrutiny depends on the document, and we're still refining where those thresholds are.</p>
+
+      <h3>Autonomy is the biggest promise and the scariest thing.</h3>
+      <p>The entire value proposition of Clawern is that it works without you. That's also what makes it the most difficult to get right. An autonomous agent processing legal documents needs to be properly sandboxed. We've been inspired by the Claude Cowork idea of working in a separate file: the delivery folder becomes the sandbox, the playground for AI output. The original documents are never modified. At some point, we might increase the autonomy, letting the system take actions beyond analysis. But right now, <strong>analysis in a sandbox is the right boundary.</strong> Trust is earned incrementally.</p>
+
+      <h3>The law firm analogy has its own limits.</h3>
+      <p>We started by questioning the prevailing analogies in legal AI. But the analogy we chose, a law firm staffed by agents, is also a constraint. Real law firms have billing structures, hierarchies, and communication patterns that don't necessarily map to how AI agents should work. The firm metaphor has been generative: it led to the soul, the debate board, the partner consultations, the retainer model. But maybe at some point we'll let that analogy go too, and find out what the system wants to become when it's freed from all inherited shapes. For now, the law firm has led to interesting results.</p>
+    </div>
+
+    <hr>
+
+    <div class="stats-hero">
+      <div class="stats">
+        <div class="stat"><div class="stat-value">66</div><div class="stat-label">Agents</div></div>
+        <div class="stat"><div class="stat-value">8</div><div class="stat-label">Workflows</div></div>
+        <div class="stat"><div class="stat-value">28</div><div class="stat-label">Claw Modules</div></div>
+        <div class="stat"><div class="stat-value">1,590</div><div class="stat-label">Tests</div></div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section" style="margin-bottom:40px">
+      <p>Lavern is an early-stage system building toward a specific vision. Sixty-six agents. Eight workflows. A three-persona lighthouse for autonomous local mode. A firm that runs on a 30-minute heartbeat, learns from every engagement, and keeps your data on your machine unless you decide otherwise.</p>
+      <p>The analogy is different from anything else in the space, and the architecture follows from that difference. An AI tool waits for you to prompt it. A law firm on retainer works while you sleep — and gets sharper the longer it runs.</p>
+      <p style="margin-top:8px">Interested in what this looks like in practice? Read <a href="/writing/" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(232,132,92,0.3)">what we learned building it</a> — the surprises, the failures, and the things that actually worked.</p>
+    </div>
+
+    <div class="pullquote">That is what we are <em>building.</em></div>
+
+    <div style="text-align:center;margin-bottom:48px">
+      <a href="mailto:hello@lavern.ai?subject=Knock%20Knock" style="display:inline-block;padding:16px 36px;background:var(--fg);color:var(--bg);font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none;border-radius:100px;transition:opacity .2s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">Contact us</a>
+    </div>
+
+    </main>
+
+    <footer class="page-footer" role="contentinfo">
+      <div class="page-footer-row">
+        <a href="/">LAVERN</a> &nbsp;·&nbsp; Helsinki · Paris
+      </div>
+      <div class="page-footer-row page-footer-links">
+        <a href="/">Home</a>
+        <span class="sep">·</span>
+        <a href="/writing/">Writing</a>
+        <span class="sep">·</span>
+        <a href="/terms/">Terms</a>
+        <span class="sep">·</span>
+        <a href="/privacy/">Privacy</a>
+        <span class="sep">·</span>
+        <a href="https://github.com/AnttiHero/lavern" rel="noopener">GitHub ↗</a>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>
