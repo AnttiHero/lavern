@@ -105,7 +105,7 @@ React single-page app with editorial design language (Inter + Cormorant Garamond
 - `viz/src/hooks/` — Shared hooks (useMediaQuery, useTabLock)
 - `viz/src/pricing/` — Billable Hours pricing page (visible when `LAVERN_AUTH_ENABLED=true`; the backing billing routes are gated off in LOCAL MODE)
 - `viz/src/challenge/` — Lavern Challenge blind document comparison
-- `viz/src/agent-builder/` — NBA2K-style custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
+- `viz/src/agent-builder/` — custom agent builder (3-step wizard: Identity, Face, Stats) with edit mode
 - `viz/src/claw/` — Clawern remote monitoring dashboard (Overview with Portfolio Intelligence, Documents with inline error recovery, Deliveries with change detection, Precedents, Config)
 - `viz/src/dispatch/` — Voice Dispatch (mobile-optimized voice command interface)
 - `viz/src/auth/` — Login/signup views

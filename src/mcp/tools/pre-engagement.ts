@@ -172,7 +172,7 @@ export function createPreEngagementTools(session: SessionState) {
   // ── Tool 4: get_agent_profiles ────────────────────────────────────────
   const getAgentProfiles = tool(
     'get_agent_profiles',
-    'Get all available agent profiles with skill ratings, personalities, and costs. Used for NBA2K-style team selection. Can filter by category (lawyer/specialist/infrastructure) or practice area.',
+    'Get all available agent profiles with skill ratings, personalities, and costs. Used for team selection. Can filter by category (lawyer/specialist/infrastructure) or practice area.',
     {
       category: z.enum(['lawyer', 'specialist', 'infrastructure', 'all']).optional()
         .describe('Filter by agent category. Default: all'),

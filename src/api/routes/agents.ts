@@ -1,7 +1,7 @@
 /**
  * Agent Routes — Agent profiles, team presets, and team recommendations API.
  *
- * v8: Provides NBA2K-style agent cards for team selection.
+ * v8: Provides agent cards with skill ratings for team selection.
  *   GET /api/agents/profiles        — All agent profiles with skill ratings
  *   GET /api/agents/profiles/:role  — Single agent detail
  *   GET /api/agents/presets         — Team preset configurations

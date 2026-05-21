@@ -16,7 +16,7 @@
  *   #/my-page    → User profile & settings
  *   #/claw       → Claw Mode remote monitoring dashboard
  *   #/challenge  → The Lavern Challenge — blind document comparison
- *   #/agent-builder → NBA2K-style custom agent builder wizard
+ *   #/agent-builder → custom agent builder wizard
  *
  * All views are lazy-loaded React components in their own directories.
  * App.tsx handles routing and cross-view data flow via sessionStorage.
@@ -955,7 +955,7 @@ export function App() {
     );
   }
 
-  // ── Agent Builder — NBA2K-style custom agent creator ────────────────
+  // ── Agent Builder — custom agent creator ────────────────────────────
   if (view === 'agent-builder') {
     return (
       <ErrorBoundary>

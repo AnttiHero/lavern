@@ -1,5 +1,5 @@
 /**
- * AgentBuilderView — NBA2K-style custom agent creator.
+ * AgentBuilderView — custom agent creator.
  *
  * Three-step wizard with a 60/40 split layout:
  *   Left (60%):  Wizard steps (Identity → Face → Stats)

@@ -2,7 +2,7 @@
  * Archetype Starter Kits — pre-built agent templates.
  *
  * Each preset fills ALL builder fields at once, giving users a
- * starting point they can customize. Like NBA2K position templates.
+ * starting point they can customize. Think position templates.
  */
 
 import type { AgentCategory, SeniorityTier, SkillRatings, PersonalityAxis } from '../../types/agent-profile.js';

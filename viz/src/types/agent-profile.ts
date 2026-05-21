@@ -1,5 +1,5 @@
 /**
- * Agent Profile Types — NBA2K-style agent cards with skills and personalities.
+ * Agent Profile Types — agent cards with skill ratings and personalities.
  *
  * Every agent in the firm has a profile that describes:
  * - Category (lawyer, specialist, infrastructure, orchestrator)

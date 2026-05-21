@@ -1,7 +1,7 @@
 /**
  * Agent Profile Registry — all 62 agent profiles for The Shem law firm.
  *
- * Each profile contains NBA2K-style skill ratings (8 dimensions),
+ * Each profile contains skill ratings across 8 dimensions,
  * personality traits (5 axes), practice areas, strengths, and limitations.
  * DiceBear Notionists avatarExtra fields control visual presentation diversity.
  *
