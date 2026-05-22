@@ -1,12 +1,12 @@
 /**
- * Unit Tests — Dispatch Command Parser (viz/src/dispatch/useDispatch.ts)
+ * Unit Tests — Dispatch Command Parser (viz/src/dispatch/commandParser.ts)
  *
  * Tests the keyword-based command parser that routes voice input
  * to Claw API endpoints without LLM calls.
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseCommand } from '../../viz/src/dispatch/useDispatch.js';
+import { parseCommand } from '../../viz/src/dispatch/commandParser.js';
 
 describe('parseCommand', () => {
   it('parses status commands', () => {
