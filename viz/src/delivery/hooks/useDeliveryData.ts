@@ -185,7 +185,18 @@ export function useDeliveryData(): {
       // finished yet. Assembly runs AFTER the workflow reaches 'delivered' and takes
       // ~30 seconds — without this check the frontend stops polling before
       // assembledDocument is available, showing the "assembly not completed" warning.
-      const deliverableValid = validateDeliverable(mapped.finalOutput).valid;
+      // A substantial assembled document that the backend has marked delivered
+      // is shippable even when structural validation flags a SOFT issue — most
+      // commonly 'excessive_placeholders' for a template full of [bracketed
+      // fields] (a ToS, a form, etc.). The backend assembler itself "accepts
+      // with warning" in exactly this case, so the UI must too; otherwise the
+      // delivery view polls forever on "Assembling…" waiting for a perfectly
+      // clean document that, for a template, will never arrive. We still require
+      // a substantial doc (>500 chars) so genuinely empty/failed assemblies fall
+      // through to the timeout path below.
+      const validation = validateDeliverable(mapped.finalOutput);
+      const docChars = mapped.finalOutput?.trim().length ?? 0;
+      const deliverableValid = validation.valid || (mapped.status === 'Complete' && docChars > 500);
       const assemblyPending = mapped.status === 'Complete' && !deliverableValid;
       const elapsed = Date.now() - startTime;
 
