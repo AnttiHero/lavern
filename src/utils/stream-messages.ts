@@ -20,11 +20,13 @@ const logger = createLogger('STREAM');
 // ── Token Pricing (per million tokens) ────────────────────────────────
 // Source: Anthropic pricing as of 2025. Updated here if prices change.
 export const PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
-  // Anthropic / Claude — current (4.7 generation)
-  'claude-opus-4-7':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
+  // Anthropic / Claude — current (4.8 generation). Opus 4.8 rates mirror 4.7
+  // ($15/$75 per M) — confirm against Anthropic's published 4.8 pricing.
+  'claude-opus-4-8':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-sonnet-4-5':          { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-4-5':            { input: 1.0,  output: 5.0,  cacheRead: 0.1,  cacheWrite: 1.25 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
+  'claude-opus-4-7':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-opus-4-6':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
   'claude-sonnet-4-5-20250929': { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
@@ -40,24 +42,39 @@ const DEFAULT_PRICING: { input: number; output: number; cacheRead: number; cache
 };
 
 /**
+ * Resolve pricing for a model id. Exact match first; then fall back to a known
+ * family by prefix so dated/variant ids (e.g. "claude-opus-4-8-20260529") are
+ * priced as their base model instead of silently dropping to Sonnet pricing.
+ */
+function pricingForModel(model?: string): { input: number; output: number; cacheRead: number; cacheWrite: number } {
+  if (!model) return DEFAULT_PRICING;
+  if (PRICING[model]) return PRICING[model];
+  for (const key of Object.keys(PRICING)) {
+    if (model.startsWith(key)) return PRICING[key];
+  }
+  return DEFAULT_PRICING;
+}
+
+/**
  * Estimate USD cost from a single assistant message's usage object.
  * The Anthropic Messages API returns token counts per response.
  */
 function estimateTurnCost(usage: Record<string, number> | undefined, model?: string): number {
   if (!usage) return 0;
 
-  const prices = (model ? PRICING[model] : undefined) ?? DEFAULT_PRICING;
+  const prices = pricingForModel(model);
 
   const inputTokens = usage.input_tokens ?? 0;
   const outputTokens = usage.output_tokens ?? 0;
   const cacheRead = usage.cache_read_input_tokens ?? 0;
   const cacheCreate = usage.cache_creation_input_tokens ?? 0;
 
-  // Non-cached input = total input minus cache-read tokens (cacheCreate is billed separately)
-  const regularInput = Math.max(0, inputTokens - cacheRead);
-
+  // The Anthropic usage object reports these buckets as MUTUALLY EXCLUSIVE:
+  // input_tokens is already the uncached input (it excludes both cache reads
+  // and cache writes). The old code subtracted cacheRead from input_tokens,
+  // double-discounting and undercounting the bill.
   return (
-    (regularInput * prices.input / 1_000_000) +
+    (inputTokens * prices.input / 1_000_000) +
     (outputTokens * prices.output / 1_000_000) +
     (cacheRead * prices.cacheRead / 1_000_000) +
     (cacheCreate * prices.cacheWrite / 1_000_000)

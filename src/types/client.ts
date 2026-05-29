@@ -10,6 +10,8 @@
  * that can be either humans or AI agents.
  */
 
+import { randomBytes } from 'node:crypto';
+
 export interface ClientIdentity {
   /** Client type: human uses the UI, agent uses the API. */
   type: 'human' | 'agent';
@@ -64,9 +66,9 @@ export function createClientIdentity(
  * Format: shem_{type}_{random}
  */
 export function generateApiKey(clientType: 'human' | 'agent'): string {
-  const random = Array.from(
-    { length: 32 },
-    () => Math.random().toString(36).charAt(2)
-  ).join('');
+  // API keys are authentication credentials, so the entropy MUST come from a
+  // CSPRNG. Math.random() is predictable and biased (charAt(2) of a base-36
+  // float skews the alphabet) — never acceptable for a secret.
+  const random = randomBytes(24).toString('base64url');
   return `shem_${clientType}_${random}`;
 }

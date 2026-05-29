@@ -491,10 +491,17 @@ export function createMemoryTools(session: SessionState) {
       precedents = precedents.filter(p => p.qualityScore >= minQ);
       precedents.sort((a, b) => b.effectivenessScore - a.effectivenessScore);
 
-      // Track for report card
+      // Track for report card. A precedent surfaced here is injected into the
+      // transformation step as guidance — i.e. applied — so record it in BOTH
+      // queried and applied. Previously precedentsApplied was never populated
+      // anywhere, which left the precedent feedback/learning loop (it scores
+      // effectiveness off precedentsApplied) completely dead.
       for (const p of precedents) {
         if (!session.precedentsQueried.includes(p.id)) {
           session.precedentsQueried.push(p.id);
+        }
+        if (!session.precedentsApplied.includes(p.id)) {
+          session.precedentsApplied.push(p.id);
         }
       }
 

@@ -195,7 +195,7 @@ ANONYMISED CLAUSES FOR DEEP REVIEW (one per '---'):
 ${anonymized.anonymizedText}`;
 
     const response = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-opus-4-8',
       max_tokens: 16_000,
       system,
       messages: [{ role: 'user', content: userMessage }],

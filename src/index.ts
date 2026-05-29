@@ -18,7 +18,7 @@
  *   --audience <audience>      Target audience: consumer, smb, enterprise, employee
  *   --jurisdiction <region>    Jurisdiction: US, EU, UK, CA, AU
  *   --budget <amount>          Max budget in USD (default: 5.00)
- *   --model <model>            Model to use (default: claude-opus-4-7)
+ *   --model <model>            Model to use (default: claude-opus-4-8)
  *   --debug                    Enable debug logging
  *   --serve                    Start API server instead of CLI
  *   --port <port>              API server port (default: 3000)
@@ -399,7 +399,7 @@ CLI Options:
   --jurisdiction <region>    Jurisdiction (default: US)
                              US, EU, UK, CA, AU
   --budget <amount>          Max budget in USD (default: 5.00)
-  --model <model>            Model (default: claude-opus-4-7)
+  --model <model>            Model (default: claude-opus-4-8)
   --debug                    Enable debug logging
   --request <text>           Free-text legal request (routes through dispatch)
   --workflow <id>            Force a specific workflow (counsel, review, adversarial, roundtable, full-bench, legal-design)

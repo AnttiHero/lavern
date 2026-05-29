@@ -333,8 +333,11 @@ function expandWithSynonyms(words: string[]): string[] {
  */
 /** @internal Exported for testing. */
 export function sanitizeFtsQuery(query: string): string {
-  // Strip everything except word chars and whitespace (removes -, ", *, etc.)
-  const cleaned = query.replace(/[^\w\s]/g, ' ');
+  // Strip everything except letters, digits, and whitespace (removes FTS5
+  // operators -, ", *, etc.). \p{L}\p{N} with the /u flag keeps letters/digits
+  // from ALL scripts — the old ASCII-only [^\w\s] turned every accented or
+  // non-Latin character into a space, corrupting non-English search terms.
+  const cleaned = query.replace(/[^\p{L}\p{N}\s]/gu, ' ');
 
   const words = cleaned
     .split(/\s+/)

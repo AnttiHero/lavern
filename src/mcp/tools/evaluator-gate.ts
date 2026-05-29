@@ -18,6 +18,7 @@ import type { SessionState } from '../../session/session-state.js';
 import { boundedPush } from '../../session/session-state.js';
 import type { EvaluatorResult } from '../../types/workflow.js';
 import { eventTimestamp } from '../../events/event-bus.js';
+import { workflowRegistry } from '../../workflows/registry.js';
 
 export function createEvaluatorGateTools(session: SessionState) {
 
@@ -118,7 +119,10 @@ The deliverable meets quality standards. Proceed to the next workflow step.`,
       }
 
       // Failed — check revision limit
-      const maxRevisions = 2; // Default; templates can override via step definition
+      // Read the per-step limit from the active template (default 2). Previously
+      // hardcoded, so each template's configured maxRevisionLoops was ignored.
+      const evalTemplate = gw ? workflowRegistry.get(gw.templateId) : undefined;
+      const maxRevisions = evalTemplate?.stepDefinitions[args.step]?.maxRevisionLoops ?? 2;
       const currentRevisions = gw ? gw.revisionCount : 1;
 
       if (currentRevisions >= maxRevisions) {

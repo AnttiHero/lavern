@@ -31,7 +31,7 @@ export async function sendTelegramMessage(text: string): Promise<void> {
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: 'Markdown',
+        parse_mode: 'MarkdownV2',
         disable_web_page_preview: true,
       }),
     });
@@ -52,7 +52,7 @@ export function formatTelegramAlert(title: string, message: string): string {
   return `*${escapeMarkdown(title)}*\n${escapeMarkdown(message)}`;
 }
 
-/** Escape Telegram Markdown v1 special characters. */
+/** Escape Telegram MarkdownV2 special characters (must match parse_mode). */
 function escapeMarkdown(text: string): string {
   return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
 }

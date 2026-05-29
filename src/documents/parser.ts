@@ -86,6 +86,42 @@ export async function parseDocument(
 
 // ── Plain Text Parser ───────────────────────────────────────────────────
 
+/**
+ * Best-effort RTF → plain text. Handles the common Word/TextEdit output:
+ * binary destination groups (font/color/style tables), \par/\line/\tab control
+ * words, \'hh hex escapes, and \uN unicode escapes. Not a full RTF parser, but
+ * turns real-world RTF into readable prose instead of raw control codes.
+ */
+function rtfToPlainText(rtf: string): string {
+  let text = rtf;
+  // Drop binary/metadata destination groups we never want as document text.
+  text = text.replace(
+    /\{\\\*?\\(?:fonttbl|colortbl|stylesheet|info|pict|object|themedata|colorschememapping|latentstyles|datastore|listtable|listoverridetable|rsidtbl|generator|xmlnstbl)[\s\S]*?\}/gi,
+    '',
+  );
+  // Decode hex escapes (\'hh) as Latin-1 bytes.
+  text = text.replace(/\\'([0-9a-fA-F]{2})/g, (_m, h) => String.fromCharCode(parseInt(h, 16)));
+  // Decode unicode escapes (\uNNNN, optionally followed by a fallback char).
+  text = text.replace(/\\u(-?\d+)\??/g, (_m, n) => {
+    let code = parseInt(n, 10);
+    if (code < 0) code += 65536;
+    return String.fromCharCode(code);
+  });
+  // Paragraph/line/tab/page breaks → whitespace.
+  text = text
+    .replace(/\\par[d]?\b/g, '\n')
+    .replace(/\\line\b/g, '\n')
+    .replace(/\\sect\b/g, '\n\n')
+    .replace(/\\page\b/g, '\n\n')
+    .replace(/\\tab\b/g, '\t');
+  // Remove any remaining control words (\word with optional numeric arg + delimiter).
+  text = text.replace(/\\[a-zA-Z]+-?\d*\s?/g, '');
+  // Unescape literal backslash/braces, then drop structural group braces.
+  text = text.replace(/\\([\\{}])/g, '$1').replace(/[{}]/g, '');
+  // Tidy whitespace.
+  return text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function parsePlainText(
   buffer: Buffer,
   filename: string,
@@ -107,6 +143,11 @@ function parsePlainText(
       .replace(/&gt;/g, '>')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
+  } else if (mimeType === 'text/rtf' || mimeType === 'application/rtf' || filename.toLowerCase().endsWith('.rtf')) {
+    // RTF is a control-word format ({\rtf1\ansi ...}) — the raw UTF-8 bytes are
+    // markup, not prose. Strip it to plain text before structure detection so
+    // downstream agents don't analyse \rtf control codes as document content.
+    fullText = rtfToPlainText(fullText);
   }
 
   const wordCount = fullText.split(/\s+/).filter(w => w.length > 0).length;

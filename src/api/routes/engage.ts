@@ -167,6 +167,10 @@ async function resolveDocumentContent(doc: { name: string; content?: string; con
     try {
       const res = await fetch(doc.contentUrl, {
         signal: controller.signal,
+        // SSRF: isUrlSafe only validated the INITIAL url. Block redirects so a
+        // safe public URL can't 3xx to an internal host (e.g. link-local cloud
+        // metadata at 169.254.169.254). 'error' rejects on any redirect.
+        redirect: 'error',
         headers: { 'Accept': 'text/plain, text/html, application/json, */*' },
       });
 
@@ -363,6 +367,8 @@ async function postWebhookWithRetry(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
+        // SSRF: don't let a validated callback URL redirect to an internal host.
+        redirect: 'error',
       });
       clearTimeout(timeout);
       if (res.ok || res.status < 500) return; // 2xx–4xx: don't retry client errors

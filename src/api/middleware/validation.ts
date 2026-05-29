@@ -35,8 +35,12 @@ const RequestTypeEnum = z.enum([
  */
 export function isPathSafe(documentPath: string, basePath?: string): boolean {
   const base = basePath ?? process.cwd();
+  const root = path.resolve(base);
   const resolved = path.resolve(base, documentPath);
-  return resolved.startsWith(path.resolve(base));
+  // Must be the base dir itself or strictly inside it. Comparing against
+  // `root + path.sep` stops a sibling directory that merely shares the prefix
+  // (e.g. resolved "/data-evil" vs base "/data") from being accepted.
+  return resolved === root || resolved.startsWith(root + path.sep);
 }
 
 const safePathString = z.string().min(1).max(500).refine(

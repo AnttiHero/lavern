@@ -94,7 +94,7 @@ export const STEP_DEFINITIONS: Record<WorkflowStep, StepDefinition> = {
 export interface WorkflowState {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
-  gateDecisions: Record<string, 'approved' | 'rejected' | 'skipped'>;
+  gateDecisions: Record<string, 'approved' | 'rejected' | 'modify' | 'skipped'>;
   startedAt: string;
   lastTransitionAt: string;
 }
@@ -188,7 +188,7 @@ export interface GenericWorkflowState {
   templateId: string;
   currentStep: string;
   completedSteps: string[];
-  gateDecisions: Record<string, 'approved' | 'rejected' | 'skipped'>;
+  gateDecisions: Record<string, 'approved' | 'rejected' | 'modify' | 'skipped'>;
   evaluatorResults: EvaluatorResult[];
   revisionCount: number;
   /** v11: Quality check results across all steps */

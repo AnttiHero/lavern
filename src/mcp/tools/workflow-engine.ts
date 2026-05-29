@@ -90,8 +90,20 @@ ${stepDef.requiresGateApproval ? `**Gate Required**: ${stepDef.gateType} (must i
           };
         }
 
-        const mapped = humanDecision.decision === 'approve' ? 'approved' : 'rejected';
+        const mapped: 'approved' | 'rejected' | 'modify' =
+          humanDecision.decision === 'approve' ? 'approved'
+          : humanDecision.decision === 'modify' ? 'modify'
+          : 'rejected';
         state.gateDecisions[gateType] = mapped;
+
+        if (mapped === 'modify') {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `MODIFICATION REQUESTED by human at gate ${gateType}.${humanDecision.notes ? ` Notes: ${humanDecision.notes}` : ''} The workflow does NOT advance yet. Apply the requested changes (re-run the relevant agents with the human's modifications), then call request_approval again for this gate.`
+            }],
+          };
+        }
 
         if (mapped === 'rejected') {
           return {

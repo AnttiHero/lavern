@@ -78,13 +78,13 @@ function buildTier(level: IntensityLevel): PricingTier {
 function buildTokenRates(): TokenRate[] {
   return [
     {
-      model: 'claude-opus-4-7',
+      model: 'claude-opus-4-8',
       tier: 'Partner / Senior',
-      ...PRICING['claude-opus-4-7'],
-      inputPerMillion: PRICING['claude-opus-4-7'].input,
-      outputPerMillion: PRICING['claude-opus-4-7'].output,
-      cacheReadPerMillion: PRICING['claude-opus-4-7'].cacheRead,
-      cacheWritePerMillion: PRICING['claude-opus-4-7'].cacheWrite,
+      ...PRICING['claude-opus-4-8'],
+      inputPerMillion: PRICING['claude-opus-4-8'].input,
+      outputPerMillion: PRICING['claude-opus-4-8'].output,
+      cacheReadPerMillion: PRICING['claude-opus-4-8'].cacheRead,
+      cacheWritePerMillion: PRICING['claude-opus-4-8'].cacheWrite,
     },
     {
       model: 'claude-sonnet-4-5',

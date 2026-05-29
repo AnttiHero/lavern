@@ -11,6 +11,7 @@
 import type { WorkflowTemplate } from '../../types/workflow.js';
 import { WORKFLOW_STEPS, STEP_DEFINITIONS } from '../../types/workflow.js';
 import { workflowRegistry } from '../registry.js';
+import { orchestratorPrompt } from '../../agents/prompts/orchestrator.js';
 
 /**
  * Convert existing StepDefinitions to GenericStepDefinition format.
@@ -109,7 +110,7 @@ export const legalDesignTemplate: WorkflowTemplate = {
     'synthesis-editor',
     'ethics-reviewer',
   ],
-  orchestratorPrompt: '(uses existing orchestratorPrompt from src/agents/prompts/orchestrator.ts)',
+  orchestratorPrompt,
   phasePermissions: {
     intake: {
       denyTools: [

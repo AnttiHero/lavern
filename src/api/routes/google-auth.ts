@@ -169,7 +169,12 @@ export function registerGoogleAuthRoutes(fastify: FastifyInstance): void {
           const placeholderHash = `google:${crypto.randomBytes(32).toString('hex')}`;
           user = createUser(email, placeholderHash, displayName);
           linkGoogleAccount(user.id, googleId);
-          setEmailVerified(user.id); // Google-verified email
+          // Only trust Google's verification — if Google itself reports the
+          // address as unverified, the new account stays unverified and must
+          // confirm via the normal email-verification flow.
+          if (profile.email_verified) {
+            setEmailVerified(user.id);
+          }
 
           logAuditEvent({ userId: user.id, action: 'google_signup', resource: 'auth', ip: request.ip, userAgent: request.headers['user-agent'] });
           logger.info('google_user_created', { userId: user.id, email });

@@ -255,17 +255,20 @@ export class WebhookGateResolver implements GateResolver {
         signal: controller.signal,
       });
 
-      clearTimeout(timeout);
-
       if (!response.ok) {
+        clearTimeout(timeout);
         logger.error('Webhook gate callback failed', { status: response.status, statusText: response.statusText });
         return this.fallbackResolve(request);
       }
 
+      // Keep the abort timer armed through the body read. Clearing it right
+      // after headers arrived meant a server that sent headers then stalled
+      // the body would hang the gate indefinitely.
       const body = await response.json() as {
         decision?: 'approve' | 'reject' | 'modify';
         notes?: string;
       };
+      clearTimeout(timeout);
 
       if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
         logger.error('Invalid decision in webhook callback response', { body });

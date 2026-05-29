@@ -68,6 +68,22 @@ import { createLogger } from '../utils/logger.js';
 const logger = createLogger('SERVER');
 
 export async function startApiServer(port: number): Promise<void> {
+  // SECURITY (fail-safe): multi-user auth ENFORCEMENT is not implemented in
+  // this build — createAuthMiddleware/createRequireVerifiedHook inject a shared
+  // synthetic `local-user` for every request. Setting LAVERN_AUTH_ENABLED=true
+  // would still register the login/OAuth routes and advertise auth as "on" to
+  // the dashboard, while every request silently runs as that shared user — a
+  // total authN/authZ bypass. Refuse to boot rather than give a false sense of
+  // security. (Run in LOCAL MODE, or reimplement enforcement before enabling.)
+  if (config.authEnabled) {
+    throw new Error(
+      'LAVERN_AUTH_ENABLED=true is not supported in this build: multi-user ' +
+      'authentication enforcement is not implemented, so the server would treat ' +
+      'every request as a single shared local-user (total auth bypass). Unset ' +
+      'LAVERN_AUTH_ENABLED to run in LOCAL MODE (single-user).',
+    );
+  }
+
   const isProd = config.isProduction;
   const fastify = Fastify({
     trustProxy: config.trustProxy,
@@ -609,6 +625,10 @@ export async function startApiServer(port: number): Promise<void> {
     registerAuthRoutes(fastify, clientRegistry);
     registerUserAuthRoutes(fastify);
     registerGoogleAuthRoutes(fastify);
+    // Referral stats are per-user, so they only make sense with multi-user
+    // auth. Keep them gated (404 in LOCAL MODE) alongside the other auth-shaped
+    // routes — previously this was registered unconditionally further down.
+    registerReferralRoutes(fastify);
   }
   // v8: Pre-engagement & team staffing routes
   registerMatterRoutes(fastify);
@@ -645,7 +665,6 @@ export async function startApiServer(port: number): Promise<void> {
   // Remote MCP bridge — Managed Agents integration (Stage 1: scaffolded, off
   // unless both LAVERN_MANAGED_AGENTS_BRIDGE=1 and the shared secret are set).
   maybeRegisterRemoteBridge(fastify, sessionManager);
-  registerReferralRoutes(fastify);
   registerTemplateRoutes(fastify);
 
   // ── Frontend Static Files ──────────────────────────────────────────
@@ -764,7 +783,9 @@ export async function startApiServer(port: number): Promise<void> {
     const hasAnthropicKey = !!config.anthropic.apiKey && config.anthropic.apiKey.length > 10;
     const hasMistralKey = !!config.mistral.apiKey && config.mistral.apiKey.length > 10;
     const provider = config.provider;
-    const authEnabled = config.authEnabled === true;
+    // Always false here: the startup guard above refuses to boot when
+    // LAVERN_AUTH_ENABLED=true, so the server only ever runs in LOCAL MODE.
+    const authEnabled = config.authEnabled;
 
     console.log(`
 ╔══════════════════════════════════════════════════════════════╗

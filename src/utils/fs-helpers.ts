@@ -9,6 +9,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('FS');
@@ -65,7 +66,10 @@ export function writeJsonFileAtomic(filePath: string, data: unknown): void {
   ensureDir(path.dirname(filePath));
 
   const content = JSON.stringify(data, null, 2);
-  const tmpPath = filePath + '.tmp';
+  // Unique temp path per write. A fixed `${filePath}.tmp` meant two concurrent
+  // writers to the same file wrote the SAME temp and raced on rename — throwing
+  // ENOENT and corrupting/losing data. pid + random guarantees no collision.
+  const tmpPath = `${filePath}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   const backupPath = filePath + '.bak';
 
   // 1. Write to temp file

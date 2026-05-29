@@ -165,11 +165,19 @@ export class DocumentRegistry {
       if (existingByPath.hash === hash) {
         return 'unchanged';
       }
-      // Content changed — mark stale
+      // Content changed — rekey the map and mark stale. The documents map is
+      // keyed by content hash; mutating .hash in place left the entry under its
+      // OLD key, so every later content-hash lookup (dedup, updateStatus) missed
+      // it — changed docs were silently dropped or reprocessed/re-billed forever.
+      const oldHash = existingByPath.hash;
       existingByPath.hash = hash;
       existingByPath.sizeBytes = lstat.size;
       existingByPath.lastModified = now;
       existingByPath.status = 'stale';
+      if (oldHash !== hash) {
+        delete this.state.documents[oldHash];
+        this.state.documents[hash] = existingByPath;
+      }
       this.save();
       return 'changed';
     }

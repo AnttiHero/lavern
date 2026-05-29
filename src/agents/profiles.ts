@@ -2603,7 +2603,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Rewrites legal documents into plain, accessible language.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'sonnet',
+    costTier: 'opus',
     billingRateUsd: 750,
     skills: {
       precision: 7,
@@ -2652,7 +2652,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Ensures legal meaning is preserved through all document transformations.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'sonnet',
+    costTier: 'opus',
     billingRateUsd: 800,
     skills: {
       precision: 9,
@@ -2701,7 +2701,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Assembles multi-agent outputs into a coherent final deliverable.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'opus',
+    costTier: 'sonnet',
     billingRateUsd: 850,
     skills: {
       precision: 8,
@@ -2750,7 +2750,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Reviews contracts for risks, ambiguities, and missing provisions.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'sonnet',
+    costTier: 'opus',
     billingRateUsd: 800,
     skills: {
       precision: 9,
@@ -2801,7 +2801,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Deep legal research with authority analysis and citation quality.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'sonnet',
+    costTier: 'opus',
     billingRateUsd: 725,
     skills: {
       precision: 7,
@@ -2850,7 +2850,7 @@ export const agentProfiles: Record<string, AgentProfile> = {
     tagline: 'Adversarial testing — finds weaknesses before opponents do.',
     category: 'specialist',
     seniority: 'specialist',
-    costTier: 'sonnet',
+    costTier: 'opus',
     billingRateUsd: 900,
     skills: {
       precision: 7,

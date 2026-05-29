@@ -56,7 +56,7 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
     default:
       // Anthropic-tier mapping. Sonnet 4.5 covers sonnet+haiku in this build.
       switch (tier) {
-        case 'opus':   return 'claude-opus-4-7';
+        case 'opus':   return 'claude-opus-4-8';
         case 'sonnet': return 'claude-sonnet-4-5';
         case 'haiku':  return 'claude-sonnet-4-5'; // upgraded in v0.14.3
       }
@@ -187,30 +187,32 @@ export async function crossProviderChat(
       ],
       temperature,
       maxTokens: opts.maxTokens,
+      timeoutMs: opts.timeoutMs,
     });
     const text = (res.message.content ?? '').toString();
-    const pricing = pricingFor(model);
-    const cost =
-      ((res.usage?.prompt_tokens ?? 0) * pricing.input / 1_000_000) +
-      ((res.usage?.completion_tokens ?? 0) * pricing.output / 1_000_000);
-    return { text, cost, model, provider: 'mistral' };
+    // mistralChat already computes per-model cost from its own pricing table.
+    // Re-deriving it here applied a flat $2/$6 rate to every model, mispricing
+    // medium/small. Trust the value the client already calculated.
+    return { text, cost: res.cost, model, provider: 'mistral' };
   }
 
   // ── ANTHROPIC / MANAGED ──
-  // NOTE: Anthropic deprecated `temperature` for Opus 4.7 (April 2026 — the
-  // API now returns `invalid_request_error: 'temperature' is deprecated for
-  // this model`). Opus 4.7 always runs at the model's default sampling.
-  // Sonnet 4.5 still accepts temperature, so we conditionally include it.
+  // NOTE: Anthropic deprecated `temperature` for Opus 4.7 (April 2026) and the
+  // deprecation carries forward to Opus 4.8 — the API returns
+  // `invalid_request_error: 'temperature' is deprecated for this model`.
+  // These models always run at the model's default sampling. Sonnet 4.5 still
+  // accepts temperature, so we conditionally include it. Verified live against
+  // the API on 2026-05-29 (opus-4-8 rejects temperature; sonnet-4-5 accepts).
   ensureApiKey();
   const client = new Anthropic();
-  const isOpus47 = /opus-4-7/.test(model);
+  const omitTemperature = /opus-4-[78]/.test(model);
   const requestBody: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: opts.maxTokens,
     system: opts.system,
     messages: turnList,
   };
-  if (!isOpus47) {
+  if (!omitTemperature) {
     requestBody.temperature = temperature;
   }
   // Audit fix H7: wrap the Anthropic call in withRetry so transient
@@ -219,13 +221,17 @@ export async function crossProviderChat(
   // Callers can pass `maxRetries: 0` to opt out — appropriate when the
   // call is intrinsically slow and retrying won't recover (e.g. /revise
   // on a long document, where a single timeout is genuine, not transient).
-  const sdkMaxRetries = opts.maxRetries ?? 2; // SDK default is 2
+  // Single retry layer. The SDK's own retry is disabled (maxRetries: 0) so the
+  // withRetry wrapper owns the entire policy. Previously BOTH layers retried,
+  // compounding to up to ~12 attempts on a stalled call. Callers pass
+  // maxRetries: 0 to opt out entirely (e.g. intrinsically-slow /revise calls,
+  // where a single timeout is genuine, not transient).
   const res = await withRetry(
     () => client.messages.create(requestBody, {
       timeout: opts.timeoutMs ?? 120_000,
-      maxRetries: sdkMaxRetries,
+      maxRetries: 0,
     }),
-    { label: `anthropic:${model}`, maxRetries: opts.maxRetries },
+    { label: `anthropic:${model}`, maxRetries: opts.maxRetries ?? 3 },
   );
 
   let text = '';

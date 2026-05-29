@@ -12,7 +12,7 @@ import { createLogger } from '../../utils/logger.js';
 import type { ScrapeResult } from './firm-scraper.js';
 
 const logger = createLogger('FIRM-ANALYZER');
-const MODEL = 'claude-opus-4-7';
+const MODEL = 'claude-opus-4-8';
 
 // ── Zod mirror of viz/src/types/agent-profile.ts::AgentProfile ─────────
 

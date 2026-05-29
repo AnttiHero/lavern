@@ -62,8 +62,13 @@ export class SessionManager {
     const entry: SessionEntry = { session, createdAt: now, lastActivityAt: now, archived: false, ttlWarned: false };
     this.sessions.set(session.id, entry);
 
-    // Track activity: any event means the session is alive
-    session.events.on('event', () => {
+    // Track activity: an event means the session is alive — but ONLY events
+    // produced by the work itself (agents, tools). Manager-originated events
+    // (TTL warnings, timeout notices, source: 'session-manager') must NOT count
+    // as activity; otherwise the TTL warning resets the idle clock and the
+    // session can never actually be TTL-evicted.
+    session.events.on('event', (evt: { source?: string }) => {
+      if (evt?.source === 'session-manager') return;
       entry.lastActivityAt = Date.now();
       // Reset TTL warning so it can fire again if session goes idle later
       entry.ttlWarned = false;
@@ -176,6 +181,16 @@ export class SessionManager {
    * Evict a single session: archive it, halt agents, then remove.
    */
   private evictSession(id: string, entry: SessionEntry, reason: string): void {
+    // If assembly is running, don't evict — and don't emit a timeout error —
+    // just reset the activity timer so the session stays alive until assembly
+    // completes. This guard MUST run before the error emission below: emitting
+    // first meant an in-flight engage got a spurious "Session timed out" error
+    // even though it was kept alive.
+    if (entry.session.isAssembling) {
+      entry.lastActivityAt = Date.now();
+      return;
+    }
+
     // Emit timeout event so WebSocket clients get notified
     if (!entry.session.isHalted()) {
       entry.session.events.emitEvent({
@@ -184,13 +199,6 @@ export class SessionManager {
         source: 'session-manager',
         timestamp: new Date().toISOString(),
       });
-    }
-
-    // If assembly is running, don't evict — reset the activity timer instead
-    // so the session stays alive until assembly completes.
-    if (entry.session.isAssembling) {
-      entry.lastActivityAt = Date.now();
-      return;
     }
 
     // Archive before removing listeners so work product is preserved (guard against double archival)

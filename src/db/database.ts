@@ -1015,9 +1015,15 @@ export function updateArchivedDocument(
 ): void {
   const db = getDb();
   const now = new Date().toISOString();
+  // NOTE: deliberately does NOT set status = 'completed'. archiveSession()
+  // (fired by session_end right after this) treats status === 'completed' as
+  // "already archived + billed → skip". Flipping to 'completed' here ran first
+  // and made that guard misfire, so releaseHold/incrementUserUsage/
+  // debitBillableHours were skipped on EVERY normal completion. Leaving the
+  // row 'assembling' lets archiveSession bill exactly once and set 'completed'.
   db.prepare(`
     UPDATE session_archive
-    SET assembled_document = ?, cost_usd = ?, status = 'completed',
+    SET assembled_document = ?, cost_usd = ?,
         completed_at = COALESCE(completed_at, ?), completed_steps_count = ?
     WHERE id = ?
   `).run(assembledDocument || null, finalCostUsd, now, completedSteps, sessionId);

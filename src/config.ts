@@ -74,7 +74,7 @@ export const config = {
   provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'local' | 'managed',
 
   // ── Models ─────────────────────────────────────────────────────────────
-  defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-7',
+  defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-8',
   routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-4-5',
 
   // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────

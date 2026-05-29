@@ -619,9 +619,13 @@ function buildPromptFromRequest(
   // ── Team Critical Rules & Success Metrics ─────────────────────────────
   // Gives the orchestrator awareness of each team member's constraints
   const teamRulesSection: string[] = [];
+  // Must match the agents actually made dispatchable to the SDK (filteredAgents
+  // uses selectedTeam || template.requiredAgents). Using
+  // classification.selectedSpecialists here briefed the orchestrator on rules
+  // for agents it couldn't dispatch — and omitted rules for ones it could.
   const teamRoles = session.selectedTeam.length > 0
     ? session.selectedTeam
-    : classification.selectedSpecialists;
+    : template.requiredAgents;
   for (const role of teamRoles) {
     const profile = agentProfiles[role];
     if (profile?.criticalRules?.length || profile?.successMetrics?.length) {
