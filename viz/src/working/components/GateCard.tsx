@@ -14,6 +14,7 @@ const GATE_LABELS: Record<string, string> = {
   meaning_critical: 'Meaning Critical',
   final_delivery: 'Final Delivery',
   rubric_override: 'Rubric Override',
+  clarification: 'Question for You',
 };
 
 interface GateCardProps {

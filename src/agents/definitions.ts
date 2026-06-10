@@ -33,6 +33,7 @@ import { criminalDefenceCounselPrompt } from './prompts/criminal-defence-counsel
 import { disclosureAnalystPrompt } from './prompts/disclosure-analyst.js';
 import { forensicAccountingAnalystPrompt } from './prompts/forensic-accounting-analyst.js';
 import { motionFactumAnalystPrompt } from './prompts/motion-factum-analyst.js';
+import { allegationMapperPrompt } from './prompts/allegation-mapper.js';
 // v8: Law Firm Leadership
 import { managingPartnerPrompt } from './prompts/managing-partner.js';
 import { supervisingPartnerPrompt } from './prompts/supervising-partner.js';
@@ -329,6 +330,15 @@ export const agentDefinitions = {
     model: 'sonnet' as const,
     maxTurns: 10,
     outputFormat: outputFormats['disclosure-analyst'],
+  },
+
+  'allegation-mapper': {
+    description: 'Party attribution and allegation register specialist. Reads motion records, pleadings, affidavits, and disclosure to map who said what (sworn vs. unsworn vs. argument) and every allegation against the client with supporting, contradicting, and unanswered evidence.',
+    prompt: enrichPrompt('allegation-mapper', allegationMapperPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'opus' as const,
+    maxTurns: 12,
+    outputFormat: outputFormats['allegation-mapper'],
   },
 
   'forensic-accounting-analyst': {

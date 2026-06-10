@@ -38,9 +38,9 @@ with qualified legal professionals.
 ## Project Structure
 
 ### Core Engine
-- `src/agents/` — 67 agent prompts (59 specialists + 7 orchestrators + 1 base), 59 agent definitions
-- `src/agents/profiles.ts` — 63-agent profile registry (skill ratings, personality, DiceBear avatars)
-- `src/mcp/tools/` — 21 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs, feedback loop, document reader)
+- `src/agents/` — 74 agent prompts (64 specialists + 9 orchestrators + 1 base), 64 agent definitions
+- `src/agents/profiles.ts` — 68-agent profile registry (skill ratings, personality, DiceBear avatars)
+- `src/mcp/tools/` — 22 MCP tool modules (debate board, scoring, verification, memory, risk pricing, baselines, knowledge base, report cards, quality checks, handoffs, feedback loop, document reader, clarification/ask_user)
 - `src/mcp/remote-bridge/` — JSON-RPC 2.0 HTTP bridge exposing 12 Counsel tools for Anthropic Managed Agents; shared-secret auth, per-session dispatch, Zod arg validation (gated by `LAVERN_MANAGED_AGENTS_BRIDGE=1`)
 - `src/hooks/` — Audit logging, human gate enforcement, cost tracking
 - `src/router/` — LLM-based request router with deterministic fallback and template mapping
@@ -49,14 +49,14 @@ with qualified legal professionals.
 - `src/permissions/` — Phase-based dynamic tool permissions
 - `src/session/` — Session state management + session manager (lifecycle, TTL, eviction)
 - `src/events/` — Event bus for real-time streaming
-- `src/gates/` — Human gate resolvers (readline CLI, async API, webhook, auto-approve)
+- `src/gates/` — Human gate resolvers (readline CLI, async API, webhook, auto-approve); approval gates + `clarification` gates (agent asks the user a question mid-analysis, answered in text or by attaching documents)
 - `src/config.ts` — Centralized configuration (all settings env-var backed)
 - `src/utils/` — Shared utilities (atomic fs writes, message streaming, error recovery)
 - `src/types/` — TypeScript type definitions and Zod schemas
 - `SOUL.md` — Default firm personality (CLI/Claw fallback; browser users set soul in My Page)
 
 ### Workflows
-- `src/workflows/` — 9 workflow templates:
+- `src/workflows/` — 11 workflow templates:
   - `counsel` — Quick legal questions
   - `review` — Full contract review with debate
   - `adversarial` — Builder + attacker + synthesizer
@@ -66,13 +66,15 @@ with qualified legal professionals.
   - `pre-engagement` — Intake and team selection
   - `verification` — Standalone document verification pipeline
   - `tabulate` — Tabular multi-document review (one row per doc, every cell cited)
+  - `defence-disclosure` — Ontario/Canada criminal disclosure review (proof matrix, forensic accounting critique, Crown/OSC red-team)
+  - `defense-strategy` — Allegation defense (civil + criminal): party attribution (who said what), allegation register, clarification round (agents pause to ask the user via `ask_user`), defense options, red-team challenge
 - `src/workflows/executor.ts` — Generic workflow runner with soul + personality injection
 
 ### API Server
 - `src/api/` — Fastify API server with WebSocket event streaming
   - `src/api/middleware/` — Auth (LOCAL-MODE no-op; cookie/Bearer logic preserved for `LAVERN_AUTH_ENABLED=true`), Zod validation, x402 payment
   - `src/api/routes/` — 27 route modules. The auth-shaped ones (auth-routes, google-auth, billing, referral) only register when `LAVERN_AUTH_ENABLED=true`; in default LOCAL MODE the dashboard runs as the synthetic `local-user` and those routes 404.
-    - `sessions.ts` — Session CRUD + gate decisions + soul injection from user profile
+    - `sessions.ts` — Session CRUD + gate decisions (incl. clarification answers) + mid-session document attachment (`POST /:id/documents`) + soul injection from user profile
     - `engage.ts` — Agent-native engagement (sync + webhook modes)
     - `verify.ts` — Standalone document verification
     - `matters.ts` — Matter management (engagements, team selection)
@@ -187,7 +189,7 @@ Native macOS SwiftUI status bar app for monitoring Clawern. Polls Claw API every
 - `scripts/seed-knowledge-base.ts` — Legal dataset seeder (5 datasets)
 
 ### Tests
-- `tests/` — 1,677 tests across 109 files. Coverage spans the engine, dashboard hooks, Claw, MCP bridge, auth-gate route registration, and the broader API surface. `npm test` is green.
+- `tests/` — 1,665 tests across 111 files. Coverage spans the engine, dashboard hooks, Claw, MCP bridge, auth-gate route registration, clarification gates, the defense-strategy workflow, and the broader API surface. `npm test` is green.
 
 ## Version History
 

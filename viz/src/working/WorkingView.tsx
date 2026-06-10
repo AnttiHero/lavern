@@ -574,6 +574,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           gateType={state.pendingGate.gateType}
           summary={state.pendingGate.summary}
           details={state.pendingGate.details}
+          question={state.pendingGate.question}
           sessionId={state.sessionId}
           isDemo={isDemo}
           onDecision={handleGateDecision}

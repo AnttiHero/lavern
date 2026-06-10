@@ -45,6 +45,7 @@ import '../workflows/index.js';
 const CANONICAL_WORKFLOWS = new Set([
   'counsel', 'review', 'adversarial', 'roundtable', 'full-bench',
   'legal-design', 'pre-engagement', 'verification', 'defence-disclosure',
+  'defense-strategy',
 ]);
 
 export interface RouterOptions {
@@ -269,8 +270,8 @@ const DEFENCE_DISCLOSURE_SPECIALISTS = [
   'ethics-reviewer',
 ];
 
-function isDefenceDisclosureRequest(request: LegalRequest): boolean {
-  const searchable = [
+function searchableText(request: LegalRequest): string {
+  return [
     request.requestText,
     request.documentPath,
     request.context?.documentType,
@@ -280,7 +281,10 @@ function isDefenceDisclosureRequest(request: LegalRequest): boolean {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
 
+function isDefenceDisclosureRequest(request: LegalRequest): boolean {
+  const searchable = searchableText(request);
   if (!searchable) return false;
 
   return [
@@ -301,14 +305,82 @@ function isDefenceDisclosureRequest(request: LegalRequest): boolean {
     'capital markets tribunal',
     'stinchcombe',
     'charter motion',
-    'motion record',
-    'factum',
     'proceeds of crime',
     'disclosure gap',
   ].some(term => searchable.includes(term));
 }
 
+const DEFENSE_STRATEGY_SPECIALISTS = [
+  'allegation-mapper',
+  'litigation-partner',
+  'litigation-associate',
+  'criminal-defence-counsel',
+  'disclosure-analyst',
+  'motion-factum-analyst',
+  'forensic-accounting-analyst',
+  'legal-researcher',
+  'red-team',
+  'plain-language-specialist',
+  'evaluator',
+  'ethics-reviewer',
+];
+
+/**
+ * Defense-strategy: the client faces allegations (civil or criminal) and
+ * needs the record mapped (who said what, which allegations) and defense
+ * options built. Distinct from defence-disclosure, which is the criminal
+ * disclosure-review pipeline — criminal disclosure terms are checked first.
+ */
+function isDefenseStrategyRequest(request: LegalRequest): boolean {
+  const searchable = searchableText(request);
+  if (!searchable) return false;
+
+  return [
+    'defense strategy',
+    'defence strategy',
+    'prepare a defense',
+    'prepare a defence',
+    'prepare my defense',
+    'prepare my defence',
+    'defend against',
+    'defend me',
+    'allegation',
+    'accused of',
+    'charged with',
+    'motion record',
+    'responding motion record',
+    'factum',
+    'statement of claim',
+    'statement of defence',
+    'statement of defense',
+    'notice of motion',
+    'plaintiff',
+    'being sued',
+    'sued me',
+    'sued by',
+    'lawsuit against',
+    'counterclaim',
+    'crossclaim',
+    'third party claim',
+  ].some(term => searchable.includes(term));
+}
+
 export function classifyRequest(request: LegalRequest): RouterClassification {
+  if (request.type === 'defense_strategy'
+    || (request.type !== 'defence_disclosure' && !isDefenceDisclosureRequest(request) && isDefenseStrategyRequest(request))) {
+    return {
+      requestType: 'multi_specialist',
+      complexity: 'high',
+      riskLevel: 'high',
+      selectedWorkflow: 'defense-strategy',
+      selectedSpecialists: DEFENSE_STRATEGY_SPECIALISTS,
+      requiresDebate: true,
+      requiresEthicsFirst: true,
+      requiresConsistencyCheck: !!request.matterId,
+      reasoning: 'Client facing allegations (civil litigation or criminal) requires the defense-strategy workflow: party attribution, allegation register, clarification round with the client, defense options, red-team challenge, and final human gate.',
+    };
+  }
+
   if (request.type === 'defence_disclosure' || isDefenceDisclosureRequest(request)) {
     return {
       requestType: 'multi_specialist',

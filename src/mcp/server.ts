@@ -27,6 +27,7 @@ import { createSdkMcpServer, type SdkMcpToolDefinition } from '@anthropic-ai/cla
 import { createDebateBoardTools } from './tools/debate-board.js';
 import { scoringEngineTools } from './tools/scoring-engine.js';
 import { createApprovalTools } from './tools/approval-gate.js';
+import { createClarificationTools } from './tools/clarification.js';
 import { createWorkflowTools } from './tools/workflow-engine.js';
 import { createGenericWorkflowTools } from './tools/generic-workflow-engine.js';
 import { createVerificationTools } from './tools/verification-engine.js';
@@ -79,6 +80,7 @@ export function buildShemTools(session: SessionState, template?: WorkflowTemplat
     ...createDebateBoardTools(session),
     ...scoringEngineTools,  // Stateless — no session needed
     ...createApprovalTools(session),
+    ...createClarificationTools(session),
     ...workflowTools,
     ...createVerificationTools(session),
     ...createMemoryTools(session),

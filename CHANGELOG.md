@@ -2,6 +2,47 @@
 
 Version history for Lavern (codebase name: The Shem). Current version is recorded in `CLAUDE.md` under "System Identity".
 
+## Unreleased — Defense Strategy workflow + clarification gates
+
+**Agents can now pause and ask the client questions mid-analysis.**
+New `clarification` gate type and `mcp__shem__ask_user` MCP tool
+(orchestrator-only): the session pauses, the dashboard shows the
+question, and the user answers in free text and/or attaches more
+documents. All four gate resolvers handle it — readline prompts for
+the answer, the async/API resolver passes `answer` through
+`POST /api/sessions/:id/gate`, the webhook resolver forwards the
+question and accepts `answer` in the callback response, and
+auto-approve *rejects* (never fabricates an answer) so agents proceed
+on explicit `[A]` assumptions.
+
+**Mid-session document attachment.** New
+`POST /api/sessions/:id/documents` appends parsed documents (evidence,
+responding records, exhibits) to a running session — re-sanitized
+defensively, deduped by id, capped at 40 per session, announced via a
+new `documents_added` event. The `ask_user` tool reports documents
+that arrived while its question was pending so the orchestrator
+re-runs `list_documents`.
+
+**New `defense-strategy` workflow** (civil + criminal allegation
+defense): intake → inventory → party attribution → allegation map →
+clarification round → defense theory → red-team challenge → strategy
+synthesis → final gate → delivered. Built for opposing records
+(motion record vs. responding motion record, claim vs. defence);
+the router sends `defense_strategy` requests and civil-allegation
+keywords here while criminal disclosure terms stay with
+defence-disclosure.
+
+**New `allegation-mapper` agent** with its own evidence-first output
+schema: party map (who speaks through which documents), attribution
+table (sworn vs. unsworn vs. argument, every entry cited), allegation
+register (accuser, legal character, supporting/contradicting evidence,
+admitted/denied/unanswered), and ranked clarification questions.
+
+**Dashboard.** GateDialog grows a clarification mode (answer textarea,
+multi-file attach that parses then attaches to the live session, Skip
+that proceeds on assumptions); gate cards label clarification gates
+"Question for You".
+
 ## v0.15.0 (Current) — Initial open-source release
 
 Apache 2.0. First publicly tagged release.

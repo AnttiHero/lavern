@@ -70,7 +70,8 @@ export const EngageRequestSchema = z.object({
   task: z.string().min(1).max(50_000),
   type: z.enum([
     'document_redesign', 'contract_review', 'legal_question',
-    'legal_research', 'risk_assessment', 'defence_disclosure', 'general',
+    'legal_research', 'risk_assessment', 'defence_disclosure',
+    'defense_strategy', 'general',
   ]).optional(),
   documents: z.array(EngageDocumentSchema).max(20).optional(),
   context: EngageContextSchema,

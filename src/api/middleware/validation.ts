@@ -24,7 +24,8 @@ const JurisdictionEnum = z.enum(['US', 'EU', 'UK', 'CA', 'AU']);
 
 const RequestTypeEnum = z.enum([
   'document_redesign', 'contract_review', 'legal_question',
-  'legal_research', 'risk_assessment', 'defence_disclosure', 'general',
+  'legal_research', 'risk_assessment', 'defence_disclosure',
+  'defense_strategy', 'general',
 ]);
 
 const ProviderEnum = z.enum(['anthropic', 'mistral', 'minimax', 'kimi', 'deepseek', 'local', 'managed']);
@@ -166,9 +167,24 @@ export const GateDecisionSchema = z.object({
   decision: z.enum(['approve', 'reject', 'modify']),
   notes: z.string().max(5000).optional(),
   gateType: z.string().max(100).optional(), // Optional: verify this matches the pending gate
+  // Free-text answer for 'clarification' gates (agent asked the user a question)
+  answer: z.string().max(20_000).optional(),
 }).strict();
 
 export type GateDecisionBody = z.infer<typeof GateDecisionSchema>;
+
+// ── Mid-Session Document Attachment Schema ────────────────────────────────
+
+/**
+ * POST /api/sessions/:id/documents — attach already-parsed documents to a
+ * running session (e.g. evidence supplied while a clarification gate is
+ * pending). Same document shape the frontend sends at session creation.
+ */
+export const AttachDocumentsSchema = z.object({
+  documents: z.array(ParsedDocumentSchema).min(1).max(20),
+}).strict();
+
+export type AttachDocumentsBody = z.infer<typeof AttachDocumentsSchema>;
 
 // ── Client Registration Schema ────────────────────────────────────────────
 

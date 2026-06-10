@@ -16,6 +16,7 @@ import './templates/roundtable.js';    // v11 name: 'roundtable'
 import './templates/full-bench.js';    // v11 name: 'full-bench'
 import './templates/tabulate.js';      // v0.14.x: structured tabular extraction
 import './templates/defence-disclosure.js';
+import './templates/defense-strategy.js';   // Allegation defense (civil + criminal) with clarification gates
 // Pre-engagement workflow (unchanged)
 import './templates/pre-engagement.js';
 // v16: Verification pipeline (standalone + post-production)

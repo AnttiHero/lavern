@@ -117,6 +117,7 @@ export const defenceDisclosureTemplate: WorkflowTemplate = {
     'mcp__shem__read_document_section',
     'mcp__shem__search_document',
     'mcp__shem__request_approval',
+    'mcp__shem__ask_user',
     'mcp__shem__run_evaluator_gate',
     'mcp__shem__record_evaluation_result',
     'mcp__shem__run_quality_check',

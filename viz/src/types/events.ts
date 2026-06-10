@@ -101,8 +101,10 @@ export type ShemEvent =
   | { type: 'challenge_posted'; challengeId: string; challenger: string; targetFindingId: string; challengeText: string; evidence: string[]; timestamp: string }
   | { type: 'response_posted'; responseId: string; responder: string; challengeId: string; accepted: boolean; responseText: string; revisedPosition?: string; timestamp: string }
   | { type: 'debate_resolved'; resolutionId: string; topic: string; resolution: string; confidence: number; winningPosition: string; evidenceWeight: string; escalationNeeded: boolean; timestamp: string }
-  | { type: 'gate_requested'; gateType: string; summary: string; details: string; timestamp: string }
-  | { type: 'gate_decided'; gateType: string; decision: string; notes?: string; timestamp: string }
+  | { type: 'gate_requested'; gateType: string; summary: string; details: string; question?: string; timestamp: string }
+  | { type: 'gate_decided'; gateType: string; decision: string; notes?: string; answer?: string; timestamp: string }
+  // Mid-session document attachment (e.g. evidence supplied at a clarification gate)
+  | { type: 'documents_added'; names: string[]; totalDocuments: number; timestamp: string }
   | { type: 'verification_run'; verificationId: string; verificationType: string; passed: boolean; confidence: number; timestamp: string }
   | { type: 'tool_used'; tool: string; agent?: string; timestamp: string }
   | { type: 'cost_update'; totalUsd: number; budgetUsd: number; timestamp: string }

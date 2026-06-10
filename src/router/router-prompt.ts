@@ -56,7 +56,13 @@ Senior partner decomposes, delegates workstreams, senior reviews, synthesizes.
 intake -> inventory -> procedural frame -> disclosure review -> proof matrix -> forensic accounting -> contradictions/gaps -> Crown/OSC red-team -> counsel synthesis -> final gate -> delivered.
 Evidence-linked defence-support work for counsel-supervised criminal disclosure, fraud charges, OSC crossover issues, motions/factums, and forensic accounting reports.
 **Error mode**: Unsupported findings, disclosure gaps, missed contradictions, untested Crown/OSC theory.
-**Use when**: Criminal disclosure, Crown brief, fraud over $5,000, OSC or securities-fraud matter, Charter/disclosure motion, factum, motion record, forensic accounting report, loss/tracing/source-of-funds review.
+**Use when**: Criminal disclosure, Crown brief, fraud over $5,000, OSC or securities-fraud matter, Charter/disclosure motion, forensic accounting report, loss/tracing/source-of-funds review.
+
+### defense-strategy (10 steps) - Allegation Defense (Civil + Criminal)
+intake -> inventory -> party attribution -> allegation map -> clarification round -> defense theory -> red-team challenge -> strategy synthesis -> final gate -> delivered.
+For a client facing allegations: reads motion records, responding records, pleadings, affidavits, or charges; maps who said what (sworn vs. unsworn vs. argument); builds an allegation register with supporting and contradicting evidence; may pause to ask the client questions (answered in text or by attaching documents); produces counsel-ready defense options.
+**Error mode**: Misattributed statements, merged party narratives, missed unanswered allegations, unsurfaced assumptions.
+**Use when**: Client is sued or accused and needs a defense built — motion record vs. responding motion record, statement of claim/defence, factum review, "who said what / what are the allegations" analysis, civil litigation or criminal defense preparation.
 
 ## Intensity Guidance
 
@@ -111,9 +117,16 @@ Use when:
 ### 6. Defence Disclosure -> defence-disclosure
 Use when:
 - Ontario/Canada criminal disclosure, Crown brief, fraud, proceeds, or OSC crossover issue
-- Motion/factum or Charter/disclosure application record
+- Charter/disclosure application record
 - Forensic accounting, loss, tracing, source-of-funds, or expert-report critique
 - Counsel-supervised defence work requiring citations, fact tags, contradictions, gaps, and a proof matrix
+
+### 7. Allegation Defense -> defense-strategy
+Use when:
+- The client is being sued or accused and wants a defense prepared
+- Opposing records must be compared (motion record vs. responding motion record, claim vs. defence)
+- The record needs party attribution (who said what, sworn vs. alleged vs. argued) and an allegation register
+- Material facts may be missing and the client should be asked mid-analysis (clarification round)
 
 ## Classification Rules
 
@@ -125,6 +138,7 @@ Use when:
 6. **If unsure** → counsel (it's the safest default — fast and cheap)
 
 Additional rule: Defence/criminal disclosure/fraud/OSC/forensic accounting requests -> defence-disclosure.
+Additional rule: Client facing allegations needing a defense built (lawsuit, motion record vs. responding record, statement of claim, criminal charge defense prep) -> defense-strategy.
 
 ## Available Specialists
 
@@ -136,6 +150,7 @@ Additional rule: Defence/criminal disclosure/fraud/OSC/forensic accounting reque
 - **disclosure-analyst**: Disclosure inventory, chronology, contradiction chart, gap list
 - **forensic-accounting-analyst**: Loss, tracing, source-of-funds, and expert report critique
 - **motion-factum-analyst**: Motions, factums, relief, arguments, authorities, evidentiary record
+- **allegation-mapper**: Party attribution (who said what), allegation register, cross-record comparison
 - **evaluator**: Automated quality gate (different model)
 - **design-reviewer**: Document design scoring across 5 dimensions
 - **ethics-auditor**: Dark pattern detection, regulatory compliance
@@ -174,7 +189,7 @@ Return structured JSON with your classification:
 - requestType: direct_answer | single_specialist | multi_specialist | full_pipeline | debate_pattern | adversarial | hierarchical
 - complexity: low | medium | high
 - riskLevel: low | medium | high
-- selectedWorkflow: counsel | review | adversarial | roundtable | full-bench | defence-disclosure
+- selectedWorkflow: counsel | review | adversarial | roundtable | full-bench | defence-disclosure | defense-strategy
 - selectedSpecialists: Array of specialist roles needed
 - requiresDebate: boolean
 - requiresEthicsFirst: boolean

@@ -94,7 +94,7 @@ export type AgentRole =
  * Replaces the document-only input model.
  */
 export interface LegalRequest {
-  type: 'document_redesign' | 'contract_review' | 'legal_question' | 'legal_research' | 'risk_assessment' | 'defence_disclosure' | 'general';
+  type: 'document_redesign' | 'contract_review' | 'legal_question' | 'legal_research' | 'risk_assessment' | 'defence_disclosure' | 'defense_strategy' | 'general';
   /** Document path — required for document_redesign/contract_review */
   documentPath?: string;
   /** Free-form request text — for questions, instructions, descriptions */
@@ -177,11 +177,13 @@ export interface NonNegotiableCheck {
 }
 
 export interface HumanGateDecision {
-  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override';
+  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override' | 'clarification';
   timestamp: string;
   summary: string;
   decision: 'approve' | 'reject' | 'modify';
   notes?: string;
+  /** For 'clarification' gates: the user's free-text answer. */
+  answer?: string;
 }
 
 /**

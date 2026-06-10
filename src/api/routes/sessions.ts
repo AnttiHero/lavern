@@ -27,12 +27,14 @@ import {
   CreateSessionSchema,
   ContinuationSchema,
   GateDecisionSchema,
+  AttachDocumentsSchema,
   DerivativeSchema,
   validateBody,
   validateDocumentPath,
   type CreateSessionBody,
   type ContinuationBody,
   type GateDecisionBody,
+  type AttachDocumentsBody,
   type DerivativeBody,
 } from '../middleware/validation.js';
 import { checkProviderReady, crossProviderChat } from '../../providers/cross-provider-chat.js';
@@ -45,6 +47,7 @@ import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
 import { checkDailySpendCap } from '../../utils/spend-tracker.js';
 import type { ParsedDocument } from '../../documents/types.js';
+import { sanitizeDocumentFields } from '../../documents/sanitize-text.js';
 import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
@@ -885,6 +888,7 @@ export function registerSessionRoutes(
         summary: pendingGate.summary,
         details: pendingGate.details,
         proposedAction: pendingGate.proposedAction,
+        question: pendingGate.question,
       } : null,
 
       // ── Rich data for delivery view ────────────────────────────────
@@ -2044,6 +2048,7 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
     const submitted = gateResolver.submitDecision({
       decision: body.decision,
       notes: body.notes,
+      answer: body.answer,
     });
 
     if (!submitted) {
@@ -2055,6 +2060,66 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
       decision: body.decision,
       gateType: pendingGate.gateType,
       sessionId: id,
+    });
+  });
+
+  // ── POST /api/sessions/:id/documents — Attach documents mid-session ──
+  //
+  // Lets the user supply additional documents (evidence, responding records,
+  // exhibits) while a session is running — typically in response to a
+  // clarification question from the team. Documents arrive pre-parsed
+  // (the frontend calls POST /api/documents/parse first), are re-sanitized
+  // defensively, and become visible to all agents via the document-reader
+  // tools on their next list_documents call.
+
+  fastify.post('/api/sessions/:id/documents', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const session = sessionManager.getSession(id);
+
+    if (!session || !checkSessionOwnership(request, session)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    if (session.isHalted()) {
+      return reply.status(409).send({ error: 'Session is halted — documents can no longer be attached' });
+    }
+
+    const body = validateBody<AttachDocumentsBody>(AttachDocumentsSchema, request, reply);
+    if (!body) return; // 400 already sent
+
+    const MAX_SESSION_DOCUMENTS = 40;
+    const existingIds = new Set(session.documents.map(d => d.id));
+    const incoming = (body.documents as ParsedDocument[]).filter(d => !existingIds.has(d.id));
+
+    if (session.documents.length + incoming.length > MAX_SESSION_DOCUMENTS) {
+      return reply.status(400).send({
+        error: `Session document limit exceeded (max ${MAX_SESSION_DOCUMENTS}, have ${session.documents.length}, adding ${incoming.length})`,
+      });
+    }
+
+    // Defence-in-depth: re-sanitize even though /api/documents/parse already
+    // sanitizes — this endpoint also accepts documents from API clients that
+    // may not have gone through the parser.
+    for (const doc of incoming) {
+      const log = sanitizeDocumentFields(doc);
+      if (log.length > 0) doc.sanitizationLog = [...(doc.sanitizationLog ?? []), ...log];
+    }
+
+    session.documents.push(...incoming);
+
+    session.events.emitEvent({
+      type: 'documents_added',
+      names: incoming.map(d => d.name),
+      totalDocuments: session.documents.length,
+      timestamp: new Date().toISOString(),
+    });
+
+    return reply.send({
+      success: true,
+      sessionId: id,
+      added: incoming.map(d => ({ id: d.id, name: d.name })),
+      skippedDuplicates: body.documents.length - incoming.length,
+      totalDocuments: session.documents.length,
     });
   });
 

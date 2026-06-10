@@ -146,6 +146,9 @@ const ORCHESTRATOR_ONLY_TOOLS = [
   'mcp__shem__advance_step',
   'mcp__shem__resolve_debate',
   'mcp__shem__request_approval',
+  // Clarification questions pause the session; only the orchestrator may ask
+  // (the gate resolver holds a single pending gate at a time).
+  'mcp__shem__ask_user',
   // v4: Learning cycle tools are orchestrator-only
   'mcp__shem__compile_report_card',
   'mcp__shem__run_feedback_loop',

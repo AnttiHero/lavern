@@ -22,15 +22,19 @@ const logger = createLogger('GATE');
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface GateRequest {
-  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override';
+  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override' | 'clarification';
   summary: string;
   details: string;
   proposedAction: string;
+  /** For 'clarification' gates: the question the agents need answered. */
+  question?: string;
 }
 
 export interface GateDecision {
   decision: 'approve' | 'reject' | 'modify';
   notes?: string;
+  /** For 'clarification' gates: the user's free-text answer. */
+  answer?: string;
 }
 
 export interface GateResolver {
@@ -41,6 +45,10 @@ export interface GateResolver {
 
 export class ReadlineGateResolver implements GateResolver {
   async resolve(request: GateRequest): Promise<GateDecision> {
+    if (request.gateType === 'clarification') {
+      return this.resolveClarification(request);
+    }
+
     const gateLabels: Record<string, string> = {
       ethics_critical: 'ETHICS CRITICAL',
       meaning_critical: 'MEANING CRITICAL',
@@ -80,6 +88,34 @@ ${separator}
     }
 
     return { decision, notes };
+  }
+
+  /**
+   * Clarification gates are a question, not an approval. The user answers in
+   * free text; an empty answer means "skip — proceed on stated assumptions".
+   */
+  private async resolveClarification(request: GateRequest): Promise<GateDecision> {
+    const separator = '═'.repeat(60);
+    console.log(`
+${separator}
+  THE TEAM HAS A QUESTION
+${separator}
+
+${request.question || request.summary}
+
+CONTEXT:
+${request.details}
+
+${separator}
+Type your answer (or press Enter to skip and let the team proceed on assumptions):
+${separator}
+`);
+
+    const answer = await this.promptUser('Your answer: ');
+    if (!answer) {
+      return { decision: 'reject', notes: 'User skipped the question — proceed on stated assumptions.' };
+    }
+    return { decision: 'approve', answer };
   }
 
   private async promptUser(question: string): Promise<string> {
@@ -200,7 +236,12 @@ export class AutoApproveGateResolver implements GateResolver {
   public decisions: Array<{ request: GateRequest; decision: GateDecision }> = [];
 
   async resolve(request: GateRequest): Promise<GateDecision> {
-    const decision: GateDecision = { decision: 'approve', notes: 'Auto-approved (test mode)' };
+    const decision: GateDecision = request.gateType === 'clarification'
+      ? {
+          decision: 'reject',
+          notes: 'Auto mode: no human available to answer. Proceed on stated assumptions and tag them [A].',
+        }
+      : { decision: 'approve', notes: 'Auto-approved (test mode)' };
     this.decisions.push({ request, decision });
     return decision;
   }
@@ -251,6 +292,7 @@ export class WebhookGateResolver implements GateResolver {
           summary: request.summary,
           details: request.details,
           proposedAction: request.proposedAction,
+          question: request.question,
           timestamp: new Date().toISOString(),
         }),
         signal: controller.signal,
@@ -268,6 +310,7 @@ export class WebhookGateResolver implements GateResolver {
       const body = await response.json() as {
         decision?: 'approve' | 'reject' | 'modify';
         notes?: string;
+        answer?: string;
       };
       clearTimeout(timeout);
 
@@ -279,6 +322,7 @@ export class WebhookGateResolver implements GateResolver {
       return {
         decision: body.decision,
         notes: body.notes,
+        answer: typeof body.answer === 'string' ? body.answer.slice(0, 20_000) : undefined,
       };
     } catch (error) {
       logger.error('Webhook gate callback error', { error });

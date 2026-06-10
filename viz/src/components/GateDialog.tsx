@@ -13,6 +13,7 @@ interface GateDialogProps {
   gateType: string;
   summary: string;
   details: string;
+  question?: string;
   sessionId: string;
   isDemo?: boolean;
   onDecision: (decision: 'approve' | 'reject' | 'modify', notes?: string) => void;
@@ -24,12 +25,14 @@ const GATE_LABELS: Record<string, string> = {
   meaning_critical: 'Meaning Critical',
   final_delivery: 'Final Delivery',
   rubric_override: 'Rubric Override',
+  clarification: 'The Team Has a Question',
 };
 
 export function GateDialog({
   gateType,
   summary,
   details,
+  question,
   sessionId,
   isDemo = false,
   onDecision,
@@ -41,6 +44,13 @@ export function GateDialog({
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Clarification mode: the team asked a question — answer with text and/or documents
+  const isClarification = gateType === 'clarification';
+  const [answer, setAnswer] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Demo mode: count down visually (auto-approve is handled by WorkingView)
   useEffect(() => {
@@ -123,6 +133,89 @@ export function GateDialog({
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) setAttachedFiles(prev => [...prev, ...files].slice(0, 10));
+    // Reset so the same file can be re-selected after removal
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  /**
+   * Answer the team's question: parse any attached files, attach them to the
+   * running session, then submit the text answer through the gate.
+   */
+  const handleClarificationAnswer = async (skip: boolean) => {
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const attachedNames: string[] = [];
+
+      if (!skip && attachedFiles.length > 0) {
+        const parsedDocs: Record<string, unknown>[] = [];
+        for (let i = 0; i < attachedFiles.length; i++) {
+          setUploadProgress(`Reading ${attachedFiles[i].name} (${i + 1}/${attachedFiles.length})…`);
+          const formData = new FormData();
+          formData.append('file', attachedFiles[i]);
+          const res = await fetch('/api/documents/parse', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+          if (!res.ok) {
+            throw new Error(`Could not read ${attachedFiles[i].name}`);
+          }
+          parsedDocs.push(await res.json() as Record<string, unknown>);
+        }
+
+        setUploadProgress('Handing documents to the team…');
+        const attachRes = await fetch(`/api/sessions/${sessionId}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ documents: parsedDocs }),
+        });
+        if (!attachRes.ok) {
+          throw new Error('Documents could not be attached to the session');
+        }
+        attachedNames.push(...attachedFiles.map(f => f.name));
+      }
+
+      setUploadProgress(null);
+
+      const answerText = skip
+        ? undefined
+        : [
+            answer.trim(),
+            attachedNames.length > 0 ? `(Attached documents: ${attachedNames.join(', ')})` : '',
+          ].filter(Boolean).join('\n\n');
+
+      const response = await fetch(`/api/sessions/${sessionId}/gate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(
+          skip
+            ? { decision: 'reject', notes: 'User skipped the question — proceed on stated assumptions.' }
+            : { decision: 'approve', answer: answerText }
+        ),
+      });
+
+      if (response.ok) {
+        onDecision(skip ? 'reject' : 'approve', answerText);
+      } else {
+        await response.text().catch(() => '');
+        setErrorMsg('Submission failed. Please try again.');
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error && err.message
+        ? `${err.message}. Please try again.`
+        : 'Unable to reach the server. Please check your connection and try again.');
+    } finally {
+      setUploadProgress(null);
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div style={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="gate-dialog-title">
       <div ref={dialogRef} style={styles.dialog}>
@@ -158,11 +251,109 @@ export function GateDialog({
 
         {/* Body */}
         <div style={styles.body}>
-          <div style={styles.summary}>{summary}</div>
+          <div style={styles.summary}>{isClarification ? (question || summary) : summary}</div>
           <div style={styles.details}>{details}</div>
         </div>
 
-        {isDemo ? (
+        {!isDemo && isClarification ? (
+          /* Clarification mode: answer in text and/or attach documents */
+          <>
+            <div style={styles.notesSection}>
+              <label htmlFor="gate-answer-input" className="sr-only">Your answer</label>
+              <textarea
+                id="gate-answer-input"
+                placeholder="Type your answer for the team…"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                style={styles.answerTextarea}
+                rows={4}
+                disabled={submitting}
+              />
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.txt,.md,.rtf,.html"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                aria-label="Attach documents"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={submitting}
+                style={{
+                  ...styles.attachBtn,
+                  backgroundColor: hoveredBtn === 'attach' ? colors.bgPanel : 'transparent',
+                }}
+                onMouseEnter={() => setHoveredBtn('attach')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                + Attach documents (evidence, records, exhibits)
+              </button>
+
+              {attachedFiles.length > 0 && (
+                <div style={styles.fileList}>
+                  {attachedFiles.map((f, i) => (
+                    <div key={`${f.name}-${i}`} style={styles.fileChip}>
+                      <span style={styles.fileChipName}>{f.name}</span>
+                      <button
+                        onClick={() => setAttachedFiles(prev => prev.filter((_, j) => j !== i))}
+                        disabled={submitting}
+                        aria-label={`Remove ${f.name}`}
+                        style={styles.fileChipRemove}
+                      >
+                        {'×'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadProgress && (
+                <div style={styles.uploadProgress}>{uploadProgress}</div>
+              )}
+            </div>
+
+            {errorMsg && (
+              <div role="alert" style={{ padding: '0 24px 12px', color: colors.danger, fontSize: 12, fontFamily: fonts.sans }}>
+                {errorMsg}
+              </div>
+            )}
+
+            <div style={styles.actions}>
+              <button
+                onClick={() => handleClarificationAnswer(true)}
+                style={{
+                  ...styles.actionBtn,
+                  ...styles.modifyBtn,
+                  backgroundColor: hoveredBtn === 'skip' ? colors.warning : 'transparent',
+                  color: hoveredBtn === 'skip' ? '#fff' : colors.warning,
+                }}
+                onMouseEnter={() => setHoveredBtn('skip')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                disabled={submitting}
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => handleClarificationAnswer(false)}
+                style={{
+                  ...styles.actionBtn,
+                  ...styles.approveBtn,
+                  backgroundColor: hoveredBtn === 'send' ? colors.success : colors.text,
+                  color: '#fff',
+                  opacity: (!answer.trim() && attachedFiles.length === 0) ? 0.5 : 1,
+                }}
+                onMouseEnter={() => setHoveredBtn('send')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                disabled={submitting || (!answer.trim() && attachedFiles.length === 0)}
+              >
+                {submitting ? 'Sending…' : 'Send Answer'}
+              </button>
+            </div>
+          </>
+        ) : isDemo ? (
           /* Demo mode: passive countdown — no user action needed */
           <div style={styles.demoFooter}>
             <div style={styles.demoCountdownTrack}>
@@ -362,6 +553,74 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 14px',
     boxSizing: 'border-box',
     transition: 'border-color 0.2s ease',
+  },
+  answerTextarea: {
+    width: '100%',
+    backgroundColor: colors.bgInput,
+    border: `1.5px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    color: colors.text,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    padding: '10px 14px',
+    boxSizing: 'border-box',
+    resize: 'vertical' as const,
+    minHeight: 90,
+    transition: 'border-color 0.2s ease',
+  },
+  attachBtn: {
+    marginTop: 10,
+    background: 'none',
+    border: `1.5px dashed ${colors.border}`,
+    borderRadius: radii.sm,
+    color: colors.textSecondary,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    padding: '8px 14px',
+    cursor: 'pointer',
+    width: '100%',
+    transition: 'background-color 0.15s ease',
+  },
+  fileList: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 6,
+    marginTop: 10,
+  },
+  fileChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bgPanel,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 100,
+    padding: '4px 6px 4px 12px',
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.text,
+    maxWidth: '100%',
+  },
+  fileChipName: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    maxWidth: 220,
+  },
+  fileChipRemove: {
+    background: 'none',
+    border: 'none',
+    color: colors.textMuted,
+    fontSize: 14,
+    cursor: 'pointer',
+    padding: '0 4px',
+    lineHeight: 1,
+  },
+  uploadProgress: {
+    marginTop: 10,
+    fontSize: 11,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
   actions: {
     display: 'flex',

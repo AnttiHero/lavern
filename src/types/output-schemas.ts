@@ -659,6 +659,48 @@ export const DefenceDisclosureOutputSchema = z.object({
   summary: z.string(),
 });
 
+// ── Allegation Mapper Output Schema ──────────────────────────────────
+//
+// Party attribution + allegation register for the defense-strategy
+// workflow. Evidence-first: every attribution and allegation must carry
+// a citation or be declined by the agent.
+
+export const AllegationMapOutputSchema = z.object({
+  agentRole: z.string(),
+  executiveSummary: z.string(),
+  jurisdiction: z.string().default('Ontario/Canada'),
+  partyMap: z.array(z.object({
+    name: z.string(),
+    role: z.string(),
+    alignment: z.enum(['client', 'adverse', 'neutral', 'unknown']),
+    speaksThrough: z.array(z.string()).min(1),
+  })),
+  attributions: z.array(z.object({
+    statement: z.string(),
+    speaker: z.string(),
+    statementKind: z.enum(['sworn_evidence', 'unsworn_allegation', 'argument', 'exhibit', 'hearsay_within_exhibit']),
+    factTag: FactTagSchema,
+    citations: z.array(EvidenceCitationSchema).min(1),
+  })),
+  allegationRegister: z.array(z.object({
+    allegation: z.string(),
+    accuser: z.string(),
+    legalCharacter: z.string(),
+    supportingEvidence: z.array(EvidenceCitationSchema),
+    contradictingEvidence: z.array(EvidenceCitationSchema),
+    responseOnRecord: z.enum(['admitted', 'denied', 'partially_admitted', 'unanswered', 'not_applicable']),
+    citations: z.array(EvidenceCitationSchema).min(1),
+  })),
+  clarificationQuestions: z.array(z.object({
+    priority: z.enum(['urgent', 'high', 'medium', 'low']),
+    question: z.string(),
+    whyItMatters: z.string(),
+  })),
+  findings: z.array(CitedDefenceFindingSchema),
+  confidence: z.number().min(0).max(1),
+  summary: z.string(),
+});
+
 export const RegulatoryLawyerOutputSchema = z.object({
   agentRole: z.string(),
   executiveSummary: z.string(),
@@ -1000,6 +1042,7 @@ export const outputFormats = {
   'disclosure-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
   'forensic-accounting-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
   'motion-factum-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
+  'allegation-mapper': zodToOutputFormat(AllegationMapOutputSchema),
   // v8: Practice area group schemas
   'managing-partner': zodToOutputFormat(LeadershipOutputSchema),
   'corporate-lawyer': zodToOutputFormat(CorporateLawyerOutputSchema),
