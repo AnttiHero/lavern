@@ -17,7 +17,22 @@ import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { WorkflowTemplate } from '../../types/workflow.js';
 import type { SessionState } from '../../session/session-state.js';
+import type { HumanGateDecision } from '../../types/index.js';
 import { eventTimestamp } from '../../events/event-bus.js';
+import { getLatestRubricEvaluation } from './rubric-gate.js';
+
+function matchesRubricOverride(
+  decision: HumanGateDecision,
+  step: string,
+  rubricId: string,
+): boolean {
+  const context = `${decision.summary}\n${decision.notes ?? ''}`.toLowerCase();
+  const normalizedStep = step.toLowerCase();
+  const readableStep = normalizedStep.replace(/[_-]+/g, ' ');
+
+  return context.includes(rubricId.toLowerCase())
+    && (context.includes(normalizedStep) || context.includes(readableStep));
+}
 
 export function createGenericWorkflowTools(
   session: SessionState,
@@ -35,6 +50,7 @@ export function createGenericWorkflowTools(
       revisionCount: 0,
       qualityChecks: [],
       stepIterationCounts: {},
+      rubricIterationCounts: {},
       handoffs: [],
       startedAt: now,
       lastTransitionAt: now,
@@ -65,6 +81,7 @@ export function createGenericWorkflowTools(
 **Completed Steps**: ${state.completedSteps.join(' \u2192 ') || '(none)'}
 ${nextStep ? `**Next Step**: ${nextStep} \u2014 ${nextDef?.description ?? ''}` : '**Status**: Final step reached'}
 ${stepDef?.requiresGateApproval ? `**Gate Required**: ${stepDef.gateType ?? 'approval'} (must invoke approval gate)` : ''}
+${stepDef?.rubricRequired ? `**Rubric Required**: ${stepDef.rubricId ?? '(missing rubric id)'} (must pass before advancing)` : ''}
 ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check required (max ${stepDef.maxRevisionLoops ?? 2} revision loops)` : ''}
 **Gate Decisions**: ${JSON.stringify(state.gateDecisions)}
 **Revision Count**: ${state.revisionCount}`,
@@ -99,6 +116,68 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
       }
 
       const stepDef = defs[completedStep];
+
+      if (stepDef?.rubricRequired) {
+        if (!stepDef.rubricId) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `ERROR: Step "${completedStep}" requires a rubric but does not define rubricId. Template "${template.id}" is misconfigured.`,
+            }],
+          };
+        }
+
+        const latestRubric = getLatestRubricEvaluation(session, completedStep, stepDef.rubricId);
+        if (!latestRubric) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `ERROR: Step "${completedStep}" requires rubric "${stepDef.rubricId}" before advancing. Call \`evaluate_rubric\` with step "${completedStep}" and rubric_id "${stepDef.rubricId}".`,
+            }],
+          };
+        }
+
+        if (latestRubric.status !== 'satisfied') {
+          if (latestRubric.status !== 'max_iterations_reached') {
+            const gaps = latestRubric.criteria
+              .filter(c => !c.passed)
+              .map((c, i) => `${i + 1}. ${c.name}: ${c.gap ?? c.evidence}`)
+              .join('\n');
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `ERROR: Step "${completedStep}" cannot advance because rubric "${stepDef.rubricId}" is ${latestRubric.status}.\n\n${latestRubric.explanation}${gaps ? `\n\nFailed criteria:\n${gaps}` : ''}\n\nRevise the artifact, then call \`evaluate_rubric\` again.`,
+              }],
+            };
+          }
+
+          const overrideDecision = [...session.gateDecisions]
+            .reverse()
+            .find(d =>
+              d.gateType === 'rubric_override'
+              && Date.parse(d.timestamp) >= Date.parse(latestRubric.timestamp)
+              && matchesRubricOverride(d, completedStep, stepDef.rubricId!),
+            );
+
+          if (!overrideDecision) {
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `ERROR: Rubric "${stepDef.rubricId}" reached the maximum iteration cap for step "${completedStep}". A human override is required before advancing. Call \`request_approval\` with gate_type: "rubric_override" and include the step name, rubric id, and rubric gaps in the summary or notes.`,
+              }],
+            };
+          }
+
+          if (overrideDecision.decision !== 'approve') {
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `RUBRIC OVERRIDE REJECTED by human.${overrideDecision.notes ? ` Notes: ${overrideDecision.notes}` : ''} The workflow does NOT advance. Revise and evaluate the rubric again.`,
+              }],
+            };
+          }
+        }
+      }
 
       // Gate steps require a real human decision recorded by request_approval
       if (stepDef?.requiresGateApproval) {
@@ -187,6 +266,7 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
           text: `ADVANCED: ${completedStep} \u2192 ${nextStep}
 **Now**: ${nextDef?.description ?? ''}
 ${nextDef?.requiresGateApproval ? `\u26a0\ufe0f GATE STEP: Must invoke ${nextDef.gateType ?? 'approval'} gate before advancing.` : ''}
+${nextDef?.rubricRequired ? `RUBRIC GATE: Must satisfy ${nextDef.rubricId ?? 'configured rubric'} before advancing.` : ''}
 ${nextDef?.requiresEvaluatorGate ? `\ud83d\udd0d EVALUATOR GATE: Automated quality check required.` : ''}
 **Progress**: ${state.completedSteps.length}/${steps.length} steps completed`,
         }],
@@ -208,7 +288,10 @@ ${nextDef?.requiresEvaluatorGate ? `\ud83d\udd0d EVALUATOR GATE: Automated quali
         const evalInfo = def?.requiresEvaluatorGate
           ? ` [EVALUATOR: revision ${state.revisionCount}]`
           : '';
-        return `${i + 1}. ${step}${gateInfo}${evalInfo}`;
+        const rubricInfo = def?.rubricRequired && def.rubricId
+          ? ` [RUBRIC: ${getLatestRubricEvaluation(session, step, def.rubricId)?.status ?? 'not_run'}]`
+          : '';
+        return `${i + 1}. ${step}${gateInfo}${rubricInfo}${evalInfo}`;
       }).join('\n');
 
       return {

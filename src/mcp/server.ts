@@ -38,6 +38,7 @@ import { createLegalMdTools } from './tools/legal-md-compiler.js';
 import { createReplayTestingTools } from './tools/session-replay-testing.js';
 // v5: Evaluator Gate + Generic Workflow
 import { createEvaluatorGateTools } from './tools/evaluator-gate.js';
+import { createRubricGateTools } from './tools/rubric-gate.js';
 // v6: Risk Pricing
 import { createRiskPricingTools } from './tools/risk-pricing.js';
 // v11: Quality Check Iteration Loops
@@ -48,6 +49,7 @@ import { createHandoffTools } from './tools/handoff.js';
 import { createDocumentCheckTools } from './tools/document-checks.js';
 // v12: Document Reader
 import { createDocumentReaderTools } from './tools/document-reader.js';
+import { createGroundingVerifierTools } from './tools/grounding-verifier.js';
 // v8: Pre-Engagement
 import { createPreEngagementTools } from './tools/pre-engagement.js';
 // v15: Knowledge Base
@@ -88,6 +90,8 @@ export function buildShemTools(session: SessionState, template?: WorkflowTemplat
     ...createReplayTestingTools(session),
     // v5: Evaluator Gate
     ...createEvaluatorGateTools(session),
+    // v17: Native rubric gates
+    ...createRubricGateTools(session, template),
     // v6: Risk Pricing
     ...createRiskPricingTools(session),
     // v8: Pre-Engagement
@@ -96,6 +100,8 @@ export function buildShemTools(session: SessionState, template?: WorkflowTemplat
     ...createQualityCheckTools(session),
     // v12: Document Reader
     ...createDocumentReaderTools(session),
+    // v12/v17: Mechanical grounding verifier
+    ...createGroundingVerifierTools(session),
     // v15: Knowledge Base — searchable reference document collections
     ...createKnowledgeBaseTools(session),
     // Handoff Templates — structured phase-transition summaries

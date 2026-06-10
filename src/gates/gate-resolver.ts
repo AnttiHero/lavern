@@ -22,7 +22,7 @@ const logger = createLogger('GATE');
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface GateRequest {
-  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection';
+  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override';
   summary: string;
   details: string;
   proposedAction: string;
@@ -45,6 +45,7 @@ export class ReadlineGateResolver implements GateResolver {
       ethics_critical: 'ETHICS CRITICAL',
       meaning_critical: 'MEANING CRITICAL',
       final_delivery: 'FINAL DELIVERY',
+      rubric_override: 'RUBRIC OVERRIDE',
     };
 
     const separator = '\u2550'.repeat(60);

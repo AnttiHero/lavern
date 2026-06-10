@@ -44,8 +44,9 @@ class WorkflowRegistry {
       const stepList = t.steps.map((s, i) => {
         const def = t.stepDefinitions[s];
         const gate = def?.requiresGateApproval ? ' [GATE]' : '';
+        const rubric = def?.rubricRequired ? ' [RUBRIC]' : '';
         const evaluator = def?.requiresEvaluatorGate ? ' [EVALUATOR]' : '';
-        return `  ${i + 1}. ${s}${gate}${evaluator}`;
+        return `  ${i + 1}. ${s}${gate}${rubric}${evaluator}`;
       }).join('\n');
 
       return `### ${t.id}: ${t.name}

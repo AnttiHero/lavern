@@ -25,6 +25,7 @@ export function createApprovalTools(session: SessionState) {
     final_delivery: 'FINAL DELIVERY',
     engagement_acceptance: 'ENGAGEMENT ACCEPTANCE',
     team_selection: 'TEAM SELECTION',
+    rubric_override: 'RUBRIC OVERRIDE',
   };
 
   const requestApproval = tool(
@@ -37,6 +38,7 @@ export function createApprovalTools(session: SessionState) {
         'final_delivery',
         'engagement_acceptance',
         'team_selection',
+        'rubric_override',
       ]).describe('Type of approval gate'),
       summary: z.string()
         .describe('Human-readable summary of what needs approval'),

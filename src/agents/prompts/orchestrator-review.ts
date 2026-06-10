@@ -102,6 +102,11 @@ specific evidence? If you can see the gap before the evaluator does, fix it
 now — don't waste a revision loop on something you could have caught. Record
 with \`record_quality_result\`. Maximum 2 iterations.
 
+Then call \`evaluate_rubric\` with step "specialist_analysis" and rubric_id
+"review.specialist_analysis". Do not advance until the rubric is satisfied.
+If the rubric reaches its iteration cap, request a human \`rubric_override\`
+approval or revise and evaluate again.
+
 Call \`advance_step\` with completed_step: "specialist_analysis".
 
 ### 3. EVALUATOR GATE
@@ -174,6 +179,8 @@ Execute all 10 passes in order:
 
 Record each pass with \`record_pass_result(pass, score, findings)\`.
 After all 10, call \`compile_verification_report\`.
+Then call \`evaluate_rubric\` with step "verification_pass" and rubric_id
+"review.verification_pass". Do not advance until the rubric is satisfied.
 
 The verification report includes a verdict (PASS / CONDITIONAL_PASS / FAIL) and
 severity-categorized findings. Present the verdict alongside the deliverable at

@@ -153,6 +153,11 @@ describe('Workflow Template Registry', () => {
       const summary = workflowRegistry.getSummaryForRouter();
       expect(summary).toContain('[EVALUATOR]');
     });
+
+    it('should indicate rubric gate steps', () => {
+      const summary = workflowRegistry.getSummaryForRouter();
+      expect(summary).toContain('[RUBRIC]');
+    });
   });
 
   describe('Custom Template Registration', () => {

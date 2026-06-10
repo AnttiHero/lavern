@@ -61,6 +61,11 @@ export const legalDesignTemplate: WorkflowTemplate = {
     'mcp__shem__run_cross_verification',
     'mcp__shem__run_score_verification',
     'mcp__shem__get_verification_summary',
+    // Rubric gates + grounding
+    'mcp__shem__evaluate_rubric',
+    'mcp__shem__list_rubrics',
+    'mcp__shem__verify_finding_grounding',
+    'mcp__shem__verify_all_findings_grounding',
     // Memory system
     'mcp__shem__add_institutional_memory',
     'mcp__shem__query_institutional_memory',

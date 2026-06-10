@@ -29,6 +29,7 @@ import type { SessionReportCard, DimensionSnapshot } from '../types/report-card.
 import type { MatterRecord } from '../types/matter.js';
 import type { ParsedDocument } from '../documents/types.js';
 import type { VerificationPipelineState } from '../types/verification.js';
+import type { RubricEvaluation } from '../types/rubric.js';
 
 // ── Array size limits ─────────────────────────────────────────────────────
 // Prevents unbounded growth of debate findings, challenges, audit entries, etc.
@@ -151,6 +152,11 @@ export class SessionState {
     minorCount: number;
     timestamp: string;
   }> = [];
+
+  // Rubric Gate State
+  public readonly rubricEvaluations: RubricEvaluation[] = [];
+  public rubricCounter = 0;
+  public rubricIterationCounts: Record<string, number> = {};
 
   // ── Approval Gate State ──
   public readonly gateDecisions: HumanGateDecision[] = [];

@@ -39,6 +39,9 @@ export const reviewTemplate: WorkflowTemplate = {
       preconditions: ['intake'],
       maxIterations: 2,
       qualityCheckType: 'self',
+      rubricRequired: true,
+      rubricId: 'review.specialist_analysis',
+      rubricMaxIterations: 2,
     },
     evaluator_gate: {
       name: 'evaluator_gate',
@@ -56,6 +59,9 @@ export const reviewTemplate: WorkflowTemplate = {
       name: 'verification_pass',
       description: '10-pass verification pipeline on the deliverable. Context, UX, clarity, structure, accuracy, completeness, risk, formatting, legal design, delivery readiness. Produces Verification Report with severity-categorized findings and verdict.',
       preconditions: ['plain_language_review'],
+      rubricRequired: true,
+      rubricId: 'review.verification_pass',
+      rubricMaxIterations: 2,
     },
     final_gate: {
       name: 'final_gate',
@@ -105,6 +111,11 @@ export const reviewTemplate: WorkflowTemplate = {
     // Evaluator gate
     'mcp__shem__run_evaluator_gate',
     'mcp__shem__record_evaluation_result',
+    // Rubric gates + grounding
+    'mcp__shem__evaluate_rubric',
+    'mcp__shem__list_rubrics',
+    'mcp__shem__verify_finding_grounding',
+    'mcp__shem__verify_all_findings_grounding',
     // Scoring
     'mcp__shem__calculate_readability_score',
     'mcp__shem__calculate_complexity_tax',
