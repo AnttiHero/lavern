@@ -26,7 +26,7 @@ describe('systemd service file generation', () => {
   });
 
   it('includes ExecStart with a valid path', () => {
-    expect(serviceContent).toMatch(/ExecStart=\/.+/);
+    expect(serviceContent).toMatch(/ExecStart=.+/);
   });
 
   it('sets Restart=on-failure', () => {
@@ -55,7 +55,7 @@ describe('systemd service file generation', () => {
   });
 
   it('includes WorkingDirectory', () => {
-    expect(serviceContent).toMatch(/WorkingDirectory=\/.+/);
+    expect(serviceContent).toMatch(/WorkingDirectory=.+/);
   });
 
   it('sets RestartSec for crash recovery delay', () => {

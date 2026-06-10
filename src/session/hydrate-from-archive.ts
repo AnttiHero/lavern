@@ -23,6 +23,21 @@
 import type { ArchivedSession } from '../db/database.js';
 import type { Finding, DebateResolution } from '../types/debate.js';
 import type { AgentRole } from '../types/index.js';
+import type { LLMProvider } from '../providers/types.js';
+
+interface ArchivedDocumentMetadata {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  pageCount: number;
+  wordCount: number;
+  sectionCount: number;
+  definedTermCount: number;
+  tableCount: number;
+  parseMethod?: string;
+  parsedAt?: string;
+}
 
 /**
  * The subset of SessionState fields that read-only post-delivery endpoints
@@ -57,20 +72,33 @@ export interface HydratedSession {
   selectedTeam: string[];
   userId: string | null;
   soul?: string;
-  documents: never[];
+  provider?: LLMProvider;
+  documents: ArchivedDocumentMetadata[];
   events: { emitEvent: (_e: unknown) => void };
   /** Flag so callers can detect hydrated sessions and reject mutations. */
   readonly _fromArchive: true;
 }
 
 interface SummaryJson {
+  provider?: LLMProvider;
+  documents?: ArchivedDocumentMetadata[];
   topFindings?: Array<{
+    id?: string;
     severity?: string;
     content?: string;
     agent?: string;
+    category?: string;
+    findingType?: string;
+    evidence?: unknown;
+    confidence?: number;
+    groundingScore?: number | null;
+    timestamp?: string;
+    resolved?: boolean;
   }>;
   resolutions?: Array<{
+    topic?: string;
     debateTopic?: string;
+    findingIds?: string[];
     resolution?: string;
     winningPosition?: string;
     evidenceWeight?: string;
@@ -102,6 +130,29 @@ function safeParseTeam(raw: string): string[] {
   }
 }
 
+function safeStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((x): x is string => typeof x === 'string') : [];
+}
+
+function safeDocuments(value: unknown): ArchivedDocumentMetadata[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null)
+    .map(d => ({
+      id: typeof d.id === 'string' ? d.id : '',
+      name: typeof d.name === 'string' ? d.name : 'Archived document',
+      mimeType: typeof d.mimeType === 'string' ? d.mimeType : '',
+      size: typeof d.size === 'number' ? d.size : 0,
+      pageCount: typeof d.pageCount === 'number' ? d.pageCount : 0,
+      wordCount: typeof d.wordCount === 'number' ? d.wordCount : 0,
+      sectionCount: typeof d.sectionCount === 'number' ? d.sectionCount : 0,
+      definedTermCount: typeof d.definedTermCount === 'number' ? d.definedTermCount : 0,
+      tableCount: typeof d.tableCount === 'number' ? d.tableCount : 0,
+      parseMethod: typeof d.parseMethod === 'string' ? d.parseMethod : undefined,
+      parsedAt: typeof d.parsedAt === 'string' ? d.parsedAt : undefined,
+    }));
+}
+
 /** Normalize severity string to Severity union, defaulting to YELLOW. */
 function normalizeSeverity(s: string | undefined): Finding['severity'] {
   const upper = (s ?? '').toUpperCase();
@@ -112,26 +163,28 @@ function normalizeSeverity(s: string | undefined): Finding['severity'] {
 export function hydrateSessionFromArchive(archived: ArchivedSession): HydratedSession {
   const summary = safeParseSummary(archived.summary_json ?? '{}');
   const team = safeParseTeam(archived.team_roles ?? '[]');
+  const documents = safeDocuments(summary.documents);
 
   // Rebuild findings from topFindings. The archive only stores the top 10, which
   // is fine for derivatives/conversation (they surface headline issues, not an
   // exhaustive list). Fill in minimal required fields.
   const findings: Finding[] = (summary.topFindings ?? []).map((f, i) => ({
-    id: `archived-finding-${i}`,
+    id: f.id ?? `archived-finding-${i}`,
     agentRole: (f.agent ?? 'corporate-generalist') as AgentRole,
-    findingType: 'contract-risk',
+    findingType: (f.category ?? f.findingType ?? 'contract-risk') as Finding['findingType'],
     content: f.content ?? '',
     severity: normalizeSeverity(f.severity),
-    evidence: [],
-    confidence: 0.7,
-    timestamp: archived.completed_at ?? archived.created_at,
-    resolved: true,
+    evidence: safeStringArray(f.evidence),
+    confidence: typeof f.confidence === 'number' ? f.confidence : 0.7,
+    groundingScore: typeof f.groundingScore === 'number' ? f.groundingScore : undefined,
+    timestamp: f.timestamp ?? archived.completed_at ?? archived.created_at,
+    resolved: typeof f.resolved === 'boolean' ? f.resolved : true,
   }));
 
   const resolutions: DebateResolution[] = (summary.resolutions ?? []).map((r, i) => ({
     id: `archived-resolution-${i}`,
-    debateTopic: r.debateTopic ?? '',
-    findingIds: [],
+    debateTopic: r.debateTopic ?? r.topic ?? '',
+    findingIds: safeStringArray(r.findingIds),
     resolution: r.resolution ?? '',
     winningPosition: r.winningPosition ?? '',
     evidenceWeight: r.evidenceWeight ?? '',
@@ -164,7 +217,8 @@ export function hydrateSessionFromArchive(archived: ArchivedSession): HydratedSe
     selectedTeam: team,
     userId: archived.user_id ?? null,
     soul: undefined,
-    documents: [],
+    provider: summary.provider,
+    documents,
     events: { emitEvent: () => { /* no-op for archived sessions */ } },
     _fromArchive: true,
   };

@@ -16,6 +16,8 @@
 
 // ── Event types ───────────────────────────────────────────────────────
 
+import { apiPathFromInput, apiUrl } from '../api.js';
+
 export type ApiErrorType = 'auth-expired' | 'rate-limited' | 'server-error';
 
 export interface ApiErrorEvent {
@@ -73,7 +75,7 @@ async function interceptResponse(res: Response, url: string): Promise<void> {
     // A transient 401 (DB hiccup, race condition) should not permanently
     // delete the user's auth token.
     try {
-      const verifyRes = await originalFetchRef('/api/auth/me', { credentials: 'include' });
+      const verifyRes = await originalFetchRef(apiUrl('/api/auth/me'), { credentials: 'include' });
       if (verifyRes.ok) return; // Session is actually fine — skip logout
     } catch {
       // Network error during verification — don't logout on connectivity issues
@@ -141,16 +143,9 @@ export function installApiInterceptor(): void {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    const res = await originalFetch(input, init);
-
-    // Extract URL string for path matching
-    const url = typeof input === 'string'
-      ? input
-      : input instanceof URL
-        ? input.pathname
-        : input instanceof Request
-          ? new URL(input.url).pathname
-          : '';
+    const fetchInput = typeof input === 'string' ? apiUrl(input) : input;
+    const res = await originalFetch(fetchInput, init);
+    const url = apiPathFromInput(fetchInput);
 
     // Fire-and-forget interception (don't delay the response)
     interceptResponse(res, url).catch(() => {});
@@ -169,7 +164,7 @@ export async function apiFetch(
   url: string,
   init?: RequestInit,
 ): Promise<Response> {
-  return fetch(url, {
+  return fetch(apiUrl(url), {
     credentials: 'include',
     ...init,
   });

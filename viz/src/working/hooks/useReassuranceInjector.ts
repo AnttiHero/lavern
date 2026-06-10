@@ -41,6 +41,7 @@ const GENERIC_MESSAGES = [
 export function useReassuranceInjector(
   streamCards: StreamCard[],
   currentStep: WorkflowStep,
+  disabled = false,
 ): FeedItem[] {
   const [reassurances, setReassurances] = useState<ReassuranceItem[]>([]);
   const messageIndexRef = useRef(0);
@@ -59,6 +60,11 @@ export function useReassuranceInjector(
 
   // Periodic check for silence gaps
   useEffect(() => {
+    if (disabled) {
+      setReassurances([]);
+      return;
+    }
+
     const timer = setInterval(() => {
       const sinceLastHighValue = Date.now() - lastHighValueTimeRef.current;
       const sinceLastInjection = Date.now() - lastInjectionTimeRef.current;
@@ -87,7 +93,7 @@ export function useReassuranceInjector(
     }, 5_000); // Check every 5 seconds
 
     return () => clearInterval(timer);
-  }, [currentStep, streamCards.length]);
+  }, [currentStep, streamCards.length, disabled]);
 
   // Reset when step changes — clear stale reassurances to prevent memory leak
   useEffect(() => {
@@ -95,10 +101,11 @@ export function useReassuranceInjector(
     lastHighValueTimeRef.current = Date.now();
     lastInjectionTimeRef.current = 0;
     setReassurances([]);
-  }, [currentStep]);
+  }, [currentStep, disabled]);
 
   // Merge stream cards + reassurance items via single-pass merge (O(n+m))
   return useMemo(() => {
+    if (disabled) return streamCards;
     if (reassurances.length === 0) return streamCards;
 
     const merged: FeedItem[] = [];
@@ -121,5 +128,5 @@ export function useReassuranceInjector(
     }
 
     return merged;
-  }, [streamCards, reassurances]);
+  }, [streamCards, reassurances, disabled]);
 }

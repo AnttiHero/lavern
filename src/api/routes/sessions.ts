@@ -25,19 +25,21 @@ import { dispatch } from '../../dispatch.js';
 import { attachEventStream } from '../ws-handler.js';
 import {
   CreateSessionSchema,
+  ContinuationSchema,
   GateDecisionSchema,
   DerivativeSchema,
   validateBody,
   validateDocumentPath,
   type CreateSessionBody,
+  type ContinuationBody,
   type GateDecisionBody,
   type DerivativeBody,
 } from '../middleware/validation.js';
-import { crossProviderChat } from '../../providers/cross-provider-chat.js';
+import { checkProviderReady, crossProviderChat } from '../../providers/cross-provider-chat.js';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getUserById, logAuditEvent, holdBillableHours, debitBillableHours, updateArchiveUserId, updateArchiveTitle } from '../../db/database.js';
+import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getUserById, logAuditEvent, holdBillableHours, debitBillableHours, updateArchiveUserId, updateArchiveTitle, updateArchivedDocument, type ArchivedSession } from '../../db/database.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -47,6 +49,7 @@ import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
+import { extractCounselDocument, looksLikeStatusPackage } from '../../assembly/extract-counsel.js';
 import {
   convertTabulateToSingleCsv, convertTabulateToCsvBundle,
   convertTabulateToHtml, convertTabulateToDocx,
@@ -182,6 +185,169 @@ function getSessionOrHydrate(
   return hydrateSessionFromArchive(archived);
 }
 
+function validateClientDeliverable(text: string): { valid: boolean; reason?: string } {
+  const validation = validateDeliverable(text);
+  if (validation.valid || looksLikeStatusPackage(text)) {
+    return { valid: true };
+  }
+  return validation;
+}
+
+type DeliveryState = 'complete' | 'needs_direction' | 'assembly_failed';
+type DirectionAnswerType = 'text' | 'choice' | 'date' | 'textarea';
+
+interface DirectionBlocker {
+  id: string;
+  label: string;
+  required: boolean;
+  answerType: DirectionAnswerType;
+  options?: string[];
+}
+
+interface DirectionRequest {
+  title: string;
+  blockers: DirectionBlocker[];
+}
+
+const DIRECTION_BLOCKERS: DirectionBlocker[] = [
+  { id: 'client_identity', label: 'Who is the client?', required: true, answerType: 'text' },
+  { id: 'osc_complainant', label: 'Is the OSC a complainant in the criminal proceedings?', required: true, answerType: 'choice', options: ['Yes', 'No', 'Unknown'] },
+  { id: 'deliverable_type', label: 'What is the actual deliverable?', required: true, answerType: 'choice', options: ['High-level critique', 'Section-by-section analysis', 'Full responding expert report'] },
+  { id: 'deadline', label: 'What is the deadline?', required: true, answerType: 'date' },
+  { id: 'proposed_format', label: 'Is the proposed format acceptable?', required: true, answerType: 'choice', options: ['Yes, use the proposed format', 'No, I will describe a different format'] },
+  { id: 'sub_questions', label: 'Are there specific sub-questions beyond the general request?', required: true, answerType: 'textarea' },
+  { id: 'independent_accountant', label: 'Do you approve retaining an independent forensic accountant?', required: true, answerType: 'choice', options: ['Yes', 'No', 'Not sure yet'] },
+  { id: 'budget_envelope', label: 'What is the budget envelope, and who is billed?', required: true, answerType: 'text' },
+];
+
+function extractStatusTitle(text: string): string {
+  const heading = text.match(/^#\s+(.+)$/m)?.[1]?.trim();
+  return heading || 'Intake complete, analysis paused';
+}
+
+function buildDirectionRequest(text: string): DirectionRequest {
+  return {
+    title: extractStatusTitle(text),
+    blockers: DIRECTION_BLOCKERS.map(b => ({ ...b, options: b.options ? [...b.options] : undefined })),
+  };
+}
+
+function hasDirectionHoldSignal(text: string): boolean {
+  return /\b(?:INTAKE HOLD|SPECIALIST ANALYSIS ON HOLD|analysis on hold|release the hold|awaiting your direction|matter is paused|HOLD all specialist analysis)\b/i.test(text);
+}
+
+function classifyDeliveryState(
+  assembledDocument: string | null | undefined,
+  findings: Array<{ content?: unknown }> = [],
+): { deliveryState: DeliveryState; directionRequest?: DirectionRequest } {
+  const document = assembledDocument?.trim() ?? '';
+  const findingText = findings.map(f => typeof f.content === 'string' ? f.content : '').join('\n');
+  const directionText = `${document}\n${findingText}`;
+
+  if ((document && looksLikeStatusPackage(document)) || hasDirectionHoldSignal(directionText)) {
+    return {
+      deliveryState: 'needs_direction',
+      directionRequest: buildDirectionRequest(document || findingText),
+    };
+  }
+
+  if (!document || isProcessDump(document)) {
+    return { deliveryState: 'assembly_failed' };
+  }
+
+  return { deliveryState: 'complete' };
+}
+
+function scopeLabel(scope: ContinuationBody['continuationScope']): string {
+  switch (scope) {
+    case 'section_by_section': return 'Section-by-section analysis';
+    case 'responding_report': return 'Full responding expert report';
+    default: return 'High-level critique';
+  }
+}
+
+function parseBudgetEnvelope(value: string | undefined, fallback: number): number {
+  const matches = value?.match(/\d+(?:\.\d+)?/g) ?? [];
+  const amounts = matches.map(n => Number(n)).filter(n => Number.isFinite(n) && n > 0);
+  if (amounts.length === 0) return fallback;
+  return Math.min(Math.max(Math.max(...amounts), 0.01), 500);
+}
+
+function uniqueDocuments(docs: ParsedDocument[]): ParsedDocument[] {
+  const seen = new Set<string>();
+  const result: ParsedDocument[] = [];
+  for (const doc of docs) {
+    const key = doc.id || `${doc.name}:${doc.size}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(doc);
+  }
+  return result.slice(0, 20);
+}
+
+function buildContinuationRequestText(
+  originalSessionId: string,
+  priorStatusMemo: string,
+  body: ContinuationBody,
+  documents: ParsedDocument[],
+): string {
+  const answers = DIRECTION_BLOCKERS
+    .map(b => `- ${b.label}: ${body.answers[b.id]?.trim() || '(not answered)'}`)
+    .join('\n');
+  const documentLines = documents.length > 0
+    ? documents.map(d => {
+      const note = body.documentNotes[d.id]?.trim();
+      const noteText = note ? ` Note from client: ${note}` : '';
+      return `- ${d.name} (${d.wordCount.toLocaleString()} words, ${d.pageCount} pages).${noteText}`;
+    }).join('\n')
+    : '- No additional parsed documents were attached to the continuation request.';
+  const memoExcerpt = priorStatusMemo.trim()
+    ? priorStatusMemo.trim().slice(0, 16_000)
+    : '(No prior status memo was available.)';
+
+  return `Continuation request for paused Lavern matter.
+
+Original session: ${originalSessionId}
+Requested continuation scope: ${scopeLabel(body.continuationScope)}
+Deadline: ${body.deadline?.trim() || body.answers.deadline?.trim() || '(not supplied)'}
+Budget/billing envelope: ${body.budgetEnvelope?.trim() || body.answers.budget_envelope?.trim() || '(not supplied)'}
+
+Client answers to the intake HOLD blockers:
+${answers}
+
+Client instructions for the continuation:
+${body.instructions.trim() || '(No additional overall instructions supplied.)'}
+
+Documents available for this continuation:
+${documentLines}
+
+Prior Lavern status memo for continuity:
+${memoExcerpt}
+
+Instruction to Lavern: treat this as a linked continuation, not a request to revise the status memo. Use the answers and documents above to release the intake HOLD if sufficient, dispatch the appropriate specialists, preserve all mandatory human gates, and produce the selected deliverable with cited evidence.`;
+}
+
+function extractDeliverableFromArchive(archived: ArchivedSession): string {
+  const existing = archived.assembled_document?.trim();
+  if (existing) {
+    const validation = validateClientDeliverable(existing);
+    if (validation.valid || existing.length > 5000) {
+      return existing;
+    }
+  }
+
+  const finalOutput = archived.final_output ?? '';
+  const extracted = extractCounselDocument(finalOutput);
+  if (!extracted) return '';
+
+  const validation = validateClientDeliverable(extracted);
+  if (validation.valid || extracted.length > 5000) {
+    return extracted;
+  }
+
+  return '';
+}
+
 export function registerSessionRoutes(
   fastify: FastifyInstance,
   sessionManager: SessionManager
@@ -251,6 +417,16 @@ export function registerSessionRoutes(
     let sessionBudget = body.options?.budget ?? config.defaultBudgetUsd;
 
     // LOCAL MODE: billing + mass-action checks removed
+
+    const requestedProvider = body.options?.provider ?? config.provider;
+    const readinessError = await checkProviderReady(requestedProvider);
+    if (readinessError) {
+      return reply.status(422).send({
+        error: `Provider ${requestedProvider} is not ready: ${readinessError}.`,
+        message: `Add the missing key to .env or choose a configured engine in Strategy.`,
+        provider: requestedProvider,
+      });
+    }
 
     const gateResolver = yoloMode
       ? new AutoApproveGateResolver()
@@ -570,6 +746,18 @@ export function registerSessionRoutes(
       const archived = getArchivedSessionById(id);
       if (archived) {
         const summary = safeJsonParse<Record<string, unknown>>(archived.summary_json, {});
+        const hydrated = hydrateSessionFromArchive(archived);
+        const serializedFindings = hydrated.debate.findings.map(f => ({
+          id: f.id,
+          agent: f.agentRole,
+          category: f.findingType,
+          severity: f.severity,
+          content: f.content,
+          evidence: f.evidence,
+          confidence: f.confidence,
+          groundingScore: f.groundingScore ?? null,
+        }));
+        const deliveryClassification = classifyDeliveryState(archived.assembled_document, serializedFindings);
         return reply.send({
           id: archived.id,
           workflow: {
@@ -590,21 +778,27 @@ export function registerSessionRoutes(
           pendingGate: null,
           evaluator: { results: [], bestScore: (summary as Record<string, unknown>).bestEvalScore ?? 0 },
           agentPerformance: [],
-          assembledDocument: archived.assembled_document || null,
-          finalOutput: archived.final_output || null,
-          debateResolutions: ((summary as Record<string, unknown>).resolutions as Array<Record<string, unknown>>) ?? [],
-          gateDecisionRecords: [],
-          findings: (((summary as Record<string, unknown>).topFindings as Array<Record<string, unknown>>) ?? []).map(f => ({
-            id: '', agent: f.agent ?? '', category: '', severity: f.severity ?? 'medium', content: f.content ?? '', evidence: '', confidence: 0,
+          assembledDocument: hydrated.assembledDocument || null,
+          finalOutput: hydrated.finalOutput || null,
+          ...deliveryClassification,
+          debateResolutions: hydrated.debate.resolutions.map(r => ({
+            topic: r.debateTopic,
+            resolution: r.resolution,
+            winningPosition: r.winningPosition,
+            evidenceWeight: r.evidenceWeight,
+            escalationNeeded: r.escalationNeeded,
+            confidence: r.confidence,
           })),
-          documents: [],
+          gateDecisionRecords: [],
+          findings: serializedFindings,
+          documents: hydrated.documents,
           beforeScores: (summary as Record<string, unknown>).beforeScores ?? null,
           afterScores: (summary as Record<string, unknown>).afterScores ?? null,
           reportCard: (summary as Record<string, unknown>).reportCard ?? null,
           matterTitle: archived.title,
           workflowTemplateId: archived.workflow_id,
-          provider: 'anthropic',
-          selectedTeam: safeJsonParse(archived.team_roles, []),
+          provider: hydrated.provider ?? config.provider,
+          selectedTeam: hydrated.selectedTeam,
           halted: false,
           haltReason: null,
           durationMs: archived.duration_ms,
@@ -636,6 +830,17 @@ export function registerSessionRoutes(
       findingsPosted: a.findingsPosted,
       challengesIssued: a.challengesIssued,
     }));
+    const serializedFindings = session.debate.findings.map(f => ({
+      id: f.id,
+      agent: f.agentRole,
+      category: f.findingType,
+      severity: f.severity,
+      content: f.content,
+      evidence: f.evidence,
+      confidence: f.confidence,
+      groundingScore: f.groundingScore ?? null,
+    }));
+    const deliveryClassification = classifyDeliveryState(session.assembledDocument, serializedFindings);
 
     return reply.send({
       id: session.id,
@@ -688,6 +893,7 @@ export function registerSessionRoutes(
       // ── Deliverable content ────────────────────────────────────────
       assembledDocument: session.assembledDocument || null,
       finalOutput: session.finalOutput || null,
+      ...deliveryClassification,
       debateResolutions: session.debate.resolutions.map(r => ({
         topic: r.debateTopic,
         resolution: r.resolution,
@@ -701,16 +907,7 @@ export function registerSessionRoutes(
         decision: g.decision,
         notes: g.notes,
       })),
-      findings: session.debate.findings.map(f => ({
-        id: f.id,
-        agent: f.agentRole,
-        category: f.findingType,
-        severity: f.severity,
-        content: f.content,
-        evidence: f.evidence,
-        confidence: f.confidence,
-        groundingScore: f.groundingScore ?? null,
-      })),
+      findings: serializedFindings,
 
       // ── Confidence summary ──────────────────────────────────────
       confidenceSummary: (() => {
@@ -774,6 +971,167 @@ export function registerSessionRoutes(
   // ── GET /api/sessions/:id/download — Download work product ─────────
   // v15: Serves assembledDocument (the clean deliverable) by default.
   // Supports: md, docx, pdf, json, summary, raw (process log)
+
+  fastify.post('/api/sessions/:id/continue', {
+    config: {
+      rateLimit: {
+        max: config.rateLimitSessionMax,
+        timeWindow: config.rateLimitWindowMs,
+      },
+    },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const original = getSessionOrHydrate(sessionManager, id);
+    if (!original) return reply.status(404).send({ error: `Session not found: ${id}` });
+
+    if (!checkSessionOrHydrateOwnership(request, original)) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+
+    const body = validateBody<ContinuationBody>(ContinuationSchema, request, reply);
+    if (!body) return;
+
+    const originalFindings = original.debate.findings.map(f => ({ content: f.content }));
+    const classification = classifyDeliveryState(original.assembledDocument, originalFindings);
+    if (classification.deliveryState !== 'needs_direction') {
+      return reply.status(409).send({
+        error: 'This session is not waiting for direction. Use revision for completed work products.',
+        code: 'NOT_WAITING_FOR_DIRECTION',
+      });
+    }
+
+    const spendCheck = checkDailySpendCap();
+    if (!spendCheck.allowed) {
+      const retryAfterSec = Math.ceil((spendCheck.retryAfterMs ?? 3600_000) / 1000);
+      reply.header('Retry-After', retryAfterSec.toString());
+      return reply.status(503).send({
+        error: 'Lavern is resting.',
+        message: spendCheck.reason,
+        retryAfterMs: spendCheck.retryAfterMs,
+      });
+    }
+
+    const capacity = sessionManager.getCapacity();
+    if (!capacity.available) {
+      const retryAfterSec = Math.ceil(capacity.estimatedWaitMs / 1000);
+      reply.header('Retry-After', retryAfterSec.toString());
+      return reply.status(503).send({
+        error: 'Lavern is at capacity.',
+        current: capacity.current,
+        max: capacity.max,
+        retryAfterMs: capacity.estimatedWaitMs,
+      });
+    }
+
+    const provider = !isHydratedFromArchive(original) && original.provider
+      ? original.provider
+      : config.provider;
+    const readinessError = await checkProviderReady(provider);
+    if (readinessError) {
+      return reply.status(422).send({
+        error: `Provider ${provider} is not ready: ${readinessError}.`,
+        message: 'Add the missing key to .env or choose a configured engine in Strategy.',
+        provider,
+      });
+    }
+
+    const requestedBudget = body.budgetEnvelope || body.answers.budget_envelope;
+    const sessionBudget = parseBudgetEnvelope(requestedBudget, original.budgetUsd || config.defaultBudgetUsd);
+    const gateResolver = new AsyncGateResolver();
+    const continuation = sessionManager.createSession({ gateResolver, budgetUsd: sessionBudget });
+
+    const userId = (request as typeof request & { userId?: string }).userId
+      ?? (original.userId ?? undefined);
+    if (userId) {
+      continuation.userId = userId;
+      try { updateArchiveUserId(continuation.id, userId); } catch { /* non-fatal */ }
+    }
+
+    if (!isHydratedFromArchive(original) && original.matterRecord) {
+      continuation.matterRecord = original.matterRecord;
+    }
+
+    continuation.selectedTeam = [...(original.selectedTeam ?? [])];
+    continuation.provider = provider;
+    continuation.documents = uniqueDocuments([
+      ...(!isHydratedFromArchive(original) ? original.documents : []),
+      ...((body.documents ?? []) as ParsedDocument[]),
+    ]);
+
+    const baseTitle = original.matterRecord?.title
+      ?? classification.directionRequest?.title
+      ?? 'Paused matter';
+    continuation.title = `${baseTitle} - continuation`.slice(0, 120);
+    try { updateArchiveTitle(continuation.id, continuation.title); } catch { /* non-fatal */ }
+
+    const workflow = original.workflowTemplateId || 'review';
+    const legalRequest = {
+      type: !isHydratedFromArchive(original) && original.legalRequest?.type
+        ? original.legalRequest.type
+        : 'contract_review',
+      requestText: buildContinuationRequestText(id, original.assembledDocument, body, continuation.documents),
+      context: !isHydratedFromArchive(original) ? original.legalRequest?.context : undefined,
+      matterId: !isHydratedFromArchive(original) ? original.legalRequest?.matterId : undefined,
+    } satisfies NonNullable<CreateSessionBody['request']>;
+    continuation.legalRequest = legalRequest;
+
+    logAuditEvent({
+      userId: userId || undefined,
+      action: 'session_continue',
+      resource: `session:${id}->${continuation.id}`,
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
+    });
+
+    continuation.events.emitEvent({
+      type: 'tool_used',
+      tool: `continuation_created: linked to ${id}`,
+      agent: 'system',
+      timestamp: new Date().toISOString(),
+    });
+
+    dispatch(legalRequest, {
+      session: continuation,
+      gateResolver,
+      forceWorkflow: workflow,
+      matterId: legalRequest.matterId,
+      maxBudgetUsd: sessionBudget,
+      yoloMode: false,
+      provider,
+    }).catch((err) => {
+      try {
+        logger.error('Continuation session failed', { sessionId: continuation.id, originalSessionId: id, error: err });
+        continuation.events.emitEvent({
+          type: 'error',
+          message: `Continuation failed: ${err instanceof Error ? err.message : String(err)}`,
+          source: 'orchestrator',
+          timestamp: new Date().toISOString(),
+        });
+        continuation.events.emitEvent({
+          type: 'session_end',
+          sessionId: continuation.id,
+          totalCost: continuation.accumulatedCost,
+          duration: Date.now() - new Date(continuation.workflow.startedAt).getTime(),
+          timestamp: new Date().toISOString(),
+        });
+      } catch (innerErr) {
+        logger.error('Continuation error handler failed', { sessionId: continuation.id, error: innerErr });
+      }
+    });
+
+    return reply.status(201).send({
+      sessionId: continuation.id,
+      continuationOf: id,
+      status: 'running',
+      createdAt: new Date().toISOString(),
+      endpoints: {
+        status: `/api/sessions/${continuation.id}`,
+        events: `/api/sessions/${continuation.id}/events`,
+        gate: `/api/sessions/${continuation.id}/gate`,
+        cancel: `/api/sessions/${continuation.id}`,
+      },
+    });
+  });
 
   fastify.get('/api/sessions/:id/download', async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -862,7 +1220,7 @@ export function registerSessionRoutes(
 
     // For document formats (md, docx, pdf), validate before serving
     if (format === 'md' || format === 'docx' || format === 'pdf') {
-      const validation = validateDeliverable(deliverable);
+      const validation = validateClientDeliverable(deliverable);
       if (!validation.valid) {
         logger.error('Blocked invalid deliverable', { sessionId: id, reason: validation.reason });
         return reply.status(503).send({
@@ -1058,8 +1416,23 @@ export function registerSessionRoutes(
       if (archived.user_id && !checkSessionOwnership(request, { userId: archived.user_id })) {
         return reply.status(404).send({ error: `Session not found: ${id}` });
       }
-      if (archived.assembled_document && validateDeliverable(archived.assembled_document).valid) {
-        return reply.send({ success: true, hasDocument: true, message: 'Document already assembled (from archive).' });
+      const archivedDeliverable = extractDeliverableFromArchive(archived);
+      if (archivedDeliverable) {
+        if (archivedDeliverable !== archived.assembled_document) {
+          updateArchivedDocument(
+            archived.id,
+            archivedDeliverable,
+            archived.cost_usd ?? 0,
+            archived.completed_steps_count ?? 0,
+          );
+        }
+        return reply.send({
+          success: true,
+          hasDocument: true,
+          message: archived.assembled_document
+            ? 'Document already assembled (from archive).'
+            : 'Document assembled from archived pipeline output.',
+        });
       }
       return reply.status(409).send({
         error: 'This session is no longer in memory and does not have a completed deliverable to reassemble. Please start a new session.',
@@ -1069,7 +1442,7 @@ export function registerSessionRoutes(
     const session = liveSession;
 
     // Guard: already have a valid assembled document
-    if (session.assembledDocument && validateDeliverable(session.assembledDocument).valid) {
+    if (session.assembledDocument && validateClientDeliverable(session.assembledDocument).valid) {
       return reply.send({ success: true, hasDocument: true, message: 'Document already assembled.' });
     }
 
@@ -1128,7 +1501,7 @@ export function registerSessionRoutes(
 
     // Check that session has a valid assembled deliverable to derive from.
     // v18: Never generate derivatives from finalOutput (process dump).
-    const deliverableValidation = validateDeliverable(session.assembledDocument || '');
+    const deliverableValidation = validateClientDeliverable(session.assembledDocument || '');
     if (!deliverableValidation.valid) {
       return reply.status(409).send({
         error: 'The primary work product is not ready yet. Wait for document assembly to complete, or retry later.',

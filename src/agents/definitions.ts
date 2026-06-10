@@ -29,6 +29,10 @@ import { contractReviewerPrompt } from './prompts/contract-reviewer.js';
 import { legalResearcherPrompt } from './prompts/legal-researcher.js';
 import { riskPricerPrompt } from './prompts/risk-pricer.js';
 import { redTeamPrompt } from './prompts/red-team.js';
+import { criminalDefenceCounselPrompt } from './prompts/criminal-defence-counsel.js';
+import { disclosureAnalystPrompt } from './prompts/disclosure-analyst.js';
+import { forensicAccountingAnalystPrompt } from './prompts/forensic-accounting-analyst.js';
+import { motionFactumAnalystPrompt } from './prompts/motion-factum-analyst.js';
 // v8: Law Firm Leadership
 import { managingPartnerPrompt } from './prompts/managing-partner.js';
 import { supervisingPartnerPrompt } from './prompts/supervising-partner.js';
@@ -308,6 +312,42 @@ export const agentDefinitions = {
   },
 
   // ── v8: Law Firm — Leadership (3) ─────────────────────────────────────
+
+  'criminal-defence-counsel': {
+    description: 'Ontario/Canada criminal defence support specialist. Maps charge elements, disclosure/Charter issues, Crown theory, OSC crossover risks, and counsel-only questions with cited evidence.',
+    prompt: enrichPrompt('criminal-defence-counsel', criminalDefenceCounselPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools, ...memoryWriteTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['criminal-defence-counsel'],
+  },
+
+  'disclosure-analyst': {
+    description: 'Disclosure review specialist. Builds document inventories, chronologies, disclosure gap lists, contradiction charts, and citation-backed evidence maps for defence teams.',
+    prompt: enrichPrompt('disclosure-analyst', disclosureAnalystPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'sonnet' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['disclosure-analyst'],
+  },
+
+  'forensic-accounting-analyst': {
+    description: 'Defensive forensic accounting analyst. Reverse engineers loss, tracing, source-of-funds, transaction, and expert-report claims for reproducibility and missing-source issues.',
+    prompt: enrichPrompt('forensic-accounting-analyst', forensicAccountingAnalystPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'opus' as const,
+    maxTurns: 10,
+    outputFormat: outputFormats['forensic-accounting-analyst'],
+  },
+
+  'motion-factum-analyst': {
+    description: 'Motion and factum analyst. Maps relief sought, arguments, authorities, evidentiary record, missing support, and counsel decision points.',
+    prompt: enrichPrompt('motion-factum-analyst', motionFactumAnalystPrompt),
+    tools: [...readOnlyTools, ...debateTools, ...memoryReadTools],
+    model: 'sonnet' as const,
+    maxTurns: 8,
+    outputFormat: outputFormats['motion-factum-analyst'],
+  },
 
   'managing-partner': {
     description: 'Strategic oversight and final sign-off. Reviews all deliverables before client delivery. Conservative, meticulous, nothing ships without approval.',

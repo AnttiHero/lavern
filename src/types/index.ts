@@ -34,6 +34,10 @@ export type AgentRole =
   | 'legal-researcher'
   | 'risk-pricer'
   | 'red-team'
+  | 'criminal-defence-counsel'
+  | 'disclosure-analyst'
+  | 'forensic-accounting-analyst'
+  | 'motion-factum-analyst'
   // v8: Law Firm — Leadership (3)
   | 'managing-partner'
   | 'supervising-partner'
@@ -90,7 +94,7 @@ export type AgentRole =
  * Replaces the document-only input model.
  */
 export interface LegalRequest {
-  type: 'document_redesign' | 'contract_review' | 'legal_question' | 'legal_research' | 'risk_assessment' | 'general';
+  type: 'document_redesign' | 'contract_review' | 'legal_question' | 'legal_research' | 'risk_assessment' | 'defence_disclosure' | 'general';
   /** Document path — required for document_redesign/contract_review */
   documentPath?: string;
   /** Free-form request text — for questions, instructions, descriptions */

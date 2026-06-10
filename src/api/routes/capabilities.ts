@@ -18,6 +18,8 @@ import type { FastifyInstance } from 'fastify';
 import { workflowRegistry } from '../../workflows/registry.js';
 import { INTENSITY_PROFILES, type IntensityLevel } from '../../types/engagement.js';
 import { config } from '../../config.js';
+import { isOpenAICompatibleProvider } from '../../providers/types.js';
+import { getOpenAICompatibleSettings } from '../../providers/openai-compatible.js';
 
 export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
 
@@ -30,6 +32,11 @@ export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
   //      `pricing` blocks for autonomous integration.
   fastify.get('/api/capabilities', async (_request, reply) => {
     const templates = workflowRegistry.list();
+    const providerModel = isOpenAICompatibleProvider(config.provider)
+      ? getOpenAICompatibleSettings(config.provider).defaultModel
+      : config.provider === 'local'
+        ? config.local.defaultModel
+        : config.defaultModel;
 
     return reply
       .header('Cache-Control', 'public, max-age=60')
@@ -49,7 +56,7 @@ export function registerCapabilitiesRoutes(fastify: FastifyInstance): void {
         version: config.version,
         description: 'Multi-agent legal orchestration platform. Upload documents, describe tasks, and receive structured legal analysis. Same engine serves human clients through a visual interface and AI agents through this API.',
         provider: config.provider,
-        providerModel: config.provider === 'mistral' ? config.mistral.defaultModel : config.defaultModel,
+        providerModel,
       },
 
       // ── Available Workflows ──

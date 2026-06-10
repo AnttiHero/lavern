@@ -1,10 +1,10 @@
 /**
- * StaffingView — Component tests.
+ * TeamView — Component tests.
  */
 
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithSession, screen, waitFor } from '../test-utils/render.js';
-import StaffingView from '../staffing/StaffingView.js';
+import TeamView from '../staffing/TeamView.js';
 
 const noop = () => {};
 
@@ -44,42 +44,42 @@ vi.mock('../staffing/hooks/useSoundEffects.js', () => ({
   useSoundEffects: () => ({ play: () => {} }),
 }));
 
-describe('StaffingView', () => {
+describe('TeamView', () => {
   it('renders page title', async () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
+      <TeamView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
     expect(screen.getByText(/Lavern/)).toBeInTheDocument();
 
     // Wait for async profile loading — section headers appear
     await waitFor(() => {
-      expect(screen.getByText('Orchestrators')).toBeInTheDocument();
+      expect(screen.getByText('Partners')).toBeInTheDocument();
     });
   });
 
   it('shows agent sections after loading', async () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
+      <TeamView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
     // Section headers appear after profile loading
     await waitFor(() => {
-      expect(screen.getByText('Orchestrators')).toBeInTheDocument();
+      expect(screen.getByText('Partners')).toBeInTheDocument();
     });
   });
 
   it('renders back button', () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
+      <TeamView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
-    expect(screen.getByText(/Back/)).toBeInTheDocument();
+    expect(screen.getByText(/Strategy/)).toBeInTheDocument();
   });
 
   it('renders skip button', () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
+      <TeamView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
     expect(screen.getByText(/Skip/)).toBeInTheDocument();
@@ -87,18 +87,18 @@ describe('StaffingView', () => {
 
   it('renders section headers after profile loading', async () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
+      <TeamView onTeamConfirmed={noop} onBack={noop} onSkip={noop} />
     );
 
     // Profiles load asynchronously (fetch fails → falls back to DEMO_PROFILES)
     await waitFor(() => {
-      expect(screen.getByText('Orchestrators')).toBeInTheDocument();
+      expect(screen.getByText('Partners')).toBeInTheDocument();
     });
   });
 
   it('renders without crashing when no session data', async () => {
     renderWithSession(
-      <StaffingView onTeamConfirmed={noop} onBack={noop} />,
+      <TeamView onTeamConfirmed={noop} onBack={noop} />,
       { withSessionData: false }
     );
 
@@ -106,7 +106,7 @@ describe('StaffingView', () => {
 
     // Wait for loading to finish
     await waitFor(() => {
-      expect(screen.getByText('Orchestrators')).toBeInTheDocument();
+      expect(screen.getByText('Partners')).toBeInTheDocument();
     });
   });
 });

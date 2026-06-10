@@ -12,6 +12,7 @@ import type { AssemblyStatus } from '../hooks/useDeliveryData.js';
 import { DownloadPanel } from './DownloadPanel.js';
 import { DerivativesPanel } from './DerivativesPanel.js';
 import { RevisionPanel } from './RevisionPanel.js';
+import { DirectionPanel } from './DirectionPanel.js';
 import { ShareTeamModal } from './ShareTeamModal.js';
 import { SimpleMarkdown, type DocStyle } from './SimpleMarkdown.js';
 import { useAgentProfiles, type AgentProfile } from '../../staffing/hooks/useAgentProfiles.js';
@@ -43,35 +44,59 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       .filter(p => p.category === 'lawyer' || p.category === 'specialist')
       .slice(0, 6);
   }, [allProfiles, data.agentPerformance]);
-  const canShareTeam = teamProfiles.length > 0 && !data.sessionId.startsWith('demo-session');
-
   const displayDocument = activeRevisionDoc ?? data.finalOutput;
   const hasDocument = assemblyStatus === 'ready' && displayDocument.length > 100;
-  // Only show assembly failure after polling has definitively ended (timeout/error).
-  // While still polling, the assembler may still be working — don't flash the error.
-  const assemblyFailed = assemblyStatus === 'timeout' || assemblyStatus === 'error';
+  const needsDirection = data.deliveryState === 'needs_direction';
+  const sessionFailed = data.sessionFailed === true;
+  const isDemo = data.sessionId.startsWith('demo-session');
+  const scrollToDirectionPanel = () => {
+    document.getElementById('direction-panel')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+  // Only show assembly failure after polling has definitively ended, or when
+  // restored archive metadata explicitly says assembly failed.
+  const restoredAssemblyFailure = data.deliveryState === 'assembly_failed' && assemblyStatus !== 'polling';
+  const assemblyFailed = sessionFailed || restoredAssemblyFailure || assemblyStatus === 'timeout' || assemblyStatus === 'error';
+  const assemblyPending = !isDemo && !sessionFailed && !needsDirection && !assemblyFailed && !hasDocument;
+  const hasFinalDeliverable = !assemblyFailed && !assemblyPending && !needsDirection && hasDocument;
+  const canShareTeam = teamProfiles.length > 0 && !isDemo && !sessionFailed && !assemblyFailed;
+  const heroOverline = sessionFailed
+    ? 'Interrupted Session'
+    : needsDirection
+      ? 'Needs Direction'
+      : assemblyFailed
+        ? 'Assembly Incomplete'
+        : assemblyPending
+          ? 'Assembling Work Product'
+          : 'Delivered Work Product';
 
   return (
     <div>
       {/* ── Hero title ──────────────────────────────────────────── */}
       <div style={styles.heroSection}>
-        <div style={styles.heroOverline}>Delivered Work Product</div>
+        <div style={styles.heroOverline}>
+          {heroOverline}
+        </div>
         <h2 style={styles.heroTitle}>{data.documentTitle}</h2>
         <div style={styles.heroDivider} />
       </div>
 
       {/* ── Assembly failure notice ────────────────────────────── */}
-      {assemblyFailed && !data.sessionId.startsWith('demo-session') && (
+      {assemblyFailed && !isDemo && (
         <div style={styles.assemblyFailedNotice}>
           <div style={styles.assemblyFailedIcon}>⚠</div>
           <div style={styles.assemblyFailedContent}>
-            <div style={styles.assemblyFailedTitle}>Document assembly did not complete</div>
-            <div style={styles.assemblyFailedBody}>
-              The agents completed their analysis, but the final document could not be assembled.
-              You can retry assembly, or download the structured analysis data (JSON) which contains
-              all findings, debate resolutions, and recommendations.
+            <div style={styles.assemblyFailedTitle}>
+              {sessionFailed ? 'Session interrupted before delivery' : 'Document assembly did not complete'}
             </div>
-            {onRetryAssembly && (
+            <div style={styles.assemblyFailedBody}>
+              {sessionFailed
+                ? 'The workflow stopped before a final work product was assembled. Review the agent activity to see where it stopped, then start a new session when the provider path is healthy.'
+                : 'The agents completed their analysis, but the final document could not be assembled. You can retry assembly, or download the structured analysis data (JSON) which contains all findings, debate resolutions, and recommendations.'}
+            </div>
+            {onRetryAssembly && !sessionFailed && (
               <button onClick={onRetryAssembly} style={styles.assemblyFailedRetry}>
                 Retry Assembly
               </button>
@@ -80,14 +105,32 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
         </div>
       )}
 
+      {/* ── Direction prompt ─────────────────────────────────────────── */}
+      {needsDirection && (
+        <div style={styles.directionNotice}>
+          <div style={styles.directionNoticeBody}>
+            <div style={styles.directionNoticeOverline}>Needs Direction</div>
+            <div style={styles.directionNoticeTitle}>Specialist work is waiting on your answers.</div>
+            <div style={styles.directionNoticeText}>
+              Lavern paused the matter because key intake details are missing. Review the status memo, then send the missing direction.
+            </div>
+          </div>
+          <button type="button" onClick={scrollToDirectionPanel} style={styles.directionNoticeButton}>
+            Answer blockers
+          </button>
+        </div>
+      )}
+
       {/* ── Revision controls (version pills + Send back CTA) ─────────── */}
-      <RevisionPanel
-        sessionId={data.sessionId}
-        onActiveDocumentChange={(doc, version) => {
-          setActiveRevisionDoc(doc);
-          setActiveRevisionVersion(version);
-        }}
-      />
+      {hasFinalDeliverable && (
+        <RevisionPanel
+          sessionId={data.sessionId}
+          onActiveDocumentChange={(doc, version) => {
+            setActiveRevisionDoc(doc);
+            setActiveRevisionVersion(version);
+          }}
+        />
+      )}
 
       {/* ── Share team CTA — sits below the revision panel ─────────────── */}
       {canShareTeam && (
@@ -118,7 +161,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
       )}
 
       {/* ── Document preview — the deliverable is what the client came for ── */}
-      {hasDocument && (
+      {hasDocument && !assemblyFailed && (
         <div style={styles.previewSection}>
           <div style={styles.sectionHeader}>
             <div style={styles.sectionTitle}>
@@ -128,7 +171,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
             <div style={styles.sectionCount}>{displayDocument.length.toLocaleString()} chars</div>
           </div>
           <div style={styles.previewCard}>
-            {data.sessionId.startsWith('demo-session') && (
+            {isDemo && (
               <div style={styles.mockBanner}>MOCK DOCUMENT</div>
             )}
             <SimpleMarkdown
@@ -141,6 +184,8 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
           </div>
         </div>
       )}
+
+      {needsDirection && <DirectionPanel data={data} />}
 
       {/* ── Executive summary — editorial pull-quote style ─────── */}
       <div style={styles.summarySection}>
@@ -160,7 +205,7 @@ export function TheWorkTab({ data, assemblyStatus, onRetryAssembly }: Props) {
 
 
       {/* ── Derivatives — live sessions only ────────────────────── */}
-      {!data.sessionId.startsWith('demo-session') && (
+      {hasFinalDeliverable && !isDemo && (
         <DerivativesPanel data={data} assemblyStatus={assemblyStatus} />
       )}
     </div>
@@ -255,6 +300,61 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.accent,
     margin: '20px auto 0',
     opacity: 0.5,
+  },
+
+  // ── Direction Notice ───────────────────────────────────────────
+  directionNotice: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    padding: `${spacing.lg}px ${spacing.xl}px`,
+    marginBottom: spacing.xxl,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.borderSelected}`,
+    borderRadius: radii.sm,
+    flexWrap: 'wrap' as const,
+  },
+  directionNoticeBody: {
+    flex: '1 1 360px',
+    minWidth: 0,
+  },
+  directionNoticeOverline: {
+    fontSize: 9,
+    fontWeight: 700,
+    fontFamily: fonts.sans,
+    color: colors.accent,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase' as const,
+    marginBottom: 8,
+  },
+  directionNoticeTitle: {
+    fontSize: 18,
+    fontWeight: 400,
+    fontFamily: fonts.serif,
+    color: colors.text,
+    lineHeight: 1.3,
+    marginBottom: 6,
+  },
+  directionNoticeText: {
+    fontSize: 13,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    lineHeight: 1.6,
+  },
+  directionNoticeButton: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    color: '#fff',
+    backgroundColor: colors.text,
+    border: 'none',
+    borderRadius: radii.sm,
+    padding: '10px 18px',
+    cursor: 'pointer',
+    minHeight: 40,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
   },
 
   // ── Executive Summary ──────────────────────────────────────────

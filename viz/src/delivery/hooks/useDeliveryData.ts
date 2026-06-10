@@ -72,9 +72,28 @@ export interface VerificationCheck {
   score?: number;
 }
 
+export type DeliveryState = 'complete' | 'needs_direction' | 'assembly_failed';
+
+export interface DirectionBlocker {
+  id: string;
+  label: string;
+  required: boolean;
+  answerType: 'text' | 'choice' | 'date' | 'textarea';
+  options?: string[];
+}
+
+export interface DirectionRequest {
+  title: string;
+  blockers: DirectionBlocker[];
+}
+
 export interface DeliveryData {
   sessionId: string;
   status: string;
+  deliveryState: DeliveryState;
+  workflowTemplateId?: string | null;
+  sessionFailed?: boolean;
+  directionRequest?: DirectionRequest;
 
   // Tab 1: The Work
   documentTitle: string;
@@ -181,6 +200,11 @@ export function useDeliveryData(): {
       setData(mapped);
       setLoading(false);
 
+      if (mapped.sessionFailed) {
+        setAssemblyStatus('error');
+        return;
+      }
+
       // Keep polling if not complete OR if complete but document assembly hasn't
       // finished yet. Assembly runs AFTER the workflow reaches 'delivered' and takes
       // ~30 seconds — without this check the frontend stops polling before
@@ -196,7 +220,9 @@ export function useDeliveryData(): {
       // through to the timeout path below.
       const validation = validateDeliverable(mapped.finalOutput);
       const docChars = mapped.finalOutput?.trim().length ?? 0;
-      const deliverableValid = validation.valid || (mapped.status === 'Complete' && docChars > 500);
+      const deliverableValid = validation.valid
+        || (mapped.deliveryState === 'needs_direction' && docChars > 200)
+        || (mapped.status === 'Complete' && docChars > 500);
       const assemblyPending = mapped.status === 'Complete' && !deliverableValid;
       const elapsed = Date.now() - startTime;
 
@@ -312,6 +338,16 @@ function formatRole(role: string): string {
   return role.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function inferDeliveryState(documentText: string, rawState: unknown): DeliveryState {
+  if (rawState === 'complete' || rawState === 'needs_direction' || rawState === 'assembly_failed') {
+    return rawState;
+  }
+  if (/\b(?:INTAKE HOLD|SPECIALIST ANALYSIS ON HOLD|analysis on hold|release the hold|awaiting your direction|matter is paused)\b/i.test(documentText)) {
+    return 'needs_direction';
+  }
+  return documentText.trim().length > 0 ? 'complete' : 'assembly_failed';
+}
+
 function mapApiResponse(sessionId: string, raw: Record<string, unknown>): DeliveryData {
   const workflow = raw.workflow as { currentStep?: string; completedSteps?: string[] } | undefined;
   const debate = raw.debate as { findingsCount?: number; challengesCount?: number; resolutionsCount?: number; unresolvedCount?: number } | undefined;
@@ -321,6 +357,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const agentPerf = raw.agentPerformance as Array<{ role: string; durationMs?: number; findingsPosted?: number; challengesIssued?: number }> | undefined;
   const matterTitle = raw.matterTitle as string | null;
   const durationMs = raw.durationMs as number | undefined;
+  const workflowTemplateId = raw.workflowTemplateId as string | null | undefined;
   // v19: Use assembledDocument ONLY. NEVER fall back to finalOutput (process log).
   // finalOutput contains orchestrator thinking/coordination — serving it as a
   // deliverable is catastrophic. If assembledDocument is null, the deliverable is empty.
@@ -332,6 +369,13 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const rawBeforeScores = raw.beforeScores as Array<{ dimension: string; score: number; classification?: string }> | undefined;
   const rawAfterScores = raw.afterScores as Array<{ dimension: string; score: number; classification?: string }> | undefined;
   const rawReportCard = raw.reportCard as { scores?: { deltas?: Array<{ dimension: string; before: number; after: number; delta: number }> } } | null;
+  const deliveryState = inferDeliveryState(rawFinalOutput ?? '', raw.deliveryState);
+  let sessionFailed = false;
+  try {
+    sessionFailed = sessionStorage.getItem('shem-session-failed') === sessionId;
+  } catch { /* ignore */ }
+  const directionRequest = raw.directionRequest as DirectionRequest | undefined;
+  const needsDirection = deliveryState === 'needs_direction';
 
   const bestScore = evaluator?.bestScore ?? 0;
   const evalResults = evaluator?.results ?? [];
@@ -339,12 +383,20 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const evalFailed = evalResults.filter(r => !r.passed).length;
 
   const isComplete = workflow?.currentStep === 'delivered';
+  const assemblyIncomplete = deliveryState === 'assembly_failed' && isComplete && !sessionFailed;
   const stepLabel = (workflow?.currentStep ?? 'unknown').replace(/_/g, ' ');
   const docTitle = matterTitle ?? 'Session Results';
 
   // Executive summary
   const summaryParts: string[] = [];
-  if (isComplete) {
+  if (sessionFailed) {
+    summaryParts.push(`Session interrupted during ${stepLabel}. No final deliverable was assembled.`);
+    summaryParts.push('Partial agent activity remains available in the working-session audit trail.');
+  } else if (needsDirection) {
+    summaryParts.push('Intake is complete, but specialist analysis is paused until you answer the required direction questions.');
+  } else if (assemblyIncomplete) {
+    summaryParts.push('Analysis complete, but final document assembly did not complete.');
+  } else if (isComplete) {
     summaryParts.push('Analysis complete.');
   } else {
     summaryParts.push(`Session in progress \u2014 currently at: ${stepLabel}.`);
@@ -451,7 +503,28 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   }
 
   // Completion
-  if (isComplete) {
+  if (sessionFailed) {
+    narrative.push({
+      phase: 'Interrupted',
+      heading: 'Workflow stopped before delivery',
+      body: `The session failed during ${stepLabel}. No final work product was assembled, and any partial orchestration notes should not be treated as a deliverable.`,
+      agents: [],
+    });
+  } else if (needsDirection) {
+    narrative.push({
+      phase: 'Direction Needed',
+      heading: 'Analysis paused for client direction',
+      body: 'Lavern completed intake and produced a status memo, but it has not dispatched the specialist bench. Answer the blockers and attach any supporting documents to continue the matter.',
+      agents: [],
+    });
+  } else if (assemblyIncomplete) {
+    narrative.push({
+      phase: 'Assembly',
+      heading: 'Document assembly did not complete',
+      body: 'The agents completed their analysis, but no final work product was assembled. Retry assembly or download the structured analysis data for review.',
+      agents: [],
+    });
+  } else if (isComplete) {
     narrative.push({
       phase: 'Delivery',
       heading: 'Work product delivered',
@@ -501,7 +574,16 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   }
 
   const nextSteps: NextStepItem[] = [];
-  if (isComplete) {
+  if (sessionFailed) {
+    nextSteps.push({ label: 'Review the agent activity', description: 'Use the Working View or audit bundle to inspect where the workflow stopped and what partial context was gathered.', kind: 'action' });
+    nextSteps.push({ label: 'Start a new session', description: 'Retry with the same document after checking provider availability or reducing the requested workflow scope.', kind: 'action' });
+  } else if (needsDirection) {
+    nextSteps.push({ label: 'Answer the blockers', description: 'Provide the requested client identity, scope, deadline, budget, and specialist approval details so Lavern can continue.', kind: 'action' });
+    nextSteps.push({ label: 'Attach supporting documents', description: 'Add any new filings, schedules, correspondence, expert materials, or transaction records the specialists should consider.', kind: 'action' });
+  } else if (assemblyIncomplete) {
+    nextSteps.push({ label: 'Retry assembly', description: 'Run the assembly step again after confirming the provider path is healthy.', kind: 'action' });
+    nextSteps.push({ label: 'Download structured data', description: 'Use the JSON export to review findings, debate resolutions, verification results, and costs while no final work product is available.', kind: 'action' });
+  } else if (isComplete) {
     nextSteps.push({ label: 'Review the output', description: 'Read through the generated content carefully. Compare against your original brief to verify all requirements were addressed.', kind: 'action' });
     nextSteps.push({ label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review the output before finalizing.', kind: 'watchout' });
   } else {
@@ -513,6 +595,15 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   if (debateResolutions.some(r => r.escalationNeeded)) {
     flaggedItems.push('One or more debate resolutions were flagged for escalation');
   }
+  if (needsDirection) {
+    flaggedItems.push('The matter is paused until client direction is supplied');
+  }
+  if (sessionFailed) {
+    flaggedItems.push('The session was interrupted before a final deliverable was assembled');
+  }
+  if (assemblyIncomplete) {
+    flaggedItems.push('Final document assembly did not complete');
+  }
   if (findings.some(f => f.severity === 'RED')) {
     flaggedItems.push('RED severity findings were identified \u2014 verify remediation');
   }
@@ -520,8 +611,12 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
 
   return {
     sessionId,
-    status: isComplete ? 'Complete' : stepLabel,
-    documentTitle: docTitle,
+    status: sessionFailed ? 'Interrupted' : needsDirection ? 'Needs Direction' : assemblyIncomplete ? 'Assembly Incomplete' : isComplete ? 'Complete' : stepLabel,
+    deliveryState,
+    workflowTemplateId,
+    sessionFailed,
+    directionRequest,
+    documentTitle: needsDirection ? (directionRequest?.title ?? 'Intake complete, analysis paused') : docTitle,
     executiveSummary: summaryParts.join(' '),
     keyChanges,
     dimensions,
@@ -547,6 +642,10 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
   const title = (raw.title as string) || 'Archived Session';
   // v18: Use assembledDocument (clean deliverable), never raw finalOutput (process dump)
   const finalOutput = (raw.assembledDocument as string) || '';
+  const deliveryState = inferDeliveryState(finalOutput, raw.deliveryState);
+  const directionRequest = raw.directionRequest as DirectionRequest | undefined;
+  const needsDirection = deliveryState === 'needs_direction';
+  const assemblyIncomplete = deliveryState === 'assembly_failed';
   const costUsd = (raw.costUsd as number) || 0;
   const budgetUsd = (raw.budgetUsd as number) || 0;
   const durationMs = (raw.durationMs as number) || 0;
@@ -554,6 +653,7 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
   const resolutionsCount = (raw.resolutionsCount as number) || 0;
   const teamRoles = (raw.teamRoles as string[]) || [];
   const completedAt = raw.completedAt as string | null;
+  const workflowTemplateId = raw.workflowTemplateId as string | null | undefined;
 
   // Parse summary JSON (debate, topFindings, resolutions, scores, verification)
   const summary = (raw.summary as Record<string, unknown>) || {};
@@ -566,7 +666,7 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
 
   const mins = durationMs > 0 ? Math.round(durationMs / 60000) : 0;
   const summaryParts = [
-    'Analysis complete.',
+    assemblyIncomplete ? 'Analysis complete, but final document assembly did not complete.' : 'Analysis complete.',
     findingsCount > 0 ? `${findingsCount} findings, ${resolutionsCount} resolutions.` : '',
     costUsd > 0 ? `Cost: $${costUsd.toFixed(2)} of $${budgetUsd.toFixed(2)} budget.` : '',
     mins > 0 ? `Duration: ${mins} min.` : '',
@@ -611,7 +711,11 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
   for (const r of resolutions) {
     narrative.push({ phase: 'Debate', heading: r.topic, body: r.resolution, agents: [] });
   }
-  narrative.push({ phase: 'Delivery', heading: 'Work product delivered', body: 'All workflow steps completed. The deliverable was assembled and delivered.', agents: [] });
+  narrative.push(needsDirection
+    ? { phase: 'Direction Needed', heading: 'Analysis paused for client direction', body: 'Lavern completed intake and is waiting for blocker answers before continuing specialist analysis.', agents: [] }
+    : assemblyIncomplete
+      ? { phase: 'Assembly', heading: 'Document assembly did not complete', body: 'The agents completed their analysis, but no final work product was assembled. Retry assembly or download the structured analysis data for review.', agents: [] }
+    : { phase: 'Delivery', heading: 'Work product delivered', body: 'All workflow steps completed. The deliverable was assembled and delivered.', agents: [] });
 
   // Agent performance from team roles
   const agentPerformance: AgentPerf[] = teamRoles.map(role => ({
@@ -623,8 +727,11 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
 
   return {
     sessionId,
-    status: 'Complete',
-    documentTitle: title,
+    status: needsDirection ? 'Needs Direction' : assemblyIncomplete ? 'Assembly Incomplete' : 'Complete',
+    deliveryState,
+    workflowTemplateId,
+    directionRequest,
+    documentTitle: needsDirection ? (directionRequest?.title ?? 'Intake complete, analysis paused') : title,
     executiveSummary: summaryParts.join(' '),
     keyChanges,
     dimensions,
@@ -641,14 +748,28 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
     agentPerformance,
     eventCount: 0,
     limitations: {
-      flaggedForHumanReview: ['Verify legal accuracy with qualified counsel before relying on this output'],
+      flaggedForHumanReview: needsDirection
+        ? ['The matter is paused until client direction is supplied']
+        : assemblyIncomplete
+          ? ['Final document assembly did not complete', 'Verify legal accuracy with qualified counsel before relying on this output']
+        : ['Verify legal accuracy with qualified counsel before relying on this output'],
       confidenceIntervals: '',
       disclaimer: 'This analysis was produced by an AI system with multi-agent verification.',
     },
-    nextSteps: [
-      { label: 'Review the output', description: 'Read through the generated content carefully.', kind: 'action' },
-      { label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review.', kind: 'watchout' },
-    ],
+    nextSteps: needsDirection
+      ? [
+        { label: 'Answer the blockers', description: 'Provide the requested direction so Lavern can continue.', kind: 'action' },
+        { label: 'Attach supporting documents', description: 'Add any documents or explanations the specialists should consider.', kind: 'action' },
+      ]
+      : assemblyIncomplete
+        ? [
+          { label: 'Retry assembly', description: 'Run the assembly step again after confirming the provider path is healthy.', kind: 'action' },
+          { label: 'Download structured data', description: 'Use the JSON export while no final work product is available.', kind: 'action' },
+        ]
+      : [
+        { label: 'Review the output', description: 'Read through the generated content carefully.', kind: 'action' },
+        { label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review.', kind: 'watchout' },
+      ],
   };
 }
 
@@ -680,6 +801,8 @@ function buildDemoData(sessionId: string): DeliveryData {
   return {
     sessionId,
     status: 'Complete',
+    deliveryState: 'complete',
+    workflowTemplateId: null,
 
     documentTitle: matterTitle,
     executiveSummary:
@@ -768,6 +891,7 @@ function buildHeartConnectDemoData(sessionId: string): DeliveryData {
   return {
     sessionId,
     status: 'Complete',
+    deliveryState: 'complete',
 
     documentTitle: 'HeartConnect Terms of Service',
     executiveSummary:
@@ -1301,6 +1425,7 @@ function buildHealthPrivacyDemoData(sessionId: string): DeliveryData {
   return {
     sessionId,
     status: 'Complete',
+    deliveryState: 'complete',
 
     documentTitle: 'MediVault Privacy Policy',
     executiveSummary:
@@ -1878,6 +2003,7 @@ function buildCloudMSADemoData(sessionId: string): DeliveryData {
   return {
     sessionId,
     status: 'Complete',
+    deliveryState: 'complete',
 
     documentTitle: 'Cloud MSA \u2014 Negotiation Briefing',
     executiveSummary:
@@ -2184,6 +2310,7 @@ function buildDevContractDemoData(sessionId: string): DeliveryData {
   return {
     sessionId,
     status: 'Complete',
+    deliveryState: 'complete',
 
     documentTitle: 'CodeCraft Developer Services Agreement',
     executiveSummary:

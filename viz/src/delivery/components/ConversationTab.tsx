@@ -141,6 +141,7 @@ export interface ConversationMessage {
 
 interface Props {
   sessionId: string;
+  needsDirection?: boolean;
   messages: ConversationMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ConversationMessage[]>>;
   input: string;
@@ -150,7 +151,7 @@ interface Props {
 }
 
 export function ConversationTab({
-  sessionId, messages, setMessages, input, setInput, streaming, setStreaming,
+  sessionId, needsDirection = false, messages, setMessages, input, setInput, streaming, setStreaming,
 }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +169,17 @@ export function ConversationTab({
   } = useVoiceInput();
   const [micActive, setMicActive] = useState(false);
   const sendTextRef = useRef<((text: string) => void) | null>(null);
+  const emptyHints = needsDirection
+    ? [
+      { text: 'Choose the scope', prompt: 'Help me choose between a high-level critique, section-by-section analysis, and a full responding expert report.' },
+      { text: 'Explain the blockers', prompt: 'Explain why these intake blockers matter before specialist analysis can continue.' },
+      { text: 'What should I answer first?', prompt: 'What should I answer first to get this matter moving again?' },
+    ]
+    : [
+      { text: 'Summarize the key risks', prompt: 'Summarize the key risks in plain language' },
+      { text: 'Draft an alternative clause', prompt: 'Draft an alternative clause for the most critical finding' },
+      { text: 'What to fix first?', prompt: 'What should we prioritize fixing first?' },
+    ];
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -321,11 +333,7 @@ export function ConversationTab({
           <div style={styles.emptyState}>
             <div style={styles.emptyTitle}>What would you like to know?</div>
             <div style={styles.emptyHints}>
-              {[
-                { text: 'Summarize the key risks', prompt: 'Summarize the key risks in plain language' },
-                { text: 'Draft an alternative clause', prompt: 'Draft an alternative clause for the most critical finding' },
-                { text: 'What to fix first?', prompt: 'What should we prioritize fixing first?' },
-              ].map(({ text, prompt }) => (
+              {emptyHints.map(({ text, prompt }) => (
                 <button
                   key={text}
                   style={{ ...styles.hint, ...(streaming ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}

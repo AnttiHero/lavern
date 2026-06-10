@@ -27,7 +27,8 @@ import { zodToOutputFormat } from '../types/output-schemas.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
-import { mistralChat } from '../providers/mistral.js';
+import { getOpenAICompatibleSettings, openAICompatibleChat } from '../providers/openai-compatible.js';
+import { isOpenAICompatibleProvider, type LLMProvider, type OpenAICompatibleProvider } from '../providers/types.js';
 
 const logger = createLogger('ROUTER');
 
@@ -43,7 +44,7 @@ import '../workflows/index.js';
  */
 const CANONICAL_WORKFLOWS = new Set([
   'counsel', 'review', 'adversarial', 'roundtable', 'full-bench',
-  'legal-design', 'pre-engagement', 'verification',
+  'legal-design', 'pre-engagement', 'verification', 'defence-disclosure',
 ]);
 
 export interface RouterOptions {
@@ -52,7 +53,7 @@ export interface RouterOptions {
   /** Model to use for LLM routing (default: claude-sonnet-4-5) */
   model?: string;
   /** v18: Per-session provider override. */
-  provider?: 'anthropic' | 'mistral' | 'managed';
+  provider?: LLMProvider;
 }
 
 /**
@@ -77,8 +78,8 @@ export async function routeRequest(
     // v18: Per-session provider override (options > global config)
     const provider = options?.provider ?? config.provider;
     try {
-      const llmResult = provider === 'mistral'
-        ? await mistralClassify(request)
+      const llmResult = isOpenAICompatibleProvider(provider)
+        ? await openAICompatibleClassify(request, provider)
         : await llmClassify(request, options?.model);
 
       // Validate the LLM's selected workflow actually exists
@@ -167,21 +168,24 @@ async function llmClassify(
 }
 
 /**
- * Mistral-based classification — uses chat completion with JSON output.
+ * OpenAI-compatible classification — uses chat completion with JSON output.
  *
- * Mistral doesn't support structured output schemas like the Agent SDK,
+ * These providers don't use the Claude Agent SDK structured-output path here,
  * so we ask for JSON in the prompt and parse the response.
  */
-async function mistralClassify(
+async function openAICompatibleClassify(
   request: LegalRequest,
+  provider: OpenAICompatibleProvider,
 ): Promise<RouterClassification> {
   const workflowSummary = workflowRegistry.getSummaryForRouter();
   const userPrompt = buildRouterUserPrompt(request);
+  const settings = getOpenAICompatibleSettings(provider);
 
   const systemPromptText = `${routerPrompt}\n\n## Currently Registered Workflows\n\n${workflowSummary}\n\nRespond with ONLY valid JSON matching the RouterClassification schema. No other text.`;
 
-  const result = await mistralChat({
-    model: config.mistral.routerModel,
+  const result = await openAICompatibleChat({
+    provider,
+    model: settings.routerModel,
     messages: [
       { role: 'system', content: systemPromptText },
       { role: 'user', content: userPrompt },
@@ -195,19 +199,19 @@ async function mistralClassify(
   // Extract JSON from response
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error('Mistral router did not return valid JSON');
+    throw new Error(`${settings.label} router did not return valid JSON`);
   }
 
   let jsonObj: unknown;
   try {
     jsonObj = JSON.parse(jsonMatch[0]);
   } catch {
-    throw new Error('Mistral router returned malformed JSON');
+    throw new Error(`${settings.label} router returned malformed JSON`);
   }
 
   const parsed = RouterClassificationSchema.safeParse(jsonObj);
   if (!parsed.success) {
-    throw new Error(`Mistral router returned invalid classification: ${parsed.error.message}`);
+    throw new Error(`${settings.label} router returned invalid classification: ${parsed.error.message}`);
   }
 
   return parsed.data;
@@ -252,7 +256,73 @@ function buildRouterUserPrompt(request: LegalRequest): string {
  * This is the fallback when no LLM is available, and the primary classifier
  * during testing.
  */
+const DEFENCE_DISCLOSURE_SPECIALISTS = [
+  'criminal-defence-counsel',
+  'disclosure-analyst',
+  'forensic-accounting-analyst',
+  'motion-factum-analyst',
+  'legal-researcher',
+  'litigation-partner',
+  'red-team',
+  'plain-language-specialist',
+  'evaluator',
+  'ethics-reviewer',
+];
+
+function isDefenceDisclosureRequest(request: LegalRequest): boolean {
+  const searchable = [
+    request.requestText,
+    request.documentPath,
+    request.context?.documentType,
+    request.context?.focus,
+    request.context?.jurisdiction,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (!searchable) return false;
+
+  return [
+    'defence disclosure',
+    'defense disclosure',
+    'criminal disclosure',
+    'crown disclosure',
+    'crown brief',
+    'fraud charge',
+    'fraud over',
+    'forensic accounting',
+    'loss calculation',
+    'source of funds',
+    'source-of-funds',
+    'asset tracing',
+    'osc',
+    'securities fraud',
+    'capital markets tribunal',
+    'stinchcombe',
+    'charter motion',
+    'motion record',
+    'factum',
+    'proceeds of crime',
+    'disclosure gap',
+  ].some(term => searchable.includes(term));
+}
+
 export function classifyRequest(request: LegalRequest): RouterClassification {
+  if (request.type === 'defence_disclosure' || isDefenceDisclosureRequest(request)) {
+    return {
+      requestType: 'multi_specialist',
+      complexity: 'high',
+      riskLevel: 'high',
+      selectedWorkflow: 'defence-disclosure',
+      selectedSpecialists: DEFENCE_DISCLOSURE_SPECIALISTS,
+      requiresDebate: true,
+      requiresEthicsFirst: true,
+      requiresConsistencyCheck: !!request.matterId,
+      reasoning: 'Defence disclosure, criminal fraud, OSC crossover, motion/factum, or forensic accounting request requires the defence-disclosure workflow with evidence inventory, proof matrix, accounting critique, red-team challenge, and final human gate.',
+    };
+  }
+
   // Rule 1: Document redesign → legal-design (multidisciplinary panel, 10-step pipeline)
   if (request.type === 'document_redesign') {
     return {

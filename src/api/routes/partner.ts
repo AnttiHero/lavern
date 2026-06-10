@@ -141,7 +141,7 @@ export function registerPartnerRoutes(fastify: FastifyInstance): void {
       // for Mistral / local we run a single crossProviderChat call and
       // emit the whole reply as one text event so no data leaks to
       // api.anthropic.com.
-      if (config.provider === 'mistral' || config.provider === 'local') {
+      if (config.provider !== 'anthropic' && config.provider !== 'managed') {
         try {
           const { text } = await crossProviderChat({
             system: systemPrompt,

@@ -50,6 +50,7 @@ const WORKFLOW_ORCHESTRATOR_MAP: Record<string, string> = {
 
   // The Professor: adversarial testing, intellectual honesty
   'adversarial': 'orchestrator-professor',
+  'defence-disclosure': 'orchestrator-professor',
 
   // The Conductor: multidisciplinary synthesis, parallel fan-out, debate
   'roundtable': 'orchestrator-conductor',

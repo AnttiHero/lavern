@@ -125,6 +125,7 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
   const [selectedStyle, setSelectedStyle] = useState<DocStyle>('elegant');
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat>('docx');
   const isDemo = data.sessionId.startsWith('demo-session');
+  const sessionFailed = data.sessionFailed === true;
   const generationBlocked = !isDemo && assemblyStatus !== 'ready';
 
   // Track active timeouts for cleanup on unmount
@@ -266,7 +267,9 @@ export function DerivativesPanel({ data, assemblyStatus }: Props) {
 
       {generationBlocked && (
         <div style={styles.blockedWarning}>
-          {assemblyStatus === 'polling'
+          {sessionFailed
+            ? 'Session interrupted before a primary work product was assembled. Start a new session before generating derivatives.'
+            : assemblyStatus === 'polling'
             ? 'Document is still being assembled — derivative generation will be available once assembly completes.'
             : assemblyStatus === 'timeout'
               ? 'Document assembly timed out. Retry assembly above, then generate derivatives.'

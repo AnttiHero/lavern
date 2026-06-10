@@ -1,10 +1,16 @@
 import './app.css';
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import { App } from './App.js';
 import { AuthGate } from './auth/AuthGate.js';
 import { installApiInterceptor } from './hooks/useApiFetch.js';
+
+declare global {
+  interface Window {
+    __lavernRoot?: Root;
+  }
+}
 
 // Initialize Sentry error monitoring (if DSN configured)
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
@@ -23,7 +29,11 @@ if (SENTRY_DSN) {
 // Install global fetch interceptor for API error handling (401/402/429/5xx)
 installApiInterceptor();
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')!;
+const root = window.__lavernRoot ?? createRoot(rootElement);
+window.__lavernRoot = root;
+
+root.render(
   <StrictMode>
     <Sentry.ErrorBoundary fallback={<SentryFallback />}>
       <AuthGate>

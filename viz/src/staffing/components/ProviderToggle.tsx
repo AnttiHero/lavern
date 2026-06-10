@@ -1,21 +1,20 @@
 /**
- * ProviderToggle — Two-option segmented selector for LLM provider.
+ * ProviderToggle — segmented selector for LLM provider.
  *
- * Both options always visible — you can see exactly what you're choosing
- * between. Uses the same segmented-button pattern as IntensitySelector.
- *
- * Options:
- *   - Claude — most capable, US-hosted
- *   - EU Sovereign — Mistral AI, data stays in Europe
+ * All options are visible so the chosen engine is explicit.
  */
 
 import { AnimatePresence, motion } from 'motion/react';
 import { colors, fonts, radii, spacing } from '../styles/tokens.js';
 import type { LLMProvider } from '../hooks/useEngagementConfig.js';
 
-/** EU sovereign blue — desaturated, editorial. */
-const EU_COLOR = '#2E5D9C';
-const EU_BG = 'rgba(46, 93, 156, 0.07)';
+const PROVIDER_ACCENT: Record<LLMProvider, string> = {
+  anthropic: colors.text,
+  mistral: '#2E5D9C',
+  minimax: '#7A4D00',
+  kimi: '#6B4FA3',
+  deepseek: '#0F766E',
+};
 
 const OPTIONS: {
   value: LLMProvider;
@@ -29,8 +28,23 @@ const OPTIONS: {
   },
   {
     value: 'mistral',
-    label: '\uD83C\uDDEA\uD83C\uDDFA EU Sovereign',
+    label: 'Mistral',
     description: 'Mistral AI. Your data never leaves Europe.',
+  },
+  {
+    value: 'minimax',
+    label: 'MiniMax M3',
+    description: 'Large-context agentic model via MiniMax.',
+  },
+  {
+    value: 'kimi',
+    label: 'Kimi K2.6',
+    description: 'Moonshot/Kimi model for agent and coding work.',
+  },
+  {
+    value: 'deepseek',
+    label: 'DeepSeek V4 Pro',
+    description: 'DeepSeek reasoning model through its OpenAI-compatible API.',
   },
 ];
 
@@ -41,7 +55,7 @@ interface Props {
 
 export function ProviderToggle({ provider, onToggle }: Props) {
   const active = OPTIONS.find(o => o.value === provider) ?? OPTIONS[0];
-  const isEU = provider === 'mistral';
+  const accent = PROVIDER_ACCENT[provider] ?? colors.text;
 
   return (
     <div style={styles.container}>
@@ -52,12 +66,12 @@ export function ProviderToggle({ provider, onToggle }: Props) {
       {/* Segmented button row — both options always visible */}
       <div style={{
         ...styles.buttonRow,
-        borderColor: isEU ? EU_COLOR : colors.border,
+        borderColor: accent,
       }}>
         {OPTIONS.map((opt, i) => {
           const isActive = opt.value === provider;
           const isLast = i === OPTIONS.length - 1;
-          const isEUOpt = opt.value === 'mistral';
+          const optionAccent = PROVIDER_ACCENT[opt.value];
 
           return (
             <button
@@ -66,11 +80,11 @@ export function ProviderToggle({ provider, onToggle }: Props) {
               style={{
                 ...styles.button,
                 backgroundColor: isActive
-                  ? (isEUOpt ? EU_COLOR : colors.text)
+                  ? optionAccent
                   : 'transparent',
                 color: isActive ? '#fff' : colors.textSecondary,
                 fontWeight: isActive ? 600 : 400,
-                borderRight: isLast ? 'none' : `1px solid ${isEU ? EU_COLOR : colors.border}`,
+                borderRight: isLast ? 'none' : `1px solid ${accent}`,
               }}
             >
               {opt.label}
@@ -82,22 +96,26 @@ export function ProviderToggle({ provider, onToggle }: Props) {
       {/* Description updates based on selection */}
       <div style={{
         ...styles.description,
-        color: isEU ? EU_COLOR : colors.textMuted,
+        color: accent,
       }}>
         {active.description}
       </div>
 
-      {/* Info box — only when EU is selected */}
       <AnimatePresence>
-        {isEU && (
+        {provider !== 'anthropic' && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            style={styles.info}
+            style={{
+              ...styles.info,
+              color: accent,
+              backgroundColor: `${accent}12`,
+              borderColor: `${accent}30`,
+            }}
           >
-            Mistral Large is EU-hosted. Quality may differ from Claude on complex matters, but data sovereignty is guaranteed.
+            Uses the {active.label} defaults from .env. You can override the exact model IDs there without changing code.
           </motion.div>
         )}
       </AnimatePresence>
@@ -125,7 +143,8 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
   },
   buttonRow: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(104px, 1fr))',
     gap: 0,
     borderRadius: radii.md,
     overflow: 'hidden',
@@ -133,12 +152,13 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'border-color 0.2s ease',
   },
   button: {
-    flex: 1,
-    padding: '8px 4px',
+    minHeight: 36,
+    padding: '8px 6px',
     border: 'none',
     backgroundColor: 'transparent',
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 1.15,
     cursor: 'pointer',
     transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
   },
@@ -151,11 +171,9 @@ const styles: Record<string, React.CSSProperties> = {
   info: {
     fontSize: 11,
     fontFamily: fonts.sans,
-    color: EU_COLOR,
     padding: '6px 10px',
     borderRadius: radii.sm,
-    backgroundColor: EU_BG,
-    border: `1px solid rgba(46, 93, 156, 0.15)`,
+    border: `1px solid ${colors.border}`,
     overflow: 'hidden',
   },
 };

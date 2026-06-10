@@ -108,8 +108,11 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   // state can never drift apart.
   const sessionIdRef = useRef<string | undefined>(undefined);
   const isReplayRef = useRef(false);
+  const sessionFailedRef = useRef(false);
+  const lastNonTerminalStepRef = useRef<WorkflowStep>('intake');
   useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
   useEffect(() => { isReplayRef.current = isReplay; }, [isReplay]);
+  useEffect(() => { sessionFailedRef.current = sessionFailed; }, [sessionFailed]);
 
   // Workflow
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('intake');
@@ -138,10 +141,16 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     });
 
     if (event.type === 'workflow_step') {
+      if (event.step !== 'delivered') lastNonTerminalStepRef.current = event.step;
       setCurrentStep(event.step);
       setCompletedSteps(prev =>
         prev.includes(event.previousStep) ? prev : [...prev, event.previousStep]
       );
+    } else if (event.type === 'session_error') {
+      sessionFailedRef.current = true;
+      setSessionFailed(true);
+      setCurrentStep(prev => prev === 'delivered' ? lastNonTerminalStepRef.current : prev);
+      setCompletedSteps(prev => prev.filter(step => step !== 'delivered'));
     } else if (event.type === 'cost_update') {
       setCost({ accumulated: event.totalUsd, budget: event.budgetUsd });
     } else if (event.type === 'gate_requested') {
@@ -158,13 +167,19 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       // from the delivery view.
       const fatalSources = ['orchestrator', 'session'];
       if (event.source && fatalSources.includes(event.source)) {
+        sessionFailedRef.current = true;
         setSessionFailed(true);
+        setCurrentStep(prev => prev === 'delivered' ? lastNonTerminalStepRef.current : prev);
+        setCompletedSteps(prev => prev.filter(step => step !== 'delivered'));
       }
     } else if (event.type === 'session_end') {
       // Replay mode: don't auto-transition to delivery. Otherwise viewing an
       // archived case's recording navigates back to delivery the moment the
       // replay finishes, creating a Delivery → Working → Delivery loop.
       if (isReplayRef.current) {
+        return;
+      }
+      if (sessionFailedRef.current) {
         return;
       }
       setCompletedSteps(prev =>
@@ -247,6 +262,8 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   const connectToSession = useCallback((id: string) => {
     setSessionId(id);
     deliveredAtRef.current = null;
+    sessionFailedRef.current = false;
+    lastNonTerminalStepRef.current = 'intake';
     setSessionExpired(false);
     setSessionFailed(false);
     setIsAssemblyReady(false);
@@ -270,6 +287,8 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   const connectToReplay = useCallback((id: string) => {
     setSessionId(id);
+    sessionFailedRef.current = false;
+    lastNonTerminalStepRef.current = 'intake';
     setIsReplay(true);
     setEvents([]);
     setCurrentStep('intake');
@@ -288,6 +307,8 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     wsClientRef.current?.disconnect();
     setSessionId(undefined);
     deliveredAtRef.current = null;
+    sessionFailedRef.current = false;
+    lastNonTerminalStepRef.current = 'intake';
     setConnectionStatus('disconnected');
     setEvents([]);
     setCurrentStep('intake');
@@ -359,6 +380,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
     const poll = setInterval(async () => {
       if (completionFiredRef.current) { clearInterval(poll); return; }
+      if (sessionFailedRef.current) { clearInterval(poll); return; }
       try {
         const res = await fetch(`/api/sessions/${sessionId}`, { credentials: 'include' });
         if (!res.ok) return;
@@ -712,6 +734,15 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
             kind: 'tool_used',
             tool: event.tool,
             agent: event.agent,
+            timestamp: event.timestamp,
+          });
+          break;
+
+        case 'session_error':
+          cards.push({
+            kind: 'error',
+            message: event.message,
+            source: 'session',
             timestamp: event.timestamp,
           });
           break;

@@ -34,8 +34,8 @@ describe('parseDocument', () => {
     expect(SUPPORTED_EXTENSIONS.has('.rtf')).toBe(true);
   });
 
-  it('has 10 MB max file size', () => {
-    expect(MAX_FILE_SIZE).toBe(10 * 1024 * 1024);
+  it('has 200 MB max file size by default', () => {
+    expect(MAX_FILE_SIZE).toBe(200 * 1024 * 1024);
   });
 
   // ── Plain Text Parsing ─────────────────────────────────────────────

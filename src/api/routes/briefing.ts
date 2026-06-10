@@ -185,7 +185,7 @@ export function registerBriefingRoutes(fastify: FastifyInstance): void {
       // The "no model data crosses to api.anthropic.com" guarantee holds.
       // (`managed` keeps the native streaming path below — it uses the
       // Anthropic API under the hood.)
-      if (config.provider === 'mistral' || config.provider === 'local') {
+      if (config.provider !== 'anthropic' && config.provider !== 'managed') {
         try {
           const { text } = await crossProviderChat({
             system: systemPrompt,

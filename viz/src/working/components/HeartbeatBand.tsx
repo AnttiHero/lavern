@@ -26,6 +26,7 @@ interface HeartbeatBandProps {
   /** Replay mode: when set, the elapsed timer freezes at endTime - start
    *  instead of ticking against wall clock. */
   replayEndTime?: string | null;
+  isFailed?: boolean;
 }
 
 /** Rotating color palette for phase dots. */
@@ -47,6 +48,7 @@ export function HeartbeatBand({
   sessionStartTime,
   lastEventTimestamp,
   replayEndTime,
+  isFailed,
 }: HeartbeatBandProps) {
   const [workflowId] = useState<string>(() => {
     try {
@@ -131,7 +133,7 @@ export function HeartbeatBand({
         insightCount={findingCount}
         cost={cost}
         certaintyPct={certaintyPct}
-        frozen={currentStep === 'delivered' || completedSteps.includes('delivered')}
+        frozen={isFailed || currentStep === 'delivered' || completedSteps.includes('delivered')}
         endTime={replayEndTime}
       />
     </nav>

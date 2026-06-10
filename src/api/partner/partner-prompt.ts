@@ -172,8 +172,8 @@ export function buildPartnerFinalizationPrompt(params: FinalizationParams): stri
   parts.push('## Required JSON Schema');
   parts.push('');
   parts.push('{');
-  parts.push('  "workflowId": "<counsel|review|adversarial|roundtable|legal-design|full-bench>",');
-  parts.push('  "requestType": "<legal_question|contract_review|document_redesign|legal_research|risk_assessment|general>",');
+  parts.push('  "workflowId": "<counsel|review|adversarial|roundtable|legal-design|full-bench|defence-disclosure>",');
+  parts.push('  "requestType": "<legal_question|contract_review|document_redesign|legal_research|risk_assessment|defence_disclosure|general>",');
   parts.push('  "intensity": "<standard|maximal|maximum>",');
   parts.push('  "budgetUsd": <number>,');
   parts.push('  "teamRoles": ["<role-1>", "<role-2>", ...],');

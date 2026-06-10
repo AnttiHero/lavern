@@ -230,6 +230,82 @@ describe('C1 — archive endpoints require auth', () => {
     });
     expect(res.statusCode).toBe(404);
   });
+
+  it('GET /api/sessions/:id restores archived provider, document metadata, and finding fidelity', async () => {
+    const a = await makeUser('archive-fidelity@example.com');
+    const session = makeLiveSession(a.id);
+    session.provider = 'minimax';
+    session.documents = [{
+      id: 'doc-990163',
+      name: '990163_0000009.pdf',
+      mimeType: 'application/pdf',
+      size: 155155312,
+      pageCount: 91,
+      wordCount: 17574,
+      fullText: 'Extracted text',
+      sections: [{ heading: 'Opening', level: 1, content: 'Extracted text', startIndex: 0, children: [] }],
+      tables: [],
+      definedTerms: ['Agreement'],
+      parseMethod: 'pdf-parse',
+      parsedAt: '2026-06-09T17:06:00.000Z',
+    }];
+    session.debate.findings.push({
+      id: 'finding-1',
+      agentRole: 'contract-reviewer',
+      findingType: 'contract-risk',
+      content: 'Guaranteed 24% annual return requires securities-law scrutiny.',
+      severity: 'RED',
+      evidence: ['Cover letter p. 2: "guaranteed 24% yearly return"'],
+      confidence: 0.93,
+      groundingScore: 0.88,
+      timestamp: '2026-06-09T17:40:00.000Z',
+      resolved: true,
+    });
+
+    const sessionId = session.id;
+    expect(sessionManager.destroySession(sessionId)).toBe(true);
+
+    const archivedRow = getDb()
+      .prepare('SELECT summary_json FROM session_archive WHERE id = ?')
+      .get(sessionId) as { summary_json: string };
+    const summary = JSON.parse(archivedRow.summary_json);
+    expect(summary.provider).toBe('minimax');
+    expect(summary.documents[0].name).toBe('990163_0000009.pdf');
+    expect(summary.topFindings[0].evidence).toEqual(['Cover letter p. 2: "guaranteed 24% yearly return"']);
+    expect(summary.topFindings[0].confidence).toBe(0.93);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/sessions/${sessionId}`,
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body._restored).toBe(true);
+    expect(body.provider).toBe('minimax');
+    expect(body.documents).toEqual([{
+      id: 'doc-990163',
+      name: '990163_0000009.pdf',
+      mimeType: 'application/pdf',
+      size: 155155312,
+      pageCount: 91,
+      wordCount: 17574,
+      sectionCount: 1,
+      definedTermCount: 1,
+      tableCount: 0,
+      parseMethod: 'pdf-parse',
+      parsedAt: '2026-06-09T17:06:00.000Z',
+    }]);
+    expect(body.findings[0]).toMatchObject({
+      id: 'finding-1',
+      agent: 'contract-reviewer',
+      category: 'contract-risk',
+      severity: 'RED',
+      content: 'Guaranteed 24% annual return requires securities-law scrutiny.',
+      evidence: ['Cover letter p. 2: "guaranteed 24% yearly return"'],
+      confidence: 0.93,
+      groundingScore: 0.88,
+    });
+  });
 });
 
 // ──────────────────────────────────────────────────────────────────────────

@@ -38,7 +38,7 @@
 
 import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompts.js';
 import { validateDeliverable } from './validate-deliverable.js';
-import { extractCounselDocument } from './extract-counsel.js';
+import { extractCounselDocument, looksLikeStatusPackage } from './extract-counsel.js';
 import { extractTabulateResult } from './extract-tabulate.js';
 import { convertTabulateToMarkdown } from './tabulate-format-converter.js';
 import { eventTimestamp } from '../events/event-bus.js';
@@ -338,9 +338,11 @@ export async function assembleDocument(
 
     if (extracted) {
       const validation = validateDeliverable(extracted);
-      if (validation.valid) {
+      const statusPackage = looksLikeStatusPackage(extracted);
+      if (validation.valid || statusPackage) {
         logger.info('Counsel extraction (deterministic) succeeded — skipping LLM assembly', {
           chars: extracted.length,
+          statusPackage,
         });
         emitAssemblyComplete(session, 0);
         return extracted;

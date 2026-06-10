@@ -77,7 +77,7 @@ describe('classifyRequest', () => {
   it('includes reasoning in all classifications', () => {
     const types: LegalRequest['type'][] = [
       'document_redesign', 'contract_review', 'legal_research',
-      'risk_assessment', 'legal_question', 'general',
+      'risk_assessment', 'legal_question', 'defence_disclosure', 'general',
     ];
     for (const type of types) {
       const result = classifyRequest(makeRequest({ type }));
@@ -89,7 +89,7 @@ describe('classifyRequest', () => {
   it('always returns a valid riskLevel', () => {
     const types: LegalRequest['type'][] = [
       'document_redesign', 'contract_review', 'legal_research',
-      'risk_assessment', 'legal_question', 'general',
+      'risk_assessment', 'legal_question', 'defence_disclosure', 'general',
     ];
     for (const type of types) {
       const result = classifyRequest(makeRequest({ type }));

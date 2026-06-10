@@ -63,11 +63,12 @@ export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
     budgetUsd: 40,
     yoloMode: true,
     teamPreset: 'full-service',
-    teamSize: 12,
+    teamSize: 14,
     teamRoles: [
       'managing-partner', 'supervising-partner', 'corporate-generalist', 'contract-specialist',
       'regulatory-counsel', 'privacy-counsel', 'service-designer', 'plain-language-specialist',
-      'client-proxy', 'ethics-auditor', 'evaluator', 'risk-pricer',
+      'client-proxy', 'ethics-auditor', 'legal-researcher', 'synthesis-editor',
+      'evaluator', 'risk-pricer',
     ],
   },
   elite: {

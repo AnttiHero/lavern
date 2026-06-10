@@ -52,6 +52,12 @@ Senior partner decomposes, delegates workstreams, senior reviews, synthesizes.
 **Error mode**: Everything — requires senior judgment at both ends.
 **Use when**: M&A due diligence, major litigation prep, transformative legal design, multi-jurisdictional matters.
 
+### defence-disclosure (11 steps) - Ontario/Canada Defence Disclosure
+intake -> inventory -> procedural frame -> disclosure review -> proof matrix -> forensic accounting -> contradictions/gaps -> Crown/OSC red-team -> counsel synthesis -> final gate -> delivered.
+Evidence-linked defence-support work for counsel-supervised criminal disclosure, fraud charges, OSC crossover issues, motions/factums, and forensic accounting reports.
+**Error mode**: Unsupported findings, disclosure gaps, missed contradictions, untested Crown/OSC theory.
+**Use when**: Criminal disclosure, Crown brief, fraud over $5,000, OSC or securities-fraud matter, Charter/disclosure motion, factum, motion record, forensic accounting report, loss/tracing/source-of-funds review.
+
 ## Intensity Guidance
 
 The client's chosen intensity level should influence pattern selection:
@@ -102,6 +108,13 @@ Use when:
 - Cross-jurisdictional matters with interdependent issues
 - The highest complexity and stakes
 
+### 6. Defence Disclosure -> defence-disclosure
+Use when:
+- Ontario/Canada criminal disclosure, Crown brief, fraud, proceeds, or OSC crossover issue
+- Motion/factum or Charter/disclosure application record
+- Forensic accounting, loss, tracing, source-of-funds, or expert-report critique
+- Counsel-supervised defence work requiring citations, fact tags, contradictions, gaps, and a proof matrix
+
 ## Classification Rules
 
 1. **Document redesign/transformation** → roundtable
@@ -111,12 +124,18 @@ Use when:
 5. **Complex multi-domain matter** → full-bench
 6. **If unsure** → counsel (it's the safest default — fast and cheap)
 
+Additional rule: Defence/criminal disclosure/fraud/OSC/forensic accounting requests -> defence-disclosure.
+
 ## Available Specialists
 
 - **contract-reviewer**: Clause-by-clause risk-scored contract analysis
 - **legal-researcher**: Research memos with citations, confidence levels
 - **risk-pricer**: Error probability, potential loss magnitude, insurability
 - **red-team**: Adversarial testing — finds vulnerabilities, edge cases
+- **criminal-defence-counsel**: Ontario/Canada charges, Crown theory, Charter/disclosure issues, counsel questions
+- **disclosure-analyst**: Disclosure inventory, chronology, contradiction chart, gap list
+- **forensic-accounting-analyst**: Loss, tracing, source-of-funds, and expert report critique
+- **motion-factum-analyst**: Motions, factums, relief, arguments, authorities, evidentiary record
 - **evaluator**: Automated quality gate (different model)
 - **design-reviewer**: Document design scoring across 5 dimensions
 - **ethics-auditor**: Dark pattern detection, regulatory compliance
@@ -155,7 +174,7 @@ Return structured JSON with your classification:
 - requestType: direct_answer | single_specialist | multi_specialist | full_pipeline | debate_pattern | adversarial | hierarchical
 - complexity: low | medium | high
 - riskLevel: low | medium | high
-- selectedWorkflow: counsel | review | adversarial | roundtable | full-bench
+- selectedWorkflow: counsel | review | adversarial | roundtable | full-bench | defence-disclosure
 - selectedSpecialists: Array of specialist roles needed
 - requiresDebate: boolean
 - requiresEthicsFirst: boolean

@@ -334,7 +334,7 @@ export function createPreEngagementTools(session: SessionState) {
     {
       client_name: z.string().describe('Client name'),
       matter_description: z.string().describe('Brief matter description'),
-      matter_type: z.enum(['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'general'])
+      matter_type: z.enum(['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'defence_disclosure', 'general'])
         .describe('Type of legal matter'),
     },
     async (args): Promise<{ content: Array<{ type: 'text'; text: string }> }> => {

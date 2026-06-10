@@ -107,6 +107,7 @@ export type ShemEvent =
   | { type: 'tool_used'; tool: string; agent?: string; timestamp: string }
   | { type: 'cost_update'; totalUsd: number; budgetUsd: number; timestamp: string }
   | { type: 'memory_saved'; memoryType: string; key: string; timestamp: string }
+  | { type: 'session_error'; sessionId: string; step?: WorkflowStep; message: string; recoverable?: boolean; timestamp: string }
   | { type: 'error'; message: string; source?: string; timestamp: string }
   // v5: Evaluator events
   | { type: 'evaluator_gate_result'; passed: boolean; score: number; step: string; failureReasons: string[]; timestamp: string }

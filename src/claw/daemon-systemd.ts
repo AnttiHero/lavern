@@ -29,18 +29,32 @@ function logDir(): string {
   return path.join(config.claw.dir, 'logs');
 }
 
+function executableBin(name: string): string {
+  return process.platform === 'win32' ? `${name}.cmd` : name;
+}
+
+function findExecutable(name: string, fallback: string): string {
+  if (name === 'node') {
+    return process.execPath || fallback;
+  }
+
+  const command = process.platform === 'win32' ? `where ${name}` : `command -v ${name}`;
+  try {
+    return execSync(command, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .trim()
+      .split(/\r?\n/)[0]
+      || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // ── Service File Generation ─────────────────────────────────────────────
 
 function generateServiceFile(): string {
   const workDir = process.cwd();
 
-  // Find node binary
-  let nodePath: string;
-  try {
-    nodePath = execSync('which node', { encoding: 'utf-8' }).trim();
-  } catch {
-    nodePath = '/usr/bin/node';
-  }
+  const nodePath = findExecutable('node', '/usr/bin/node');
 
   // Use compiled dist/ if available, else tsx
   const useCompiled = fs.existsSync(path.join(workDir, 'dist', 'index.js'));
@@ -49,12 +63,10 @@ function generateServiceFile(): string {
   if (useCompiled) {
     execStart = `${nodePath} ${path.join(workDir, 'dist', 'index.js')} --serve --claw`;
   } else {
-    let tsxPath: string;
-    try {
-      tsxPath = execSync('which tsx', { encoding: 'utf-8' }).trim();
-    } catch {
-      tsxPath = path.join(workDir, 'node_modules', '.bin', 'tsx');
-    }
+    const tsxPath = findExecutable(
+      'tsx',
+      path.join(workDir, 'node_modules', '.bin', executableBin('tsx')),
+    );
     execStart = `${tsxPath} ${path.join(workDir, 'src', 'index.ts')} --serve --claw`;
   }
 

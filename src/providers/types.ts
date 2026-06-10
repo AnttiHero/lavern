@@ -1,9 +1,12 @@
 /**
  * Provider Types — LLM provider abstraction for EU-sovereign deployments.
  *
- * Lavern supports four LLM providers:
+ * Lavern supports several LLM providers:
  * - `anthropic` — Claude via the Anthropic SDK + Agent SDK (default)
  * - `mistral` — Mistral AI via OpenAI-compatible API (EU-sovereign)
+ * - `minimax` — MiniMax via OpenAI-compatible API
+ * - `kimi` — Moonshot/Kimi via OpenAI-compatible API
+ * - `deepseek` — DeepSeek via OpenAI-compatible API
  * - `local` — On-device model via Ollama (zero-egress / privilege-protected)
  * - `managed` — Anthropic Managed Agents beta (durable server-hosted sessions).
  *   Scaffolded only; execution path is not wired yet. See
@@ -13,7 +16,7 @@
  * or pass `provider` per-session via the API.
  */
 
-export type LLMProvider = 'anthropic' | 'mistral' | 'local' | 'managed';
+export type LLMProvider = 'anthropic' | 'mistral' | 'minimax' | 'kimi' | 'deepseek' | 'local' | 'managed';
 
 export interface LocalConfig {
   /** Ollama HTTP API base URL. Default: http://localhost:11434 */
@@ -48,6 +51,23 @@ export interface MistralConfig {
   assemblyModel: string;
 }
 
+export interface OpenAICompatibleConfig {
+  apiKey: string;
+  baseUrl: string;
+  defaultModel: string;
+  routerModel: string;
+  assemblyModel: string;
+}
+
+export type OpenAICompatibleProvider = 'mistral' | 'minimax' | 'kimi' | 'deepseek';
+
+export function isOpenAICompatibleProvider(provider: LLMProvider): provider is OpenAICompatibleProvider {
+  return provider === 'mistral'
+    || provider === 'minimax'
+    || provider === 'kimi'
+    || provider === 'deepseek';
+}
+
 /**
  * Model mapping: Lavern cost tier → Mistral model.
  *
@@ -71,9 +91,12 @@ export function resolveModel(modelName: string, provider: LLMProvider): string {
     return LOCAL_MODELS.opus;
   }
 
-  // Mistral mapping
-  if (modelName.includes('opus')) return MISTRAL_MODELS.opus;
-  if (modelName.includes('sonnet')) return MISTRAL_MODELS.sonnet;
-  if (modelName.includes('haiku')) return MISTRAL_MODELS.haiku;
-  return MISTRAL_MODELS.opus;
+  if (provider === 'mistral') {
+    if (modelName.includes('opus')) return MISTRAL_MODELS.opus;
+    if (modelName.includes('sonnet')) return MISTRAL_MODELS.sonnet;
+    if (modelName.includes('haiku')) return MISTRAL_MODELS.haiku;
+    return MISTRAL_MODELS.opus;
+  }
+
+  return modelName;
 }

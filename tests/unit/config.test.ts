@@ -50,6 +50,12 @@ describe('Config', () => {
     expect(config.genericMaxTurns).toBeGreaterThan(0);
   });
 
+  it('should give workflow LLM calls enough time for long documents', async () => {
+    const { config } = await import('../../src/config.js');
+    expect(typeof config.workflowLlmTimeoutMs).toBe('number');
+    expect(config.workflowLlmTimeoutMs).toBeGreaterThanOrEqual(300_000);
+  });
+
   it('should have log level', async () => {
     const { config } = await import('../../src/config.js');
     expect(['debug', 'info', 'warn', 'error']).toContain(config.logLevel);

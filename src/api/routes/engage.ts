@@ -63,14 +63,14 @@ const EngageConstraintsSchema = z.object({
   intensity: z.enum(['quick', 'standard', 'thorough', 'maximal']).optional(),
   workflow: z.string().min(1).max(100).optional(),
   /** v18: LLM provider — per-engagement override. */
-  provider: z.enum(['anthropic', 'mistral']).optional(),
+  provider: z.enum(['anthropic', 'mistral', 'minimax', 'kimi', 'deepseek', 'local', 'managed']).optional(),
 }).strict().optional();
 
 export const EngageRequestSchema = z.object({
   task: z.string().min(1).max(50_000),
   type: z.enum([
     'document_redesign', 'contract_review', 'legal_question',
-    'legal_research', 'risk_assessment', 'general',
+    'legal_research', 'risk_assessment', 'defence_disclosure', 'general',
   ]).optional(),
   documents: z.array(EngageDocumentSchema).max(20).optional(),
   context: EngageContextSchema,

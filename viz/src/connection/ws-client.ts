@@ -9,6 +9,7 @@
  */
 
 import type { ShemEvent, WsMessage } from '../types/events.js';
+import { webSocketUrl } from '../api.js';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
@@ -37,9 +38,7 @@ export class ShemWsClient {
    * Connect to a live session's event stream.
    */
   connectToSession(sessionId: string, fromIndex = 0): void {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    this.url = `${protocol}//${host}/api/sessions/${sessionId}/events?from=${fromIndex}`;
+    this.url = webSocketUrl(`/api/sessions/${sessionId}/events?from=${fromIndex}`);
     this.lastEventIndex = fromIndex;
     this.connect();
   }
@@ -48,9 +47,7 @@ export class ShemWsClient {
    * Connect to a replay stream.
    */
   connectToReplay(sessionId: string, speed = 1.0): void {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    this.url = `${protocol}//${host}/api/replay/${sessionId}?speed=${speed}`;
+    this.url = webSocketUrl(`/api/replay/${sessionId}?speed=${speed}`);
     this.connect();
   }
 

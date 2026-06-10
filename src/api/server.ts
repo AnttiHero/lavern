@@ -62,6 +62,8 @@ import { registerUserAuthRoutes } from './routes/auth-routes.js';
 import { registerGoogleAuthRoutes } from './routes/google-auth.js';
 import { initDatabase, cleanExpiredTokens, cleanExpiredUserTokens, rotateAuditLog, logAuditEvent, cleanOldArchives, sweepStaleHolds } from '../db/database.js';
 import { config } from '../config.js';
+import { isOpenAICompatibleProvider } from '../providers/types.js';
+import { getOpenAICompatibleSettings } from '../providers/openai-compatible.js';
 import { captureError, isSentryEnabled } from '../utils/sentry.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -87,6 +89,7 @@ export async function startApiServer(port: number): Promise<void> {
   const isProd = config.isProduction;
   const fastify = Fastify({
     trustProxy: config.trustProxy,
+    bodyLimit: config.maxUploadBytes,
     disableRequestLogging: true,
     logger: {
       level: config.logLevel === 'debug' ? 'debug' : 'info',
@@ -469,10 +472,23 @@ export async function startApiServer(port: number): Promise<void> {
     }
 
     // LLM API key present
-    checks.llm = {
-      ok: !!config.anthropic.apiKey,
-      detail: config.anthropic.apiKey ? 'configured' : 'ANTHROPIC_API_KEY not set',
-    };
+    if (isOpenAICompatibleProvider(config.provider)) {
+      const settings = getOpenAICompatibleSettings(config.provider);
+      checks.llm = {
+        ok: !!settings.apiKey,
+        detail: settings.apiKey ? `${settings.label} configured` : `${settings.apiKeyEnv} not set`,
+      };
+    } else if (config.provider === 'local') {
+      checks.llm = {
+        ok: true,
+        detail: `local provider (${config.local.defaultModel})`,
+      };
+    } else {
+      checks.llm = {
+        ok: !!config.anthropic.apiKey,
+        detail: config.anthropic.apiKey ? 'configured' : 'ANTHROPIC_API_KEY not set',
+      };
+    }
 
     // Email service
     checks.email = {
@@ -536,6 +552,7 @@ export async function startApiServer(port: number): Promise<void> {
         create: 'POST /api/sessions',
         list: 'GET /api/sessions',
         get: 'GET /api/sessions/:id',
+        continue: 'POST /api/sessions/:id/continue',
         events: 'GET /api/sessions/:id/events (WebSocket)',
         gate: 'POST /api/sessions/:id/gate',
         cancel: 'DELETE /api/sessions/:id',
@@ -781,8 +798,9 @@ export async function startApiServer(port: number): Promise<void> {
 
     const dashboardAvailable = fs.existsSync(frontendDir);
     const hasAnthropicKey = !!config.anthropic.apiKey && config.anthropic.apiKey.length > 10;
-    const hasMistralKey = !!config.mistral.apiKey && config.mistral.apiKey.length > 10;
     const provider = config.provider;
+    const compatibleSettings = isOpenAICompatibleProvider(provider) ? getOpenAICompatibleSettings(provider) : null;
+    const hasProviderKey = compatibleSettings ? compatibleSettings.apiKey.length > 10 : true;
     // Always false here: the startup guard above refuses to boot when
     // LAVERN_AUTH_ENABLED=true, so the server only ever runs in LOCAL MODE.
     const authEnabled = config.authEnabled;
@@ -811,7 +829,7 @@ ${dashboardAvailable ? `  Dashboard: http://localhost:${port}/dashboard/` : '  D
   └────────────────────────────────────────────────────────────┘
 
   Mode:        ${authEnabled ? 'multi-user (LAVERN_AUTH_ENABLED=true)' : 'LOCAL MODE (single-user, auth disabled)'}
-  Provider:    ${provider}${provider === 'anthropic' && !hasAnthropicKey ? ` (no ANTHROPIC_API_KEY — demo only)` : ''}${provider === 'mistral' && !hasMistralKey ? ` (no MISTRAL_API_KEY — set it in .env)` : ''}
+  Provider:    ${provider}${provider === 'anthropic' && !hasAnthropicKey ? ` (no ANTHROPIC_API_KEY — demo only)` : ''}${compatibleSettings && !hasProviderKey ? ` (no ${compatibleSettings.apiKeyEnv} — set it in .env)` : ''}
   Bundled try: lavern samples/sample-terms-of-service.txt --workflow review
 
   ${provider === 'anthropic' && !hasAnthropicKey ? `Tip: set ANTHROPIC_API_KEY in .env to enable real engagements.

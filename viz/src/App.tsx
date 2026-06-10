@@ -39,6 +39,11 @@ import { LoadingW } from './components/LoadingW.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { YOLO_CONFIGS, type YoloTier } from './landing/yolo-config.js';
 import { CustomCursor } from './components/CustomCursor.js';
+import { apiUrl } from './api.js';
+import {
+  fitParsedDocumentsForStorage,
+  normalizeParsedDocumentsForSession,
+} from './briefing/utils/sessionDocuments.js';
 
 // Lazy-load all views (separate code-split chunks)
 const DemoTourView = lazy(() => import('./demo/DemoTourView.js'));
@@ -126,6 +131,36 @@ function ViewFallback({ text }: { text: string }) {
 /** Fade-up entrance for all views */
 function ViewTransition({ children }: { children: React.ReactNode }) {
   return <div className="view-entrance">{children}</div>;
+}
+
+function sessionErrorMessage(data: unknown): string {
+  if (!data || typeof data !== 'object') {
+    return 'Something went wrong. Please try again.';
+  }
+
+  const record = data as {
+    error?: unknown;
+    message?: unknown;
+    details?: Array<{ path?: unknown; message?: unknown }>;
+  };
+  const base = typeof record.error === 'string'
+    ? record.error
+    : typeof record.message === 'string'
+      ? record.message
+      : 'Something went wrong. Please try again.';
+  const details = Array.isArray(record.details)
+    ? record.details
+        .slice(0, 3)
+        .map(detail => {
+          const path = typeof detail.path === 'string' ? detail.path : '';
+          const message = typeof detail.message === 'string' ? detail.message : '';
+          return [path, message].filter(Boolean).join(': ');
+        })
+        .filter(Boolean)
+        .join('; ')
+    : '';
+
+  return details ? `${base}. ${details}` : base;
 }
 
 /** Minimal inline handler for email verification links (#/verify-email?token=xxx). */
@@ -296,7 +331,7 @@ export function App() {
 
     // Create session via API (same pattern as handleStaffingComplete)
     try {
-      const res = await fetch('/api/sessions', {
+      const res = await fetch(apiUrl('/api/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -329,7 +364,7 @@ export function App() {
       // API returned non-ok — log the actual error
       console.error('[YOLO] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Something went wrong. Please try again.');
+      setErrorToast(sessionErrorMessage(data));
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[YOLO] API unreachable — cannot create session');
@@ -352,7 +387,8 @@ export function App() {
     }
     const config = YOLO_CONFIGS[tier];
     const matterId = `qs-${Date.now()}`;
-    const hasDocuments = parsedDocs.length > 0;
+    const docsForSession = normalizeParsedDocumentsForSession(parsedDocs);
+    const hasDocuments = docsForSession.length > 0;
     const questionText = question || 'Please review the attached documents.';
 
     // Seed synthetic matter data
@@ -390,11 +426,12 @@ export function App() {
     // Store parsed documents if available
     if (hasDocuments) {
       try {
-        const serialized = JSON.stringify(parsedDocs);
+        const storageDocs = fitParsedDocumentsForStorage(docsForSession);
+        const serialized = JSON.stringify(storageDocs);
         if (serialized.length < 4_500_000) {
           sessionStorage.setItem('shem-parsed-docs', serialized);
         } else {
-          const trimmed = parsedDocs.map(d => ({
+          const trimmed = storageDocs.map(d => ({
             ...d,
             fullText: d.fullText.slice(0, 50_000),
           }));
@@ -407,7 +444,7 @@ export function App() {
 
     // Create session via API
     try {
-      const res = await fetch('/api/sessions', {
+      const res = await fetch(apiUrl('/api/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -416,7 +453,7 @@ export function App() {
             type: hasDocuments ? 'contract_review' : config.requestType,
             requestText: questionText,
           },
-          ...(hasDocuments ? { documents: parsedDocs } : {}),
+          ...(hasDocuments ? { documents: docsForSession } : {}),
           team: config.teamRoles,
           workflow: config.workflowId,
           options: {
@@ -440,7 +477,7 @@ export function App() {
 
       console.error('[QuickStart] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast('Something went wrong. Please try again.');
+      setErrorToast(sessionErrorMessage(data));
     } catch {
       console.error('[QuickStart] API unreachable');
       sessionStorage.removeItem('shem-session-id');
@@ -477,13 +514,14 @@ export function App() {
     // v12: Store parsed documents for session creation (full structure)
     if (payload.parsedDocuments?.length) {
       try {
-        const serialized = JSON.stringify(payload.parsedDocuments);
+        const storageDocs = fitParsedDocumentsForStorage(payload.parsedDocuments);
+        const serialized = JSON.stringify(storageDocs);
         // sessionStorage limit is ~5MB — truncate fullText if needed
         if (serialized.length < 4_500_000) {
           sessionStorage.setItem('shem-parsed-docs', serialized);
         } else {
           // Store with truncated fullText to fit sessionStorage
-          const trimmed = payload.parsedDocuments.map(d => ({
+          const trimmed = storageDocs.map(d => ({
             ...d,
             fullText: d.fullText.slice(0, 50_000),
           }));
@@ -536,7 +574,9 @@ export function App() {
     } catch { console.warn('[App] Corrupted parsed docs in sessionStorage — skipping'); }
 
     try {
-      const res = await fetch('/api/sessions', {
+      const docsForSession = normalizeParsedDocumentsForSession(parsedDocs as FrontendParsedDocument[]);
+
+      const res = await fetch(apiUrl('/api/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -545,7 +585,7 @@ export function App() {
             type: WORKFLOW_TYPE_MAP[config.workflowId] ?? 'general',
             requestText: memoText || 'New engagement session',
           },
-          ...(parsedDocs.length > 0 ? { documents: parsedDocs } : {}),
+          ...(docsForSession.length > 0 ? { documents: docsForSession } : {}),
           team: roles,
           workflow: config.workflowId,
           options: {
@@ -553,7 +593,7 @@ export function App() {
             intensity: config.intensity,
             yoloMode: config.yoloMode,
             verification: config.verification !== false,
-            provider: config.provider,
+            ...(config.provider ? { provider: config.provider } : {}),
           },
         }),
       });
@@ -572,7 +612,7 @@ export function App() {
 
       console.error('[Session] Session creation failed:', res.status, data);
       sessionStorage.removeItem('shem-session-id');
-      setErrorToast(data?.error || 'Something went wrong. Please try again.');
+      setErrorToast(sessionErrorMessage(data));
     } catch {
       // API unreachable — show error, don't silently fall through to demo
       console.error('[Session] API unreachable — cannot create session');

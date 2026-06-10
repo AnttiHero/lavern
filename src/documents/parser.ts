@@ -39,8 +39,11 @@ export const SUPPORTED_EXTENSIONS = new Set([
   '.pdf', '.docx', '.doc', '.txt', '.md', '.rtf', '.html', '.htm',
 ]);
 
-/** Maximum file size: 10 MB */
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+/** Maximum file size. Mirrors SHEM_MAX_UPLOAD_BYTES; default: 200 MB. */
+export const MAX_FILE_SIZE = (() => {
+  const parsed = Number.parseInt(process.env.SHEM_MAX_UPLOAD_BYTES ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 200 * 1024 * 1024;
+})();
 
 // ── Main Parser ─────────────────────────────────────────────────────────
 

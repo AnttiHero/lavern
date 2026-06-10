@@ -170,9 +170,17 @@ describe('ClawWatcher Integration', () => {
 
     await new Promise(r => setTimeout(r, 200));
 
-    // Create a symlink in the watched dir
+    // Create a symlink in the watched dir. Some Windows environments deny
+    // symlink creation without Developer Mode or admin privileges.
     const symPath = path.join(watchDir, 'linked-doc.md');
-    fs.symlinkSync(realFile, symPath);
+    try {
+      fs.symlinkSync(realFile, symPath);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'EPERM') {
+        return;
+      }
+      throw err;
+    }
 
     // Wait for any potential debounce + processing
     await new Promise(r => setTimeout(r, 1000));

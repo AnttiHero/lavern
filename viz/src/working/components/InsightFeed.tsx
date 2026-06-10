@@ -123,16 +123,18 @@ export function InsightFeed({
           <EmptyState isConnected={isConnected} team={team} />
         ) : (
           <>
-            {cards.map((card) => {
+            {cards.map((card, index) => {
               // Stable keys: use unique card IDs where available, timestamp as fallback
               const key = card.kind === 'reassurance'
-                ? `reassurance-${card.timestamp}`
+                ? `reassurance-${card.timestamp}-${index}`
                 : 'findingId' in card ? `${card.kind}-${card.findingId}`
                 : 'challengeId' in card ? `${card.kind}-${card.challengeId}`
                 : 'responseId' in card ? `${card.kind}-${card.responseId}`
                 : 'resolutionId' in card ? `${card.kind}-${card.resolutionId}`
                 : 'agentId' in card ? `${card.kind}-${card.agentId}-${card.timestamp}`
-                : `${card.kind}-${card.timestamp}`;
+                : card.kind === 'tool_used'
+                  ? `${card.kind}-${card.agent ?? 'system'}-${card.tool}-${card.timestamp}-${index}`
+                  : `${card.kind}-${card.timestamp}-${index}`;
 
               // Reassurance messages (injected by useReassuranceInjector)
               if (card.kind === 'reassurance') {

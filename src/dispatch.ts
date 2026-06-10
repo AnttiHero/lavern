@@ -18,6 +18,7 @@ import { runGenericWorkflow } from './workflows/executor.js';
 import { routeRequest } from './router/router.js';
 import { workflowRegistry } from './workflows/registry.js';
 import { SessionState } from './session/session-state.js';
+import { checkProviderReady } from './providers/cross-provider-chat.js';
 import type { LegalRequest } from './types/index.js';
 import type { GateResolver } from './gates/gate-resolver.js';
 import { type IntensityLevel, effortForIntensity } from './types/engagement.js';
@@ -64,6 +65,15 @@ export async function dispatch(
   // v18: Store provider on session for per-session override
   if (opts.provider) {
     session.provider = opts.provider;
+  }
+
+  const requestedProvider = opts.provider ?? session.provider;
+  const readinessError = await checkProviderReady(requestedProvider);
+  if (readinessError) {
+    throw new Error(
+      `Provider ${requestedProvider ?? 'default'} is not ready: ${readinessError}. ` +
+      'Add the missing key to .env or choose a configured engine in Strategy.',
+    );
   }
 
   // v8: Matter data (including selectedTeam) is pre-loaded on the session by

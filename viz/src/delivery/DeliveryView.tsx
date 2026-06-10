@@ -55,6 +55,42 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
   // Detect demo session
   const isDemo = data?.sessionId.startsWith('demo-session') ?? false;
+  const needsDirection = data?.deliveryState === 'needs_direction';
+  const sessionFailed = data?.sessionFailed === true;
+  const hasFinalDeliverable = Boolean(
+    isDemo
+    || (
+      data
+      && !sessionFailed
+      && !needsDirection
+      && data.deliveryState === 'complete'
+      && assemblyStatus === 'ready'
+      && data.finalOutput.trim().length > 100
+    )
+  );
+  const restoredAssemblyFailure = data?.deliveryState === 'assembly_failed' && assemblyStatus !== 'polling';
+  const assemblyIncomplete = Boolean(
+    data
+    && !isDemo
+    && !sessionFailed
+    && !needsDirection
+    && (restoredAssemblyFailure || assemblyStatus === 'timeout' || assemblyStatus === 'error')
+  );
+  const assemblyPending = Boolean(
+    data
+    && !isDemo
+    && !sessionFailed
+    && !needsDirection
+    && !assemblyIncomplete
+    && assemblyStatus === 'polling'
+  );
+
+  const focusDirectionPanel = () => {
+    setActiveTab('work');
+    window.setTimeout(() => {
+      document.getElementById('direction-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   // Demo: no auto-advance — user clicks "See Clawern →" in the footer
 
@@ -94,8 +130,8 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
       {data && (
         <>
-          <ConfettiBurst />
-          <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+          {hasFinalDeliverable && <ConfettiBurst />}
+          <TabBar activeTab={activeTab} onTabChange={setActiveTab} workflowId={data.workflowTemplateId} />
 
           <div key={activeTab} role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} style={{ animation: 'tabFadeIn 0.3s ease both' }}>
             {activeTab === 'work' && <TheWorkTab data={data} assemblyStatus={assemblyStatus} onRetryAssembly={retryAssembly} />}
@@ -116,6 +152,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
               ) : (
                 <ConversationTab
                   sessionId={data.sessionId}
+                  needsDirection={needsDirection}
                   messages={convMessages}
                   setMessages={setConvMessages}
                   input={convInput}
@@ -131,7 +168,78 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
 
       {/* Footer */}
       <div style={styles.footer}>
-        {isArchiveView ? (
+        {sessionFailed ? (
+          <button
+            onClick={() => { window.location.hash = '#/working'; }}
+            style={styles.secondaryBtn}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.transform = 'translateY(-2px)'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.5)'; }}
+          >
+            View Agent Work
+          </button>
+        ) : needsDirection ? (
+          <>
+            {isArchiveView && (
+              <button
+                onClick={() => { window.location.hash = '#/my-cases'; }}
+                style={styles.secondaryBtn}
+                onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.transform = 'translateY(-2px)'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'; }}
+                onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.5)'; }}
+              >
+                Back to Cases
+              </button>
+            )}
+            <button
+              onClick={focusDirectionPanel}
+              style={styles.continueBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+            >
+              Answer blockers & continue {'\u2192'}
+            </button>
+          </>
+        ) : assemblyIncomplete ? (
+          <>
+            <button
+              onClick={() => {
+                if (isArchiveView) sessionStorage.setItem('shem-from-archive', 'true');
+                window.location.hash = '#/working';
+              }}
+              style={styles.secondaryBtn}
+              onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; b.style.transform = 'translateY(-2px)'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)'; }}
+              onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; b.style.transform = ''; b.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.5)'; }}
+            >
+              View Agent Work
+            </button>
+            {isArchiveView ? (
+              <button
+                onClick={() => { window.location.hash = '#/my-cases'; }}
+                style={styles.continueBtn}
+                onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+                onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              >
+                {'\u2190'} Back to Cases
+              </button>
+            ) : (
+              <button
+                onClick={() => { void retryAssembly(); }}
+                style={styles.continueBtn}
+                onMouseEnter={e => { const b = e.currentTarget; b.style.backgroundColor = 'transparent'; b.style.color = colors.text; }}
+                onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
+              >
+                Retry Assembly {'\u2192'}
+              </button>
+            )}
+          </>
+        ) : assemblyPending ? (
+          <button
+            type="button"
+            disabled
+            style={{ ...styles.secondaryBtn, cursor: 'wait', opacity: 0.75 }}
+          >
+            Assembling work product...
+          </button>
+        ) : isArchiveView ? (
           <>
             <button
               onClick={() => {
@@ -153,7 +261,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
               {'\u2190'} Back to Cases
             </button>
           </>
-        ) : (
+        ) : hasFinalDeliverable ? (
           <button
             onClick={onContinue}
             style={styles.continueBtn}
@@ -161,6 +269,14 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             onMouseLeave={e => { const b = e.currentTarget; b.style.backgroundColor = colors.text; b.style.color = '#fff'; }}
           >
             Continue to Billing {'\u2192'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            style={{ ...styles.secondaryBtn, cursor: 'wait', opacity: 0.75 }}
+          >
+            Preparing delivery...
           </button>
         )}
       </div>

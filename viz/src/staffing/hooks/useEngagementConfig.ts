@@ -13,7 +13,7 @@ import { IS_STANDALONE } from '../../standalone.js';
 
 export type IntensityLevel = 'quick' | 'standard' | 'thorough' | 'maximal';
 
-export type LLMProvider = 'anthropic' | 'mistral';
+export type LLMProvider = 'anthropic' | 'mistral' | 'minimax' | 'kimi' | 'deepseek';
 
 export interface EngagementConfig {
   workflowId: string;
@@ -22,7 +22,7 @@ export interface EngagementConfig {
   yoloMode: boolean;
   /** Enable 10-pass verification pipeline before delivery (default: true). */
   verification: boolean;
-  /** v18: LLM provider — 'anthropic' (default) or 'mistral' (EU sovereign). */
+  /** LLM provider for this engagement. */
   provider: LLMProvider;
 }
 

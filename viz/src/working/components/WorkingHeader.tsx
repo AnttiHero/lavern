@@ -27,8 +27,16 @@ interface WorkingHeaderProps {
   onSkip: () => void;
   certaintyPct?: number;
   /** v18: Active LLM provider for this session. */
-  provider?: 'anthropic' | 'mistral';
+  provider?: 'anthropic' | 'mistral' | 'minimax' | 'kimi' | 'deepseek';
 }
+
+const PROVIDER_BADGES: Record<NonNullable<WorkingHeaderProps['provider']>, string> = {
+  anthropic: 'Claude',
+  mistral: 'Mistral',
+  minimax: 'MiniMax M3',
+  kimi: 'Kimi K2.6',
+  deepseek: 'DeepSeek V4 Pro',
+};
 
 const STATUS_COLORS: Record<ConnectionStatus, string> = {
   disconnected: colors.danger,
@@ -86,8 +94,8 @@ export function WorkingHeader({
         <div style={{ ...styles.statusDot, backgroundColor: STATUS_COLORS[connectionStatus] }} />
         <span style={styles.statusText}>{connectionStatus}</span>
         {sessionId && <span style={styles.sessionId}>{sessionId}</span>}
-        {provider === 'mistral' && (
-          <span style={styles.euBadge}>{'\uD83C\uDDEA\uD83C\uDDFA'} EU</span>
+        {provider && provider !== 'anthropic' && (
+          <span style={styles.euBadge}>{PROVIDER_BADGES[provider]}</span>
         )}
       </div>
 

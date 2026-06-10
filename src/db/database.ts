@@ -807,6 +807,74 @@ function deriveSessionTitle(session: SessionState): string {
   return 'Session Results';
 }
 
+function summarizeDocumentsForArchive(session: SessionState): Array<Record<string, unknown>> {
+  return session.documents.map(d => ({
+    id: d.id,
+    name: d.name,
+    mimeType: d.mimeType,
+    size: d.size,
+    pageCount: d.pageCount,
+    wordCount: d.wordCount,
+    sectionCount: d.sections.length,
+    definedTermCount: d.definedTerms.length,
+    tableCount: d.tables.length,
+    parseMethod: d.parseMethod,
+    parsedAt: d.parsedAt,
+  }));
+}
+
+function summarizeFindingsForArchive(session: SessionState): Array<Record<string, unknown>> {
+  return session.debate.findings.slice(0, 10).map(f => ({
+    id: f.id,
+    severity: f.severity,
+    content: f.content,
+    agent: f.agentRole,
+    category: f.findingType,
+    evidence: f.evidence,
+    confidence: f.confidence,
+    groundingScore: f.groundingScore ?? null,
+    timestamp: f.timestamp,
+    resolved: f.resolved,
+  }));
+}
+
+function summarizeResolutionsForArchive(session: SessionState): Array<Record<string, unknown>> {
+  return session.debate.resolutions.map(r => ({
+    topic: r.debateTopic,
+    debateTopic: r.debateTopic,
+    findingIds: r.findingIds,
+    resolution: r.resolution,
+    winningPosition: r.winningPosition,
+    evidenceWeight: r.evidenceWeight,
+    escalationNeeded: r.escalationNeeded,
+    confidence: r.confidence,
+    resolvedBy: r.resolvedBy,
+    timestamp: r.timestamp,
+  }));
+}
+
+function buildArchiveSummary(session: SessionState): Record<string, unknown> {
+  return {
+    provider: session.provider ?? config.provider,
+    documents: summarizeDocumentsForArchive(session),
+    debate: {
+      findingsCount: session.debate.findings.length,
+      challengesCount: session.debate.challenges.length,
+      resolutionsCount: session.debate.resolutions.length,
+    },
+    topFindings: summarizeFindingsForArchive(session),
+    resolutions: summarizeResolutionsForArchive(session),
+    beforeScores: session.beforeScores,
+    afterScores: session.afterScores,
+    reportCard: session.reportCard ?? null,
+    verification: {
+      total: session.verificationResults.length,
+      passed: session.verificationResults.filter(v => v.passed).length,
+      averageConfidence: session.verificationSummary?.averageConfidence ?? null,
+    },
+  };
+}
+
 export function earlyArchiveSession(session: SessionState): void {
   const db = getDb();
   const now = new Date().toISOString();
@@ -859,28 +927,7 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     ? (session.haltReason?.includes('timeout') ? 'failed' : 'halted')
     : 'completed';
 
-  const summaryJson = JSON.stringify({
-    debate: {
-      findingsCount: session.debate.findings.length,
-      challengesCount: session.debate.challenges.length,
-      resolutionsCount: session.debate.resolutions.length,
-    },
-    topFindings: session.debate.findings.slice(0, 10).map(f => ({
-      severity: f.severity,
-      content: f.content,
-      agent: f.agentRole,
-    })),
-    resolutions: session.debate.resolutions.map(r => ({
-      topic: r.debateTopic,
-      resolution: r.resolution,
-    })),
-    beforeScores: session.beforeScores,
-    afterScores: session.afterScores,
-    verification: {
-      total: session.verificationResults.length,
-      passed: session.verificationResults.filter(v => v.passed).length,
-    },
-  });
+  const summaryJson = JSON.stringify(buildArchiveSummary(session));
 
   // Wrap everything in a transaction so usage/debit/archive stay consistent
   db.transaction(() => {
@@ -963,18 +1010,7 @@ export function preArchiveSessionRow(session: SessionState, userId: string | nul
   const now = new Date().toISOString();
   const startedAt = session.genericWorkflow?.startedAt ?? session.workflow.startedAt;
 
-  const summaryJson = JSON.stringify({
-    debate: {
-      findingsCount: session.debate.findings.length,
-      challengesCount: session.debate.challenges.length,
-      resolutionsCount: session.debate.resolutions.length,
-    },
-    topFindings: session.debate.findings.slice(0, 10).map(f => ({
-      severity: f.severity,
-      content: f.content,
-      agent: f.agentRole,
-    })),
-  });
+  const summaryJson = JSON.stringify(buildArchiveSummary(session));
 
   db.prepare(`
     INSERT OR IGNORE INTO session_archive

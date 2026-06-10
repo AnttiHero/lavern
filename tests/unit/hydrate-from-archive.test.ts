@@ -19,7 +19,16 @@ function makeArchived(overrides: Partial<ArchivedSession> = {}): ArchivedSession
     summary_json: JSON.stringify({
       debate: { findingsCount: 2, challengesCount: 0, resolutionsCount: 1 },
       topFindings: [
-        { severity: 'RED', content: 'Arbitration clause is one-sided', agent: 'contract-specialist' },
+        {
+          id: 'finding-risk-1',
+          severity: 'RED',
+          content: 'Arbitration clause is one-sided',
+          agent: 'contract-specialist',
+          category: 'contract-risk',
+          evidence: ['Section 14.2 gives the vendor sole forum control.'],
+          confidence: 0.91,
+          groundingScore: 0.84,
+        },
         { severity: 'YELLOW', content: 'Auto-renewal lacks clear disclosure', agent: 'ethics-auditor' },
       ],
       resolutions: [
@@ -56,10 +65,55 @@ describe('hydrateSessionFromArchive', () => {
   it('rebuilds findings from summary_json topFindings', () => {
     const h = hydrateSessionFromArchive(makeArchived());
     expect(h.debate.findings).toHaveLength(2);
+    expect(h.debate.findings[0].id).toBe('finding-risk-1');
     expect(h.debate.findings[0].severity).toBe('RED');
     expect(h.debate.findings[0].content).toBe('Arbitration clause is one-sided');
     expect(h.debate.findings[0].agentRole).toBe('contract-specialist');
+    expect(h.debate.findings[0].findingType).toBe('contract-risk');
+    expect(h.debate.findings[0].evidence).toEqual(['Section 14.2 gives the vendor sole forum control.']);
+    expect(h.debate.findings[0].confidence).toBe(0.91);
+    expect(h.debate.findings[0].groundingScore).toBe(0.84);
     expect(h.debate.findings[0].resolved).toBe(true);
+  });
+
+  it('restores archived provider and document metadata from summary_json', () => {
+    const h = hydrateSessionFromArchive(makeArchived({
+      summary_json: JSON.stringify({
+        provider: 'minimax',
+        documents: [
+          {
+            id: 'doc-1',
+            name: '990163_0000009.pdf',
+            mimeType: 'application/pdf',
+            size: 155155312,
+            pageCount: 91,
+            wordCount: 17574,
+            sectionCount: 80,
+            definedTermCount: 237,
+            tableCount: 0,
+            parseMethod: 'pdf-parse',
+            parsedAt: '2026-06-09T17:06:00.000Z',
+          },
+        ],
+        topFindings: [],
+      }),
+    }));
+    expect(h.provider).toBe('minimax');
+    expect(h.documents).toEqual([
+      {
+        id: 'doc-1',
+        name: '990163_0000009.pdf',
+        mimeType: 'application/pdf',
+        size: 155155312,
+        pageCount: 91,
+        wordCount: 17574,
+        sectionCount: 80,
+        definedTermCount: 237,
+        tableCount: 0,
+        parseMethod: 'pdf-parse',
+        parsedAt: '2026-06-09T17:06:00.000Z',
+      },
+    ]);
   });
 
   it('rebuilds resolutions from summary_json', () => {

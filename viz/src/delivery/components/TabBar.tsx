@@ -21,17 +21,28 @@ const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'conversation', label: 'Ask the Team' },
 ];
 
+const DEFENCE_TABS: { id: DeliveryTab; label: string }[] = [
+  { id: 'work', label: 'Disclosure Map' },
+  { id: 'review', label: 'Proof Matrix' },
+  { id: 'story', label: 'Case Story' },
+  { id: 'scorecard', label: 'Forensic Accounting' },
+  { id: 'next-steps', label: 'Counsel Questions' },
+  { id: 'conversation', label: 'Ask the Team' },
+];
+
 interface Props {
   activeTab: DeliveryTab;
   onTabChange: (tab: DeliveryTab) => void;
+  workflowId?: string | null;
 }
 
-export function TabBar({ activeTab, onTabChange }: Props) {
+export function TabBar({ activeTab, onTabChange, workflowId }: Props) {
   const { isMobile } = useResponsive();
   const barRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<DeliveryTab, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const [ready, setReady] = useState(false);
+  const tabs = workflowId === 'defence-disclosure' ? DEFENCE_TABS : TABS;
 
   const measure = useCallback(() => {
     const bar = barRef.current;
@@ -59,7 +70,7 @@ export function TabBar({ activeTab, onTabChange }: Props) {
 
   return (
     <nav ref={barRef} style={styles.bar} role="tablist" aria-label="Delivery sections">
-      {TABS.map(tab => {
+      {tabs.map(tab => {
         const isActive = activeTab === tab.id;
         return (
           <button

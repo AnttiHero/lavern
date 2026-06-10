@@ -1,15 +1,14 @@
 /**
- * AuthGate — Transparent auth wrapper.
+ * AuthGate - transparent auth wrapper.
  *
- * Always renders children (the app). Provides UserContext with
- * the current user (or null) plus login/logout functions.
- *
- * In standalone mode: skips auth check entirely, renders immediately.
+ * Always renders children with the current user context. In LOCAL MODE the API
+ * reports auth=false, so the app uses a synthetic local user and skips login.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { UserContext, type AuthUser } from './UserContext.js';
 import { IS_STANDALONE } from '../standalone.js';
+import { apiUrl } from '../api.js';
 import { colors, fonts } from '../staffing/styles/tokens.js';
 import { LavernIlluminated } from '../components/LavernIlluminated.js';
 
@@ -17,58 +16,71 @@ interface Props {
   children: React.ReactNode;
 }
 
+const LOCAL_USER: AuthUser = {
+  id: 'local-user',
+  email: 'local@localhost',
+  displayName: 'Local User',
+  firmName: '',
+  profile: {},
+  emailVerified: true,
+};
+
 export function AuthGate({ children }: Props) {
-  // LOCAL MODE: synthetic user, no auth check
-  const [user, setUser] = useState<AuthUser | null>({
-    id: 'local-user',
-    email: 'local@localhost',
-    displayName: 'Local User',
-    firmName: '',
-    profile: {},
-    emailVerified: true,
-  });
-  const [checking, setChecking] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(LOCAL_USER);
+  const [checking, setChecking] = useState(!IS_STANDALONE);
 
-  // Check for existing session on mount (API mode only)
   useEffect(() => {
-    if (IS_STANDALONE) return;
+    if (IS_STANDALONE) {
+      setChecking(false);
+      return;
+    }
 
-    // 5-second timeout prevents indefinite loading on slow/unresponsive server
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    fetch('/api/auth/me', { credentials: 'include', signal: controller.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+    fetch(apiUrl('/api/capabilities'), { credentials: 'include', signal: controller.signal })
+      .then(async r => {
+        if (!r.ok) throw new Error(`Capabilities HTTP ${r.status}`);
+        return await r.json() as { auth?: boolean };
+      })
+      .then(async capabilities => {
+        if (!capabilities.auth) {
+          setUser(LOCAL_USER);
+          return;
+        }
+
+        const res = await fetch(apiUrl('/api/auth/me'), {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const data = res.ok ? await res.json() : null;
         setUser(data?.user ?? null);
-        setChecking(false);
       })
       .catch(() => {
-        // Network error or timeout — proceed as unauthenticated
-        setChecking(false);
+        setUser(LOCAL_USER);
       })
-      .finally(() => clearTimeout(timeout));
+      .finally(() => {
+        setChecking(false);
+        clearTimeout(timeout);
+      });
   }, []);
 
   const login = useCallback((u: AuthUser) => {
     setUser(u);
-    // Clear any demo session so real API calls are used going forward
     sessionStorage.removeItem('shem-session-id');
     sessionStorage.removeItem('shem-demo-case');
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      await fetch(apiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
     setUser(null);
-    // Don't redirect away from auth-free routes
     if (!window.location.hash.startsWith('#/claw-live')) {
       window.location.hash = '';
     }
   }, []);
 
-  // Brief loading flash while checking cookie (API mode only)
   if (checking) {
     return (
       <div style={loadingStyles.wrap}>

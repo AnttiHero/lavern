@@ -24,6 +24,7 @@ import { streamMessages } from './utils/stream-messages.js';
 import { handleSessionError } from './utils/error-recovery.js';
 import { config } from './config.js';
 import type { DocumentContext } from './types/index.js';
+import type { LLMProvider } from './providers/types.js';
 import type { GateResolver } from './gates/gate-resolver.js';
 import type { EffortLevel } from './types/engagement.js';
 import { createLogger } from './utils/logger.js';
@@ -43,7 +44,7 @@ export interface SchemOptions {
   /** Optional gate resolver override (for API/testing). */
   gateResolver?: GateResolver;
   /** v18: LLM provider override for this session. Overrides global LAVERN_PROVIDER. */
-  provider?: 'anthropic' | 'mistral' | 'managed';
+  provider?: LLMProvider;
 }
 
 export async function runTheShem(

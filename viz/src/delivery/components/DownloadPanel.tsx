@@ -185,13 +185,22 @@ function generateClientSummary(data: DeliveryData): string {
 
 export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: controlledStyle, onStyleChange }: Props) {
   const isDemo = data.sessionId.startsWith('demo-session');
+  const sessionFailed = data.sessionFailed === true;
   const [internalStyle, setInternalStyle] = useState<DocStyle>('elegant');
   const selectedStyle = controlledStyle ?? internalStyle;
   const setSelectedStyle = (s: DocStyle) => { setInternalStyle(s); onStyleChange?.(s); };
   const [saveStatus, setSaveStatus] = useState<'idle' | 'writing' | 'done' | 'error'>('idle');
 
   // Assembly status drives download availability
-  const deliverableValid = assemblyStatus === 'ready';
+  const deliverableValid = isDemo
+    || (assemblyStatus === 'ready' && data.deliveryState === 'complete' && data.finalOutput.trim().length > 100);
+  const assemblyUnavailable = !isDemo && !deliverableValid && (
+    sessionFailed
+    || assemblyStatus === 'timeout'
+    || assemblyStatus === 'error'
+    || data.deliveryState === 'assembly_failed'
+  );
+  const panelTitle = deliverableValid ? 'Download Deliverable' : 'Download Analysis Data';
 
   // Check if cowork folder is available for write-back
   const coworkActive = sessionStorage.getItem('shem-cowork-active') === 'true';
@@ -387,7 +396,7 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
   return (
     <div style={styles.panel}>
       <div style={styles.panelHeader}>
-        <div style={styles.panelTitle}>Download Deliverable</div>
+        <div style={styles.panelTitle}>{panelTitle}</div>
       </div>
 
       {/* Save to folder — shown when cowork folder is connected */}
@@ -416,30 +425,32 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
       )}
 
       {/* Style selector */}
-      <div style={styles.styleSection}>
-        <div style={styles.styleLabel}>Document Style</div>
-        <div style={styles.stylePills}>
-          {STYLE_OPTIONS.map(opt => {
-            const isActive = selectedStyle === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedStyle(opt.id)}
-                style={{
-                  ...styles.pill,
-                  ...(isActive ? styles.pillActive : {}),
-                }}
-              >
-                <span style={styles.pillName}>{opt.label}</span>
-                <span style={{
-                  ...styles.pillDesc,
-                  color: isActive ? 'rgba(255,255,255,0.7)' : colors.textMuted,
-                }}>{opt.desc}</span>
-              </button>
-            );
-          })}
+      {deliverableValid && (
+        <div style={styles.styleSection}>
+          <div style={styles.styleLabel}>Document Style</div>
+          <div style={styles.stylePills}>
+            {STYLE_OPTIONS.map(opt => {
+              const isActive = selectedStyle === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedStyle(opt.id)}
+                  style={{
+                    ...styles.pill,
+                    ...(isActive ? styles.pillActive : {}),
+                  }}
+                >
+                  <span style={styles.pillName}>{opt.label}</span>
+                  <span style={{
+                    ...styles.pillDesc,
+                    color: isActive ? 'rgba(255,255,255,0.7)' : colors.textMuted,
+                  }}>{opt.desc}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Assembly status messages */}
       {assemblyStatus === 'polling' && !isDemo && (
@@ -460,8 +471,10 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
       )}
       {assemblyStatus === 'error' && !isDemo && (
         <div style={styles.assemblyError}>
-          Document assembly failed. Try again or download structured data below.
-          {onRetry && (
+          {sessionFailed
+            ? 'Session interrupted before delivery. No final work product is available.'
+            : 'Document assembly failed. Try again or download structured data below.'}
+          {onRetry && !sessionFailed && (
             <button onClick={onRetry} style={styles.retryBtn}>
               Retry Assembly
             </button>
@@ -469,7 +482,14 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
         </div>
       )}
 
+      {assemblyUnavailable && (
+        <div style={styles.analysisDataHint}>
+          No final work product is available yet. The structured data export preserves the analysis record for review.
+        </div>
+      )}
+
       {/* Download button */}
+      {deliverableValid && (
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <DownloadButton
           label="Download"
@@ -479,6 +499,17 @@ export function DownloadPanel({ data, assemblyStatus, onRetry, selectedStyle: co
           disabled={!isDemo && !deliverableValid}
         />
       </div>
+      )}
+      {!deliverableValid && (
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <DownloadButton
+          label="Download Structured Data"
+          sub=".json"
+          primary
+          onClick={() => handleDownload('json')}
+        />
+      </div>
+      )}
     </div>
   );
 }
@@ -561,6 +592,14 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 16px',
     marginBottom: spacing.md,
     lineHeight: 1.5,
+  },
+  analysisDataHint: {
+    fontSize: 12,
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 1.6,
+    marginBottom: spacing.md,
   },
   spinner: {
     display: 'inline-block',

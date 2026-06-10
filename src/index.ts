@@ -62,6 +62,8 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
 import { config } from './config.js';
+import { isOpenAICompatibleProvider } from './providers/types.js';
+import { getOpenAICompatibleSettings } from './providers/openai-compatible.js';
 
 // ── Pre-flight Checks ──────────────────────────────────────────────────
 
@@ -105,12 +107,12 @@ async function runPreflightChecks(options: { port?: number; requireApiKey?: bool
         detail = `Ollama unreachable at ${url} — is the menu-bar app running?`;
       }
       results.push({ check: 'Ollama (local model)', ok, detail });
-    } else if (provider === 'mistral') {
-      const mk = config.mistral.apiKey;
+    } else if (isOpenAICompatibleProvider(provider)) {
+      const settings = getOpenAICompatibleSettings(provider);
       results.push({
-        check: 'MISTRAL_API_KEY',
-        ok: !!mk && mk.length > 10,
-        detail: mk ? 'configured' : 'MISSING — set MISTRAL_API_KEY in .env',
+        check: settings.apiKeyEnv,
+        ok: !!settings.apiKey && settings.apiKey.length > 10,
+        detail: settings.apiKey ? `${settings.label} configured` : `MISSING — set ${settings.apiKeyEnv} in .env`,
       });
     } else {
       results.push({
@@ -330,9 +332,10 @@ async function main(): Promise<void> {
       console.log(`║  Model:    ${model.padEnd(48)} ║`);
       console.log('║  Cost:     $0.00/run — nothing leaves this machine          ║');
       console.log('╚══════════════════════════════════════════════════════════════╝\n');
-    } else if (provider === 'mistral') {
+    } else if (isOpenAICompatibleProvider(provider)) {
+      const settings = getOpenAICompatibleSettings(provider);
       console.log('╔══════════════════════════════════════════════════════════════╗');
-      console.log('║  EU SOVEREIGN MODE — Mistral                                ║');
+      console.log(`║  ${`${settings.label.toUpperCase()} MODE`.padEnd(60)} ║`);
       console.log('╚══════════════════════════════════════════════════════════════╝\n');
     } else if (!hasAnthropicKey) {
       console.log('╔══════════════════════════════════════════════════════════════╗');

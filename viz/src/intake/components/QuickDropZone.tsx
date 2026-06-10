@@ -189,21 +189,23 @@ export function QuickDropZone({ onSubmit, loading }: Props) {
           // Backend unreachable — fall back to client-side content below.
         }
 
-        // Read file content for the UploadedDocument shape briefing expects.
+        // Read text content only. Large binary files are represented by the
+        // parsed backend document, not duplicated into sessionStorage as base64.
         const content: string = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-          reader.onerror = () => resolve('');
-          if (
+          const isTextLike =
             pendingFile.type.startsWith('text/') ||
             pendingFile.name.endsWith('.md') ||
             pendingFile.name.endsWith('.txt') ||
-            pendingFile.name.endsWith('.rtf')
-          ) {
-            reader.readAsText(pendingFile);
-          } else {
-            reader.readAsDataURL(pendingFile);
+            pendingFile.name.endsWith('.rtf');
+          if (!isTextLike) {
+            resolve('');
+            return;
           }
+
+          const reader = new FileReader();
+          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+          reader.onerror = () => resolve('');
+          reader.readAsText(pendingFile);
         });
 
         uploaded = {

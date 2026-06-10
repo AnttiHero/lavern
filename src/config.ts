@@ -71,7 +71,7 @@ export const config = {
   },
 
   // ── Provider ──────────────────────────────────────────────────────────
-  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'local' | 'managed',
+  provider: (process.env.LAVERN_PROVIDER ?? 'anthropic') as 'anthropic' | 'mistral' | 'minimax' | 'kimi' | 'deepseek' | 'local' | 'managed',
 
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-4-8',
@@ -84,6 +84,30 @@ export const config = {
     defaultModel: process.env.MISTRAL_MODEL ?? 'mistral-large-latest',
     routerModel: process.env.MISTRAL_ROUTER_MODEL ?? 'mistral-small-latest',
     assemblyModel: process.env.MISTRAL_ASSEMBLY_MODEL ?? 'mistral-large-latest',
+  },
+
+  minimax: {
+    apiKey: process.env.MINIMAX_API_KEY ?? '',
+    baseUrl: process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.io/v1',
+    defaultModel: process.env.MINIMAX_MODEL ?? 'MiniMax-M3',
+    routerModel: process.env.MINIMAX_ROUTER_MODEL ?? process.env.MINIMAX_MODEL ?? 'MiniMax-M3',
+    assemblyModel: process.env.MINIMAX_ASSEMBLY_MODEL ?? process.env.MINIMAX_MODEL ?? 'MiniMax-M3',
+  },
+
+  kimi: {
+    apiKey: process.env.KIMI_API_KEY ?? process.env.MOONSHOT_API_KEY ?? '',
+    baseUrl: process.env.KIMI_BASE_URL ?? 'https://api.moonshot.ai/v1',
+    defaultModel: process.env.KIMI_MODEL ?? 'kimi-k2.6',
+    routerModel: process.env.KIMI_ROUTER_MODEL ?? process.env.KIMI_MODEL ?? 'kimi-k2.6',
+    assemblyModel: process.env.KIMI_ASSEMBLY_MODEL ?? process.env.KIMI_MODEL ?? 'kimi-k2.6',
+  },
+
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY ?? '',
+    baseUrl: process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com',
+    defaultModel: process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-pro',
+    routerModel: process.env.DEEPSEEK_ROUTER_MODEL ?? process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-pro',
+    assemblyModel: process.env.DEEPSEEK_ASSEMBLY_MODEL ?? process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-pro',
   },
 
   // ── Local (On-device via Ollama) ────────────────────────────────────
@@ -105,8 +129,8 @@ export const config = {
   corsOrigins: process.env.SHEM_CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000',
   baseUrl: process.env.SHEM_BASE_URL ?? 'http://localhost:3000',
   trustProxy: process.env.SHEM_TRUST_PROXY === 'true',
-  /** Max upload file size in bytes (default: 10 MB) */
-  maxUploadBytes: safeInt(process.env.SHEM_MAX_UPLOAD_BYTES, 10_000_000),
+  /** Max upload file size in bytes (default: 200 MB) */
+  maxUploadBytes: safeInt(process.env.SHEM_MAX_UPLOAD_BYTES, 200 * 1024 * 1024),
 
   // ── Rate Limiting ───────────────────────────────────────────────────
   /** Max requests per window per IP (default: 100/min) */
@@ -230,6 +254,8 @@ export const config = {
   // ── Orchestrator ───────────────────────────────────────────────────────
   defaultMaxTurns: safeInt(process.env.SHEM_MAX_TURNS, 80),
   genericMaxTurns: safeInt(process.env.SHEM_GENERIC_MAX_TURNS, 60),
+  /** Per-turn LLM timeout for generic/provider workflow loops (default: 5 min). */
+  workflowLlmTimeoutMs: safeInt(process.env.LAVERN_WORKFLOW_LLM_TIMEOUT_MS, 300_000),
 
   // ── Gates ──────────────────────────────────────────────────────────────
   /** Webhook gate timeout in ms (default: 30s) */
@@ -342,6 +368,15 @@ export function validateProductionConfig(): void {
   // as the global default, its credentials must exist or every request fails.
   if (config.provider === 'mistral' && !config.mistral.apiKey) {
     fatal.push('LAVERN_PROVIDER=mistral but MISTRAL_API_KEY is not set');
+  }
+  if (config.provider === 'minimax' && !config.minimax.apiKey) {
+    fatal.push('LAVERN_PROVIDER=minimax but MINIMAX_API_KEY is not set');
+  }
+  if (config.provider === 'kimi' && !config.kimi.apiKey) {
+    fatal.push('LAVERN_PROVIDER=kimi but KIMI_API_KEY or MOONSHOT_API_KEY is not set');
+  }
+  if (config.provider === 'deepseek' && !config.deepseek.apiKey) {
+    fatal.push('LAVERN_PROVIDER=deepseek but DEEPSEEK_API_KEY is not set');
   }
   if (config.provider === 'managed' && !process.env.ANTHROPIC_API_KEY) {
     fatal.push('LAVERN_PROVIDER=managed but ANTHROPIC_API_KEY is not set');

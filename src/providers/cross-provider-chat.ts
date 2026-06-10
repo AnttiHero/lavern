@@ -19,7 +19,10 @@
  *   - 'anthropic' → Anthropic SDK with the cost-tier-mapped model
  *   - 'local'     → Ollama via OpenAI-compat (local.ts), all tiers map to
  *                   the local default model (one model per host)
- *   - 'mistral'   → Mistral API (mistralChat) with tier-mapped model
+ *   - 'mistral'   → Mistral API with tier-mapped model
+ *   - 'minimax'   → MiniMax OpenAI-compatible API
+ *   - 'kimi'      → Kimi/Moonshot OpenAI-compatible API
+ *   - 'deepseek'  → DeepSeek OpenAI-compatible API
  *   - 'managed'   → falls through to anthropic for now (managed agents
  *                   beta uses the same key)
  */
@@ -28,11 +31,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
 import { ensureApiKey } from '../utils/ensure-api-key.js';
 import { localChat, checkLocalReady } from './local.js';
-import { mistralChat } from './mistral.js';
 import { PRICING as ANTHROPIC_PRICING } from '../utils/stream-messages.js';
 import { LOCAL_PRICING } from './local.js';
-import { MISTRAL_MODELS } from './types.js';
+import { MISTRAL_MODELS, isOpenAICompatibleProvider, type LLMProvider } from './types.js';
 import { withRetry } from '../utils/with-retry.js';
+import { getOpenAICompatibleSettings, openAICompatibleChat } from './openai-compatible.js';
 
 // ── Tier → model resolution ─────────────────────────────────────────────
 
@@ -51,6 +54,17 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
     case 'mistral':
       return MISTRAL_MODELS[tier];
 
+    case 'minimax':
+    case 'kimi':
+    case 'deepseek': {
+      const settings = getOpenAICompatibleSettings(config.provider);
+      switch (tier) {
+        case 'haiku': return settings.routerModel;
+        case 'sonnet': return settings.defaultModel;
+        case 'opus': return settings.defaultModel;
+      }
+    }
+
     case 'managed':
     case 'anthropic':
     default:
@@ -67,7 +81,10 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
 
 function pricingFor(model: string): { input: number; output: number } {
   if (config.provider === 'local') return LOCAL_PRICING[model] ?? { input: 0, output: 0 };
-  if (config.provider === 'mistral') return { input: 2, output: 6 }; // approximate, EU
+  if (isOpenAICompatibleProvider(config.provider)) {
+    const settings = getOpenAICompatibleSettings(config.provider);
+    return settings.pricing[model] ?? settings.defaultPricing;
+  }
   // Anthropic
   return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-4-5'] ?? { input: 3, output: 15 };
 }
@@ -112,7 +129,7 @@ export interface CrossProviderChatResult {
   /** Resolved model name. */
   model: string;
   /** Provider that handled the call. */
-  provider: 'anthropic' | 'mistral' | 'local' | 'managed';
+  provider: LLMProvider;
 }
 
 /**
@@ -123,18 +140,19 @@ export interface CrossProviderChatResult {
  * (e.g. quality gate) when the provider is unavailable, rather than
  * failing the whole request.
  */
-export async function checkProviderReady(): Promise<string | null> {
-  if (config.provider === 'local') {
+export async function checkProviderReady(provider = config.provider): Promise<string | null> {
+  if (provider === 'local') {
     return checkLocalReady(config.local.defaultModel);
   }
-  if (config.provider === 'anthropic' || config.provider === 'managed') {
+  if (provider === 'anthropic' || provider === 'managed') {
     const key = ensureApiKey();
     return key ? null : 'ANTHROPIC_API_KEY is not configured';
   }
-  if (config.provider === 'mistral') {
-    return config.mistral.apiKey ? null : 'MISTRAL_API_KEY is not configured';
+  if (isOpenAICompatibleProvider(provider)) {
+    const settings = getOpenAICompatibleSettings(provider);
+    return settings.apiKey ? null : `${settings.apiKeyEnv} is not configured`;
   }
-  return `Unknown provider: ${config.provider}`;
+  return `Unknown provider: ${provider}`;
 }
 
 /**
@@ -177,9 +195,10 @@ export async function crossProviderChat(
     return { text, cost: res.cost, model, provider: 'local' };
   }
 
-  // ── MISTRAL ──
-  if (config.provider === 'mistral') {
-    const res = await mistralChat({
+  // ── OPENAI-COMPATIBLE CLOUD PROVIDERS ──
+  if (isOpenAICompatibleProvider(config.provider)) {
+    const res = await openAICompatibleChat({
+      provider: config.provider,
       model,
       messages: [
         { role: 'system', content: opts.system },
@@ -190,10 +209,7 @@ export async function crossProviderChat(
       timeoutMs: opts.timeoutMs,
     });
     const text = (res.message.content ?? '').toString();
-    // mistralChat already computes per-model cost from its own pricing table.
-    // Re-deriving it here applied a flat $2/$6 rate to every model, mispricing
-    // medium/small. Trust the value the client already calculated.
-    return { text, cost: res.cost, model, provider: 'mistral' };
+    return { text, cost: res.cost, model, provider: config.provider };
   }
 
   // ── ANTHROPIC / MANAGED ──

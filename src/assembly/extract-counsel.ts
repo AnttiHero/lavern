@@ -248,9 +248,10 @@ export function extractCounselDocument(finalOutput: string): string {
   // if thinner than usual. The downstream LLM cleanup pass will further
   // refine if needed.
   const RELAXED_MIN = 500;
-  const minRequired = explicitEndHit ? RELAXED_MIN : MIN_EXTRACTED_CHARS;
+  const statusPackage = looksLikeStatusPackage(extracted);
+  const minRequired = explicitEndHit || statusPackage ? RELAXED_MIN : MIN_EXTRACTED_CHARS;
   if (extracted.length < minRequired) return '';
-  if (!explicitEndHit && !looksLikeDocument(extracted)) return '';
+  if (!explicitEndHit && !statusPackage && !looksLikeDocument(extracted)) return '';
 
   return extracted.trim();
 }
@@ -313,6 +314,36 @@ function stripTrailingEpilogue(text: string): string {
   }
 
   return lines.slice(0, lastContentLine + 1).join('\n');
+}
+
+/**
+ * Intake hold/status packages are client-facing deliverables, but they often
+ * have one top-level heading plus bold field labels instead of a full memo
+ * outline. Keep this narrow so ordinary thin outputs still fall back.
+ */
+export function looksLikeStatusPackage(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('#')) return false;
+
+  const nonBlank = trimmed.split('\n').filter(l => l.trim().length > 0);
+  if (nonBlank.length === 0) return false;
+
+  const firstHeading = nonBlank.find(l => /^#{1,6}\s/.test(l.trim())) ?? '';
+  const hasStatusHeading =
+    /\b(?:status|intake|hold|paused|blockers?|gate)\b/i.test(firstHeading);
+  const hasHoldSignal =
+    /\b(?:INTAKE HOLD|SPECIALIST ANALYSIS ON HOLD|analysis on hold|release the hold|awaiting your direction|blockers?|paused|HOLD all specialist analysis|human gate)\b/i.test(trimmed);
+  const labeledBlocks = nonBlank.filter(l => /^\*\*[^*\n]{3,160}\*\*:/.test(l.trim())).length;
+  const bullets = nonBlank.filter(l => /^[-*]\s+\S/.test(l.trim())).length;
+  const narrativeLines = nonBlank.filter(l =>
+    /^\s*(I'll|I will|I've|I have|Let me|Now|Next|OK|Okay|Good|Alright|Then|First,|The specialist|The ethics|The evaluator)/i.test(l)
+  );
+  const narrativeRatio = narrativeLines.length / nonBlank.length;
+
+  return hasStatusHeading
+    && hasHoldSignal
+    && (labeledBlocks >= 2 || bullets >= 2)
+    && narrativeRatio <= 0.20;
 }
 
 /**

@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { apiUrl } from '../../api.js';
 
 export interface UploadedDocument {
   id: string;
@@ -45,7 +46,8 @@ export interface FrontendParsedDocument {
   parsedAt: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+const MAX_FILE_SIZE_LABEL = '200MB';
 
 export function useDocumentUpload() {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
@@ -92,7 +94,7 @@ export function useDocumentUpload() {
         const formData = new FormData();
         formData.append('file', file);
 
-        const res = await fetch('/api/documents/parse', {
+        const res = await fetch(apiUrl('/api/documents/parse'), {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -129,7 +131,7 @@ export function useDocumentUpload() {
 
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        setError(`${file.name} exceeds 10MB limit`);
+        setError(`${file.name} exceeds ${MAX_FILE_SIZE_LABEL} limit`);
         continue;
       }
 
@@ -182,7 +184,16 @@ export function useDocumentUpload() {
         ) {
           reader.readAsText(file);
         } else {
-          reader.readAsDataURL(file);
+          const doc: UploadedDocument = {
+            id: docId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: '',
+            uploadedAt: new Date().toISOString(),
+          };
+          setDocuments(prev => [...prev, doc]);
+          resolve();
         }
       });
       parsePromises.push(readPromise);
@@ -232,11 +243,16 @@ export function useDocumentUpload() {
   }, []);
 
   const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
       const files = Array.from(e.target.files ?? []);
-      if (files.length > 0) processFiles(files);
-      // Reset so the same file can be re-selected
-      if (inputRef.current) inputRef.current.value = '';
+      try {
+        if (files.length > 0) await processFiles(files);
+      } finally {
+        // Keep the browser-backed File handles alive until uploads finish.
+        // Clearing the input immediately can abort large FormData requests.
+        input.value = '';
+      }
     },
     [processFiles],
   );

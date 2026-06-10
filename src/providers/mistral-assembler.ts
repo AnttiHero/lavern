@@ -10,15 +10,18 @@
 
 import { getAssemblySystemPrompt, buildAssemblyContext } from '../assembly/assembly-prompts.js';
 import { validateDeliverable } from '../assembly/validate-deliverable.js';
+import { extractCounselDocument, looksLikeStatusPackage } from '../assembly/extract-counsel.js';
+import { extractTabulateResult } from '../assembly/extract-tabulate.js';
+import { convertTabulateToMarkdown } from '../assembly/tabulate-format-converter.js';
 import { stripProcessText } from '../assembly/document-assembler.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
-import { mistralChat, estimateMistralCost } from './mistral.js';
+import { getOpenAICompatibleSettings, openAICompatibleChat } from './openai-compatible.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
 import { createLogger } from '../utils/logger.js';
 
-const logger = createLogger('MISTRAL-ASSEMBLY');
+const logger = createLogger('OPENAI-COMPAT-ASSEMBLY');
 
 /** Maximum number of assembly attempts. */
 const MAX_ASSEMBLY_ATTEMPTS = 3;
@@ -73,6 +76,8 @@ async function mistralQualityGate(
   request?: LegalRequest,
 ): Promise<{ pass: boolean; critique?: string; cost: number }> {
   try {
+    const provider = session.provider ?? config.provider;
+    const settings = getOpenAICompatibleSettings(provider);
     const requestSummary = request?.requestText
       ?? session.matterRecord?.title
       ?? 'General legal analysis';
@@ -105,8 +110,9 @@ Respond with EXACTLY one of these two formats:
 PASS
 FAIL: [one sentence explaining why]`;
 
-    const result = await mistralChat({
-      model: config.mistral.routerModel, // Small model, fast + cheap
+    const result = await openAICompatibleChat({
+      provider: settings.provider,
+      model: settings.routerModel,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
       maxTokens: 200,
@@ -153,9 +159,6 @@ export async function assembleMistralDocument(
       : session.workflowTemplateId === 'counsel' ? 'counsel_extraction'
       : 'general');
 
-  const systemPrompt = getAssemblySystemPrompt(requestType);
-  const baseContext = buildAssemblyContext(session, request);
-
   session.events.emitEvent({
     type: 'tool_used',
     tool: 'document_assembly_start',
@@ -167,9 +170,64 @@ export async function assembleMistralDocument(
   logger.info('DOCUMENT ASSEMBLY — Producing final deliverable...');
   logger.info('─'.repeat(60));
 
+  if (session.workflowTemplateId === 'tabulate' && session.finalOutput) {
+    const tabulateResult = extractTabulateResult(session.finalOutput);
+    if (tabulateResult) {
+      session.tabulateResult = tabulateResult;
+      const md = convertTabulateToMarkdown(tabulateResult);
+      logger.info('Tabulate fast-path succeeded', {
+        tables: tabulateResult.tables.length,
+        rows: tabulateResult.tables.reduce((n, t) => n + t.rows.length, 0),
+      });
+      emitAssemblyComplete(session, 0);
+      return md;
+    }
+    logger.warn('Tabulate fast-path: no valid JSON tabulate result in finalOutput — falling through to LLM assembly');
+  }
+
+  if (config.counselFastPathEnabled && session.finalOutput) {
+    const extracted = extractCounselDocument(session.finalOutput);
+    if (extracted) {
+      const validation = validateDeliverable(extracted);
+      const statusPackage = looksLikeStatusPackage(extracted);
+      if (validation.valid || statusPackage) {
+        logger.info('Deterministic extraction succeeded — skipping LLM assembly', {
+          chars: extracted.length,
+          statusPackage,
+        });
+        emitAssemblyComplete(session, 0);
+        return extracted;
+      }
+      if (extracted.length > 5000) {
+        logger.warn('Deterministic extraction produced substantial content but failed structural validation — accepting with warning', {
+          chars: extracted.length,
+          reason: validation.reason,
+        });
+        session.events.emitEvent({
+          type: 'error',
+          message: 'Document assembly completed with warnings. Please review carefully.',
+          source: 'document-assembler',
+          timestamp: eventTimestamp(),
+        });
+        emitAssemblyComplete(session, 0);
+        return extracted;
+      }
+      logger.info('Deterministic extraction produced thin content — falling back to LLM assembly', {
+        chars: extracted.length,
+      });
+    } else {
+      logger.info('Deterministic extraction heuristics did not find a document — falling back to LLM assembly');
+    }
+  }
+
+  const systemPrompt = getAssemblySystemPrompt(requestType);
+  const baseContext = buildAssemblyContext(session, request);
+
   let totalAssemblyCost = 0;
   const rejectionReasons: string[] = [];
-  const model = config.mistral.assemblyModel;
+  const provider = session.provider ?? config.provider;
+  const settings = getOpenAICompatibleSettings(provider);
+  const model = settings.assemblyModel;
 
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
     try {
@@ -182,7 +240,8 @@ export async function assembleMistralDocument(
 
       logger.info('Assembly attempt', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS });
 
-      const result = await mistralChat({
+      const result = await openAICompatibleChat({
+        provider: settings.provider,
         model,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -190,6 +249,7 @@ export async function assembleMistralDocument(
         ],
         temperature: 0.1,
         maxTokens: 16384,
+        timeoutMs: config.workflowLlmTimeoutMs,
       });
 
       let assembledText = (result.message.content ?? '').trim();
@@ -274,7 +334,7 @@ export async function assembleMistralDocument(
 
   session.events.emitEvent({
     type: 'error',
-    message: `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts (Mistral).`,
+    message: `Document assembly failed after ${MAX_ASSEMBLY_ATTEMPTS} attempts (${settings.label}).`,
     source: 'document-assembler',
     timestamp: eventTimestamp(),
   });

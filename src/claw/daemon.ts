@@ -32,26 +32,35 @@ function logDir(): string {
   return path.join(config.claw.dir, 'logs');
 }
 
+function executableBin(name: string): string {
+  return process.platform === 'win32' ? `${name}.cmd` : name;
+}
+
+function findExecutable(name: string, fallback: string): string {
+  if (name === 'node') {
+    return process.execPath || fallback;
+  }
+
+  const command = process.platform === 'win32' ? `where ${name}` : `command -v ${name}`;
+  try {
+    return execSync(command, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .trim()
+      .split(/\r?\n/)[0]
+      || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // ── Plist Generation ─────────────────────────────────────────────────────
 
 function generatePlist(): string {
-  // Find the node binary
-  let nodePath: string;
-  try {
-    nodePath = execSync('which node', { encoding: 'utf-8' }).trim();
-  } catch {
-    nodePath = '/usr/local/bin/node';
-  }
-
-  // Find tsx for development mode
-  let tsxPath: string;
-  try {
-    tsxPath = execSync('which tsx', { encoding: 'utf-8' }).trim();
-  } catch {
-    tsxPath = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');
-  }
-
   const workDir = process.cwd();
+  const nodePath = findExecutable('node', '/usr/local/bin/node');
+  const tsxPath = findExecutable(
+    'tsx',
+    path.join(workDir, 'node_modules', '.bin', executableBin('tsx')),
+  );
   const entryPoint = path.join(workDir, 'src', 'index.ts');
   const logs = logDir();
 

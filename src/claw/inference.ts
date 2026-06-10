@@ -13,9 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { z } from 'zod';
-import { config } from '../config.js';
 import { crossProviderChat } from '../providers/cross-provider-chat.js';
-import { mistralChat } from '../providers/mistral.js';
 import type { LegalRequest, Audience, Jurisdiction, Moment } from '../types/index.js';
 import type { IntensityLevel } from '../types/engagement.js';
 import type { ClawProfile, SidecarConfig, WatchmanResult } from './types.js';
@@ -44,7 +42,7 @@ const SidecarConfigSchema = z.object({
 }).passthrough();
 
 const LlmInferenceSchema = z.object({
-  type: z.enum(['contract_review', 'document_redesign', 'risk_assessment', 'legal_research', 'general']).catch('contract_review'),
+  type: z.enum(['contract_review', 'document_redesign', 'risk_assessment', 'legal_research', 'defence_disclosure', 'general']).catch('contract_review'),
   workflow: z.string().nullable().catch(null),
   reasoning: z.string().catch('No reasoning provided'),
   documentType: z.string().catch('Document'),
@@ -107,8 +105,8 @@ function findSidecar(documentPath: string): SidecarConfig | null {
 const INFERENCE_PROMPT = `You are a law firm intake classifier. Given a document excerpt and client profile, determine what type of legal work this document needs.
 
 Respond in JSON with these fields:
-- type: one of "contract_review", "document_redesign", "risk_assessment", "legal_research", "general"
-- workflow: one of "review", "roundtable", "adversarial", "counsel", "full-bench" (or null to let the router decide)
+- type: one of "contract_review", "document_redesign", "risk_assessment", "legal_research", "defence_disclosure", "general"
+- workflow: one of "review", "roundtable", "adversarial", "counsel", "full-bench", "defence-disclosure" (or null to let the router decide)
 - reasoning: 1-2 sentence explanation
 - documentType: what kind of document this is (e.g., "NDA", "Terms of Service", "Employment Agreement")
 - riskLevel: "low", "medium", or "high"
@@ -149,45 +147,6 @@ async function llmInfer(
   };
 }
 
-/** Mistral-based task inference — uses the Mistral chat API. */
-async function mistralInfer(
-  documentExcerpt: string,
-  filename: string,
-  profile: ClawProfile,
-): Promise<z.infer<typeof LlmInferenceSchema>> {
-  const result = await mistralChat({
-    model: config.mistral.routerModel,
-    messages: [
-      { role: 'system', content: INFERENCE_PROMPT },
-      {
-        role: 'user',
-        content: `DOCUMENT: ${filename}\n\nCLIENT: ${profile.company} (${profile.industry}, ${profile.jurisdiction})\nCONCERNS: ${profile.concerns.join(', ')}\nRISK APPETITE: ${profile.preferences.riskAppetite}\n\nDOCUMENT EXCERPT (first 2000 chars):\n${documentExcerpt.slice(0, 2000)}`,
-      },
-    ],
-    temperature: 0.1,
-    maxTokens: 300,
-  });
-
-  const text = result.message.content ?? '';
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const raw = JSON.parse(jsonMatch[0]);
-      return LlmInferenceSchema.parse(raw);
-    } catch {
-      // Matched something that looks like JSON but isn't valid — fall through
-    }
-  }
-
-  return {
-    type: 'contract_review',
-    workflow: null,
-    reasoning: 'Mistral response did not contain valid JSON, falling back to contract review.',
-    documentType: 'Document',
-    riskLevel: 'medium',
-  };
-}
-
 // ── Heuristic Inference ──────────────────────────────────────────────────
 
 function heuristicInfer(
@@ -195,6 +154,12 @@ function heuristicInfer(
   ext: string,
 ): { type: string; workflow: string | null; reasoning: string } {
   const lower = filename.toLowerCase();
+
+  if (lower.includes('crown') || lower.includes('disclosure') || lower.includes('fraud') ||
+      lower.includes('forensic') || lower.includes('osc') || lower.includes('factum') ||
+      lower.includes('motion') || lower.includes('stinchcombe')) {
+    return { type: 'defence_disclosure', workflow: 'defence-disclosure', reasoning: `Filename suggests defence disclosure or forensic-litigation support: ${filename}` };
+  }
 
   // Contracts & agreements → review
   if (lower.includes('contract') || lower.includes('agreement') || lower.includes('nda') ||
@@ -332,7 +297,9 @@ export async function inferTask(
   const sidecar = findSidecar(documentPath);
   if (sidecar) {
     const requestType = sidecar.workflow
-      ? (sidecar.workflow.includes('review') ? 'contract_review' : 'document_redesign')
+      ? (sidecar.workflow === 'defence-disclosure'
+        ? 'defence_disclosure'
+        : sidecar.workflow.includes('review') ? 'contract_review' : 'document_redesign')
       : 'general';
 
     const request: LegalRequest = {
@@ -358,9 +325,7 @@ export async function inferTask(
 
   // 2. Try LLM inference (provider-aware)
   try {
-    const llmResult = config.provider === 'mistral'
-      ? await mistralInfer(documentContent, filename, profile)
-      : await llmInfer(documentContent, filename, profile);
+    const llmResult = await llmInfer(documentContent, filename, profile);
 
     const request: LegalRequest = {
       type: llmResult.type as LegalRequest['type'],

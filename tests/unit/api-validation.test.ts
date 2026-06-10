@@ -11,6 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   CreateSessionSchema,
+  ContinuationSchema,
   GateDecisionSchema,
   CreateClientSchema,
   isPathSafe,
@@ -78,7 +79,7 @@ describe('API Validation', () => {
       });
 
       it('should accept all request types', () => {
-        const types = ['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'general'];
+        const types = ['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'defence_disclosure', 'general'];
         for (const type of types) {
           const result = CreateSessionSchema.safeParse({
             request: { type, requestText: 'test' },
@@ -186,6 +187,48 @@ describe('API Validation', () => {
   });
 
   // ── GateDecisionSchema ──────────────────────────────────────────────
+
+  describe('ContinuationSchema', () => {
+    const parsedDocument = {
+      id: 'doc-1',
+      name: 'supplement.pdf',
+      mimeType: 'application/pdf',
+      size: 1024,
+      pageCount: 2,
+      wordCount: 400,
+      fullText: 'Parsed supplemental document text.',
+      sections: [],
+      tables: [],
+      definedTerms: [],
+      parseMethod: 'pdf',
+      parsedAt: new Date().toISOString(),
+    };
+
+    it('should accept blocker answers with documents and document notes', () => {
+      const result = ContinuationSchema.safeParse({
+        answers: {
+          client_identity: 'Crown',
+          deadline: '2026-06-30',
+          budget_envelope: '$125',
+        },
+        documents: [parsedDocument],
+        documentNotes: { 'doc-1': 'Updated bank schedule.' },
+        instructions: 'Please focus on transfer timing.',
+        continuationScope: 'section_by_section',
+        deadline: '2026-06-30',
+        budgetEnvelope: '$125',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject unknown continuation scope', () => {
+      const result = ContinuationSchema.safeParse({
+        answers: {},
+        continuationScope: 'everything',
+      });
+      expect(result.success).toBe(false);
+    });
+  });
 
   describe('GateDecisionSchema', () => {
     it('should accept valid approve decision', () => {

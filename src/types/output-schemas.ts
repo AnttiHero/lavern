@@ -568,6 +568,97 @@ export const LitigationLawyerOutputSchema = z.object({
 /**
  * Regulatory & Compliance agents: Regulatory Counsel, Compliance Officer, Antitrust, Sanctions
  */
+// Defence disclosure support schemas. These are evidence-first: every finding
+// must carry at least one non-empty citation or be declined by the agent.
+const FactTagSchema = z.enum(['[K] known', '[I] inferred', '[C] to confirm', '[A] assumed adverse']);
+
+const EvidenceCitationSchema = z.object({
+  document: z.string().min(1),
+  quotedText: z.string().min(1),
+  page: z.number().int().positive().optional(),
+  section: z.string().optional(),
+  sourceId: z.string().optional(),
+  factTag: FactTagSchema,
+});
+
+const CitedDefenceFindingSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  content: z.string(),
+  severity: SeveritySchema,
+  evidence: z.array(z.string().min(1)).min(1),
+  confidence: z.number().min(0).max(1),
+  factTag: FactTagSchema,
+});
+
+export const DefenceDisclosureOutputSchema = z.object({
+  agentRole: z.string(),
+  executiveSummary: z.string(),
+  jurisdiction: z.string().default('Ontario/Canada'),
+  disclosureInventory: z.array(z.object({
+    document: z.string(),
+    source: z.string(),
+    dateRange: z.string(),
+    format: z.string(),
+    custodian: z.string().optional(),
+    status: z.enum(['received', 'missing', 'partial', 'unreadable', 'to_confirm']),
+    citations: z.array(EvidenceCitationSchema),
+  })),
+  chronology: z.array(z.object({
+    date: z.string(),
+    event: z.string(),
+    factTag: FactTagSchema,
+    citations: z.array(EvidenceCitationSchema).min(1),
+  })),
+  proofMatrix: z.array(z.object({
+    chargeOrIssue: z.string(),
+    element: z.string(),
+    crownTheory: z.string(),
+    defenceIssue: z.string(),
+    supportStatus: z.enum(['supported', 'contested', 'missing', 'unclear']),
+    citations: z.array(EvidenceCitationSchema),
+  })),
+  contradictions: z.array(z.object({
+    issue: z.string(),
+    sourceA: EvidenceCitationSchema,
+    sourceB: EvidenceCitationSchema,
+    significance: z.string(),
+    counselQuestion: z.string(),
+  })),
+  disclosureGaps: z.array(z.object({
+    missingItem: z.string(),
+    expectedSource: z.string(),
+    whyItMatters: z.string(),
+    relatedIssue: z.string(),
+    support: z.array(EvidenceCitationSchema),
+  })),
+  forensicAccountingCritique: z.array(z.object({
+    claimOrCalculation: z.string(),
+    methodUsed: z.string(),
+    assumptions: z.array(z.string()),
+    reproducibilityIssue: z.string(),
+    alternativeExplanation: z.string(),
+    citations: z.array(EvidenceCitationSchema),
+  })),
+  motionFactumIssues: z.array(z.object({
+    filingType: z.string(),
+    reliefSought: z.string(),
+    argument: z.string(),
+    authorities: z.array(z.string()),
+    evidentiaryRecord: z.array(EvidenceCitationSchema),
+    counselDecision: z.string(),
+  })),
+  counselQuestions: z.array(z.object({
+    priority: z.enum(['urgent', 'high', 'medium', 'low']),
+    question: z.string(),
+    reason: z.string(),
+    relatedEvidence: z.array(EvidenceCitationSchema),
+  })),
+  findings: z.array(CitedDefenceFindingSchema),
+  confidence: z.number().min(0).max(1),
+  summary: z.string(),
+});
+
 export const RegulatoryLawyerOutputSchema = z.object({
   agentRole: z.string(),
   executiveSummary: z.string(),
@@ -905,6 +996,10 @@ export const outputFormats = {
   'legal-researcher': zodToOutputFormat(LegalResearchOutputSchema),
   'risk-pricer': zodToOutputFormat(RiskPricingOutputSchema),
   'red-team': zodToOutputFormat(RedTeamOutputSchema),
+  'criminal-defence-counsel': zodToOutputFormat(DefenceDisclosureOutputSchema),
+  'disclosure-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
+  'forensic-accounting-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
+  'motion-factum-analyst': zodToOutputFormat(DefenceDisclosureOutputSchema),
   // v8: Practice area group schemas
   'managing-partner': zodToOutputFormat(LeadershipOutputSchema),
   'corporate-lawyer': zodToOutputFormat(CorporateLawyerOutputSchema),

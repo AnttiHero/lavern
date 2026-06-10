@@ -338,7 +338,7 @@ export class SessionState {
 
   // ── v18: Per-Session Provider Selection ──
   /** LLM provider for this session. When set, overrides the global config.provider. */
-  public provider?: 'anthropic' | 'mistral' | 'managed';
+  public provider?: import('../providers/types.js').LLMProvider;
 
   // ── v12: Document Storage ──
   /** Parsed documents uploaded by the client, available to agents via MCP tools. */

@@ -34,6 +34,7 @@ import { config } from '../config.js';
 import { runMistralWorkflow } from '../providers/mistral-executor.js';
 import { runLocalWorkflow } from '../providers/local-executor.js';
 import { checkLocalReady } from '../providers/local.js';
+import { isOpenAICompatibleProvider } from '../providers/types.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { LegalRequest, RouterClassification } from '../types/index.js';
@@ -54,12 +55,12 @@ export async function runGenericWorkflow(
   // v18: Per-session provider override (options > session > global config)
   const provider = options.provider ?? session.provider ?? config.provider;
 
-  // Initialize the audit log + event-stream bridge for mistral/local. The
+  // Initialize the audit log + event-stream bridge for OpenAI-compatible/local. The
   // Anthropic path does its own init below (driven by SDK PostToolUse hooks).
-  // Mistral/local emit through the event bus instead, so we mirror every
+  // These providers emit through the event bus instead, so we mirror every
   // emitted event into the audit JSONL — that's what /api/replay reads when
   // the user clicks "View Agent Work" on a finished case.
-  if (provider === 'mistral' || provider === 'local') {
+  if (isOpenAICompatibleProvider(provider) || provider === 'local') {
     session.workflowTemplateId = template.id;
     session.legalRequest = request;
     initAuditLog(session);
@@ -81,15 +82,15 @@ export async function runGenericWorkflow(
     );
   }
 
-  if (provider === 'mistral') {
+  if (isOpenAICompatibleProvider(provider)) {
     try {
       return await runMistralWorkflow(request, template, classification, session, options);
-    } catch (mistralError) {
-      logger.error('Mistral workflow failed', { error: mistralError });
+    } catch (providerError) {
+      logger.error('OpenAI-compatible workflow failed', { provider, error: providerError });
       // Emit session_end so frontend isn't stuck waiting
       session.events.emitEvent({
         type: 'error',
-        message: `Workflow failed: ${mistralError instanceof Error ? mistralError.message : String(mistralError)}`,
+        message: `Workflow failed: ${providerError instanceof Error ? providerError.message : String(providerError)}`,
         source: 'orchestrator',
         timestamp: eventTimestamp(),
       });
@@ -100,7 +101,7 @@ export async function runGenericWorkflow(
         duration: 0,
         timestamp: eventTimestamp(),
       });
-      throw mistralError;
+      throw providerError;
     }
   }
 

@@ -44,12 +44,14 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   useEffect(() => { injectWorkingKeyframes(); }, []);
 
   // v18: Read provider from engagement config (persisted to sessionStorage by StrategyView)
-  const sessionProvider = useMemo<'anthropic' | 'mistral' | undefined>(() => {
+  const sessionProvider = useMemo<'anthropic' | 'mistral' | 'minimax' | 'kimi' | 'deepseek' | undefined>(() => {
     try {
       const raw = sessionStorage.getItem('shem-briefing-config');
       if (raw) {
         const cfg = JSON.parse(raw);
-        if (cfg.provider === 'mistral') return 'mistral';
+        if (['anthropic', 'mistral', 'minimax', 'kimi', 'deepseek'].includes(cfg.provider)) {
+          return cfg.provider;
+        }
       }
     } catch { /* ignore */ }
     return undefined;
@@ -88,7 +90,14 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
   const { debateThreads, threadedStream } = useDebateThreads(state.streamCards);
 
   // Inject reassurance messages during silent periods
-  const feedItems = useReassuranceInjector(threadedStream, state.currentStep);
+  const feedItems = useReassuranceInjector(
+    threadedStream,
+    state.currentStep,
+    state.sessionFailed || state.sessionExpired,
+  );
+  const visibleCompletedSteps = state.sessionFailed
+    ? state.completedSteps.filter(step => step !== 'delivered')
+    : state.completedSteps;
 
   const handleGateDecision = useCallback(
     (_decision: 'approve' | 'reject' | 'modify', _notes?: string) => {
@@ -317,13 +326,14 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
 
       <HeartbeatBand
         currentStep={state.currentStep}
-        completedSteps={state.completedSteps}
+        completedSteps={visibleCompletedSteps}
         cost={state.cost}
         certaintyPct={runningCertainty}
         findingCount={totalFindings}
         sessionStartTime={state.events[0]?.timestamp ?? null}
         lastEventTimestamp={state.lastEventTimestamp}
-        replayEndTime={state.isReplay ? state.lastEventTimestamp : null}
+        replayEndTime={state.isReplay || state.sessionFailed ? state.lastEventTimestamp : null}
+        isFailed={state.sessionFailed}
       />
 
       {/* Connection Lost banner — visible when WS drops during an active session */}
@@ -389,7 +399,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
       )}
 
       {/* Session error recovery overlay — shown when session fails mid-work */}
-      {state.sessionFailed && state.currentStep === 'delivered' && !state.sessionExpired && (
+      {state.sessionFailed && !state.sessionExpired && (
         <div style={styles.expiredOverlay}>
           <div style={styles.expiredCard}>
             <span style={{ fontFamily: fonts.serif, fontSize: 36, fontWeight: 300, color: colors.danger, opacity: 0.7 }}>!</span>
@@ -426,7 +436,10 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
                 Start New Session
               </button>
               <button
-                onClick={onComplete}
+                onClick={() => {
+                  if (state.sessionId) sessionStorage.setItem('shem-session-failed', state.sessionId);
+                  onComplete();
+                }}
                 style={{
                   padding: '10px 28px',
                   borderRadius: radii.sm,
@@ -471,12 +484,13 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
         {(!isMobile || sidebarOpen) && (
           <ProgressSidebar
             currentStep={state.currentStep}
-            completedSteps={state.completedSteps}
+            completedSteps={visibleCompletedSteps}
             streamCards={state.streamCards}
             activeThinkingAgents={state.activeThinkingAgents}
             team={team}
             isMobile={isMobile}
             isTablet={isTablet}
+            isFailed={state.sessionFailed}
           />
         )}
 
@@ -510,7 +524,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
 
       {/* "View Results" button — shown when session reaches delivered state
           as a failsafe in case auto-navigation doesn't fire */}
-      {state.currentStep === 'delivered' && (
+      {state.currentStep === 'delivered' && !state.sessionFailed && (
         <div style={styles.deliveredBanner}>
           <span style={styles.deliveredText}>
             {state.isAssemblyReady

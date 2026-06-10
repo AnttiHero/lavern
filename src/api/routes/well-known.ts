@@ -240,7 +240,7 @@ function buildOpenApiSpec() {
             task: { type: 'string', maxLength: 50000, description: 'Natural language description of the legal task.' },
             type: {
               type: 'string',
-              enum: ['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'general'],
+              enum: ['document_redesign', 'contract_review', 'legal_question', 'legal_research', 'risk_assessment', 'defence_disclosure', 'general'],
               description: 'Request type. Auto-detected if omitted.',
             },
             documents: {

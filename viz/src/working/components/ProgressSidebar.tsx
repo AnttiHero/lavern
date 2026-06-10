@@ -39,6 +39,7 @@ interface ProgressSidebarProps {
   team?: AgentProfile[];
   isMobile?: boolean;
   isTablet?: boolean;
+  isFailed?: boolean;
 }
 
 /** Format a role string for display. */
@@ -232,6 +233,7 @@ export function ProgressSidebar({
   team,
   isMobile,
   isTablet,
+  isFailed,
 }: ProgressSidebarProps) {
   // Resolve the correct pipeline for this workflow
   const [workflowId] = useState<string>(() => {
@@ -437,7 +439,7 @@ export function ProgressSidebar({
       </div>
 
       {/* Footer: estimated time + reassurance */}
-      {estMinutes > 0 && currentStep !== 'delivered' && (
+      {estMinutes > 0 && currentStep !== 'delivered' && !isFailed && (
         <div style={styles.footer}>
           <span style={styles.footerText}>
             ~{estMinutes} min remaining

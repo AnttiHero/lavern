@@ -22,7 +22,7 @@ import { getOrchestratorForWorkflow } from '../workflows/orchestrator-mapping.js
 import { eventTimestamp } from '../events/event-bus.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { config } from '../config.js';
-import { mistralChat } from './mistral.js';
+import { getOpenAICompatibleSettings, openAICompatibleChat } from './openai-compatible.js';
 import { buildToolRegistry } from './tool-converter.js';
 import { assembleMistralDocument } from './mistral-assembler.js';
 import { existsSync, readFileSync } from 'fs';
@@ -34,7 +34,7 @@ import type { SchemOptions } from '../orchestrator.js';
 import type OpenAI from 'openai';
 import { createLogger } from '../utils/logger.js';
 
-const logger = createLogger('MISTRAL');
+const logger = createLogger('OPENAI-COMPAT');
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -44,6 +44,40 @@ const MAX_FINAL_OUTPUT_BYTES = 500_000;
 // ── Types ───────────────────────────────────────────────────────────────
 
 type ChatMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
+
+export function normalizeAssistantToolCallArguments<T extends { tool_calls?: readonly any[] }>(message: T): T {
+  const toolCalls = message.tool_calls;
+  if (!toolCalls || toolCalls.length === 0) return message;
+
+  let changed = false;
+  const normalizedToolCalls = toolCalls.map((toolCall) => {
+    if (toolCall?.type !== 'function') return toolCall;
+
+    const args = toolCall.function?.arguments;
+    if (typeof args === 'string') {
+      try {
+        JSON.parse(args);
+        return toolCall;
+      } catch {
+        // Keep conversation history provider-valid even when a model emits
+        // malformed tool arguments. The tool call itself will receive `{}`.
+      }
+    }
+
+    changed = true;
+    return {
+      ...toolCall,
+      function: {
+        ...toolCall.function,
+        arguments: '{}',
+      },
+    };
+  });
+
+  return changed
+    ? { ...message, tool_calls: normalizedToolCalls } as T
+    : message;
+}
 
 // ── Main Executor ───────────────────────────────────────────────────────
 
@@ -67,7 +101,9 @@ export async function runMistralWorkflow(
     logLevel = config.logLevel,
   } = options;
 
-  const model = config.mistral.defaultModel;
+  const provider = options.provider ?? session.provider ?? config.provider;
+  const settings = getOpenAICompatibleSettings(provider);
+  const model = settings.defaultModel;
 
   session.budgetUsd = maxBudgetUsd;
   session.workflowTemplateId = template.id;
@@ -85,12 +121,13 @@ export async function runMistralWorkflow(
     timestamp: eventTimestamp(),
   });
 
-  logger.info('Starting Mistral workflow', {
+  logger.info('Starting OpenAI-compatible workflow', {
     sessionId: session.id,
     workflow: `${template.id} (${template.name})`,
     requestType: classification.requestType,
     budget: maxBudgetUsd.toFixed(2),
-    model: config.mistral.defaultModel,
+    provider,
+    model,
     specialists: classification.selectedSpecialists.join(', '),
   });
 
@@ -118,7 +155,7 @@ export async function runMistralWorkflow(
     : '';
 
   const systemPrompt = soulPrefix + personalityPrefix + template.orchestratorPrompt +
-    `\n\n## Provider Note\nYou are running on Mistral (${model}). You are a single orchestrator — there are no subagents. Execute all analysis steps yourself using the available tools. Work through each workflow step methodically.`;
+    `\n\n## Provider Note\nYou are running on ${settings.label} (${model}). You are a single orchestrator — there are no subagents. Execute all analysis steps yourself using the available tools. Work through each workflow step methodically.`;
 
   // ── Build user prompt (reuse existing logic) ──────────────────────
   const userPrompt = buildPromptFromRequest(request, template, classification, session);
@@ -154,13 +191,15 @@ export async function runMistralWorkflow(
         break;
       }
 
-      const result = await mistralChat({
+      const result = await openAICompatibleChat({
+        provider: settings.provider,
         model,
         messages,
         tools: toolRegistry.definitions,
         toolChoice: 'auto',
         temperature: 0.1,
         maxTokens: 8192,
+        timeoutMs: config.workflowLlmTimeoutMs,
       });
 
       turns++;
@@ -171,7 +210,7 @@ export async function runMistralWorkflow(
         logger.error('Turn completed', { turn: turns, turnCost: result.cost.toFixed(4), totalCost: totalCost.toFixed(4), finishReason: result.finishReason });
       }
 
-      const msg = result.message;
+      const msg = normalizeAssistantToolCallArguments(result.message);
 
       // Emit activity for frontend (use tool_used which the frontend renders)
       if (msg.content) {
@@ -326,7 +365,7 @@ export async function runMistralWorkflow(
 
   logger.info('Session complete', {
     workflow: template.id,
-    provider: 'Mistral',
+    provider: settings.label,
     cost: totalCost.toFixed(2),
     turns,
     findings: session.debate.findings.length,

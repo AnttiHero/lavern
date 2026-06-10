@@ -24,8 +24,13 @@ const JurisdictionEnum = z.enum(['US', 'EU', 'UK', 'CA', 'AU']);
 
 const RequestTypeEnum = z.enum([
   'document_redesign', 'contract_review', 'legal_question',
-  'legal_research', 'risk_assessment', 'general',
+  'legal_research', 'risk_assessment', 'defence_disclosure', 'general',
 ]);
+
+const ProviderEnum = z.enum(['anthropic', 'mistral', 'minimax', 'kimi', 'deepseek', 'local', 'managed']);
+const MAX_SESSION_DOCUMENT_BYTES = 200 * 1024 * 1024;
+const MAX_PARSED_TEXT_CHARS = 50_000_000;
+const MAX_PARSED_TABLES = 10_000;
 
 // ── Path Safety ───────────────────────────────────────────────────────────
 
@@ -63,8 +68,8 @@ const SessionOptionsSchema = z.object({
   yoloMode: z.boolean().optional(),
   /** Enable 10-pass verification pipeline before delivery (default: true for review/full-bench). */
   verification: z.boolean().optional(),
-  /** v18: LLM provider — per-session override. 'anthropic' (default), 'mistral' (EU sovereign), or 'managed' (Anthropic Managed Agents beta; scaffold only, execution path not yet wired). */
-  provider: z.enum(['anthropic', 'mistral', 'managed']).optional(),
+  /** LLM provider — per-session override. */
+  provider: ProviderEnum.optional(),
 }).strict().optional();
 
 // ── Context Schema ────────────────────────────────────────────────────────
@@ -89,6 +94,31 @@ const LegalRequestSchema = z.object({
 
 // ── Create Session — Combined Schema ──────────────────────────────────────
 
+const ParsedDocumentSchema = z.object({
+  id: z.string().min(1).max(200),
+  name: z.string().min(1).max(500),
+  mimeType: z.string().min(1).max(200),
+  size: z.number().int().min(0).max(MAX_SESSION_DOCUMENT_BYTES),
+  pageCount: z.number().int().min(0).max(50_000),
+  wordCount: z.number().int().min(0).max(10_000_000),
+  fullText: z.string().max(MAX_PARSED_TEXT_CHARS),
+  sections: z.array(z.object({
+    heading: z.string().max(1000),
+    level: z.number().int().min(1).max(10),
+    content: z.string().max(5_000_000),
+    startIndex: z.number().int().min(0),
+    children: z.array(z.lazy(() => z.any())).max(200),
+  }).passthrough()).max(500),
+  tables: z.array(z.object({
+    caption: z.string().max(1000).optional(),
+    headers: z.array(z.string().max(1000)).max(100),
+    rows: z.array(z.array(z.string().max(10_000)).max(100)).max(10_000),
+  }).passthrough()).max(MAX_PARSED_TABLES),
+  definedTerms: z.array(z.string().max(500)).max(5000),
+  parseMethod: z.string().min(1).max(50),
+  parsedAt: z.string().max(50),
+}).passthrough();
+
 /**
  * POST /api/sessions body accepts two formats:
  * 1. Legacy: { documentPath, context, options }
@@ -104,30 +134,7 @@ export const CreateSessionSchema = z.object({
   request: LegalRequestSchema.optional(),
   workflow: z.string().min(1).max(100).optional(),
   // v12: Parsed documents from frontend document ingestion
-  documents: z.array(z.object({
-    id: z.string().min(1).max(200),
-    name: z.string().min(1).max(500),
-    mimeType: z.string().min(1).max(200),
-    size: z.number().int().min(0).max(50_000_000),
-    pageCount: z.number().int().min(0).max(50_000),
-    wordCount: z.number().int().min(0).max(10_000_000),
-    fullText: z.string().max(10_000_000),
-    sections: z.array(z.object({
-      heading: z.string().max(1000),
-      level: z.number().int().min(1).max(10),
-      content: z.string().max(5_000_000),
-      startIndex: z.number().int().min(0),
-      children: z.array(z.lazy(() => z.any())).max(200),
-    }).passthrough()).max(500),
-    tables: z.array(z.object({
-      caption: z.string().max(1000).optional(),
-      headers: z.array(z.string().max(1000)).max(100),
-      rows: z.array(z.array(z.string().max(10_000)).max(100)).max(10_000),
-    }).passthrough()).max(200),
-    definedTerms: z.array(z.string().max(500)).max(5000),
-    parseMethod: z.string().min(1).max(50),
-    parsedAt: z.string().max(50),
-  }).passthrough()).max(20).optional(),
+  documents: z.array(ParsedDocumentSchema).max(20).optional(),
   // v13: Team roles from frontend staffing
   team: z.array(z.string().min(1).max(100)).max(30).optional(),
   // Shared
@@ -140,6 +147,18 @@ export const CreateSessionSchema = z.object({
 );
 
 export type CreateSessionBody = z.infer<typeof CreateSessionSchema>;
+
+export const ContinuationSchema = z.object({
+  answers: z.record(z.string().min(1).max(100), z.string().max(10_000)).default({}),
+  documents: z.array(ParsedDocumentSchema).max(20).optional(),
+  documentNotes: z.record(z.string().min(1).max(200), z.string().max(5_000)).default({}),
+  instructions: z.string().max(20_000).default(''),
+  continuationScope: z.enum(['high_level', 'section_by_section', 'responding_report']),
+  deadline: z.string().max(200).optional(),
+  budgetEnvelope: z.string().max(500).optional(),
+}).strict();
+
+export type ContinuationBody = z.infer<typeof ContinuationSchema>;
 
 // ── Gate Decision Schema ──────────────────────────────────────────────────
 
@@ -192,6 +211,8 @@ export function validateBody<T>(
       message: issue.message,
       code: issue.code,
     }));
+
+    request.log.warn({ errors }, 'validation_failed');
 
     reply.status(400).send({
       error: 'Validation failed',

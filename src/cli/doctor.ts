@@ -113,13 +113,20 @@ async function runChecks(repoRoot: string): Promise<Check[]> {
 
   // 6. API key configured (info only, not required for demo mode)
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const mistralKey = process.env.MISTRAL_API_KEY;
   const provider = process.env.LAVERN_PROVIDER ?? 'anthropic';
-  if (provider === 'mistral') {
+  const providerKeyEnv: Record<string, string> = {
+    mistral: 'MISTRAL_API_KEY',
+    minimax: 'MINIMAX_API_KEY',
+    kimi: process.env.KIMI_API_KEY ? 'KIMI_API_KEY' : 'MOONSHOT_API_KEY',
+    deepseek: 'DEEPSEEK_API_KEY',
+  };
+  const providerEnv = providerKeyEnv[provider];
+  if (providerEnv) {
+    const key = process.env[providerEnv];
     checks.push({
-      name: 'MISTRAL_API_KEY (provider=mistral)',
-      severity: mistralKey && mistralKey.length > 10 ? 'pass' : 'fail',
-      hint: mistralKey ? undefined : 'Set MISTRAL_API_KEY in .env.',
+      name: `${providerEnv} (provider=${provider})`,
+      severity: key && key.length > 10 ? 'pass' : 'fail',
+      hint: key ? undefined : `Set ${providerEnv} in .env.`,
     });
   } else if (provider === 'local') {
     checks.push({ name: 'Ollama (provider=local)', severity: 'warn', detail: 'check skipped; doctor does not probe local model' });
