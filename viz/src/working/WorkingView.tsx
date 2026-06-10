@@ -67,6 +67,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
     connectToReplay,
     disconnect,
     dismissGate,
+    reopenGate,
     pause,
     resume,
     setSpeed,
@@ -514,7 +515,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
           <InsightFeed
             cards={feedItems}
             team={team}
-            onGateClick={() => { /* gate dialog is shown via state.pendingGate */ }}
+            onGateClick={reopenGate}
             isConnected={state.connectionStatus === 'connected'}
             debateThreads={debateThreads}
             activeThinkingAgents={state.activeThinkingAgents}

@@ -330,6 +330,13 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     setPendingGate(null);
   }, []);
 
+  // Reopen the gate dialog after a dismiss: re-fetch session state, which
+  // restores pendingGate if the gate is still waiting on the server. Without
+  // this, a dismissed gate dialog can never be answered and the gate times out.
+  const reopenGate = useCallback(() => {
+    if (sessionId) void syncSessionState(sessionId);
+  }, [sessionId, syncSessionState]);
+
   // Replay controls
   const pause = useCallback(() => {
     wsClientRef.current?.pause();
@@ -864,6 +871,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     connectToReplay,
     disconnect,
     dismissGate,
+    reopenGate,
     pause,
     resume,
     setSpeed,

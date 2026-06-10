@@ -449,7 +449,11 @@ export async function runGenericWorkflow(
   try {
     session.assembledDocument = await assembleDocument(session, request);
 
-    if (session.assembledDocument) {
+    if (session.assembledDocument && session.assemblyFallbackUsed) {
+      // Deterministic findings report — real content, but not the polished memo
+      session.outputTier = 2;
+      session.outputTierReason = 'LLM assembly failed — structured findings report delivered instead.';
+    } else if (session.assembledDocument) {
       // Check if assembly used bestAttempt fallback (tier 2) vs full pass (tier 1)
       // The assembler logs warnings when using bestAttempt — check for them
       session.outputTier = 1;

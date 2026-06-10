@@ -26,6 +26,12 @@ export function GateCard({ card, onClick }: GateCardProps) {
   const [hovered, setHovered] = useState(false);
   const time = new Date(card.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const label = GATE_LABELS[card.gateType] ?? card.gateType;
+  const isClarification = card.gateType === 'clarification';
+  // For a question, "reject" means the user (or a timeout) skipped it
+  const decisionLabel = isClarification
+    ? (card.decision === 'approve' ? 'Answered' : 'Skipped — proceeding on assumptions')
+    : card.decision;
+  const actionLabel = isClarification ? 'Answer' : 'Review & Decide';
 
   return (
     <div style={{
@@ -47,7 +53,7 @@ export function GateCard({ card, onClick }: GateCardProps) {
       <div style={styles.summary}>{card.summary}</div>
       {card.decided ? (
         <div style={styles.decidedRow}>
-          <span style={styles.decidedBadge}>{card.decision}</span>
+          <span style={styles.decidedBadge}>{decisionLabel}</span>
         </div>
       ) : (
         <button
@@ -60,7 +66,7 @@ export function GateCard({ card, onClick }: GateCardProps) {
             color: hovered ? '#fff' : colors.text,
           }}
         >
-          Review &amp; Decide
+          {actionLabel}
         </button>
       )}
     </div>

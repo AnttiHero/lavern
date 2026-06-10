@@ -163,18 +163,26 @@ export class AsyncGateResolver implements GateResolver {
       this.pendingGate = null;
     }
 
+    // Clarification questions get a longer window — the user may be hunting
+    // for documents to attach, not just clicking approve/reject.
+    const effectiveTimeoutMs = request.gateType === 'clarification'
+      ? this.timeoutMs * 3
+      : this.timeoutMs;
+
     return new Promise<GateDecision>((resolvePromise) => {
-      const timer = this.timeoutMs > 0
+      const timer = effectiveTimeoutMs > 0
         ? setTimeout(() => {
-            logger.warn('Gate timeout — rejecting for safety', { timeoutSec: this.timeoutMs / 1000, gateType: request.gateType });
+            logger.warn('Gate timeout — rejecting for safety', { timeoutSec: effectiveTimeoutMs / 1000, gateType: request.gateType });
             if (this.pendingGate) {
               this.pendingGate = null;
               resolvePromise({
                 decision: 'reject',
-                notes: `Gate timed out — rejected for safety. No human response within ${Math.round(this.timeoutMs / 60000)} minutes.`,
+                notes: request.gateType === 'clarification'
+                  ? `No answer within ${Math.round(effectiveTimeoutMs / 60000)} minutes — proceed on stated assumptions tagged [A].`
+                  : `Gate timed out — rejected for safety. No human response within ${Math.round(effectiveTimeoutMs / 60000)} minutes.`,
               });
             }
-          }, this.timeoutMs)
+          }, effectiveTimeoutMs)
         : null; // no timer when timeout disabled
 
       this.pendingGate = {

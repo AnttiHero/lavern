@@ -37,6 +37,7 @@
  */
 
 import { getAssemblySystemPrompt, buildAssemblyContext } from './assembly-prompts.js';
+import { buildFindingsReport } from './findings-report.js';
 import { validateDeliverable } from './validate-deliverable.js';
 import { extractCounselDocument, looksLikeStatusPackage } from './extract-counsel.js';
 import { extractTabulateResult } from './extract-tabulate.js';
@@ -614,6 +615,27 @@ export async function assembleDocument(
     workflowTemplateId: session.workflowTemplateId,
     sessionId: session.id,
   });
+
+  // ── Last resort: deterministic findings report ─────────────────────
+  // The debate board usually still holds the engagement's real value
+  // (cited findings, resolutions, clarification Q&A). Render it directly —
+  // zero LLM calls, cannot fail — rather than delivering nothing.
+  const findingsReport = buildFindingsReport(session, request);
+  if (findingsReport) {
+    session.assemblyFallbackUsed = true;
+    logger.warn('LLM assembly failed — returning deterministic findings report', {
+      findings: session.debate.findings.length,
+      chars: findingsReport.length,
+    });
+    session.events.emitEvent({
+      type: 'error',
+      message: 'The polished deliverable could not be assembled; delivering the structured findings report instead. All findings and citations are included.',
+      source: 'document-assembler',
+      timestamp: eventTimestamp(),
+    });
+    emitAssemblyComplete(session, totalAssemblyCost);
+    return findingsReport;
+  }
 
   session.events.emitEvent({
     type: 'error',

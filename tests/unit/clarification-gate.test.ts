@@ -49,6 +49,35 @@ describe('AsyncGateResolver — clarification answers', () => {
   });
 });
 
+describe('AsyncGateResolver — clarification timeout', () => {
+  it('gives clarification gates 3x the normal timeout, then instructs assumptions', async () => {
+    const { vi } = await import('vitest');
+    vi.useFakeTimers();
+    try {
+      const resolver = new AsyncGateResolver(1000);
+      const promise = resolver.resolve({
+        gateType: 'clarification',
+        summary: 'Q',
+        details: 'Ctx',
+        proposedAction: 'Answer',
+        question: 'Q',
+      });
+
+      // Normal timeout elapses — clarification gate must still be pending
+      vi.advanceTimersByTime(1001);
+      expect(resolver.hasPendingGate()).toBe(true);
+
+      // 3x timeout elapses — now it resolves with an assumptions note
+      vi.advanceTimersByTime(2000);
+      const result = await promise;
+      expect(result.decision).toBe('reject');
+      expect(result.notes).toContain('assumptions');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('AutoApproveGateResolver — clarification', () => {
   it('rejects clarification gates instead of fabricating an answer', async () => {
     const resolver = new AutoApproveGateResolver();

@@ -52,6 +52,7 @@ import { getMatter } from './matters.js';
 import { convertToDocx, convertToHtml, convertToPdf, extractSoulBranding, type DocumentStyle } from '../../assembly/format-converter.js';
 import { validateDeliverable, isProcessDump } from '../../assembly/validate-deliverable.js';
 import { assembleDocument } from '../../assembly/document-assembler.js';
+import { buildFindingsReport } from '../../assembly/findings-report.js';
 import { extractCounselDocument, looksLikeStatusPackage } from '../../assembly/extract-counsel.js';
 import {
   convertTabulateToSingleCsv, convertTabulateToCsvBundle,
@@ -1461,8 +1462,32 @@ export function registerSessionRoutes(
       return reply.send({ success: true, hasDocument: true, message: 'Document already assembled.' });
     }
 
-    // Guard: need finalOutput to assemble from
+    // Guard: need finalOutput to assemble from. If the orchestrator never
+    // produced one (maxTurns, interruption) but the debate board has cited
+    // findings, deliver the deterministic findings report instead of a 409
+    // dead-end — that is where the engagement's value actually lives.
     if (!session.finalOutput || session.finalOutput.length < 100) {
+      if (session.isAssembling) {
+        return reply.status(409).send({
+          error: 'Assembly is still running. Please wait for it to finish.',
+        });
+      }
+      const report = buildFindingsReport(session, session.legalRequest);
+      if (report) {
+        session.assembledDocument = report;
+        session.assemblyFallbackUsed = true;
+        session.outputTier = 2;
+        session.outputTierReason = 'No pipeline output to assemble from — structured findings report delivered.';
+        try {
+          const stepsDone = (session.genericWorkflow?.completedSteps ?? session.workflow.completedSteps).length;
+          updateArchivedDocument(session.id, report, session.accumulatedCost, stepsDone);
+        } catch { /* archive update is best-effort */ }
+        return reply.send({
+          success: true,
+          hasDocument: true,
+          message: 'Structured findings report assembled from the analysis record.',
+        });
+      }
       return reply.status(409).send({
         error: 'Session has no pipeline output to assemble from. The workflow may still be running.',
       });
@@ -1473,6 +1498,10 @@ export function registerSessionRoutes(
 
       if (result && result.length > 0) {
         session.assembledDocument = result;
+        try {
+          const stepsDone = (session.genericWorkflow?.completedSteps ?? session.workflow.completedSteps).length;
+          updateArchivedDocument(session.id, result, session.accumulatedCost, stepsDone);
+        } catch { /* archive update is best-effort */ }
         return reply.send({ success: true, hasDocument: true });
       }
 
