@@ -166,7 +166,7 @@ export const createDynamicPermissions = (
 ): CanUseTool => {
   return async (
     toolName: string,
-    _input: Record<string, unknown>,
+    input: Record<string, unknown>,
     options: {
       signal: AbortSignal;
       suggestions?: unknown[];
@@ -188,6 +188,13 @@ export const createDynamicPermissions = (
         message: `Tool "${toolName}" can only be called by the orchestrator, not by subagents.`,
         toolUseID: options.toolUseID,
       };
+    }
+
+    if (
+      toolName === 'mcp__shem__request_approval'
+      && input?.gate_type === 'rubric_override'
+    ) {
+      return { behavior: 'allow', toolUseID: options.toolUseID };
     }
 
     // v5: Use template phasePermissions if available (generic workflows)

@@ -24,7 +24,7 @@ export interface StepDefinition {
   description: string;
   preconditions: WorkflowStep[];
   requiresGateApproval?: boolean;
-  gateType?: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection';
+  gateType?: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'rubric_override';
 }
 
 export const STEP_DEFINITIONS: Record<WorkflowStep, StepDefinition> = {
@@ -113,6 +113,12 @@ export interface GenericStepDefinition {
   preconditions: string[];
   requiresGateApproval?: boolean;
   gateType?: string;
+  /** If true, the step cannot advance until its rubric evaluates as satisfied. */
+  rubricRequired?: boolean;
+  /** Rubric definition id, e.g. "review.specialist_analysis". */
+  rubricId?: string;
+  /** Max rubric evaluation iterations before a human override is required. */
+  rubricMaxIterations?: number;
   /** If true, the evaluator gate runs automatically after this step */
   requiresEvaluatorGate?: boolean;
   /** Max revision loops for evaluator gate failures (default: 2) */
@@ -195,6 +201,8 @@ export interface GenericWorkflowState {
   qualityChecks: QualityCheckResult[];
   /** v11: Per-step iteration counts (keyed by step name) */
   stepIterationCounts: Record<string, number>;
+  /** Per-step rubric evaluation attempt counts, keyed by "step::rubricId". */
+  rubricIterationCounts: Record<string, number>;
   /** Structured handoff summaries recorded at each phase transition */
   handoffs: HandoffSummary[];
   startedAt: string;

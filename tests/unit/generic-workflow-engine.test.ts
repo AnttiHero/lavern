@@ -28,6 +28,10 @@ function initState(template: WorkflowTemplate): void {
     gateDecisions: {},
     evaluatorResults: [],
     revisionCount: 0,
+    qualityChecks: [],
+    stepIterationCounts: {},
+    rubricIterationCounts: {},
+    handoffs: [],
     startedAt: now,
     lastTransitionAt: now,
   };
@@ -220,6 +224,13 @@ describe('Generic Workflow Engine', () => {
       const evalStep = reviewTemplate.stepDefinitions['evaluator_gate'];
       expect(evalStep.requiresEvaluatorGate).toBe(true);
       expect(evalStep.maxRevisionLoops).toBe(2);
+    });
+
+    it('review rubric-gated steps should declare rubric ids', () => {
+      expect(reviewTemplate.stepDefinitions['specialist_analysis'].rubricRequired).toBe(true);
+      expect(reviewTemplate.stepDefinitions['specialist_analysis'].rubricId).toBe('review.specialist_analysis');
+      expect(reviewTemplate.stepDefinitions['verification_pass'].rubricRequired).toBe(true);
+      expect(reviewTemplate.stepDefinitions['verification_pass'].rubricId).toBe('review.verification_pass');
     });
 
     it('counsel should have no evaluator gates', () => {

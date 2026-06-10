@@ -55,6 +55,9 @@ export type ShemEvent =
   // v11: Quality iteration events
   | { type: 'quality_check_run'; step: string; checkType: string; checkerRole?: string; iteration: number; timestamp: string }
   | { type: 'quality_check_result'; step: string; passed: boolean; score: number; iteration: number; failureReasons: string[]; revisionGuidance: string[]; timestamp: string }
+  // v17: Rubric gate events
+  | { type: 'rubric_evaluation_start'; rubricId: string; step: string; iteration: number; timestamp: string }
+  | { type: 'rubric_evaluation_end'; rubricId: string; step: string; iteration: number; result: string; score: number; failedCriteria: string[]; timestamp: string }
   // v16: Verification Pipeline events
   | { type: 'verification_pass_started'; pass: string; passIndex: number; totalPasses: number; timestamp: string }
   | { type: 'verification_pass_completed'; pass: string; passIndex: number; score: number; criticalCount: number; majorCount: number; minorCount: number; timestamp: string }

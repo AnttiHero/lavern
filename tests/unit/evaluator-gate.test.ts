@@ -25,6 +25,10 @@ describe('Evaluator Gate', () => {
       gateDecisions: {},
       evaluatorResults: [],
       revisionCount: 0,
+      qualityChecks: [],
+      stepIterationCounts: {},
+      rubricIterationCounts: {},
+      handoffs: [],
       startedAt: now,
       lastTransitionAt: now,
     };

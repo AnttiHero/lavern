@@ -28,6 +28,10 @@ function initGenericWorkflow(session: SessionState, template: WorkflowTemplate):
     gateDecisions: {},
     evaluatorResults: [],
     revisionCount: 0,
+    qualityChecks: [],
+    stepIterationCounts: {},
+    rubricIterationCounts: {},
+    handoffs: [],
     startedAt: new Date().toISOString(),
     lastTransitionAt: new Date().toISOString(),
   };

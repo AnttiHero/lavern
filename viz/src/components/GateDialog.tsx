@@ -23,6 +23,7 @@ const GATE_LABELS: Record<string, string> = {
   ethics_critical: 'Ethics Critical',
   meaning_critical: 'Meaning Critical',
   final_delivery: 'Final Delivery',
+  rubric_override: 'Rubric Override',
 };
 
 export function GateDialog({

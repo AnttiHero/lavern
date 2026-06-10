@@ -492,6 +492,7 @@ function buildPromptFromRequest(
     const def = template.stepDefinitions[step];
     const flags: string[] = [];
     if (def?.requiresGateApproval) flags.push('[HUMAN GATE]');
+    if (def?.rubricRequired) flags.push('[RUBRIC GATE]');
     if (def?.requiresEvaluatorGate) flags.push('[EVALUATOR GATE]');
     parts.push(`${i + 1}. ${step} — ${def?.description ?? ''} ${flags.join(' ')}`);
   });

@@ -60,6 +60,9 @@ export const counselTemplate: WorkflowTemplate = {
     'mcp__shem__list_documents',
     'mcp__shem__read_document_section',
     'mcp__shem__search_document',
+    // Rubric gates
+    'mcp__shem__evaluate_rubric',
+    'mcp__shem__list_rubrics',
   ],
   requiredAgents: [
     // Selected dynamically by the router based on request type.
