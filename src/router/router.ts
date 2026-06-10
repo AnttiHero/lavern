@@ -74,14 +74,19 @@ export async function routeRequest(
   let classification: RouterClassification;
   let routingMethod: 'llm' | 'deterministic' = 'deterministic';
 
+  // Dashboard uploads arrive as parsed documents with no documentPath —
+  // the filenames ("Responding Motion Record of Plaintiff…") often carry the
+  // strongest routing signal. Make them visible to both routing tiers.
+  const documentNames = session.documents.map(d => d.name).join(' ');
+
   if (options?.useLlm !== false) {
     // Try LLM-based routing (provider-aware)
     // v18: Per-session provider override (options > global config)
     const provider = options?.provider ?? config.provider;
     try {
       const llmResult = isOpenAICompatibleProvider(provider)
-        ? await openAICompatibleClassify(request, provider)
-        : await llmClassify(request, options?.model);
+        ? await openAICompatibleClassify(request, provider, documentNames)
+        : await llmClassify(request, options?.model, documentNames);
 
       // Validate the LLM's selected workflow actually exists
       const template = workflowRegistry.get(llmResult.selectedWorkflow);
@@ -91,16 +96,16 @@ export async function routeRequest(
       } else {
         // LLM hallucinated a workflow — fall back to deterministic
         logger.warn('llm_unknown_workflow', llmResult.selectedWorkflow);
-        classification = classifyRequest(request);
+        classification = classifyRequest(request, documentNames);
       }
     } catch (err) {
       // LLM call failed — fall back to deterministic
       logger.warn('llm_classification_failed', err instanceof Error ? err.message : err);
-      classification = classifyRequest(request);
+      classification = classifyRequest(request, documentNames);
     }
   } else {
     // Deterministic-only
-    classification = classifyRequest(request);
+    classification = classifyRequest(request, documentNames);
   }
 
   // Store on the request for downstream use
@@ -128,10 +133,11 @@ export async function routeRequest(
 async function llmClassify(
   request: LegalRequest,
   model?: string,
+  documentNames?: string,
 ): Promise<RouterClassification> {
   const workflowSummary = workflowRegistry.getSummaryForRouter();
 
-  const userPrompt = buildRouterUserPrompt(request);
+  const userPrompt = buildRouterUserPrompt(request, documentNames);
 
   const systemPromptText = `${routerPrompt}\n\n## Currently Registered Workflows\n\n${workflowSummary}`;
 
@@ -177,9 +183,10 @@ async function llmClassify(
 async function openAICompatibleClassify(
   request: LegalRequest,
   provider: OpenAICompatibleProvider,
+  documentNames?: string,
 ): Promise<RouterClassification> {
   const workflowSummary = workflowRegistry.getSummaryForRouter();
-  const userPrompt = buildRouterUserPrompt(request);
+  const userPrompt = buildRouterUserPrompt(request, documentNames);
   const settings = getOpenAICompatibleSettings(provider);
 
   const systemPromptText = `${routerPrompt}\n\n## Currently Registered Workflows\n\n${workflowSummary}\n\nRespond with ONLY valid JSON matching the RouterClassification schema. No other text.`;
@@ -221,13 +228,17 @@ async function openAICompatibleClassify(
 /**
  * Build the user prompt for the Router from a LegalRequest.
  */
-function buildRouterUserPrompt(request: LegalRequest): string {
+function buildRouterUserPrompt(request: LegalRequest, documentNames?: string): string {
   const parts: string[] = ['Classify this request:\n'];
 
   parts.push(`**Request Type**: ${request.type}`);
 
   if (request.documentPath) {
     parts.push(`**Document**: ${request.documentPath}`);
+  }
+
+  if (documentNames) {
+    parts.push(`**Uploaded Documents**: ${documentNames}`);
   }
 
   if (request.requestText) {
@@ -270,21 +281,22 @@ const DEFENCE_DISCLOSURE_SPECIALISTS = [
   'ethics-reviewer',
 ];
 
-function searchableText(request: LegalRequest): string {
+function searchableText(request: LegalRequest, extraText?: string): string {
   return [
     request.requestText,
     request.documentPath,
     request.context?.documentType,
     request.context?.focus,
     request.context?.jurisdiction,
+    extraText,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 }
 
-function isDefenceDisclosureRequest(request: LegalRequest): boolean {
-  const searchable = searchableText(request);
+function isDefenceDisclosureRequest(request: LegalRequest, extraText?: string): boolean {
+  const searchable = searchableText(request, extraText);
   if (!searchable) return false;
 
   return [
@@ -331,8 +343,8 @@ const DEFENSE_STRATEGY_SPECIALISTS = [
  * options built. Distinct from defence-disclosure, which is the criminal
  * disclosure-review pipeline — criminal disclosure terms are checked first.
  */
-function isDefenseStrategyRequest(request: LegalRequest): boolean {
-  const searchable = searchableText(request);
+function isDefenseStrategyRequest(request: LegalRequest, extraText?: string): boolean {
+  const searchable = searchableText(request, extraText);
   if (!searchable) return false;
 
   return [
@@ -365,9 +377,9 @@ function isDefenseStrategyRequest(request: LegalRequest): boolean {
   ].some(term => searchable.includes(term));
 }
 
-export function classifyRequest(request: LegalRequest): RouterClassification {
+export function classifyRequest(request: LegalRequest, extraText?: string): RouterClassification {
   if (request.type === 'defense_strategy'
-    || (request.type !== 'defence_disclosure' && !isDefenceDisclosureRequest(request) && isDefenseStrategyRequest(request))) {
+    || (request.type !== 'defence_disclosure' && !isDefenceDisclosureRequest(request, extraText) && isDefenseStrategyRequest(request, extraText))) {
     return {
       requestType: 'multi_specialist',
       complexity: 'high',
@@ -381,7 +393,7 @@ export function classifyRequest(request: LegalRequest): RouterClassification {
     };
   }
 
-  if (request.type === 'defence_disclosure' || isDefenceDisclosureRequest(request)) {
+  if (request.type === 'defence_disclosure' || isDefenceDisclosureRequest(request, extraText)) {
     return {
       requestType: 'multi_specialist',
       complexity: 'high',

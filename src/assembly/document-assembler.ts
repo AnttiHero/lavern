@@ -763,6 +763,17 @@ function emitAssemblyComplete(session: SessionState, totalCost: number): void {
 export function stripProcessText(text: string): string {
   let cleaned = text.trim();
 
+  // Reasoning models (MiniMax-M3, DeepSeek-R1, etc.) may emit <think>…</think>
+  // blocks before the document. Strip them first — otherwise every attempt
+  // fails the "must start with a heading" check no matter how good the
+  // document after the block is.
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  // Unclosed leading think block: drop everything up to the first heading.
+  if (/^<think>/i.test(cleaned)) {
+    const headingIdx = cleaned.search(/^#{1,6}\s/m);
+    cleaned = headingIdx > 0 ? cleaned.substring(headingIdx).trim() : cleaned;
+  }
+
   // If the text starts with a markdown heading, it's already clean
   if (cleaned.startsWith('#')) return cleaned;
 

@@ -9,6 +9,7 @@
  */
 
 import { getAssemblySystemPrompt, buildAssemblyContext } from '../assembly/assembly-prompts.js';
+import { buildFindingsReport } from '../assembly/findings-report.js';
 import { validateDeliverable } from '../assembly/validate-deliverable.js';
 import { extractCounselDocument, looksLikeStatusPackage } from '../assembly/extract-counsel.js';
 import { extractTabulateResult } from '../assembly/extract-tabulate.js';
@@ -432,6 +433,30 @@ export async function assembleMistralDocument(
     });
     emitAssemblyComplete(session, totalAssemblyCost);
     return bestAttempt;
+  }
+
+  // ── Last resort: deterministic findings report ─────────────────────
+  // Same fallback as the Anthropic assembler: the debate board usually
+  // still holds the engagement's real value (cited findings, resolutions,
+  // clarification Q&A). Render it with zero LLM calls rather than
+  // delivering nothing.
+  const findingsReport = buildFindingsReport(session, request);
+  if (findingsReport) {
+    session.assemblyFallbackUsed = true;
+    session.outputTier = 2;
+    session.outputTierReason = 'LLM assembly failed — structured findings report delivered instead.';
+    logger.warn('LLM assembly failed — returning deterministic findings report', {
+      findings: session.debate.findings.length,
+      chars: findingsReport.length,
+    });
+    session.events.emitEvent({
+      type: 'error',
+      message: 'The polished deliverable could not be assembled; delivering the structured findings report instead. All findings and citations are included.',
+      source: 'document-assembler',
+      timestamp: eventTimestamp(),
+    });
+    emitAssemblyComplete(session, totalAssemblyCost);
+    return findingsReport;
   }
 
   logger.error('All assembly attempts failed, returning empty document', { attempts: MAX_ASSEMBLY_ATTEMPTS });

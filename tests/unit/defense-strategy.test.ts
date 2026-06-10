@@ -42,6 +42,18 @@ describe('defense-strategy workflow', () => {
     expect(result.selectedWorkflow).toBe('defense-strategy');
   });
 
+  it('routes by uploaded document names when the request text is generic', () => {
+    const result = classifyRequest(
+      {
+        type: 'general',
+        requestText: 'What do you think the chances of success are?',
+      },
+      'Responding Motion Record of Plaintiff with Cross-Motion-September 22-2025.pdf',
+    );
+
+    expect(result.selectedWorkflow).toBe('defense-strategy');
+  });
+
   it('still routes criminal disclosure review to defence-disclosure (regression)', () => {
     const result = classifyRequest({
       type: 'general',

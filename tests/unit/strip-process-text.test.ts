@@ -15,6 +15,21 @@ describe('stripProcessText', () => {
     expect(stripProcessText(clean)).toBe(clean);
   });
 
+  it('strips <think> reasoning blocks (MiniMax-M3, DeepSeek-R1 style)', () => {
+    const input = '<think>\nThe user wants a motion analysis. I should structure this as...\n</think>\n\n# Motion Analysis\n\nGround 1...';
+    expect(stripProcessText(input)).toBe('# Motion Analysis\n\nGround 1...');
+  });
+
+  it('strips an unclosed leading <think> block up to the first heading', () => {
+    const input = '<think>\nReasoning that never closes the tag\n\n# Motion Analysis\n\nGround 1...';
+    expect(stripProcessText(input)).toBe('# Motion Analysis\n\nGround 1...');
+  });
+
+  it('strips both <think> block and a trailing preamble', () => {
+    const input = '<think>plan the doc</think>\nHere is the final document:\n\n# Risk Assessment\n\nOverall risk...';
+    expect(stripProcessText(input)).toBe('# Risk Assessment\n\nOverall risk...');
+  });
+
   it('strips "I\'ll" preamble before heading', () => {
     const input = "I'll start by reviewing the contract.\n\n# Contract Review\n\nThis document covers...";
     expect(stripProcessText(input)).toBe("# Contract Review\n\nThis document covers...");
