@@ -21,6 +21,8 @@ build/
 # Logs
 *.log
 npm-debug.log*
+/logs/
+/.codex-logs/
 
 # Test coverage
 coverage/
