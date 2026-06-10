@@ -75,6 +75,22 @@ describe('WorkingView', () => {
     expect(screen.getByText('Disconnect')).toBeInTheDocument();
   });
 
+  it('keeps the selected team names visible while work is starting', () => {
+    renderWithSession(
+      <WorkingView onComplete={noop} onBack={noop} onSkip={noop} />,
+      {
+        sessionOverrides: {
+          team: ['contract-reviewer', 'risk-pricer', 'synthesis-editor'],
+        },
+      }
+    );
+
+    expect(screen.getByText('Team Working')).toBeInTheDocument();
+    expect(screen.getByText('Contract Reviewer')).toBeInTheDocument();
+    expect(screen.getByText('Risk Pricer')).toBeInTheDocument();
+    expect(screen.getByText('Synthesis Editor')).toBeInTheDocument();
+  });
+
   it('shows connect input when no session data', () => {
     renderWithSession(
       <WorkingView onComplete={noop} onBack={noop} onSkip={noop} />,

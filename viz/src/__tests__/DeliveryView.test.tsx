@@ -173,6 +173,51 @@ describe('DeliveryView', () => {
     expect(screen.getByText('Download Structured Data')).toBeEnabled();
   });
 
+  it('stops polling and shows analysis download for live assembly failures', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        id: 'shem-live-assembly-failed',
+        workflow: { currentStep: 'delivered', completedSteps: ['intake', 'specialist_analysis', 'delivered'] },
+        debate: { findingsCount: 23, challengesCount: 0, resolutionsCount: 4, unresolvedCount: 0 },
+        verification: { resultsCount: 0, passed: 0, failed: 0 },
+        cost: { accumulated: 0, budget: 40, remaining: 40 },
+        eventCount: 47,
+        evaluator: { results: [], bestScore: 0 },
+        agentPerformance: [],
+        assembledDocument: null,
+        finalOutput: null,
+        deliveryState: 'assembly_failed',
+        debateResolutions: [],
+        gateDecisionRecords: [],
+        findings: [],
+        documents: [],
+        matterTitle: 'Motion Record Volume No. 1',
+        workflowTemplateId: 'review',
+        provider: 'minimax',
+        selectedTeam: [],
+        halted: false,
+        haltReason: null,
+        durationMs: 960000,
+      }),
+    });
+
+    renderWithSession(
+      <DeliveryView onContinue={noop} onBack={noop} />,
+      { sessionOverrides: { sessionId: 'shem-live-assembly-failed' } }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Assembly Incomplete')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Assembling document/)).not.toBeInTheDocument();
+    expect(screen.getByText('Download Analysis Data')).toBeInTheDocument();
+    expect(screen.getByText('Download Structured Data')).toBeEnabled();
+    expect(screen.queryByText(/Continue to Billing/)).not.toBeInTheDocument();
+  });
+
   it('renders back button', () => {
     renderWithSession(
       <DeliveryView onContinue={noop} onBack={noop} />,

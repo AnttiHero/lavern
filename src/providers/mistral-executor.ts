@@ -310,10 +310,22 @@ export async function runMistralWorkflow(
   }
 
   // ── Document assembly (via Mistral) ─────────────────────────────────
+  session.outputTier = 3;
+  session.outputTierReason = 'Analysis complete, assembling deliverable';
+  session.isAssembling = true;
+  logger.info('Document assembly phase starting', {
+    sessionId: session.id,
+    workflow: template.id,
+    provider: settings.label,
+    findings: session.debate.findings.length,
+    resolutions: session.debate.resolutions.length,
+  });
   try {
     session.assembledDocument = await assembleMistralDocument(session, request);
 
     if (!session.assembledDocument) {
+      session.outputTier = 3;
+      session.outputTierReason = 'Assembly could not produce a deliverable. Raw findings and debate available.';
       session.events.emitEvent({
         type: 'error',
         message: 'Document assembly could not produce a deliverable. You can retry from the delivery view.',
@@ -323,11 +335,24 @@ export async function runMistralWorkflow(
     }
   } catch (assemblyError) {
     logger.error('Document assembly failed (non-fatal)', { error: assemblyError });
+    session.outputTier = 3;
+    session.outputTierReason = `Assembly error: ${assemblyError instanceof Error ? assemblyError.message : 'Unknown'}. Raw findings and debate available.`;
     session.events.emitEvent({
       type: 'error',
       message: `Document assembly error: ${assemblyError instanceof Error ? assemblyError.message : String(assemblyError)}`,
       source: 'document-assembler',
       timestamp: eventTimestamp(),
+    });
+  } finally {
+    session.isAssembling = false;
+    logger.info('Document assembly phase finished', {
+      sessionId: session.id,
+      workflow: template.id,
+      provider: settings.label,
+      hasDocument: session.assembledDocument.length > 0,
+      assembledChars: session.assembledDocument.length,
+      outputTier: session.outputTier,
+      outputTierReason: session.outputTierReason,
     });
   }
 

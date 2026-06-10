@@ -93,6 +93,9 @@ export interface DeliveryData {
   deliveryState: DeliveryState;
   workflowTemplateId?: string | null;
   sessionFailed?: boolean;
+  isAssembling?: boolean;
+  outputTier?: number;
+  outputTierReason?: string;
   directionRequest?: DirectionRequest;
 
   // Tab 1: The Work
@@ -169,6 +172,7 @@ export function useDeliveryData(): {
   const cancelledRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const startTimeRef = useRef(Date.now());
+  const lastDeliveryLogKeyRef = useRef('');
   /** Tracks whether we've already scheduled (or completed) the final post-ready poll. */
   const finalPollDoneRef = useRef(false);
 
@@ -200,7 +204,32 @@ export function useDeliveryData(): {
       setData(mapped);
       setLoading(false);
 
+      const logKey = [
+        mapped.status,
+        mapped.deliveryState,
+        mapped.isAssembling ? 'assembling' : 'not-assembling',
+        mapped.finalOutput.length,
+        mapped.outputTier ?? 'no-tier',
+      ].join('|');
+      if (lastDeliveryLogKeyRef.current !== logKey) {
+        lastDeliveryLogKeyRef.current = logKey;
+        console.info('[DeliveryData] session poll state', {
+          sessionId,
+          status: mapped.status,
+          deliveryState: mapped.deliveryState,
+          isAssembling: mapped.isAssembling === true,
+          deliverableChars: mapped.finalOutput.length,
+          outputTier: mapped.outputTier,
+          outputTierReason: mapped.outputTierReason,
+        });
+      }
+
       if (mapped.sessionFailed) {
+        setAssemblyStatus('error');
+        return;
+      }
+
+      if (mapped.deliveryState === 'assembly_failed' && !mapped.isAssembling) {
         setAssemblyStatus('error');
         return;
       }
@@ -358,6 +387,9 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
   const matterTitle = raw.matterTitle as string | null;
   const durationMs = raw.durationMs as number | undefined;
   const workflowTemplateId = raw.workflowTemplateId as string | null | undefined;
+  const isAssembling = raw.isAssembling === true;
+  const outputTier = typeof raw.outputTier === 'number' ? raw.outputTier : undefined;
+  const outputTierReason = typeof raw.outputTierReason === 'string' ? raw.outputTierReason : undefined;
   // v19: Use assembledDocument ONLY. NEVER fall back to finalOutput (process log).
   // finalOutput contains orchestrator thinking/coordination — serving it as a
   // deliverable is catastrophic. If assembledDocument is null, the deliverable is empty.
@@ -615,6 +647,9 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     deliveryState,
     workflowTemplateId,
     sessionFailed,
+    isAssembling,
+    outputTier,
+    outputTierReason,
     directionRequest,
     documentTitle: needsDirection ? (directionRequest?.title ?? 'Intake complete, analysis paused') : docTitle,
     executiveSummary: summaryParts.join(' '),
@@ -654,6 +689,9 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
   const teamRoles = (raw.teamRoles as string[]) || [];
   const completedAt = raw.completedAt as string | null;
   const workflowTemplateId = raw.workflowTemplateId as string | null | undefined;
+  const isAssembling = raw.isAssembling === true;
+  const outputTier = typeof raw.outputTier === 'number' ? raw.outputTier : undefined;
+  const outputTierReason = typeof raw.outputTierReason === 'string' ? raw.outputTierReason : undefined;
 
   // Parse summary JSON (debate, topFindings, resolutions, scores, verification)
   const summary = (raw.summary as Record<string, unknown>) || {};
@@ -730,6 +768,9 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
     status: needsDirection ? 'Needs Direction' : assemblyIncomplete ? 'Assembly Incomplete' : 'Complete',
     deliveryState,
     workflowTemplateId,
+    isAssembling,
+    outputTier,
+    outputTierReason,
     directionRequest,
     documentTitle: needsDirection ? (directionRequest?.title ?? 'Intake complete, analysis paused') : title,
     executiveSummary: summaryParts.join(' '),

@@ -110,4 +110,26 @@ describe('OpenAI-compatible document assembler', () => {
     expect(chatMock).toHaveBeenCalled();
     expect(chatMock.mock.calls[0][0].timeoutMs).toBeGreaterThanOrEqual(300_000);
   });
+
+  it('returns a structurally valid best attempt when the quality gate returns empty responses', async () => {
+    chatMock
+      .mockResolvedValueOnce({ message: { content: substantiveDocument() }, cost: 0 })
+      .mockResolvedValueOnce({ message: { content: '' }, cost: 0 })
+      .mockResolvedValueOnce({ message: { content: substantiveDocument() }, cost: 0 })
+      .mockResolvedValueOnce({ message: { content: '' }, cost: 0 })
+      .mockResolvedValueOnce({ message: { content: substantiveDocument() }, cost: 0 })
+      .mockResolvedValueOnce({ message: { content: '' }, cost: 0 });
+
+    const session = new SessionState('openai-compat-empty-gate-test');
+    session.provider = 'minimax';
+    session.workflowTemplateId = 'review';
+
+    const result = await assembleMistralDocument(session, {
+      type: 'contract_review',
+      requestText: 'Review the securities-fraud evidence package.',
+    });
+
+    expect(result).toContain('# Review Package');
+    expect(result.length).toBeGreaterThan(500);
+  });
 });

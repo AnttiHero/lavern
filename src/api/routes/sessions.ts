@@ -729,6 +729,11 @@ export function registerSessionRoutes(
       budgetUsd: session.budget_usd,
       assembledDocument: session.assembled_document || null,
       summary: safeJsonParse(session.summary_json, {}),
+      isAssembling: false,
+      outputTier: session.assembled_document ? 1 : 3,
+      outputTierReason: session.assembled_document
+        ? 'Archived deliverable available'
+        : 'Archived session has no assembled deliverable',
       createdAt: session.created_at,
       completedAt: session.completed_at,
       durationMs: session.duration_ms,
@@ -799,6 +804,11 @@ export function registerSessionRoutes(
           workflowTemplateId: archived.workflow_id,
           provider: hydrated.provider ?? config.provider,
           selectedTeam: hydrated.selectedTeam,
+          isAssembling: false,
+          outputTier: archived.assembled_document ? 1 : 3,
+          outputTierReason: archived.assembled_document
+            ? 'Archived deliverable available'
+            : 'Archived session has no assembled deliverable',
           halted: false,
           haltReason: null,
           durationMs: archived.duration_ms,
@@ -957,6 +967,7 @@ export function registerSessionRoutes(
       workflowTemplateId: session.workflowTemplateId ?? null,
       provider: session.provider ?? config.provider,
       selectedTeam: session.selectedTeam,
+      isAssembling: session.isAssembling,
       outputTier: session.outputTier,
       outputTierReason: session.outputTierReason,
       halted: session.isHalted(),

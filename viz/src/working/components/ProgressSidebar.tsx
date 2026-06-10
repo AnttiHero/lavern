@@ -323,6 +323,19 @@ export function ProgressSidebar({
         )}
       </div>
 
+      {team && team.length > 0 && (
+        <div style={styles.teamRoster} aria-label="Team working on this task">
+          <div style={styles.teamRosterLabel}>Team Working</div>
+          <div style={styles.teamRosterNames}>
+            {team.slice(0, 10).map(agent => (
+              <span key={agent.role} style={styles.teamRosterName}>
+                {agent.displayName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Steps */}
       <div style={styles.stepList}>
         {pipelineSteps.map((step, idx) => {
@@ -482,6 +495,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 10,
     fontFamily: fonts.mono,
     color: colors.textDim,
+  },
+  teamRoster: {
+    padding: '10px 16px 8px',
+    borderBottom: `1px solid ${colors.border}`,
+    backgroundColor: colors.bgCard,
+  },
+  teamRosterLabel: {
+    fontSize: 9,
+    fontFamily: fonts.sans,
+    fontWeight: 700,
+    color: colors.accent,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
+    marginBottom: 6,
+  },
+  teamRosterNames: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 4,
+  },
+  teamRosterName: {
+    maxWidth: '100%',
+    fontSize: 10,
+    fontFamily: fonts.sans,
+    color: colors.textSecondary,
+    backgroundColor: colors.bgPanel,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
+    padding: '3px 6px',
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+    whiteSpace: 'nowrap' as const,
   },
   stepList: {
     flex: 1,

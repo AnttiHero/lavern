@@ -89,6 +89,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   const sessionEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Timestamp when 'delivered' step was first detected (for assembly wait timeout). */
   const deliveredAtRef = useRef<number | null>(null);
+  const completionPollLogKeyRef = useRef('');
   // Stable ref for onSessionEnd to avoid restarting effects when callback identity changes
   const onSessionEndRef = useRef(onSessionEnd);
   onSessionEndRef.current = onSessionEnd;
@@ -262,6 +263,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   const connectToSession = useCallback((id: string) => {
     setSessionId(id);
     deliveredAtRef.current = null;
+    completionPollLogKeyRef.current = '';
     sessionFailedRef.current = false;
     lastNonTerminalStepRef.current = 'intake';
     setSessionExpired(false);
@@ -287,6 +289,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
   const connectToReplay = useCallback((id: string) => {
     setSessionId(id);
+    completionPollLogKeyRef.current = '';
     sessionFailedRef.current = false;
     lastNonTerminalStepRef.current = 'intake';
     setIsReplay(true);
@@ -307,6 +310,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
     wsClientRef.current?.disconnect();
     setSessionId(undefined);
     deliveredAtRef.current = null;
+    completionPollLogKeyRef.current = '';
     sessionFailedRef.current = false;
     lastNonTerminalStepRef.current = 'intake';
     setConnectionStatus('disconnected');
@@ -390,6 +394,25 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
         const steps = data.workflow?.completedSteps ?? [];
         const isDelivered = step === 'delivered' || steps.includes('delivered');
         const hasAssembledDoc = !!data.assembledDocument && data.assembledDocument.length > 100;
+        const assemblyFailed = data.deliveryState === 'assembly_failed' && data.isAssembling !== true;
+        const pollLogKey = [
+          step ?? 'unknown',
+          isDelivered ? 'delivered' : 'not-delivered',
+          hasAssembledDoc ? 'has-doc' : 'no-doc',
+          assemblyFailed ? 'assembly-failed' : 'assembly-not-failed',
+          data.isAssembling === true ? 'assembling' : 'not-assembling',
+        ].join('|');
+        if (completionPollLogKeyRef.current !== pollLogKey) {
+          completionPollLogKeyRef.current = pollLogKey;
+          console.info('[WorkingState] completion poll state', {
+            sessionId,
+            currentStep: step,
+            isDelivered,
+            hasAssembledDoc,
+            deliveryState: data.deliveryState,
+            isAssembling: data.isAssembling === true,
+          });
+        }
 
         // Always sync visible state (step progress, cost) while on Working screen.
         // Never regress past 'delivered' — once the client has seen session_end
@@ -429,8 +452,9 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
 
           const waitedMs = Date.now() - deliveredAtRef.current;
 
-          // Transition when: assembled document is ready, OR 5-min fallback exceeded
-          if ((hasAssembledDoc || waitedMs > MAX_ASSEMBLY_WAIT_MS) && !completionFiredRef.current) {
+          // Transition when: assembled document is ready, assembly has failed
+          // but analysis data is available, OR 5-min fallback exceeded.
+          if ((hasAssembledDoc || assemblyFailed || waitedMs > MAX_ASSEMBLY_WAIT_MS) && !completionFiredRef.current) {
             completionFiredRef.current = true;
             // Unlock the "View Results" failsafe button now that the document
             // is actually fetchable — same gate the auto-nav uses below.

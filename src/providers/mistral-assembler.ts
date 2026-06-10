@@ -70,11 +70,18 @@ Produce the FULL, SUBSTANTIVE document now.`;
 
 // ── LLM Quality Gate (Mistral) ──────────────────────────────────────────
 
+interface QualityGateResult {
+  pass: boolean;
+  critique?: string;
+  cost: number;
+  gateUnavailable?: boolean;
+}
+
 async function mistralQualityGate(
   assembledText: string,
   session: SessionState,
   request?: LegalRequest,
-): Promise<{ pass: boolean; critique?: string; cost: number }> {
+): Promise<QualityGateResult> {
   try {
     const provider = session.provider ?? config.provider;
     const settings = getOpenAICompatibleSettings(provider);
@@ -119,10 +126,29 @@ FAIL: [one sentence explaining why]`;
     });
 
     const responseText = (result.message.content ?? '').trim();
+    logger.info('Quality gate response received', {
+      provider: settings.provider,
+      model: settings.routerModel,
+      responseChars: responseText.length,
+      finishReason: result.finishReason,
+      cost: result.cost.toFixed(4),
+    });
 
     if (responseText.startsWith('PASS')) {
       logger.info('Quality gate passed', { cost: result.cost.toFixed(4) });
       return { pass: true, cost: result.cost };
+    }
+
+    if (!responseText) {
+      const critique = 'Quality gate returned an empty response';
+      logger.warn('Quality gate unavailable', {
+        critique,
+        provider: settings.provider,
+        model: settings.routerModel,
+        finishReason: result.finishReason,
+        cost: result.cost.toFixed(4),
+      });
+      return { pass: false, critique, cost: result.cost, gateUnavailable: true };
     }
 
     const critique = responseText.startsWith('FAIL:')
@@ -131,8 +157,16 @@ FAIL: [one sentence explaining why]`;
         ? responseText.substring(4).replace(/^[\s:—-]+/, '').trim() || 'Document did not meet quality standards'
         : 'Quality gate returned ambiguous result: ' + responseText.substring(0, 200);
 
-    logger.warn('Quality gate failed', { critique, cost: result.cost.toFixed(4) });
-    return { pass: false, critique, cost: result.cost };
+    const gateUnavailable = !responseText.startsWith('FAIL');
+    logger.warn(gateUnavailable ? 'Quality gate unavailable' : 'Quality gate failed', {
+      critique,
+      provider: settings.provider,
+      model: settings.routerModel,
+      responseChars: responseText.length,
+      finishReason: result.finishReason,
+      cost: result.cost.toFixed(4),
+    });
+    return { pass: false, critique, cost: result.cost, gateUnavailable };
   } catch (error) {
     logger.error('Quality gate error (allowing document through)', { error });
     return { pass: true, critique: undefined, cost: 0 };
@@ -228,6 +262,10 @@ export async function assembleMistralDocument(
   const provider = session.provider ?? config.provider;
   const settings = getOpenAICompatibleSettings(provider);
   const model = settings.assemblyModel;
+  let bestAttempt = '';
+  let bestAttemptReason = '';
+  let qualityGateUnavailableCount = 0;
+  let qualityGateRejectionCount = 0;
 
   for (let attempt = 1; attempt <= MAX_ASSEMBLY_ATTEMPTS; attempt++) {
     try {
@@ -254,6 +292,15 @@ export async function assembleMistralDocument(
 
       let assembledText = (result.message.content ?? '').trim();
       totalAssemblyCost += result.cost;
+      logger.info('Assembly attempt response received', {
+        attempt,
+        maxAttempts: MAX_ASSEMBLY_ATTEMPTS,
+        provider: settings.provider,
+        model,
+        responseChars: assembledText.length,
+        finishReason: result.finishReason,
+        cost: result.cost.toFixed(4),
+      });
 
       if (result.cost > 0) {
         session.updateCost(session.accumulatedCost + result.cost);
@@ -287,6 +334,16 @@ export async function assembleMistralDocument(
         continue;
       }
 
+      if (assembledText.length > bestAttempt.length) {
+        bestAttempt = assembledText;
+        bestAttemptReason = `structurally valid attempt ${attempt}`;
+      }
+      logger.info('Assembly attempt passed structural validation', {
+        attempt,
+        maxAttempts: MAX_ASSEMBLY_ATTEMPTS,
+        chars: assembledText.length,
+      });
+
       // Step 2: LLM Quality Gate
       const qualityGate = await mistralQualityGate(assembledText, session, request);
       totalAssemblyCost += qualityGate.cost;
@@ -298,14 +355,41 @@ export async function assembleMistralDocument(
         logger.info('Assembly complete', { attempt, chars: assembledText.length, cost: totalAssemblyCost.toFixed(2) });
         logger.info('─'.repeat(60));
 
+        session.outputTier = 1;
+        session.outputTierReason = 'Full deliverable produced';
         emitAssemblyComplete(session, totalAssemblyCost);
         return assembledText;
       }
 
       const critique = qualityGate.critique ?? 'Document did not pass quality review';
-      rejectionReasons.push(`quality_gate: ${critique}`);
+      if (qualityGate.gateUnavailable) {
+        qualityGateUnavailableCount += 1;
+        rejectionReasons.push(`quality_gate_unavailable: ${critique}`);
+      } else {
+        qualityGateRejectionCount += 1;
+        rejectionReasons.push(`quality_gate: ${critique}`);
+      }
 
       logger.warn('Assembly attempt rejected (quality gate)', { attempt, maxAttempts: MAX_ASSEMBLY_ATTEMPTS, critique });
+
+      if (qualityGate.gateUnavailable && qualityGateUnavailableCount >= 2) {
+        logger.warn('Quality gate unavailable repeatedly, returning structurally valid best attempt', {
+          attempt,
+          chars: assembledText.length,
+          qualityGateUnavailableCount,
+          bestAttemptReason,
+        });
+        session.outputTier = 2;
+        session.outputTierReason = 'Best-effort deliverable produced because the quality gate did not return a usable verdict.';
+        session.events.emitEvent({
+          type: 'error',
+          message: 'Document assembly completed with warnings: quality gate did not return a usable verdict. Please review the deliverable carefully.',
+          source: 'document-assembler',
+          timestamp: eventTimestamp(),
+        });
+        emitAssemblyComplete(session, totalAssemblyCost);
+        return bestAttempt || assembledText;
+      }
 
       if (attempt < MAX_ASSEMBLY_ATTEMPTS) {
         session.events.emitEvent({
@@ -328,6 +412,26 @@ export async function assembleMistralDocument(
 
       if (attempt >= MAX_ASSEMBLY_ATTEMPTS) break;
     }
+  }
+
+  if (bestAttempt) {
+    logger.warn('Returning structurally valid best attempt after assembly retries', {
+      chars: bestAttempt.length,
+      bestAttemptReason,
+      qualityGateUnavailableCount,
+      qualityGateRejectionCount,
+      rejectionReasons,
+    });
+    session.outputTier = 2;
+    session.outputTierReason = 'Best-effort deliverable produced after assembly quality gate retries.';
+    session.events.emitEvent({
+      type: 'error',
+      message: 'Document assembly completed with warnings. The deliverable passed structural checks but did not receive a clean quality-gate pass.',
+      source: 'document-assembler',
+      timestamp: eventTimestamp(),
+    });
+    emitAssemblyComplete(session, totalAssemblyCost);
+    return bestAttempt;
   }
 
   logger.error('All assembly attempts failed, returning empty document', { attempts: MAX_ASSEMBLY_ATTEMPTS });
