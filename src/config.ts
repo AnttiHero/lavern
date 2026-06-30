@@ -99,6 +99,31 @@ export const config = {
     assemblyModel: process.env.LAVERN_LOCAL_ASSEMBLY_MODEL ?? 'gemma3:4b',
   },
 
+  // ── Connectors (external legal-data sources) ─────────────────────────
+  // CourtListener: free/public U.S. case law. Token is optional (raises rate
+  // limits + unlocks citation lookup). Set LAVERN_COURTLISTENER_ENABLED=false
+  // to keep engagements fully offline; the tool layer also force-disables it
+  // under the local (zero-egress) provider for privilege-sensitive matters.
+  courtListener: {
+    apiToken: process.env.COURTLISTENER_API_TOKEN ?? '',
+    baseUrl: process.env.COURTLISTENER_BASE_URL ?? 'https://www.courtlistener.com/api/rest/v4',
+    enabled: (process.env.LAVERN_COURTLISTENER_ENABLED ?? 'true') !== 'false',
+  },
+
+  // ── Collective Intelligence (adaptive per-agent model routing) ───────
+  // When ENABLED, the engine overrides each agent's model per engagement with
+  // the best-measured choice and occasionally explores alternatives to learn.
+  // OFF by default — shadow recording (the delivery "Collective" tab) still
+  // runs regardless, so the feature is observable before it changes behavior.
+  collectiveIntelligence: {
+    enabled: process.env.LAVERN_CI_ROUTING === 'true',
+    // Default 0: pure qualitymax (always the best-known model). Exploration
+    // deliberately tries weaker models to learn, so it's OPT-IN only — never the
+    // default on a legal product where live matters are real client work.
+    explorationRate: safeFloat(process.env.LAVERN_CI_EXPLORATION, 0),
+    minObservations: safeInt(process.env.LAVERN_CI_MIN_OBS, 3),
+  },
+
   // ── API ────────────────────────────────────────────────────────────────
   port: safeInt(process.env.SHEM_PORT, 3000),
   host: process.env.SHEM_HOST ?? '127.0.0.1',
@@ -281,6 +306,10 @@ export const config = {
     // Heartbeat — periodic check-in (v17)
     heartbeatEnabled: process.env.LAVERN_CLAW_HEARTBEAT !== 'false',
     heartbeatIntervalMs: safeInt(process.env.LAVERN_CLAW_HEARTBEAT_INTERVAL, 30 * 60 * 1000),
+    // Renewal Watcher — extract contract renewal/cancellation deadlines and alert
+    // on upcoming ones (opt-in). Lead time controls how early alerts start.
+    renewalWatch: process.env.LAVERN_CLAW_RENEWAL_WATCH === 'true',
+    renewalLeadDays: safeInt(process.env.LAVERN_CLAW_RENEWAL_LEAD_DAYS, 30),
     // Precedent Board — institutional memory (v0.13)
     precedentDecayDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_DECAY_DAYS, 30),
     precedentArchiveDays: safeInt(process.env.LAVERN_CLAW_PRECEDENT_ARCHIVE_DAYS, 90),

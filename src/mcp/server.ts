@@ -52,6 +52,8 @@ import { createDocumentReaderTools } from './tools/document-reader.js';
 import { createPreEngagementTools } from './tools/pre-engagement.js';
 // v15: Knowledge Base
 import { createKnowledgeBaseTools } from './tools/knowledge-base.js';
+// Connectors: live external legal-data sources (CourtListener case law)
+import { createCaseLawTools } from './tools/case-law.js';
 import type { SessionState } from '../session/session-state.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import { config } from '../config.js';
@@ -98,6 +100,8 @@ export function buildShemTools(session: SessionState, template?: WorkflowTemplat
     ...createDocumentReaderTools(session),
     // v15: Knowledge Base — searchable reference document collections
     ...createKnowledgeBaseTools(session),
+    // Connectors: live U.S. case law via CourtListener (search + citation verify)
+    ...createCaseLawTools(session),
     // Handoff Templates — structured phase-transition summaries
     ...createHandoffTools(session),
     // v16: Document Structure & Formatting Checks
