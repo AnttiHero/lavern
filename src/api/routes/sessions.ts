@@ -665,6 +665,8 @@ export function registerSessionRoutes(
         remaining: session.budgetUsd - session.accumulatedCost,
       },
       eventCount: session.events.getEventCount(),
+      // Collective Intelligence: per-agent model-routing decisions for this engagement.
+      collectiveIntelligence: session.collectiveIntelligence,
       pendingGate: pendingGate ? {
         gateType: pendingGate.gateType,
         summary: pendingGate.summary,

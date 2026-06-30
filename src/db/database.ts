@@ -880,6 +880,9 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       total: session.verificationResults.length,
       passed: session.verificationResults.filter(v => v.passed).length,
     },
+    // Collective Intelligence: persist the per-agent model-routing decisions +
+    // rationale so auditability survives session eviction (not just live API).
+    collectiveIntelligence: session.collectiveIntelligence,
   });
 
   // Wrap everything in a transaction so usage/debit/archive stay consistent

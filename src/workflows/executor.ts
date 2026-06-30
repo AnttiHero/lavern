@@ -40,6 +40,7 @@ import type { LegalRequest, RouterClassification } from '../types/index.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import type { SchemOptions } from '../orchestrator.js';
 import { createLogger } from '../utils/logger.js';
+import { planEngagementRouting, recordEngagementOutcome } from '../orchestration/record-engagement-routing.js';
 
 const logger = createLogger('EXECUTOR');
 
@@ -232,6 +233,22 @@ export async function runGenericWorkflow(
     if (Object.keys(filteredAgents).length === 0) {
       throw new Error(`No valid agent definitions found for workflow "${template.id}". Selected team: [${teamRoles.join(', ')}], required: [${fallbackTeam.join(', ')}]`);
     }
+  }
+
+  // Collective Intelligence: decide each agent's model for this engagement and
+  // record it for the delivery "Collective" tab + audit bundle. When live
+  // routing is enabled (config-gated, OFF by default) we override each agent's
+  // model with its effective choice; otherwise this is pure shadow recording.
+  try {
+    const ciDecisions = planEngagementRouting(session, template.id, Object.keys(filteredAgents), provider);
+    if (config.collectiveIntelligence.enabled) {
+      for (const d of ciDecisions) {
+        const def = filteredAgents[d.agentRole];
+        if (def) filteredAgents[d.agentRole] = { ...def, model: d.effectiveTier as typeof def.model };
+      }
+    }
+  } catch (err) {
+    logger.warn('CI routing plan failed (non-fatal)', { error: (err as Error).message });
   }
 
   // v0.14.5: Inject document context into every subagent's system prompt.
@@ -486,6 +503,10 @@ export async function runGenericWorkflow(
       logger.warn('Archive document update failed (non-fatal)', { error: updateErr });
     }
   }
+
+  // Collective Intelligence: fold this engagement's measured quality into the
+  // ledger (against the model each agent actually ran on), so routing learns.
+  try { recordEngagementOutcome(session, template.id); } catch { /* non-fatal */ }
 
   // NOW emit session_end — assembly is complete, deliverable is ready
   session.events.emitEvent({

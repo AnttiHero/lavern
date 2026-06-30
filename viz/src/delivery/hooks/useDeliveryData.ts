@@ -72,6 +72,36 @@ export interface VerificationCheck {
   score?: number;
 }
 
+export interface CandidateView {
+  modelId: string;
+  label: string;
+  provider: string;
+  score: number;
+  source: 'measured' | 'prior';
+  observations: number;
+  costWeight: number;
+  eligible: boolean;
+  reason?: string;
+}
+
+export interface RoutingDecisionView {
+  agentRole: string;
+  chosenModelId: string;
+  chosenLabel: string;
+  provider: string;
+  tier: string;
+  source: 'measured' | 'prior';
+  score: number;
+  rationale: string;
+  candidates: CandidateView[];
+  baselineModelId: string;
+  overrodeBaseline: boolean;
+  effectiveModelId?: string;
+  effectiveTier?: string;
+  explored?: boolean;
+  decidedAt: string;
+}
+
 export interface DeliveryData {
   sessionId: string;
   status: string;
@@ -124,6 +154,9 @@ export interface DeliveryData {
 
   // Tab 5: Next Steps
   nextSteps: NextStepItem[];
+
+  // Collective Intelligence: per-agent model routing for this engagement.
+  collectiveIntelligence?: RoutingDecisionView[];
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -536,6 +569,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     agentPerformance: agentPerfList,
     eventCount: (raw.eventCount as number | undefined) ?? 0,
     confidenceSummary: (raw.confidenceSummary as DeliveryData['confidenceSummary']) ?? undefined,
+    collectiveIntelligence: Array.isArray(raw.collectiveIntelligence) ? (raw.collectiveIntelligence as RoutingDecisionView[]) : [],
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,
   };

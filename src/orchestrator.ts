@@ -21,6 +21,7 @@ import { createDynamicPermissions } from './permissions/dynamic-permissions.js';
 import { SessionState } from './session/session-state.js';
 import { eventTimestamp } from './events/event-bus.js';
 import { streamMessages } from './utils/stream-messages.js';
+import { planEngagementRouting, recordEngagementOutcome } from './orchestration/record-engagement-routing.js';
 import { handleSessionError } from './utils/error-recovery.js';
 import { config } from './config.js';
 import type { DocumentContext } from './types/index.js';
@@ -130,6 +131,19 @@ IMPORTANT:
 
 Produce the complete dual-artifact output with full audit trail.
   `.trim();
+
+  // Collective Intelligence: shadow-record per-agent model routing for the
+  // legal-design pipeline (delivery "Collective" tab + ledger). The live
+  // override is intentionally limited to the generic-workflow executor — this
+  // legacy pipeline dispatches the full agent set unchanged, so liveRouting is
+  // false to keep ledger attribution on the model that actually runs.
+  try {
+    if (session.selectedTeam.length) {
+      planEngagementRouting(session, 'legal-design', session.selectedTeam, options.provider ?? config.provider, false);
+    }
+  } catch (err) {
+    logger.warn('CI routing (legal-design) skipped', { error: (err as Error).message });
+  }
 
   let result;
   try {
@@ -246,6 +260,9 @@ Produce the complete dual-artifact output with full audit trail.
     logger.error('Session error', { step: sessionError.step, error: sessionError.cause });
     throw error;
   }
+
+  // Collective Intelligence: fold the legal-design outcome into the ledger.
+  try { recordEngagementOutcome(session, 'legal-design'); } catch { /* non-fatal */ }
 
   return session;
 }

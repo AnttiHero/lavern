@@ -314,6 +314,8 @@ export class SessionState {
   public precedentsApplied: string[] = [];
   public precedentsSaved: string[] = [];
   public reportCard: SessionReportCard | null = null;
+  /** Collective Intelligence: per-agent model-routing decisions for this engagement. */
+  public collectiveIntelligence: import('../orchestration/model-selection.js').RoutingDecision[] = [];
   public reportsDir = config.reportsDir;
   public baselinesDir = config.baselinesDir;
 
