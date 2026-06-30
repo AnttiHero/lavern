@@ -27,7 +27,8 @@ export type ClawNotificationType =
   | 'document_confidential'
   | 'daemon_error'
   | 'heartbeat'
-  | 'precedent_match';
+  | 'precedent_match'
+  | 'renewal_deadline';
 
 export interface ClawNotification {
   type: ClawNotificationType;

@@ -17,7 +17,7 @@ import * as crypto from 'node:crypto';
 import { readJsonFile, writeJsonFileAtomic, ensureDir } from '../utils/fs-helpers.js';
 import { SUPPORTED_EXTENSIONS } from '../documents/parser.js';
 import { config } from '../config.js';
-import type { ClawState, DocumentEntry, DocumentStatus } from './types.js';
+import type { ClawState, DocumentEntry, DocumentStatus, RenewalTerms } from './types.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('CLAW-REGISTRY');
@@ -206,6 +206,15 @@ export class DocumentRegistry {
       doc.status = status;
       this.save();
     }
+  }
+
+  /** Renewal Watcher: store (or clear) extracted renewal terms for a document. */
+  setRenewalTerms(hash: string, terms: RenewalTerms | null): void {
+    const doc = this.state.documents[hash];
+    if (!doc) return;
+    if (terms) doc.renewalTerms = terms;
+    else delete doc.renewalTerms;
+    this.save();
   }
 
   markReviewed(

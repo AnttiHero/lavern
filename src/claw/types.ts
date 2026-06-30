@@ -143,6 +143,23 @@ export interface CuratorDecision {
   requestFrontierEscalation: string[];
 }
 
+/** Renewal Watcher: deadlines extracted from a contract. Dates are ISO yyyy-mm-dd. */
+export interface RenewalTerms {
+  /** Contract auto-renews / is evergreen unless cancelled. */
+  autoRenew: boolean;
+  /** Notice required to cancel, in days, if stated. */
+  noticePeriodDays?: number;
+  /** Concrete date we anchor the deadline to (explicit renewal or expiration date). */
+  anchorDate?: string;
+  anchorKind?: 'expiration' | 'renewal';
+  /** Cancel-by date = anchorDate − noticePeriodDays, when both are known. */
+  cancelByDate?: string;
+  /** high = explicit date + notice; medium = explicit date only; low = relative terms only. */
+  confidence: 'high' | 'medium' | 'low';
+  /** Source clause snippet (provenance). */
+  clause?: string;
+}
+
 export interface DocumentEntry {
   path: string;
   name: string;
@@ -162,6 +179,8 @@ export interface DocumentEntry {
   costUsd?: number;            // Cost of last review
   error?: string;              // Error message if status === 'error'
   confidential?: boolean;      // Processed via local model (privilege preservation)
+  /** Renewal Watcher: extracted renewal/termination deadlines, if any. */
+  renewalTerms?: RenewalTerms;
 }
 
 /** Persistent state tracked across Claw Mode sessions. */
@@ -326,6 +345,10 @@ export interface ClawConfig {
   ethicalMode: boolean;
   /** LLM model for document processing (default: Sonnet for batch efficiency). */
   model?: string;
+  /** Renewal Watcher: extract renewal/termination deadlines and alert on upcoming ones. */
+  renewalWatch: boolean;
+  /** Days of lead time before a renewal/cancellation deadline to start alerting. */
+  renewalLeadDays: number;
 }
 
 // ── Shared Helpers ─────────────────────────────────────────────────────

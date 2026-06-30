@@ -21,6 +21,7 @@ import { writeJsonFileAtomic } from '../utils/fs-helpers.js';
 import { dispatch } from '../dispatch.js';
 import type { DispatchOptions } from '../dispatch.js';
 import { parseDocument } from '../documents/parser.js';
+import { extractRenewalTerms } from './renewal.js';
 import { AutoApproveGateResolver } from '../gates/gate-resolver.js';
 import { inferTask } from './inference.js';
 import { watchmanTriage } from './watchman.js';
@@ -98,6 +99,19 @@ export async function processDocument(
     const ext = path.extname(documentPath).toLowerCase();
     const mime = mimeFromExt(ext);
     const parsed = await parseDocument(buffer, path.basename(documentPath), mime);
+
+    // ── Renewal Watcher ───────────────────────────────────────────────
+    // Cheap, deterministic extraction of renewal/termination deadlines from
+    // the parsed text, stored on the registry entry for the heartbeat deadline
+    // check. Runs for EVERY parsed document (even ones the Watchman later
+    // skips) so a contract's auto-renewal can still be flagged.
+    if (clawConfig.renewalWatch) {
+      try {
+        registry.setRenewalTerms(documentHash, extractRenewalTerms(parsed.fullText));
+      } catch (err) {
+        log(`Renewal extraction skipped: ${(err as Error).message}`);
+      }
+    }
 
     // ── 1a. WATCHMAN TRIAGE (lighthouse persona 1) ────────────────────
     // Runs first on every document. One LLM call (local-first, cloud

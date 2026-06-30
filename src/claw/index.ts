@@ -22,6 +22,7 @@ import { DocumentRegistry } from './registry.js';
 import { ClawWatcher } from './watcher.js';
 import { planWork, planSingleJob } from './planner.js';
 import { processDocument } from './processor.js';
+import { checkRenewalDeadlines } from './renewal.js';
 import { runDaemon } from './daemon-factory.js';
 import { notify } from './notify.js';
 import { getPrecedentBoard } from './precedent-board.js';
@@ -175,6 +176,8 @@ function buildClawConfig(args: ClawCliArgs): ClawConfig {
     debug: args.debug ?? false,
     ethicalMode: args.ethical ?? profile?.ethicalMode ?? false,
     model: config.claw.model,
+    renewalWatch: config.claw.renewalWatch,
+    renewalLeadDays: config.claw.renewalLeadDays,
   };
 }
 
@@ -512,6 +515,40 @@ async function runStart(args: ClawCliArgs): Promise<void> {
 
     watcher.start(watchPaths);
 
+    // Renewal Watcher — alert on contracts whose renewal/cancellation deadline
+    // falls within the lead window. Runs once now and again on every heartbeat.
+    // De-duped per (document hash + deadline) on a 24h cadence: two contracts
+    // with the same filename can't suppress each other, and the same deadline
+    // doesn't re-fire on every heartbeat.
+    const renewalAlerted = new Map<string, number>();
+    const RENEWAL_REALERT_MS = 24 * 60 * 60 * 1000;
+    const runRenewalCheck = (): number => {
+      if (!config.claw.renewalWatch) return 0;
+      let count = 0;
+      try {
+        const now = Date.now();
+        for (const r of checkRenewalDeadlines(registry, config.claw.renewalLeadDays)) {
+          const key = `${r.hash}:${r.deadlineDate}`;
+          const last = renewalAlerted.get(key);
+          if (last && now - last < RENEWAL_REALERT_MS) continue; // already alerted in the last day
+          renewalAlerted.set(key, now);
+          const verb = r.kind === 'cancel-by' ? 'Cancel by' : r.kind === 'renewal' ? 'Renews' : 'Expires';
+          const message = r.needsReview
+            ? `Auto-renewing contract — last known ${r.kind === 'cancel-by' ? 'cancel-by' : 'renewal'} date ${r.deadlineDate} has passed. Verify the next window manually.`
+            : `${verb} ${r.deadlineDate} (${r.daysLeft} day${r.daysLeft === 1 ? '' : 's'} left)${r.autoRenew ? ' — auto-renews' : ''}${r.noticePeriodDays ? ` · ${r.noticePeriodDays}-day notice` : ''}.`;
+          notify({
+            type: 'renewal_deadline',
+            title: `Renewal ${r.needsReview ? 'review' : 'deadline'}: ${r.name} — ${r.deadlineDate}`,
+            message,
+            details: { hash: r.hash, kind: r.kind, deadlineDate: r.deadlineDate, daysLeft: r.daysLeft, autoRenew: r.autoRenew, noticePeriodDays: r.noticePeriodDays, needsReview: r.needsReview },
+          });
+          count++;
+        }
+      } catch { /* renewal check non-fatal */ }
+      return count;
+    };
+    runRenewalCheck();
+
     // Telegram bot — two-way chat control
     startTelegramBot();
 
@@ -550,6 +587,10 @@ async function runStart(args: ClawCliArgs): Promise<void> {
         if (stale > 0) alerts.push(`${stale} doc(s) changed since review`);
         if (errors > 0) alerts.push(`${errors} doc(s) failed processing`);
         if (flagged > 0) alerts.push(`${flagged} doc(s) need human review`);
+
+        // Renewal Watcher: fire per-doc deadline notifications + summarize in the heartbeat
+        const renewalDue = runRenewalCheck();
+        if (renewalDue > 0) alerts.push(`${renewalDue} renewal deadline(s) within ${config.claw.renewalLeadDays}d`);
 
         // Precedent board: check deprecated count + decay on compaction cycle
         let precBoard: ReturnType<typeof getPrecedentBoard> | null = null;
