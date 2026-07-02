@@ -38,7 +38,7 @@ export interface ModelOption {
  */
 export const DEFAULT_MODEL_POOL: ModelOption[] = [
   { id: 'claude-opus-4-8',     label: 'Opus 4.8',     provider: 'anthropic', tier: 'opus',      residency: 'us',        qualityPrior: 0.95, costWeight: 25 },
-  { id: 'claude-sonnet-4-5',   label: 'Sonnet 4.5',   provider: 'anthropic', tier: 'sonnet',    residency: 'us',        qualityPrior: 0.82, costWeight: 5  },
+  { id: 'claude-sonnet-5',     label: 'Sonnet 5',     provider: 'anthropic', tier: 'sonnet',    residency: 'us',        qualityPrior: 0.90, costWeight: 5  },
   { id: 'claude-haiku-4-5',    label: 'Haiku 4.5',    provider: 'anthropic', tier: 'haiku',     residency: 'us',        qualityPrior: 0.66, costWeight: 1  },
   { id: 'mistral-large-latest',label: 'Mistral Large',provider: 'mistral',   tier: 'large',     residency: 'eu',        qualityPrior: 0.79, costWeight: 4  },
   { id: 'mistral-medium-latest',label: 'Mistral Medium',provider: 'mistral', tier: 'medium',    residency: 'eu',        qualityPrior: 0.66, costWeight: 2  },

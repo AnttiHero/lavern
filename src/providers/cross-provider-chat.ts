@@ -54,11 +54,11 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
     case 'managed':
     case 'anthropic':
     default:
-      // Anthropic-tier mapping. Sonnet 4.5 covers sonnet+haiku in this build.
+      // Anthropic-tier mapping. Sonnet 5 covers sonnet+haiku in this build.
       switch (tier) {
         case 'opus':   return 'claude-opus-4-8';
-        case 'sonnet': return 'claude-sonnet-4-5';
-        case 'haiku':  return 'claude-sonnet-4-5'; // upgraded in v0.14.3
+        case 'sonnet': return 'claude-sonnet-5';
+        case 'haiku':  return 'claude-sonnet-5'; // sonnet + haiku tiers both on Sonnet 5
       }
   }
 }
@@ -69,7 +69,7 @@ function pricingFor(model: string): { input: number; output: number } {
   if (config.provider === 'local') return LOCAL_PRICING[model] ?? { input: 0, output: 0 };
   if (config.provider === 'mistral') return { input: 2, output: 6 }; // approximate, EU
   // Anthropic
-  return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-4-5'] ?? { input: 3, output: 15 };
+  return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-5'] ?? { input: 3, output: 15 };
 }
 
 // ── Public API ──────────────────────────────────────────────────────────
@@ -197,15 +197,15 @@ export async function crossProviderChat(
   }
 
   // ── ANTHROPIC / MANAGED ──
-  // NOTE: Anthropic deprecated `temperature` for Opus 4.7 (April 2026) and the
-  // deprecation carries forward to Opus 4.8 — the API returns
-  // `invalid_request_error: 'temperature' is deprecated for this model`.
-  // These models always run at the model's default sampling. Sonnet 4.5 still
-  // accepts temperature, so we conditionally include it. Verified live against
-  // the API on 2026-05-29 (opus-4-8 rejects temperature; sonnet-4-5 accepts).
+  // NOTE: Anthropic deprecated `temperature` starting with Opus 4.7, and it
+  // carries forward across the whole Claude 5 family (Sonnet 5, and future
+  // Opus/Haiku/Fable 5) — the API returns `invalid_request_error: 'temperature'
+  // is deprecated for this model`. These run at default sampling. Sonnet 4.5
+  // (the "-4-5" line) still ACCEPTS temperature, so the regex must not match it.
+  // Verified live: opus-4-8 ✗, claude-sonnet-5 ✗, sonnet-4-5 ✓.
   ensureApiKey();
   const client = new Anthropic();
-  const omitTemperature = /opus-4-[78]/.test(model);
+  const omitTemperature = /opus-4-[78]|(?:sonnet|opus|haiku|fable)-5/.test(model);
   const requestBody: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: opts.maxTokens,

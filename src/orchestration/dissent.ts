@@ -64,7 +64,7 @@ export function defaultPanel(): PanelMember[] {
   }
   return [
     { key: 'opus', label: 'Opus 4.8', provider: 'anthropic', model: 'claude-opus-4-8' },
-    { key: 'sonnet', label: 'Sonnet 4.5', provider: 'anthropic', model: 'claude-sonnet-4-5' },
+    { key: 'sonnet', label: 'Sonnet 5', provider: 'anthropic', model: 'claude-sonnet-5' },
   ];
 }
 

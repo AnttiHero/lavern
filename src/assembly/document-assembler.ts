@@ -56,9 +56,10 @@ const PRICING: Record<string, { input: number; output: number }> = {
   // Rates mirror the 4.7 generation ($15/$75 per M) — confirm against
   // Anthropic's published 4.8 pricing if it differs.
   'claude-opus-4-8': { input: 15.0, output: 75.0 },
-  'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
+  'claude-sonnet-5': { input: 3.0, output: 15.0 }, // Sonnet 5 — standard rates
   'claude-haiku-4-5': { input: 1.0, output: 5.0 },
   // Legacy keys (kept for in-flight sessions + archived cost records)
+  'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
   'claude-opus-4-7': { input: 15.0, output: 75.0 },
   'claude-opus-4-6': { input: 15.0, output: 75.0 },
   'claude-sonnet-4-5-20250929': { input: 3.0, output: 15.0 },

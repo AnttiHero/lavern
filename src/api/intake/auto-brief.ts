@@ -28,7 +28,7 @@ import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('AUTO-BRIEF');
 
-const ENRICH_MODEL = 'claude-sonnet-4-5';
+const ENRICH_MODEL = 'claude-sonnet-5';
 const AUTO_BRIEF_THRESHOLD_CHARS = 400;
 const PER_DOC_EXCERPT_CHARS = 8_000;
 const MAX_DOCS_FOR_BRIEF = 3;

@@ -49,7 +49,7 @@ const CANONICAL_WORKFLOWS = new Set([
 export interface RouterOptions {
   /** Use LLM-based routing (default: true). Set to false for deterministic-only. */
   useLlm?: boolean;
-  /** Model to use for LLM routing (default: claude-sonnet-4-5) */
+  /** Model to use for LLM routing (default: claude-sonnet-5) */
   model?: string;
   /** v18: Per-session provider override. */
   provider?: 'anthropic' | 'mistral' | 'managed';
@@ -137,7 +137,7 @@ async function llmClassify(
     prompt: userPrompt,
     options: {
       systemPrompt: systemPromptText,
-      model: model ?? 'claude-sonnet-4-5',
+      model: model ?? 'claude-sonnet-5',
       maxTurns: 1,
       outputFormat: zodToOutputFormat(RouterClassificationSchema),
     },

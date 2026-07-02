@@ -92,7 +92,7 @@ export class ClawDelivery {
         startedAt,
         completedAt,
         durationSeconds,
-        model: config.ethicalMode ? 'mistral-large-latest' : (config.model ?? 'claude-sonnet-4-5'),
+        model: config.ethicalMode ? 'mistral-large-latest' : (config.model ?? 'claude-sonnet-5'),
         totalCostUsd: session.accumulatedCost,
         budgetUsd: config.perDocBudget,
         agentsUsed,
