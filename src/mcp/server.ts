@@ -54,6 +54,8 @@ import { createPreEngagementTools } from './tools/pre-engagement.js';
 import { createKnowledgeBaseTools } from './tools/knowledge-base.js';
 // Connectors: live external legal-data sources (CourtListener case law)
 import { createCaseLawTools } from './tools/case-law.js';
+// Dissent Mode: independent multi-model panel on a hard clause
+import { createDissentTools } from './tools/dissent.js';
 import type { SessionState } from '../session/session-state.js';
 import type { WorkflowTemplate } from '../types/workflow.js';
 import { config } from '../config.js';
@@ -102,6 +104,8 @@ export function buildShemTools(session: SessionState, template?: WorkflowTemplat
     ...createKnowledgeBaseTools(session),
     // Connectors: live U.S. case law via CourtListener (search + citation verify)
     ...createCaseLawTools(session),
+    // Dissent Mode: independent multi-model panel that surfaces disagreement
+    ...createDissentTools(session),
     // Handoff Templates — structured phase-transition summaries
     ...createHandoffTools(session),
     // v16: Document Structure & Formatting Checks

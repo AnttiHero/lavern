@@ -316,6 +316,8 @@ export class SessionState {
   public reportCard: SessionReportCard | null = null;
   /** Collective Intelligence: per-agent model-routing decisions for this engagement. */
   public collectiveIntelligence: import('../orchestration/model-selection.js').RoutingDecision[] = [];
+  /** Dissent Mode: independent-panel splits surfaced during this engagement. */
+  public dissents: import('../orchestration/dissent.js').DissentResult[] = [];
   public reportsDir = config.reportsDir;
   public baselinesDir = config.baselinesDir;
 
