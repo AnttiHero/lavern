@@ -73,6 +73,14 @@ evaluator gate) to check:
 Use \`run_evaluator_gate\` and \`record_evaluation_result\` if available.
 Otherwise, self-evaluate against these 8 dimensions.
 
+For any clause whose correct reading is genuinely contestable AND materially
+matters (liability caps, indemnity scope, termination triggers, governing law,
+auto-renewal), call \`run_dissent_panel\` with the clause and a multiple-choice
+framing of the question. If an independent panel of models SPLITS on the
+interpretation, treat that as a CRITICAL accuracy finding — the document is
+ambiguous on a material term. Record the split (which models, which readings)
+as the evidence; do not resolve it silently.
+
 ### Pass 6: COMPLETENESS
 Call \`run_cross_verification\` to check:
 - Have all identified findings been addressed? (in post-production mode)

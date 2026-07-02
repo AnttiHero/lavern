@@ -102,6 +102,25 @@ export interface RoutingDecisionView {
   decidedAt: string;
 }
 
+export interface DissentVerdictView {
+  member: string;
+  provider: string;
+  label: string;
+  quote: string;
+  rationale: string;
+  confidence: string;
+  error?: string;
+}
+
+export interface DissentView {
+  question: string;
+  options: string[];
+  verdicts: DissentVerdictView[];
+  dissent: boolean;
+  positions: Record<string, string[]>;
+  summary: string;
+}
+
 export interface DeliveryData {
   sessionId: string;
   status: string;
@@ -157,6 +176,8 @@ export interface DeliveryData {
 
   // Collective Intelligence: per-agent model routing for this engagement.
   collectiveIntelligence?: RoutingDecisionView[];
+  // Dissent Mode: independent-panel splits surfaced this engagement.
+  dissents?: DissentView[];
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -570,6 +591,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     eventCount: (raw.eventCount as number | undefined) ?? 0,
     confidenceSummary: (raw.confidenceSummary as DeliveryData['confidenceSummary']) ?? undefined,
     collectiveIntelligence: Array.isArray(raw.collectiveIntelligence) ? (raw.collectiveIntelligence as RoutingDecisionView[]) : [],
+    dissents: Array.isArray(raw.dissents) ? (raw.dissents as DissentView[]) : [],
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,
   };

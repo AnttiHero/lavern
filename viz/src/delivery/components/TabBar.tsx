@@ -10,7 +10,7 @@ import { useRef, useLayoutEffect, useState, useCallback } from 'react';
 import { useResponsive } from '../../hooks/useMediaQuery.js';
 import { colors, fonts, spacing } from '../../staffing/styles/tokens.js';
 
-export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'collective' | 'next-steps' | 'conversation';
+export type DeliveryTab = 'work' | 'review' | 'story' | 'scorecard' | 'collective' | 'dissent' | 'next-steps' | 'conversation';
 
 const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'work', label: 'The Work' },
@@ -18,6 +18,7 @@ const TABS: { id: DeliveryTab; label: string }[] = [
   { id: 'story', label: 'The Story' },
   { id: 'scorecard', label: 'The Scorecard' },
   { id: 'collective', label: 'The Collective' },
+  { id: 'dissent', label: 'The Dissent' },
   { id: 'next-steps', label: 'Next Steps' },
   { id: 'conversation', label: 'Ask the Team' },
 ];

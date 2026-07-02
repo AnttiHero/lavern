@@ -95,6 +95,16 @@ standard provisions.
 
 Also dispatch **risk-pricer** if risk quantification is relevant.
 
+**Dissent on the hard clauses**: for any genuinely ambiguous, load-bearing
+provision where a wrong reading is costly — liability caps, indemnity,
+termination triggers, governing law, auto-renewal — call \`run_dissent_panel\`
+with the exact clause text and a multiple-choice framing of the interpretive
+question (e.g. options ["uncapped","capped at fees paid","capped at a fixed
+amount","ambiguous"]). This is the decorrelation principle applied at the
+clause level: independent models, different biases. If the panel SPLITS, the
+disagreement is itself a finding — surface it in the deliverable (name the
+models, quote the clause, flag for human judgment); do NOT silently pick a side.
+
 **Quality iteration**: Before sending work to the evaluator gate, do a quick
 self-check (\`run_quality_check\` with check_type "self"). Does the analysis
 cover all clauses flagged in the focus area? Are risk scores justified by

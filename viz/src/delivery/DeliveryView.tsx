@@ -25,6 +25,7 @@ import { ReviewTab } from './components/ReviewTab.js';
 import { TheStoryTab } from './components/TheStoryTab.js';
 import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { CollectiveIntelligenceTab } from './components/CollectiveIntelligenceTab.js';
+import { DissentTab } from './components/DissentTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
 import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
 import { ConfettiBurst } from './components/ConfettiBurst.js';
@@ -104,6 +105,7 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             {activeTab === 'story' && <TheStoryTab data={data} />}
             {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
             {activeTab === 'collective' && <CollectiveIntelligenceTab data={data} />}
+            {activeTab === 'dissent' && <DissentTab data={data} />}
             {activeTab === 'next-steps' && <NextStepsTab data={data} />}
             {activeTab === 'conversation' && (
               isDemo ? (

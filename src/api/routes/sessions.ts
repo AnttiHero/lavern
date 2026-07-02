@@ -667,6 +667,8 @@ export function registerSessionRoutes(
       eventCount: session.events.getEventCount(),
       // Collective Intelligence: per-agent model-routing decisions for this engagement.
       collectiveIntelligence: session.collectiveIntelligence,
+      // Dissent Mode: independent-panel splits surfaced this engagement.
+      dissents: session.dissents,
       pendingGate: pendingGate ? {
         gateType: pendingGate.gateType,
         summary: pendingGate.summary,
