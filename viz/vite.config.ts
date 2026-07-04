@@ -11,7 +11,8 @@ export default defineConfig({
     outDir: 'dist',
   },
   server: {
-    port: 5173,
+    // Default 5173; PORT env lets a second instance (e.g. preview tooling) coexist.
+    port: Number(process.env.PORT) || 5173,
     proxy: {
       // Proxy API + WebSocket calls to the Shem backend
       '/api': {

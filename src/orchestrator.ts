@@ -132,8 +132,8 @@ IMPORTANT:
 Produce the complete dual-artifact output with full audit trail.
   `.trim();
 
-  // Collective Intelligence: shadow-record per-agent model routing for the
-  // legal-design pipeline (delivery "Collective" tab + ledger). The live
+  // Hivemind: shadow-record per-agent model routing for the
+  // legal-design pipeline (delivery "Hivemind" tab + ledger). The live
   // override is intentionally limited to the generic-workflow executor — this
   // legacy pipeline dispatches the full agent set unchanged, so liveRouting is
   // false to keep ledger attribution on the model that actually runs.
@@ -142,7 +142,7 @@ Produce the complete dual-artifact output with full audit trail.
       planEngagementRouting(session, 'legal-design', session.selectedTeam, options.provider ?? config.provider, false);
     }
   } catch (err) {
-    logger.warn('CI routing (legal-design) skipped', { error: (err as Error).message });
+    logger.warn('Hivemind routing (legal-design) skipped', { error: (err as Error).message });
   }
 
   let result;
@@ -261,7 +261,7 @@ Produce the complete dual-artifact output with full audit trail.
     throw error;
   }
 
-  // Collective Intelligence: fold the legal-design outcome into the ledger.
+  // Hivemind: fold the legal-design outcome into the ledger.
   try { recordEngagementOutcome(session, 'legal-design'); } catch { /* non-fatal */ }
 
   return session;

@@ -601,6 +601,12 @@ export function registerSessionRoutes(
           beforeScores: (summary as Record<string, unknown>).beforeScores ?? null,
           afterScores: (summary as Record<string, unknown>).afterScores ?? null,
           reportCard: (summary as Record<string, unknown>).reportCard ?? null,
+          // Hivemind + Dissent survive eviction via summary_json. Archives
+          // written before the rename used `collectiveIntelligence`.
+          hivemind: (summary as Record<string, unknown>).hivemind
+            ?? (summary as Record<string, unknown>).collectiveIntelligence ?? [],
+          dissents: (summary as Record<string, unknown>).dissents ?? [],
+          quorumChecks: (summary as Record<string, unknown>).quorumChecks ?? [],
           matterTitle: archived.title,
           workflowTemplateId: archived.workflow_id,
           provider: 'anthropic',
@@ -663,12 +669,16 @@ export function registerSessionRoutes(
         accumulated: session.accumulatedCost,
         budget: session.budgetUsd,
         remaining: session.budgetUsd - session.accumulatedCost,
+        // Hivemind panel calls run outside the SDK cost pipeline — estimated.
+        hivemindEstimated: session.hivemindCostUsd,
       },
       eventCount: session.events.getEventCount(),
-      // Collective Intelligence: per-agent model-routing decisions for this engagement.
-      collectiveIntelligence: session.collectiveIntelligence,
+      // Hivemind: per-agent model-routing decisions for this engagement.
+      hivemind: session.hivemind,
       // Dissent Mode: independent-panel splits surfaced this engagement.
       dissents: session.dissents,
+      // Hivemind quorum: panel checks run on CRITICAL verification findings.
+      quorumChecks: session.quorumChecks,
       pendingGate: pendingGate ? {
         gateType: pendingGate.gateType,
         summary: pendingGate.summary,

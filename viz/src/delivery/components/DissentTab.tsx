@@ -8,7 +8,7 @@
  * reaching opposite conclusions. No single-model tool can produce this.
  */
 
-import type { DeliveryData, DissentView, DissentVerdictView } from '../hooks/useDeliveryData.js';
+import type { DeliveryData, DissentView, DissentVerdictView, DissentResolutionView } from '../hooks/useDeliveryData.js';
 
 interface Props {
   data: DeliveryData;
@@ -42,6 +42,39 @@ function Verdict({ v }: { v: DissentVerdictView }) {
   );
 }
 
+function Resolution({ r }: { r: DissentResolutionView }) {
+  const revote = r.revote.filter(v => !v.error);
+  return (
+    <div style={styles.resolution}>
+      <div style={{
+        ...styles.resolutionBanner,
+        background: r.resolved ? '#EEF4EE' : '#FBE9E0',
+        color: r.resolved ? '#3C6B47' : '#8A3A17',
+      }}>
+        {r.resolved ? '✓ Resolved with evidence' : '⚠️ Escalated to human review'} — {r.note}
+      </div>
+      {r.evidence.length > 0 && (
+        <div style={styles.evidence}>
+          <div style={styles.evidenceTitle}>Retrieved authority</div>
+          {r.evidence.map((e, i) => (
+            <div key={i} style={styles.evidenceItem}>
+              <span style={styles.evidenceSource}>{e.source}</span> — {e.snippet}
+            </div>
+          ))}
+        </div>
+      )}
+      {revote.length > 0 && (
+        <div style={styles.revote}>
+          <span style={styles.revoteTitle}>Re-vote with evidence:</span>
+          {revote.map((v, i) => (
+            <span key={i} style={styles.revoteChip}>{v.member} → {v.label}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DissentCard({ d }: { d: DissentView }) {
   const labels = Object.keys(d.positions);
   return (
@@ -65,6 +98,8 @@ function DissentCard({ d }: { d: DissentView }) {
       <div style={styles.verdicts}>
         {d.verdicts.map((v, i) => <Verdict key={`${v.member}-${i}`} v={v} />)}
       </div>
+
+      {d.resolution && <Resolution r={d.resolution} />}
     </div>
   );
 }
@@ -79,9 +114,9 @@ export function DissentTab({ data }: Props) {
         <h2 style={styles.title}>The Dissent</h2>
         <p style={styles.subtitle}>
           On the hardest, load-bearing clauses, an independent panel of different models answered the same
-          question. Where they <strong>disagree</strong>, that split is surfaced here — not hidden behind a
-          single answer. Two models reading the same words to opposite conclusions is a signal to escalate
-          to human judgment.
+          question. Where they <strong>disagree</strong>, the hivemind retrieves authority and puts the
+          question again with the evidence attached. A split that resolves is recorded with its evidence;
+          a split that survives is escalated to human judgment — never hidden behind a single answer.
         </p>
         {dissents.length > 0 && (
           <div style={styles.summary}>
@@ -129,4 +164,13 @@ const styles: Record<string, React.CSSProperties> = {
   vUnavailable: { fontSize: 11.5, color: '#A89F92' },
   vQuote: { margin: '7px 0 0', padding: '6px 12px', borderLeft: '3px solid #D9CBB2', background: '#F7F2E9', fontSize: 13, lineHeight: 1.5, color: '#463F35', fontStyle: 'italic' },
   vRationale: { fontSize: 13, lineHeight: 1.5, color: '#534C42', margin: '6px 0 0' },
+  resolution: { margin: '14px 16px 0', borderTop: '1px dashed #D9CBB2', paddingTop: 12 },
+  resolutionBanner: { fontSize: 13, fontWeight: 600, padding: '8px 12px', borderRadius: 8 },
+  evidence: { marginTop: 10 },
+  evidenceTitle: { fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' as const, color: '#8A8276', marginBottom: 6 },
+  evidenceItem: { fontSize: 12.5, lineHeight: 1.5, color: '#534C42', background: '#F7F2E9', borderRadius: 8, padding: '7px 10px', marginBottom: 6 },
+  evidenceSource: { fontWeight: 600, color: '#3D372F' },
+  revote: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, marginTop: 8 },
+  revoteTitle: { fontSize: 12, fontWeight: 600, color: '#6B6358' },
+  revoteChip: { fontSize: 12, color: '#3D372F', background: '#F0EBE1', borderRadius: 999, padding: '3px 10px' },
 };

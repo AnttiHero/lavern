@@ -1,5 +1,5 @@
 /**
- * Unit Tests — Collective Intelligence model selection (src/orchestration/).
+ * Unit Tests — Hivemind model selection (src/orchestration/).
  *
  * Covers: cold-start prior selection, measured-data override (with the
  * min-observations gate), the residency hard-filter for confidential matters,

@@ -110,18 +110,26 @@ export const config = {
     enabled: (process.env.LAVERN_COURTLISTENER_ENABLED ?? 'true') !== 'false',
   },
 
-  // ── Collective Intelligence (adaptive per-agent model routing) ───────
+  // ── Hivemind (adaptive per-agent model routing) ──────────────────────
   // When ENABLED, the engine overrides each agent's model per engagement with
   // the best-measured choice and occasionally explores alternatives to learn.
-  // OFF by default — shadow recording (the delivery "Collective" tab) still
+  // OFF by default — shadow recording (the delivery "Hivemind" tab) still
   // runs regardless, so the feature is observable before it changes behavior.
-  collectiveIntelligence: {
-    enabled: process.env.LAVERN_CI_ROUTING === 'true',
+  // LAVERN_CI_* names are the pre-rename aliases, kept as fallbacks.
+  hivemind: {
+    enabled: (process.env.LAVERN_HIVEMIND_ROUTING ?? process.env.LAVERN_CI_ROUTING) === 'true',
     // Default 0: pure qualitymax (always the best-known model). Exploration
     // deliberately tries weaker models to learn, so it's OPT-IN only — never the
     // default on a legal product where live matters are real client work.
-    explorationRate: safeFloat(process.env.LAVERN_CI_EXPLORATION, 0),
-    minObservations: safeInt(process.env.LAVERN_CI_MIN_OBS, 3),
+    explorationRate: safeFloat(process.env.LAVERN_HIVEMIND_EXPLORATION ?? process.env.LAVERN_CI_EXPLORATION, 0),
+    minObservations: safeInt(process.env.LAVERN_HIVEMIND_MIN_OBS ?? process.env.LAVERN_CI_MIN_OBS, 3),
+    // Quorum: every CRITICAL verification finding faces an independent panel.
+    // ON by default — the outcome only ANNOTATES (severity is never lowered),
+    // so it can't hide a true CRITICAL; it just marks unconfirmed ones.
+    quorum: (process.env.LAVERN_HIVEMIND_QUORUM ?? 'true') !== 'false',
+    // Cross-provider panelists on Anthropic engagements. Opt-in: clause text
+    // reaches an ADDITIONAL vendor. Never applies to local/EU engagements.
+    crossPanel: process.env.LAVERN_HIVEMIND_CROSS_PANEL === 'true',
   },
 
   // ── API ────────────────────────────────────────────────────────────────

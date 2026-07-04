@@ -76,10 +76,20 @@ Otherwise, self-evaluate against these 8 dimensions.
 For any clause whose correct reading is genuinely contestable AND materially
 matters (liability caps, indemnity scope, termination triggers, governing law,
 auto-renewal), call \`run_dissent_panel\` with the clause and a multiple-choice
-framing of the question. If an independent panel of models SPLITS on the
-interpretation, treat that as a CRITICAL accuracy finding — the document is
-ambiguous on a material term. Record the split (which models, which readings)
-as the evidence; do not resolve it silently.
+framing of the question. If the panel SPLITS, the hivemind automatically
+retrieves authority and re-votes with the evidence attached:
+- Split RESOLVES → use the converged reading and cite the retrieved authority,
+  but still note the initial split in the report (which models disagreed and
+  why) so the reader sees the clause was contested before it was resolved.
+- Split PERSISTS → treat it as a CRITICAL accuracy finding — the document is
+  ambiguous on a material term, and it is escalated to human review. Record
+  the split (which models, which readings, what evidence both sides saw) as
+  the evidence; do not resolve it silently.
+
+Note: every CRITICAL finding you record via \`record_pass_result\` is
+automatically put to an independent hivemind quorum. If the quorum comes back
+"unconfirmed", the finding stays CRITICAL but you MUST cite the quorum split
+in the report so the reader knows independent models did not corroborate it.
 
 ### Pass 6: COMPLETENESS
 Call \`run_cross_verification\` to check:

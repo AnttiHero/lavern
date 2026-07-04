@@ -1,5 +1,5 @@
 /**
- * CollectiveIntelligenceTab — "The Collective".
+ * HivemindTab — "The Hivemind".
  *
  * Shows, per engagement, which model each agent was routed to and WHY: the
  * rationale, every candidate model it was weighed against (with scores), and
@@ -7,7 +7,7 @@
  * This is the auditable, glass-box face of Lavern's adaptive orchestration.
  */
 
-import type { DeliveryData, RoutingDecisionView, CandidateView } from '../hooks/useDeliveryData.js';
+import type { DeliveryData, RoutingDecisionView, CandidateView, QuorumView } from '../hooks/useDeliveryData.js';
 
 interface Props {
   data: DeliveryData;
@@ -74,14 +74,44 @@ function DecisionCard({ d }: { d: RoutingDecisionView }) {
   );
 }
 
-export function CollectiveIntelligenceTab({ data }: Props) {
-  const decisions = data.collectiveIntelligence ?? [];
+const QUORUM_STYLE: Record<QuorumView['outcome'], { label: string; bg: string; fg: string }> = {
+  confirmed: { label: '✓ Confirmed', bg: '#EEF4EE', fg: '#3C6B47' },
+  unconfirmed: { label: '⚠️ Unconfirmed', bg: '#FBF0DC', fg: '#8A5A17' },
+  inconclusive: { label: 'Inconclusive', bg: '#F0EBE1', fg: '#8A8276' },
+};
+
+function QuorumCard({ q }: { q: QuorumView }) {
+  const s = QUORUM_STYLE[q.outcome] ?? QUORUM_STYLE.inconclusive;
+  const answered = q.verdicts.filter(v => !v.error);
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHead}>
+        <span style={{ ...styles.quorumChip, background: s.bg, color: s.fg }}>{s.label}</span>
+        <span style={styles.quorumVotes}>{q.votes}</span>
+        <span style={styles.quorumPass}>pass: {q.pass}</span>
+      </div>
+      <p style={styles.rationale}>{q.finding}</p>
+      {answered.length > 0 && (
+        <div style={styles.quorumPanelists}>
+          {answered.map((v, i) => (
+            <span key={i} style={styles.quorumPanelist}>{v.member} → {v.label}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HivemindTab({ data }: Props) {
+  const decisions = data.hivemind ?? [];
   const deviated = decisions.filter(d => d.overrodeBaseline).length;
+  const quorum = data.quorumChecks ?? [];
+  const confirmed = quorum.filter(q => q.outcome === 'confirmed').length;
 
   return (
     <div style={styles.wrap}>
       <header style={styles.header}>
-        <h2 style={styles.title}>Collective Intelligence</h2>
+        <h2 style={styles.title}>The Hivemind</h2>
         <p style={styles.subtitle}>
           Each agent is routed to the best model for its job — maximizing quality, and showing its work.
           The engine keeps each agent&rsquo;s hand-tuned default until measured performance on this kind of
@@ -98,12 +128,30 @@ export function CollectiveIntelligenceTab({ data }: Props) {
       {decisions.length === 0 ? (
         <div style={styles.empty}>
           Routing detail isn&rsquo;t available for this engagement yet. It appears for engagements run with
-          Collective Intelligence enabled.
+          the Hivemind enabled.
         </div>
       ) : (
         <div style={styles.list}>
           {decisions.map(d => <DecisionCard key={d.agentRole} d={d} />)}
         </div>
+      )}
+
+      {quorum.length > 0 && (
+        <section style={styles.quorumSection}>
+          <h3 style={styles.sectionTitle}>The Quorum</h3>
+          <p style={styles.subtitle}>
+            Every CRITICAL finding was put to an independent panel: does the cited evidence support it as
+            stated? Severity is never lowered by the panel — unconfirmed findings stay CRITICAL and are
+            flagged, so nothing ships on one model&rsquo;s say-so.
+          </p>
+          <div style={styles.summary}>
+            <strong>{quorum.length}</strong> CRITICAL finding{quorum.length === 1 ? '' : 's'} checked
+            {' '}· <strong>{confirmed}</strong> confirmed by the panel
+          </div>
+          <div style={{ ...styles.list, marginTop: 14 }}>
+            {quorum.map((q, i) => <QuorumCard key={i} q={q} />)}
+          </div>
+        </section>
       )}
     </div>
   );
@@ -133,4 +181,11 @@ const styles: Record<string, React.CSSProperties> = {
   barFill: { height: '100%', borderRadius: 999, transition: 'width .3s ease' },
   barScore: { fontSize: 12, color: '#6B6358', textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
   barSource: { display: 'block', fontSize: 10, color: '#A89F92' },
+  quorumSection: { marginTop: 36 },
+  sectionTitle: { fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 24, fontWeight: 600, margin: '0 0 6px', color: '#1A1714' },
+  quorumChip: { fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999 },
+  quorumVotes: { fontSize: 12, color: '#6B6358', fontVariantNumeric: 'tabular-nums' },
+  quorumPass: { fontSize: 11.5, color: '#A89F92' },
+  quorumPanelists: { display: 'flex', gap: 8, flexWrap: 'wrap' },
+  quorumPanelist: { fontSize: 12, color: '#3D372F', background: '#F0EBE1', borderRadius: 999, padding: '3px 10px' },
 };

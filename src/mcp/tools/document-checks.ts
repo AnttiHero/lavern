@@ -20,6 +20,19 @@ import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
 import { eventTimestamp } from '../../events/event-bus.js';
+import { config } from '../../config.js';
+import { runQuorumCheck } from '../../orchestration/quorum.js';
+import type { QuorumRecord } from '../../orchestration/quorum.js';
+import { composePanel, panelPool } from '../../orchestration/panels.js';
+import { getLedger } from '../../orchestration/record-engagement-routing.js';
+import { EST_PANELIST_CALL_USD } from '../../orchestration/dissent.js';
+
+/** Quorum fan-out limits: a pass with many CRITICALs must not stall the
+ *  verification tool call or storm the provider. Checks beyond the cap ship
+ *  unannotated (fail-safe: no annotation, never a false one). */
+const MAX_QUORUM_PER_PASS = 6;
+const QUORUM_CONCURRENCY = 2;
+const QUORUM_DEADLINE_MS = 120_000;
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -305,16 +318,56 @@ ${issues.length > 0 ? `### Issues\n${issues.map((issue, i) => `${i + 1}. ${issue
       };
       passes.push(result);
 
+      // Hivemind quorum: every CRITICAL faces an independent panel before it
+      // is recorded. The outcome ANNOTATES the finding — severity is never
+      // lowered here — and any panel failure degrades to no annotation.
+      // The panel follows the SESSION's provider (EU-sovereign/local sessions
+      // never egress finding text to another vendor), fan-out is capped, and
+      // the whole block has a deadline so the tool call can't stall.
+      const quorumByFinding = new Map<(typeof args.findings)[number], QuorumRecord>();
+      const budgetExhausted = session.budgetUsd > 0
+        && (session.accumulatedCost + session.hivemindCostUsd) >= session.budgetUsd;
+      if (config.hivemind.quorum && critical > 0 && !budgetExhausted) {
+        const sessionProvider = session.provider ?? config.provider;
+        const panel = composePanel(
+          session.workflowTemplateId ?? 'verification', getLedger(), 2, panelPool(sessionProvider),
+        );
+        if (panel.length >= 2) {
+          const toCheck = args.findings.filter(f => f.severity === 'CRITICAL').slice(0, MAX_QUORUM_PER_PASS);
+          session.hivemindCostUsd += toCheck.length * panel.length * EST_PANELIST_CALL_USD;
+          const runAll = (async () => {
+            for (let i = 0; i < toCheck.length; i += QUORUM_CONCURRENCY) {
+              await Promise.all(toCheck.slice(i, i + QUORUM_CONCURRENCY).map(async (f) => {
+                try {
+                  const q = await runQuorumCheck({ pass: args.pass, description: f.description, evidence: f.evidence, location: f.location, panel });
+                  quorumByFinding.set(f, q);
+                  session.quorumChecks.push(q);
+                } catch { /* non-fatal — finding ships unannotated */ }
+              }));
+            }
+          })();
+          let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+          const deadline = new Promise<void>(resolve => { deadlineTimer = setTimeout(resolve, QUORUM_DEADLINE_MS); });
+          await Promise.race([runAll, deadline]);
+          clearTimeout(deadlineTimer);
+        }
+      }
+
       // Also record findings on the debate board for downstream consumers
       const severityMap = { 'CRITICAL': 'RED', 'MAJOR': 'YELLOW', 'MINOR': 'GREEN' } as const;
       for (const finding of args.findings) {
+        const q = quorumByFinding.get(finding);
         session.debate.findings.push({
           id: `VP-${args.pass.toUpperCase()}-${session.debate.findings.length + 1}`,
           agentRole: 'orchestrator',
           findingType: 'score',
           content: `[${args.pass.toUpperCase()}] ${finding.description}`,
           severity: severityMap[finding.severity] ?? 'YELLOW',
-          evidence: [finding.evidence, `Location: ${finding.location}`],
+          evidence: [
+            finding.evidence,
+            `Location: ${finding.location}`,
+            ...(q ? [`Hivemind quorum: ${q.outcome} (${q.votes})`] : []),
+          ],
           confidence: finding.confidence,
           timestamp: new Date().toISOString(),
           resolved: false,
@@ -328,10 +381,19 @@ ${issues.length > 0 ? `### Issues\n${issues.map((issue, i) => `${i + 1}. ${issue
         timestamp: eventTimestamp(),
       });
 
+      const checks = [...quorumByFinding.values()];
+      const quorumNote = checks.length > 0
+        ? `\nHivemind quorum on ${checks.length} CRITICAL finding(s): `
+          + `${checks.filter(q => q.outcome === 'confirmed').length} confirmed, `
+          + `${checks.filter(q => q.outcome === 'unconfirmed').length} unconfirmed, `
+          + `${checks.filter(q => q.outcome === 'inconclusive').length} inconclusive. `
+          + 'Unconfirmed findings stay CRITICAL but are flagged — cite the quorum split in the report.'
+        : '';
+
       return {
         content: [{
           type: 'text' as const,
-          text: `✓ Pass "${args.pass}" recorded: ${args.score.toFixed(2)} / 1.00 (${args.findings.length} findings: ${critical} critical, ${major} major, ${minor} minor)`,
+          text: `✓ Pass "${args.pass}" recorded: ${args.score.toFixed(2)} / 1.00 (${args.findings.length} findings: ${critical} critical, ${major} major, ${minor} minor)${quorumNote}`,
         }],
       };
     }

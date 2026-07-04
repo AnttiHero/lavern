@@ -112,6 +112,15 @@ export interface DissentVerdictView {
   error?: string;
 }
 
+export interface DissentResolutionView {
+  evidence: { source: string; snippet: string }[];
+  revote: DissentVerdictView[];
+  resolved: boolean;
+  finalLabel?: string;
+  escalated: boolean;
+  note: string;
+}
+
 export interface DissentView {
   question: string;
   options: string[];
@@ -119,6 +128,18 @@ export interface DissentView {
   dissent: boolean;
   positions: Record<string, string[]>;
   summary: string;
+  /** Present when a split triggered the evidence + re-vote loop. */
+  resolution?: DissentResolutionView;
+}
+
+export interface QuorumView {
+  pass: string;
+  finding: string;
+  location: string;
+  verdicts: DissentVerdictView[];
+  outcome: 'confirmed' | 'unconfirmed' | 'inconclusive';
+  votes: string;
+  checkedAt: string;
 }
 
 export interface DeliveryData {
@@ -174,10 +195,12 @@ export interface DeliveryData {
   // Tab 5: Next Steps
   nextSteps: NextStepItem[];
 
-  // Collective Intelligence: per-agent model routing for this engagement.
-  collectiveIntelligence?: RoutingDecisionView[];
+  // Hivemind: per-agent model routing for this engagement.
+  hivemind?: RoutingDecisionView[];
   // Dissent Mode: independent-panel splits surfaced this engagement.
   dissents?: DissentView[];
+  // Hivemind quorum: panel checks on CRITICAL verification findings.
+  quorumChecks?: QuorumView[];
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -554,12 +577,25 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     });
   }
 
+  // Parsed early: escalated splits feed Next Steps below.
+  const dissents: DissentView[] = Array.isArray(raw.dissents) ? (raw.dissents as DissentView[]) : [];
+
   const nextSteps: NextStepItem[] = [];
   if (isComplete) {
     nextSteps.push({ label: 'Review the output', description: 'Read through the generated content carefully. Compare against your original brief to verify all requirements were addressed.', kind: 'action' });
     nextSteps.push({ label: 'Independent counsel review', description: 'For legally binding documents, have an independent attorney review the output before finalizing.', kind: 'watchout' });
   } else {
     nextSteps.push({ label: 'Session still in progress', description: `The session is at the "${stepLabel}" step. Return to the Working View to monitor progress.`, kind: 'action' });
+  }
+  // Escalated dissents: splits that survived the evidence loop need a human.
+  for (const d of dissents) {
+    if (d.resolution?.escalated) {
+      nextSteps.push({
+        label: 'Resolve a panel split',
+        description: `Independent models still disagree on: "${d.question}" — even after reviewing retrieved authority. See The Dissent tab for both readings and the evidence; this needs human judgment.`,
+        kind: 'watchout',
+      });
+    }
   }
 
   // Limitations — flag what might be missing
@@ -590,8 +626,11 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     agentPerformance: agentPerfList,
     eventCount: (raw.eventCount as number | undefined) ?? 0,
     confidenceSummary: (raw.confidenceSummary as DeliveryData['confidenceSummary']) ?? undefined,
-    collectiveIntelligence: Array.isArray(raw.collectiveIntelligence) ? (raw.collectiveIntelligence as RoutingDecisionView[]) : [],
-    dissents: Array.isArray(raw.dissents) ? (raw.dissents as DissentView[]) : [],
+    // Pre-rename servers/archives send `collectiveIntelligence` — read both.
+    hivemind: Array.isArray(raw.hivemind) ? (raw.hivemind as RoutingDecisionView[])
+      : Array.isArray(raw.collectiveIntelligence) ? (raw.collectiveIntelligence as RoutingDecisionView[]) : [],
+    dissents,
+    quorumChecks: Array.isArray(raw.quorumChecks) ? (raw.quorumChecks as QuorumView[]) : [],
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,
   };
@@ -696,6 +735,12 @@ function mapArchiveResponse(sessionId: string, raw: Record<string, unknown>): De
     cost: { accumulated: costUsd, budget: budgetUsd, remaining: budgetUsd - costUsd },
     agentPerformance,
     eventCount: 0,
+    // Hivemind + Dissent persist in summary_json; pre-rename archives used
+    // the `collectiveIntelligence` key.
+    hivemind: Array.isArray(summary.hivemind) ? (summary.hivemind as RoutingDecisionView[])
+      : Array.isArray(summary.collectiveIntelligence) ? (summary.collectiveIntelligence as RoutingDecisionView[]) : [],
+    dissents: Array.isArray(summary.dissents) ? (summary.dissents as DissentView[]) : [],
+    quorumChecks: Array.isArray(summary.quorumChecks) ? (summary.quorumChecks as QuorumView[]) : [],
     limitations: {
       flaggedForHumanReview: ['Verify legal accuracy with qualified counsel before relying on this output'],
       confidenceIntervals: '',

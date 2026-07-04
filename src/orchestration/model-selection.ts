@@ -1,5 +1,5 @@
 /**
- * Collective Intelligence — the glass-box model selector.
+ * Hivemind — the glass-box model selector.
  *
  * Given an agent and the matter context, pick the model to run it on. The
  * default objective is "quality" (qualitymax): route to the model with the
@@ -7,7 +7,7 @@
  * the cold-start prior until a cell has enough observations. Hard constraints
  * (data residency for confidential matters; optional budget ceiling) filter the
  * pool first. Every decision returns a human-readable rationale AND the full
- * scored candidate list, so the Collective Intelligence tab and the audit
+ * scored candidate list, so the Hivemind tab and the audit
  * bundle can always show *why* an agent got the model it got.
  */
 
@@ -65,7 +65,7 @@ export interface ModelChoice {
   source: 'measured' | 'prior';
   /** Plain-language explanation, logged to the audit bundle. */
   rationale: string;
-  /** Every model considered, scored — powers the Collective Intelligence tab. */
+  /** Every model considered, scored — powers the Hivemind tab. */
   candidates: CandidateScore[];
 }
 
@@ -101,7 +101,7 @@ export function selectModel(ctx: SelectionContext, ledger: LedgerView): ModelCho
   const scored = pool.map(model => ({ model, c: scoreCandidate(model, ctx, ledger) }));
   const eligible = scored.filter(s => s.c.eligible);
   if (eligible.length === 0) {
-    throw new Error(`Collective Intelligence: no eligible model for ${ctx.agentRole} under residency=${ctx.residency ?? 'us'}`);
+    throw new Error(`Hivemind: no eligible model for ${ctx.agentRole} under residency=${ctx.residency ?? 'us'}`);
   }
 
   // Rank by objective: qualitymax = highest score; cost = cheapest.
@@ -151,7 +151,7 @@ export function selectModel(ctx: SelectionContext, ledger: LedgerView): ModelCho
 /**
  * A model-routing decision recorded for one agent in one engagement. Stored on
  * the session, persisted to the audit bundle, and rendered in the
- * Collective Intelligence delivery sub-tab.
+ * Hivemind delivery sub-tab.
  */
 export interface RoutingDecision {
   agentRole: string;

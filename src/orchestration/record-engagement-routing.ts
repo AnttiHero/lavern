@@ -1,18 +1,18 @@
 /**
- * Collective Intelligence — per-engagement glue.
+ * Hivemind — per-engagement glue.
  *
  * planEngagementRouting(): at engagement start, decide each team agent's model.
  *   It computes the qualitymax choice (respecting each agent's hand-tuned
  *   default unless measured data justifies a change) and, when live routing is
  *   enabled, occasionally EXPLORES an alternative to gather measured data. The
  *   decision (with rationale + the model the agent will actually run on) is
- *   recorded on the session for the "Collective" delivery tab + audit bundle.
+ *   recorded on the session for the "Hivemind" delivery tab + audit bundle.
  *
  * recordEngagementOutcome(): after the engagement, fold its measured quality
  *   back into the Performance Ledger against the model each agent ACTUALLY ran
  *   on — so the selector can deviate from defaults where the data earns it.
  *
- * Live model OVERRIDE (config.collectiveIntelligence.enabled) is applied by the
+ * Live model OVERRIDE (config.hivemind.enabled) is applied by the
  * executor using each decision's `effectiveTier`. With the flag OFF, agents run
  * their static models and this layer is pure shadow recording — zero behavior
  * change.
@@ -27,12 +27,12 @@ import { DEFAULT_MODEL_POOL, residencySatisfies, type ModelOption, type ModelRes
 import { PerformanceLedger } from './performance-ledger.js';
 import type { SessionState } from '../session/session-state.js';
 
-const logger = createLogger('CI-ROUTING');
+const logger = createLogger('HIVEMIND');
 
 /**
  * Roles whose model is DELIBERATELY kept distinct from the specialists for
  * error decorrelation — the automated quality gate and independent verifiers.
- * They exist to catch the other agents' mistakes, so CI routing must never
+ * They exist to catch the other agents' mistakes, so hivemind routing must never
  * move them onto another agent's model (which would re-correlate the errors
  * the gate is meant to catch). Their model stays the hand-tuned default.
  */
@@ -81,7 +81,7 @@ export function planEngagementRouting(
   /** Whether the CALLER applies the live model override. When false (e.g. the
    *  legal-design pipeline, which is shadow-only), effective = the static
    *  default so ledger attribution matches what actually ran. */
-  liveRouting: boolean = config.collectiveIntelligence.enabled,
+  liveRouting: boolean = config.hivemind.enabled,
   rng: () => number = Math.random,
 ): RoutingDecision[] {
   const pool = runnablePool();
@@ -95,7 +95,7 @@ export function planEngagementRouting(
     let choice;
     try {
       choice = selectModel(
-        { agentRole: role, matterType, residency, pool, baselineModelId: baseId, minObservations: config.collectiveIntelligence.minObservations },
+        { agentRole: role, matterType, residency, pool, baselineModelId: baseId, minObservations: config.hivemind.minObservations },
         lg,
       );
     } catch (err) {
@@ -108,7 +108,7 @@ export function planEngagementRouting(
     let effId = enabled ? choice.modelId : baseId;
     let effTier = enabled ? choice.tier : (pool.find(m => m.id === baseId)?.tier ?? choice.tier);
     let explored = false;
-    if (enabled && rng() < config.collectiveIntelligence.explorationRate) {
+    if (enabled && rng() < config.hivemind.explorationRate) {
       const alt = pickAlternative(pool, choice.modelId, residency, rng);
       if (alt) { effId = alt.id; effTier = alt.tier; explored = true; }
     }
@@ -142,7 +142,7 @@ export function planEngagementRouting(
     });
   }
 
-  session.collectiveIntelligence = decisions;
+  session.hivemind = decisions;
   if (enabled) logger.info('live routing applied', { matterType, agents: decisions.length, explored: decisions.filter(d => d.explored).length });
   return decisions;
 }
@@ -160,7 +160,7 @@ function engagementQuality(session: SessionState): number {
  * overrides both teach the selector.
  */
 export function recordEngagementOutcome(session: SessionState, matterType: string): void {
-  const decisions = session.collectiveIntelligence;
+  const decisions = session.hivemind;
   if (!decisions.length) return;
   const quality = engagementQuality(session);
   const lg = getLedger();

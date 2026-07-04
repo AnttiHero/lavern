@@ -1,5 +1,5 @@
 /**
- * Unit Tests — Collective Intelligence engagement glue
+ * Unit Tests — Hivemind engagement glue
  * (src/orchestration/record-engagement-routing.ts).
  *
  * Covers shadow vs live attribution, the decorrelation guard (verification
@@ -14,8 +14,8 @@ import { planEngagementRouting, recordEngagementOutcome, getLedger } from '../..
 import { config } from '../../src/config.js';
 
 // Minimal SessionState stand-in — the helper only touches these fields.
-function fakeSession(): { collectiveIntelligence: unknown[]; verificationResults: { passed: boolean }[]; selectedTeam: string[] } {
-  return { collectiveIntelligence: [], verificationResults: [{ passed: true }, { passed: false }], selectedTeam: [] };
+function fakeSession(): { hivemind: unknown[]; verificationResults: { passed: boolean }[]; selectedTeam: string[] } {
+  return { hivemind: [], verificationResults: [{ passed: true }, { passed: false }], selectedTeam: [] };
 }
 
 describe('planEngagementRouting', () => {
@@ -25,34 +25,34 @@ describe('planEngagementRouting', () => {
     const [d] = planEngagementRouting(s as any, 'glue-shadow', ['contract-reviewer'], 'anthropic', false);
     expect(d.effectiveModelId).toBe(d.baselineModelId);
     expect(d.explored).toBe(false);
-    expect(s.collectiveIntelligence).toHaveLength(1);
+    expect(s.hivemind).toHaveLength(1);
   });
 
   it('decorrelation guard: the evaluator is never moved off its default, even live', () => {
     const s = fakeSession();
-    const prev = config.collectiveIntelligence.explorationRate;
-    (config.collectiveIntelligence as { explorationRate: number }).explorationRate = 1; // force exploration
+    const prev = config.hivemind.explorationRate;
+    (config.hivemind as { explorationRate: number }).explorationRate = 1; // force exploration
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const [d] = planEngagementRouting(s as any, 'glue-decorr', ['evaluator'], 'anthropic', true, () => 0);
       expect(d.effectiveModelId).toBe(d.baselineModelId); // protected → stays on default
       expect(d.explored).toBe(false);
     } finally {
-      (config.collectiveIntelligence as { explorationRate: number }).explorationRate = prev;
+      (config.hivemind as { explorationRate: number }).explorationRate = prev;
     }
   });
 
   it('exploration (live + rng): routes a non-protected agent to an alternative', () => {
     const s = fakeSession();
-    const prev = config.collectiveIntelligence.explorationRate;
-    (config.collectiveIntelligence as { explorationRate: number }).explorationRate = 1;
+    const prev = config.hivemind.explorationRate;
+    (config.hivemind as { explorationRate: number }).explorationRate = 1;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const [d] = planEngagementRouting(s as any, 'glue-explore', ['contract-reviewer'], 'anthropic', true, () => 0);
       expect(d.explored).toBe(true);
       expect(d.effectiveModelId).not.toBe(d.chosenModelId);
     } finally {
-      (config.collectiveIntelligence as { explorationRate: number }).explorationRate = prev;
+      (config.hivemind as { explorationRate: number }).explorationRate = prev;
     }
   });
 

@@ -61,4 +61,29 @@ describe('runDissent', () => {
     expect(r.verdicts.find(v => v.member === 'Opus')?.label).toBe('uncapped');
     expect(r.verdicts.find(v => v.member === 'Sonnet')?.label).toBe('other');
   });
+
+  it('never inverts a negated label into the option it negates', async () => {
+    const options = ['supported', 'not supported', 'overstated'];
+    const r = await runDissent({
+      question: 'q', options, context: 'c', panel: PANEL,
+      callFn: canned({
+        opus: '{"label":"not supported by the cited evidence"}',
+        sonnet: '{"label":"unsupported"}',
+        mistral: '{"label":"supported"}',
+      }),
+    });
+    // "not supported by..." → the longer option wins over its substring
+    expect(r.verdicts.find(v => v.member === 'Opus')?.label).toBe('not supported');
+    // "unsupported" contains "supported" only under negation → other, never support
+    expect(r.verdicts.find(v => v.member === 'Sonnet')?.label).toBe('other');
+    expect(r.verdicts.find(v => v.member === 'Mistral')?.label).toBe('supported');
+  });
+
+  it('maps an empty or missing label to "other", not the first option', async () => {
+    const r = await runDissent({
+      question: 'q', options: OPTIONS, context: 'c', panel: [PANEL[0], PANEL[1]],
+      callFn: canned({ opus: '{}', sonnet: '{"label":""}' }),
+    });
+    expect(r.verdicts.every(v => v.label === 'other')).toBe(true);
+  });
 });

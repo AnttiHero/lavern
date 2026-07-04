@@ -1,5 +1,5 @@
 /**
- * Collective Intelligence — model pool + cold-start quality priors.
+ * Hivemind — model pool + cold-start quality priors.
  *
  * The pool is the set of LLM "workers" Lavern can route an agent to. Each
  * option carries a cold-start quality prior (0–1, rough public-capability
@@ -18,7 +18,7 @@ export type ModelResidency = 'us' | 'eu' | 'on-device';
 export interface ModelOption {
   /** Concrete model id passed to the provider. */
   id: string;
-  /** Short display label for the Collective Intelligence tab. */
+  /** Short display label for the Hivemind tab. */
   label: string;
   provider: 'anthropic' | 'mistral' | 'local';
   /** Lavern tier this model fills, for back-compat with the static tier map. */

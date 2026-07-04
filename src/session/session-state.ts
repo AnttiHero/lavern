@@ -314,10 +314,16 @@ export class SessionState {
   public precedentsApplied: string[] = [];
   public precedentsSaved: string[] = [];
   public reportCard: SessionReportCard | null = null;
-  /** Collective Intelligence: per-agent model-routing decisions for this engagement. */
-  public collectiveIntelligence: import('../orchestration/model-selection.js').RoutingDecision[] = [];
+  /** Hivemind: per-agent model-routing decisions for this engagement. */
+  public hivemind: import('../orchestration/model-selection.js').RoutingDecision[] = [];
   /** Dissent Mode: independent-panel splits surfaced during this engagement. */
   public dissents: import('../orchestration/dissent.js').DissentResult[] = [];
+  /** Hivemind quorum: panel checks run on CRITICAL verification findings. */
+  public quorumChecks: import('../orchestration/quorum.js').QuorumRecord[] = [];
+  /** Estimated spend on hivemind panel calls (quorum + dissent). These go
+   *  through direct provider clients, outside the SDK's total_cost_usd, so
+   *  they are tracked separately rather than folded into accumulatedCost. */
+  public hivemindCostUsd = 0;
   public reportsDir = config.reportsDir;
   public baselinesDir = config.baselinesDir;
 

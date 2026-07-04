@@ -880,10 +880,13 @@ export function archiveSession(session: SessionState, userId: string | null): vo
       total: session.verificationResults.length,
       passed: session.verificationResults.filter(v => v.passed).length,
     },
-    // Collective Intelligence: persist the per-agent model-routing decisions +
-    // rationale so auditability survives session eviction (not just live API).
-    collectiveIntelligence: session.collectiveIntelligence,
+    // Hivemind: persist the per-agent model-routing decisions + rationale so
+    // auditability survives session eviction (not just live API). Older
+    // archives carry this under the pre-rename key `collectiveIntelligence`;
+    // the dashboard reads both.
+    hivemind: session.hivemind,
     dissents: session.dissents,
+    quorumChecks: session.quorumChecks,
   });
 
   // Wrap everything in a transaction so usage/debit/archive stay consistent
