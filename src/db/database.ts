@@ -887,6 +887,9 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     hivemind: session.hivemind,
     dissents: session.dissents,
     quorumChecks: session.quorumChecks,
+    // Effective provider at archive time — post-archive human rulings need it
+    // to residency-tag the precedents they create.
+    provider: session.provider ?? config.provider,
   });
 
   // Wrap everything in a transaction so usage/debit/archive stay consistent
@@ -1034,6 +1037,16 @@ export function updateArchivedDocument(
         completed_at = COALESCE(completed_at, ?), completed_steps_count = ?
     WHERE id = ?
   `).run(assembledDocument || null, finalCostUsd, now, completedSteps, sessionId);
+}
+
+/**
+ * Replace an archived session's summary_json wholesale. Used for post-archive
+ * mutations that live inside the summary (e.g. a human ruling on an escalated
+ * hivemind dissent). Caller reads → patches → writes; last write wins.
+ */
+export function updateArchivedSummary(sessionId: string, summary: unknown): void {
+  getDb().prepare(`UPDATE session_archive SET summary_json = ? WHERE id = ?`)
+    .run(JSON.stringify(summary ?? {}), sessionId);
 }
 
 export function getSessionArchive(userId: string, limit = 50): ArchivedSession[] {

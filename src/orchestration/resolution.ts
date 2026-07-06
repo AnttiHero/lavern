@@ -18,6 +18,7 @@ import { runDissent } from './dissent.js';
 import type { DissentResult, DissentVerdict, PanelMember } from './dissent.js';
 import { searchKnowledgeBase } from '../knowledge-base/retriever.js';
 import { searchCaseLaw, isConnectorError } from '../connectors/courtlistener.js';
+import { getPrecedents } from './precedents.js';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -27,6 +28,8 @@ export interface DissentEvidence {
   /** Where it came from, e.g. "KB: Indemnification" or "Smith v. Jones, 12 F.3d 34". */
   source: string;
   snippet: string;
+  /** Set when this item is a hive precedent — its ruling, for departure detection. */
+  precedentRuling?: string;
 }
 
 export interface DissentResolution {
@@ -53,8 +56,28 @@ export async function gatherEvidence(
   question: string,
   userId?: string,
   provider: string = config.provider,
+  matterType?: string,
 ): Promise<DissentEvidence[]> {
   const out: DissentEvidence[] = [];
+
+  // Cite before you litigate: questions this hive has already adjudicated —
+  // panel-resolved or human-ruled — go before the panel first. Local file,
+  // no egress. Scope is a hard filter: precedents carry confidential clause
+  // text, so they never cross users, and sovereign-recorded text is never
+  // served into a session on a different provider.
+  try {
+    const board = getPrecedents();
+    for (const p of board.search(question, matterType, 2, { userId, provider })) {
+      out.push({
+        source: `Hive precedent (${p.source === 'human-ruled' ? 'human-ruled' : 'panel-resolved'}, ${p.decidedAt.slice(0, 10)}): "${p.ruling}"`,
+        snippet: `Question then: ${p.question} Clause then: ${p.clauseExcerpt}`,
+        precedentRuling: p.ruling,
+      });
+      board.recordCitation(p.id);
+    }
+  } catch (err) {
+    logger.warn('precedent lookup failed', { err: (err as Error).message });
+  }
 
   if (userId) {
     try {
@@ -95,15 +118,17 @@ export async function resolveDissent(result: DissentResult, opts: {
   userId?: string;
   /** The engagement's EFFECTIVE provider — gates external evidence egress. */
   provider?: string;
+  /** Routing key for precedent retrieval (workflow id / matter type). */
+  matterType?: string;
   panel?: PanelMember[];
   callFn?: (m: PanelMember, system: string, user: string) => Promise<string>;
-  gatherFn?: (question: string, userId?: string, provider?: string) => Promise<DissentEvidence[]>;
+  gatherFn?: (question: string, userId?: string, provider?: string, matterType?: string) => Promise<DissentEvidence[]>;
 }): Promise<DissentResult> {
   if (!result.dissent) return result;
 
   try {
     const gather = opts.gatherFn ?? gatherEvidence;
-    const evidence = await gather(result.question, opts.userId, opts.provider ?? config.provider);
+    const evidence = await gather(result.question, opts.userId, opts.provider ?? config.provider, opts.matterType);
 
     // With nothing new to weigh, a re-vote is a coin re-flip, not a
     // resolution — the split stands and goes straight to a human.
@@ -114,8 +139,9 @@ export async function resolveDissent(result: DissentResult, opts: {
       };
     }
 
+    const hasPrecedent = evidence.some(e => e.precedentRuling);
     const evidenceBlock =
-      '\n\n--- RETRIEVED AUTHORITY (secondary — the document text controls) ---\n'
+      `\n\n--- RETRIEVED AUTHORITY (secondary — the document text controls${hasPrecedent ? '; prior hive precedent may be distinguished if this clause differs materially' : ''}) ---\n`
       + evidence.map(e => `[${e.source}] ${e.snippet}`).join('\n\n');
 
     const second = await runDissent({
@@ -134,8 +160,21 @@ export async function resolveDissent(result: DissentResult, opts: {
     // the ledger on it would launder a non-answer. Escalate instead.
     const resolved = answered.length >= 2 && labels.length === 1 && result.options.includes(labels[0]);
     const finalLabel = resolved ? labels[0] : undefined;
+    // Stare decisis, out loud: converging against a cited precedent is
+    // allowed (distinguishing), but it is flagged, never silent. Only
+    // COMPARABLE rulings count — a precedent whose ruling is not one of THIS
+    // question's options ("cap applies" vs "uncapped" vocabularies) can
+    // neither confirm nor be departed from; flagging it would stamp a false
+    // DEPARTED into the audit trail.
+    const citedRulings = evidence
+      .filter(e => e.precedentRuling !== undefined && result.options.includes(e.precedentRuling))
+      .map(e => e.precedentRuling);
+    const precedentNote = !resolved || citedRulings.length === 0 ? ''
+      : citedRulings.includes(finalLabel)
+        ? ' Consistent with prior hive precedent.'
+        : ' DEPARTED from prior hive precedent — the panel distinguished this clause.';
     const note = resolved
-      ? `Split resolved after evidence review — panel converged on "${finalLabel}".`
+      ? `Split resolved after evidence review — panel converged on "${finalLabel}".${precedentNote}`
       : labels.length === 1
         ? 'Re-vote did not converge on a listed option — escalated to human review.'
         : 'Split persists after evidence review — escalated to human review.';

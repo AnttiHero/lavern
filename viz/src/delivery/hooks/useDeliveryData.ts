@@ -130,6 +130,8 @@ export interface DissentView {
   summary: string;
   /** Present when a split triggered the evidence + re-vote loop. */
   resolution?: DissentResolutionView;
+  /** Present once a human ruled on the split — recorded as hive precedent. */
+  humanRuling?: { label: string; ruledAt: string };
 }
 
 export interface QuorumView {

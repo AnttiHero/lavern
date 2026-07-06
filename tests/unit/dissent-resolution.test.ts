@@ -117,6 +117,51 @@ describe('resolveDissent', () => {
     expect(r.resolution?.escalated).toBe(true);
   });
 
+  it('flags a departure when the panel converges AGAINST a cited hive precedent', async () => {
+    const split = await makeSplit();
+    const r = await resolveDissent(split, {
+      context: 'the clause',
+      panel: PANEL,
+      gatherFn: async () => [
+        { source: 'Hive precedent (human-ruled, 2026-06-12): "uncapped"', snippet: 'prior ruling', precedentRuling: 'uncapped' },
+      ],
+      callFn: canned({ opus: '{"label":"capped at fees"}', sonnet: '{"label":"capped at fees"}' }),
+    });
+    expect(r.resolution?.resolved).toBe(true);
+    expect(r.resolution?.note).toMatch(/DEPARTED from prior hive precedent/);
+  });
+
+  it('notes consistency when the panel converges WITH a cited hive precedent', async () => {
+    const split = await makeSplit();
+    const r = await resolveDissent(split, {
+      context: 'the clause',
+      panel: PANEL,
+      gatherFn: async () => [
+        { source: 'Hive precedent (panel-resolved, 2026-06-12): "capped at fees"', snippet: 'prior ruling', precedentRuling: 'capped at fees' },
+      ],
+      callFn: canned({ opus: '{"label":"capped at fees"}', sonnet: '{"label":"capped at fees"}' }),
+    });
+    expect(r.resolution?.resolved).toBe(true);
+    expect(r.resolution?.note).toMatch(/Consistent with prior hive precedent/);
+  });
+
+  it('adds no precedent note when the cited ruling uses a different option vocabulary', async () => {
+    const split = await makeSplit();
+    const r = await resolveDissent(split, {
+      context: 'the clause',
+      panel: PANEL,
+      // Precedent from an engagement whose options were phrased differently —
+      // "cap applies" is not in THIS question's option list, so it can neither
+      // be followed nor departed from.
+      gatherFn: async () => [
+        { source: 'Hive precedent (panel-resolved, 2026-06-12): "cap applies"', snippet: 'prior ruling', precedentRuling: 'cap applies' },
+      ],
+      callFn: canned({ opus: '{"label":"capped at fees"}', sonnet: '{"label":"capped at fees"}' }),
+    });
+    expect(r.resolution?.resolved).toBe(true);
+    expect(r.resolution?.note).not.toMatch(/DEPARTED|Consistent with prior/);
+  });
+
   it('fail-safes to escalation when the gatherer throws', async () => {
     const split = await makeSplit();
     const r = await resolveDissent(split, {

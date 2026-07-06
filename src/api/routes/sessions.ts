@@ -37,7 +37,11 @@ import { crossProviderChat } from '../../providers/cross-provider-chat.js';
 import { DERIVATIVE_TYPES, DERIVATIVE_TYPE_LIST, buildFullContext } from '../derivatives/derivative-types.js';
 import { agentProfiles } from '../../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../../workflows/orchestrator-mapping.js';
-import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getUserById, logAuditEvent, holdBillableHours, debitBillableHours, updateArchiveUserId, updateArchiveTitle } from '../../db/database.js';
+import { getSessionArchive, getAllSessionArchive, getArchivedSession, getArchivedSessionById, getUserById, logAuditEvent, holdBillableHours, debitBillableHours, updateArchiveUserId, updateArchiveTitle, updateArchivedSummary } from '../../db/database.js';
+import { getPrecedents } from '../../orchestration/precedents.js';
+import { getLedger } from '../../orchestration/record-engagement-routing.js';
+import { recordPanelistOutcomes } from '../../orchestration/panels.js';
+import type { DissentResult } from '../../orchestration/dissent.js';
 import type { Moment, Audience, Jurisdiction } from '../../types/index.js';
 import type { ClientIdentity } from '../../types/client.js';
 import { config } from '../../config.js';
@@ -1686,6 +1690,117 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
       gateType: pendingGate.gateType,
       sessionId: id,
     });
+  });
+
+  // ── POST /api/sessions/:id/dissents/:index/ruling — Human ruling ─────
+  //
+  // The Precedent's gold-label path: a human decides an escalated hivemind
+  // split. The ruling (1) marks the dissent, (2) becomes a human-ruled
+  // precedent future panels cite before litigating, and (3) grades every
+  // panelist against ground truth from OUTSIDE the panel — the only
+  // non-circular signal the panel ledger gets. Works on live sessions and
+  // archived ones (the split usually outlives the session that raised it).
+  fastify.post('/api/sessions/:id/dissents/:index/ruling', async (request, reply) => {
+    const { id, index } = request.params as { id: string; index: string };
+    const idx = Number.parseInt(index, 10);
+    if (!Number.isInteger(idx) || idx < 0) {
+      return reply.status(400).send({ error: 'Invalid dissent index' });
+    }
+    const label = typeof (request.body as { label?: unknown } | undefined)?.label === 'string'
+      ? ((request.body as { label: string }).label).trim()
+      : '';
+    if (!label || label.length > 200) {
+      return reply.status(400).send({ error: 'Body must include a non-empty label (max 200 chars)' });
+    }
+
+    const applyRuling = (
+      d: DissentResult,
+      matterType: string,
+      sessionId: string,
+      scope: { userId?: string; provider?: string },
+    ): { error?: string; code?: number } => {
+      if (!d.dissent) return { error: 'This panel was unanimous — nothing to rule on', code: 400 };
+      if (d.humanRuling) return { error: `Already ruled: "${d.humanRuling.label}"`, code: 409 };
+      if (!d.options.includes(label)) {
+        return { error: `Label must be one of the panel's options: ${d.options.join(' | ')}`, code: 400 };
+      }
+      d.humanRuling = { label, ruledAt: new Date().toISOString() };
+      try {
+        getPrecedents().record({
+          question: d.question,
+          options: d.options,
+          // The dissent record carries no clause body; the panelists' verbatim
+          // quotes are the clause text that mattered.
+          clauseExcerpt: d.verdicts.map(v => v.quote).filter(Boolean).join(' … '),
+          matterType,
+          ruling: label,
+          source: 'human-ruled',
+          evidence: d.resolution?.evidence ?? [],
+          panel: d.verdicts.map(v => v.member),
+          sessionId,
+          userId: scope.userId,
+          provider: scope.provider,
+          decidedAt: d.humanRuling.ruledAt,
+        });
+        // Gold label from outside the panel — grade every seat (minAnswered=1).
+        recordPanelistOutcomes(getLedger(), matterType, d.verdicts, label, 1);
+      } catch { /* ruling stands even if precedent/ledger write fails */ }
+      return {};
+    };
+
+    // Patch the archived summary_json with the ruling (best-effort). This is
+    // load-bearing for the LIVE path too: a completed session was archived at
+    // session_end — BEFORE any ruling could exist — and is never re-archived
+    // (eviction/destroy skip archived entries; archiveSession early-returns on
+    // status 'completed'). Without this write the ruling would evaporate at
+    // TTL eviction and the archive would happily accept a second,
+    // contradictory ruling.
+    const patchArchive = (d: DissentResult): void => {
+      try {
+        const row = getArchivedSessionById(id);
+        if (!row) return;
+        const summary = safeJsonParse<Record<string, unknown>>(row.summary_json, {});
+        const archDissents = Array.isArray(summary.dissents) ? (summary.dissents as DissentResult[]) : [];
+        if (archDissents[idx] && archDissents[idx].question === d.question) {
+          archDissents[idx].humanRuling = d.humanRuling;
+          updateArchivedSummary(id, { ...summary, dissents: archDissents });
+        }
+      } catch { /* memory + precedent + ledger already hold the ruling */ }
+    };
+
+    const live = sessionManager.getSession(id);
+    if (live) {
+      if (!checkSessionOwnership(request, live)) {
+        return reply.status(404).send({ error: `Session not found: ${id}` });
+      }
+      const d = live.dissents[idx];
+      if (!d) return reply.status(404).send({ error: `No dissent at index ${idx}` });
+      const res = applyRuling(d, live.workflowTemplateId ?? 'general', id, {
+        userId: live.userId,
+        provider: live.provider ?? config.provider,
+      });
+      if (res.error) return reply.status(res.code ?? 400).send({ error: res.error });
+      patchArchive(d);
+      return reply.send({ success: true, humanRuling: d.humanRuling });
+    }
+
+    const archived = getArchivedSessionById(id);
+    if (!archived || !checkSessionOwnership(request, { userId: archived.user_id })) {
+      return reply.status(404).send({ error: `Session not found: ${id}` });
+    }
+    const summary = safeJsonParse<Record<string, unknown>>(archived.summary_json, {});
+    const dissents = Array.isArray(summary.dissents) ? (summary.dissents as DissentResult[]) : [];
+    const d = dissents[idx];
+    if (!d) return reply.status(404).send({ error: `No dissent at index ${idx}` });
+    const res = applyRuling(d, archived.workflow_id ?? 'general', id, {
+      userId: archived.user_id || undefined,
+      // Pre-provider archives yield undefined → the precedent is stored
+      // unservable rather than guessed into the wrong residency.
+      provider: typeof summary.provider === 'string' ? summary.provider : undefined,
+    });
+    if (res.error) return reply.status(res.code ?? 400).send({ error: res.error });
+    updateArchivedSummary(id, { ...summary, dissents });
+    return reply.send({ success: true, humanRuling: d.humanRuling });
   });
 
   // ── POST /api/sessions/:id/inject — Voice/user context injection ────

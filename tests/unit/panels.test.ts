@@ -87,6 +87,13 @@ describe('recordPanelistOutcomes', () => {
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-sonnet-5')).toBeUndefined();
   });
 
+  it('grades a 2-seat panel against a HUMAN ruling (gold label, minAnswered=1)', () => {
+    const ledger = new PerformanceLedger();
+    recordPanelistOutcomes(ledger, 'review', verdicts.slice(0, 2), 'capped at fees', 1);
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-4-8')).toEqual({ ewma: 1, n: 1 });
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-sonnet-5')).toEqual({ ewma: 0, n: 1 });
+  });
+
   it('errored panelists do not count toward the 3-answer minimum and get no cell', () => {
     const ledger = new PerformanceLedger();
     const withError: DissentVerdict[] = [

@@ -53,6 +53,8 @@ export interface DissentResult {
   summary: string;
   /** Set by the resolution loop when a split triggered evidence + re-vote. */
   resolution?: import('./resolution.js').DissentResolution;
+  /** Set when a human ruled on this split post-escalation — gold ground truth. */
+  humanRuling?: { label: string; ruledAt: string };
 }
 
 /** Rough per-panelist call estimate (≈1.5k in / ≤1k out on current pricing) —

@@ -8,10 +8,17 @@
  * reaching opposite conclusions. No single-model tool can produce this.
  */
 
+import { useState } from 'react';
 import type { DeliveryData, DissentView, DissentVerdictView, DissentResolutionView } from '../hooks/useDeliveryData.js';
+
+export type DissentRuling = { label: string; ruledAt: string };
 
 interface Props {
   data: DeliveryData;
+  /** Lifted to DeliveryView so a ruling survives tab switches (this tab
+   *  unmounts on navigation; see conversation state for the same pattern). */
+  rulings: Record<number, DissentRuling>;
+  onRuled: (index: number, ruling: DissentRuling) => void;
 }
 
 const PROVIDER_COLOR: Record<string, string> = {
@@ -75,8 +82,77 @@ function Resolution({ r }: { r: DissentResolutionView }) {
   );
 }
 
-function DissentCard({ d }: { d: DissentView }) {
+/**
+ * One-click ruling on an escalated split. The click is a gold label: it is
+ * recorded as hive precedent and grades every panelist against a truth that
+ * came from outside the panel.
+ */
+function RulingBlock({ d, sessionId, index, onRuled }: {
+  d: DissentView; sessionId: string; index: number; onRuled: (r: DissentRuling) => void;
+}) {
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const rule = async (label: string) => {
+    setPending(label);
+    setError(null);
+    try {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/dissents/${index}/ruling`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ label }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        // Someone (or a lost local state) already ruled — adopt that ruling
+        // instead of stranding the user on an error.
+        const m = /Already ruled: "(.+)"/.exec(body.error ?? '');
+        onRuled({ label: m?.[1] ?? label, ruledAt: new Date().toISOString() });
+        return;
+      }
+      if (!res.ok) throw new Error(body.error || `Ruling failed (${res.status})`);
+      onRuled(body.humanRuling ?? { label, ruledAt: new Date().toISOString() });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <div style={styles.ruling}>
+      <div style={styles.rulingPrompt}>
+        Rule on this split — your decision is recorded as hive precedent and future panels will cite it:
+      </div>
+      <div style={styles.rulingButtons}>
+        {d.options.map(o => (
+          <button
+            key={o}
+            onClick={() => rule(o)}
+            disabled={pending !== null}
+            style={{ ...styles.rulingBtn, opacity: pending && pending !== o ? 0.5 : 1 }}
+          >
+            {pending === o ? 'Recording…' : o}
+          </button>
+        ))}
+      </div>
+      {error && <div role="alert" style={styles.rulingError}>{error}</div>}
+    </div>
+  );
+}
+
+function DissentCard({ d, sessionId, index, canRule, ruledLocally, onRuled }: {
+  d: DissentView; sessionId: string; index: number; canRule: boolean;
+  ruledLocally?: DissentRuling; onRuled: (r: DissentRuling) => void;
+}) {
   const labels = Object.keys(d.positions);
+  const ruling = d.humanRuling ?? ruledLocally;
+  // A human is asked to rule when the split reached them: it escalated, or it
+  // predates the resolution loop entirely (old sessions).
+  const needsRuling = canRule && d.dissent && !ruling && Array.isArray(d.options) && d.options.length > 0
+    && (d.resolution ? d.resolution.escalated : true);
+
   return (
     <div style={{ ...styles.card, borderColor: d.dissent ? '#D9A24C' : '#E7E0D4' }}>
       <div style={{ ...styles.banner, background: d.dissent ? '#FBF0DC' : '#EEF4EE', color: d.dissent ? '#8A5A17' : '#3C6B47' }}>
@@ -100,13 +176,22 @@ function DissentCard({ d }: { d: DissentView }) {
       </div>
 
       {d.resolution && <Resolution r={d.resolution} />}
+
+      {ruling && (
+        <div role="status" style={styles.ruledBanner}>
+          ⚖️ Ruled by human review: <strong>{ruling.label}</strong> — recorded as hive precedent; the panelists were graded against this ruling.
+        </div>
+      )}
+      {needsRuling && <RulingBlock d={d} sessionId={sessionId} index={index} onRuled={onRuled} />}
     </div>
   );
 }
 
-export function DissentTab({ data }: Props) {
+export function DissentTab({ data, rulings, onRuled }: Props) {
   const dissents = data.dissents ?? [];
   const splits = dissents.filter(d => d.dissent).length;
+  // Demo sessions have no backend record to rule on.
+  const canRule = !data.sessionId.startsWith('demo-session');
 
   return (
     <div style={styles.wrap}>
@@ -133,7 +218,17 @@ export function DissentTab({ data }: Props) {
         </div>
       ) : (
         <div style={styles.list}>
-          {dissents.map((d, i) => <DissentCard key={i} d={d} />)}
+          {dissents.map((d, i) => (
+            <DissentCard
+              key={i}
+              d={d}
+              sessionId={data.sessionId}
+              index={i}
+              canRule={canRule}
+              ruledLocally={rulings[i]}
+              onRuled={r => onRuled(i, r)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -173,4 +268,16 @@ const styles: Record<string, React.CSSProperties> = {
   revote: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, marginTop: 8 },
   revoteTitle: { fontSize: 12, fontWeight: 600, color: '#6B6358' },
   revoteChip: { fontSize: 12, color: '#3D372F', background: '#F0EBE1', borderRadius: 999, padding: '3px 10px' },
+  ruling: { margin: '14px 16px 0', borderTop: '1px dashed #D9CBB2', paddingTop: 12 },
+  rulingPrompt: { fontSize: 13, fontWeight: 600, color: '#3D372F', marginBottom: 10 },
+  rulingButtons: { display: 'flex', gap: 8, flexWrap: 'wrap' as const },
+  rulingBtn: {
+    fontSize: 13, fontWeight: 600, color: '#1A1714', background: '#F4EFE6',
+    border: '1.5px solid #C9B98F', borderRadius: 999, padding: '7px 16px', cursor: 'pointer',
+  },
+  rulingError: { fontSize: 12.5, color: '#A33B1F', marginTop: 8 },
+  ruledBanner: {
+    margin: '14px 16px 0', fontSize: 13, fontWeight: 500, color: '#3C6B47',
+    background: '#EEF4EE', borderRadius: 8, padding: '9px 12px',
+  },
 };

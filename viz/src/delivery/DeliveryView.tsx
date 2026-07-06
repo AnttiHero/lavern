@@ -25,7 +25,7 @@ import { ReviewTab } from './components/ReviewTab.js';
 import { TheStoryTab } from './components/TheStoryTab.js';
 import { TheScorecardTab } from './components/TheScorecardTab.js';
 import { HivemindTab } from './components/HivemindTab.js';
-import { DissentTab } from './components/DissentTab.js';
+import { DissentTab, type DissentRuling } from './components/DissentTab.js';
 import { NextStepsTab } from './components/NextStepsTab.js';
 import { ConversationTab, type ConversationMessage } from './components/ConversationTab.js';
 import { ConfettiBurst } from './components/ConfettiBurst.js';
@@ -54,6 +54,10 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
   const [convMessages, setConvMessages] = useState<ConversationMessage[]>([]);
   const [convInput, setConvInput] = useState('');
   const [convStreaming, setConvStreaming] = useState(false);
+
+  // Dissent rulings live here for the same reason: a ruling must not
+  // resurrect its buttons after the user visits another tab.
+  const [dissentRulings, setDissentRulings] = useState<Record<number, DissentRuling>>({});
 
   // Detect demo session
   const isDemo = data?.sessionId.startsWith('demo-session') ?? false;
@@ -105,7 +109,13 @@ export default function DeliveryView({ onContinue, onBack, onSkip }: Props) {
             {activeTab === 'story' && <TheStoryTab data={data} />}
             {activeTab === 'scorecard' && <TheScorecardTab data={data} />}
             {activeTab === 'hivemind' && <HivemindTab data={data} />}
-            {activeTab === 'dissent' && <DissentTab data={data} />}
+            {activeTab === 'dissent' && (
+              <DissentTab
+                data={data}
+                rulings={dissentRulings}
+                onRuled={(i, r) => setDissentRulings(prev => ({ ...prev, [i]: r }))}
+              />
+            )}
             {activeTab === 'next-steps' && <NextStepsTab data={data} />}
             {activeTab === 'conversation' && (
               isDemo ? (

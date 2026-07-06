@@ -20,6 +20,7 @@ import { runDissent, EST_PANELIST_CALL_USD } from '../../orchestration/dissent.j
 import { resolveDissent } from '../../orchestration/resolution.js';
 import { composePanel, panelPool, recordPanelistOutcomes } from '../../orchestration/panels.js';
 import { getLedger } from '../../orchestration/record-engagement-routing.js';
+import { getPrecedents } from '../../orchestration/precedents.js';
 
 export function createDissentTools(session: SessionState) {
   const dissentTool = tool(
@@ -52,13 +53,37 @@ export function createDissentTools(session: SessionState) {
       session.hivemindCostUsd += panel.length * EST_PANELIST_CALL_USD;
 
       if (result.dissent) {
-        result = await resolveDissent(result, { context: args.clause, userId: session.userId, provider: sessionProvider, panel });
+        result = await resolveDissent(result, { context: args.clause, userId: session.userId, provider: sessionProvider, matterType, panel });
         if (result.resolution?.revote.length) {
           session.hivemindCostUsd += panel.length * EST_PANELIST_CALL_USD;
         }
         if (result.resolution?.resolved && result.resolution.finalLabel) {
           // Layer 3: a resolved split reveals who read it right first time.
           recordPanelistOutcomes(getLedger(), matterType, result.verdicts, result.resolution.finalLabel);
+          // The Precedent: a settled question becomes citable — the next
+          // panel facing a similar clause sees this ruling before it litigates.
+          // NOT when the resolution itself leaned on a cited precedent: a
+          // derivative echo adds no information and would crowd the original
+          // (possibly human-ruled) entry out of the retrieval slots.
+          const citedPrecedent = result.resolution.evidence.some(e => e.precedentRuling !== undefined);
+          if (!citedPrecedent) {
+            try {
+              getPrecedents().record({
+                question: args.question,
+                options: args.options,
+                clauseExcerpt: args.clause,
+                matterType,
+                ruling: result.resolution.finalLabel,
+                source: 'panel-resolved',
+                evidence: result.resolution.evidence,
+                panel: panel.map(m => m.label),
+                sessionId: session.id,
+                userId: session.userId,
+                provider: sessionProvider,
+                decidedAt: new Date().toISOString(),
+              });
+            } catch { /* non-fatal — precedent is an optimization, not a gate */ }
+          }
         }
       }
 

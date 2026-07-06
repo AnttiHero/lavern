@@ -81,21 +81,26 @@ export function composePanel(
  * FIRST-round verdict matched the final label — that measures who reads this
  * kind of question right before the evidence arrives.
  *
- * Requires at least 3 answering panelists. On a 2-seat panel, a resolved
- * split means exactly one panelist flipped on the evidence — crediting the
- * non-flipper 1 and the flipper 0 would measure stubbornness, not
- * correctness (the final label comes from the same two models, so there is
- * no independent ground truth). With 3+ seats the final label reflects a
- * majority the individual panelist did not control, which is a real signal.
+ * Requires at least `minAnswered` answering panelists — default 3. On a
+ * 2-seat panel, a resolved split means exactly one panelist flipped on the
+ * evidence — crediting the non-flipper 1 and the flipper 0 would measure
+ * stubbornness, not correctness (the final label comes from the same two
+ * models, so there is no independent ground truth). With 3+ seats the final
+ * label reflects a majority the individual panelist did not control.
+ *
+ * EXCEPTION: when the label is a HUMAN ruling on an escalated split, the
+ * circularity objection vanishes — the truth came from outside the panel —
+ * so callers pass minAnswered=1 and every seat gets graded against gold.
  */
 export function recordPanelistOutcomes(
   ledger: PerformanceLedger,
   matterType: string,
   verdicts: DissentVerdict[],
   finalLabel: string,
+  minAnswered = 3,
 ): void {
   const answered = verdicts.filter(v => !v.error && v.model);
-  if (answered.length < 3) return;
+  if (answered.length < minAnswered) return;
   for (const v of answered) {
     ledger.record(matterType, PANELIST_ROLE, v.model, v.label === finalLabel ? 1 : 0);
   }
