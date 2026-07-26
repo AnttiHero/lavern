@@ -58,8 +58,9 @@ describe('PRICING table', () => {
   });
 
   it('all prices are per million tokens', () => {
-    // Sanity check: Opus output should be $75/M tokens
-    expect(PRICING['claude-opus-4-7'].output).toBe(75.0);
+    // Sanity check: Opus output is $25/M tokens (the whole 4.x/5 Opus line)
+    expect(PRICING['claude-opus-5'].output).toBe(25.0);
+    expect(PRICING['claude-opus-4-7'].output).toBe(25.0);
     // Sonnet input should be $3/M tokens
     expect(PRICING['claude-sonnet-4-5'].input).toBe(3.0);
   });

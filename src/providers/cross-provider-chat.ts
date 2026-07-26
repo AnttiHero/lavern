@@ -56,7 +56,7 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
     default:
       // Anthropic-tier mapping. Sonnet 5 covers sonnet+haiku in this build.
       switch (tier) {
-        case 'opus':   return 'claude-opus-4-8';
+        case 'opus':   return 'claude-opus-5';
         case 'sonnet': return 'claude-sonnet-5';
         case 'haiku':  return 'claude-sonnet-5'; // sonnet + haiku tiers both on Sonnet 5
       }
@@ -202,15 +202,24 @@ export async function crossProviderChat(
   // Opus/Haiku/Fable 5) — the API returns `invalid_request_error: 'temperature'
   // is deprecated for this model`. These run at default sampling. Sonnet 4.5
   // (the "-4-5" line) still ACCEPTS temperature, so the regex must not match it.
-  // Verified live: opus-4-8 ✗, claude-sonnet-5 ✗, sonnet-4-5 ✓.
+  // Verified live: opus-4-8 ✗, opus-5 ✗, claude-sonnet-5 ✗, sonnet-4-5 ✓.
   ensureApiKey();
   const client = new Anthropic();
   const omitTemperature = /opus-4-[78]|(?:sonnet|opus|haiku|fable)-5/.test(model);
+  // Claude 5 family runs ADAPTIVE THINKING when `thinking` is omitted, and
+  // thinking tokens count against max_tokens. Tight-budget calls here are all
+  // short structured verdicts (quality gate PASS/FAIL, doc-type inference,
+  // watchman triage) sized in the pre-thinking era — a thinking burst inside
+  // a 200-token cap truncates the verdict. Disable thinking for those calls
+  // (accepted at the default effort on Opus 5/Sonnet 5), restoring their
+  // exact pre-5 contract; larger calls keep adaptive thinking for quality.
+  const disableThinking = /(?:sonnet|opus|haiku)-5/.test(model) && opts.maxTokens < 2048;
   const requestBody: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: opts.maxTokens,
     system: opts.system,
     messages: turnList,
+    ...(disableThinking ? { thinking: { type: 'disabled' as const } } : {}),
   };
   if (!omitTemperature) {
     requestBody.temperature = temperature;

@@ -80,8 +80,8 @@ function makeLocalResult(overrides: Partial<LocalAnalysisResult> = {}): LocalAna
 
 // Opus 4.7 pricing — the implementation computes cost from token usage:
 //   frontierUsd = (inputT * 15 + outputT * 75) / 1_000_000
-const OPUS_INPUT_USD_PER_M = 15;
-const OPUS_OUTPUT_USD_PER_M = 75;
+const OPUS_INPUT_USD_PER_M = 5;   // Opus 5 — $5/M in (4.x/5 line)
+const OPUS_OUTPUT_USD_PER_M = 25; // Opus 5 — $25/M out
 
 function expectedFrontierCost(inputTokens: number, outputTokens: number): number {
   return (inputTokens * OPUS_INPUT_USD_PER_M + outputTokens * OPUS_OUTPUT_USD_PER_M) / 1_000_000;

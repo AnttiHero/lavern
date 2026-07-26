@@ -81,7 +81,7 @@ export function registerChallengeRoutes(
     };
 
     try {
-      // Call Opus 4.7 directly via Anthropic SDK. The system prompt already
+      // Call Opus 5 directly via Anthropic SDK. The system prompt already
       // mandates JSON-only output (see buildComparisonSystemPrompt); the
       // downstream cleanup at lines 110-126 strips fences/thinking and
       // extracts the outermost {...} block, so we don't need to use an
@@ -96,8 +96,10 @@ export function registerChallengeRoutes(
       const userPrompt = buildComparisonUserPrompt(docA, docB);
 
       const response = await getClient().messages.create({
-        model: 'claude-opus-4-8',
-        max_tokens: 4096,
+        model: 'claude-opus-5',
+        // Opus 5 thinks by default and thinking counts against max_tokens —
+        // 8192 leaves headroom so the JSON comparison never truncates.
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt },

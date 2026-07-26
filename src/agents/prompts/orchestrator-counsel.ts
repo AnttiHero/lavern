@@ -44,7 +44,7 @@ Do **not** dispatch a contract-specialist or other subagent via the \`Task\` too
 Subagent dispatch has been deprecated for the Counsel workflow because (a) your
 context already contains the documents, (b) Task subagents would re-fetch docs
 via tools that are not always available in this configuration, and (c) Counsel's
-value is *speed* — a single Opus 4.7 turn beats a Task round-trip every time.
+value is *speed* — a single Opus 5 turn beats a Task round-trip every time.
 
 1. **INTAKE**: Call \`get_current_step\`. Optionally call \`query_institutional_memory\`
    and \`search_knowledge_base\` for relevant precedent (returns empty if none —

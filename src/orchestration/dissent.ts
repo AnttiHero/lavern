@@ -57,9 +57,10 @@ export interface DissentResult {
   humanRuling?: { label: string; ruledAt: string };
 }
 
-/** Rough per-panelist call estimate (≈1.5k in / ≤1k out on current pricing) —
- *  used to surface hivemind spend, which bypasses the SDK cost pipeline. */
-export const EST_PANELIST_CALL_USD = 0.02;
+/** Rough per-panelist call estimate (≈1.5k in / ≤2k out incl. default-on
+ *  thinking, at Opus 5 rates) — used to surface hivemind spend, which
+ *  bypasses the SDK cost pipeline. */
+export const EST_PANELIST_CALL_USD = 0.03;
 
 /**
  * Same-provider panel (no surprise cross-vendor egress). `provider` MUST be
@@ -78,7 +79,7 @@ export function defaultPanel(provider: string = config.provider): PanelMember[] 
     return [{ key: 'local', label: config.local.defaultModel, provider: 'local', model: config.local.defaultModel }];
   }
   return [
-    { key: 'opus', label: 'Opus 4.8', provider: 'anthropic', model: 'claude-opus-4-8' },
+    { key: 'opus', label: 'Opus 5', provider: 'anthropic', model: 'claude-opus-5' },
     { key: 'sonnet', label: 'Sonnet 5', provider: 'anthropic', model: 'claude-sonnet-5' },
   ];
 }
@@ -87,12 +88,19 @@ async function callModel(m: PanelMember, system: string, user: string): Promise<
   if (m.provider === 'anthropic') {
     ensureApiKey();
     const client = new Anthropic();
-    // No temperature: Opus 4.x rejects it, and panel independence comes from
-    // model diversity, not sampling noise.
+    // No temperature: the Claude 5 family and Opus 4.x reject it; panel
+    // independence comes from model diversity, not sampling noise.
+    // max_tokens 4096: on Opus 5 / Sonnet 5 thinking runs by default and
+    // counts against max_tokens — 1024 risked truncating the JSON verdict.
     const res = await client.messages.create(
-      { model: m.model, max_tokens: 1024, system, messages: [{ role: 'user', content: user }] },
+      { model: m.model, max_tokens: 4096, system, messages: [{ role: 'user', content: user }] },
       { timeout: 60_000, maxRetries: 1 },
     );
+    if (res.stop_reason === 'refusal') {
+      // stop_details is not yet in the installed SDK's Message typings.
+      const category = (res as { stop_details?: { category?: string | null } }).stop_details?.category;
+      throw new Error(`panelist declined the request (refusal${category ? `: ${category}` : ''})`);
+    }
     let text = '';
     for (const b of res.content) if (b.type === 'text') text += b.text;
     return text;

@@ -21,7 +21,7 @@ function entry(over: Partial<Omit<HivePrecedent, 'id' | 'citations'>> = {}): Omi
     ruling: 'cap does not apply',
     source: 'panel-resolved',
     evidence: [],
-    panel: ['Opus 4.8', 'Sonnet 5'],
+    panel: ['Opus 5', 'Sonnet 5'],
     decidedAt: '2026-07-01T00:00:00.000Z',
     ...over,
   };

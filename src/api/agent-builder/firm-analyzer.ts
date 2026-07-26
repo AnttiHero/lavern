@@ -1,7 +1,7 @@
 /**
  * Firm Analyzer — Turn scraped firm-site content into N agent profiles.
  *
- * Single Opus 4.7 call with JSON-structured output, validated by Zod.
+ * Single Opus 5 call with JSON-structured output, validated by Zod.
  * The prompt requires every profile to carry a "seenOnSite" citation
  * so hallucinated roles don't slip past.
  */
@@ -12,7 +12,7 @@ import { createLogger } from '../../utils/logger.js';
 import type { ScrapeResult } from './firm-scraper.js';
 
 const logger = createLogger('FIRM-ANALYZER');
-const MODEL = 'claude-opus-4-8';
+const MODEL = 'claude-opus-5';
 
 // ── Zod mirror of viz/src/types/agent-profile.ts::AgentProfile ─────────
 

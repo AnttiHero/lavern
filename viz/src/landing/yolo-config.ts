@@ -10,7 +10,7 @@
  *
  * The `effort` field maps to Claude's API effort parameter:
  *   'medium' = balanced token spend (counsel tier)
- *   'max'    = no token limits, deepest reasoning (Opus 4.7 only)
+ *   'max'    = no token limits, deepest reasoning (Opus tier only)
  */
 
 export type YoloTier = 'standard' | 'white-shoe' | 'elite';

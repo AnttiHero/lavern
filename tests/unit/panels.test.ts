@@ -13,7 +13,7 @@ import { defaultPanel } from '../../src/orchestration/dissent.js';
 import type { PanelMember, DissentVerdict } from '../../src/orchestration/dissent.js';
 
 const POOL: PanelMember[] = [
-  { key: 'opus', label: 'Opus', provider: 'anthropic', model: 'claude-opus-4-8' },
+  { key: 'opus', label: 'Opus', provider: 'anthropic', model: 'claude-opus-5' },
   { key: 'sonnet', label: 'Sonnet', provider: 'anthropic', model: 'claude-sonnet-5' },
   { key: 'mistral', label: 'Mistral Large', provider: 'mistral', model: 'mistral-large-latest' },
 ];
@@ -30,7 +30,7 @@ describe('composePanel', () => {
     const panel = composePanel('review', ledger, 2, POOL);
     // Opus has the highest prior; second seat goes cross-provider (Mistral)
     // over the same-provider Sonnet even though Sonnet's prior is higher.
-    expect(panel[0].model).toBe('claude-opus-4-8');
+    expect(panel[0].model).toBe('claude-opus-5');
     expect(panel[1].provider).toBe('mistral');
   });
 
@@ -39,7 +39,7 @@ describe('composePanel', () => {
     // Sonnet measured excellent, Opus measured poor, on this matter type (3 obs each)
     for (let i = 0; i < 3; i++) {
       ledger.record('review', PANELIST_ROLE, 'claude-sonnet-5', 1);
-      ledger.record('review', PANELIST_ROLE, 'claude-opus-4-8', 0);
+      ledger.record('review', PANELIST_ROLE, 'claude-opus-5', 0);
     }
     const panel = composePanel('review', ledger, 2, POOL);
     expect(panel[0].model).toBe('claude-sonnet-5');
@@ -51,7 +51,7 @@ describe('composePanel', () => {
     const ledger = new PerformanceLedger();
     ledger.record('review', PANELIST_ROLE, 'claude-sonnet-5', 1); // only 1 obs
     const panel = composePanel('review', ledger, 2, POOL);
-    expect(panel[0].model).toBe('claude-opus-4-8'); // priors still rule
+    expect(panel[0].model).toBe('claude-opus-5'); // priors still rule
   });
 
   it('fills same-provider seats when no other provider remains', () => {
@@ -67,7 +67,7 @@ describe('recordPanelistOutcomes', () => {
   // 3 ANSWERING panelists — the minimum for ledger credit: on a 2-seat panel
   // a resolved split just means one panelist flipped, which is not a signal.
   const verdicts: DissentVerdict[] = [
-    { member: 'Opus', provider: 'anthropic', model: 'claude-opus-4-8', label: 'capped at fees', quote: '', rationale: '', confidence: 'high' },
+    { member: 'Opus', provider: 'anthropic', model: 'claude-opus-5', label: 'capped at fees', quote: '', rationale: '', confidence: 'high' },
     { member: 'Sonnet', provider: 'anthropic', model: 'claude-sonnet-5', label: 'uncapped', quote: '', rationale: '', confidence: 'medium' },
     { member: 'Mistral', provider: 'mistral', model: 'mistral-large-latest', label: 'capped at fees', quote: '', rationale: '', confidence: 'medium' },
   ];
@@ -75,7 +75,7 @@ describe('recordPanelistOutcomes', () => {
   it('credits correct first-round verdicts and debits wrong ones', () => {
     const ledger = new PerformanceLedger();
     recordPanelistOutcomes(ledger, 'review', verdicts, 'capped at fees');
-    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-4-8')).toEqual({ ewma: 1, n: 1 });
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-5')).toEqual({ ewma: 1, n: 1 });
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-sonnet-5')).toEqual({ ewma: 0, n: 1 });
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'mistral-large-latest')).toEqual({ ewma: 1, n: 1 });
   });
@@ -83,14 +83,14 @@ describe('recordPanelistOutcomes', () => {
   it('records nothing with fewer than 3 answering panelists (2-seat unanimity is not a signal)', () => {
     const ledger = new PerformanceLedger();
     recordPanelistOutcomes(ledger, 'review', verdicts.slice(0, 2), 'capped at fees');
-    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-4-8')).toBeUndefined();
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-5')).toBeUndefined();
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-sonnet-5')).toBeUndefined();
   });
 
   it('grades a 2-seat panel against a HUMAN ruling (gold label, minAnswered=1)', () => {
     const ledger = new PerformanceLedger();
     recordPanelistOutcomes(ledger, 'review', verdicts.slice(0, 2), 'capped at fees', 1);
-    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-4-8')).toEqual({ ewma: 1, n: 1 });
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-5')).toEqual({ ewma: 1, n: 1 });
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-sonnet-5')).toEqual({ ewma: 0, n: 1 });
   });
 
@@ -101,7 +101,7 @@ describe('recordPanelistOutcomes', () => {
       { member: 'Down', provider: 'mistral', model: 'mistral-large-latest', label: 'error', quote: '', rationale: '', confidence: 'unknown', error: 'down' },
     ];
     recordPanelistOutcomes(ledger, 'review', withError, 'capped at fees');
-    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-4-8')).toBeUndefined();
+    expect(ledger.qualityFor('review', PANELIST_ROLE, 'claude-opus-5')).toBeUndefined();
     expect(ledger.qualityFor('review', PANELIST_ROLE, 'mistral-large-latest')).toBeUndefined();
   });
 
@@ -109,7 +109,7 @@ describe('recordPanelistOutcomes', () => {
     const ledger = new PerformanceLedger();
     for (let i = 0; i < 3; i++) recordPanelistOutcomes(ledger, 'review', verdicts, 'capped at fees');
     const panel = composePanel('review', ledger, 2, POOL);
-    expect(panel[0].model).toBe('claude-opus-4-8');
+    expect(panel[0].model).toBe('claude-opus-5');
   });
 });
 

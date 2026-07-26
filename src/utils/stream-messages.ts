@@ -20,17 +20,20 @@ const logger = createLogger('STREAM');
 // ── Token Pricing (per million tokens) ────────────────────────────────
 // Source: Anthropic pricing as of 2025. Updated here if prices change.
 export const PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
-  // Anthropic / Claude — current (4.8 generation). Opus 4.8 rates mirror 4.7
-  // ($15/$75 per M) — confirm against Anthropic's published 4.8 pricing.
-  'claude-opus-4-8':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
+  // Anthropic / Claude — current (Claude 5 generation).
+  // Opus 5 is a drop-in at Opus 4.8 pricing: $5/$25 per M.
+  'claude-opus-5':              { input: 5.0,  output: 25.0, cacheRead: 0.5,  cacheWrite: 6.25 },
   // Sonnet 5 — standard rates ($3/$15). Intro pricing (through 2026-08-31) is
   // $2/$10; we log at standard so the cost record never under-counts.
   'claude-sonnet-5':            { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-4-5':            { input: 1.0,  output: 5.0,  cacheRead: 0.1,  cacheWrite: 1.25 },
-  // Legacy keys (kept for in-flight sessions + archived cost records)
+  // Legacy keys (kept for in-flight sessions + archived cost records).
+  // NOTE: the whole Opus 4.x line is $5/$25 — the previous $15/$75 figures
+  // here were wrong (Opus 3-era rates) and overstated costs 3x.
+  'claude-opus-4-8':            { input: 5.0,  output: 25.0, cacheRead: 0.5,  cacheWrite: 6.25 },
   'claude-sonnet-4-5':          { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
-  'claude-opus-4-7':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
-  'claude-opus-4-6':            { input: 15.0, output: 75.0, cacheRead: 1.5,  cacheWrite: 18.75 },
+  'claude-opus-4-7':            { input: 5.0,  output: 25.0, cacheRead: 0.5,  cacheWrite: 6.25 },
+  'claude-opus-4-6':            { input: 5.0,  output: 25.0, cacheRead: 0.5,  cacheWrite: 6.25 },
   'claude-sonnet-4-5-20250929': { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
   'claude-haiku-3-5-20250929':  { input: 0.8,  output: 4.0,  cacheRead: 0.08, cacheWrite: 1.0 },
   // Mistral AI (EU-sovereign)

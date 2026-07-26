@@ -404,7 +404,7 @@ const PIPELINE = [
   },
   {
     name: 'Escalate',
-    body: 'Hybrid mode only. Major + critical clauses get anonymized and sent to Opus 4.7 as a single focused call — not the full agent firm. Frontier mode dispatches the day-shift firm instead.',
+    body: 'Hybrid mode only. Major + critical clauses get anonymized and sent to Opus 5 as a single focused call — not the full agent firm. Frontier mode dispatches the day-shift firm instead.',
     detail: 'anonymize.ts · hybrid-analysis.ts',
   },
   {
@@ -472,7 +472,7 @@ const MODES = [
     badgeTone: 'accent' as const,
     name: 'Hybrid',
     body:
-      'Local model triages every clause for severity. Only major + critical clauses get anonymized and sent to Opus 4.7 as a single focused call — not the full agent firm. Cost-capped per document.',
+      'Local model triages every clause for severity. Only major + critical clauses get anonymized and sent to Opus 5 as a single focused call — not the full agent firm. Cost-capped per document.',
     suits: 'Suits: routine contract intake where you want a senior eye on the few flags that matter.',
   },
   {

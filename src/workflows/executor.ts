@@ -561,7 +561,7 @@ function buildPromptFromRequest(
   // because it claimed it could not access the documents, or (b) hallucinate from
   // the request text. Both produced unusable output.
   //
-  // With Opus 4.7's 1M-token window, embedding ~150k chars of document content
+  // With Opus 5's 1M-token window, embedding ~150k chars of document content
   // directly is trivial and removes an entire class of failure modes. Tools remain
   // available as a backup for very large multi-doc cases (>200k chars total).
   if (session.documents.length > 0) {
