@@ -219,3 +219,30 @@ describe('createDynamicPermissions', () => {
     });
   });
 });
+
+// ── SDK result contract ─────────────────────────────────────────────────
+// The Agent SDK validates every permission result with a Zod union in which
+// `allow` REQUIRES `updatedInput`. A bare allow fails validation and the tool
+// call dies with "Tool permission request failed: ZodError" — which silently
+// killed every MCP tool outside a template allowlist in production (dissent
+// panel, memory writes). Pin the contract so it cannot regress.
+describe('SDK permission-result contract', () => {
+  const contractOpts = { signal: new AbortController().signal, toolUseID: 'tu-contract' };
+  const contractInput = { question: 'Is the cap carved out?', options: ['yes', 'no'] };
+  const contractSession = { workflow: { currentStep: 'synthesis' }, genericWorkflow: { currentStep: 'synthesis' } } as never;
+
+  it('every allow carries updatedInput echoing the tool input (template path)', async () => {
+    const tmpl = { phasePermissions: { synthesis: { denyTools: [], reason: 't' } } } as never;
+    const can = createDynamicPermissions(contractSession, tmpl);
+    expect(await can('mcp__shem__run_dissent_panel', contractInput, contractOpts))
+      .toEqual({ behavior: 'allow', updatedInput: contractInput, toolUseID: 'tu-contract' });
+    expect(await can('Read', { file_path: '/x' }, contractOpts))
+      .toEqual({ behavior: 'allow', updatedInput: { file_path: '/x' }, toolUseID: 'tu-contract' });
+  });
+
+  it('every allow carries updatedInput (legacy path, no template)', async () => {
+    const can = createDynamicPermissions(contractSession);
+    expect(await can('mcp__shem__save_precedent', contractInput, contractOpts))
+      .toEqual({ behavior: 'allow', updatedInput: contractInput, toolUseID: 'tu-contract' });
+  });
+});

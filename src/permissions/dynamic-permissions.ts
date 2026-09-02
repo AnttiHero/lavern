@@ -160,13 +160,25 @@ const ORCHESTRATOR_ONLY_TOOLS = [
  * If a WorkflowTemplate is provided, uses its phasePermissions for deny rules.
  * Otherwise, uses the legacy PHASE_DENY_RULES (legal-design pipeline).
  */
+/**
+ * The SDK validates the callback's result against a Zod union in which
+ * `allow` REQUIRES `updatedInput` (the tool input, possibly edited). A bare
+ * `{ behavior: 'allow' }` fails that validation and the tool call dies with
+ * "Tool permission request failed: ZodError" — which is exactly how every MCP
+ * tool outside a template's allowlist (dissent panel, memory writes, ...)
+ * failed in production. Always echo the input back.
+ */
+function allow(input: Record<string, unknown>, toolUseID: string): PermissionResult {
+  return { behavior: 'allow', updatedInput: input, toolUseID };
+}
+
 export const createDynamicPermissions = (
   session: SessionState,
   template?: WorkflowTemplate,
 ): CanUseTool => {
   return async (
     toolName: string,
-    _input: Record<string, unknown>,
+    input: Record<string, unknown>,
     options: {
       signal: AbortSignal;
       suggestions?: unknown[];
@@ -177,7 +189,7 @@ export const createDynamicPermissions = (
     }
   ): Promise<PermissionResult> => {
     if (!toolName.startsWith('mcp__shem__')) {
-      return { behavior: 'allow', toolUseID: options.toolUseID };
+      return allow(input, options.toolUseID);
     }
 
     const isSubagent = options.agentID !== undefined;
@@ -204,7 +216,7 @@ export const createDynamicPermissions = (
         };
       }
 
-      return { behavior: 'allow', toolUseID: options.toolUseID };
+      return allow(input, options.toolUseID);
     }
 
     // Legacy path: use PHASE_DENY_RULES (legal-design pipeline)
@@ -220,6 +232,6 @@ export const createDynamicPermissions = (
       };
     }
 
-    return { behavior: 'allow', toolUseID: options.toolUseID };
+    return allow(input, options.toolUseID);
   };
 };

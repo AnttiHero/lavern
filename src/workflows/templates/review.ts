@@ -84,6 +84,10 @@ export const reviewTemplate: WorkflowTemplate = {
     'mcp__shem__get_debate_summary',
     'mcp__shem__resolve_debate',
     'mcp__shem__get_unresolved_debates',
+    // Hivemind dissent panel (v0.15.1): the orchestrator prompts call run_dissent_panel on
+    // load-bearing ambiguities. It MUST be in the allowlist — unlisted MCP tools are
+    // routed through the permission prompt, which denied every call in production.
+    'mcp__shem__run_dissent_panel',
     // Memory system
     'mcp__shem__query_institutional_memory',
     'mcp__shem__add_institutional_memory',

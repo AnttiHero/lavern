@@ -58,6 +58,10 @@ export const adversarialTemplate: WorkflowTemplate = {
   },
   availableTools: [
     'Read', 'Grep', 'Glob', 'Task', 'TodoWrite',
+    // Hivemind dissent panel (v0.15.1): the orchestrator prompts call run_dissent_panel on
+    // load-bearing ambiguities. It MUST be in the allowlist — unlisted MCP tools are
+    // routed through the permission prompt, which denied every call in production.
+    'mcp__shem__run_dissent_panel',
     // Workflow engine
     'mcp__shem__get_current_step',
     'mcp__shem__advance_step',
