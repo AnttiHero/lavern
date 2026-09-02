@@ -109,7 +109,10 @@ export async function streamMessages(
 ): Promise<void> {
   const { session, documentLabel, workflowLabel, logLevel, suppressSessionEnd } = options;
   const label = workflowLabel ? `SESSION COMPLETE (${workflowLabel})` : 'SESSION COMPLETE';
-  let estimatedCost = 0;
+  // Start from the session's running total: a retried or second query must ADD
+  // to what earlier queries cost, never restart the meter at zero.
+  const baselineCost = session.accumulatedCost;
+  let estimatedCost = baselineCost;
 
   for await (const message of result) {
     if (!('type' in message)) continue;
@@ -154,13 +157,27 @@ export async function streamMessages(
         const totalCost = (message as Record<string, unknown>).total_cost_usd as number ?? 0;
         const totalTurns = (message as Record<string, unknown>).num_turns as number ?? 0;
 
-        // Final authoritative cost from the SDK replaces our estimate
-        if (totalCost > 0) {
-          session.updateCost(totalCost);
+        // Our per-turn estimate is the authoritative figure: it uses actual
+        // token usage at Lavern's current price table. The pinned SDK bundle
+        // has NO pricing for the Claude 5 family and silently falls back to a
+        // $3/$15 rate, so its total_cost_usd under-bills Opus 5 work by ~40%
+        // (observed live: $12.83 estimated -> $7.60 after the overwrite).
+        // Only when we saw no usage at all is the SDK figure used — and then
+        // ADDED to the pre-query baseline, since it is query-scoped.
+        // This query's cost for the audit bundle: ours when we have it.
+        const queryCost = estimatedCost > baselineCost ? estimatedCost - baselineCost : totalCost;
+        if (estimatedCost > baselineCost) {
+          if (totalCost > 0 && logLevel === 'debug') {
+            logger.error('SDK total_cost_usd ignored in favour of usage-based estimate', {
+              sdk: totalCost.toFixed(4), estimated: (estimatedCost - baselineCost).toFixed(4),
+            });
+          }
+        } else if (totalCost > 0) {
+          session.updateCost(baselineCost + totalCost);
         }
 
         if ('subtype' in message && message.subtype === 'success') {
-          const auditTrail = compileAuditTrail(session, documentLabel, totalCost, totalTurns);
+          const auditTrail = compileAuditTrail(session, documentLabel, queryCost, totalTurns);
 
           if (!suppressSessionEnd) {
             session.events.emitEvent({
@@ -196,7 +213,7 @@ export async function streamMessages(
           }
 
           // Still compile audit trail for error cases
-          compileAuditTrail(session, documentLabel, totalCost, totalTurns);
+          compileAuditTrail(session, documentLabel, queryCost, totalTurns);
         }
         break;
       }

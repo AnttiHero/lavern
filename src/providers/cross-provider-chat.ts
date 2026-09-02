@@ -109,6 +109,15 @@ export interface CrossProviderChatOptions {
    * Ignored for local/mistral providers (no retry wrapper there).
    */
   maxRetries?: number;
+  /**
+   * 'off' disables extended thinking on models where it is adaptive by
+   * default (Opus 5 / Sonnet 5 / Haiku 5). Thinking counts against
+   * max_tokens, so long-form generation (document assembly, memo cleanup)
+   * must switch it off or the output truncates mid-sentence — observed live
+   * on a 61-finding review: attempt 1 rejected as truncated, 3 min retry.
+   * Ignored on the fable tier, which cannot disable thinking (400).
+   */
+  thinking?: 'auto' | 'off';
 }
 
 export interface CrossProviderChatResult {
@@ -220,7 +229,7 @@ export async function crossProviderChat(
   // a 200-token cap truncates the verdict. Disable thinking for those calls
   // (accepted at the default effort on Opus 5/Sonnet 5), restoring their
   // exact pre-5 contract; larger calls keep adaptive thinking for quality.
-  const disableThinking = /(?:sonnet|opus|haiku)-5/.test(model) && opts.maxTokens < 2048;
+  const disableThinking = /(?:sonnet|opus|haiku)-5/.test(model) && (opts.thinking === 'off' || opts.maxTokens < 2048);
   // The fable tier cannot disable thinking (400) and thinks always-on inside
   // max_tokens, so tight caps get headroom instead — a cap raise is free.
   const maxTokens = /fable-5/.test(model) ? Math.max(opts.maxTokens, 4096) : opts.maxTokens;

@@ -395,6 +395,9 @@ export async function assembleDocument(
         user: assemblyContext,
         tier: 'opus',
         maxTokens: 16384,
+        // Assembly is transcription, not reasoning: thinking off so the whole
+        // budget is output (adaptive thinking truncated a long memo live).
+        thinking: 'off',
         // 5 min per attempt — Opus generating a 16K-token polished legal
         // doc non-streaming genuinely takes 3-5 minutes. Original 90s was
         // killing the call before it could finish. Outer for-loop still
@@ -689,6 +692,7 @@ Output the cleaned memo as markdown. No commentary, no "here is the cleaned vers
     user: input,
     tier: 'sonnet',
     maxTokens: 16_384,
+    thinking: 'off', // cleanup is transcription; keep the budget for output
     // 5 min — Sonnet cleaning 27K chars non-streaming can take 2-3 min.
     // Caller's try/catch handles real failure → raw extraction.
     timeoutMs: 300_000,

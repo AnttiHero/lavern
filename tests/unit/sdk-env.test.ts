@@ -64,3 +64,12 @@ describe('pricing', () => {
     expect(PRICING['claude-fable-5-1']).toMatchObject({ input: 10.0, output: 50.0, cacheRead: 0.25, cacheWrite: 12.5 });
   });
 });
+
+describe('crossProviderChat thinking control', () => {
+  it('assembler long-form calls request thinking off (budget goes to output)', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync('src/assembly/document-assembler.ts', 'utf8');
+    const longCalls = src.match(/maxTokens: 16_?384,[\s\S]{0,400}?thinking: 'off'/g) ?? [];
+    expect(longCalls.length).toBeGreaterThanOrEqual(2);
+  });
+});
