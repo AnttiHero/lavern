@@ -11,6 +11,7 @@
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { withSdkModelEnv } from '../providers/sdk-env.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import type { SessionState } from '../session/session-state.js';
 import { createLogger } from './logger.js';
@@ -73,9 +74,12 @@ function isRetryable(error: unknown): boolean {
  * @returns The query result (async iterable of messages)
  */
 export function retryQuery(
-  args: Parameters<typeof query>[0],
+  rawArgs: Parameters<typeof query>[0],
   session?: SessionState,
 ): ReturnType<typeof query> {
+  // Every query goes through here (executor + legal-design orchestrator), so
+  // this is where the subagent tier aliases get pinned to Lavern's models.
+  const args = withSdkModelEnv(rawArgs);
   // First attempt — try synchronously (query() is sync in the SDK)
   let lastError: unknown;
 

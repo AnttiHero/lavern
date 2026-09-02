@@ -7,6 +7,7 @@
 
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { DEFAULT_ANTHROPIC_TIER_MODELS } from './providers/tier-defaults.js';
 
 /** Parse an integer from env, falling back to default if the value is invalid. */
 function safeInt(envVal: string | undefined, fallback: number): number {
@@ -76,6 +77,21 @@ export const config = {
   // ── Models ─────────────────────────────────────────────────────────────
   defaultModel: process.env.SHEM_MODEL ?? 'claude-opus-5',
   routerModel: process.env.SHEM_ROUTER_MODEL ?? 'claude-sonnet-5',
+  /**
+   * Semantic tier → concrete Anthropic model. THE source of truth for what
+   * the opus/sonnet/haiku tiers run on: crossProviderChat, the Hivemind model
+   * pool, the default dissent panel, and — critically — the Claude Agent SDK
+   * subprocess, which receives these as ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL
+   * (see providers/sdk-env.ts). Without that injection the pinned SDK resolves
+   * subagent aliases to ITS OWN release's models (opus → claude-opus-4-6,
+   * sonnet → claude-sonnet-4-5), so every specialist silently ran two
+   * generations behind the orchestrator. Verified with a logging proxy.
+   */
+  anthropicTierModels: {
+    opus: process.env.SHEM_OPUS_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.opus,
+    sonnet: process.env.SHEM_SONNET_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.sonnet,
+    haiku: process.env.SHEM_HAIKU_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.haiku,
+  },
 
   // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────
   mistral: {

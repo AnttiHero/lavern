@@ -21,11 +21,13 @@ const logger = createLogger('STREAM');
 // Source: Anthropic pricing as of 2025. Updated here if prices change.
 export const PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic / Claude — current (Claude 5 generation).
+  // Fable 5.1 — $10/$50; cache READS are 0.025x ($0.25/M), not the usual 0.1x.
+  'claude-fable-5-1':           { input: 10.0, output: 50.0, cacheRead: 0.25, cacheWrite: 12.5 },
   // Opus 5 is a drop-in at Opus 4.8 pricing: $5/$25 per M.
   'claude-opus-5':              { input: 5.0,  output: 25.0, cacheRead: 0.5,  cacheWrite: 6.25 },
-  // Sonnet 5 — standard rates ($3/$15). Intro pricing (through 2026-08-31) is
-  // $2/$10; we log at standard so the cost record never under-counts.
-  'claude-sonnet-5':            { input: 3.0,  output: 15.0, cacheRead: 0.3,  cacheWrite: 3.75 },
+  // Sonnet 5 — $2/$10 is now the STANDARD rate (the scheduled Sep 2026 rise
+  // to $3/$15 was cancelled), so logging at $3/$15 over-counted by 50%.
+  'claude-sonnet-5':            { input: 2.0,  output: 10.0, cacheRead: 0.2,  cacheWrite: 2.5 },
   'claude-haiku-4-5':            { input: 1.0,  output: 5.0,  cacheRead: 0.1,  cacheWrite: 1.25 },
   // Legacy keys (kept for in-flight sessions + archived cost records).
   // NOTE: the whole Opus 4.x line is $5/$25 — the previous $15/$75 figures

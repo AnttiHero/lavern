@@ -53,9 +53,10 @@ const logger = createLogger('ASSEMBLY');
 
 // ── Token Pricing ────────────────────────────────────────────────────────
 const PRICING: Record<string, { input: number; output: number }> = {
+  'claude-fable-5-1': { input: 10.0, output: 50.0 },
   // Opus 5 — drop-in at Opus 4.8 pricing ($5/$25 per M).
   'claude-opus-5': { input: 5.0, output: 25.0 },
-  'claude-sonnet-5': { input: 3.0, output: 15.0 }, // Sonnet 5 — standard rates
+  'claude-sonnet-5': { input: 2.0, output: 10.0 }, // Sonnet 5 — $2/$10 is now standard
   'claude-haiku-4-5': { input: 1.0, output: 5.0 },
   // Legacy keys (kept for in-flight sessions + archived cost records).
   // The Opus 4.x line is $5/$25 — earlier $15/$75 figures here were wrong.

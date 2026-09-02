@@ -33,6 +33,7 @@ import { PRICING as ANTHROPIC_PRICING } from '../utils/stream-messages.js';
 import { LOCAL_PRICING } from './local.js';
 import { MISTRAL_MODELS } from './types.js';
 import { withRetry } from '../utils/with-retry.js';
+import { anthropicTierModels } from './tier-models.js';
 
 // ── Tier → model resolution ─────────────────────────────────────────────
 
@@ -54,11 +55,13 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
     case 'managed':
     case 'anthropic':
     default:
-      // Anthropic-tier mapping. Sonnet 5 covers sonnet+haiku in this build.
+      // Anthropic-tier mapping from config (single source of truth, shared
+      // with the SDK subprocess pins). Direct-call haiku work deliberately
+      // runs on the sonnet model: cheap enough, and far stronger.
       switch (tier) {
-        case 'opus':   return 'claude-opus-5';
-        case 'sonnet': return 'claude-sonnet-5';
-        case 'haiku':  return 'claude-sonnet-5'; // sonnet + haiku tiers both on Sonnet 5
+        case 'opus':   return anthropicTierModels().opus;
+        case 'sonnet': return anthropicTierModels().sonnet;
+        case 'haiku':  return anthropicTierModels().sonnet;
       }
   }
 }
@@ -69,7 +72,7 @@ function pricingFor(model: string): { input: number; output: number } {
   if (config.provider === 'local') return LOCAL_PRICING[model] ?? { input: 0, output: 0 };
   if (config.provider === 'mistral') return { input: 2, output: 6 }; // approximate, EU
   // Anthropic
-  return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-5'] ?? { input: 3, output: 15 };
+  return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-5'] ?? { input: 2, output: 10 };
 }
 
 // ── Public API ──────────────────────────────────────────────────────────

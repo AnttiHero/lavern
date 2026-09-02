@@ -17,6 +17,8 @@ import { ensureApiKey } from '../utils/ensure-api-key.js';
 import { mistralChat } from '../providers/mistral.js';
 import { localChat } from '../providers/local.js';
 import { config } from '../config.js';
+import { labelForModel } from './model-priors.js';
+import { anthropicTierModels } from '../providers/tier-models.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('DISSENT');
@@ -78,9 +80,10 @@ export function defaultPanel(provider: string = config.provider): PanelMember[] 
   if (provider === 'local') {
     return [{ key: 'local', label: config.local.defaultModel, provider: 'local', model: config.local.defaultModel }];
   }
+  const t = anthropicTierModels();
   return [
-    { key: 'opus', label: 'Opus 5', provider: 'anthropic', model: 'claude-opus-5' },
-    { key: 'sonnet', label: 'Sonnet 5', provider: 'anthropic', model: 'claude-sonnet-5' },
+    { key: 'opus', label: labelForModel(t.opus), provider: 'anthropic', model: t.opus },
+    { key: 'sonnet', label: labelForModel(t.sonnet), provider: 'anthropic', model: t.sonnet },
   ];
 }
 
