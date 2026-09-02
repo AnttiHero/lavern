@@ -47,8 +47,13 @@ export function getLedger(): PerformanceLedger {
 
 /** Models Lavern can actually dispatch today. v1: the Anthropic family (the
  *  Agent SDK path). Cross-provider per-agent dispatch widens this later. */
+/** Tiers the Agent SDK can dispatch a subagent on. Anything else (the fable
+ *  tier) is silently DROPPED by the SDK if set on an agent definition — so
+ *  routing must never seat it; Fable reaches the hive through panels instead. */
+const SDK_DISPATCHABLE_TIERS = new Set(['opus', 'sonnet', 'haiku']);
+
 function runnablePool(): ModelOption[] {
-  return DEFAULT_MODEL_POOL.filter(m => m.provider === 'anthropic');
+  return DEFAULT_MODEL_POOL.filter(m => m.provider === 'anthropic' && SDK_DISPATCHABLE_TIERS.has(m.tier));
 }
 
 function residencyForProvider(provider: string): ModelResidency {

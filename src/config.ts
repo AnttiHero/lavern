@@ -91,6 +91,7 @@ export const config = {
     opus: process.env.SHEM_OPUS_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.opus,
     sonnet: process.env.SHEM_SONNET_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.sonnet,
     haiku: process.env.SHEM_HAIKU_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.haiku,
+    fable: process.env.SHEM_FABLE_MODEL ?? DEFAULT_ANTHROPIC_TIER_MODELS.fable,
   },
 
   // ── Mistral (EU-Sovereign Alternative) ──────────────────────────────
@@ -146,6 +147,10 @@ export const config = {
     // Cross-provider panelists on Anthropic engagements. Opt-in: clause text
     // reaches an ADDITIONAL vendor. Never applies to local/EU engagements.
     crossPanel: process.env.LAVERN_HIVEMIND_CROSS_PANEL === 'true',
+    // Fable seat: the fable tier sits on every Anthropic panel as a third,
+    // genuinely different reader. Three seats are also what lets the panel
+    // ledger learn (2-seat unanimity is never a signal). ON by default.
+    fableSeat: (process.env.LAVERN_HIVEMIND_FABLE_SEAT ?? 'true') !== 'false',
   },
 
   // ── API ────────────────────────────────────────────────────────────────

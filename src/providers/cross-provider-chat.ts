@@ -34,6 +34,9 @@ import { LOCAL_PRICING } from './local.js';
 import { MISTRAL_MODELS } from './types.js';
 import { withRetry } from '../utils/with-retry.js';
 import { anthropicTierModels } from './tier-models.js';
+import { createLogger } from '../utils/logger.js';
+
+const logger = createLogger('CROSS-PROVIDER');
 
 // ── Tier → model resolution ─────────────────────────────────────────────
 
@@ -43,7 +46,7 @@ import { anthropicTierModels } from './tier-models.js';
  * same business logic ("use a haiku-class model for the briefing analyzer")
  * works across providers without per-call model strings.
  */
-function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
+function modelFor(tier: 'opus' | 'sonnet' | 'haiku' | 'fable'): string {
   switch (config.provider) {
     case 'local':
       // One model per host on local. All tiers point at the default model.
@@ -59,6 +62,7 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku'): string {
       // with the SDK subprocess pins). Direct-call haiku work deliberately
       // runs on the sonnet model: cheap enough, and far stronger.
       switch (tier) {
+        case 'fable':  return anthropicTierModels().fable;
         case 'opus':   return anthropicTierModels().opus;
         case 'sonnet': return anthropicTierModels().sonnet;
         case 'haiku':  return anthropicTierModels().sonnet;
@@ -90,7 +94,7 @@ export interface CrossProviderChatOptions {
    */
   messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   /** Semantic cost tier. Resolves to a per-provider model. */
-  tier: 'opus' | 'sonnet' | 'haiku';
+  tier: 'opus' | 'sonnet' | 'haiku' | 'fable';
   /** Max output tokens. */
   maxTokens: number;
   /** Optional temperature override. Default 0.2. */
@@ -217,9 +221,12 @@ export async function crossProviderChat(
   // (accepted at the default effort on Opus 5/Sonnet 5), restoring their
   // exact pre-5 contract; larger calls keep adaptive thinking for quality.
   const disableThinking = /(?:sonnet|opus|haiku)-5/.test(model) && opts.maxTokens < 2048;
+  // The fable tier cannot disable thinking (400) and thinks always-on inside
+  // max_tokens, so tight caps get headroom instead — a cap raise is free.
+  const maxTokens = /fable-5/.test(model) ? Math.max(opts.maxTokens, 4096) : opts.maxTokens;
   const requestBody: Anthropic.MessageCreateParamsNonStreaming = {
     model,
-    max_tokens: opts.maxTokens,
+    max_tokens: maxTokens,
     system: opts.system,
     messages: turnList,
     ...(disableThinking ? { thinking: { type: 'disabled' as const } } : {}),
@@ -251,6 +258,15 @@ export async function crossProviderChat(
     if (block.type === 'text') text += block.text;
   }
   text = text.trim();
+
+  // Claude 5 family (Fable especially) can end a turn with stop_reason
+  // 'refusal'. Callers already treat empty text as a failed call (the quality
+  // gate fails closed and retries), so surface WHY rather than changing the
+  // control flow under a live system.
+  if (res.stop_reason === 'refusal') {
+    const category = (res as { stop_details?: { category?: string | null } }).stop_details?.category;
+    logger.warn('model declined the request', { model, category: category ?? 'unspecified' });
+  }
 
   const pricing = pricingFor(model);
   const inputTokens = res.usage?.input_tokens ?? 0;

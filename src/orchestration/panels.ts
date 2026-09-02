@@ -16,7 +16,8 @@
 import { config } from '../config.js';
 import { defaultPanel } from './dissent.js';
 import type { PanelMember, DissentVerdict } from './dissent.js';
-import { DEFAULT_MODEL_POOL } from './model-priors.js';
+import { DEFAULT_MODEL_POOL, labelForModel } from './model-priors.js';
+import { anthropicTierModels } from '../providers/tier-models.js';
 import type { LedgerView, PerformanceLedger } from './performance-ledger.js';
 
 /** Ledger role key for panel-outcome cells — kept distinct from agent roles. */
@@ -35,10 +36,30 @@ const DEFAULT_PANELIST_PRIOR = 0.7;
  */
 export function panelPool(provider: string = config.provider): PanelMember[] {
   const pool = [...defaultPanel(provider)];
+  if (config.hivemind.fableSeat && provider === 'anthropic') {
+    const fable = anthropicTierModels().fable;
+    pool.push({ key: 'fable', label: labelForModel(fable), provider: 'anthropic', model: fable });
+  }
   if (config.hivemind.crossPanel && provider === 'anthropic' && config.mistral.apiKey) {
     pool.push({ key: 'mistral-large', label: 'Mistral Large', provider: 'mistral', model: 'mistral-large-latest' });
   }
   return pool;
+}
+
+/** Seats to fill from a pool: three when the pool allows it — the size at
+ *  which quorum has no ties and the panel ledger can learn — else the pool. */
+export function defaultPanelSize(pool: PanelMember[]): number {
+  return Math.min(3, pool.length);
+}
+
+/** Rough per-call spend by model family; the fable tier thinks more and costs 2x. */
+export function estPanelistCallUsd(model: string): number {
+  return /fable/.test(model) ? 0.06 : 0.03;
+}
+
+/** Estimated spend for one round of the whole panel. */
+export function estPanelCostUsd(panel: PanelMember[]): number {
+  return panel.reduce((sum, m) => sum + estPanelistCallUsd(m.model), 0);
 }
 
 /**

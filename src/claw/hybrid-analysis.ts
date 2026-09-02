@@ -8,6 +8,13 @@ import type { LocalAnalysisResult, ClauseAnalysis, RiskItem } from './local-anal
 import type { AnonymizationResult } from './anonymize.js';
 import type { ClawProfile, ClawConfig } from './types.js';
 import type { ParsedDocument } from '../documents/types.js';
+import { PRICING } from '../utils/stream-messages.js';
+import { anthropicTierModels } from '../providers/tier-models.js';
+import { labelForModel } from '../orchestration/model-priors.js';
+
+/** Frontier escalation runs on the fable tier: one bounded call per document,
+ *  and its whole job is to be the deepest reader available. */
+const FRONTIER_MODEL = anthropicTierModels().fable;
 
 // ── Result Types ─────────────────────────────────────────────────────────
 
@@ -160,7 +167,7 @@ export async function analyzeHybrid(
   let frontierUsd = 0;
 
   try {
-    log(`[hybrid] Sending ${escalated.length} anonymised clauses to Opus 5 for deep review (budget cap: $${(clawConfig.perDocBudget * 0.3).toFixed(2)}).`);
+    log(`[hybrid] Sending ${escalated.length} anonymised clauses to ${labelForModel(FRONTIER_MODEL)} for deep review (budget cap: $${(clawConfig.perDocBudget * 0.3).toFixed(2)}).`);
     ensureApiKey();
     const client = new Anthropic();
 
@@ -195,7 +202,7 @@ ANONYMISED CLAUSES FOR DEEP REVIEW (one per '---'):
 ${anonymized.anonymizedText}`;
 
     const response = await client.messages.create({
-      model: 'claude-opus-5',
+      model: FRONTIER_MODEL,
       max_tokens: 16_000,
       system,
       messages: [{ role: 'user', content: userMessage }],
@@ -206,12 +213,11 @@ ${anonymized.anonymizedText}`;
       if (block.type === 'text') raw += block.text;
     }
 
-    // Cost — Opus 5: $5/M input, $25/M output (whole Opus 4.x/5 line; the
-    // previous 15/75 figures were Opus-3-era rates and overcharged the
-    // Claw budget 3x).
+    // Cost from the shared pricing table so this can never drift from it again.
+    const price = PRICING[FRONTIER_MODEL] ?? PRICING['claude-fable-5-1'];
     const inputT = response.usage?.input_tokens ?? 0;
     const outputT = response.usage?.output_tokens ?? 0;
-    frontierUsd = (inputT * 5 / 1_000_000) + (outputT * 25 / 1_000_000);
+    frontierUsd = (inputT * price.input / 1_000_000) + (outputT * price.output / 1_000_000);
 
     // Parse the findings — accept JSON object or fenced JSON
     const tryParse = (s: string): unknown => {

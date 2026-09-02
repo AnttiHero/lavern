@@ -31,7 +31,7 @@ export interface ModelOption {
   label: string;
   provider: 'anthropic' | 'mistral' | 'local';
   /** Lavern tier this model fills, for back-compat with the static tier map. */
-  tier: 'opus' | 'sonnet' | 'haiku' | 'large' | 'medium' | 'small' | 'on-device';
+  tier: 'opus' | 'sonnet' | 'haiku' | 'fable' | 'large' | 'medium' | 'small' | 'on-device';
   /** Where the data is processed — drives the confidentiality hard-filter. */
   residency: ModelResidency;
   /** Cold-start general-capability prior in [0,1]. Overridden by measured data. */
@@ -54,6 +54,8 @@ export const DEFAULT_MODEL_POOL: ModelOption[] = [
   { id: TIER.opus,   label: labelForModel(TIER.opus),   provider: 'anthropic', tier: 'opus',   residency: 'us', qualityPrior: 0.96, costWeight: 5 },
   { id: TIER.sonnet, label: labelForModel(TIER.sonnet), provider: 'anthropic', tier: 'sonnet', residency: 'us', qualityPrior: 0.90, costWeight: 2 },
   { id: TIER.haiku,  label: labelForModel(TIER.haiku),  provider: 'anthropic', tier: 'haiku',  residency: 'us', qualityPrior: 0.66, costWeight: 1 },
+  // Panel seat + priors only: subagents can't be dispatched to this tier (see runnablePool).
+  { id: TIER.fable,  label: labelForModel(TIER.fable),  provider: 'anthropic', tier: 'fable',  residency: 'us', qualityPrior: 0.98, costWeight: 10 },
   { id: 'mistral-large-latest',label: 'Mistral Large',provider: 'mistral',   tier: 'large',     residency: 'eu',        qualityPrior: 0.79, costWeight: 4  },
   { id: 'mistral-medium-latest',label: 'Mistral Medium',provider: 'mistral', tier: 'medium',    residency: 'eu',        qualityPrior: 0.66, costWeight: 2  },
   { id: 'gemma3:27b',          label: 'Gemma3 27B',   provider: 'local',     tier: 'on-device', residency: 'on-device', qualityPrior: 0.55, costWeight: 0  },

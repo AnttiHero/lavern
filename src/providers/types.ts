@@ -55,6 +55,7 @@ export interface MistralConfig {
  * data sovereignty (EU-hosted, GDPR-native), not raw capability.
  */
 export const MISTRAL_MODELS = {
+  fable: 'mistral-large-latest', // no Mistral peer for the fable tier — best available
   opus: 'mistral-large-latest',
   sonnet: 'mistral-medium-latest',
   haiku: 'mistral-small-latest',

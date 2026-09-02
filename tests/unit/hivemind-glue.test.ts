@@ -74,3 +74,17 @@ describe('planEngagementRouting', () => {
     expect(q!.ewma).toBeCloseTo(0.5, 5); // 1 of 2 verifications passed
   });
 });
+
+describe('fable tier is never routed to a subagent', () => {
+  it('no routing candidate is the fable tier (the SDK would drop the agent)', async () => {
+    const { planEngagementRouting } = await import('../../src/orchestration/record-engagement-routing.js');
+    const s = fakeSession();
+    planEngagementRouting(s as never, 'review', ['contract-reviewer'], 'anthropic', false, () => 0.5);
+    const decisions = s.hivemind as Array<{ candidates: Array<{ modelId: string }>; effectiveTier: string }>;
+    expect(decisions.length).toBeGreaterThan(0);
+    for (const d of decisions) {
+      expect(d.candidates.some(c => /fable/.test(c.modelId))).toBe(false);
+      expect(d.effectiveTier).not.toBe('fable');
+    }
+  });
+});

@@ -23,9 +23,8 @@ import { eventTimestamp } from '../../events/event-bus.js';
 import { config } from '../../config.js';
 import { runQuorumCheck } from '../../orchestration/quorum.js';
 import type { QuorumRecord } from '../../orchestration/quorum.js';
-import { composePanel, panelPool } from '../../orchestration/panels.js';
+import { composePanel, panelPool, defaultPanelSize, estPanelCostUsd } from '../../orchestration/panels.js';
 import { getLedger } from '../../orchestration/record-engagement-routing.js';
-import { EST_PANELIST_CALL_USD } from '../../orchestration/dissent.js';
 
 /** Quorum fan-out limits: a pass with many CRITICALs must not stall the
  *  verification tool call or storm the provider. Checks beyond the cap ship
@@ -329,12 +328,11 @@ ${issues.length > 0 ? `### Issues\n${issues.map((issue, i) => `${i + 1}. ${issue
         && (session.accumulatedCost + session.hivemindCostUsd) >= session.budgetUsd;
       if (config.hivemind.quorum && critical > 0 && !budgetExhausted) {
         const sessionProvider = session.provider ?? config.provider;
-        const panel = composePanel(
-          session.workflowTemplateId ?? 'verification', getLedger(), 2, panelPool(sessionProvider),
-        );
+        const pool = panelPool(sessionProvider);
+        const panel = composePanel(session.workflowTemplateId ?? 'verification', getLedger(), defaultPanelSize(pool), pool);
         if (panel.length >= 2) {
           const toCheck = args.findings.filter(f => f.severity === 'CRITICAL').slice(0, MAX_QUORUM_PER_PASS);
-          session.hivemindCostUsd += toCheck.length * panel.length * EST_PANELIST_CALL_USD;
+          session.hivemindCostUsd += toCheck.length * estPanelCostUsd(panel);
           const runAll = (async () => {
             for (let i = 0; i < toCheck.length; i += QUORUM_CONCURRENCY) {
               await Promise.all(toCheck.slice(i, i + QUORUM_CONCURRENCY).map(async (f) => {

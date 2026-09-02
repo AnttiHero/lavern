@@ -16,9 +16,9 @@ import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import type { SessionState } from '../../session/session-state.js';
 import { config } from '../../config.js';
-import { runDissent, EST_PANELIST_CALL_USD } from '../../orchestration/dissent.js';
+import { runDissent } from '../../orchestration/dissent.js';
 import { resolveDissent } from '../../orchestration/resolution.js';
-import { composePanel, panelPool, recordPanelistOutcomes } from '../../orchestration/panels.js';
+import { composePanel, panelPool, recordPanelistOutcomes, defaultPanelSize, estPanelCostUsd } from '../../orchestration/panels.js';
 import { getLedger } from '../../orchestration/record-engagement-routing.js';
 import { getPrecedents } from '../../orchestration/precedents.js';
 
@@ -39,7 +39,8 @@ export function createDissentTools(session: SessionState) {
       // Panel follows the SESSION's provider: an EU-sovereign engagement gets
       // an EU panel even when the deployment's global provider is anthropic.
       const sessionProvider = session.provider ?? config.provider;
-      const panel = composePanel(matterType, getLedger(), 2, panelPool(sessionProvider));
+      const pool = panelPool(sessionProvider);
+      const panel = composePanel(matterType, getLedger(), defaultPanelSize(pool), pool);
       if (panel.length < 2) {
         return {
           content: [{
@@ -50,12 +51,12 @@ export function createDissentTools(session: SessionState) {
       }
 
       let result = await runDissent({ question: args.question, options: args.options, context: args.clause, panel });
-      session.hivemindCostUsd += panel.length * EST_PANELIST_CALL_USD;
+      session.hivemindCostUsd += estPanelCostUsd(panel);
 
       if (result.dissent) {
         result = await resolveDissent(result, { context: args.clause, userId: session.userId, provider: sessionProvider, matterType, panel });
         if (result.resolution?.revote.length) {
-          session.hivemindCostUsd += panel.length * EST_PANELIST_CALL_USD;
+          session.hivemindCostUsd += estPanelCostUsd(panel);
         }
         if (result.resolution?.resolved && result.resolution.finalLabel) {
           // Layer 3: a resolved split reveals who read it right first time.

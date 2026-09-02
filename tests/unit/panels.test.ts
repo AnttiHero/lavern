@@ -7,7 +7,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { composePanel, recordPanelistOutcomes, PANELIST_ROLE } from '../../src/orchestration/panels.js';
+import { composePanel, recordPanelistOutcomes, PANELIST_ROLE, panelPool, defaultPanelSize, estPanelCostUsd } from '../../src/orchestration/panels.js';
+import { config } from '../../src/config.js';
 import { PerformanceLedger } from '../../src/orchestration/performance-ledger.js';
 import { defaultPanel } from '../../src/orchestration/dissent.js';
 import type { PanelMember, DissentVerdict } from '../../src/orchestration/dissent.js';
@@ -124,5 +125,41 @@ describe('defaultPanel provider threading', () => {
     const panel = defaultPanel('local');
     expect(panel).toHaveLength(1);
     expect(panel[0].provider).toBe('local');
+  });
+});
+
+describe('the fable seat', () => {
+  it('sits on the anthropic panel by default as a third, distinct reader', () => {
+    const pool = panelPool('anthropic');
+    expect(pool.map(m => m.model)).toContain(config.anthropicTierModels.fable);
+    expect(new Set(pool.map(m => m.model)).size).toBe(pool.length);
+    expect(defaultPanelSize(pool)).toBe(3);
+  });
+
+  it('never joins a sovereign or local panel', () => {
+    expect(panelPool('mistral').some(m => /fable/.test(m.model))).toBe(false);
+    expect(panelPool('local').some(m => /fable/.test(m.model))).toBe(false);
+  });
+
+  it('a three-seat pool seats all three (fable included), so the panel ledger can learn', () => {
+    const ledger = new PerformanceLedger();
+    const pool = panelPool('anthropic');
+    const panel = composePanel('review', ledger, defaultPanelSize(pool), pool);
+    expect(panel).toHaveLength(3);
+    expect(panel.map(m => m.model)).toContain(config.anthropicTierModels.fable);
+  });
+
+  it('with a cross-provider seat available, fable still takes a seat on prior', () => {
+    const ledger = new PerformanceLedger();
+    const pool = [...panelPool('anthropic'), { key: 'mistral', label: 'Mistral Large', provider: 'mistral' as const, model: 'mistral-large-latest' }];
+    const panel = composePanel('review', ledger, 3, pool);
+    expect(panel).toHaveLength(3);
+    expect(panel[0].model).toBe(config.anthropicTierModels.fable); // highest prior seats first
+    expect(panel.map(m => m.model)).toContain('mistral-large-latest'); // decorrelation pulls the second seat cross-provider
+  });
+
+  it('prices the fable seat at double', () => {
+    const pool = panelPool('anthropic');
+    expect(estPanelCostUsd(pool)).toBeCloseTo(0.03 + 0.03 + 0.06, 6);
   });
 });

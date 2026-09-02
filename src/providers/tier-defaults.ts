@@ -7,6 +7,10 @@ export const DEFAULT_ANTHROPIC_TIER_MODELS = {
   opus: 'claude-opus-5',
   sonnet: 'claude-sonnet-5',
   haiku: 'claude-haiku-4-5',
+  /** The most capable tier. Never dispatched to a subagent (the SDK only
+   *  takes alias tiers); it enters via the Hivemind panel, Claw's frontier
+   *  escalation, and the Challenge judge. */
+  fable: 'claude-fable-5-1',
 } as const;
 
-export type AnthropicTierModels = { opus: string; sonnet: string; haiku: string };
+export type AnthropicTierModels = { opus: string; sonnet: string; haiku: string; fable: string };

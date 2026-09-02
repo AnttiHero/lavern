@@ -95,9 +95,11 @@ async function callModel(m: PanelMember, system: string, user: string): Promise<
     // independence comes from model diversity, not sampling noise.
     // max_tokens 4096: on Opus 5 / Sonnet 5 thinking runs by default and
     // counts against max_tokens — 1024 risked truncating the JSON verdict.
+    // The fable tier thinks always-on and runs slower: give it twice the wall clock.
+    const timeout = /fable/.test(m.model) ? 120_000 : 60_000;
     const res = await client.messages.create(
       { model: m.model, max_tokens: 4096, system, messages: [{ role: 'user', content: user }] },
-      { timeout: 60_000, maxRetries: 1 },
+      { timeout, maxRetries: 1 },
     );
     if (res.stop_reason === 'refusal') {
       // stop_details is not yet in the installed SDK's Message typings.

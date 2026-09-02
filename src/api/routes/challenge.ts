@@ -18,6 +18,7 @@ import {
   buildComparisonUserPrompt,
 } from './challenge-prompt.js';
 import { createLogger } from '../../utils/logger.js';
+import { anthropicTierModels } from '../../providers/tier-models.js';
 
 const logger = createLogger('CHALLENGE');
 
@@ -81,7 +82,7 @@ export function registerChallengeRoutes(
     };
 
     try {
-      // Call Opus 5 directly via Anthropic SDK. The system prompt already
+      // Call the fable tier directly via Anthropic SDK. The system prompt already
       // mandates JSON-only output (see buildComparisonSystemPrompt); the
       // downstream cleanup at lines 110-126 strips fences/thinking and
       // extracts the outermost {...} block, so we don't need to use an
@@ -96,9 +97,10 @@ export function registerChallengeRoutes(
       const userPrompt = buildComparisonUserPrompt(docA, docB);
 
       const response = await getClient().messages.create({
-        model: 'claude-opus-5',
-        // Opus 5 thinks by default and thinking counts against max_tokens —
-        // 8192 leaves headroom so the JSON comparison never truncates.
+        // The blind judge is the fable tier: the strongest reader we have,
+        // one bounded call. Thinking is always-on and counts against
+        // max_tokens — 8192 leaves headroom so the JSON never truncates.
+        model: anthropicTierModels().fable,
         max_tokens: 8192,
         system: systemPrompt,
         messages: [
