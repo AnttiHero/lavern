@@ -23,6 +23,7 @@ const GATE_LABELS: Record<string, string> = {
   ethics_critical: 'Ethics Critical',
   meaning_critical: 'Meaning Critical',
   final_delivery: 'Final Delivery',
+  quality_escalation: 'Quality Escalation',
 };
 
 export function GateDialog({

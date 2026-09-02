@@ -489,6 +489,7 @@ export function registerEngageRoutes(
         await postWebhookWithRetry(callbackUrl, response);
       }).catch(async (err) => {
         logger.error('Session failed', { sessionId: session.id, error: err });
+        session.halt(`Session failed: ${err instanceof Error ? err.message : String(err)}`);
         // A dispatch failure is already user-visible (the engagement won't
         // deliver) but the CAUSE is only in our logs. Page Sentry so a
         // regression in the orchestrator doesn't silently degrade every

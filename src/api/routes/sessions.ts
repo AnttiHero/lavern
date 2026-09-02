@@ -390,6 +390,9 @@ export function registerSessionRoutes(
       }).catch((err) => {
         try {
           logger.error('Session failed', { sessionId: session.id, error: err });
+          // Make the failure legible on the session itself: without this the
+          // API kept reporting "intake, $0" forever for a session that died at start.
+          session.halt(`Session failed: ${err instanceof Error ? err.message : String(err)}`);
           session.events.emitEvent({
             type: 'error',
             message: `Session failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -611,6 +614,7 @@ export function registerSessionRoutes(
             ?? (summary as Record<string, unknown>).collectiveIntelligence ?? [],
           dissents: (summary as Record<string, unknown>).dissents ?? [],
           quorumChecks: (summary as Record<string, unknown>).quorumChecks ?? [],
+          qualityEscalation: (summary as Record<string, unknown>).qualityEscalation ?? null,
           matterTitle: archived.title,
           workflowTemplateId: archived.workflow_id,
           provider: 'anthropic',
@@ -683,6 +687,7 @@ export function registerSessionRoutes(
       dissents: session.dissents,
       // Hivemind quorum: panel checks run on CRITICAL verification findings.
       quorumChecks: session.quorumChecks,
+      qualityEscalation: session.genericWorkflow?.qualityEscalation ?? null,
       pendingGate: pendingGate ? {
         gateType: pendingGate.gateType,
         summary: pendingGate.summary,

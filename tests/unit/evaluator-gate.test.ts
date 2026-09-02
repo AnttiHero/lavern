@@ -298,3 +298,51 @@ describe('Evaluator Gate', () => {
     });
   });
 });
+
+// ── Quality escalation (engine-enforced) ─────────────────────────────────
+describe('quality escalation after exhausted revisions', () => {
+  it('raises a qualityEscalation on the workflow state and tells the orchestrator advance_step is refused', async () => {
+    const session = new SessionState('test-escalation');
+    const now = new Date().toISOString();
+    session.genericWorkflow = {
+      templateId: 'review', currentStep: 'evaluator_gate', completedSteps: ['intake', 'specialist_analysis'],
+      // revisionCount is incremented by the failed-record path before the limit check: 1 -> 2 of 2.
+      gateDecisions: {}, evaluatorResults: [], revisionCount: 1, qualityChecks: [], stepIterationCounts: {}, handoffs: [],
+      startedAt: now, lastTransitionAt: now,
+    } as never;
+    const tools = createEvaluatorGateTools(session);
+    const record = tools.find((t: any) => t.name === 'record_evaluation_result') as any;
+    const res = await record.handler({
+      specialist_role: 'contract-specialist', step: 'evaluator_gate', score: 0.58, passed: false,
+      failure_reasons: ['Cap analysis contradicts Section 6'], revision_suggestions: ['Reconcile 5 and 6'],
+    });
+    const text = res.content[0].text as string;
+    expect(text).toContain('ESCALATION REQUIRED');
+    expect(text).toContain('quality_escalation');
+    const esc = session.genericWorkflow!.qualityEscalation!;
+    expect(esc).toMatchObject({ step: 'evaluator_gate', score: 0.58, revisions: 2, maxRevisions: 2, failureReasons: ['Cap analysis contradicts Section 6'] });
+    expect(esc.resolvedBy).toBeUndefined();
+  });
+});
+
+import { createApprovalTools } from '../../src/mcp/tools/approval-gate.js';
+describe('request_approval under an unresolved quality escalation', () => {
+  it('puts the evaluator failure in front of the human verbatim, whatever the orchestrator wrote', async () => {
+    const session = new SessionState('test-esc-gate');
+    const now = new Date().toISOString();
+    session.genericWorkflow = {
+      templateId: 'review', currentStep: 'evaluator_gate', completedSteps: [], gateDecisions: {}, evaluatorResults: [],
+      revisionCount: 2, qualityChecks: [], stepIterationCounts: {}, handoffs: [], startedAt: now, lastTransitionAt: now,
+      qualityEscalation: { step: 'evaluator_gate', score: 0.58, revisions: 2, maxRevisions: 2, failureReasons: ['Cap contradiction'], raisedAt: now },
+    } as never;
+    let seen: { details: string } | undefined;
+    (session as any).gateResolver = { resolve: async (req: { details: string }) => { seen = req; return { decision: 'approve', notes: 'ok' }; } };
+    const request = (createApprovalTools(session) as any[]).find(t => t.name === 'request_approval') as any;
+    await request.handler({ gate_type: 'quality_escalation', summary: 'Deliver?', details: 'Orchestrator says fine.', proposed_action: 'deliver' });
+    expect(seen!.details).toContain('QUALITY ESCALATION');
+    expect(seen!.details).toContain('0.58');
+    expect(seen!.details).toContain('Cap contradiction');
+    expect(seen!.details).toContain('Orchestrator says fine.');
+    expect(session.gateDecisions.at(-1)).toMatchObject({ gateType: 'quality_escalation', decision: 'approve' });
+  });
+});

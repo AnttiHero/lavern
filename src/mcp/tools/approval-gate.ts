@@ -37,7 +37,8 @@ export function createApprovalTools(session: SessionState) {
         'final_delivery',
         'engagement_acceptance',
         'team_selection',
-      ]).describe('Type of approval gate'),
+        'quality_escalation',
+      ]).describe('Type of approval gate. quality_escalation: the evaluator failed the work after all revision loops — the client decides whether to deliver anyway.'),
       summary: z.string()
         .describe('Human-readable summary of what needs approval'),
       details: z.string()
@@ -46,12 +47,20 @@ export function createApprovalTools(session: SessionState) {
         .describe('What will happen if approved'),
     },
     async (args) => {
+      // An unresolved quality escalation is put in front of the human
+      // verbatim, whatever the orchestrator chose to write: the client must
+      // know they are approving work that failed Lavern's own quality bar.
+      const esc = session.genericWorkflow?.qualityEscalation;
+      const details = esc && !esc.resolvedBy
+        ? `QUALITY ESCALATION — the independent evaluator FAILED this work at ${esc.score.toFixed(2)} after ${esc.revisions}/${esc.maxRevisions} revisions.\nFailure reasons:\n${esc.failureReasons.map((r, i) => `${i + 1}. ${r}`).join('\n') || '(none recorded)'}\nApproving delivers work that did not clear Lavern's own quality bar.\n\n${args.details}`
+        : args.details;
+
       // Emit gate requested event (visualization: alarm animation)
       session.events.emitEvent({
         type: 'gate_requested',
         gateType: args.gate_type,
         summary: args.summary,
-        details: args.details,
+        details,
         timestamp: eventTimestamp(),
       });
 
@@ -59,7 +68,7 @@ export function createApprovalTools(session: SessionState) {
       const result = await session.gateResolver.resolve({
         gateType: args.gate_type,
         summary: args.summary,
-        details: args.details,
+        details,
         proposedAction: args.proposed_action,
       });
 

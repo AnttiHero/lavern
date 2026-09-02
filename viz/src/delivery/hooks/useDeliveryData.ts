@@ -144,6 +144,16 @@ export interface QuorumView {
   checkedAt: string;
 }
 
+export interface QualityEscalationView {
+  step: string;
+  score: number;
+  revisions: number;
+  maxRevisions: number;
+  failureReasons: string[];
+  raisedAt: string;
+  resolvedBy?: { gateType: string; decision: 'approve' | 'reject' | 'modify'; notes?: string; decidedAt: string };
+}
+
 export interface DeliveryData {
   sessionId: string;
   status: string;
@@ -201,6 +211,8 @@ export interface DeliveryData {
   hivemind?: RoutingDecisionView[];
   // Dissent Mode: independent-panel splits surfaced this engagement.
   dissents?: DissentView[];
+  /** Evaluator failure after exhausted revisions, and the human decision that delivered anyway. */
+  qualityEscalation?: QualityEscalationView | null;
   // Hivemind quorum: panel checks on CRITICAL verification findings.
   quorumChecks?: QuorumView[];
 }
@@ -602,6 +614,17 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
 
   // Limitations — flag what might be missing
   const flaggedItems: string[] = [];
+  // Quality escalation: the evaluator failed the work after all revisions and a
+  // human decided to deliver anyway — the client must see that, in plain words.
+  const qualityEscalation: QualityEscalationView | null =
+    raw.qualityEscalation && typeof raw.qualityEscalation === 'object' ? (raw.qualityEscalation as QualityEscalationView) : null;
+  if (qualityEscalation) {
+    const who = qualityEscalation.resolvedBy
+      ? `delivered on a human decision (${qualityEscalation.resolvedBy.decision}${qualityEscalation.resolvedBy.notes ? `: ${qualityEscalation.resolvedBy.notes}` : ''})`
+      : 'awaiting a human decision';
+    flaggedItems.push(`Lavern's own evaluator FAILED this work at ${qualityEscalation.score.toFixed(2)} after ${qualityEscalation.revisions}/${qualityEscalation.maxRevisions} revisions — ${who}. Failure reasons: ${qualityEscalation.failureReasons.join('; ') || 'none recorded'}. Treat the deliverable as unverified.`);
+  }
+
   if (debateResolutions.some(r => r.escalationNeeded)) {
     flaggedItems.push('One or more debate resolutions were flagged for escalation');
   }
@@ -632,6 +655,7 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     hivemind: Array.isArray(raw.hivemind) ? (raw.hivemind as RoutingDecisionView[])
       : Array.isArray(raw.collectiveIntelligence) ? (raw.collectiveIntelligence as RoutingDecisionView[]) : [],
     dissents,
+    qualityEscalation,
     quorumChecks: Array.isArray(raw.quorumChecks) ? (raw.quorumChecks as QuorumView[]) : [],
     limitations: { flaggedForHumanReview: flaggedItems, confidenceIntervals: '', disclaimer: 'This analysis was produced by an AI system with multi-agent verification. For matters involving regulatory filings, litigation, or binding contractual obligations, we recommend independent counsel verification.' },
     nextSteps,

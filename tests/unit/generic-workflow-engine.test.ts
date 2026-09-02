@@ -265,3 +265,56 @@ describe('Generic Workflow Engine', () => {
     });
   });
 });
+
+// ── Quality escalation is the client's decision, enforced by the engine ──
+import { SessionState } from '../../src/session/session-state.js';
+import { createGenericWorkflowTools } from '../../src/mcp/tools/generic-workflow-engine.js';
+
+function escalatedSession(raisedAt: string): SessionState {
+  const s = new SessionState('test-esc-engine');
+  const now = new Date().toISOString();
+  s.genericWorkflow = {
+    templateId: 'review', currentStep: 'evaluator_gate', completedSteps: ['intake', 'specialist_analysis'],
+    gateDecisions: {}, evaluatorResults: [], revisionCount: 2, qualityChecks: [], stepIterationCounts: {}, handoffs: [],
+    startedAt: now, lastTransitionAt: now,
+    qualityEscalation: { step: 'evaluator_gate', score: 0.58, revisions: 2, maxRevisions: 2, failureReasons: ['x'], raisedAt },
+  } as never;
+  return s;
+}
+const advanceTool = (s: SessionState) =>
+  (createGenericWorkflowTools(s, reviewTemplate) as any[]).find(t => t.name === 'advance_step') as any;
+
+describe('advance_step under an unresolved quality escalation', () => {
+  it('refuses to advance until a human decision recorded after the escalation exists', async () => {
+    const s = escalatedSession(new Date().toISOString());
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('cannot advance until a HUMAN decides');
+    expect(s.genericWorkflow!.currentStep).toBe('evaluator_gate');
+  });
+
+  it('a stale decision from before the escalation does not count', async () => {
+    const s = escalatedSession(new Date(Date.now() + 60_000).toISOString());
+    s.gateDecisions.push({ gateType: 'final_delivery', timestamp: new Date().toISOString(), summary: 'old', decision: 'approve' });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('cannot advance until a HUMAN decides');
+  });
+
+  it('a human rejection re-raises the escalation and does not advance', async () => {
+    const s = escalatedSession(new Date(Date.now() - 1000).toISOString());
+    s.gateDecisions.push({ gateType: 'quality_escalation', timestamp: new Date().toISOString(), summary: 'q', decision: 'reject', notes: 'fix the cap' });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('REJECTED');
+    expect(res.content[0].text).toContain('fix the cap');
+    expect(s.genericWorkflow!.qualityEscalation!.resolvedBy).toBeUndefined();
+    expect(s.genericWorkflow!.currentStep).toBe('evaluator_gate');
+  });
+
+  it('a human approval resolves the escalation on the record and the workflow advances', async () => {
+    const s = escalatedSession(new Date(Date.now() - 1000).toISOString());
+    s.gateDecisions.push({ gateType: 'quality_escalation', timestamp: new Date().toISOString(), summary: 'q', decision: 'approve', notes: 'deliver with caveats' });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).not.toContain('cannot advance');
+    expect(s.genericWorkflow!.qualityEscalation!.resolvedBy).toMatchObject({ gateType: 'quality_escalation', decision: 'approve', notes: 'deliver with caveats' });
+    expect(s.genericWorkflow!.completedSteps).toContain('evaluator_gate');
+  });
+});

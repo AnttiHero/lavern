@@ -57,6 +57,21 @@ const AgentDocsView = lazy(() => import('./agent-docs/AgentDocsView.js'));
 const LoginView = lazy(() => import('./auth/LoginView.js'));
 const ResetPasswordView = lazy(() => import('./auth/ResetPasswordView.js'));
 const QuickStartView = lazy(() => import('./landing/QuickStartView.js'));
+
+/**
+ * Express "Instruct" tiers follow the profile's YOLO default (My Page → Default
+ * Settings), which is OFF unless the user turned it on: human gates are
+ * mandatory, and an express lane is not consent to skip them. The explicit
+ * YOLO launcher is the only path that auto-approves unconditionally.
+ */
+function expressYoloMode(): boolean {
+  try {
+    const raw = localStorage.getItem('shem-user-profile');
+    return raw ? JSON.parse(raw).yoloModeDefault === true : false;
+  } catch {
+    return false;
+  }
+}
 const ClawView = lazy(() => import('./claw/ClawView.js'));
 const ClawLiveView = lazy(() => import('./claw/ClawLiveView.js'));
 const RalphLoopView = lazy(() => import('./ralph/RalphLoopView.js'));
@@ -383,7 +398,7 @@ export function App() {
       workflowId: config.workflowId,
       intensity: config.intensity,
       budgetUsd: config.budgetUsd,
-      yoloMode: true,
+      yoloMode: expressYoloMode(),
     }));
     sessionStorage.setItem('shem-briefing-team', JSON.stringify(config.teamRoles));
 
@@ -423,7 +438,7 @@ export function App() {
             budget: config.budgetUsd,
             intensity: config.intensity,
             effort: config.effort,
-            yoloMode: true,
+            yoloMode: expressYoloMode(),
             verification: config.workflowId !== 'counsel',
           },
         }),

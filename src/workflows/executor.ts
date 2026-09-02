@@ -221,8 +221,12 @@ export async function runGenericWorkflow(
     filteredAgents['evaluator'] = agentDefinitions['evaluator'];
   }
 
-  // Sanity check: at least one agent must be available
-  if (Object.keys(filteredAgents).length === 0) {
+  // Sanity check: at least one agent must be available — unless the template
+  // has no required agents (counsel: the orchestrator answers directly, no
+  // subagents). Throwing here killed every team-less counsel session at start.
+  if (Object.keys(filteredAgents).length === 0 && template.requiredAgents.length === 0) {
+    logger.info('No subagents for this engagement — orchestrator answers directly', { template: template.id });
+  } else if (Object.keys(filteredAgents).length === 0) {
     const fallbackTeam = template.requiredAgents;
     logger.error('No valid agents from selected team — falling back to template defaults', { fallbackTeam: fallbackTeam.join(', ') });
     for (const role of fallbackTeam) {

@@ -24,7 +24,7 @@ export interface StepDefinition {
   description: string;
   preconditions: WorkflowStep[];
   requiresGateApproval?: boolean;
-  gateType?: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection';
+  gateType?: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'quality_escalation';
 }
 
 export const STEP_DEFINITIONS: Record<WorkflowStep, StepDefinition> = {
@@ -184,6 +184,22 @@ export interface HandoffSummary {
   timestamp: string;
 }
 
+/**
+ * Raised when the evaluator gate fails after a step's revision loops are
+ * exhausted. The engine refuses to advance past that step until a HUMAN gate
+ * decision recorded after `raisedAt` resolves it: delivering work that failed
+ * Lavern's own quality bar is the client's decision, never the orchestrator's.
+ */
+export interface QualityEscalation {
+  step: string;
+  score: number;
+  revisions: number;
+  maxRevisions: number;
+  failureReasons: string[];
+  raisedAt: string;
+  resolvedBy?: { gateType: string; decision: 'approve' | 'reject' | 'modify'; notes?: string; decidedAt: string };
+}
+
 export interface GenericWorkflowState {
   templateId: string;
   currentStep: string;
@@ -197,6 +213,8 @@ export interface GenericWorkflowState {
   stepIterationCounts: Record<string, number>;
   /** Structured handoff summaries recorded at each phase transition */
   handoffs: HandoffSummary[];
+  /** Unresolved or resolved evaluator-failure escalation (see QualityEscalation). */
+  qualityEscalation?: QualityEscalation;
   startedAt: string;
   lastTransitionAt: string;
 }

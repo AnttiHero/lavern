@@ -22,7 +22,7 @@ const logger = createLogger('GATE');
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface GateRequest {
-  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection';
+  gateType: 'ethics_critical' | 'meaning_critical' | 'final_delivery' | 'engagement_acceptance' | 'team_selection' | 'quality_escalation';
   summary: string;
   details: string;
   proposedAction: string;

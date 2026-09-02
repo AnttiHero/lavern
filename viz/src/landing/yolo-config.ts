@@ -6,7 +6,9 @@
  *   Review:      dedicated team, debate + quality checks, max effort, $40 budget
  *   Full Bench:  every specialist, senior oversight at both ends, max effort, $125 budget
  *
- * All set yoloMode: true (auto-approve all gates).
+ * `yoloMode: true` applies to the explicit YOLO launcher only. The express
+ * Instruct tiers reuse these configs but take their gate mode from the
+ * profile's YOLO default (human gates unless the user opted out).
  *
  * The `effort` field maps to Claude's API effort parameter:
  *   'medium' = balanced token spend (counsel tier)

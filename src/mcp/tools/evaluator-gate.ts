@@ -126,6 +126,18 @@ The deliverable meets quality standards. Proceed to the next workflow step.`,
       const currentRevisions = gw ? gw.revisionCount : 1;
 
       if (currentRevisions >= maxRevisions) {
+        // Engine-enforced escalation: advance_step refuses this step until a
+        // human gate decision (recorded after raisedAt) resolves it.
+        if (gw) {
+          gw.qualityEscalation = {
+            step: args.step,
+            score: args.score,
+            revisions: currentRevisions,
+            maxRevisions,
+            failureReasons: args.failure_reasons ?? [],
+            raisedAt: new Date().toISOString(),
+          };
+        }
         return {
           content: [{
             type: 'text' as const,
@@ -143,7 +155,7 @@ ${(args.failure_reasons ?? []).map((r, i) => `${i + 1}. ${r}`).join('\n')}
 **Revision Suggestions**:
 ${(args.revision_suggestions ?? []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
-Invoke the approval gate to present these issues to the human for decision.`,
+You MUST call \`request_approval\` with gate_type "quality_escalation", stating the score, the failure reasons and exactly what will be delivered if approved. \`advance_step\` is REFUSED for this step until the human has decided. Do not self-report a decision.`,
           }],
         };
       }

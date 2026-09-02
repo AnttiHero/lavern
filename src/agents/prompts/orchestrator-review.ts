@@ -121,7 +121,7 @@ If the evaluator fails the work: send the specialist targeted feedback (not the
 entire evaluator output — the specific dimensions that failed). The specialist
 revises against those dimensions. The evaluator re-checks. Maximum 2 loops.
 
-After passing (or exhausting loops), call \`advance_step\`
+After passing, call \`advance_step\`. If the revision loops are exhausted, the engine REFUSES \`advance_step\`: call \`request_approval\` with gate_type "quality_escalation" and let the client decide, on the record. Then call \`advance_step\`
 with completed_step: "evaluator_gate".
 
 ### 4. PLAIN LANGUAGE REVIEW

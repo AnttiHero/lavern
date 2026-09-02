@@ -100,6 +100,36 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
 
       const stepDef = defs[completedStep];
 
+      // Quality escalation: an evaluator failure after exhausted revisions is
+      // the CLIENT's decision. Engine-enforced, so a prompt cannot wave it
+      // through — the same posture as the human gates below.
+      const esc = state.qualityEscalation;
+      if (esc && !esc.resolvedBy && esc.step === completedStep) {
+        const raisedAt = Date.parse(esc.raisedAt);
+        const decision = [...session.gateDecisions]
+          .reverse()
+          .find(d => Date.parse(d.timestamp) >= raisedAt);
+        if (!decision) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `ERROR: Step "${completedStep}" FAILED the evaluator gate (score ${esc.score.toFixed(2)}) after ${esc.revisions}/${esc.maxRevisions} revisions. The workflow cannot advance until a HUMAN decides. Call \`request_approval\` with gate_type "quality_escalation", stating the score, the failure reasons and exactly what will be delivered if approved, then wait for the decision. Do not self-report a decision.`,
+            }],
+          };
+        }
+        if (decision.decision === 'reject') {
+          // Re-raise: a later, fresh decision is required.
+          esc.raisedAt = new Date().toISOString();
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `QUALITY ESCALATION REJECTED by human${decision.notes ? `: ${decision.notes}` : ''}. The workflow does NOT advance. Revise the work, re-run the evaluator, and request approval again.`,
+            }],
+          };
+        }
+        esc.resolvedBy = { gateType: decision.gateType, decision: decision.decision, notes: decision.notes, decidedAt: decision.timestamp };
+      }
+
       // Gate steps require a real human decision recorded by request_approval
       if (stepDef?.requiresGateApproval) {
         const gateKey = stepDef.gateType ?? completedStep;
