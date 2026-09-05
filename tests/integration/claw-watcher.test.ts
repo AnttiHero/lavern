@@ -1,4 +1,9 @@
 /**
+ * ENVIRONMENT-DEPENDENT: exercises real filesystem watchers and can hit
+ * EMFILE on constrained hosts. Excluded from the default `npm test`; run
+ * with `npm run test:env`.
+ */
+/**
  * Integration Tests — ClawWatcher (src/claw/watcher.ts)
  *
  * Exercises the file watcher: new file detection, debounce,

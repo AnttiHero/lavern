@@ -74,6 +74,10 @@ jobs:
           npm ci
           npm run build
 
+      - name: Run dashboard tests
+        working-directory: viz
+        run: npm test
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

@@ -60,3 +60,21 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 });
+
+
+// ── Inert WebSocket / EventSource ────────────────────────────────────────
+// jsdom's WebSocket opens a real socket (and Node's fetch may be reached
+// through it), which surfaced as undici "invalid onError method" unhandled
+// rejections in WorkingView tests. Components under test must never touch
+// the network.
+class InertWebSocket {
+  static CONNECTING = 0; static OPEN = 1; static CLOSING = 2; static CLOSED = 3;
+  readyState = 0; url: string; onopen: unknown = null; onmessage: unknown = null; onerror: unknown = null; onclose: unknown = null;
+  constructor(url: string) { this.url = url; }
+  send(): void {} close(): void { this.readyState = 3; }
+  addEventListener(): void {} removeEventListener(): void {}
+}
+// @ts-expect-error test double
+globalThis.WebSocket = InertWebSocket;
+// @ts-expect-error test double
+globalThis.EventSource = class { close(): void {} addEventListener(): void {} removeEventListener(): void {} };

@@ -36,7 +36,7 @@ export interface YoloConfig {
 
 /**
  * Team roles are from DEMO_PRESETS in staffing/data/demoProfiles.ts.
- * Counsel = 1 dispatched, Review = 14 agents, Full Bench = 23 agents.
+ * Counsel = 8 roles, Review = 12 roles, Full Bench = 21 roles (teamSize is the truth).
  */
 export const YOLO_CONFIGS: Record<YoloTier, YoloConfig> = {
   standard: {

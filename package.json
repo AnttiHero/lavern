@@ -1,7 +1,7 @@
 {
   "name": "lavern",
   "version": "0.15.0",
-  "description": "Lavern — An agentic legal architecture. A law firm staffed with AI agents.",
+  "description": "Lavern \u2014 An agentic legal architecture. A law firm staffed with AI agents.",
   "license": "Apache-2.0",
   "author": "Antti Innanen (https://lavern.ai)",
   "homepage": "https://lavern.ai",
@@ -32,7 +32,8 @@
     "serve": "NODE_OPTIONS='--no-deprecation' tsx --env-file-if-exists=.env src/index.ts --serve",
     "serve:dev": "NODE_OPTIONS='--no-deprecation' tsx --env-file-if-exists=.env src/index.ts --serve --port 3000",
     "build:viz": "cd viz && npm run build",
-    "build:site": "cd viz && VITE_BASE_PATH=/demo/ npm run build && rm -rf ../site/demo && cp -R dist ../site/demo && echo 'site/demo rebuilt. Drag site/ to Netlify when ready.'"
+    "build:site": "cd viz && VITE_BASE_PATH=/demo/ npm run build && rm -rf ../site/demo && cp -R dist ../site/demo && echo 'site/demo rebuilt. Drag site/ to Netlify when ready.'",
+    "test:env": "vitest run --config vitest.env.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.2.38",
