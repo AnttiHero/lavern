@@ -344,6 +344,7 @@ export async function assembleDocument(
     if (extracted) {
       const validation = validateDeliverable(extracted);
       if (validation.valid) {
+        session.assemblyStatus = { status: 'passed', attempts: 0, reasons: ['Deterministic counsel extraction; no LLM assembly needed'], structurallyValid: true };
         logger.info('Counsel extraction (deterministic) succeeded — skipping LLM assembly', {
           chars: extracted.length,
         });
