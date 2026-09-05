@@ -57,6 +57,7 @@ import {
 } from '../../assembly/tabulate-format-converter.js';
 import type { TabulateResult } from '../../assembly/tabulate-types.js';
 import { hydrateSessionFromArchive, isHydratedFromArchive, type HydratedSession } from '../../session/hydrate-from-archive.js';
+import { executionContextFor } from '../../providers/execution-context.js';
 import type { SessionState } from '../../session/session-state.js';
 import { createLogger } from '../../utils/logger.js';
 import { createMassActionGuard } from '../middleware/mass-action-guard.js';
@@ -1177,6 +1178,7 @@ export function registerSessionRoutes(
         system: derivativeType.systemPrompt,
         user: context,
         tier: 'opus',
+        provider: executionContextFor(session).provider,
         maxTokens: 8192,
         timeoutMs: 240_000, // longer for local
       });
@@ -1333,6 +1335,7 @@ ${buildFullContext(session as SessionState)}`;
         system: systemPrompt,
         user: prompt,
         tier: 'opus',
+        provider: executionContextFor(session).provider,
         maxTokens: 4096,
         timeoutMs: 240_000,
       });
@@ -1526,11 +1529,13 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
       // retry policy then multiplied a single timeout into a 5–6 minute wait
       // before the user got a generic 500. Give the call real headroom and
       // disable retries — retrying a slow call doesn't make it faster.
-      const isLocal = config.provider === 'local';
+      const ctx = executionContextFor(session);
+      const isLocal = ctx.provider === 'local';
       const { text: revisedDoc, cost: costUsd } = await crossProviderChat({
         system,
         user,
         tier: 'opus',
+        provider: ctx.provider,
         maxTokens: 16_000,
         timeoutMs: isLocal ? 600_000 : 300_000,
         maxRetries: 0,

@@ -152,8 +152,14 @@ export async function analyzeHybrid(
 
   // ── Step 3: Anonymize escalated clauses ────────────────────────────────
   const combinedText = escalated.map(c => c.text).join('\n\n---\n\n');
-  const anonymized: AnonymizationResult = anonymize(combinedText, parsedDocument.definedTerms);
+  // The client's own name is an identity too: register it with the defined
+  // terms so the clause text and the request header share one placeholder.
+  const identityTerms = [...(parsedDocument.definedTerms ?? []), ...(profile.company ? [profile.company] : [])];
+  const anonymized: AnonymizationResult = anonymize(combinedText, identityTerms);
   const entityCount = anonymized.mappings.length;
+  const clientPlaceholder = profile.company
+    ? (anonymized.mappings.find(m => m.original.toLowerCase().trim() === profile.company.toLowerCase().trim())?.placeholder ?? '[CLIENT]')
+    : '[CLIENT]';
 
   log(`[hybrid] Anonymized ${entityCount} entities.`);
 
@@ -170,6 +176,9 @@ export async function analyzeHybrid(
     log(`[hybrid] Sending ${escalated.length} anonymised clauses to ${labelForModel(FRONTIER_MODEL)} for deep review (budget cap: $${(clawConfig.perDocBudget * 0.3).toFixed(2)}).`);
     ensureApiKey();
     const client = new Anthropic();
+    const jurisdictionLine = profile.jurisdiction
+      ? `${profile.jurisdiction} (from the client profile; a governing-law clause in the document prevails)`
+      : 'unknown — not stated in intake';
 
     const system = `You are senior counsel performing a deep adversarial review of contract clauses flagged as elevated-risk by an initial automated triage. The clauses you receive have been anonymised — party names, dollar amounts, dates and identifiers have been replaced with stable placeholders. Analyse the clause as drafted, regardless of placeholders.
 
@@ -189,17 +198,27 @@ Output ONLY a JSON object of shape:
 
 No commentary, no markdown, no code fences. JSON only.
 
-Apply rigorous standards. Where Australian or NSW law canons of construction are relevant (penalty doctrine post-Andrews/Paciocco, good-faith implied terms post-Burger King/Macquarie, fiduciary exclusion post-Brian's case), apply them and cite the case shortly inside the "content" field.
+Apply rigorous standards. Governing-law context: ${jurisdictionLine}. Apply that jurisdiction's canons of construction where relevant and cite authority briefly inside the "content" field; if the governing law is unknown or the clause names a different one, say so rather than assume.
 
-If the clause is benign on a fair reading, mark it minor and say so concisely. Do not invent risks.`;
+If the clause is benign on a fair reading, mark it minor and say so concisely. Do not invent risks, roles, ownership shares or facts that are not in the clause text or the intake fields below.`;
 
-    const userMessage = `Client: ${profile.company} (${profile.jurisdiction}, ${profile.industry})
-Client's role: 40% non-operator participant in this joint venture
+    // Every material fact here traces to intake or triage; missing facts are
+    // stated as unknown. No fixture roles, no invented ownership.
+    const userMessage = `Client: ${clientPlaceholder} (${profile.jurisdiction || 'jurisdiction not stated'}, ${profile.industry || 'industry not stated'})
+Client's role in this document: not stated in intake — do not assume ownership, operator or counterparty status; infer only what the clause text supports.
+Document type (triage): ${opts?.watchman?.documentType ?? localResult.documentType ?? 'unknown'}
 Client's risk appetite: ${profile.preferences.riskAppetite}
 
 ANONYMISED CLAUSES FOR DEEP REVIEW (one per '---'):
 
 ${anonymized.anonymizedText}`;
+
+    // Send-boundary validation: the complete outbound envelope must contain
+    // none of the identities we anonymised. Deterministic, not model-dependent.
+    assertNoIdentityLeak({ system, messages: [userMessage] }, [
+      ...anonymized.mappings.map(m => m.original),
+      ...(profile.company ? [profile.company] : []),
+    ]);
 
     const response = await client.messages.create({
       model: FRONTIER_MODEL,
@@ -315,4 +334,20 @@ ${anonymized.anonymizedText}`;
     entityCount,
     processingNote: `Hybrid analysis: ${escalated.length} of ${totalClauseCount} clauses escalated to frontier. ${entityCount} entities anonymized.`,
   };
+}
+
+
+/**
+ * Refuse to send an envelope that still carries a known identity. Names
+ * shorter than 3 characters are ignored (no signal). Case-insensitive.
+ */
+export function assertNoIdentityLeak(envelope: { system: string; messages: string[] }, identities: string[]): void {
+  const haystack = [envelope.system, ...envelope.messages].join('\n').toLowerCase();
+  for (const id of identities) {
+    const needle = id.trim().toLowerCase();
+    if (needle.length < 3) continue;
+    if (haystack.includes(needle)) {
+      throw new Error(`Outbound envelope still contains an anonymised identity (${'*'.repeat(Math.min(needle.length, 12))}) — refusing to send`);
+    }
+  }
 }

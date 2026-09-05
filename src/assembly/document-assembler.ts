@@ -43,6 +43,7 @@ import { extractTabulateResult } from './extract-tabulate.js';
 import { convertTabulateToMarkdown } from './tabulate-format-converter.js';
 import { eventTimestamp } from '../events/event-bus.js';
 import { config } from '../config.js';
+import { executionContextFor } from '../providers/execution-context.js';
 import { crossProviderChat, checkProviderReady } from '../providers/cross-provider-chat.js';
 import type { SessionState } from '../session/session-state.js';
 import type { LegalRequest } from '../types/index.js';
@@ -146,7 +147,7 @@ async function llmQualityGate(
     // Pre-flight: if the active provider isn't ready (e.g. local mode + Ollama
     // down, or anthropic mode + no key), pass through cleanly. The gate is a
     // safety net, not a hard requirement.
-    const notReady = await checkProviderReady();
+    const notReady = await checkProviderReady(executionContextFor(session).provider);
     if (notReady) {
       logger.warn('Quality gate skipped — provider not ready', { reason: notReady });
       return { pass: true, cost: 0, apiError: true };
@@ -197,6 +198,7 @@ FAIL: [one sentence explaining why this document is not good enough]`;
       system: 'You are a quality gate for a legal document assembly system.',
       user: prompt,
       tier: 'sonnet',
+      provider: executionContextFor(session).provider,
       maxTokens: 200,
       timeoutMs: 30_000,
     });
@@ -394,6 +396,7 @@ export async function assembleDocument(
         system: systemPrompt,
         user: assemblyContext,
         tier: 'opus',
+        provider: executionContextFor(session).provider,
         maxTokens: 16384,
         // Assembly is transcription, not reasoning: thinking off so the whole
         // budget is output (adaptive thinking truncated a long memo live).
@@ -691,6 +694,7 @@ Output the cleaned memo as markdown. No commentary, no "here is the cleaned vers
     system,
     user: input,
     tier: 'sonnet',
+    provider: executionContextFor(session).provider,
     maxTokens: 16_384,
     thinking: 'off', // cleanup is transcription; keep the budget for output
     // 5 min — Sonnet cleaning 27K chars non-streaming can take 2-3 min.

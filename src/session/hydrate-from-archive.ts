@@ -30,6 +30,8 @@ import type { AgentRole } from '../types/index.js';
  */
 export interface HydratedSession {
   id: string;
+  /** The provider the engagement ran on — follow-up calls must use it, not the server default. */
+  provider: string | null;
   workflowTemplateId: string | null;
   accumulatedCost: number;
   budgetUsd: number;
@@ -143,6 +145,7 @@ export function hydrateSessionFromArchive(archived: ArchivedSession): HydratedSe
 
   return {
     id: archived.id,
+    provider: (summary as { provider?: string }).provider ?? null,
     workflowTemplateId: archived.workflow_id ?? null,
     accumulatedCost: archived.cost_usd ?? 0,
     budgetUsd: archived.budget_usd ?? 0,

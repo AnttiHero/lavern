@@ -265,10 +265,10 @@ export function deanonymize(text: string, mappings: EntityMapping[]): string {
 
   let result = text;
   for (const { placeholder, original } of sorted) {
-    // Replace all occurrences of this placeholder
-    while (result.includes(placeholder)) {
-      result = result.replace(placeholder, original);
-    }
+    // Literal, single-pass replacement: String.replace() interprets `$`
+    // patterns in the replacement, and a loop that re-scans can reintroduce
+    // (or loop on) its own placeholder when the original contains one.
+    result = result.split(placeholder).join(original);
   }
   return result;
 }

@@ -181,7 +181,14 @@ export async function processDocument(
       const localModelName = config.claw.localAnalysisModel || config.claw.localModel || config.local.defaultModel;
 
       // ── HYBRID PATH: local triage + anonymized frontier ──────────
-      if (processingMode === 'hybrid') {
+      // Precedence: a confidential document, or ethical mode (which promises
+      // all-confidential treatment), OVERRIDES a profile's hybrid default.
+      // Hybrid egress for confidential material is not a supported opt-in.
+      const hybridAllowed = processingMode === 'hybrid' && !confidential && !clawConfig.ethicalMode;
+      if (processingMode === 'hybrid' && !hybridAllowed) {
+        log(`🔒 ${confidential ? 'Confidential document' : 'Ethical mode'} — hybrid frontier egress disabled by policy; local only (${localModelName})`);
+      }
+      if (hybridAllowed) {
         log(`🔒🌐 Hybrid — local triage + anonymized frontier (${localModelName})`);
         try {
           const { analyzeHybrid } = await import('./hybrid-analysis.js');

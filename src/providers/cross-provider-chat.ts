@@ -46,8 +46,10 @@ const logger = createLogger('CROSS-PROVIDER');
  * same business logic ("use a haiku-class model for the briefing analyzer")
  * works across providers without per-call model strings.
  */
-function modelFor(tier: 'opus' | 'sonnet' | 'haiku' | 'fable'): string {
-  switch (config.provider) {
+export type LLMProviderId = 'anthropic' | 'mistral' | 'local' | 'managed';
+
+function modelFor(tier: 'opus' | 'sonnet' | 'haiku' | 'fable', provider: LLMProviderId = config.provider): string {
+  switch (provider) {
     case 'local':
       // One model per host on local. All tiers point at the default model.
       return config.local.defaultModel;
@@ -72,9 +74,9 @@ function modelFor(tier: 'opus' | 'sonnet' | 'haiku' | 'fable'): string {
 
 // ── Pricing ─────────────────────────────────────────────────────────────
 
-function pricingFor(model: string): { input: number; output: number } {
-  if (config.provider === 'local') return LOCAL_PRICING[model] ?? { input: 0, output: 0 };
-  if (config.provider === 'mistral') return { input: 2, output: 6 }; // approximate, EU
+function pricingFor(model: string, provider: LLMProviderId = config.provider): { input: number; output: number } {
+  if (provider === 'local') return LOCAL_PRICING[model] ?? { input: 0, output: 0 };
+  if (provider === 'mistral') return { input: 2, output: 6 }; // approximate, EU
   // Anthropic
   return ANTHROPIC_PRICING[model] ?? ANTHROPIC_PRICING['claude-sonnet-5'] ?? { input: 2, output: 10 };
 }
@@ -118,6 +120,15 @@ export interface CrossProviderChatOptions {
    * Ignored on the fable tier, which cannot disable thinking (400).
    */
   thinking?: 'auto' | 'off';
+  /**
+   * The provider this call MUST use. Session-scoped callers (conversation,
+   * revision, derivatives, assembly) pass the session's provider so a
+   * Mistral / local engagement never leaks its context to the globally
+   * configured provider. Defaults to config.provider for non-session work.
+   * There is no fallback across providers: if the named provider cannot
+   * serve the call, it throws.
+   */
+  provider?: LLMProviderId;
 }
 
 export interface CrossProviderChatResult {
@@ -139,18 +150,18 @@ export interface CrossProviderChatResult {
  * (e.g. quality gate) when the provider is unavailable, rather than
  * failing the whole request.
  */
-export async function checkProviderReady(): Promise<string | null> {
-  if (config.provider === 'local') {
+export async function checkProviderReady(provider: LLMProviderId = config.provider): Promise<string | null> {
+  if (provider === 'local') {
     return checkLocalReady(config.local.defaultModel);
   }
-  if (config.provider === 'anthropic' || config.provider === 'managed') {
+  if (provider === 'anthropic' || provider === 'managed') {
     const key = ensureApiKey();
     return key ? null : 'ANTHROPIC_API_KEY is not configured';
   }
-  if (config.provider === 'mistral') {
+  if (provider === 'mistral') {
     return config.mistral.apiKey ? null : 'MISTRAL_API_KEY is not configured';
   }
-  return `Unknown provider: ${config.provider}`;
+  return `Unknown provider: ${provider}`;
 }
 
 /**
@@ -164,7 +175,8 @@ export async function checkProviderReady(): Promise<string | null> {
 export async function crossProviderChat(
   opts: CrossProviderChatOptions,
 ): Promise<CrossProviderChatResult> {
-  const model = modelFor(opts.tier);
+  const provider: LLMProviderId = opts.provider ?? config.provider;
+  const model = modelFor(opts.tier, provider);
   const temperature = opts.temperature ?? 0.2;
 
   // Either `user` or `messages` must be provided — but not both.
@@ -178,7 +190,7 @@ export async function crossProviderChat(
     opts.messages ?? [{ role: 'user', content: opts.user ?? '' }];
 
   // ── LOCAL ──
-  if (config.provider === 'local') {
+  if (provider === 'local') {
     const res = await localChat({
       model,
       messages: [
@@ -194,7 +206,7 @@ export async function crossProviderChat(
   }
 
   // ── MISTRAL ──
-  if (config.provider === 'mistral') {
+  if (provider === 'mistral') {
     const res = await mistralChat({
       model,
       messages: [
@@ -277,7 +289,7 @@ export async function crossProviderChat(
     logger.warn('model declined the request', { model, category: category ?? 'unspecified' });
   }
 
-  const pricing = pricingFor(model);
+  const pricing = pricingFor(model, provider);
   const inputTokens = res.usage?.input_tokens ?? 0;
   const outputTokens = res.usage?.output_tokens ?? 0;
   const cacheRead = (res.usage as { cache_read_input_tokens?: number } | undefined)?.cache_read_input_tokens ?? 0;
@@ -286,5 +298,5 @@ export async function crossProviderChat(
     (regularInput * pricing.input / 1_000_000) +
     (outputTokens * pricing.output / 1_000_000);
 
-  return { text, cost, model, provider: config.provider };
+  return { text, cost, model, provider };
 }
