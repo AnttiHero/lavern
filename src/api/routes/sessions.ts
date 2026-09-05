@@ -618,6 +618,7 @@ export function registerSessionRoutes(
           qualityEscalation: (summary as Record<string, unknown>).qualityEscalation ?? null,
           outcome: (summary as Record<string, unknown>).outcome ?? null,
           outcomeReasons: (summary as Record<string, unknown>).outcomeReasons ?? [],
+          assemblyStatus: (summary as Record<string, unknown>).assemblyStatus ?? null,
           matterTitle: archived.title,
           workflowTemplateId: archived.workflow_id,
           provider: 'anthropic',
@@ -693,6 +694,7 @@ export function registerSessionRoutes(
       qualityEscalation: session.genericWorkflow?.qualityEscalation ?? null,
       outcome: session.outcome ?? null,
       outcomeReasons: session.outcomeReasons,
+      assemblyStatus: session.assemblyStatus ?? null,
       pendingGate: pendingGate ? {
         gateId: pendingGate.gateId,
         artifactDigest: pendingGate.artifactDigest,

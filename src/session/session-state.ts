@@ -392,6 +392,14 @@ export class SessionState {
   /** Terminal outcome of the engagement (see workflows/completion.ts). Undefined while running. */
   public outcome?: import('../workflows/completion.js').WorkflowOutcome;
   public outcomeReasons: string[] = [];
+  /**
+   * How the deliverable was produced. 'passed' cleared the quality gate;
+   * 'unverified' means the gate could not run (API error) and the text was
+   * accepted unverified; 'best_attempt' failed the gate on every attempt and
+   * the best text was returned (structurallyValid says whether it at least
+   * passed structural validation); 'failed' produced nothing.
+   */
+  public assemblyStatus?: { status: 'passed' | 'unverified' | 'best_attempt' | 'failed'; attempts: number; reasons: string[]; structurallyValid: boolean };
 
   /** The original legal request that created this session (stored for assembly context). */
   public legalRequest?: import('../types/index.js').LegalRequest;

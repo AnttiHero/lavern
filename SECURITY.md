@@ -40,7 +40,7 @@ Out of scope:
 
 v0.15.0 ships with `LAVERN_AUTH_ENABLED=false` by default. In that **LOCAL MODE**, every request is the synthetic `local-user`, no cookies are set, no passwords are stored, no Stripe webhooks are accepted, and the auth/billing/Google-OAuth/referral routes don't register at all. The threat model collapses to "single user on a machine they own" — most of the trust boundaries below are inert until the flag is flipped.
 
-The multi-user model below applies when `LAVERN_AUTH_ENABLED=true` (shared / hosted deployments). The auth backend code is preserved on the same branch; flipping the flag and restarting brings it back online with no migration.
+The multi-user model below is **not available in this build**. Setting `LAVERN_AUTH_ENABLED=true` makes the server refuse to start (see `src/api/server.ts`): the auth routes are preserved on this branch, but request-level enforcement is not implemented, so enabling the flag would advertise authentication while every request still ran as the shared `local-user`. The guard is deliberate — fail closed rather than give a false sense of security. Shared or hosted deployments need the enforcement work first; treat the sections below as the design target, not a supported switch.
 
 ## Trust boundaries
 

@@ -489,6 +489,7 @@ export async function assembleDocument(
       if (qualityGate.apiError) {
         gateFailureCount++;
         if (gateFailureCount >= 2) {
+          session.assemblyStatus = { status: 'unverified', attempts: attempt, reasons: ['Quality gate unavailable (API error) on consecutive attempts; deliverable accepted unverified'], structurallyValid: true };
           // API is genuinely down — accept structurally-valid doc
           logger.warn('Quality gate API down (2+ failures), accepting structurally-valid document');
           emitAssemblyComplete(session, totalAssemblyCost);
@@ -509,6 +510,7 @@ export async function assembleDocument(
       }
 
       if (qualityGate.pass) {
+        session.assemblyStatus = { status: 'passed', attempts: attempt, reasons: [], structurallyValid: true };
         logger.info('Assembly complete', { attempt, chars: assembledText.length, cost: totalAssemblyCost.toFixed(2) });
         logger.info('─'.repeat(60));
 
@@ -569,6 +571,7 @@ export async function assembleDocument(
         chars: bestAttempt.length,
         reasons: rejectionReasons,
       });
+      session.assemblyStatus = { status: 'best_attempt', attempts: MAX_ASSEMBLY_ATTEMPTS, reasons: [...rejectionReasons], structurallyValid: true };
 
       session.events.emitEvent({
         type: 'error',
@@ -592,6 +595,7 @@ export async function assembleDocument(
         structuralReason: bestValidation.reason,
         reasons: rejectionReasons,
       });
+      session.assemblyStatus = { status: 'best_attempt', attempts: MAX_ASSEMBLY_ATTEMPTS, reasons: [...rejectionReasons, `Structural validation: ${bestValidation.reason ?? 'failed'}`], structurallyValid: false };
 
       session.events.emitEvent({
         type: 'error',
@@ -630,6 +634,7 @@ export async function assembleDocument(
   });
 
   emitAssemblyComplete(session, totalAssemblyCost);
+  session.assemblyStatus = { status: 'failed', attempts: MAX_ASSEMBLY_ATTEMPTS, reasons: [...rejectionReasons], structurallyValid: false };
   return '';
 }
 

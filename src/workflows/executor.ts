@@ -501,10 +501,17 @@ export async function runGenericWorkflow(
     session.assembledDocument = await assembleDocument(session, request);
 
     if (session.assembledDocument) {
-      // Check if assembly used bestAttempt fallback (tier 2) vs full pass (tier 1)
-      // The assembler logs warnings when using bestAttempt — check for them
-      session.outputTier = 1;
-      session.outputTierReason = 'Full deliverable produced';
+      const st = session.assemblyStatus;
+      if (st && st.status !== 'passed') {
+        // Degraded assembly is labelled, not laundered into tier 1.
+        session.outputTier = 2;
+        session.outputTierReason = st.status === 'unverified'
+          ? 'Deliverable produced but its quality gate could not run; review carefully.'
+          : `Deliverable failed the quality gate on ${st.attempts} attempt(s)${st.structurallyValid ? '' : ' and structural validation'}; best attempt returned. Reasons: ${st.reasons.join('; ')}`;
+      } else {
+        session.outputTier = 1;
+        session.outputTierReason = 'Full deliverable produced';
+      }
     } else {
       // Assembly returned empty — tier 3 (findings only)
       session.outputTier = 3;

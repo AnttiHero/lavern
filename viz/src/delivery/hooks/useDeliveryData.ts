@@ -625,6 +625,22 @@ function mapApiResponse(sessionId: string, raw: Record<string, unknown>): Delive
     flaggedItems.push(`Lavern's own evaluator FAILED this work at ${qualityEscalation.score.toFixed(2)} after ${qualityEscalation.revisions}/${qualityEscalation.maxRevisions} revisions — ${who}. Failure reasons: ${qualityEscalation.failureReasons.join('; ') || 'none recorded'}. Treat the deliverable as unverified.`);
   }
 
+  // Degraded or interrupted outcomes are said plainly, never inferred from text length.
+  const outcome = typeof raw.outcome === 'string' ? raw.outcome : null;
+  const outcomeReasons = Array.isArray(raw.outcomeReasons) ? (raw.outcomeReasons as string[]) : [];
+  if (outcome && outcome !== 'completed') {
+    flaggedItems.push(`This engagement ended as ${outcome.replace('_', ' ')}: ${outcomeReasons.join(' ') || 'no reason recorded'}. Findings are PARTIAL and no deliverable was assembled.`);
+  }
+  const assemblyStatus = raw.assemblyStatus && typeof raw.assemblyStatus === 'object' ? (raw.assemblyStatus as { status: string; attempts: number; reasons: string[]; structurallyValid: boolean }) : null;
+  if (assemblyStatus && assemblyStatus.status !== 'passed') {
+    flaggedItems.push(assemblyStatus.status === 'unverified'
+      ? 'The deliverable was produced but its quality gate could not run; treat it as unverified.'
+      : assemblyStatus.status === 'failed'
+        ? 'No deliverable could be assembled; use the findings and audit bundle.'
+        : `The deliverable failed Lavern's quality gate on ${assemblyStatus.attempts} attempt(s)${assemblyStatus.structurallyValid ? '' : ' and structural validation'}; the best attempt is shown. Reasons: ${assemblyStatus.reasons.join('; ') || 'not recorded'}.`);
+  }
+
+
   if (debateResolutions.some(r => r.escalationNeeded)) {
     flaggedItems.push('One or more debate resolutions were flagged for escalation');
   }
