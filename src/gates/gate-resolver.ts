@@ -298,8 +298,12 @@ export class WebhookGateResolver implements GateResolver {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
+      // A public callback URL must not be able to redirect the gate payload to
+      // a blocked destination: refuse redirects outright (as the engage
+      // content-fetch path does) instead of fetch's default 'follow'.
       const response = await fetch(this.callbackUrl, {
         method: 'POST',
+        redirect: 'error',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'gate_request',
