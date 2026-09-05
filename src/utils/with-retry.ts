@@ -42,7 +42,20 @@ function isRetryableMessage(error: unknown): boolean {
   );
 }
 
+/**
+ * A client-side request timeout (the SDK's APIConnectionTimeoutError,
+ * "Request timed out.") is OUR deadline expiring on a slow call, not a
+ * transient provider failure. Retrying it multiplies the wait: a 240s
+ * conversation call retried 3x held a dashboard request for 16 minutes
+ * before failing (observed live). Server-side 408/504 remain retryable.
+ */
+export function isClientTimeout(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'APIConnectionTimeoutError' || /request timed out/i.test(error.message);
+}
+
 export function isRetryableError(error: unknown): boolean {
+  if (isClientTimeout(error)) return false;
   const status = getErrorStatus(error);
   if (status && RETRYABLE_STATUS_CODES.has(status)) return true;
   return isRetryableMessage(error);

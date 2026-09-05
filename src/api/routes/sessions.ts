@@ -1184,7 +1184,9 @@ export function registerSessionRoutes(
         tier: 'opus',
         provider: executionContextFor(session).provider,
         maxTokens: 8192,
-        timeoutMs: 240_000, // longer for local
+        thinking: 'off', // generation from analysed context, not reasoning
+        timeoutMs: 300_000, // longer for local
+        maxRetries: 0,     // a slow derivative is not made faster by retrying
       });
 
       if (!generatedContent) {
@@ -1341,7 +1343,11 @@ ${buildFullContext(session as SessionState)}`;
         tier: 'opus',
         provider: executionContextFor(session).provider,
         maxTokens: 4096,
-        timeoutMs: 240_000,
+        // Q&A over already-analysed context: thinking off (faster, cheaper);
+        // one attempt with a real deadline — a timeout is never retried here.
+        thinking: 'off',
+        timeoutMs: 300_000,
+        maxRetries: 0,
       });
 
       logger.info('Conversation answered', { sessionId: id, chars: answer.length });
