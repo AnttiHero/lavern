@@ -343,6 +343,11 @@ describe('request_approval under an unresolved quality escalation', () => {
     expect(seen!.details).toContain('0.58');
     expect(seen!.details).toContain('Cap contradiction');
     expect(seen!.details).toContain('Orchestrator says fine.');
-    expect(session.gateDecisions.at(-1)).toMatchObject({ gateType: 'quality_escalation', decision: 'approve' });
+    const recorded = session.gateDecisions.at(-1)!;
+    expect(recorded).toMatchObject({ gateType: 'quality_escalation', decision: 'approve' });
+    // the audit record names the exact request that was decided
+    expect(recorded.gateId).toBeTruthy();
+    expect(recorded.artifactDigest).toBeTruthy();
+    expect(session.genericWorkflow!.qualityEscalation!.gateId).toBe(recorded.gateId);
   });
 });

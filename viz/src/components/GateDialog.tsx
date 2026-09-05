@@ -276,7 +276,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: radii.sm,
     width: 480,
     maxWidth: '90vw',
-    overflow: 'hidden',
+    maxHeight: '92vh',
+    overflowY: 'auto', // a long partner summary must never push Approve/Reject out of reach
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
   },
   header: {
@@ -332,6 +333,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: `${spacing.xl}px`,
   },
   summary: {
+    maxHeight: '38vh',
+    overflowY: 'auto',
     color: colors.text,
     fontSize: 14,
     fontFamily: fonts.sans,

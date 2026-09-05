@@ -601,7 +601,7 @@ export function registerSessionRoutes(
           assembledDocument: archived.assembled_document || null,
           finalOutput: archived.final_output || null,
           debateResolutions: ((summary as Record<string, unknown>).resolutions as Array<Record<string, unknown>>) ?? [],
-          gateDecisionRecords: [],
+          gateDecisionRecords: (((summary as Record<string, unknown>).gateDecisions as Array<Record<string, unknown>>) ?? []),
           findings: (((summary as Record<string, unknown>).topFindings as Array<Record<string, unknown>>) ?? []).map(f => ({
             id: '', agent: f.agent ?? '', category: '', severity: f.severity ?? 'medium', content: f.content ?? '', evidence: '', confidence: 0,
           })),
@@ -730,6 +730,8 @@ export function registerSessionRoutes(
         confidence: r.confidence,
       })),
       gateDecisionRecords: session.gateDecisions.map(g => ({
+        gateId: g.gateId ?? null,
+        artifactDigest: g.artifactDigest ?? null,
         gateType: g.gateType,
         decision: g.decision,
         notes: g.notes,

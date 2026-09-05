@@ -891,6 +891,7 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     outcome: session.outcome ?? null,
     outcomeReasons: session.outcomeReasons,
     assemblyStatus: session.assemblyStatus ?? null,
+    gateDecisions: session.gateDecisions.map(g => ({ gateType: g.gateType, gateId: g.gateId ?? null, artifactDigest: g.artifactDigest ?? null, decision: g.decision, notes: g.notes, timestamp: g.timestamp })),
     // Effective provider at archive time — post-archive human rulings need it
     // to residency-tag the precedents they create.
     provider: session.provider ?? config.provider,
