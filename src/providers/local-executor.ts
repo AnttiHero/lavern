@@ -20,6 +20,7 @@ import { buildShemTools } from '../mcp/server.js';
 import { agentProfiles } from '../agents/profiles.js';
 import { getOrchestratorForWorkflow } from '../workflows/orchestrator-mapping.js';
 import { eventTimestamp } from '../events/event-bus.js';
+import { assessCompletion, markIncomplete } from '../workflows/completion.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { config } from '../config.js';
 import { localChat } from './local.js';
@@ -269,6 +270,32 @@ export async function runLocalWorkflow(
     });
     throw error;
   }
+
+  // ── Completion contract — only a finished workflow may be delivered ──
+  // A one-turn limit used to mark an unfinished review "delivered" with no
+  // gate decision. Assess first; anything but 'completed' is preserved as
+  // partial, labelled work with no assembly and no forced step advance.
+  const assessment = assessCompletion(session, template);
+  if (assessment.outcome !== 'completed') {
+    markIncomplete(session, assessment);
+    logger.error('Engagement did not complete — no assembly', { workflow: template.id, provider: 'Local', outcome: assessment.outcome, reasons: assessment.reasons });
+    session.events.emitEvent({
+      type: 'error',
+      message: `Engagement ended as ${assessment.outcome.replace('_', ' ')}: ${assessment.reasons.join(' ')}`,
+      source: 'orchestrator',
+      timestamp: eventTimestamp(),
+    });
+    session.events.emitEvent({
+      type: 'session_end',
+      sessionId: session.id,
+      totalCost,
+      duration: 0,
+      timestamp: eventTimestamp(),
+      outcome: assessment.outcome,
+    });
+    return session;
+  }
+  session.outcome = 'completed';
 
   // ── Document assembly (via Local) ─────────────────────────────────
   try {

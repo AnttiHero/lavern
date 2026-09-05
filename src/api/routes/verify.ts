@@ -90,6 +90,7 @@ export function registerVerifyRoutes(
         yoloMode: true,
       }).catch((err) => {
         logger.error('Session failed', { sessionId: session.id, error: err });
+        session.halt(`Session failed: ${err instanceof Error ? err.message : String(err)}`);
       });
 
       return reply.status(202).send({

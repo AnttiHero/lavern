@@ -26,7 +26,8 @@ import { createGateHooks } from '../hooks/human-gate.js';
 import { createDynamicPermissions } from '../permissions/dynamic-permissions.js';
 import { SessionState } from '../session/session-state.js';
 import { eventTimestamp } from '../events/event-bus.js';
-import { streamMessages } from '../utils/stream-messages.js';
+import { streamMessages, type StreamOutcome } from '../utils/stream-messages.js';
+import { assessCompletion, markIncomplete } from './completion.js';
 import { handleSessionError } from '../utils/error-recovery.js';
 import { assembleDocument } from '../assembly/document-assembler.js';
 import { preArchiveSessionRow, updateArchivedDocument } from '../db/database.js';
@@ -413,8 +414,9 @@ export async function runGenericWorkflow(
   // Stream messages to console (suppress session_end — we emit it after assembly)
   let pipelineCost = 0;
   let pipelineDurationMs = 0;
+  let streamOutcome: StreamOutcome | undefined;
   try {
-    await streamMessages(result, {
+    streamOutcome = await streamMessages(result, {
       session,
       documentLabel: request.documentPath ?? '(no document)',
       workflowLabel: template.id,
@@ -427,6 +429,8 @@ export async function runGenericWorkflow(
     logger.error('Workflow error', { workflow: template.id, step: sessionError.step, error: sessionError.cause });
 
     // Tier 4: partial findings from interrupted analysis (or 4 with zero findings)
+    session.outcome = 'failed';
+    session.outcomeReasons = [`Workflow error at step "${sessionError.step}"`];
     session.outputTier = 4;
     session.outputTierReason = session.debate.findings.length > 0
       ? `Workflow error at step "${sessionError.step}". ${session.debate.findings.length} finding(s) preserved.`
@@ -445,6 +449,33 @@ export async function runGenericWorkflow(
     }
     throw error;
   }
+
+  // ── Completion contract — only a finished workflow may be delivered ──
+  // A max-turn stop, a budget stop, an unresolved escalation or a missing
+  // gate decision used to fall straight through to assembly and ship as a
+  // tier-1 deliverable. Now it is an explicit terminal outcome, preserved
+  // as partial findings and labelled as such.
+  const assessment = assessCompletion(session, template, streamOutcome);
+  if (assessment.outcome !== 'completed') {
+    markIncomplete(session, assessment);
+    logger.error('Engagement did not complete — no assembly', { workflow: template.id, outcome: assessment.outcome, reasons: assessment.reasons });
+    session.events.emitEvent({
+      type: 'error',
+      message: `Engagement ended as ${assessment.outcome.replace('_', ' ')}: ${assessment.reasons.join(' ')}`,
+      source: 'orchestrator',
+      timestamp: eventTimestamp(),
+    });
+    session.events.emitEvent({
+      type: 'session_end',
+      sessionId: session.id,
+      totalCost: session.accumulatedCost,
+      duration: pipelineDurationMs,
+      timestamp: eventTimestamp(),
+      outcome: assessment.outcome,
+    });
+    return session;
+  }
+  session.outcome = 'completed';
 
   // ── v15: Document Assembly — produce the actual deliverable ────────
   // After the multi-agent pipeline completes, make a focused Claude call

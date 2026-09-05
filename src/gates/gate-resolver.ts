@@ -13,6 +13,7 @@
  */
 
 import * as readline from 'node:readline';
+import { createHash, randomUUID } from 'node:crypto';
 import { config } from '../config.js';
 import { createLogger } from '../utils/logger.js';
 import { isUrlSafe } from '../utils/url-safety.js';
@@ -26,11 +27,33 @@ export interface GateRequest {
   summary: string;
   details: string;
   proposedAction: string;
+  /**
+   * Unpredictable identity of THIS request. A decision must name it: consent
+   * given for one artifact must never resolve a replacement request of the
+   * same type (delayed response, double-click, second tab, retry).
+   */
+  gateId?: string;
+  /** Digest of what the human is deciding on (summary + details + action). */
+  artifactDigest?: string;
+  requestedAt?: string;
 }
 
 export interface GateDecision {
   decision: 'approve' | 'reject' | 'modify';
   notes?: string;
+}
+
+/** Outcome of submitting a decision against the pending gate. */
+export type SubmitResult =
+  | { ok: true; idempotent?: boolean; decision: GateDecision; gateId: string }
+  | { ok: false; reason: 'no_pending' | 'gate_mismatch' | 'gate_superseded'; currentGateId?: string; recordedDecision?: GateDecision };
+
+/** Stable identity for a gate request; fills gateId/digest/requestedAt if absent. */
+export function identifyGateRequest(request: GateRequest): Required<Pick<GateRequest, 'gateId' | 'artifactDigest' | 'requestedAt'>> & GateRequest {
+  const gateId = request.gateId ?? randomUUID();
+  const artifactDigest = request.artifactDigest
+    ?? createHash('sha256').update(`${request.gateType}\n${request.summary}\n${request.details}\n${request.proposedAction}`).digest('hex').slice(0, 24);
+  return { ...request, gateId, artifactDigest, requestedAt: request.requestedAt ?? new Date().toISOString() };
 }
 
 export interface GateResolver {
@@ -105,11 +128,22 @@ ${separator}
  */
 export class AsyncGateResolver implements GateResolver {
   private pendingGate: {
-    request: GateRequest;
+    request: ReturnType<typeof identifyGateRequest>;
     resolve: (decision: GateDecision) => void;
     createdAt: number;
     timer: ReturnType<typeof setTimeout> | null;
   } | null = null;
+  /** Decided gates, so an exact duplicate submission is idempotent (bounded). */
+  private decided = new Map<string, GateDecision>();
+  private static readonly DECIDED_CAP = 50;
+
+  private remember(gateId: string, decision: GateDecision): void {
+    this.decided.set(gateId, decision);
+    if (this.decided.size > AsyncGateResolver.DECIDED_CAP) {
+      const oldest = this.decided.keys().next().value;
+      if (oldest !== undefined) this.decided.delete(oldest);
+    }
+  }
 
   /** Gate timeout in ms. Default 5 minutes. Set to 0 to disable. */
   private timeoutMs: number;
@@ -118,11 +152,14 @@ export class AsyncGateResolver implements GateResolver {
     this.timeoutMs = timeoutMs;
   }
 
-  async resolve(request: GateRequest): Promise<GateDecision> {
+  async resolve(rawRequest: GateRequest): Promise<GateDecision> {
+    const request = identifyGateRequest(rawRequest);
     // Clear any stale pending gate (safety net) — reject, don't approve
     if (this.pendingGate) {
       if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
-      this.pendingGate.resolve({ decision: 'reject', notes: 'Superseded by new gate request — rejected for safety' });
+      const superseded: GateDecision = { decision: 'reject', notes: 'Superseded by new gate request — rejected for safety' };
+      this.remember(this.pendingGate.request.gateId, superseded);
+      this.pendingGate.resolve(superseded);
       this.pendingGate = null;
     }
 
@@ -131,11 +168,13 @@ export class AsyncGateResolver implements GateResolver {
         ? setTimeout(() => {
             logger.warn('Gate timeout — rejecting for safety', { timeoutSec: this.timeoutMs / 1000, gateType: request.gateType });
             if (this.pendingGate) {
-              this.pendingGate = null;
-              resolvePromise({
+              const timedOut: GateDecision = {
                 decision: 'reject',
                 notes: `Gate timed out — rejected for safety. No human response within ${Math.round(this.timeoutMs / 60000)} minutes.`,
-              });
+              };
+              this.remember(this.pendingGate.request.gateId, timedOut);
+              this.pendingGate = null;
+              resolvePromise(timedOut);
             }
           }, this.timeoutMs)
         : null; // no timer when timeout disabled
@@ -171,14 +210,28 @@ export class AsyncGateResolver implements GateResolver {
   }
 
   /**
-   * Submit a decision for the pending gate (called by API route).
+   * Submit a decision for the pending gate (called by API route). The
+   * decision must name the gate it answers; a mismatch is refused so a
+   * delayed answer can never approve a superseding request. Re-submitting
+   * the decision for an already-decided gate is idempotent.
    */
-  submitDecision(decision: GateDecision): boolean {
-    if (!this.pendingGate) return false;
+  submitDecision(decision: GateDecision, gateId: string): SubmitResult {
+    const currentGateId = this.pendingGate?.request.gateId;
+    if (!this.pendingGate || currentGateId !== gateId) {
+      const prior = this.decided.get(gateId);
+      // Exact repeat of a decision already recorded for that gate (retry,
+      // double-click): idempotent. A DIFFERENT decision for a gate that was
+      // superseded, timed out or cancelled is refused — the recorded outcome
+      // stands and the caller is told which gate is actually open.
+      if (prior && prior.decision === decision.decision) return { ok: true, idempotent: true, decision: prior, gateId };
+      if (prior) return { ok: false, reason: 'gate_superseded', currentGateId, recordedDecision: prior };
+      return this.pendingGate ? { ok: false, reason: 'gate_mismatch', currentGateId } : { ok: false, reason: 'no_pending' };
+    }
     if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
+    this.remember(gateId, decision);
     this.pendingGate.resolve(decision);
     this.pendingGate = null;
-    return true;
+    return { ok: true, decision, gateId };
   }
 
   /**
@@ -187,7 +240,9 @@ export class AsyncGateResolver implements GateResolver {
   cancel(): void {
     if (this.pendingGate) {
       if (this.pendingGate.timer) clearTimeout(this.pendingGate.timer);
-      this.pendingGate.resolve({ decision: 'reject', notes: 'Session cancelled' });
+      const cancelled: GateDecision = { decision: 'reject', notes: 'Session cancelled' };
+      this.remember(this.pendingGate.request.gateId, cancelled);
+      this.pendingGate.resolve(cancelled);
       this.pendingGate = null;
     }
   }
@@ -198,7 +253,8 @@ export class AsyncGateResolver implements GateResolver {
 export class AutoApproveGateResolver implements GateResolver {
   public decisions: Array<{ request: GateRequest; decision: GateDecision }> = [];
 
-  async resolve(request: GateRequest): Promise<GateDecision> {
+  async resolve(rawRequest: GateRequest): Promise<GateDecision> {
+    const request = identifyGateRequest(rawRequest);
     const decision: GateDecision = { decision: 'approve', notes: 'Auto-approved (test mode)' };
     this.decisions.push({ request, decision });
     return decision;
@@ -226,7 +282,8 @@ export class WebhookGateResolver implements GateResolver {
     this.fallback = new AsyncGateResolver();
   }
 
-  async resolve(request: GateRequest): Promise<GateDecision> {
+  async resolve(rawRequest: GateRequest): Promise<GateDecision> {
+    const request = identifyGateRequest(rawRequest);
     try {
       // SSRF defence-in-depth: refuse to fetch a URL that points at a
       // private/loopback/link-local target, even if upstream validation
@@ -246,6 +303,8 @@ export class WebhookGateResolver implements GateResolver {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'gate_request',
+          gateId: request.gateId,
+          artifactDigest: request.artifactDigest,
           gateType: request.gateType,
           summary: request.summary,
           details: request.details,
@@ -267,11 +326,17 @@ export class WebhookGateResolver implements GateResolver {
       const body = await response.json() as {
         decision?: 'approve' | 'reject' | 'modify';
         notes?: string;
+        gateId?: string;
       };
       clearTimeout(timeout);
 
       if (!body.decision || !['approve', 'reject', 'modify'].includes(body.decision)) {
         logger.error('Invalid decision in webhook callback response', { body });
+        return this.fallbackResolve(request);
+      }
+      // A response that names a different gate is a stale answer, not consent.
+      if (body.gateId !== undefined && body.gateId !== request.gateId) {
+        logger.error('Webhook decision names a different gate — rejected', { expected: request.gateId, got: body.gateId });
         return this.fallbackResolve(request);
       }
 

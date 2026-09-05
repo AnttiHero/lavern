@@ -105,10 +105,12 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
       // through — the same posture as the human gates below.
       const esc = state.qualityEscalation;
       if (esc && !esc.resolvedBy && esc.step === completedStep) {
-        const raisedAt = Date.parse(esc.raisedAt);
-        const decision = [...session.gateDecisions]
-          .reverse()
-          .find(d => Date.parse(d.timestamp) >= raisedAt);
+        // Only a decision that names the gate raised FOR this escalation
+        // counts — never "any later decision" (a delayed answer to an
+        // earlier, different question must not resolve this one).
+        const decision = esc.gateId
+          ? [...session.gateDecisions].reverse().find(d => d.gateId === esc.gateId)
+          : undefined;
         if (!decision) {
           return {
             content: [{
@@ -118,8 +120,9 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
           };
         }
         if (decision.decision === 'reject') {
-          // Re-raise: a later, fresh decision is required.
+          // Re-raise: a fresh request (new gateId) and decision are required.
           esc.raisedAt = new Date().toISOString();
+          esc.gateId = undefined;
           return {
             content: [{
               type: 'text' as const,
@@ -127,7 +130,47 @@ ${stepDef?.requiresEvaluatorGate ? `**Evaluator Gate**: Automated quality check 
             }],
           };
         }
-        esc.resolvedBy = { gateType: decision.gateType, decision: decision.decision, notes: decision.notes, decidedAt: decision.timestamp };
+        esc.resolvedBy = { gateType: decision.gateType, gateId: decision.gateId, decision: decision.decision, notes: decision.notes, decidedAt: decision.timestamp };
+      }
+
+      // Evaluator gate steps require CURRENT passing evidence — enforced here,
+      // not merely displayed. A missing evaluation, a first failure below the
+      // revision limit, or a pass that predates a later failure all block.
+      // The only alternative is a resolved quality escalation for this step.
+      if (stepDef?.requiresEvaluatorGate) {
+        const overridden = state.qualityEscalation?.step === completedStep
+          && state.qualityEscalation.resolvedBy !== undefined
+          && state.qualityEscalation.resolvedBy.decision !== 'reject';
+        if (!overridden) {
+          const stepStartedAt = Date.parse(state.lastTransitionAt);
+          const forStep = state.evaluatorResults.filter(r => r.step === completedStep && Date.parse(r.timestamp) >= stepStartedAt);
+          const latest = forStep[forStep.length - 1];
+          if (!latest) {
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `ERROR: Step "${completedStep}" requires a passing evaluator result and none has been recorded for it. Run \`run_evaluator_gate\` and then \`record_evaluation_result\` with step: "${completedStep}" BEFORE calling advance_step. Do not self-report a pass.`,
+              }],
+            };
+          }
+          if (!latest.passed) {
+            const maxRevisions = stepDef.maxRevisionLoops ?? 2;
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `ERROR: Step "${completedStep}" FAILED its latest evaluator check (score ${latest.score.toFixed(2)}, revision ${latest.revisionNumber}/${maxRevisions}). Revise the deliverable against the failure reasons, re-run the evaluator, and record the new result. The workflow does not advance on a failed evaluation.`,
+              }],
+            };
+          }
+          if (latest.revisionNumber !== state.revisionCount + 1) {
+            return {
+              content: [{
+                type: 'text' as const,
+                text: `ERROR: Step "${completedStep}" has a passing evaluation for revision ${latest.revisionNumber}, but the deliverable has since been revised (current revision ${state.revisionCount + 1}). Re-run the evaluator on the current revision and record the result.`,
+              }],
+            };
+          }
+        }
       }
 
       // Gate steps require a real human decision recorded by request_approval

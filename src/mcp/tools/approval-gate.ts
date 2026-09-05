@@ -13,6 +13,7 @@
 
 import { z } from 'zod';
 import { tool } from '@anthropic-ai/claude-agent-sdk';
+import { identifyGateRequest } from '../../gates/gate-resolver.js';
 import type { HumanGateDecision } from '../../types/index.js';
 import type { SessionState } from '../../session/session-state.js';
 import { boundedPush } from '../../session/session-state.js';
@@ -55,25 +56,36 @@ export function createApprovalTools(session: SessionState) {
         ? `QUALITY ESCALATION — the independent evaluator FAILED this work at ${esc.score.toFixed(2)} after ${esc.revisions}/${esc.maxRevisions} revisions.\nFailure reasons:\n${esc.failureReasons.map((r, i) => `${i + 1}. ${r}`).join('\n') || '(none recorded)'}\nApproving delivers work that did not clear Lavern's own quality bar.\n\n${args.details}`
         : args.details;
 
+      // One identity per request: events, the pending-gate API, the dialog,
+      // the webhook and the audit record all carry it, and a decision must
+      // name it (see gate-resolver.ts).
+      const gateRequest = identifyGateRequest({
+        gateType: args.gate_type,
+        summary: args.summary,
+        details,
+        proposedAction: args.proposed_action,
+      });
+      // An open escalation is answered by THIS request and no other.
+      if (esc && !esc.resolvedBy) esc.gateId = gateRequest.gateId;
+
       // Emit gate requested event (visualization: alarm animation)
       session.events.emitEvent({
         type: 'gate_requested',
         gateType: args.gate_type,
+        gateId: gateRequest.gateId,
+        artifactDigest: gateRequest.artifactDigest,
         summary: args.summary,
         details,
         timestamp: eventTimestamp(),
       });
 
       // Delegate to the session's gate resolver (CLI, API, or auto-approve)
-      const result = await session.gateResolver.resolve({
-        gateType: args.gate_type,
-        summary: args.summary,
-        details,
-        proposedAction: args.proposed_action,
-      });
+      const result = await session.gateResolver.resolve(gateRequest);
 
       const gateDecision: HumanGateDecision = {
         gateType: args.gate_type,
+        gateId: gateRequest.gateId,
+        artifactDigest: gateRequest.artifactDigest,
         timestamp: new Date().toISOString(),
         summary: args.summary,
         decision: result.decision,
@@ -85,6 +97,7 @@ export function createApprovalTools(session: SessionState) {
       session.events.emitEvent({
         type: 'gate_decided',
         gateType: args.gate_type,
+        gateId: gateRequest.gateId,
         decision: result.decision,
         notes: result.notes,
         timestamp: eventTimestamp(),

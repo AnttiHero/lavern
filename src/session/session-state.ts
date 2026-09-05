@@ -389,6 +389,9 @@ export class SessionState {
    *  Tier 4: Partial findings (session halted/errored mid-analysis) */
   public outputTier: 1 | 2 | 3 | 4 = 4;
   public outputTierReason = '';
+  /** Terminal outcome of the engagement (see workflows/completion.ts). Undefined while running. */
+  public outcome?: import('../workflows/completion.js').WorkflowOutcome;
+  public outcomeReasons: string[] = [];
 
   /** The original legal request that created this session (stored for assembly context). */
   public legalRequest?: import('../types/index.js').LegalRequest;

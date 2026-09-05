@@ -197,7 +197,9 @@ export interface QualityEscalation {
   maxRevisions: number;
   failureReasons: string[];
   raisedAt: string;
-  resolvedBy?: { gateType: string; decision: 'approve' | 'reject' | 'modify'; notes?: string; decidedAt: string };
+  /** The gate request that was put to the human for THIS escalation; only a decision naming it resolves it. */
+  gateId?: string;
+  resolvedBy?: { gateType: string; gateId?: string; decision: 'approve' | 'reject' | 'modify'; notes?: string; decidedAt: string };
 }
 
 export interface GenericWorkflowState {

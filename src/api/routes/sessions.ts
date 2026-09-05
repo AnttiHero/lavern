@@ -615,6 +615,8 @@ export function registerSessionRoutes(
           dissents: (summary as Record<string, unknown>).dissents ?? [],
           quorumChecks: (summary as Record<string, unknown>).quorumChecks ?? [],
           qualityEscalation: (summary as Record<string, unknown>).qualityEscalation ?? null,
+          outcome: (summary as Record<string, unknown>).outcome ?? null,
+          outcomeReasons: (summary as Record<string, unknown>).outcomeReasons ?? [],
           matterTitle: archived.title,
           workflowTemplateId: archived.workflow_id,
           provider: 'anthropic',
@@ -688,7 +690,12 @@ export function registerSessionRoutes(
       // Hivemind quorum: panel checks run on CRITICAL verification findings.
       quorumChecks: session.quorumChecks,
       qualityEscalation: session.genericWorkflow?.qualityEscalation ?? null,
+      outcome: session.outcome ?? null,
+      outcomeReasons: session.outcomeReasons,
       pendingGate: pendingGate ? {
+        gateId: pendingGate.gateId,
+        artifactDigest: pendingGate.artifactDigest,
+        requestedAt: pendingGate.requestedAt,
         gateType: pendingGate.gateType,
         summary: pendingGate.summary,
         details: pendingGate.details,
@@ -1661,38 +1668,41 @@ Apply the partner's notes following the rules in your system prompt. Preserve ev
       });
     }
 
-    const pendingGate = gateResolver.getPendingGate();
-    if (!pendingGate) {
-      return reply.status(409).send({
-        error: 'No pending gate decision',
-      });
-    }
-
-    // Validate gate decision body
+    // Validate gate decision body (gateId is required: consent is per request)
     const body = validateBody<GateDecisionBody>(GateDecisionSchema, request, reply);
     if (!body) return; // 400 already sent
 
-    // Optional gate type verification — if the client specifies which gate they're
-    // deciding, ensure it matches the pending gate (prevents stale approvals)
-    if (body.gateType && body.gateType !== pendingGate.gateType) {
+    const pendingGate = gateResolver.getPendingGate();
+
+    // Gate type verification against the pending gate (prevents stale approvals)
+    if (pendingGate && body.gateType && body.gateType !== pendingGate.gateType) {
       return reply.status(409).send({
         error: `Gate type mismatch: expected '${pendingGate.gateType}', got '${body.gateType}'`,
+        currentGateId: pendingGate.gateId,
       });
     }
 
-    const submitted = gateResolver.submitDecision({
-      decision: body.decision,
-      notes: body.notes,
-    });
+    const result = gateResolver.submitDecision({ decision: body.decision, notes: body.notes }, body.gateId);
 
-    if (!submitted) {
-      return reply.status(409).send({ error: 'Gate decision could not be submitted (gate may have timed out)' });
+    if (!result.ok) {
+      if (result.reason === 'no_pending') {
+        return reply.status(409).send({ error: 'No pending gate decision' });
+      }
+      return reply.status(409).send({
+        error: result.reason === 'gate_superseded'
+          ? `This gate was already resolved (${result.recordedDecision?.decision}); a different decision cannot be applied to it. Read the current gate and decide on it explicitly.`
+          : 'Gate mismatch: this decision names a gate that is not pending. Read the current gate and decide on it explicitly.',
+        currentGateId: result.currentGateId ?? null,
+        gateType: pendingGate?.gateType ?? null,
+      });
     }
 
     return reply.send({
       success: true,
-      decision: body.decision,
-      gateType: pendingGate.gateType,
+      idempotent: result.idempotent === true,
+      decision: result.decision.decision,
+      gateId: result.gateId,
+      gateType: pendingGate?.gateType ?? body.gateType ?? null,
       sessionId: id,
     });
   });

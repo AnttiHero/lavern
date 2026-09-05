@@ -888,6 +888,8 @@ export function archiveSession(session: SessionState, userId: string | null): vo
     dissents: session.dissents,
     quorumChecks: session.quorumChecks,
     qualityEscalation: session.genericWorkflow?.qualityEscalation ?? null,
+    outcome: session.outcome ?? null,
+    outcomeReasons: session.outcomeReasons,
     // Effective provider at archive time — post-archive human rulings need it
     // to residency-tag the precedents they create.
     provider: session.provider ?? config.provider,

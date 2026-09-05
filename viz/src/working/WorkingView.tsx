@@ -558,6 +558,7 @@ export default function WorkingView({ onComplete, onBack, onSkip }: WorkingViewP
       {state.pendingGate && state.sessionId && (
         <GateDialog
           gateType={state.pendingGate.gateType}
+          gateId={state.pendingGate.gateId}
           summary={state.pendingGate.summary}
           details={state.pendingGate.details}
           sessionId={state.sessionId}

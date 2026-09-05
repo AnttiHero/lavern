@@ -57,7 +57,7 @@ export interface WorkingState {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
   cost: { accumulated: number; budget: number } | undefined;
-  pendingGate: { gateType: string; summary: string; details: string } | null;
+  pendingGate: { gateType: string; summary: string; details: string; gateId?: string } | null;
   events: ShemEvent[];
   agentStatuses: Map<string, AgentStatus>;
   streamCards: StreamCard[];
@@ -122,7 +122,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
   const [pendingGate, setPendingGate] = useState<{
     gateType: string;
     summary: string;
-    details: string;
+    details: string; gateId?: string;
   } | null>(null);
 
   // Raw events
@@ -148,7 +148,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
       setPendingGate({
         gateType: event.gateType,
         summary: event.summary,
-        details: event.details,
+        details: event.details, gateId: event.gateId,
       });
     } else if (event.type === 'gate_decided') {
       setPendingGate(null);
@@ -237,6 +237,7 @@ export function useWorkingState(onSessionEnd?: () => void, teamRoles: string[] =
           gateType: data.pendingGate.gateType,
           summary: data.pendingGate.summary,
           details: data.pendingGate.details,
+          gateId: data.pendingGate.gateId,
         });
       }
     } catch { /* ignore */ }

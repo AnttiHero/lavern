@@ -277,7 +277,7 @@ function escalatedSession(raisedAt: string): SessionState {
     templateId: 'review', currentStep: 'evaluator_gate', completedSteps: ['intake', 'specialist_analysis'],
     gateDecisions: {}, evaluatorResults: [], revisionCount: 2, qualityChecks: [], stepIterationCounts: {}, handoffs: [],
     startedAt: now, lastTransitionAt: now,
-    qualityEscalation: { step: 'evaluator_gate', score: 0.58, revisions: 2, maxRevisions: 2, failureReasons: ['x'], raisedAt },
+    qualityEscalation: { step: 'evaluator_gate', score: 0.58, revisions: 2, maxRevisions: 2, failureReasons: ['x'], raisedAt, gateId: 'gate-esc-1' },
   } as never;
   return s;
 }
@@ -292,16 +292,16 @@ describe('advance_step under an unresolved quality escalation', () => {
     expect(s.genericWorkflow!.currentStep).toBe('evaluator_gate');
   });
 
-  it('a stale decision from before the escalation does not count', async () => {
+  it('a decision that does not name the escalation\'s gate does not count (stale or unrelated consent)', async () => {
     const s = escalatedSession(new Date(Date.now() + 60_000).toISOString());
-    s.gateDecisions.push({ gateType: 'final_delivery', timestamp: new Date().toISOString(), summary: 'old', decision: 'approve' });
+    s.gateDecisions.push({ gateType: 'final_delivery', gateId: 'some-other-gate', timestamp: new Date().toISOString(), summary: 'old', decision: 'approve' });
     const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
     expect(res.content[0].text).toContain('cannot advance until a HUMAN decides');
   });
 
   it('a human rejection re-raises the escalation and does not advance', async () => {
     const s = escalatedSession(new Date(Date.now() - 1000).toISOString());
-    s.gateDecisions.push({ gateType: 'quality_escalation', timestamp: new Date().toISOString(), summary: 'q', decision: 'reject', notes: 'fix the cap' });
+    s.gateDecisions.push({ gateType: 'quality_escalation', gateId: 'gate-esc-1', timestamp: new Date().toISOString(), summary: 'q', decision: 'reject', notes: 'fix the cap' });
     const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
     expect(res.content[0].text).toContain('REJECTED');
     expect(res.content[0].text).toContain('fix the cap');
@@ -311,10 +311,86 @@ describe('advance_step under an unresolved quality escalation', () => {
 
   it('a human approval resolves the escalation on the record and the workflow advances', async () => {
     const s = escalatedSession(new Date(Date.now() - 1000).toISOString());
-    s.gateDecisions.push({ gateType: 'quality_escalation', timestamp: new Date().toISOString(), summary: 'q', decision: 'approve', notes: 'deliver with caveats' });
+    s.gateDecisions.push({ gateType: 'quality_escalation', gateId: 'gate-esc-1', timestamp: new Date().toISOString(), summary: 'q', decision: 'approve', notes: 'deliver with caveats' });
     const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
     expect(res.content[0].text).not.toContain('cannot advance');
     expect(s.genericWorkflow!.qualityEscalation!.resolvedBy).toMatchObject({ gateType: 'quality_escalation', decision: 'approve', notes: 'deliver with caveats' });
     expect(s.genericWorkflow!.completedSteps).toContain('evaluator_gate');
+  });
+});
+
+
+// ── L01: evaluator evidence is required, not displayed ───────────────────
+import { createEvaluatorGateTools } from '../../src/mcp/tools/evaluator-gate.js';
+
+function atEvaluatorGate(): SessionState {
+  const s = new SessionState('test-l01');
+  const now = new Date(Date.now() - 1000).toISOString();
+  s.genericWorkflow = {
+    templateId: 'review', currentStep: 'evaluator_gate', completedSteps: ['intake', 'specialist_analysis'],
+    gateDecisions: {}, evaluatorResults: [], revisionCount: 0, qualityChecks: [], stepIterationCounts: {}, handoffs: [],
+    startedAt: now, lastTransitionAt: now,
+  } as never;
+  return s;
+}
+const recordTool = (s: SessionState) => (createEvaluatorGateTools(s) as any[]).find(t => t.name === 'record_evaluation_result') as any;
+
+describe('advance_step on an evaluator-gated step (L01)', () => {
+  it('blocks with no evaluation recorded', async () => {
+    const s = atEvaluatorGate();
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('requires a passing evaluator result');
+    expect(s.genericWorkflow!.currentStep).toBe('evaluator_gate');
+  });
+
+  it('blocks after a first failure below the revision limit (revise and re-evaluate)', async () => {
+    const s = atEvaluatorGate();
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: false, score: 0.1, failure_reasons: ['Incorrect liability cap'] });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('FAILED its latest evaluator check');
+    expect(s.genericWorkflow!.currentStep).toBe('evaluator_gate');
+  });
+
+  it('advances on a fresh pass', async () => {
+    const s = atEvaluatorGate();
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: true, score: 0.9 });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).not.toContain('ERROR');
+    expect(s.genericWorkflow!.currentStep).toBe('plain_language_review');
+  });
+
+  it('blocks when a pass predates a later failure (stale pass)', async () => {
+    const s = atEvaluatorGate();
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: true, score: 0.9 });
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: false, score: 0.2, failure_reasons: ['regressed'] });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('FAILED its latest evaluator check');
+  });
+
+  it('blocks a pass recorded for a different step', async () => {
+    const s = atEvaluatorGate();
+    await recordTool(s).handler({ step: 'specialist_analysis', passed: true, score: 0.9 });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).toContain('requires a passing evaluator result');
+  });
+
+  it('exhausted failures escalate; only a decision naming the escalation gate advances', async () => {
+    const s = atEvaluatorGate();
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: false, score: 0.1 });
+    await recordTool(s).handler({ step: 'evaluator_gate', passed: false, score: 0.1 });
+    const esc = s.genericWorkflow!.qualityEscalation!;
+    expect(esc).toBeDefined();
+    // no request raised yet -> blocked
+    expect((await advanceTool(s).handler({ completed_step: 'evaluator_gate' })).content[0].text).toContain('cannot advance until a HUMAN decides');
+    // a decision for some other gate -> still blocked
+    esc.gateId = 'gate-for-this-escalation';
+    s.gateDecisions.push({ gateType: 'quality_escalation', gateId: 'unrelated', timestamp: new Date().toISOString(), summary: 'x', decision: 'approve' });
+    expect((await advanceTool(s).handler({ completed_step: 'evaluator_gate' })).content[0].text).toContain('cannot advance until a HUMAN decides');
+    // the matching decision -> advances, on the record
+    s.gateDecisions.push({ gateType: 'quality_escalation', gateId: 'gate-for-this-escalation', timestamp: new Date().toISOString(), summary: 'x', decision: 'approve', notes: 'deliver, flagged' });
+    const res = await advanceTool(s).handler({ completed_step: 'evaluator_gate' });
+    expect(res.content[0].text).not.toContain('ERROR');
+    expect(esc.resolvedBy).toMatchObject({ gateId: 'gate-for-this-escalation', decision: 'approve' });
+    expect(s.genericWorkflow!.currentStep).toBe('plain_language_review');
   });
 });

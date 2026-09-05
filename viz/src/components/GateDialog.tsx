@@ -11,6 +11,8 @@ import { colors, fonts, radii, spacing } from '../staffing/styles/tokens.js';
 
 interface GateDialogProps {
   gateType: string;
+  /** Identity of the pending request; the decision must name it (consent is per request). */
+  gateId?: string;
   summary: string;
   details: string;
   sessionId: string;
@@ -28,6 +30,7 @@ const GATE_LABELS: Record<string, string> = {
 
 export function GateDialog({
   gateType,
+  gateId,
   summary,
   details,
   sessionId,
@@ -106,7 +109,7 @@ export function GateDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ decision, notes: notes || undefined }),
+        body: JSON.stringify({ decision, notes: notes || undefined, gateId, gateType }),
       });
 
       if (response.ok) {

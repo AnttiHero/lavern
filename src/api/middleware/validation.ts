@@ -147,6 +147,8 @@ export const GateDecisionSchema = z.object({
   decision: z.enum(['approve', 'reject', 'modify']),
   notes: z.string().max(5000).optional(),
   gateType: z.string().max(100).optional(), // Optional: verify this matches the pending gate
+  /** REQUIRED: the gateId from gate_requested / pendingGate. Consent is per request, never per type. */
+  gateId: z.string().min(8).max(100),
 }).strict();
 
 export type GateDecisionBody = z.infer<typeof GateDecisionSchema>;

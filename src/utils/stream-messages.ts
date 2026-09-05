@@ -103,16 +103,29 @@ export interface StreamOptions {
  * handle the result event (audit trail, session_end), and
  * throw on errors.
  */
+/**
+ * How the SDK query ended. 'completed' is the ONLY outcome that means the
+ * model finished its own turn normally; everything else is an explicit
+ * terminal state that the executor must not treat as a finished review.
+ */
+export interface StreamOutcome {
+  outcome: 'completed' | 'interrupted' | 'failed';
+  subtype?: string;
+  errors?: unknown;
+}
+
 export async function streamMessages(
   result: AsyncIterable<any>,
   options: StreamOptions,
-): Promise<void> {
+): Promise<StreamOutcome> {
   const { session, documentLabel, workflowLabel, logLevel, suppressSessionEnd } = options;
   const label = workflowLabel ? `SESSION COMPLETE (${workflowLabel})` : 'SESSION COMPLETE';
   // Start from the session's running total: a retried or second query must ADD
   // to what earlier queries cost, never restart the meter at zero.
   const baselineCost = session.accumulatedCost;
   let estimatedCost = baselineCost;
+  // No result message at all (process died, stream cut) is a failure, not a completion.
+  let streamOutcome: StreamOutcome = { outcome: 'failed', subtype: 'no_result' };
 
   for await (const message of result) {
     if (!('type' in message)) continue;
@@ -177,6 +190,7 @@ export async function streamMessages(
         }
 
         if ('subtype' in message && message.subtype === 'success') {
+          streamOutcome = { outcome: 'completed', subtype: 'success' };
           const auditTrail = compileAuditTrail(session, documentLabel, queryCost, totalTurns);
 
           if (!suppressSessionEnd) {
@@ -201,6 +215,8 @@ export async function streamMessages(
           const errors = (message as Record<string, unknown>).errors;
           const subtype = (message as Record<string, unknown>).subtype as string;
           logger.error('Session ended with error', { subtype, errors });
+          // Max-turn / budget-style stops are interruptions; anything else failed.
+          streamOutcome = { outcome: /max_turns|max_budget|budget/.test(subtype ?? '') ? 'interrupted' : 'failed', subtype, errors };
 
           if (!suppressSessionEnd) {
             session.events.emitEvent({
@@ -219,4 +235,5 @@ export async function streamMessages(
       }
     }
   }
+  return streamOutcome;
 }

@@ -178,6 +178,9 @@ export interface HumanGateDecision {
   summary: string;
   decision: 'approve' | 'reject' | 'modify';
   notes?: string;
+  /** Identity of the request this decision answered (see GateRequest). */
+  gateId?: string;
+  artifactDigest?: string;
 }
 
 /**

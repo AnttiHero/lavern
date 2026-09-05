@@ -188,8 +188,13 @@ describe('API Validation', () => {
   // ── GateDecisionSchema ──────────────────────────────────────────────
 
   describe('GateDecisionSchema', () => {
+    it('rejects a decision without a gateId (consent is per request, never per type)', () => {
+      expect(GateDecisionSchema.safeParse({ decision: 'approve' }).success).toBe(false);
+    });
+
     it('should accept valid approve decision', () => {
       const result = GateDecisionSchema.safeParse({
+        gateId: 'gate-abc-123',
         decision: 'approve',
         notes: 'Looks good',
       });
@@ -198,6 +203,7 @@ describe('API Validation', () => {
 
     it('should accept valid reject decision', () => {
       const result = GateDecisionSchema.safeParse({
+        gateId: 'gate-abc-123',
         decision: 'reject',
       });
       expect(result.success).toBe(true);
@@ -205,6 +211,7 @@ describe('API Validation', () => {
 
     it('should accept valid modify decision', () => {
       const result = GateDecisionSchema.safeParse({
+        gateId: 'gate-abc-123',
         decision: 'modify',
         notes: 'Change clause 3',
       });
@@ -213,6 +220,7 @@ describe('API Validation', () => {
 
     it('should reject invalid decision value', () => {
       const result = GateDecisionSchema.safeParse({
+        gateId: 'gate-abc-123',
         decision: 'maybe',
       });
       expect(result.success).toBe(false);
@@ -227,6 +235,7 @@ describe('API Validation', () => {
 
     it('should reject extra fields', () => {
       const result = GateDecisionSchema.safeParse({
+        gateId: 'gate-abc-123',
         decision: 'approve',
         extraField: 'malicious',
       });

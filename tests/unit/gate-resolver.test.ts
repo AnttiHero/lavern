@@ -34,11 +34,12 @@ describe('AsyncGateResolver', () => {
 
     // Gate should be pending
     expect(resolver.hasPendingGate()).toBe(true);
-    expect(resolver.getPendingGate()).toEqual(request);
+    expect(resolver.getPendingGate()).toMatchObject(request);
+    expect(resolver.getPendingGate()?.gateId).toBeTruthy();
 
     // Submit decision
-    const accepted = resolver.submitDecision({ decision: 'approve', notes: 'LGTM' });
-    expect(accepted).toBe(true);
+    const accepted = resolver.submitDecision({ decision: 'approve', notes: 'LGTM' }, resolver.getPendingGate()?.gateId ?? 'missing');
+    expect(accepted.ok).toBe(true);
 
     const result = await promise;
     expect(result.decision).toBe('approve');
@@ -81,14 +82,14 @@ describe('AsyncGateResolver', () => {
     expect(resolver.getPendingGate()?.gateType).toBe('final_delivery');
 
     // Resolve second gate
-    resolver.submitDecision({ decision: 'approve' });
+    resolver.submitDecision({ decision: 'approve' }, resolver.getPendingGate()?.gateId ?? 'missing');
     const result2 = await promise2;
     expect(result2.decision).toBe('approve');
   });
 
   it('returns false when submitting without pending gate', () => {
     const resolver = new AsyncGateResolver();
-    expect(resolver.submitDecision({ decision: 'approve' })).toBe(false);
+    expect(resolver.submitDecision({ decision: 'approve' }, resolver.getPendingGate()?.gateId ?? 'missing').ok).toBe(false);
   });
 
   it('cancel() rejects pending gate', async () => {
@@ -124,7 +125,7 @@ describe('AsyncGateResolver', () => {
     expect(resolver.getPendingAge()).toBe(5000);
 
     // Clean up
-    resolver.submitDecision({ decision: 'approve' });
+    resolver.submitDecision({ decision: 'approve' }, resolver.getPendingGate()?.gateId ?? 'missing');
     await promise;
   });
 
@@ -137,7 +138,7 @@ describe('AsyncGateResolver', () => {
     expect(resolver.hasPendingGate()).toBe(true);
 
     // Clean up
-    resolver.submitDecision({ decision: 'approve' });
+    resolver.submitDecision({ decision: 'approve' }, resolver.getPendingGate()?.gateId ?? 'missing');
     const result = await promise;
     expect(result.decision).toBe('approve');
   });
