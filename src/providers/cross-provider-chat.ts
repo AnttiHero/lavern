@@ -35,6 +35,7 @@ import { MISTRAL_MODELS } from './types.js';
 import { withRetry } from '../utils/with-retry.js';
 import { anthropicTierModels } from './tier-models.js';
 import { createLogger } from '../utils/logger.js';
+import { costForUsage, type UsageLike } from '../utils/stream-messages.js';
 
 const logger = createLogger('CROSS-PROVIDER');
 
@@ -289,14 +290,12 @@ export async function crossProviderChat(
     logger.warn('model declined the request', { model, category: category ?? 'unspecified' });
   }
 
-  const pricing = pricingFor(model, provider);
+  // One usage→cost function for every Anthropic path (see stream-messages):
+  // the previous local formula subtracted cache reads from input and ignored
+  // cache writes, reporting $0 for a billable call.
   const inputTokens = res.usage?.input_tokens ?? 0;
   const outputTokens = res.usage?.output_tokens ?? 0;
-  const cacheRead = (res.usage as { cache_read_input_tokens?: number } | undefined)?.cache_read_input_tokens ?? 0;
-  const regularInput = Math.max(0, inputTokens - cacheRead);
-  const cost =
-    (regularInput * pricing.input / 1_000_000) +
-    (outputTokens * pricing.output / 1_000_000);
+  const cost = costForUsage(model, res.usage as UsageLike | undefined);
 
   return { text, cost, model, provider };
 }

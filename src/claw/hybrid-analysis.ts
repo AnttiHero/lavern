@@ -8,7 +8,7 @@ import type { LocalAnalysisResult, ClauseAnalysis, RiskItem } from './local-anal
 import type { AnonymizationResult } from './anonymize.js';
 import type { ClawProfile, ClawConfig } from './types.js';
 import type { ParsedDocument } from '../documents/types.js';
-import { PRICING } from '../utils/stream-messages.js';
+import { PRICING, costForUsage, type UsageLike } from '../utils/stream-messages.js';
 import { anthropicTierModels } from '../providers/tier-models.js';
 import { labelForModel } from '../orchestration/model-priors.js';
 
@@ -50,6 +50,37 @@ export interface HybridAnalysisResult {
   entityCount: number;
   /** Human-readable note about what happened. */
   processingNote: string;
+  /**
+   * What happened at the frontier boundary — so budget decisions never
+   * confuse "no request made" with "paid but unusable":
+   *  not_dispatched   nothing needed frontier review
+   *  declined         the budget cap could not cover a useful call; no request made
+   *  parsed           request made, findings parsed
+   *  unparseable      request made and PAID, response unusable (cost preserved)
+   *  refused          request made and PAID, model declined (cost preserved)
+   *  transport_failure request failed before a response (cost unknown, reported as 0)
+   */
+  frontierStatus: 'not_dispatched' | 'declined' | 'parsed' | 'unparseable' | 'refused' | 'transport_failure';
+}
+
+/** Below this many output tokens a frontier call cannot produce useful findings. */
+const MIN_FRONTIER_OUTPUT_TOKENS = 1500;
+const MAX_FRONTIER_OUTPUT_TOKENS = 16_000;
+/** Share of the per-document budget the frontier call may spend. */
+const FRONTIER_BUDGET_SHARE = 0.3;
+
+/**
+ * Reserve the frontier call against its cap BEFORE dispatch: estimate the
+ * input cost from the envelope, and derive the output tokens the remaining
+ * cap can afford. Returns null when no useful call is affordable.
+ */
+export function reserveFrontierCall(envelopeChars: number, perDocBudget: number, price: { input: number; output: number }): { maxTokens: number; cap: number; estimatedInputUsd: number } | null {
+  const cap = perDocBudget * FRONTIER_BUDGET_SHARE;
+  const estimatedInputTokens = Math.ceil(envelopeChars / 3.5);
+  const estimatedInputUsd = estimatedInputTokens * price.input / 1_000_000;
+  const affordable = Math.floor((cap - estimatedInputUsd) / (price.output / 1_000_000));
+  if (affordable < MIN_FRONTIER_OUTPUT_TOKENS) return null;
+  return { maxTokens: Math.min(MAX_FRONTIER_OUTPUT_TOKENS, affordable), cap, estimatedInputUsd };
 }
 
 // ── Severity Classification ──────────────────────────────────────────────
@@ -145,6 +176,7 @@ export async function analyzeHybrid(
       totalClauseCount,
       entityCount: 0,
       processingNote: 'All findings were low-severity. Local analysis sufficient.',
+      frontierStatus: 'not_dispatched',
     };
   }
 
@@ -171,6 +203,21 @@ export async function analyzeHybrid(
   // analysis. A direct Opus call is cleaner, faster, and works.
   let frontierFindings: HybridFinding[] = [];
   let frontierUsd = 0;
+
+  /** Local findings only, with the frontier outcome and any KNOWN charge preserved. */
+  const localOnlyResult = (frontierStatus: HybridAnalysisResult['frontierStatus'], chargedUsd: number, processingNote: string): HybridAnalysisResult => ({
+    findings: [
+      ...localResult.clauses.map(c => clauseToFinding(c, 'local')),
+      ...localResult.risks.map(riskToFinding),
+    ],
+    localResult,
+    cost: { localUsd: 0, frontierUsd: chargedUsd, totalUsd: chargedUsd },
+    frontierClauseCount: escalated.length,
+    totalClauseCount,
+    entityCount,
+    processingNote,
+    frontierStatus,
+  });
 
   try {
     log(`[hybrid] Sending ${escalated.length} anonymised clauses to ${labelForModel(FRONTIER_MODEL)} for deep review (budget cap: $${(clawConfig.perDocBudget * 0.3).toFixed(2)}).`);
@@ -220,23 +267,42 @@ ${anonymized.anonymizedText}`;
       ...(profile.company ? [profile.company] : []),
     ]);
 
-    const response = await client.messages.create({
-      model: FRONTIER_MODEL,
-      max_tokens: 16_000,
-      system,
-      messages: [{ role: 'user', content: userMessage }],
-    }, { timeout: 240_000, maxRetries: 1 });
+    // Budget reservation at the call boundary: the advertised cap is enforced,
+    // not merely logged. No call starts without an affordable output budget.
+    const price = PRICING[FRONTIER_MODEL] ?? PRICING['claude-fable-5-1'];
+    const reservation = reserveFrontierCall(system.length + userMessage.length, clawConfig.perDocBudget, price);
+    if (!reservation) {
+      log(`[hybrid] Frontier review DECLINED: the cap of $${(clawConfig.perDocBudget * FRONTIER_BUDGET_SHARE).toFixed(2)} cannot cover a useful call. Local findings only; no request made.`);
+      return localOnlyResult('declined', 0, `Frontier review declined: the per-document budget cap ($${(clawConfig.perDocBudget * FRONTIER_BUDGET_SHARE).toFixed(2)}) cannot cover a useful frontier call. Local findings only.`);
+    }
+    log(`[hybrid] Frontier reservation: cap $${reservation.cap.toFixed(2)}, est. input $${reservation.estimatedInputUsd.toFixed(4)}, max_tokens ${reservation.maxTokens}.`);
+
+    let response: Awaited<ReturnType<typeof client.messages.create>>;
+    try {
+      response = await client.messages.create({
+        model: FRONTIER_MODEL,
+        max_tokens: reservation.maxTokens,
+        system,
+        messages: [{ role: 'user', content: userMessage }],
+      }, { timeout: 240_000, maxRetries: 1 });
+    } catch (transportErr) {
+      const message = transportErr instanceof Error ? transportErr.message : String(transportErr);
+      log(`[hybrid] Frontier request failed before a response: ${message}. Cost unknown (reported as 0). Local findings only.`);
+      return localOnlyResult('transport_failure', 0, `Frontier request failed before a response (${message}). Cost unknown. Local findings only.`);
+    }
+
+    // Cost is captured the moment a response exists — whatever happens next.
+    frontierUsd = costForUsage(FRONTIER_MODEL, (response as { usage?: UsageLike }).usage);
+
+    if ((response as { stop_reason?: string }).stop_reason === 'refusal') {
+      log(`[hybrid] Frontier declined the request (refusal). $${frontierUsd.toFixed(4)} was charged. Local findings only.`);
+      return localOnlyResult('refused', frontierUsd, `The frontier model declined the request. $${frontierUsd.toFixed(4)} was charged. Local findings only.`);
+    }
 
     let raw = '';
     for (const block of response.content) {
       if (block.type === 'text') raw += block.text;
     }
-
-    // Cost from the shared pricing table so this can never drift from it again.
-    const price = PRICING[FRONTIER_MODEL] ?? PRICING['claude-fable-5-1'];
-    const inputT = response.usage?.input_tokens ?? 0;
-    const outputT = response.usage?.output_tokens ?? 0;
-    frontierUsd = (inputT * price.input / 1_000_000) + (outputT * price.output / 1_000_000);
 
     // Parse the findings — accept JSON object or fenced JSON
     const tryParse = (s: string): unknown => {
@@ -248,7 +314,15 @@ ${anonymized.anonymizedText}`;
       throw new Error('Frontier response was not parseable JSON');
     };
 
-    const parsed = tryParse(raw) as { findings?: unknown };
+    let parsed: { findings?: unknown };
+    try {
+      parsed = tryParse(raw) as { findings?: unknown };
+    } catch (parseErr) {
+      // Paid, but unusable: the charge must survive the fallback.
+      const message = parseErr instanceof Error ? parseErr.message : String(parseErr);
+      log(`[hybrid] Frontier response unusable (${message}). $${frontierUsd.toFixed(4)} was charged. Local findings only.`);
+      return localOnlyResult('unparseable', frontierUsd, `Frontier response was unusable (${message}). $${frontierUsd.toFixed(4)} was charged. Local findings only.`);
+    }
     const rawFindings = Array.isArray(parsed.findings) ? parsed.findings : [];
 
     frontierFindings = rawFindings.map((f) => {
@@ -265,23 +339,11 @@ ${anonymized.anonymizedText}`;
 
     log(`[hybrid] Frontier produced ${frontierFindings.length} findings ($${frontierUsd.toFixed(4)}).`);
   } catch (err) {
+    // Anything before dispatch (identity-leak guard, key, client construction):
+    // no request was made, so nothing was charged.
     const message = err instanceof Error ? err.message : String(err);
-    log(`[hybrid] Frontier dispatch failed: ${message}. Returning local findings only.`);
-
-    const findings: HybridFinding[] = [
-      ...localResult.clauses.map(c => clauseToFinding(c, 'local')),
-      ...localResult.risks.map(riskToFinding),
-    ];
-
-    return {
-      findings,
-      localResult,
-      cost: { localUsd: 0, frontierUsd: 0, totalUsd: 0 },
-      frontierClauseCount: escalated.length,
-      totalClauseCount,
-      entityCount,
-      processingNote: 'Frontier analysis failed. Returning local findings only.',
-    };
+    log(`[hybrid] Frontier dispatch failed before any request: ${message}. Returning local findings only.`);
+    return localOnlyResult('transport_failure', frontierUsd, `Frontier dispatch failed (${message}). Returning local findings only.`);
   }
 
   // ── Step 6: Merge findings ─────────────────────────────────────────────
@@ -333,6 +395,7 @@ ${anonymized.anonymizedText}`;
     totalClauseCount,
     entityCount,
     processingNote: `Hybrid analysis: ${escalated.length} of ${totalClauseCount} clauses escalated to frontier. ${entityCount} entities anonymized.`,
+    frontierStatus: 'parsed',
   };
 }
 

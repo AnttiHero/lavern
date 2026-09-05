@@ -67,26 +67,45 @@ function pricingForModel(model?: string): { input: number; output: number; cache
  * Estimate USD cost from a single assistant message's usage object.
  * The Anthropic Messages API returns token counts per response.
  */
-function estimateTurnCost(usage: Record<string, number> | undefined, model?: string): number {
+/** Normalised Anthropic usage. The four buckets are MUTUALLY EXCLUSIVE:
+ *  input_tokens is already the uncached input. */
+export interface UsageLike {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+  /** Per-TTL cache-write breakdown (newer API); 1h writes cost 2x input. */
+  cache_creation?: { ephemeral_5m_input_tokens?: number; ephemeral_1h_input_tokens?: number } | null;
+}
+
+/**
+ * THE usage→USD function for Anthropic calls. SDK streaming, direct chat,
+ * the hybrid frontier call and billing persistence all use it; independent
+ * copies drifted (one subtracted cache reads from input and dropped cache
+ * writes entirely, reporting $0 for a billable call).
+ */
+export function costForUsage(model: string | undefined, usage: UsageLike | null | undefined): number {
   if (!usage) return 0;
-
   const prices = pricingForModel(model);
-
   const inputTokens = usage.input_tokens ?? 0;
   const outputTokens = usage.output_tokens ?? 0;
   const cacheRead = usage.cache_read_input_tokens ?? 0;
-  const cacheCreate = usage.cache_creation_input_tokens ?? 0;
-
-  // The Anthropic usage object reports these buckets as MUTUALLY EXCLUSIVE:
-  // input_tokens is already the uncached input (it excludes both cache reads
-  // and cache writes). The old code subtracted cacheRead from input_tokens,
-  // double-discounting and undercounting the bill.
+  const write5m = usage.cache_creation?.ephemeral_5m_input_tokens;
+  const write1h = usage.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+  // When the per-TTL breakdown is present it is authoritative; otherwise the
+  // legacy aggregate is priced at the 5-minute write rate.
+  const cacheWrite5m = write5m !== undefined ? write5m : Math.max(0, (usage.cache_creation_input_tokens ?? 0) - write1h);
   return (
     (inputTokens * prices.input / 1_000_000) +
     (outputTokens * prices.output / 1_000_000) +
     (cacheRead * prices.cacheRead / 1_000_000) +
-    (cacheCreate * prices.cacheWrite / 1_000_000)
+    (cacheWrite5m * prices.cacheWrite / 1_000_000) +
+    (write1h * prices.input * 2 / 1_000_000)
   );
+}
+
+function estimateTurnCost(usage: Record<string, number> | undefined, model?: string): number {
+  return costForUsage(model, usage as UsageLike | undefined);
 }
 
 export interface StreamOptions {

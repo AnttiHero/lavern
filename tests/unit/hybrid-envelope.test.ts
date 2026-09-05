@@ -75,6 +75,45 @@ describe('hybrid outbound envelope', () => {
   });
 });
 
+describe('frontier accounting and budget (L06 / L07)', () => {
+  it('a paid but unparseable response keeps its charge (L06)', async () => {
+    spies.cloud.mockResolvedValue({ content: [{ type: 'text', text: 'not JSON' }], usage: { input_tokens: 10000, output_tokens: 2000 }, stop_reason: 'end_turn' });
+    const r = await analyzeHybrid('synthetic NDA', 'nda.txt', profile, claw, document, () => {});
+    expect(spies.cloud).toHaveBeenCalledOnce();
+    expect(r.frontierStatus).toBe('unparseable');
+    expect(r.cost.frontierUsd).toBeGreaterThan(0.1);
+    expect(r.cost.totalUsd).toBe(r.cost.frontierUsd);
+    expect(r.findings.length).toBeGreaterThan(0); // local findings still delivered
+  });
+
+  it('a refusal keeps its charge and is distinguished from a transport failure', async () => {
+    spies.cloud.mockResolvedValue({ content: [], usage: { input_tokens: 500, output_tokens: 0 }, stop_reason: 'refusal' });
+    const r = await analyzeHybrid('synthetic NDA', 'nda.txt', profile, claw, document, () => {});
+    expect(r.frontierStatus).toBe('refused');
+    expect(r.cost.frontierUsd).toBeGreaterThan(0);
+    spies.cloud.mockRejectedValue(new Error('ECONNRESET'));
+    const t = await analyzeHybrid('synthetic NDA', 'nda.txt', profile, claw, document, () => {});
+    expect(t.frontierStatus).toBe('transport_failure');
+    expect(t.cost.frontierUsd).toBe(0);
+  });
+
+  it('the advertised cap is enforced at the call boundary (L07)', async () => {
+    // $0.10 per document -> $0.03 frontier cap: cannot cover a useful call -> no request
+    const tiny = await analyzeHybrid('synthetic NDA', 'nda.txt', profile, { ...claw, perDocBudget: 0.1 }, document, () => {});
+    expect(spies.cloud).not.toHaveBeenCalled();
+    expect(tiny.frontierStatus).toBe('declined');
+    expect(tiny.cost.totalUsd).toBe(0);
+    // $0.5 -> $0.15 cap: affordable, but output is capped below the 16k default
+    await analyzeHybrid('synthetic NDA', 'nda.txt', profile, { ...claw, perDocBudget: 0.5 }, document, () => {});
+    const capped = spies.cloud.mock.calls[0][0].max_tokens;
+    expect(capped).toBeLessThan(16_000); expect(capped).toBeGreaterThanOrEqual(1500);
+    // $5 -> $1.5 cap: the full 16k budget fits
+    vi.clearAllMocks(); spies.cloud.mockResolvedValue({ content: [{ type: 'text', text: '{"findings":[]}' }], usage: { input_tokens: 1000, output_tokens: 100 }, stop_reason: 'end_turn' });
+    await analyzeHybrid('synthetic NDA', 'nda.txt', profile, { ...claw, perDocBudget: 5 }, document, () => {});
+    expect(spies.cloud.mock.calls[0][0].max_tokens).toBe(16_000);
+  });
+});
+
 describe('deanonymize is literal (L11)', () => {
   it('round-trips a party name containing replacement syntax', () => {
     const name = 'A$`B'; const original = `Before ${name} after.`;
